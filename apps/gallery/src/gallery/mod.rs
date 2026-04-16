@@ -1,24 +1,87 @@
-use gpui::{Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, rgb};
+use std::sync::Arc;
+
+use gpui::{Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, rgb};
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
+use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
 use lucide_icons::Icon as LucideIcon;
+
+struct GalleryCheckboxTheme {
+    base: DefaultCheckboxTheme,
+    control_border: Option<Hsla>,
+    control_background: Option<Hsla>,
+}
+
+impl GalleryCheckboxTheme {
+    fn new(control_border: Option<Hsla>, control_background: Option<Hsla>) -> Self {
+        Self {
+            base: DefaultCheckboxTheme::default(),
+            control_border,
+            control_background,
+        }
+    }
+}
+
+impl CheckboxTheme for GalleryCheckboxTheme {
+    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
+        let mut appearance = self.base.resolve(checked, state);
+
+        if !state.disabled {
+            if let Some(control_border) = self.control_border {
+                appearance.control_border = Some(control_border);
+                appearance.control_padding_x = 10.0;
+                appearance.control_padding_y = 6.0;
+            }
+
+            if let Some(control_background) = self.control_background {
+                appearance.control_background = Some(control_background);
+            }
+        }
+
+        appearance
+    }
+}
+
+#[derive(Clone, Copy)]
+enum CheckboxPresentation {
+    Default,
+    Border,
+    BorderAndBackground,
+}
 
 pub struct GalleryApp {
     button: Entity<Button>,
     icon_button: Entity<IconButton>,
     toggle_button: Entity<ToggleButton>,
+    default_checkbox: Entity<Checkbox>,
+    border_checkbox: Entity<Checkbox>,
+    filled_checkbox: Entity<Checkbox>,
     disabled_button: Entity<Button>,
     disabled_icon_button: Entity<IconButton>,
     disabled_toggle_button: Entity<ToggleButton>,
+    disabled_checkbox: Entity<Checkbox>,
     clicks: usize,
     icon_clicks: usize,
     toggle_selected: bool,
+    default_checkbox_checked: bool,
+    border_checkbox_checked: bool,
+    filled_checkbox_checked: bool,
     _subscriptions: Vec<Subscription>,
 }
 
 impl GalleryApp {
     pub fn new(cx: &mut Context<Self>) -> Self {
+        let border_checkbox_template = checkbox_template(Arc::new(GalleryCheckboxTheme::new(
+            Some(rgb(0x2563eb).into()),
+            None,
+        )));
+        let filled_checkbox_template = checkbox_template(Arc::new(GalleryCheckboxTheme::new(
+            Some(rgb(0xbe185d).into()),
+            Some(rgb(0xfce7f3).into()),
+        )));
+
         let button = Button::new("button-example")
             .label("Click me")
             .kind(ButtonKind::Primary)
@@ -29,6 +92,19 @@ impl GalleryApp {
         let toggle_button = ToggleButton::new("toggle-button-example")
             .label("Toggle")
             .selected(true)
+            .spawn(cx);
+        let default_checkbox = Checkbox::new("checkbox-default")
+            .label("As-is")
+            .checked(true)
+            .spawn(cx);
+        let border_checkbox = Checkbox::new("checkbox-border")
+            .label("Border")
+            .template(border_checkbox_template)
+            .spawn(cx);
+        let filled_checkbox = Checkbox::new("checkbox-border-background")
+            .label("Border + fill")
+            .checked(true)
+            .template(filled_checkbox_template)
             .spawn(cx);
         let disabled_button = Button::new("disabled-button")
             .label("Disabled")
@@ -42,6 +118,11 @@ impl GalleryApp {
             .selected(true)
             .enabled(false)
             .spawn(cx);
+        let disabled_checkbox = Checkbox::new("disabled-checkbox")
+            .label("Disabled checkbox")
+            .checked(true)
+            .enabled(false)
+            .spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&button, |this, _, event: &ButtonEvent, cx| {
@@ -53,18 +134,34 @@ impl GalleryApp {
             cx.subscribe(&toggle_button, |this, _, event: &ToggleButtonEvent, cx| {
                 this.handle_toggle_button_event(event, cx);
             }),
+            cx.subscribe(&default_checkbox, |this, _, event: &CheckboxEvent, cx| {
+                this.handle_checkbox_event(CheckboxPresentation::Default, event, cx);
+            }),
+            cx.subscribe(&border_checkbox, |this, _, event: &CheckboxEvent, cx| {
+                this.handle_checkbox_event(CheckboxPresentation::Border, event, cx);
+            }),
+            cx.subscribe(&filled_checkbox, |this, _, event: &CheckboxEvent, cx| {
+                this.handle_checkbox_event(CheckboxPresentation::BorderAndBackground, event, cx);
+            }),
         ];
 
         Self {
             button,
             icon_button,
             toggle_button,
+            default_checkbox,
+            border_checkbox,
+            filled_checkbox,
             disabled_button,
             disabled_icon_button,
             disabled_toggle_button,
+            disabled_checkbox,
             clicks: 0,
             icon_clicks: 0,
             toggle_selected: true,
+            default_checkbox_checked: true,
+            border_checkbox_checked: false,
+            filled_checkbox_checked: true,
             _subscriptions: subscriptions,
         }
     }
@@ -107,6 +204,30 @@ impl GalleryApp {
             }
         }
     }
+
+    fn handle_checkbox_event(
+        &mut self,
+        presentation: CheckboxPresentation,
+        event: &CheckboxEvent,
+        cx: &mut Context<Self>,
+    ) {
+        match event {
+            CheckboxEvent::Change { checked } => {
+                match presentation {
+                    CheckboxPresentation::Default => {
+                        self.default_checkbox_checked = *checked;
+                    }
+                    CheckboxPresentation::Border => {
+                        self.border_checkbox_checked = *checked;
+                    }
+                    CheckboxPresentation::BorderAndBackground => {
+                        self.filled_checkbox_checked = *checked;
+                    }
+                }
+                cx.notify();
+            }
+        }
+    }
 }
 
 impl Render for GalleryApp {
@@ -130,8 +251,27 @@ impl Render for GalleryApp {
             )
             .child(
                 div()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(self.default_checkbox.clone())
+                    .child(self.border_checkbox.clone())
+                    .child(self.filled_checkbox.clone()),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap_1()
                     .text_color(rgb(0x334155))
-                    .child(format!("Toggle selected: {}", self.toggle_selected)),
+                    .child(format!("Toggle selected: {}", self.toggle_selected))
+                    .child(format!(
+                        "Checkboxes: as-is={}, border={}, border + fill={}",
+                        self.default_checkbox_checked,
+                        self.border_checkbox_checked,
+                        self.filled_checkbox_checked
+                    )),
             )
             .child(
                 div()
@@ -140,7 +280,12 @@ impl Render for GalleryApp {
                     .gap_3()
                     .child(self.disabled_button.clone())
                     .child(self.disabled_icon_button.clone())
-                    .child(self.disabled_toggle_button.clone()),
+                    .child(self.disabled_toggle_button.clone())
+                    .child(self.disabled_checkbox.clone()),
             )
     }
+}
+
+fn checkbox_template(theme: Arc<dyn CheckboxTheme>) -> Arc<dyn CheckboxTemplate> {
+    Arc::new(ThemedCheckboxTemplate::new(theme))
 }

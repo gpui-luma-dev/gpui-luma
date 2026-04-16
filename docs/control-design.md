@@ -11,7 +11,9 @@ The current SDK includes:
 - `Button`
 - `IconButton`
 - `ToggleButton`
+- `Checkbox`
 - shared button-family theme resolution
+- checkbox-specific theme resolution
 - shared interaction-state resolution
 - configurable theme tokens
 - a gallery app that acts as the first real consumer
@@ -110,6 +112,10 @@ crates/sdk/src/controls/
     model.rs
     template.rs
   toggle_button/
+    control.rs
+    model.rs
+    template.rs
+  checkbox/
     control.rs
     model.rs
     template.rs
@@ -307,6 +313,30 @@ toggle.update(cx, |toggle, cx| {
 ```
 
 Toggle activation is still semantic. Application code observes `ToggleButtonEvent::Change`.
+
+### 4.5 Checkbox
+
+`Checkbox` owns its checked state and emits semantic change events.
+
+```rust
+use gpui_luma::controls::checkbox::Checkbox;
+
+let checkbox = Checkbox::new("remember-choice")
+    .label("Remember choice")
+    .checked(false)
+    .enabled(true)
+    .spawn(cx);
+```
+
+The live control exposes checked-state mutation:
+
+```rust
+checkbox.update(cx, |checkbox, cx| {
+    checkbox.set_checked(true, cx);
+});
+```
+
+Application code observes `CheckboxEvent::Change { checked }`. The checkbox checkmark is an SDK-owned affordance, so callers do not pass an icon for the internal checkmark.
 
 ## 5. Events And Application Ownership
 
@@ -540,6 +570,20 @@ let radius = match role {
 
 This keeps shape policy in the family theme instead of hardcoding it in `IconButton`.
 
+### 9.1 Non-Button Theme Families
+
+Controls should only join `ButtonFamilyTheme` when they actually behave like members of the button interaction family. Controls with different shape or value affordance policy should define their own resolver.
+
+`Checkbox` uses:
+
+```rust
+pub trait CheckboxTheme: Send + Sync {
+    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance;
+}
+```
+
+The resolver still uses shared tokens and `InteractionState::layer()` for state precedence, but it owns checkbox-specific policy such as control container background and border, indicator size, checked background, label color, and checkmark color. This keeps non-button controls from expanding `ButtonFamilyRole` into a catch-all enum.
+
 ## 10. Icon Policy
 
 The SDK supports icon rendering, but app-level icon choice belongs to the app.
@@ -562,6 +606,8 @@ Conversion rules:
 This prevents partial name support from becoming an accidental public contract.
 
 The SDK may use Lucide internally for SDK-owned affordances later, such as dropdown arrows. That is separate from application-owned icon choices.
+
+SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state rather than application content. App-owned icons, such as an add or save icon in an `IconButton`, must still be passed explicitly by the consumer.
 
 ## 11. Gallery Boundary
 
