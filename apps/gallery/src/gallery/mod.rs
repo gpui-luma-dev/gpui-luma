@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, rgb};
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
+use gpui_luma::controls::dropdown_menu::{DropdownMenu, DropdownMenuEvent, DropdownMenuItem};
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
@@ -58,6 +59,7 @@ pub struct GalleryApp {
     default_checkbox: Entity<Checkbox>,
     border_checkbox: Entity<Checkbox>,
     filled_checkbox: Entity<Checkbox>,
+    dropdown_menu: Entity<DropdownMenu>,
     disabled_button: Entity<Button>,
     disabled_icon_button: Entity<IconButton>,
     disabled_toggle_button: Entity<ToggleButton>,
@@ -68,6 +70,7 @@ pub struct GalleryApp {
     default_checkbox_checked: bool,
     border_checkbox_checked: bool,
     filled_checkbox_checked: bool,
+    dropdown_selection: String,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -106,6 +109,33 @@ impl GalleryApp {
             .checked(true)
             .template(filled_checkbox_template)
             .spawn(cx);
+        let dropdown_menu = DropdownMenu::new("dropdown-menu-example")
+            .label("Actions")
+            .items([
+                DropdownMenuItem::new("new")
+                    .label("New file")
+                    .icon(LucideIcon::FilePlus),
+                DropdownMenuItem::new("rename")
+                    .label("Rename")
+                    .icon(LucideIcon::Pencil),
+                DropdownMenuItem::new("archive").label("Archive"),
+                DropdownMenuItem::new("share")
+                    .label("Share")
+                    .icon(LucideIcon::Share2)
+                    .submenu([
+                        DropdownMenuItem::new("copy-link")
+                            .label("Copy link")
+                            .icon(LucideIcon::Link),
+                        DropdownMenuItem::new("email")
+                            .label("Email")
+                            .icon(LucideIcon::Mail),
+                    ]),
+                DropdownMenuItem::new("disabled")
+                    .label("Unavailable")
+                    .icon(LucideIcon::ArchiveX)
+                    .enabled(false),
+            ])
+            .spawn(cx);
         let disabled_button = Button::new("disabled-button")
             .label("Disabled")
             .enabled(false)
@@ -143,6 +173,9 @@ impl GalleryApp {
             cx.subscribe(&filled_checkbox, |this, _, event: &CheckboxEvent, cx| {
                 this.handle_checkbox_event(CheckboxPresentation::BorderAndBackground, event, cx);
             }),
+            cx.subscribe(&dropdown_menu, |this, _, event: &DropdownMenuEvent, cx| {
+                this.handle_dropdown_menu_event(event, cx);
+            }),
         ];
 
         Self {
@@ -152,6 +185,7 @@ impl GalleryApp {
             default_checkbox,
             border_checkbox,
             filled_checkbox,
+            dropdown_menu,
             disabled_button,
             disabled_icon_button,
             disabled_toggle_button,
@@ -162,6 +196,7 @@ impl GalleryApp {
             default_checkbox_checked: true,
             border_checkbox_checked: false,
             filled_checkbox_checked: true,
+            dropdown_selection: "none".to_string(),
             _subscriptions: subscriptions,
         }
     }
@@ -228,6 +263,15 @@ impl GalleryApp {
             }
         }
     }
+
+    fn handle_dropdown_menu_event(&mut self, event: &DropdownMenuEvent, cx: &mut Context<Self>) {
+        match event {
+            DropdownMenuEvent::Select { label, .. } => {
+                self.dropdown_selection = label.to_string();
+                cx.notify();
+            }
+        }
+    }
 }
 
 impl Render for GalleryApp {
@@ -258,6 +302,7 @@ impl Render for GalleryApp {
                     .child(self.border_checkbox.clone())
                     .child(self.filled_checkbox.clone()),
             )
+            .child(self.dropdown_menu.clone())
             .child(
                 div()
                     .flex()
@@ -271,7 +316,8 @@ impl Render for GalleryApp {
                         self.default_checkbox_checked,
                         self.border_checkbox_checked,
                         self.filled_checkbox_checked
-                    )),
+                    ))
+                    .child(format!("Dropdown selected: {}", self.dropdown_selection)),
             )
             .child(
                 div()
