@@ -23,8 +23,7 @@ impl GalleryApp {
             .label("Click me")
             .kind(ButtonKind::Primary)
             .spawn(cx);
-        let icon_button = IconButton::new("icon-button-example")
-            .icon(LucideIcon::Plus)
+        let icon_button = IconButton::new("icon-button-example", LucideIcon::Plus)
             .kind(IconButtonKind::Primary)
             .spawn(cx);
         let toggle_button = ToggleButton::new("toggle-button-example")
@@ -35,8 +34,7 @@ impl GalleryApp {
             .label("Disabled")
             .enabled(false)
             .spawn(cx);
-        let disabled_icon_button = IconButton::new("disabled-icon-button")
-            .icon(LucideIcon::Check)
+        let disabled_icon_button = IconButton::new("disabled-icon-button", LucideIcon::Check)
             .enabled(false)
             .spawn(cx);
         let disabled_toggle_button = ToggleButton::new("disabled-toggle-button")
@@ -88,7 +86,7 @@ impl GalleryApp {
         match event {
             IconButtonEvent::Click => {
                 self.icon_clicks += 1;
-                let icon = if self.icon_clicks % 2 == 0 {
+                let icon = if self.icon_clicks.is_multiple_of(2) {
                     LucideIcon::Plus
                 } else {
                     LucideIcon::Check

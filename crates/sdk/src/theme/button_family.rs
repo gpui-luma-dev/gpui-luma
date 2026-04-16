@@ -75,9 +75,11 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let colors = &self.tokens.colors;
         let metrics = &self.tokens.metrics;
         let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-        let variant = selected
-            .then_some(ButtonVariant::Primary)
-            .unwrap_or(variant);
+        let variant = if selected {
+            ButtonVariant::Primary
+        } else {
+            variant
+        };
         let foreground = match (variant, state.disabled) {
             (_, true) => colors.text_disabled,
             (ButtonVariant::Default, false) => colors.text,

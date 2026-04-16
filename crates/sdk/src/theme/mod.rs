@@ -8,4 +8,4 @@ pub use button_family::{
     DefaultButtonFamilyTheme, default_button_family_theme,
 };
 pub use interaction::{InteractionLayer, InteractionState};
-pub use tokens::{ColorTokens, ControlSize, MetricTokens, ThemeTokens};
+pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};

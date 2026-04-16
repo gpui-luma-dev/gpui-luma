@@ -8,7 +8,7 @@ pub enum ControlSize {
     Lg,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ThemeTokens {
     pub colors: ColorTokens,
     pub metrics: MetricTokens,
@@ -36,16 +36,20 @@ pub struct ColorTokens {
     pub focus_ring: Hsla,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct MetricTokens;
+#[derive(Clone, Debug)]
+pub struct MetricTokens {
+    pub sm: ControlMetricTokens,
+    pub md: ControlMetricTokens,
+    pub lg: ControlMetricTokens,
+}
 
-impl Default for ThemeTokens {
-    fn default() -> Self {
-        Self {
-            colors: ColorTokens::default(),
-            metrics: MetricTokens,
-        }
-    }
+#[derive(Clone, Copy, Debug)]
+pub struct ControlMetricTokens {
+    pub radius: f32,
+    pub control_height: f32,
+    pub padding_x: f32,
+    pub padding_y: f32,
+    pub gap: f32,
 }
 
 impl Default for ColorTokens {
@@ -73,44 +77,60 @@ impl Default for ColorTokens {
     }
 }
 
-impl MetricTokens {
-    pub fn radius(&self, size: ControlSize) -> f32 {
-        match size {
-            ControlSize::Sm => 5.0,
-            ControlSize::Md => 6.0,
-            ControlSize::Lg => 7.0,
+impl Default for MetricTokens {
+    fn default() -> Self {
+        Self {
+            sm: ControlMetricTokens {
+                radius: 5.0,
+                control_height: 28.0,
+                padding_x: 10.0,
+                padding_y: 5.0,
+                gap: 6.0,
+            },
+            md: ControlMetricTokens {
+                radius: 6.0,
+                control_height: 36.0,
+                padding_x: 14.0,
+                padding_y: 8.0,
+                gap: 8.0,
+            },
+            lg: ControlMetricTokens {
+                radius: 7.0,
+                control_height: 44.0,
+                padding_x: 18.0,
+                padding_y: 10.0,
+                gap: 10.0,
+            },
         }
+    }
+}
+
+impl MetricTokens {
+    pub fn for_size(&self, size: ControlSize) -> ControlMetricTokens {
+        match size {
+            ControlSize::Sm => self.sm,
+            ControlSize::Md => self.md,
+            ControlSize::Lg => self.lg,
+        }
+    }
+
+    pub fn radius(&self, size: ControlSize) -> f32 {
+        self.for_size(size).radius
     }
 
     pub fn control_height(&self, size: ControlSize) -> f32 {
-        match size {
-            ControlSize::Sm => 28.0,
-            ControlSize::Md => 36.0,
-            ControlSize::Lg => 44.0,
-        }
+        self.for_size(size).control_height
     }
 
     pub fn padding_x(&self, size: ControlSize) -> f32 {
-        match size {
-            ControlSize::Sm => 10.0,
-            ControlSize::Md => 14.0,
-            ControlSize::Lg => 18.0,
-        }
+        self.for_size(size).padding_x
     }
 
     pub fn padding_y(&self, size: ControlSize) -> f32 {
-        match size {
-            ControlSize::Sm => 5.0,
-            ControlSize::Md => 8.0,
-            ControlSize::Lg => 10.0,
-        }
+        self.for_size(size).padding_y
     }
 
     pub fn gap(&self, size: ControlSize) -> f32 {
-        match size {
-            ControlSize::Sm => 6.0,
-            ControlSize::Md => 8.0,
-            ControlSize::Lg => 10.0,
-        }
+        self.for_size(size).gap
     }
 }

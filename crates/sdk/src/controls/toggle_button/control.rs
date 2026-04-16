@@ -1,9 +1,10 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, FocusHandle, Focusable, IntoElement, MouseButton,
-    MouseDownEvent, MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
+    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
 };
 
-use super::{ToggleButtonBuilder, ToggleButtonRenderModel, ToggleButtonState};
+use super::{ToggleButtonBuilder, ToggleButtonRenderModel};
+use crate::controls::interaction::ControlInteraction;
 use crate::controls::toggle_button::model::ToggleButtonModel;
 
 #[derive(Clone, Debug)]
@@ -13,22 +14,23 @@ pub enum ToggleButtonEvent {
 
 pub struct ToggleButton {
     model: ToggleButtonModel,
-    state: ToggleButtonState,
-    focus_handle: FocusHandle,
+    interaction: ControlInteraction,
 }
 
 impl EventEmitter<ToggleButtonEvent> for ToggleButton {}
 
 impl ToggleButton {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> ToggleButtonBuilder {
         ToggleButtonBuilder::new(id)
     }
 
     pub(crate) fn from_builder(builder: ToggleButtonBuilder, cx: &mut Context<Self>) -> Self {
+        let enabled = builder.model.enabled;
+
         Self {
             model: builder.model,
-            state: ToggleButtonState::default(),
-            focus_handle: cx.focus_handle().tab_stop(true),
+            interaction: ControlInteraction::new(enabled, cx),
         }
     }
 
@@ -43,7 +45,7 @@ impl ToggleButton {
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
-        self.state.disabled = !enabled;
+        self.interaction.set_enabled(enabled);
         cx.notify();
     }
 
@@ -55,11 +57,7 @@ impl ToggleButton {
             size: self.model.size,
             enabled: self.model.enabled,
             selected: self.model.selected,
-            state: ToggleButtonState {
-                focused: self.focus_handle.is_focused(window),
-                disabled: !self.model.enabled,
-                ..self.state
-            },
+            state: self.interaction.render_state(self.model.enabled, window),
         }
     }
 
@@ -74,11 +72,9 @@ impl ToggleButton {
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
-        self.state.hovered = *hovered;
-        if !hovered {
-            self.state.pressed = false;
+        if self.interaction.handle_hover(*hovered) {
+            cx.notify();
         }
-        cx.notify();
     }
 
     fn handle_mouse_down(
@@ -87,9 +83,10 @@ impl ToggleButton {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.model.enabled {
-            self.state.pressed = true;
-            self.focus_handle.focus(window, cx);
+        if self
+            .interaction
+            .handle_mouse_down(self.model.enabled, window, cx)
+        {
             cx.notify();
         }
     }
@@ -100,16 +97,15 @@ impl ToggleButton {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.state.pressed {
-            self.state.pressed = false;
+        if self.interaction.handle_mouse_up() {
             cx.notify();
         }
     }
 }
 
 impl Focusable for ToggleButton {
-    fn focus_handle(&self, _cx: &App) -> FocusHandle {
-        self.focus_handle.clone()
+    fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
+        self.interaction.focus_handle().clone()
     }
 }
 
@@ -122,7 +118,7 @@ impl Render for ToggleButton {
                 self.model
                     .template
                     .render(&model, window, cx)
-                    .track_focus(&self.focus_handle)
+                    .track_focus(self.interaction.focus_handle())
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))

@@ -5,9 +5,7 @@ use gpui_platform::application;
 
 fn main() {
     application().run(|cx| {
-        gpui_luma::init(cx);
-
-        if let Err(error) = app_shell::open(cx) {
+        if let Err(error) = gpui_luma::init(cx).and_then(|_| app_shell::open(cx)) {
             eprintln!("failed to open GPUI-Luma gallery: {error:?}");
         }
     });

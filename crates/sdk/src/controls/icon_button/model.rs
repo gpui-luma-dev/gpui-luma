@@ -31,12 +31,12 @@ pub struct IconButtonBuilder {
 }
 
 impl IconButtonBuilder {
-    pub fn new(id: impl Into<SharedString>) -> Self {
+    pub fn new(id: impl Into<SharedString>, icon: impl Into<IconButtonIcon>) -> Self {
         let id = id.into();
 
         Self {
             model: IconButtonModel {
-                icon: IconButtonIcon::from("plus"),
+                icon: icon.into(),
                 id,
                 kind: IconButtonKind::Default,
                 size: IconButtonSize::Md,
