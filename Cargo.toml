@@ -30,7 +30,7 @@ split-debuginfo = "unpacked"
 [profile.dev.package.gpui-luma]
 opt-level = 2
 
-[profile.dev.package.gpui-opal-gallery]
+[profile.dev.package.gpui-luma-gallery]
 opt-level = 1
 
 [profile.dev.package.gpui]

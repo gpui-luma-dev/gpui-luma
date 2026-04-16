@@ -6,3 +6,4 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
+gpui = { workspace = true }
