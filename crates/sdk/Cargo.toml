@@ -6,4 +6,9 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-gpui = { workspace = true }
+gpui.workspace = true
+anyhow.workspace = true
+tiny-skia.workspace = true
+lucide-icons.workspace = true
+ttf-parser = "0.25"
+palette = "0.7.6"

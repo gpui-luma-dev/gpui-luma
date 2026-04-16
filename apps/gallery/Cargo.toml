@@ -10,3 +10,4 @@ anyhow = { workspace = true }
 gpui = { workspace = true }
 gpui-luma = { path = "../../crates/sdk" }
 gpui_platform = { workspace = true }
+lucide-icons = { workspace = true }

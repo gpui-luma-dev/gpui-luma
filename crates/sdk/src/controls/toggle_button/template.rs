@@ -1,49 +1,54 @@
-use std::sync::Arc;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
 
-use super::ButtonRenderModel;
+use super::ToggleButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
-pub trait ButtonTemplate: Send + Sync {
+pub trait ToggleButtonTemplate: Send + Sync {
     fn render(
         &self,
-        model: &ButtonRenderModel<'_>,
+        model: &ToggleButtonRenderModel<'_>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedButtonTemplate {
+pub struct ThemedToggleButtonTemplate {
     theme: Arc<dyn ButtonFamilyTheme>,
 }
 
-impl ThemedButtonTemplate {
+impl ThemedToggleButtonTemplate {
     pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
         Self { theme }
     }
 }
 
-pub fn default_button_template() -> Arc<dyn ButtonTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate>> = OnceLock::new();
+pub fn default_toggle_button_template() -> Arc<dyn ToggleButtonTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn ToggleButtonTemplate>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| Arc::new(ThemedButtonTemplate::new(default_button_family_theme())))
+        .get_or_init(|| {
+            Arc::new(ThemedToggleButtonTemplate::new(
+                default_button_family_theme(),
+            ))
+        })
         .clone()
 }
 
-impl ButtonTemplate for ThemedButtonTemplate {
+impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
     fn render(
         &self,
-        model: &ButtonRenderModel<'_>,
+        model: &ToggleButtonRenderModel<'_>,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
         let appearance = self.theme.resolve(
             button_variant(model.kind),
-            ButtonFamilyRole::Text,
+            ButtonFamilyRole::Toggle {
+                selected: model.selected,
+            },
             model.size,
             model.state,
         );
@@ -65,7 +70,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .cursor_pointer()
             .child(model.label.clone());
 
-        if model.state.disabled {
+        if !model.enabled {
             root = root.opacity(0.56);
         }
 

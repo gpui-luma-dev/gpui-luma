@@ -2,32 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{Button, ButtonTemplate, ThemedButtonTemplate};
-use crate::theme::button::ButtonThemePack;
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum ButtonKind {
-    #[default]
-    Default,
-    Primary,
-    Destructive,
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum ButtonSize {
-    Sm,
-    #[default]
-    Md,
-    Lg,
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct ButtonState {
-    pub hovered: bool,
-    pub pressed: bool,
-    pub focused: bool,
-    pub disabled: bool,
-}
+use super::{Button, ButtonTemplate, default_button_template};
+use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
 
 #[derive(Clone)]
 pub struct ButtonModel {
@@ -62,9 +38,7 @@ impl ButtonBuilder {
                 kind: ButtonKind::Default,
                 size: ButtonSize::Md,
                 enabled: true,
-                template: Arc::new(ThemedButtonTemplate::new(Arc::new(
-                    ButtonThemePack::default(),
-                ))),
+                template: default_button_template(),
             },
         }
     }

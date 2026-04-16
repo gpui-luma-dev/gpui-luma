@@ -1,49 +1,48 @@
-use std::sync::Arc;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
+use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, svg, prelude::*};
 
-use super::ButtonRenderModel;
+use super::{IconButtonIcon, IconButtonRenderModel};
 use crate::controls::button_family::ButtonKind;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
-pub trait ButtonTemplate: Send + Sync {
+pub trait IconButtonTemplate: Send + Sync {
     fn render(
         &self,
-        model: &ButtonRenderModel<'_>,
+        model: &IconButtonRenderModel<'_>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedButtonTemplate {
+pub struct ThemedIconButtonTemplate {
     theme: Arc<dyn ButtonFamilyTheme>,
 }
 
-impl ThemedButtonTemplate {
+impl ThemedIconButtonTemplate {
     pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
         Self { theme }
     }
 }
 
-pub fn default_button_template() -> Arc<dyn ButtonTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate>> = OnceLock::new();
+pub fn default_icon_button_template() -> Arc<dyn IconButtonTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn IconButtonTemplate>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| Arc::new(ThemedButtonTemplate::new(default_button_family_theme())))
+        .get_or_init(|| Arc::new(ThemedIconButtonTemplate::new(default_button_family_theme())))
         .clone()
 }
 
-impl ButtonTemplate for ThemedButtonTemplate {
+impl IconButtonTemplate for ThemedIconButtonTemplate {
     fn render(
         &self,
-        model: &ButtonRenderModel<'_>,
+        model: &IconButtonRenderModel<'_>,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
         let appearance = self.theme.resolve(
             button_variant(model.kind),
-            ButtonFamilyRole::Text,
+            ButtonFamilyRole::Icon,
             model.size,
             model.state,
         );
@@ -52,10 +51,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .flex()
             .items_center()
             .justify_center()
-            .gap(px(appearance.gap))
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .h(px(appearance.height))
+            .size(px(appearance.height))
             .bg(appearance.background)
             .text_color(appearance.foreground)
             .border_1()
@@ -63,7 +59,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .rounded(px(appearance.radius))
             .font_weight(FontWeight::MEDIUM)
             .cursor_pointer()
-            .child(model.label.clone());
+            .child(render_icon(model.icon, appearance.foreground));
 
         if model.state.disabled {
             root = root.opacity(0.56);
@@ -74,6 +70,31 @@ impl ButtonTemplate for ThemedButtonTemplate {
         }
 
         root
+    }
+}
+
+fn render_icon(icon: &IconButtonIcon, color: gpui::Hsla) -> AnyElement {
+    if let Some(icon) = icon.lucide() {
+        div()
+            .size(px(16.0))
+            .flex()
+            .items_center()
+            .justify_center()
+            .font_family("lucide")
+            .font_weight(FontWeight::NORMAL)
+            .text_size(px(16.0))
+            .line_height(px(16.0))
+            .text_color(color)
+            .child(char::from(icon).to_string())
+            .into_any_element()
+    } else if let Some(path) = icon.svg_path() {
+        svg()
+            .external_path(path.clone())
+            .size(px(16.0))
+            .text_color(color)
+            .into_any_element()
+    } else {
+        div().size(px(16.0)).into_any_element()
     }
 }
 
