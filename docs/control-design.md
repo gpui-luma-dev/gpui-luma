@@ -12,12 +12,16 @@ The current SDK includes:
 - `IconButton`
 - `ToggleButton`
 - `Checkbox`
+- `Switch`
+- `RadioGroup`
 - `Slider`
 - `Progress`
 - `DropdownMenu`
 - `ContextMenu`
 - shared button-family theme resolution
 - checkbox-specific theme resolution
+- switch-specific theme resolution
+- radio-group-specific theme resolution
 - slider-specific theme resolution
 - progress-specific theme resolution
 - dropdown-menu-specific theme resolution
@@ -126,6 +130,14 @@ crates/sdk/src/controls/
     model.rs
     template.rs
   checkbox/
+    control.rs
+    model.rs
+    template.rs
+  switch/
+    control.rs
+    model.rs
+    template.rs
+  radio_group/
     control.rs
     model.rs
     template.rs
@@ -365,7 +377,61 @@ checkbox.update(cx, |checkbox, cx| {
 
 Application code observes `CheckboxEvent::Change { checked }`. The checkbox checkmark is an SDK-owned affordance, so callers do not pass an icon for the internal checkmark.
 
-### 4.6 Slider
+### 4.6 Switch
+
+`Switch` owns a binary on/off state and emits semantic change events.
+
+```rust
+use gpui_luma::controls::switch::Switch;
+
+let switch = Switch::new("notifications-switch")
+    .on(true)
+    .enabled(true)
+    .spawn(cx);
+```
+
+The live control exposes on-state and enabled-state mutation:
+
+```rust
+switch.update(cx, |switch, cx| {
+    switch.set_on(false, cx);
+    switch.set_enabled(true, cx);
+});
+```
+
+Application code observes `SwitchEvent::Change { on }`. The default template renders the switch as a pill track with a thumb position derived from the semantic on/off state; theme policy owns the track, thumb, and focus-ring appearance. `Switch` is the SDK's standalone binary state control, while `RadioGroup` owns mutually exclusive option selection.
+
+### 4.7 RadioGroup
+
+`RadioGroup` owns mutual exclusivity for a set of radio-style options and emits one semantic change event.
+
+```rust
+use gpui_luma::controls::radio_group::{
+    RadioGroup, RadioGroupItem,
+};
+
+let group = RadioGroup::new("density")
+    .items([
+        RadioGroupItem::new("compact").label("Compact"),
+        RadioGroupItem::new("comfortable").label("Comfortable"),
+        RadioGroupItem::new("expanded").label("Expanded"),
+    ])
+    .selected("comfortable")
+    .spawn(cx);
+```
+
+The live control exposes selected value, items, and enabled-state mutation:
+
+```rust
+group.update(cx, |group, cx| {
+    group.set_selected("expanded", cx);
+    group.set_enabled(true, cx);
+});
+```
+
+Application code observes `RadioGroupEvent::Change { selected_id, label }`. The group owns selection coercion and clears the need for app-level sibling radio-button wiring. The default group template renders each radio item while the group control owns selection behavior.
+
+### 4.8 Slider
 
 `Slider` owns its numeric value, coerces it through a configured range and step, and emits semantic change events.
 
@@ -391,7 +457,7 @@ slider.update(cx, |slider, cx| {
 
 Application code observes `SliderEvent::Change { value }`. Drag and pointer math stay in the control, while the template owns the bar structure and passes measured bounds back through control-owned handlers.
 
-### 4.7 Progress
+### 4.9 Progress
 
 `Progress` owns a numeric value and range, defaults to `0..100`, and renders as a circular progress indicator.
 
@@ -414,7 +480,7 @@ progress.update(cx, |progress, cx| {
 
 `Progress` is non-interactive status display. It has no hover, pressed, or focus behavior and emits no user events.
 
-### 4.8 DropdownMenu
+### 4.10 DropdownMenu
 
 `DropdownMenu` owns its open state internally and emits semantic select events for enabled menu items.
 
@@ -466,7 +532,7 @@ Application code observes `DropdownMenuEvent::Select { item_id, label }`. The op
 
 Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
 
-### 4.9 ContextMenu
+### 4.11 ContextMenu
 
 `ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target and emits semantic select events for enabled menu items.
 

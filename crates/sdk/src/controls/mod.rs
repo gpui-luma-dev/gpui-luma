@@ -6,6 +6,8 @@ pub mod dropdown_menu;
 pub mod icon_button;
 pub(crate) mod interaction;
 pub mod progress;
+pub mod radio_group;
 pub mod slider;
+pub mod switch;
 pub mod toggle_button;
 pub mod value;

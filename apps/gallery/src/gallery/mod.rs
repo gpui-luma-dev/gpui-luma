@@ -7,7 +7,9 @@ use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::dropdown_menu::{DropdownMenu, DropdownMenuEvent, DropdownMenuItem};
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::progress::Progress;
+use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
 use lucide_icons::Icon as LucideIcon;
@@ -69,9 +71,11 @@ pub struct GalleryApp {
     button: Entity<Button>,
     icon_button: Entity<IconButton>,
     toggle_button: Entity<ToggleButton>,
+    switch: Entity<Switch>,
     default_checkbox: Entity<Checkbox>,
     border_checkbox: Entity<Checkbox>,
     filled_checkbox: Entity<Checkbox>,
+    radio_group: Entity<RadioGroup>,
     slider: Entity<Slider>,
     progress: Entity<Progress>,
     dropdown_menu: Entity<DropdownMenu>,
@@ -80,13 +84,16 @@ pub struct GalleryApp {
     disabled_button: Entity<Button>,
     disabled_icon_button: Entity<IconButton>,
     disabled_toggle_button: Entity<ToggleButton>,
+    disabled_switch: Entity<Switch>,
     disabled_checkbox: Entity<Checkbox>,
     clicks: usize,
     icon_clicks: usize,
     toggle_selected: bool,
+    switch_on: bool,
     default_checkbox_checked: bool,
     border_checkbox_checked: bool,
     filled_checkbox_checked: bool,
+    radio_choice: String,
     slider_value: f32,
     dropdown_selection: String,
     default_context_selection: String,
@@ -116,6 +123,7 @@ impl GalleryApp {
             .label("Toggle")
             .selected(true)
             .spawn(cx);
+        let switch = Switch::new("switch-example").on(true).spawn(cx);
         let default_checkbox = Checkbox::new("checkbox-default")
             .label("As-is")
             .checked(true)
@@ -128,6 +136,14 @@ impl GalleryApp {
             .label("Border + fill")
             .checked(true)
             .template(filled_checkbox_template)
+            .spawn(cx);
+        let radio_group = RadioGroup::new("density-radio-group")
+            .items([
+                RadioGroupItem::new("compact").label("Compact"),
+                RadioGroupItem::new("comfortable").label("Comfortable"),
+                RadioGroupItem::new("expanded").label("Expanded"),
+            ])
+            .selected("comfortable")
             .spawn(cx);
         let slider = Slider::new("slider-example")
             .range(1..100)
@@ -202,6 +218,10 @@ impl GalleryApp {
             .selected(true)
             .enabled(false)
             .spawn(cx);
+        let disabled_switch = Switch::new("disabled-switch")
+            .on(true)
+            .enabled(false)
+            .spawn(cx);
         let disabled_checkbox = Checkbox::new("disabled-checkbox")
             .label("Disabled checkbox")
             .checked(true)
@@ -218,6 +238,9 @@ impl GalleryApp {
             cx.subscribe(&toggle_button, |this, _, event: &ToggleButtonEvent, cx| {
                 this.handle_toggle_button_event(event, cx);
             }),
+            cx.subscribe(&switch, |this, _, event: &SwitchEvent, cx| {
+                this.handle_switch_event(event, cx);
+            }),
             cx.subscribe(&default_checkbox, |this, _, event: &CheckboxEvent, cx| {
                 this.handle_checkbox_event(CheckboxPresentation::Default, event, cx);
             }),
@@ -226,6 +249,9 @@ impl GalleryApp {
             }),
             cx.subscribe(&filled_checkbox, |this, _, event: &CheckboxEvent, cx| {
                 this.handle_checkbox_event(CheckboxPresentation::BorderAndBackground, event, cx);
+            }),
+            cx.subscribe(&radio_group, |this, _, event: &RadioGroupEvent, cx| {
+                this.handle_radio_group_event(event, cx);
             }),
             cx.subscribe(&slider, |this, _, event: &SliderEvent, cx| {
                 this.handle_slider_event(event, cx);
@@ -251,9 +277,11 @@ impl GalleryApp {
             button,
             icon_button,
             toggle_button,
+            switch,
             default_checkbox,
             border_checkbox,
             filled_checkbox,
+            radio_group,
             slider,
             progress,
             dropdown_menu,
@@ -262,13 +290,16 @@ impl GalleryApp {
             disabled_button,
             disabled_icon_button,
             disabled_toggle_button,
+            disabled_switch,
             disabled_checkbox,
             clicks: 0,
             icon_clicks: 0,
             toggle_selected: true,
+            switch_on: true,
             default_checkbox_checked: true,
             border_checkbox_checked: false,
             filled_checkbox_checked: true,
+            radio_choice: "Comfortable".to_string(),
             slider_value: 41.0,
             dropdown_selection: "none".to_string(),
             default_context_selection: "none".to_string(),
@@ -316,6 +347,15 @@ impl GalleryApp {
         }
     }
 
+    fn handle_switch_event(&mut self, event: &SwitchEvent, cx: &mut Context<Self>) {
+        match event {
+            SwitchEvent::Change { on } => {
+                self.switch_on = *on;
+                cx.notify();
+            }
+        }
+    }
+
     fn handle_checkbox_event(
         &mut self,
         presentation: CheckboxPresentation,
@@ -344,6 +384,15 @@ impl GalleryApp {
         match event {
             DropdownMenuEvent::Select { label, .. } => {
                 self.dropdown_selection = label.to_string();
+                cx.notify();
+            }
+        }
+    }
+
+    fn handle_radio_group_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<Self>) {
+        match event {
+            RadioGroupEvent::Change { label, .. } => {
+                self.radio_choice = label.to_string();
                 cx.notify();
             }
         }
@@ -400,7 +449,8 @@ impl Render for GalleryApp {
                     .gap_3()
                     .child(self.button.clone())
                     .child(self.icon_button.clone())
-                    .child(self.toggle_button.clone()),
+                    .child(self.toggle_button.clone())
+                    .child(self.switch.clone()),
             )
             .child(
                 div()
@@ -410,6 +460,13 @@ impl Render for GalleryApp {
                     .child(self.default_checkbox.clone())
                     .child(self.border_checkbox.clone())
                     .child(self.filled_checkbox.clone()),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(self.radio_group.clone()),
             )
             .child(
                 div()
@@ -446,12 +503,14 @@ impl Render for GalleryApp {
                     .gap_1()
                     .text_color(rgb(0x334155))
                     .child(format!("Toggle selected: {}", self.toggle_selected))
+                    .child(format!("Switch on: {}", self.switch_on))
                     .child(format!(
                         "Checkboxes: as-is={}, border={}, border + fill={}",
                         self.default_checkbox_checked,
                         self.border_checkbox_checked,
                         self.filled_checkbox_checked
                     ))
+                    .child(format!("Radio choice: {}", self.radio_choice))
                     .child(format!("Slider value: {:.0}", self.slider_value))
                     .child(format!("Dropdown selected: {}", self.dropdown_selection))
                     .child(format!(
@@ -471,6 +530,7 @@ impl Render for GalleryApp {
                     .child(self.disabled_button.clone())
                     .child(self.disabled_icon_button.clone())
                     .child(self.disabled_toggle_button.clone())
+                    .child(self.disabled_switch.clone())
                     .child(self.disabled_checkbox.clone()),
             )
     }

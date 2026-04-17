@@ -18,6 +18,11 @@ const RADIAL_BUTTON_SIZE: f32 = 42.0;
 const RADIAL_BUTTON_RADIUS: f32 = 58.0;
 const RADIAL_CENTER_MARKER_SIZE: f32 = 12.0;
 
+type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+type ContextMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+
 pub fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
     Arc::new(GalleryRadialContextMenuTemplate::new(
         default_context_menu_theme(),
@@ -96,11 +101,11 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
 fn render_target(
     model: &ContextMenuRenderModel<'_>,
     appearance: &ContextMenuAppearance,
-    target_aux_click: Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>,
-    target_hover: Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>,
-    target_mouse_down: Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>,
-    target_mouse_up: Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>,
-    target_mouse_up_out: Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>,
+    target_aux_click: ContextMenuClickHandler,
+    target_hover: ContextMenuHoverHandler,
+    target_mouse_down: ContextMenuMouseDownHandler,
+    target_mouse_up: ContextMenuMouseUpHandler,
+    target_mouse_up_out: ContextMenuMouseUpHandler,
 ) -> Stateful<Div> {
     div()
         .id(format!("{}-target", model.id))
@@ -128,8 +133,8 @@ fn render_target(
 fn render_radial_menu(
     model: &ContextMenuRenderModel<'_>,
     appearance: ContextMenuAppearance,
-    item_hovers: Vec<Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>>,
-    item_clicks: Vec<Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>>,
+    item_hovers: Vec<ContextMenuHoverHandler>,
+    item_clicks: Vec<ContextMenuClickHandler>,
 ) -> Stateful<Div> {
     let mut item_clicks = item_clicks.into_iter();
     let mut menu = div()
@@ -157,10 +162,11 @@ fn render_radial_menu(
         let mut button =
             render_radial_item(model.id, index, item, &appearance).on_hover(item_hover);
 
-        if item.is_enabled() && item.submenu_items().is_empty() {
-            if let Some(item_click) = item_clicks.next() {
-                button = button.on_click(item_click);
-            }
+        if item.is_enabled()
+            && item.submenu_items().is_empty()
+            && let Some(item_click) = item_clicks.next()
+        {
+            button = button.on_click(item_click);
         }
 
         menu = menu.child(button);
