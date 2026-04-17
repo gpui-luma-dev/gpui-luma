@@ -12,10 +12,14 @@ The current SDK includes:
 - `IconButton`
 - `ToggleButton`
 - `Checkbox`
+- `Slider`
+- `Progress`
 - `DropdownMenu`
 - `ContextMenu`
 - shared button-family theme resolution
 - checkbox-specific theme resolution
+- slider-specific theme resolution
+- progress-specific theme resolution
 - dropdown-menu-specific theme resolution
 - context-menu-specific theme resolution
 - shared interaction-state resolution
@@ -125,6 +129,14 @@ crates/sdk/src/controls/
     control.rs
     model.rs
     template.rs
+  slider/
+    control.rs
+    model.rs
+    template.rs
+  progress/
+    control.rs
+    model.rs
+    template.rs
   dropdown_menu/
     control.rs
     model.rs
@@ -135,6 +147,7 @@ crates/sdk/src/controls/
     template.rs
   button_family.rs
   interaction.rs
+  value.rs
 ```
 
 ### 3.2 Control Responsibility
@@ -352,7 +365,56 @@ checkbox.update(cx, |checkbox, cx| {
 
 Application code observes `CheckboxEvent::Change { checked }`. The checkbox checkmark is an SDK-owned affordance, so callers do not pass an icon for the internal checkmark.
 
-### 4.6 DropdownMenu
+### 4.6 Slider
+
+`Slider` owns its numeric value, coerces it through a configured range and step, and emits semantic change events.
+
+```rust
+use gpui_luma::controls::slider::Slider;
+
+let slider = Slider::new("threshold-slider")
+    .range(1..100)
+    .step(10)
+    .value(41)
+    .spawn(cx);
+```
+
+The live control exposes value, range, step, and enabled-state mutation:
+
+```rust
+slider.update(cx, |slider, cx| {
+    slider.set_value(51, cx);
+    slider.set_range(1..100, cx);
+    slider.set_step(10, cx);
+});
+```
+
+Application code observes `SliderEvent::Change { value }`. Drag and pointer math stay in the control, while the template owns the bar structure and passes measured bounds back through control-owned handlers.
+
+### 4.7 Progress
+
+`Progress` owns a numeric value and range, defaults to `0..100`, and renders as a circular progress indicator.
+
+```rust
+use gpui_luma::controls::progress::Progress;
+
+let progress = Progress::new("upload-progress")
+    .value(72)
+    .spawn(cx);
+```
+
+The live control exposes value and range mutation:
+
+```rust
+progress.update(cx, |progress, cx| {
+    progress.set_value(84, cx);
+    progress.set_range(0..100, cx);
+});
+```
+
+`Progress` is non-interactive status display. It has no hover, pressed, or focus behavior and emits no user events.
+
+### 4.8 DropdownMenu
 
 `DropdownMenu` owns its open state internally and emits semantic select events for enabled menu items.
 
@@ -404,7 +466,7 @@ Application code observes `DropdownMenuEvent::Select { item_id, label }`. The op
 
 Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
 
-### 4.7 ContextMenu
+### 4.9 ContextMenu
 
 `ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target and emits semantic select events for enabled menu items.
 

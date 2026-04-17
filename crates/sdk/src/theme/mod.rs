@@ -4,6 +4,8 @@ pub mod checkbox;
 pub mod context_menu;
 pub mod dropdown_menu;
 pub mod interaction;
+pub mod progress;
+pub mod slider;
 pub mod tokens;
 
 pub use button_family::{
@@ -19,4 +21,6 @@ pub use dropdown_menu::{
     default_dropdown_menu_theme,
 };
 pub use interaction::{InteractionLayer, InteractionState};
+pub use progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme, default_progress_theme};
+pub use slider::{DefaultSliderTheme, SliderAppearance, SliderTheme, default_slider_theme};
 pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};

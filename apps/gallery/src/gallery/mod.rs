@@ -6,6 +6,8 @@ use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, T
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::dropdown_menu::{DropdownMenu, DropdownMenuEvent, DropdownMenuItem};
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
+use gpui_luma::controls::progress::Progress;
+use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
 use lucide_icons::Icon as LucideIcon;
@@ -70,6 +72,8 @@ pub struct GalleryApp {
     default_checkbox: Entity<Checkbox>,
     border_checkbox: Entity<Checkbox>,
     filled_checkbox: Entity<Checkbox>,
+    slider: Entity<Slider>,
+    progress: Entity<Progress>,
     dropdown_menu: Entity<DropdownMenu>,
     default_context_menu: Entity<ContextMenu>,
     radial_context_menu: Entity<ContextMenu>,
@@ -83,6 +87,7 @@ pub struct GalleryApp {
     default_checkbox_checked: bool,
     border_checkbox_checked: bool,
     filled_checkbox_checked: bool,
+    slider_value: f32,
     dropdown_selection: String,
     default_context_selection: String,
     radial_context_selection: String,
@@ -123,6 +128,15 @@ impl GalleryApp {
             .label("Border + fill")
             .checked(true)
             .template(filled_checkbox_template)
+            .spawn(cx);
+        let slider = Slider::new("slider-example")
+            .range(1..100)
+            .step(10)
+            .value(41)
+            .spawn(cx);
+        let progress = Progress::new("progress-example")
+            .range(1..100)
+            .value(41)
             .spawn(cx);
         let dropdown_menu = DropdownMenu::new("dropdown-menu-example")
             .label("Actions")
@@ -213,6 +227,9 @@ impl GalleryApp {
             cx.subscribe(&filled_checkbox, |this, _, event: &CheckboxEvent, cx| {
                 this.handle_checkbox_event(CheckboxPresentation::BorderAndBackground, event, cx);
             }),
+            cx.subscribe(&slider, |this, _, event: &SliderEvent, cx| {
+                this.handle_slider_event(event, cx);
+            }),
             cx.subscribe(&dropdown_menu, |this, _, event: &DropdownMenuEvent, cx| {
                 this.handle_dropdown_menu_event(event, cx);
             }),
@@ -237,6 +254,8 @@ impl GalleryApp {
             default_checkbox,
             border_checkbox,
             filled_checkbox,
+            slider,
+            progress,
             dropdown_menu,
             default_context_menu,
             radial_context_menu,
@@ -250,6 +269,7 @@ impl GalleryApp {
             default_checkbox_checked: true,
             border_checkbox_checked: false,
             filled_checkbox_checked: true,
+            slider_value: 41.0,
             dropdown_selection: "none".to_string(),
             default_context_selection: "none".to_string(),
             radial_context_selection: "none".to_string(),
@@ -329,6 +349,18 @@ impl GalleryApp {
         }
     }
 
+    fn handle_slider_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
+        match event {
+            SliderEvent::Change { value } => {
+                self.slider_value = *value;
+                self.progress.update(cx, |progress, cx| {
+                    progress.set_value(*value, cx);
+                });
+                cx.notify();
+            }
+        }
+    }
+
     fn handle_context_menu_event(
         &mut self,
         presentation: ContextMenuPresentation,
@@ -379,6 +411,14 @@ impl Render for GalleryApp {
                     .child(self.border_checkbox.clone())
                     .child(self.filled_checkbox.clone()),
             )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_4()
+                    .child(self.slider.clone())
+                    .child(self.progress.clone()),
+            )
             .child(self.dropdown_menu.clone())
             .child(
                 div()
@@ -412,6 +452,7 @@ impl Render for GalleryApp {
                         self.border_checkbox_checked,
                         self.filled_checkbox_checked
                     ))
+                    .child(format!("Slider value: {:.0}", self.slider_value))
                     .child(format!("Dropdown selected: {}", self.dropdown_selection))
                     .child(format!(
                         "Default context selected: {}",
