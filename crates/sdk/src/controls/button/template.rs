@@ -5,6 +5,7 @@ use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
+use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait ButtonTemplate: Send + Sync {
@@ -62,15 +63,16 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .border_color(appearance.border)
             .rounded(px(appearance.radius))
             .font_weight(FontWeight::MEDIUM)
-            .cursor_pointer()
             .child(model.label.clone());
 
         if model.state.disabled {
             root = root.opacity(0.56);
+        } else {
+            root = root.cursor_pointer();
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root.focus_visible(move |style| style.border_color(focus_ring));
+        if model.state.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root

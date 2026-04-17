@@ -4,6 +4,7 @@ use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, svg, pre
 
 use super::{IconButtonIcon, IconButtonRenderModel};
 use crate::controls::button_family::ButtonKind;
+use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait IconButtonTemplate: Send + Sync {
@@ -58,15 +59,16 @@ impl IconButtonTemplate for ThemedIconButtonTemplate {
             .border_color(appearance.border)
             .rounded(px(appearance.radius))
             .font_weight(FontWeight::MEDIUM)
-            .cursor_pointer()
             .child(render_icon(model.icon, appearance.foreground));
 
         if model.state.disabled {
             root = root.opacity(0.56);
+        } else {
+            root = root.cursor_pointer();
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root.focus_visible(move |style| style.border_color(focus_ring));
+        if model.state.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root

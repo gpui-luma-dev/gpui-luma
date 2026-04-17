@@ -3,7 +3,10 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 use lucide_icons::Icon as LucideIcon;
 
-use super::{DropdownMenu, DropdownMenuState, DropdownMenuTemplate, default_dropdown_menu_template};
+use super::{
+    ControlFocusState, DropdownMenu, DropdownMenuState, DropdownMenuTemplate, MenuPath,
+    default_dropdown_menu_template,
+};
 
 #[derive(Clone, Debug)]
 pub enum DropdownMenuItemIcon {
@@ -129,7 +132,9 @@ pub struct DropdownMenuRenderModel<'a> {
     pub items: &'a [DropdownMenuItem],
     pub open: bool,
     pub open_submenu: Option<usize>,
+    pub active_path: Option<MenuPath>,
     pub enabled: bool,
+    pub focus: ControlFocusState,
     pub state: DropdownMenuState,
 }
 

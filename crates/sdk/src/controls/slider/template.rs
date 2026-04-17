@@ -6,6 +6,7 @@ use gpui::{
 };
 
 use super::{SliderDrag, SliderRenderModel};
+use crate::controls::state::focus_debug_border;
 use crate::theme::{SliderTheme, default_slider_theme};
 
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -137,8 +138,8 @@ impl SliderTemplate for ThemedSliderTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root.focus_visible(move |style| style.border_1().border_color(focus_ring));
+        if model.state.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root

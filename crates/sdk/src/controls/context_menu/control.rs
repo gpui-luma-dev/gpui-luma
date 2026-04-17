@@ -1,12 +1,16 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, SharedString, Window, div, prelude::*,
+    App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, KeyDownEvent,
+    MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, point,
+    prelude::*, px,
 };
 
 use super::{ContextMenuBuilder, ContextMenuRenderModel, ContextMenuTemplateHandlers};
 use crate::controls::context_menu::model::ContextMenuModel;
 use crate::controls::dropdown_menu::DropdownMenuItem;
+use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
+use crate::controls::menu_navigation::{MenuDirection, MenuKey, MenuNavigator};
+use crate::controls::state::{ControlFocusState, MenuPath};
 
 #[derive(Clone, Debug)]
 pub enum ContextMenuEvent {
@@ -19,7 +23,9 @@ pub enum ContextMenuEvent {
 pub struct ContextMenu {
     model: ContextMenuModel,
     menu_position: Option<Point<Pixels>>,
+    target_bounds: Option<Bounds<Pixels>>,
     open_submenu: Option<usize>,
+    active_path: Option<MenuPath>,
     interaction: ControlInteraction,
 }
 
@@ -37,7 +43,9 @@ impl ContextMenu {
         Self {
             model: builder.model,
             menu_position: None,
+            target_bounds: None,
             open_submenu: None,
+            active_path: None,
             interaction: ControlInteraction::new(enabled, cx),
         }
     }
@@ -73,7 +81,13 @@ impl ContextMenu {
             items: &self.model.items,
             menu_position: self.menu_position,
             open_submenu: self.open_submenu,
+            active_path: self.active_path,
             enabled: self.model.enabled,
+            focus: ControlFocusState::from_focus_handle(
+                self.model.enabled,
+                self.interaction.focus_handle(),
+                window,
+            ),
             state: self.interaction.render_state(self.model.enabled, window),
         }
     }
@@ -82,6 +96,7 @@ impl ContextMenu {
         let item_paths = self.item_click_paths();
 
         ContextMenuTemplateHandlers {
+            target_bounds: Box::new(cx.listener(Self::handle_target_bounds)),
             target_aux_click: Box::new(cx.listener(Self::handle_target_aux_click)),
             target_hover: Box::new(cx.listener(Self::handle_hover)),
             target_mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
@@ -128,6 +143,53 @@ impl ContextMenu {
         paths
     }
 
+    fn open_menu_at(&mut self, position: Point<Pixels>, active_path: Option<MenuPath>) -> bool {
+        let open_submenu = match active_path {
+            Some(MenuPath::Submenu { parent, .. }) => Some(parent),
+            _ => None,
+        };
+        let changed = self.menu_position != Some(position)
+            || self.open_submenu != open_submenu
+            || self.active_path != active_path;
+
+        self.menu_position = Some(position);
+        self.open_submenu = open_submenu;
+        self.active_path = active_path;
+
+        changed
+    }
+
+    fn keyboard_menu_position(&self) -> Point<Pixels> {
+        self.target_bounds
+            .map(|bounds| point(bounds.left(), bounds.bottom()))
+            .unwrap_or_else(|| point(px(0.0), px(0.0)))
+    }
+
+    fn select_item_at_path(&mut self, path: &[usize], cx: &mut Context<Self>) -> bool {
+        let Some(item) = self.item_at_path(path) else {
+            return false;
+        };
+
+        if !self.model.enabled || !item.enabled || !item.submenu_items.is_empty() {
+            return false;
+        }
+
+        let item_id = item.id.clone();
+        let label = item.label.clone();
+        self.close_menu();
+        cx.emit(ContextMenuEvent::Select { item_id, label });
+        true
+    }
+
+    fn handle_target_bounds(
+        &mut self,
+        bounds: &Bounds<Pixels>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+        self.target_bounds = Some(*bounds);
+    }
+
     fn handle_target_aux_click(
         &mut self,
         event: &ClickEvent,
@@ -138,8 +200,7 @@ impl ContextMenu {
             && event.is_right_click()
             && let Some(position) = event.mouse_position()
         {
-            self.menu_position = Some(position);
-            self.open_submenu = None;
+            self.open_menu_at(position, None);
             cx.stop_propagation();
             cx.notify();
         }
@@ -152,15 +213,7 @@ impl ContextMenu {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(item) = self.item_at_path(path) else {
-            return;
-        };
-
-        if self.model.enabled && item.enabled && item.submenu_items.is_empty() {
-            let item_id = item.id.clone();
-            let label = item.label.clone();
-            self.close_menu();
-            cx.emit(ContextMenuEvent::Select { item_id, label });
+        if self.select_item_at_path(path, cx) {
             cx.notify();
         }
     }
@@ -190,8 +243,10 @@ impl ContextMenu {
             .is_some_and(|item| item.enabled && !item.submenu_items.is_empty())
             .then_some(index);
 
-        if self.open_submenu != next_submenu {
+        let next_active_path = Some(MenuPath::Root(index));
+        if self.open_submenu != next_submenu || self.active_path != next_active_path {
             self.open_submenu = next_submenu;
+            self.active_path = next_active_path;
             cx.notify();
         }
     }
@@ -242,7 +297,168 @@ impl ContextMenu {
     fn close_menu(&mut self) {
         self.menu_position = None;
         self.open_submenu = None;
+        self.active_path = None;
     }
+
+    fn handle_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.model.enabled {
+            return;
+        }
+
+        if self.menu_position.is_none() {
+            if blur_on_escape(event, window, cx) {
+                return;
+            }
+
+            if !is_context_menu_key(event) {
+                return;
+            }
+
+            let navigator = MenuNavigator::new(&self.model.items);
+            let active_path = navigator.first_root().map(MenuPath::Root);
+
+            cx.stop_propagation();
+            if self.open_menu_at(self.keyboard_menu_position(), active_path) {
+                cx.notify();
+            }
+            return;
+        }
+
+        let Some(key) = MenuKey::from_key_down(event) else {
+            return;
+        };
+
+        cx.stop_propagation();
+
+        let navigator = MenuNavigator::new(&self.model.items);
+        let mut notify = false;
+
+        match key {
+            MenuKey::Close => {
+                self.close_menu();
+                notify = true;
+            }
+            MenuKey::Previous | MenuKey::Next => {
+                let direction = if key == MenuKey::Previous {
+                    MenuDirection::Previous
+                } else {
+                    MenuDirection::Next
+                };
+
+                let next_path = match self.active_path {
+                    Some(MenuPath::Submenu { parent, child }) => navigator
+                        .step_submenu(parent, Some(child), direction)
+                        .map(|child| MenuPath::Submenu { parent, child }),
+                    _ => navigator
+                        .step_root(navigator.active_root(self.active_path), direction)
+                        .map(MenuPath::Root),
+                };
+
+                if let Some(next_path) = next_path
+                    && self.active_path != Some(next_path)
+                {
+                    self.active_path = Some(next_path);
+                    if matches!(next_path, MenuPath::Root(_)) {
+                        self.open_submenu = None;
+                    }
+                    notify = true;
+                }
+            }
+            MenuKey::First | MenuKey::Last => {
+                let next_path = match self.active_path {
+                    Some(MenuPath::Submenu { parent, .. }) => {
+                        let child = if key == MenuKey::First {
+                            navigator.first_submenu(parent)
+                        } else {
+                            navigator.last_submenu(parent)
+                        };
+
+                        child.map(|child| MenuPath::Submenu { parent, child })
+                    }
+                    _ => {
+                        let root = if key == MenuKey::First {
+                            navigator.first_root()
+                        } else {
+                            navigator.last_root()
+                        };
+
+                        root.map(MenuPath::Root)
+                    }
+                };
+
+                if let Some(next_path) = next_path
+                    && self.active_path != Some(next_path)
+                {
+                    self.active_path = Some(next_path);
+                    if matches!(next_path, MenuPath::Root(_)) {
+                        self.open_submenu = None;
+                    }
+                    notify = true;
+                }
+            }
+            MenuKey::OpenSubmenu => {
+                if let Some(parent) = navigator.active_root(self.active_path)
+                    && let Some(child) = navigator.first_submenu(parent)
+                {
+                    let next_path = Some(MenuPath::Submenu { parent, child });
+                    if self.open_submenu != Some(parent) || self.active_path != next_path {
+                        self.open_submenu = Some(parent);
+                        self.active_path = next_path;
+                        notify = true;
+                    }
+                }
+            }
+            MenuKey::CloseSubmenu => {
+                if let Some(MenuPath::Submenu { parent, .. }) = self.active_path {
+                    self.open_submenu = None;
+                    self.active_path = Some(MenuPath::Root(parent));
+                    notify = true;
+                }
+            }
+            MenuKey::Select => {
+                let Some(active_path) = self.active_path else {
+                    return;
+                };
+
+                if let Some(item) = navigator.active_item(Some(active_path)) {
+                    if !item.submenu_items().is_empty() {
+                        if let MenuPath::Root(parent) = active_path
+                            && let Some(child) = navigator.first_submenu(parent)
+                        {
+                            self.open_submenu = Some(parent);
+                            self.active_path = Some(MenuPath::Submenu { parent, child });
+                            notify = true;
+                        }
+                    } else {
+                        let path = match active_path {
+                            MenuPath::Root(index) => vec![index],
+                            MenuPath::Submenu { parent, child } => vec![parent, child],
+                        };
+                        notify = self.select_item_at_path(&path, cx);
+                    }
+                }
+            }
+            MenuKey::OpenFirst | MenuKey::OpenLast => {}
+        }
+
+        if notify {
+            cx.notify();
+        }
+    }
+}
+
+fn is_context_menu_key(event: &KeyDownEvent) -> bool {
+    let modifiers = event.keystroke.modifiers;
+    let key = event.keystroke.key.as_str();
+
+    (key == "f10" && modifiers.shift && modifiers.number_of_modifiers() == 1)
+        || (matches!(key, "menu" | "contextmenu" | "context-menu" | "apps")
+            && !modifiers.modified())
 }
 
 impl Focusable for ContextMenu {
@@ -261,7 +477,8 @@ impl Render for ContextMenu {
                 self.model
                     .template
                     .render(&model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle()),
+                    .track_focus(self.interaction.focus_handle())
+                    .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()
     }

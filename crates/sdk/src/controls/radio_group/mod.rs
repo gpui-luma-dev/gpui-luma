@@ -12,4 +12,4 @@ pub use template::{
     ThemedRadioGroupTemplate, default_radio_group_template,
 };
 
-pub use crate::theme::InteractionState as RadioGroupItemState;
+pub use crate::controls::state::{CompositeItemState as RadioGroupItemState, ControlFocusState};

@@ -7,6 +7,7 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{DropdownMenuItem, DropdownMenuItemIcon, DropdownMenuRenderModel};
+use crate::controls::state::{MenuPath, focus_debug_border};
 use crate::theme::{DropdownMenuTheme, default_dropdown_menu_theme};
 
 pub type DropdownClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -109,8 +110,8 @@ impl DropdownMenuTemplate for ThemedDropdownMenuTemplate {
             trigger = trigger.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            trigger = trigger.focus_visible(move |style| style.border_color(focus_ring));
+        if model.focus.focused {
+            trigger = trigger.border_1().border_color(focus_debug_border());
         }
 
         let mut root = div()
@@ -174,6 +175,13 @@ impl DropdownMenuTemplate for ThemedDropdownMenuTemplate {
                             appearance.item_icon_size,
                         ));
 
+                    if model
+                        .active_path
+                        .is_some_and(|active_path| active_path.is_root(index))
+                    {
+                        row = row.bg(appearance.item_hover_background);
+                    }
+
                     if item.submenu_items.is_empty() {
                         if let Some(item_click) = item_clicks.next() {
                             row = row.on_click(item_click);
@@ -185,6 +193,7 @@ impl DropdownMenuTemplate for ThemedDropdownMenuTemplate {
                             &appearance,
                             &mut item_clicks,
                             index,
+                            model.active_path,
                         ));
                     }
                 } else {
@@ -215,6 +224,7 @@ fn render_submenu(
     appearance: &crate::theme::DropdownMenuAppearance,
     item_clicks: &mut std::vec::IntoIter<DropdownClickHandler>,
     index: usize,
+    active_path: Option<MenuPath>,
 ) -> Stateful<Div> {
     let mut submenu = div()
         .id(format!("{}-submenu-{}", menu_id, item.id))
@@ -232,7 +242,7 @@ fn render_submenu(
         .shadow_sm()
         .occlude();
 
-    for submenu_item in &item.submenu_items {
+    for (submenu_index, submenu_item) in item.submenu_items.iter().enumerate() {
         let mut row = div()
             .id(format!("{}-submenu-item-{}", menu_id, submenu_item.id))
             .flex()
@@ -263,6 +273,10 @@ fn render_submenu(
                     .cursor_pointer()
                     .hover(move |style| style.bg(appearance.item_hover_background))
                     .on_click(item_click);
+            }
+
+            if active_path.is_some_and(|path| path.is_submenu(index, submenu_index)) {
+                row = row.bg(appearance.item_hover_background);
             }
         } else if !submenu_item.enabled {
             row = row.opacity(0.56);

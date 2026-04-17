@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent,
-    MouseUpEvent, Stateful, Window, anchored, deferred, div, point, prelude::*, px, svg,
+    MouseUpEvent, Stateful, Window, anchored, deferred, div, hsla, point, prelude::*, px, svg,
 };
 use gpui_luma::controls::context_menu::{
     ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers,
@@ -48,6 +48,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         let ContextMenuTemplateHandlers {
+            target_bounds,
             target_aux_click,
             target_hover,
             target_mouse_down,
@@ -72,11 +73,16 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
             target = target.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            target = target.focus_visible(move |style| style.border_color(focus_ring));
+        if model.focus.focused {
+            target = target.border_1().border_color(hsla(0.0, 0.95, 0.50, 1.0));
         }
 
         let mut root = div()
+            .on_children_prepainted(move |bounds, window, cx| {
+                if let Some(bounds) = bounds.first() {
+                    target_bounds(bounds, window, cx);
+                }
+            })
             .id(model.id.clone())
             .relative()
             .on_mouse_down_out(root_mouse_down_out)
@@ -167,6 +173,15 @@ fn render_radial_menu(
             && let Some(item_click) = item_clicks.next()
         {
             button = button.on_click(item_click);
+        }
+
+        if model
+            .active_path
+            .is_some_and(|active_path| active_path.is_root(index))
+        {
+            button = button
+                .bg(appearance.item_hover_background)
+                .border_color(appearance.item_foreground);
         }
 
         menu = menu.child(button);

@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, Pixels, Point, SharedString};
 
-use super::{ContextMenu, ContextMenuState, ContextMenuTemplate, default_context_menu_template};
+use super::{
+    ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath,
+    default_context_menu_template,
+};
 use crate::controls::dropdown_menu::DropdownMenuItem;
 
 #[derive(Clone)]
@@ -20,7 +23,9 @@ pub struct ContextMenuRenderModel<'a> {
     pub items: &'a [DropdownMenuItem],
     pub menu_position: Option<Point<Pixels>>,
     pub open_submenu: Option<usize>,
+    pub active_path: Option<MenuPath>,
     pub enabled: bool,
+    pub focus: ControlFocusState,
     pub state: ContextMenuState,
 }
 

@@ -1,14 +1,16 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent,
-    MouseUpEvent, Stateful, Window, anchored, deferred, div, px, prelude::*, svg,
+    AnyElement, App, Bounds, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent,
+    MouseUpEvent, Pixels, Stateful, Window, anchored, deferred, div, px, prelude::*, svg,
 };
 use lucide_icons::Icon as LucideIcon;
 
 use super::{ContextMenuRenderModel, DropdownMenuItem, DropdownMenuItemIcon};
+use crate::controls::state::{MenuPath, focus_debug_border};
 use crate::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
 
+pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type ContextMenuMouseDownHandler =
@@ -16,6 +18,7 @@ pub type ContextMenuMouseDownHandler =
 pub type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub struct ContextMenuTemplateHandlers {
+    pub target_bounds: ContextMenuBoundsHandler,
     pub target_aux_click: ContextMenuClickHandler,
     pub target_hover: ContextMenuHoverHandler,
     pub target_mouse_down: ContextMenuMouseDownHandler,
@@ -63,6 +66,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         let ContextMenuTemplateHandlers {
+            target_bounds,
             target_aux_click,
             target_hover,
             target_mouse_down,
@@ -99,11 +103,16 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             target = target.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            target = target.focus_visible(move |style| style.border_color(focus_ring));
+        if model.focus.focused {
+            target = target.border_1().border_color(focus_debug_border());
         }
 
         let mut root = div()
+            .on_children_prepainted(move |bounds, window, cx| {
+                if let Some(bounds) = bounds.first() {
+                    target_bounds(bounds, window, cx);
+                }
+            })
             .id(model.id.clone())
             .relative()
             .on_mouse_down_out(root_mouse_down_out)
@@ -180,6 +189,13 @@ fn render_menu(
                     appearance.item_icon_size,
                 ));
 
+            if model
+                .active_path
+                .is_some_and(|active_path| active_path.is_root(index))
+            {
+                row = row.bg(appearance.item_hover_background);
+            }
+
             if item.submenu_items.is_empty() {
                 if let Some(item_click) = item_clicks.next() {
                     row = row.on_click(item_click);
@@ -191,6 +207,7 @@ fn render_menu(
                     &appearance,
                     &mut item_clicks,
                     index,
+                    model.active_path,
                 ));
             }
         } else {
@@ -217,6 +234,7 @@ fn render_submenu(
     appearance: &ContextMenuAppearance,
     item_clicks: &mut std::vec::IntoIter<ContextMenuClickHandler>,
     index: usize,
+    active_path: Option<MenuPath>,
 ) -> Stateful<Div> {
     let mut submenu = div()
         .id(format!("{}-submenu-{}", menu_id, item.id))
@@ -234,7 +252,7 @@ fn render_submenu(
         .shadow_sm()
         .occlude();
 
-    for submenu_item in &item.submenu_items {
+    for (submenu_index, submenu_item) in item.submenu_items.iter().enumerate() {
         let mut row = div()
             .id(format!("{}-submenu-item-{}", menu_id, submenu_item.id))
             .flex()
@@ -265,6 +283,10 @@ fn render_submenu(
                     .cursor_pointer()
                     .hover(move |style| style.bg(appearance.item_hover_background))
                     .on_click(item_click);
+            }
+
+            if active_path.is_some_and(|path| path.is_submenu(index, submenu_index)) {
+                row = row.bg(appearance.item_hover_background);
             }
         } else if !submenu_item.enabled {
             row = row.opacity(0.56);

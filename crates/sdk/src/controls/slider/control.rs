@@ -1,9 +1,10 @@
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, KeyDownEvent,
     MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
 };
 
 use super::{SliderBuilder, SliderRenderModel, SliderTemplateHandlers};
+use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
@@ -204,6 +205,34 @@ impl Slider {
         self.track_bounds = Some(event.bounds);
         self.set_value_from_position(event.event.position, true, cx);
     }
+
+    fn handle_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if blur_on_escape(event, window, cx) {
+            return;
+        }
+
+        if !self.model.enabled || event.keystroke.modifiers.modified() {
+            return;
+        }
+
+        let value = match event.keystroke.key.as_str() {
+            "left" | "down" => self.model.value - self.model.step,
+            "right" | "up" => self.model.value + self.model.step,
+            "pagedown" => self.model.value - (self.model.step * 10.0),
+            "pageup" => self.model.value + (self.model.step * 10.0),
+            "home" => self.model.range.start,
+            "end" => self.model.range.end,
+            _ => return,
+        };
+
+        cx.stop_propagation();
+        self.set_value_internal(value, true, cx);
+    }
 }
 
 impl Focusable for Slider {
@@ -222,7 +251,8 @@ impl Render for Slider {
                 self.model
                     .template
                     .render(&model, handlers, window, cx)
-                    .track_focus(self.interaction.focus_handle()),
+                    .track_focus(self.interaction.focus_handle())
+                    .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()
     }

@@ -659,6 +659,31 @@ Precedence is explicit:
 
 Focused state is orthogonal. It is used for focus-ring policy, not as a replacement for hover or pressed state.
 
+Composite controls expose additional state through `controls::state`:
+
+```rust
+pub struct ControlFocusState {
+    pub focused: bool,
+    pub focus_visible: bool,
+}
+
+pub struct CompositeItemState {
+    pub disabled: bool,
+    pub hovered: bool,
+    pub pressed: bool,
+    pub selected: bool,
+    pub active: bool,
+    pub focus_visible: bool,
+}
+```
+
+`ControlFocusState` describes GPUI focus on the control root. `CompositeItemState` describes an
+item inside a composite control. For example, a `RadioGroup` has one GPUI `FocusHandle`, while its
+selected item may be the active descendant that receives the visible keyboard focus affordance.
+
+Menus use `MenuPath` for active descendants so the active item is not confused with the hovered item,
+the selected item, or the open submenu.
+
 ### 6.1 Disabled Semantics
 
 Disabled controls must not:

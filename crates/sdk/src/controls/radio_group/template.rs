@@ -6,6 +6,7 @@ use gpui::{
 };
 
 use super::RadioGroupRenderModel;
+use crate::controls::state::focus_debug_border;
 use crate::theme::{RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};
 
 pub type RadioGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -24,8 +25,7 @@ pub struct RadioGroupTemplateHandlers {
 struct RadioGroupItemVisualModel<'a> {
     id: ElementId,
     label: &'a SharedString,
-    selected: bool,
-    enabled: bool,
+    state: crate::controls::state::CompositeItemState,
 }
 
 pub trait RadioGroupTemplate: Send + Sync {
@@ -101,7 +101,9 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
                 break;
             };
 
-            let appearance = self.theme.resolve_item(item.selected, item.state);
+            let appearance = self
+                .theme
+                .resolve_item(item.state.selected, item.state.interaction_state());
             let mut row = render_radio_group_item_visual(
                 RadioGroupItemVisualModel {
                     id: ElementId::NamedChild(
@@ -109,8 +111,7 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
                         format!("item-{}", item.id).into(),
                     ),
                     label: item.label,
-                    selected: item.selected,
-                    enabled: item.enabled,
+                    state: item.state,
                 },
                 appearance,
             )
@@ -120,11 +121,15 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
             .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
             .on_click(item_click);
 
-            if item.enabled {
+            if !item.state.disabled {
                 row = row.cursor_pointer();
             }
 
             root = root.child(row);
+        }
+
+        if model.focus.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root
@@ -145,7 +150,7 @@ fn render_radio_group_item_visual(
         .border_color(appearance.indicator_border)
         .rounded(px(appearance.indicator_size))
         .child(render_dot(
-            model.selected,
+            model.state.selected,
             appearance.dot_size,
             appearance.dot_color,
         ));
@@ -172,12 +177,8 @@ fn render_radio_group_item_visual(
         root = root.border_1().border_color(border);
     }
 
-    if !model.enabled {
+    if model.state.disabled {
         root = root.opacity(0.56);
-    }
-
-    if let Some(focus_ring) = appearance.focus_ring {
-        root = root.focus_visible(move |style| style.border_1().border_color(focus_ring));
     }
 
     root

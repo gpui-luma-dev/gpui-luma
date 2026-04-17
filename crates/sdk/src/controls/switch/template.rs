@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
 
 use super::SwitchRenderModel;
+use crate::controls::state::focus_debug_border;
 use crate::theme::{SwitchTheme, default_switch_theme};
 
 pub trait SwitchTemplate: Send + Sync {
@@ -90,8 +91,8 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root.focus_visible(move |style| style.border_1().border_color(focus_ring));
+        if model.state.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root

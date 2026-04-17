@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::{RadioGroup, RadioGroupTemplate, default_radio_group_template};
-use crate::controls::radio_group::RadioGroupItemState;
+use crate::controls::radio_group::{ControlFocusState, RadioGroupItemState};
 
 #[derive(Clone, Debug)]
 pub struct RadioGroupItem {
@@ -68,6 +68,7 @@ pub struct RadioGroupRenderModel<'a> {
     pub items: Vec<RadioGroupRenderItem<'a>>,
     pub selected_id: Option<&'a SharedString>,
     pub enabled: bool,
+    pub focus: ControlFocusState,
 }
 
 pub struct RadioGroupBuilder {

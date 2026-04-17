@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px, rgb};
+use gpui::{
+    Context, Entity, Hsla, IntoElement, MouseButton, Render, Subscription, Window, div, prelude::*,
+    px, rgb,
+};
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
@@ -436,102 +439,122 @@ impl Render for GalleryApp {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .size_full()
+            .relative()
             .flex()
-            .flex_col()
             .items_center()
             .justify_center()
-            .gap_4()
-            .bg(rgb(0xf8fafc))
             .child(
                 div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(self.button.clone())
-                    .child(self.icon_button.clone())
-                    .child(self.toggle_button.clone())
-                    .child(self.switch.clone()),
+                    .absolute()
+                    .size_full()
+                    .bg(rgb(0xf8fafc))
+                    .on_mouse_down(MouseButton::Left, |_event, window, cx| {
+                        // The gallery background is inert; clicking it should clear focus
+                        // from the previously focused control so focus visuals reflect ownership.
+                        window.blur();
+                        cx.stop_propagation();
+                    }),
             )
             .child(
                 div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(self.default_checkbox.clone())
-                    .child(self.border_checkbox.clone())
-                    .child(self.filled_checkbox.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(self.radio_group.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_4()
-                    .child(self.slider.clone())
-                    .child(self.progress.clone()),
-            )
-            .child(self.dropdown_menu.clone())
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .gap_4()
-                    .min_h(px(220.0))
-                    .child(self.default_context_menu.clone())
-                    .child(
-                        div()
-                            .min_w(px(260.0))
-                            .min_h(px(220.0))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .child(self.radial_context_menu.clone()),
-                    ),
-            )
-            .child(
-                div()
+                    .relative()
                     .flex()
                     .flex_col()
                     .items_center()
-                    .gap_1()
-                    .text_color(rgb(0x334155))
-                    .child(format!("Toggle selected: {}", self.toggle_selected))
-                    .child(format!("Switch on: {}", self.switch_on))
-                    .child(format!(
-                        "Checkboxes: as-is={}, border={}, border + fill={}",
-                        self.default_checkbox_checked,
-                        self.border_checkbox_checked,
-                        self.filled_checkbox_checked
-                    ))
-                    .child(format!("Radio choice: {}", self.radio_choice))
-                    .child(format!("Slider value: {:.0}", self.slider_value))
-                    .child(format!("Dropdown selected: {}", self.dropdown_selection))
-                    .child(format!(
-                        "Default context selected: {}",
-                        self.default_context_selection
-                    ))
-                    .child(format!(
-                        "Radial context selected: {}",
-                        self.radial_context_selection
-                    )),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(self.disabled_button.clone())
-                    .child(self.disabled_icon_button.clone())
-                    .child(self.disabled_toggle_button.clone())
-                    .child(self.disabled_switch.clone())
-                    .child(self.disabled_checkbox.clone()),
+                    .justify_center()
+                    .gap_4()
+                    .occlude()
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(self.button.clone())
+                            .child(self.icon_button.clone())
+                            .child(self.toggle_button.clone())
+                            .child(self.switch.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(self.default_checkbox.clone())
+                            .child(self.border_checkbox.clone())
+                            .child(self.filled_checkbox.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(self.radio_group.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_4()
+                            .child(self.slider.clone())
+                            .child(self.progress.clone()),
+                    )
+                    .child(self.dropdown_menu.clone())
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .gap_4()
+                            .min_h(px(220.0))
+                            .child(self.default_context_menu.clone())
+                            .child(
+                                div()
+                                    .min_w(px(260.0))
+                                    .min_h(px(220.0))
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .child(self.radial_context_menu.clone()),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .items_center()
+                            .gap_1()
+                            .text_color(rgb(0x334155))
+                            .child(format!("Toggle selected: {}", self.toggle_selected))
+                            .child(format!("Switch on: {}", self.switch_on))
+                            .child(format!(
+                                "Checkboxes: as-is={}, border={}, border + fill={}",
+                                self.default_checkbox_checked,
+                                self.border_checkbox_checked,
+                                self.filled_checkbox_checked
+                            ))
+                            .child(format!("Radio choice: {}", self.radio_choice))
+                            .child(format!("Slider value: {:.0}", self.slider_value))
+                            .child(format!("Dropdown selected: {}", self.dropdown_selection))
+                            .child(format!(
+                                "Default context selected: {}",
+                                self.default_context_selection
+                            ))
+                            .child(format!(
+                                "Radial context selected: {}",
+                                self.radial_context_selection
+                            )),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(self.disabled_button.clone())
+                            .child(self.disabled_icon_button.clone())
+                            .child(self.disabled_toggle_button.clone())
+                            .child(self.disabled_switch.clone())
+                            .child(self.disabled_checkbox.clone()),
+                    ),
             )
     }
 }

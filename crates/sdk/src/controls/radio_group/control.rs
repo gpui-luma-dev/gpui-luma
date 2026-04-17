@@ -1,14 +1,15 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, KeyDownEvent, MouseDownEvent,
+    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
 };
 
 use super::{
     RadioGroupBuilder, RadioGroupItem, RadioGroupRenderItem, RadioGroupRenderModel,
     RadioGroupTemplateHandlers,
 };
+use crate::controls::focus::blur_on_escape;
 use crate::controls::radio_group::model::RadioGroupModel;
-use crate::theme::InteractionState;
+use crate::controls::state::{CompositeItemState, ControlFocusState};
 
 #[derive(Clone, Debug)]
 pub enum RadioGroupEvent {
@@ -82,7 +83,8 @@ impl RadioGroup {
     }
 
     fn render_model<'a>(&'a self, window: &Window) -> RadioGroupRenderModel<'a> {
-        let group_focused = self.model.enabled && self.focus_handle.is_focused(window);
+        let focus =
+            ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let items = self
             .model
             .items
@@ -101,11 +103,13 @@ impl RadioGroup {
                     label: &item.label,
                     selected,
                     enabled,
-                    state: InteractionState {
+                    state: CompositeItemState {
                         hovered: enabled && self.hovered_item == Some(index),
                         pressed: enabled && self.pressed_item == Some(index),
-                        focused: enabled && group_focused && selected,
                         disabled: !enabled,
+                        selected,
+                        active: enabled && focus.focused && selected,
+                        focus_visible: enabled && focus.focus_visible && selected,
                     },
                 }
             })
@@ -116,6 +120,7 @@ impl RadioGroup {
             items,
             selected_id: self.model.selected_id.as_ref(),
             enabled: self.model.enabled,
+            focus,
         }
     }
 
@@ -160,6 +165,73 @@ impl RadioGroup {
             .items
             .iter()
             .any(|item| item.enabled && &item.id == selected_id)
+    }
+
+    fn selected_index(&self) -> Option<usize> {
+        let selected_id = self.model.selected_id.as_ref()?;
+
+        self.model
+            .items
+            .iter()
+            .position(|item| item.enabled && &item.id == selected_id)
+    }
+
+    fn first_enabled_index(&self) -> Option<usize> {
+        self.model.items.iter().position(|item| item.enabled)
+    }
+
+    fn last_enabled_index(&self) -> Option<usize> {
+        self.model.items.iter().rposition(|item| item.enabled)
+    }
+
+    fn next_enabled_index(&self, direction: RadioGroupDirection) -> Option<usize> {
+        let len = self.model.items.len();
+        if len == 0 {
+            return None;
+        }
+
+        let step = match direction {
+            RadioGroupDirection::Previous => len - 1,
+            RadioGroupDirection::Next => 1,
+        };
+        let mut index = match self.selected_index() {
+            Some(index) => (index + step) % len,
+            None if direction == RadioGroupDirection::Previous => len - 1,
+            None => 0,
+        };
+
+        for _ in 0..len {
+            if self.model.items[index].enabled {
+                return Some(index);
+            }
+
+            index = (index + step) % len;
+        }
+
+        None
+    }
+
+    fn select_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+        if !self.can_select_item(index) {
+            return false;
+        }
+
+        let item = &self.model.items[index];
+        if self
+            .model
+            .selected_id
+            .as_ref()
+            .is_some_and(|selected_id| selected_id == &item.id)
+        {
+            return false;
+        }
+
+        let selected_id = item.id.clone();
+        let label = item.label.clone();
+        self.model.selected_id = Some(selected_id.clone());
+        cx.emit(RadioGroupEvent::Change { selected_id, label });
+        cx.notify();
+        true
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
@@ -214,26 +286,43 @@ impl RadioGroup {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !self.can_select_item(index) {
-            return;
-        }
-
-        let item = &self.model.items[index];
-        if self
-            .model
-            .selected_id
-            .as_ref()
-            .is_some_and(|selected_id| selected_id == &item.id)
-        {
-            return;
-        }
-
-        let selected_id = item.id.clone();
-        let label = item.label.clone();
-        self.model.selected_id = Some(selected_id.clone());
-        cx.emit(RadioGroupEvent::Change { selected_id, label });
-        cx.notify();
+        self.select_index(index, cx);
     }
+
+    fn handle_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if blur_on_escape(event, window, cx) {
+            return;
+        }
+
+        if !self.model.enabled || event.keystroke.modifiers.modified() {
+            return;
+        }
+
+        let next_index = match event.keystroke.key.as_str() {
+            "left" | "up" => self.next_enabled_index(RadioGroupDirection::Previous),
+            "right" | "down" => self.next_enabled_index(RadioGroupDirection::Next),
+            "home" => self.first_enabled_index(),
+            "end" => self.last_enabled_index(),
+            _ => return,
+        };
+
+        cx.stop_propagation();
+
+        if let Some(next_index) = next_index {
+            self.select_index(next_index, cx);
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RadioGroupDirection {
+    Previous,
+    Next,
 }
 
 impl Focusable for RadioGroup {
@@ -252,7 +341,8 @@ impl Render for RadioGroup {
                 self.model
                     .template
                     .render(&model, handlers, window, cx)
-                    .track_focus(&self.focus_handle),
+                    .track_focus(&self.focus_handle)
+                    .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()
     }

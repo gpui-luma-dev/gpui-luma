@@ -4,6 +4,7 @@ use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude:
 use lucide_icons::Icon as LucideIcon;
 
 use super::CheckboxRenderModel;
+use crate::controls::state::focus_debug_border;
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 pub trait CheckboxTemplate: Send + Sync {
@@ -83,8 +84,8 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root.focus_visible(move |style| style.border_1().border_color(focus_ring));
+        if model.state.focused {
+            root = root.border_1().border_color(focus_debug_border());
         }
 
         root
