@@ -92,6 +92,26 @@ impl DropdownMenuItem {
         self.enabled = enabled;
         self
     }
+
+    pub fn id(&self) -> &SharedString {
+        &self.id
+    }
+
+    pub fn label_text(&self) -> &SharedString {
+        &self.label
+    }
+
+    pub fn icon_ref(&self) -> Option<&DropdownMenuItemIcon> {
+        self.icon.as_ref()
+    }
+
+    pub fn submenu_items(&self) -> &[DropdownMenuItem] {
+        &self.submenu_items
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
 }
 
 #[derive(Clone)]

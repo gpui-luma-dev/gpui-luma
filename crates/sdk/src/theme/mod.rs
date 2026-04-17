@@ -1,6 +1,7 @@
 pub mod button;
 pub mod button_family;
 pub mod checkbox;
+pub mod context_menu;
 pub mod dropdown_menu;
 pub mod interaction;
 pub mod tokens;
@@ -10,6 +11,9 @@ pub use button_family::{
     DefaultButtonFamilyTheme, default_button_family_theme,
 };
 pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
+pub use context_menu::{
+    ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme,
+};
 pub use dropdown_menu::{
     DefaultDropdownMenuTheme, DropdownMenuAppearance, DropdownMenuTheme,
     default_dropdown_menu_theme,

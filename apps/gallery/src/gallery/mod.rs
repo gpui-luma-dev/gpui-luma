@@ -1,13 +1,18 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, rgb};
+use gpui::{Context, Entity, Hsla, IntoElement, Render, Subscription, Window, div, prelude::*, px, rgb};
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
+use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::dropdown_menu::{DropdownMenu, DropdownMenuEvent, DropdownMenuItem};
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
 use lucide_icons::Icon as LucideIcon;
+
+mod radial_context_menu;
+
+use radial_context_menu::radial_context_menu_template;
 
 struct GalleryCheckboxTheme {
     base: DefaultCheckboxTheme,
@@ -52,6 +57,12 @@ enum CheckboxPresentation {
     BorderAndBackground,
 }
 
+#[derive(Clone, Copy)]
+enum ContextMenuPresentation {
+    Default,
+    Radial,
+}
+
 pub struct GalleryApp {
     button: Entity<Button>,
     icon_button: Entity<IconButton>,
@@ -60,6 +71,8 @@ pub struct GalleryApp {
     border_checkbox: Entity<Checkbox>,
     filled_checkbox: Entity<Checkbox>,
     dropdown_menu: Entity<DropdownMenu>,
+    default_context_menu: Entity<ContextMenu>,
+    radial_context_menu: Entity<ContextMenu>,
     disabled_button: Entity<Button>,
     disabled_icon_button: Entity<IconButton>,
     disabled_toggle_button: Entity<ToggleButton>,
@@ -71,6 +84,8 @@ pub struct GalleryApp {
     border_checkbox_checked: bool,
     filled_checkbox_checked: bool,
     dropdown_selection: String,
+    default_context_selection: String,
+    radial_context_selection: String,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -136,6 +151,31 @@ impl GalleryApp {
                     .enabled(false),
             ])
             .spawn(cx);
+        let default_context_menu = ContextMenu::new("context-menu-default-example")
+            .label("Right-click target")
+            .items(default_context_menu_items())
+            .spawn(cx);
+        let radial_context_menu = ContextMenu::new("context-menu-radial-example")
+            .label("Radial context target")
+            .items([
+                DropdownMenuItem::new("open")
+                    .label("Open")
+                    .icon(LucideIcon::FolderOpen),
+                DropdownMenuItem::new("copy")
+                    .label("Copy")
+                    .icon(LucideIcon::Copy),
+                DropdownMenuItem::new("inspect")
+                    .label("Inspect")
+                    .icon(LucideIcon::ScanSearch),
+                DropdownMenuItem::new("download")
+                    .label("Download")
+                    .icon(LucideIcon::Download),
+                DropdownMenuItem::new("external")
+                    .label("Open externally")
+                    .icon(LucideIcon::ExternalLink),
+            ])
+            .template(radial_context_menu_template())
+            .spawn(cx);
         let disabled_button = Button::new("disabled-button")
             .label("Disabled")
             .enabled(false)
@@ -176,6 +216,18 @@ impl GalleryApp {
             cx.subscribe(&dropdown_menu, |this, _, event: &DropdownMenuEvent, cx| {
                 this.handle_dropdown_menu_event(event, cx);
             }),
+            cx.subscribe(
+                &default_context_menu,
+                |this, _, event: &ContextMenuEvent, cx| {
+                    this.handle_context_menu_event(ContextMenuPresentation::Default, event, cx);
+                },
+            ),
+            cx.subscribe(
+                &radial_context_menu,
+                |this, _, event: &ContextMenuEvent, cx| {
+                    this.handle_context_menu_event(ContextMenuPresentation::Radial, event, cx);
+                },
+            ),
         ];
 
         Self {
@@ -186,6 +238,8 @@ impl GalleryApp {
             border_checkbox,
             filled_checkbox,
             dropdown_menu,
+            default_context_menu,
+            radial_context_menu,
             disabled_button,
             disabled_icon_button,
             disabled_toggle_button,
@@ -197,6 +251,8 @@ impl GalleryApp {
             border_checkbox_checked: false,
             filled_checkbox_checked: true,
             dropdown_selection: "none".to_string(),
+            default_context_selection: "none".to_string(),
+            radial_context_selection: "none".to_string(),
             _subscriptions: subscriptions,
         }
     }
@@ -272,6 +328,27 @@ impl GalleryApp {
             }
         }
     }
+
+    fn handle_context_menu_event(
+        &mut self,
+        presentation: ContextMenuPresentation,
+        event: &ContextMenuEvent,
+        cx: &mut Context<Self>,
+    ) {
+        match event {
+            ContextMenuEvent::Select { label, .. } => {
+                match presentation {
+                    ContextMenuPresentation::Default => {
+                        self.default_context_selection = label.to_string();
+                    }
+                    ContextMenuPresentation::Radial => {
+                        self.radial_context_selection = label.to_string();
+                    }
+                }
+                cx.notify();
+            }
+        }
+    }
 }
 
 impl Render for GalleryApp {
@@ -306,6 +383,24 @@ impl Render for GalleryApp {
             .child(
                 div()
                     .flex()
+                    .items_center()
+                    .justify_center()
+                    .gap_4()
+                    .min_h(px(220.0))
+                    .child(self.default_context_menu.clone())
+                    .child(
+                        div()
+                            .min_w(px(260.0))
+                            .min_h(px(220.0))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(self.radial_context_menu.clone()),
+                    ),
+            )
+            .child(
+                div()
+                    .flex()
                     .flex_col()
                     .items_center()
                     .gap_1()
@@ -317,7 +412,15 @@ impl Render for GalleryApp {
                         self.border_checkbox_checked,
                         self.filled_checkbox_checked
                     ))
-                    .child(format!("Dropdown selected: {}", self.dropdown_selection)),
+                    .child(format!("Dropdown selected: {}", self.dropdown_selection))
+                    .child(format!(
+                        "Default context selected: {}",
+                        self.default_context_selection
+                    ))
+                    .child(format!(
+                        "Radial context selected: {}",
+                        self.radial_context_selection
+                    )),
             )
             .child(
                 div()
@@ -334,4 +437,27 @@ impl Render for GalleryApp {
 
 fn checkbox_template(theme: Arc<dyn CheckboxTheme>) -> Arc<dyn CheckboxTemplate> {
     Arc::new(ThemedCheckboxTemplate::new(theme))
+}
+
+fn default_context_menu_items() -> [DropdownMenuItem; 4] {
+    [
+        DropdownMenuItem::new("open")
+            .label("Open")
+            .icon(LucideIcon::FolderOpen),
+        DropdownMenuItem::new("copy")
+            .label("Copy")
+            .icon(LucideIcon::Copy),
+        DropdownMenuItem::new("inspect").label("Inspect"),
+        DropdownMenuItem::new("more")
+            .label("More")
+            .icon(LucideIcon::Ellipsis)
+            .submenu([
+                DropdownMenuItem::new("download")
+                    .label("Download")
+                    .icon(LucideIcon::Download),
+                DropdownMenuItem::new("external")
+                    .label("Open externally")
+                    .icon(LucideIcon::ExternalLink),
+            ]),
+    ]
 }

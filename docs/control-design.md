@@ -13,9 +13,11 @@ The current SDK includes:
 - `ToggleButton`
 - `Checkbox`
 - `DropdownMenu`
+- `ContextMenu`
 - shared button-family theme resolution
 - checkbox-specific theme resolution
 - dropdown-menu-specific theme resolution
+- context-menu-specific theme resolution
 - shared interaction-state resolution
 - configurable theme tokens
 - a gallery app that acts as the first real consumer
@@ -124,6 +126,10 @@ crates/sdk/src/controls/
     model.rs
     template.rs
   dropdown_menu/
+    control.rs
+    model.rs
+    template.rs
+  context_menu/
     control.rs
     model.rs
     template.rs
@@ -398,6 +404,40 @@ Application code observes `DropdownMenuEvent::Select { item_id, label }`. The op
 
 Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
 
+### 4.7 ContextMenu
+
+`ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target and emits semantic select events for enabled menu items.
+
+```rust
+use gpui_luma::controls::context_menu::ContextMenu;
+use gpui_luma::controls::dropdown_menu::DropdownMenuItem;
+use lucide_icons::Icon as LucideIcon;
+
+let menu = ContextMenu::new("file-context-menu")
+    .label("Right-click target")
+    .items([
+        DropdownMenuItem::new("open")
+            .label("Open")
+            .icon(LucideIcon::FolderOpen),
+        DropdownMenuItem::new("copy")
+            .label("Copy")
+            .icon(LucideIcon::Copy),
+        DropdownMenuItem::new("inspect").label("Inspect"),
+        DropdownMenuItem::new("more")
+            .label("More")
+            .icon(LucideIcon::Ellipsis)
+            .submenu([
+                DropdownMenuItem::new("download")
+                    .label("Download")
+                    .icon(LucideIcon::Download),
+            ]),
+    ])
+    .enabled(true)
+    .spawn(cx);
+```
+
+Application code observes `ContextMenuEvent::Select { item_id, label }`. The open position and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open position, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the pointer position, so opening the menu does not affect surrounding layout.
+
 ## 5. Events And Application Ownership
 
 Controls emit semantic events. Application entities subscribe to those events and own application state changes.
@@ -642,7 +682,7 @@ pub trait CheckboxTheme: Send + Sync {
 }
 ```
 
-The resolver still uses shared tokens and `InteractionState::layer()` for state precedence, but it owns control-specific policy such as checkbox container background and border, indicator size, checked background, dropdown trigger styling, menu surface styling, item hover styling, label color, and affordance color. This keeps non-button controls from expanding `ButtonFamilyRole` into a catch-all enum.
+The resolver still uses shared tokens and `InteractionState::layer()` for state precedence, but it owns control-specific policy such as checkbox container background and border, indicator size, checked background, dropdown trigger styling, context target styling, menu surface styling, item hover styling, label color, and affordance color. This keeps non-button controls from expanding `ButtonFamilyRole` into a catch-all enum.
 
 ## 10. Icon Policy
 
@@ -667,7 +707,7 @@ This prevents partial name support from becoming an accidental public contract.
 
 The SDK may use Lucide internally for SDK-owned affordances later, such as dropdown arrows. That is separate from application-owned icon choices.
 
-SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state, and a dropdown menu may render `lucide_icons::Icon::ChevronDown` and `lucide_icons::Icon::ChevronRight` internally because those chevrons communicate expandable affordances. App-owned icons, such as an add or save icon in an `IconButton` or an item icon in a `DropdownMenu`, must still be passed explicitly by the consumer.
+SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state, and dropdown or context menus may render `lucide_icons::Icon::ChevronDown` and `lucide_icons::Icon::ChevronRight` internally because those chevrons communicate expandable affordances. App-owned icons, such as an add or save icon in an `IconButton` or an item icon in a menu, must still be passed explicitly by the consumer.
 
 ## 11. Gallery Boundary
 
