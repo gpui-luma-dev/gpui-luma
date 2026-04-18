@@ -1,28 +1,22 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
+    Window, div, prelude::*,
 };
 
-use super::{
-    DropdownMenuBuilder, DropdownMenuItem, DropdownMenuRenderModel, DropdownMenuTemplateHandlers,
-    MenuPath,
-};
+use super::{DropdownMenuBuilder, DropdownMenuItem, DropdownMenuRenderModel, DropdownMenuTemplateHandlers, MenuPath};
 use crate::controls::dropdown_menu::model::DropdownMenuModel;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
-    ActivateControl, CloseSubmenu, LUMA_MENU_CONTROL_CONTEXT, OpenSubmenu, SelectFirstItem,
-    SelectLastItem, SelectNextItem, SelectPreviousItem,
+    ActivateControl, CloseSubmenu, LUMA_MENU_CONTROL_CONTEXT, OpenSubmenu, SelectFirstItem, SelectLastItem,
+    SelectNextItem, SelectPreviousItem,
 };
 
 #[derive(Clone, Debug)]
 pub enum DropdownMenuEvent {
-    Select {
-        item_id: SharedString,
-        label: SharedString,
-    },
+    Select { item_id: SharedString, label: SharedString },
 }
 
 pub struct DropdownMenu {
@@ -58,11 +52,7 @@ impl DropdownMenu {
         cx.notify();
     }
 
-    pub fn set_items(
-        &mut self,
-        items: impl IntoIterator<Item = DropdownMenuItem>,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = DropdownMenuItem>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.close_menu();
         cx.notify();
@@ -86,11 +76,7 @@ impl DropdownMenu {
             open_submenu: self.open_submenu,
             active_path: self.active_path,
             enabled: self.model.enabled,
-            focus: ControlFocusState::from_focus_handle(
-                self.model.enabled,
-                self.interaction.focus_handle(),
-                window,
-            ),
+            focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
         }
     }
@@ -134,9 +120,7 @@ impl DropdownMenu {
                     item.submenu_items
                         .iter()
                         .enumerate()
-                        .filter(|(_, submenu_item)| {
-                            submenu_item.enabled && submenu_item.submenu_items.is_empty()
-                        })
+                        .filter(|(_, submenu_item)| submenu_item.enabled && submenu_item.submenu_items.is_empty())
                         .map(|(submenu_index, _)| vec![index, submenu_index]),
                 );
             }
@@ -157,8 +141,7 @@ impl DropdownMenu {
             _ => None,
         };
 
-        let changed =
-            !self.open || self.open_submenu != open_submenu || self.active_path != active_path;
+        let changed = !self.open || self.open_submenu != open_submenu || self.active_path != active_path;
 
         self.open = true;
         self.open_submenu = open_submenu;
@@ -183,12 +166,7 @@ impl DropdownMenu {
         true
     }
 
-    fn handle_trigger_click(
-        &mut self,
-        _event: &ClickEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_trigger_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.model.enabled {
             if self.open {
                 self.close_menu();
@@ -199,13 +177,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_item_click(
-        &mut self,
-        path: &[usize],
-        _event: &ClickEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_item_click(&mut self, path: &[usize], _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.select_item_at_path(path, cx) {
             cx.notify();
         }
@@ -214,12 +186,7 @@ impl DropdownMenu {
     fn item_at_path(&self, path: &[usize]) -> Option<&DropdownMenuItem> {
         match path {
             [index] => self.model.items.get(*index),
-            [index, submenu_index] => self
-                .model
-                .items
-                .get(*index)?
-                .submenu_items
-                .get(*submenu_index),
+            [index, submenu_index] => self.model.items.get(*index)?.submenu_items.get(*submenu_index),
             _ => None,
         }
     }
@@ -250,37 +217,19 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_mouse_down(
-        &mut self,
-        _event: &MouseDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if self
-            .interaction
-            .handle_mouse_down(self.model.enabled, window, cx)
-        {
+    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
             cx.notify();
         }
     }
 
-    fn handle_mouse_up(
-        &mut self,
-        _event: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_mouse_up() {
             cx.notify();
         }
     }
 
-    fn handle_mouse_down_out(
-        &mut self,
-        _event: &MouseDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.close_menu();
             cx.notify();
@@ -315,9 +264,7 @@ impl DropdownMenu {
             Some(MenuPath::Submenu { parent, child }) => navigator
                 .step_submenu(parent, Some(child), direction)
                 .map(|child| MenuPath::Submenu { parent, child }),
-            _ => navigator
-                .step_root(navigator.active_root(self.active_path), direction)
-                .map(MenuPath::Root),
+            _ => navigator.step_root(navigator.active_root(self.active_path), direction).map(MenuPath::Root),
         };
 
         if let Some(next_path) = next_path
@@ -435,12 +382,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_select_previous_item(
-        &mut self,
-        _: &SelectPreviousItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.step_active_item(MenuDirection::Previous, cx);
         } else {
@@ -448,12 +390,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_select_next_item(
-        &mut self,
-        _: &SelectNextItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.step_active_item(MenuDirection::Next, cx);
         } else {
@@ -461,12 +398,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_select_first_item(
-        &mut self,
-        _: &SelectFirstItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.move_active_to_boundary(true, cx);
         } else if self.model.enabled {
@@ -474,12 +406,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_select_last_item(
-        &mut self,
-        _: &SelectLastItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_last_item(&mut self, _: &SelectLastItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.move_active_to_boundary(false, cx);
         } else if self.model.enabled {
@@ -487,12 +414,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_open_submenu(
-        &mut self,
-        _: &OpenSubmenu,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_open_submenu(&mut self, _: &OpenSubmenu, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.open_active_submenu(cx);
         } else if self.model.enabled {
@@ -500,12 +422,7 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_close_submenu(
-        &mut self,
-        _: &CloseSubmenu,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_close_submenu(&mut self, _: &CloseSubmenu, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.close_active_submenu(cx);
         } else if self.model.enabled {
@@ -513,21 +430,11 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_activate_control(
-        &mut self,
-        _: &ActivateControl,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
         self.activate_active_item(cx);
     }
 
-    fn handle_escape_focus(
-        &mut self,
-        _: &EscapeFocus,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_escape_focus(&mut self, _: &EscapeFocus, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.close_menu();
             cx.notify();

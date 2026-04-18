@@ -10,10 +10,7 @@ pub(crate) struct ControlInteraction {
 impl ControlInteraction {
     pub fn new<T>(enabled: bool, cx: &mut Context<T>) -> Self {
         Self {
-            state: InteractionState {
-                disabled: !enabled,
-                ..InteractionState::default()
-            },
+            state: InteractionState { disabled: !enabled, ..InteractionState::default() },
             focus_handle: cx.focus_handle().tab_stop(enabled),
         }
     }
@@ -33,11 +30,7 @@ impl ControlInteraction {
     }
 
     pub fn render_state(&self, enabled: bool, window: &Window) -> InteractionState {
-        InteractionState {
-            focused: enabled && self.focus_handle.is_focused(window),
-            disabled: !enabled,
-            ..self.state
-        }
+        InteractionState { focused: enabled && self.focus_handle.is_focused(window), disabled: !enabled, ..self.state }
     }
 
     pub fn handle_hover(&mut self, hovered: bool) -> bool {
@@ -53,12 +46,7 @@ impl ControlInteraction {
         true
     }
 
-    pub fn handle_mouse_down<T>(
-        &mut self,
-        enabled: bool,
-        window: &mut Window,
-        cx: &mut Context<T>,
-    ) -> bool {
+    pub fn handle_mouse_down<T>(&mut self, enabled: bool, window: &mut Window, cx: &mut Context<T>) -> bool {
         if !enabled {
             return false;
         }

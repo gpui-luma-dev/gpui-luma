@@ -35,9 +35,7 @@ pub struct DefaultCheckboxTheme {
 pub fn default_checkbox_theme() -> Arc<dyn CheckboxTheme> {
     static THEME: OnceLock<Arc<dyn CheckboxTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultCheckboxTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultCheckboxTheme::default())).clone()
 }
 
 impl DefaultCheckboxTheme {

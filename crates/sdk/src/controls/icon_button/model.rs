@@ -4,8 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::{IconButton, IconButtonIcon, IconButtonTemplate, default_icon_button_template};
 use crate::controls::button_family::{
-    ButtonInteractionState as IconButtonState, ButtonKind as IconButtonKind,
-    ButtonSize as IconButtonSize,
+    ButtonInteractionState as IconButtonState, ButtonKind as IconButtonKind, ButtonSize as IconButtonSize,
 };
 
 #[derive(Clone)]

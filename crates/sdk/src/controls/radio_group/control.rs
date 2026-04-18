@@ -1,24 +1,16 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
+    Window, div, prelude::*,
 };
 
-use super::{
-    RadioGroupBuilder, RadioGroupItem, RadioGroupRenderItem, RadioGroupRenderModel,
-    RadioGroupTemplateHandlers,
-};
+use super::{RadioGroupBuilder, RadioGroupItem, RadioGroupRenderItem, RadioGroupRenderModel, RadioGroupTemplateHandlers};
 use crate::controls::radio_group::model::RadioGroupModel;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{
-    LUMA_RADIO_GROUP_CONTEXT, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
-};
+use crate::keyhandling::{LUMA_RADIO_GROUP_CONTEXT, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem};
 
 #[derive(Clone, Debug)]
 pub enum RadioGroupEvent {
-    Change {
-        selected_id: SharedString,
-        label: SharedString,
-    },
+    Change { selected_id: SharedString, label: SharedString },
 }
 
 pub struct RadioGroup {
@@ -60,11 +52,7 @@ impl RadioGroup {
         }
     }
 
-    pub fn set_items(
-        &mut self,
-        items: impl IntoIterator<Item = RadioGroupItem>,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = RadioGroupItem>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.hovered_item = None;
         self.pressed_item = None;
@@ -85,8 +73,7 @@ impl RadioGroup {
     }
 
     fn render_model<'a>(&'a self, window: &Window) -> RadioGroupRenderModel<'a> {
-        let focus =
-            ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
+        let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let items = self
             .model
             .items
@@ -94,11 +81,7 @@ impl RadioGroup {
             .enumerate()
             .map(|(index, item)| {
                 let enabled = self.model.enabled && item.enabled;
-                let selected = self
-                    .model
-                    .selected_id
-                    .as_ref()
-                    .is_some_and(|selected_id| selected_id == &item.id);
+                let selected = self.model.selected_id.as_ref().is_some_and(|selected_id| selected_id == &item.id);
 
                 RadioGroupRenderItem {
                     id: &item.id,
@@ -163,19 +146,13 @@ impl RadioGroup {
     }
 
     fn can_select_id(&self, selected_id: &SharedString) -> bool {
-        self.model
-            .items
-            .iter()
-            .any(|item| item.enabled && &item.id == selected_id)
+        self.model.items.iter().any(|item| item.enabled && &item.id == selected_id)
     }
 
     fn selected_index(&self) -> Option<usize> {
         let selected_id = self.model.selected_id.as_ref()?;
 
-        self.model
-            .items
-            .iter()
-            .position(|item| item.enabled && &item.id == selected_id)
+        self.model.items.iter().position(|item| item.enabled && &item.id == selected_id)
     }
 
     fn first_enabled_index(&self) -> Option<usize> {
@@ -219,12 +196,7 @@ impl RadioGroup {
         }
 
         let item = &self.model.items[index];
-        if self
-            .model
-            .selected_id
-            .as_ref()
-            .is_some_and(|selected_id| selected_id == &item.id)
-        {
+        if self.model.selected_id.as_ref().is_some_and(|selected_id| selected_id == &item.id) {
             return false;
         }
 
@@ -269,25 +241,14 @@ impl RadioGroup {
         }
     }
 
-    fn handle_item_mouse_up(
-        &mut self,
-        _event: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_item_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.pressed_item.is_some() {
             self.pressed_item = None;
             cx.notify();
         }
     }
 
-    fn handle_item_click(
-        &mut self,
-        index: usize,
-        _event: &ClickEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_item_click(&mut self, index: usize, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
         self.select_index(index, cx);
     }
 
@@ -317,39 +278,19 @@ impl RadioGroup {
         }
     }
 
-    fn handle_select_previous_item(
-        &mut self,
-        _: &SelectPreviousItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         self.select_next_enabled(RadioGroupDirection::Previous, cx);
     }
 
-    fn handle_select_next_item(
-        &mut self,
-        _: &SelectNextItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
         self.select_next_enabled(RadioGroupDirection::Next, cx);
     }
 
-    fn handle_select_first_item(
-        &mut self,
-        _: &SelectFirstItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
         self.select_boundary(true, cx);
     }
 
-    fn handle_select_last_item(
-        &mut self,
-        _: &SelectLastItem,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_select_last_item(&mut self, _: &SelectLastItem, _window: &mut Window, cx: &mut Context<Self>) {
         self.select_boundary(false, cx);
     }
 }
@@ -388,20 +329,15 @@ impl Render for RadioGroup {
 }
 
 fn normalize_selected_id(model: &mut RadioGroupModel) {
-    if model.selected_id.as_ref().is_some_and(|selected_id| {
-        model
-            .items
-            .iter()
-            .any(|item| item.enabled && &item.id == selected_id)
-    }) {
+    if model
+        .selected_id
+        .as_ref()
+        .is_some_and(|selected_id| model.items.iter().any(|item| item.enabled && &item.id == selected_id))
+    {
         return;
     }
 
-    model.selected_id = model
-        .items
-        .iter()
-        .find(|item| item.enabled)
-        .map(|item| item.id.clone());
+    model.selected_id = model.items.iter().find(|item| item.enabled).map(|item| item.id.clone());
 }
 
 #[cfg(test)]
@@ -415,10 +351,7 @@ mod tests {
 
         normalize_selected_id(&mut model);
 
-        assert_eq!(
-            model.selected_id.as_ref().map(|id| id.to_string()),
-            Some("comfortable".to_string())
-        );
+        assert_eq!(model.selected_id.as_ref().map(|id| id.to_string()), Some("comfortable".to_string()));
     }
 
     #[test]
@@ -427,10 +360,7 @@ mod tests {
 
         normalize_selected_id(&mut model);
 
-        assert_eq!(
-            model.selected_id.as_ref().map(|id| id.to_string()),
-            Some("compact".to_string())
-        );
+        assert_eq!(model.selected_id.as_ref().map(|id| id.to_string()), Some("compact".to_string()));
     }
 
     fn model_with_selected(selected_id: Option<&str>) -> RadioGroupModel {

@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent,
-    MouseUpEvent, Stateful, Window, anchored, deferred, div, hsla, point, prelude::*, px, svg,
+    AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window,
+    anchored, deferred, div, hsla, point, prelude::*, px, svg,
 };
-use gpui_luma::controls::context_menu::{
-    ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers,
-};
+use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::dropdown_menu::{DropdownMenuItemIcon, DropdownMenuItem};
 use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
 use lucide_icons::Icon as LucideIcon;
@@ -38,10 +36,7 @@ struct GalleryRadialContextMenuTemplate {
 
 impl GalleryRadialContextMenuTemplate {
     fn new() -> Self {
-        Self {
-            theme: default_context_menu_theme(),
-            focus_border: hsla(0.0, 0.95, 0.50, 1.0),
-        }
+        Self { theme: default_context_menu_theme(), focus_border: hsla(0.0, 0.95, 0.50, 1.0) }
     }
 
     fn theme(mut self, theme: Arc<dyn ContextMenuTheme>) -> Self {
@@ -159,30 +154,18 @@ fn render_radial_menu(
     item_clicks: Vec<ContextMenuClickHandler>,
 ) -> Stateful<Div> {
     let mut item_clicks = item_clicks.into_iter();
-    let mut menu = div()
-        .id(format!("{}-radial-menu", model.id))
-        .relative()
-        .size(px(RADIAL_DIAMETER))
-        .occlude()
-        .child(
-            div()
-                .absolute()
-                .left(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
-                .top(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
-                .size(px(RADIAL_CENTER_MARKER_SIZE))
-                .rounded(px(RADIAL_CENTER_MARKER_SIZE))
-                .bg(appearance.menu_border),
-        );
+    let mut menu = div().id(format!("{}-radial-menu", model.id)).relative().size(px(RADIAL_DIAMETER)).occlude().child(
+        div()
+            .absolute()
+            .left(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
+            .top(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
+            .size(px(RADIAL_CENTER_MARKER_SIZE))
+            .rounded(px(RADIAL_CENTER_MARKER_SIZE))
+            .bg(appearance.menu_border),
+    );
 
-    for ((index, item), item_hover) in model
-        .items
-        .iter()
-        .take(RADIAL_ITEM_COUNT)
-        .enumerate()
-        .zip(item_hovers)
-    {
-        let mut button =
-            render_radial_item(model.id, index, item, &appearance).on_hover(item_hover);
+    for ((index, item), item_hover) in model.items.iter().take(RADIAL_ITEM_COUNT).enumerate().zip(item_hovers) {
+        let mut button = render_radial_item(model.id, index, item, &appearance).on_hover(item_hover);
 
         if item.is_enabled()
             && item.submenu_items().is_empty()
@@ -191,13 +174,8 @@ fn render_radial_menu(
             button = button.on_click(item_click);
         }
 
-        if model
-            .active_path
-            .is_some_and(|active_path| active_path.is_root(index))
-        {
-            button = button
-                .bg(appearance.item_hover_background)
-                .border_color(appearance.item_foreground);
+        if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
+            button = button.bg(appearance.item_hover_background).border_color(appearance.item_foreground);
         }
 
         menu = menu.child(button);
@@ -234,18 +212,12 @@ fn render_radial_item(
         .rounded(px(RADIAL_BUTTON_SIZE))
         .shadow_sm()
         .text_color(foreground)
-        .child(render_item_icon(
-            item.icon_ref(),
-            foreground,
-            appearance.item_icon_size,
-        ));
+        .child(render_item_icon(item.icon_ref(), foreground, appearance.item_icon_size));
 
     if item.is_enabled() && item.submenu_items().is_empty() {
-        button = button.cursor_pointer().hover(move |style| {
-            style
-                .bg(appearance.item_hover_background)
-                .border_color(appearance.item_foreground)
-        });
+        button = button
+            .cursor_pointer()
+            .hover(move |style| style.bg(appearance.item_hover_background).border_color(appearance.item_foreground));
     } else {
         button = button.opacity(0.56);
     }
@@ -264,25 +236,14 @@ fn radial_item_position(index: usize) -> (f32, f32) {
     .to_radians();
     let center = RADIAL_RADIUS - (RADIAL_BUTTON_SIZE * 0.5);
 
-    (
-        center + (angle.cos() * RADIAL_BUTTON_RADIUS),
-        center + (angle.sin() * RADIAL_BUTTON_RADIUS),
-    )
+    (center + (angle.cos() * RADIAL_BUTTON_RADIUS), center + (angle.sin() * RADIAL_BUTTON_RADIUS))
 }
 
-fn render_item_icon(
-    icon: Option<&DropdownMenuItemIcon>,
-    color: gpui::Hsla,
-    size: f32,
-) -> AnyElement {
+fn render_item_icon(icon: Option<&DropdownMenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
     if let Some(icon) = icon.and_then(DropdownMenuItemIcon::lucide) {
         render_lucide_icon(icon, color, size)
     } else if let Some(path) = icon.and_then(DropdownMenuItemIcon::svg_path) {
-        svg()
-            .external_path(path.clone())
-            .size(px(size))
-            .text_color(color)
-            .into_any_element()
+        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         render_lucide_icon(LucideIcon::Circle, color, size)
     }

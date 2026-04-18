@@ -24,14 +24,8 @@ impl<'a> MenuNavigator<'a> {
         self.step_root(None, MenuDirection::Previous)
     }
 
-    pub(crate) fn step_root(
-        &self,
-        current: Option<usize>,
-        direction: MenuDirection,
-    ) -> Option<usize> {
-        step_enabled_index(self.items.len(), current, direction, |index| {
-            self.items[index].is_enabled()
-        })
+    pub(crate) fn step_root(&self, current: Option<usize>, direction: MenuDirection) -> Option<usize> {
+        step_enabled_index(self.items.len(), current, direction, |index| self.items[index].is_enabled())
     }
 
     pub(crate) fn first_submenu(&self, parent: usize) -> Option<usize> {
@@ -50,9 +44,7 @@ impl<'a> MenuNavigator<'a> {
     ) -> Option<usize> {
         let submenu_items = self.items.get(parent)?.submenu_items();
 
-        step_enabled_index(submenu_items.len(), current, direction, |index| {
-            submenu_items[index].is_enabled()
-        })
+        step_enabled_index(submenu_items.len(), current, direction, |index| submenu_items[index].is_enabled())
     }
 
     pub(crate) fn active_root(&self, active_path: Option<MenuPath>) -> Option<usize> {
@@ -61,22 +53,13 @@ impl<'a> MenuNavigator<'a> {
             Some(MenuPath::Submenu { parent, .. }) => Some(parent),
             None => None,
         }
-        .filter(|index| {
-            self.items
-                .get(*index)
-                .is_some_and(DropdownMenuItem::is_enabled)
-        })
+        .filter(|index| self.items.get(*index).is_some_and(DropdownMenuItem::is_enabled))
     }
 
-    pub(crate) fn active_item(
-        &self,
-        active_path: Option<MenuPath>,
-    ) -> Option<&'a DropdownMenuItem> {
+    pub(crate) fn active_item(&self, active_path: Option<MenuPath>) -> Option<&'a DropdownMenuItem> {
         match active_path {
             Some(MenuPath::Root(index)) => self.items.get(index),
-            Some(MenuPath::Submenu { parent, child }) => {
-                self.items.get(parent)?.submenu_items().get(child)
-            }
+            Some(MenuPath::Submenu { parent, child }) => self.items.get(parent)?.submenu_items().get(child),
             None => None,
         }
     }
@@ -131,10 +114,7 @@ mod tests {
         assert_eq!(navigator.last_root(), Some(2));
         assert_eq!(navigator.step_root(Some(0), MenuDirection::Next), Some(2));
         assert_eq!(navigator.step_root(Some(2), MenuDirection::Next), Some(0));
-        assert_eq!(
-            navigator.step_root(Some(0), MenuDirection::Previous),
-            Some(2)
-        );
+        assert_eq!(navigator.step_root(Some(0), MenuDirection::Previous), Some(2));
     }
 
     #[test]
@@ -148,13 +128,7 @@ mod tests {
 
         assert_eq!(navigator.first_submenu(0), Some(0));
         assert_eq!(navigator.last_submenu(0), Some(2));
-        assert_eq!(
-            navigator.step_submenu(0, Some(0), MenuDirection::Next),
-            Some(2)
-        );
-        assert_eq!(
-            navigator.step_submenu(0, Some(2), MenuDirection::Next),
-            Some(0)
-        );
+        assert_eq!(navigator.step_submenu(0, Some(0), MenuDirection::Next), Some(2));
+        assert_eq!(navigator.step_submenu(0, Some(2), MenuDirection::Next), Some(0));
     }
 }

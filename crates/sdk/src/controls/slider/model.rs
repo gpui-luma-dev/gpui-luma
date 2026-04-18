@@ -57,10 +57,7 @@ impl SliderBuilder {
     }
 
     pub fn value(mut self, value: impl Into<f64>) -> Self {
-        self.model.value = self
-            .model
-            .range
-            .snap(value_from_input(value), self.model.step);
+        self.model.value = self.model.range.snap(value_from_input(value), self.model.step);
         self
     }
 

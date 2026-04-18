@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
+    SharedString, Window, div, prelude::*,
 };
 
 use super::{SwitchBuilder, SwitchRenderModel};
@@ -29,10 +29,7 @@ impl Switch {
     pub(crate) fn from_builder(builder: SwitchBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
-        Self {
-            model: builder.model,
-            interaction: ControlInteraction::new(enabled, cx),
-        }
+        Self { model: builder.model, interaction: ControlInteraction::new(enabled, cx) }
     }
 
     pub fn on(&self) -> bool {
@@ -75,12 +72,7 @@ impl Switch {
         self.activate(cx);
     }
 
-    fn handle_activate_control(
-        &mut self,
-        _: &ActivateControl,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
         self.activate(cx);
     }
 
@@ -90,26 +82,13 @@ impl Switch {
         }
     }
 
-    fn handle_mouse_down(
-        &mut self,
-        _event: &MouseDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if self
-            .interaction
-            .handle_mouse_down(self.model.enabled, window, cx)
-        {
+    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
             cx.notify();
         }
     }
 
-    fn handle_mouse_up(
-        &mut self,
-        _event: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_mouse_up() {
             cx.notify();
         }

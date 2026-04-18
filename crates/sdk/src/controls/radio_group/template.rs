@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, ElementId, FontWeight, MouseButton, MouseDownEvent,
-    MouseUpEvent, SharedString, Stateful, Window, div, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, ElementId, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, SharedString,
+    Stateful, Window, div, px, prelude::*,
 };
 
 use super::RadioGroupRenderModel;
@@ -72,11 +72,7 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
             item_clicks,
         } = handlers;
 
-        let mut root = div()
-            .id(model.id.clone())
-            .flex()
-            .items_center()
-            .gap(px(12.0));
+        let mut root = div().id(model.id.clone()).flex().items_center().gap(px(12.0));
 
         let mut item_hovers = item_hovers.into_iter();
         let mut item_mouse_downs = item_mouse_downs.into_iter();
@@ -101,15 +97,10 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
                 break;
             };
 
-            let appearance = self
-                .theme
-                .resolve_item(item.state.selected, item.state.interaction_state());
+            let appearance = self.theme.resolve_item(item.state.selected, item.state.interaction_state());
             let mut row = render_radio_group_item_visual(
                 RadioGroupItemVisualModel {
-                    id: ElementId::NamedChild(
-                        Arc::new(model.id.clone().into()),
-                        format!("item-{}", item.id).into(),
-                    ),
+                    id: ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.id).into()),
                     label: item.label,
                     state: item.state,
                 },
@@ -149,11 +140,7 @@ fn render_radio_group_item_visual(
         .border_1()
         .border_color(appearance.indicator_border)
         .rounded(px(appearance.indicator_size))
-        .child(render_dot(
-            model.state.selected,
-            appearance.dot_size,
-            appearance.dot_color,
-        ));
+        .child(render_dot(model.state.selected, appearance.dot_size, appearance.dot_color));
 
     let mut root = div()
         .id(model.id)
@@ -186,11 +173,7 @@ fn render_radio_group_item_visual(
 
 fn render_dot(selected: bool, size: f32, color: gpui::Hsla) -> AnyElement {
     if selected {
-        div()
-            .size(px(size))
-            .bg(color)
-            .rounded(px(size))
-            .into_any_element()
+        div().size(px(size)).bg(color).rounded(px(size)).into_any_element()
     } else {
         div().size(px(size)).into_any_element()
     }

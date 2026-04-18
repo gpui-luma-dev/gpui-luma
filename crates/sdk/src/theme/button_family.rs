@@ -53,9 +53,7 @@ pub struct DefaultButtonFamilyTheme {
 pub fn default_button_family_theme() -> Arc<dyn ButtonFamilyTheme> {
     static THEME: OnceLock<Arc<dyn ButtonFamilyTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultButtonFamilyTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultButtonFamilyTheme::default())).clone()
 }
 
 impl DefaultButtonFamilyTheme {
@@ -75,11 +73,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let colors = &self.tokens.colors;
         let metrics = &self.tokens.metrics;
         let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-        let variant = if selected {
-            ButtonVariant::Primary
-        } else {
-            variant
-        };
+        let variant = if selected { ButtonVariant::Primary } else { variant };
         let foreground = match (variant, state.disabled) {
             (_, true) => colors.text_disabled,
             (ButtonVariant::Default, false) => colors.text,
@@ -94,9 +88,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             (ButtonVariant::Primary, _, InteractionLayer::Pressed) => colors.primary_pressed,
             (ButtonVariant::Primary, _, InteractionLayer::Hovered) => colors.primary_hover,
             (ButtonVariant::Primary, _, InteractionLayer::Default) => colors.primary,
-            (ButtonVariant::Destructive, _, InteractionLayer::Pressed) => {
-                colors.destructive_pressed
-            }
+            (ButtonVariant::Destructive, _, InteractionLayer::Pressed) => colors.destructive_pressed,
             (ButtonVariant::Destructive, _, InteractionLayer::Hovered) => colors.destructive_hover,
             (ButtonVariant::Destructive, _, InteractionLayer::Default) => colors.destructive,
             (ButtonVariant::Default, _, InteractionLayer::Pressed) => colors.surface_pressed,

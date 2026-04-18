@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    Context, Entity, FocusHandle, Hsla, IntoElement, MouseButton, Render, Subscription, Window,
-    div, prelude::*, px, rgb,
+    Context, Entity, FocusHandle, Hsla, IntoElement, MouseButton, Render, Subscription, Window, div, prelude::*, px,
+    rgb,
 };
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
@@ -131,11 +131,8 @@ impl GalleryApp {
         let focus_scope = cx.focus_handle();
         window.focus(&focus_scope, cx);
 
-        let border_checkbox_template = checkbox_template(
-            GalleryCheckboxTheme::new()
-                .control_border(rgb(0x2563eb))
-                .control_padding(10.0, 6.0),
-        );
+        let border_checkbox_template =
+            checkbox_template(GalleryCheckboxTheme::new().control_border(rgb(0x2563eb)).control_padding(10.0, 6.0));
         let filled_checkbox_template = checkbox_template(
             GalleryCheckboxTheme::new()
                 .control_border(rgb(0xbe185d))
@@ -143,26 +140,14 @@ impl GalleryApp {
                 .control_padding(10.0, 6.0),
         );
 
-        let button = Button::new("button-example")
-            .label("Click me")
-            .kind(ButtonKind::Primary)
-            .spawn(cx);
-        let icon_button = IconButton::new("icon-button-example", LucideIcon::Plus)
-            .kind(IconButtonKind::Primary)
-            .spawn(cx);
-        let toggle_button = ToggleButton::new("toggle-button-example")
-            .label("Toggle")
-            .selected(true)
-            .spawn(cx);
+        let button = Button::new("button-example").label("Click me").kind(ButtonKind::Primary).spawn(cx);
+        let icon_button =
+            IconButton::new("icon-button-example", LucideIcon::Plus).kind(IconButtonKind::Primary).spawn(cx);
+        let toggle_button = ToggleButton::new("toggle-button-example").label("Toggle").selected(true).spawn(cx);
         let switch = Switch::new("switch-example").on(true).spawn(cx);
-        let default_checkbox = Checkbox::new("checkbox-default")
-            .label("As-is")
-            .checked(true)
-            .spawn(cx);
-        let border_checkbox = Checkbox::new("checkbox-border")
-            .label("Border")
-            .template(border_checkbox_template)
-            .spawn(cx);
+        let default_checkbox = Checkbox::new("checkbox-default").label("As-is").checked(true).spawn(cx);
+        let border_checkbox =
+            Checkbox::new("checkbox-border").label("Border").template(border_checkbox_template).spawn(cx);
         let filled_checkbox = Checkbox::new("checkbox-border-background")
             .label("Border + fill")
             .checked(true)
@@ -176,40 +161,19 @@ impl GalleryApp {
             ])
             .selected("comfortable")
             .spawn(cx);
-        let slider = Slider::new("slider-example")
-            .range(1..100)
-            .step(10)
-            .value(41)
-            .spawn(cx);
-        let progress = Progress::new("progress-example")
-            .range(1..100)
-            .value(41)
-            .spawn(cx);
+        let slider = Slider::new("slider-example").range(1..100).step(10).value(41).spawn(cx);
+        let progress = Progress::new("progress-example").range(1..100).value(41).spawn(cx);
         let dropdown_menu = DropdownMenu::new("dropdown-menu-example")
             .label("Actions")
             .items([
-                DropdownMenuItem::new("new")
-                    .label("New file")
-                    .icon(LucideIcon::FilePlus),
-                DropdownMenuItem::new("rename")
-                    .label("Rename")
-                    .icon(LucideIcon::Pencil),
+                DropdownMenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
+                DropdownMenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
                 DropdownMenuItem::new("archive").label("Archive"),
-                DropdownMenuItem::new("share")
-                    .label("Share")
-                    .icon(LucideIcon::Share2)
-                    .submenu([
-                        DropdownMenuItem::new("copy-link")
-                            .label("Copy link")
-                            .icon(LucideIcon::Link),
-                        DropdownMenuItem::new("email")
-                            .label("Email")
-                            .icon(LucideIcon::Mail),
-                    ]),
-                DropdownMenuItem::new("disabled")
-                    .label("Unavailable")
-                    .icon(LucideIcon::ArchiveX)
-                    .enabled(false),
+                DropdownMenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
+                    DropdownMenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
+                    DropdownMenuItem::new("email").label("Email").icon(LucideIcon::Mail),
+                ]),
+                DropdownMenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
             ])
             .spawn(cx);
         let default_context_menu = ContextMenu::new("context-menu-default-example")
@@ -219,45 +183,24 @@ impl GalleryApp {
         let radial_context_menu = ContextMenu::new("context-menu-radial-example")
             .label("Radial context target")
             .items([
-                DropdownMenuItem::new("open")
-                    .label("Open")
-                    .icon(LucideIcon::FolderOpen),
-                DropdownMenuItem::new("copy")
-                    .label("Copy")
-                    .icon(LucideIcon::Copy),
-                DropdownMenuItem::new("inspect")
-                    .label("Inspect")
-                    .icon(LucideIcon::ScanSearch),
-                DropdownMenuItem::new("download")
-                    .label("Download")
-                    .icon(LucideIcon::Download),
-                DropdownMenuItem::new("external")
-                    .label("Open externally")
-                    .icon(LucideIcon::ExternalLink),
+                DropdownMenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
+                DropdownMenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+                DropdownMenuItem::new("inspect").label("Inspect").icon(LucideIcon::ScanSearch),
+                DropdownMenuItem::new("download").label("Download").icon(LucideIcon::Download),
+                DropdownMenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
             ])
             .template(radial_context_menu_template())
             .spawn(cx);
-        let disabled_button = Button::new("disabled-button")
-            .label("Disabled")
-            .enabled(false)
-            .spawn(cx);
-        let disabled_icon_button = IconButton::new("disabled-icon-button", LucideIcon::Check)
-            .enabled(false)
-            .spawn(cx);
+        let disabled_button = Button::new("disabled-button").label("Disabled").enabled(false).spawn(cx);
+        let disabled_icon_button = IconButton::new("disabled-icon-button", LucideIcon::Check).enabled(false).spawn(cx);
         let disabled_toggle_button = ToggleButton::new("disabled-toggle-button")
             .label("Disabled toggle")
             .selected(true)
             .enabled(false)
             .spawn(cx);
-        let disabled_switch = Switch::new("disabled-switch")
-            .on(true)
-            .enabled(false)
-            .spawn(cx);
-        let disabled_checkbox = Checkbox::new("disabled-checkbox")
-            .label("Disabled checkbox")
-            .checked(true)
-            .enabled(false)
-            .spawn(cx);
+        let disabled_switch = Switch::new("disabled-switch").on(true).enabled(false).spawn(cx);
+        let disabled_checkbox =
+            Checkbox::new("disabled-checkbox").label("Disabled checkbox").checked(true).enabled(false).spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&button, |this, _, event: &ButtonEvent, cx| {
@@ -290,18 +233,12 @@ impl GalleryApp {
             cx.subscribe(&dropdown_menu, |this, _, event: &DropdownMenuEvent, cx| {
                 this.handle_dropdown_menu_event(event, cx);
             }),
-            cx.subscribe(
-                &default_context_menu,
-                |this, _, event: &ContextMenuEvent, cx| {
-                    this.handle_context_menu_event(ContextMenuPresentation::Default, event, cx);
-                },
-            ),
-            cx.subscribe(
-                &radial_context_menu,
-                |this, _, event: &ContextMenuEvent, cx| {
-                    this.handle_context_menu_event(ContextMenuPresentation::Radial, event, cx);
-                },
-            ),
+            cx.subscribe(&default_context_menu, |this, _, event: &ContextMenuEvent, cx| {
+                this.handle_context_menu_event(ContextMenuPresentation::Default, event, cx);
+            }),
+            cx.subscribe(&radial_context_menu, |this, _, event: &ContextMenuEvent, cx| {
+                this.handle_context_menu_event(ContextMenuPresentation::Radial, event, cx);
+            }),
         ];
 
         Self {
@@ -475,16 +412,13 @@ impl Render for GalleryApp {
             .flex()
             .items_center()
             .justify_center()
-            .child(
-                div()
-                    .absolute()
-                    .size_full()
-                    .bg(rgb(0xf8fafc))
-                    .on_mouse_down(MouseButton::Left, move |_event, window, cx| {
-                        window.focus(&focus_scope, cx);
-                        cx.stop_propagation();
-                    }),
-            )
+            .child(div().absolute().size_full().bg(rgb(0xf8fafc)).on_mouse_down(
+                MouseButton::Left,
+                move |_event, window, cx| {
+                    window.focus(&focus_scope, cx);
+                    cx.stop_propagation();
+                },
+            ))
             .child(
                 div()
                     .relative()
@@ -513,21 +447,8 @@ impl Render for GalleryApp {
                             .child(self.border_checkbox.clone())
                             .child(self.filled_checkbox.clone()),
                     )
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_3()
-                            .child(self.radio_group.clone()),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_4()
-                            .child(self.slider.clone())
-                            .child(self.progress.clone()),
-                    )
+                    .child(div().flex().items_center().gap_3().child(self.radio_group.clone()))
+                    .child(div().flex().items_center().gap_4().child(self.slider.clone()).child(self.progress.clone()))
                     .child(self.dropdown_menu.clone())
                     .child(
                         div()
@@ -565,14 +486,8 @@ impl Render for GalleryApp {
                             .child(format!("Radio choice: {}", self.radio_choice))
                             .child(format!("Slider value: {:.0}", self.slider_value))
                             .child(format!("Dropdown selected: {}", self.dropdown_selection))
-                            .child(format!(
-                                "Default context selected: {}",
-                                self.default_context_selection
-                            ))
-                            .child(format!(
-                                "Radial context selected: {}",
-                                self.radial_context_selection
-                            )),
+                            .child(format!("Default context selected: {}", self.default_context_selection))
+                            .child(format!("Radial context selected: {}", self.radial_context_selection)),
                     )
                     .child(
                         div()
@@ -595,23 +510,12 @@ fn checkbox_template(theme: impl CheckboxTheme + 'static) -> Arc<dyn CheckboxTem
 
 fn default_context_menu_items() -> [DropdownMenuItem; 4] {
     [
-        DropdownMenuItem::new("open")
-            .label("Open")
-            .icon(LucideIcon::FolderOpen),
-        DropdownMenuItem::new("copy")
-            .label("Copy")
-            .icon(LucideIcon::Copy),
+        DropdownMenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
+        DropdownMenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
         DropdownMenuItem::new("inspect").label("Inspect"),
-        DropdownMenuItem::new("more")
-            .label("More")
-            .icon(LucideIcon::Ellipsis)
-            .submenu([
-                DropdownMenuItem::new("download")
-                    .label("Download")
-                    .icon(LucideIcon::Download),
-                DropdownMenuItem::new("external")
-                    .label("Open externally")
-                    .icon(LucideIcon::ExternalLink),
-            ]),
+        DropdownMenuItem::new("more").label("More").icon(LucideIcon::Ellipsis).submenu([
+            DropdownMenuItem::new("download").label("Download").icon(LucideIcon::Download),
+            DropdownMenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
+        ]),
     ]
 }

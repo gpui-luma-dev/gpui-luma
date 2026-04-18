@@ -60,56 +60,16 @@ fn default_control_key_bindings() -> Vec<KeyBinding> {
         KeyBinding::new("left", CloseSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
         KeyBinding::new("enter", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
         KeyBinding::new("space", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new(
-            "shift-f10",
-            OpenContextMenu,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "menu",
-            OpenContextMenu,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "down",
-            SelectNextItem,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "up",
-            SelectPreviousItem,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "home",
-            SelectFirstItem,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "end",
-            SelectLastItem,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "right",
-            OpenSubmenu,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "left",
-            CloseSubmenu,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "enter",
-            ActivateControl,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
-        KeyBinding::new(
-            "space",
-            ActivateControl,
-            Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT),
-        ),
+        KeyBinding::new("shift-f10", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("menu", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("down", SelectNextItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("up", SelectPreviousItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("home", SelectFirstItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("end", SelectLastItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("right", OpenSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("left", CloseSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("enter", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+        KeyBinding::new("space", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
     ]
 }
 

@@ -42,9 +42,7 @@ pub struct DefaultContextMenuTheme {
 pub fn default_context_menu_theme() -> Arc<dyn ContextMenuTheme> {
     static THEME: OnceLock<Arc<dyn ContextMenuTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultContextMenuTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultContextMenuTheme::default())).clone()
 }
 
 impl DefaultContextMenuTheme {

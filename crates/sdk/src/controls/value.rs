@@ -8,10 +8,7 @@ pub struct ControlRange {
 
 impl Default for ControlRange {
     fn default() -> Self {
-        Self {
-            start: 0.0,
-            end: 100.0,
-        }
+        Self { start: 0.0, end: 100.0 }
     }
 }
 
@@ -23,15 +20,9 @@ impl ControlRange {
         if start < end {
             Self { start, end }
         } else if end < start {
-            Self {
-                start: end,
-                end: start,
-            }
+            Self { start: end, end: start }
         } else {
-            Self {
-                start,
-                end: start + 1.0,
-            }
+            Self { start, end: start + 1.0 }
         }
     }
 
@@ -95,11 +86,7 @@ macro_rules! impl_integer_range {
 impl_integer_range!(i8, i16, i32, u8, u16, u32, usize);
 
 pub(crate) fn normalized_step(step: f32) -> f32 {
-    if step.is_finite() && step > 0.0 {
-        step
-    } else {
-        1.0
-    }
+    if step.is_finite() && step > 0.0 { step } else { 1.0 }
 }
 
 pub(crate) fn value_from_input(value: impl Into<f64>) -> f32 {

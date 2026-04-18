@@ -8,12 +8,7 @@ use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait IconButtonTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &IconButtonRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &IconButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedIconButtonTemplate {
@@ -35,18 +30,9 @@ pub fn default_icon_button_template() -> Arc<dyn IconButtonTemplate> {
 }
 
 impl IconButtonTemplate for ThemedIconButtonTemplate {
-    fn render(
-        &self,
-        model: &IconButtonRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
-        let appearance = self.theme.resolve(
-            button_variant(model.kind),
-            ButtonFamilyRole::Icon,
-            model.size,
-            model.state,
-        );
+    fn render(&self, model: &IconButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let appearance =
+            self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Icon, model.size, model.state);
         let mut root = div()
             .id(model.id.clone())
             .flex()
@@ -90,11 +76,7 @@ fn render_icon(icon: &IconButtonIcon, color: gpui::Hsla) -> AnyElement {
             .child(char::from(icon).to_string())
             .into_any_element()
     } else if let Some(path) = icon.svg_path() {
-        svg()
-            .external_path(path.clone())
-            .size(px(16.0))
-            .text_color(color)
-            .into_any_element()
+        svg().external_path(path.clone()).size(px(16.0)).text_color(color).into_any_element()
     } else {
         div().size(px(16.0)).into_any_element()
     }

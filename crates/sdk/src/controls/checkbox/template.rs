@@ -8,12 +8,7 @@ use crate::controls::state::focus_debug_border;
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 pub trait CheckboxTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &CheckboxRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &CheckboxRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedCheckboxTemplate {
@@ -29,18 +24,11 @@ impl ThemedCheckboxTemplate {
 pub fn default_checkbox_template() -> Arc<dyn CheckboxTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn CheckboxTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedCheckboxTemplate::new(default_checkbox_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedCheckboxTemplate::new(default_checkbox_theme()))).clone()
 }
 
 impl CheckboxTemplate for ThemedCheckboxTemplate {
-    fn render(
-        &self,
-        model: &CheckboxRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
+    fn render(&self, model: &CheckboxRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.checked, model.state);
         let indicator = div()
             .flex()
@@ -51,11 +39,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             .border_1()
             .border_color(appearance.indicator_border)
             .rounded(px(appearance.indicator_radius))
-            .child(render_checkmark(
-                model.checked,
-                appearance.checkmark_size,
-                appearance.checkmark_color,
-            ));
+            .child(render_checkmark(model.checked, appearance.checkmark_size, appearance.checkmark_color));
 
         let mut root = div()
             .id(model.id.clone())

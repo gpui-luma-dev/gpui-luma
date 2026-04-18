@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    App, AppContext as _, Bounds, Div, DragMoveEvent, MouseButton, MouseDownEvent, MouseUpEvent,
-    Pixels, Stateful, Window, canvas, div, px, prelude::*,
+    App, AppContext as _, Bounds, Div, DragMoveEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful,
+    Window, canvas, div, px, prelude::*,
 };
 
 use super::{SliderDrag, SliderRenderModel};
@@ -13,8 +13,7 @@ pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App
 pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SliderMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SliderMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-pub type SliderDragMoveHandler =
-    Box<dyn Fn(&DragMoveEvent<SliderDrag>, &mut Window, &mut App) + 'static>;
+pub type SliderDragMoveHandler = Box<dyn Fn(&DragMoveEvent<SliderDrag>, &mut Window, &mut App) + 'static>;
 
 pub struct SliderTemplateHandlers {
     pub track_bounds: SliderBoundsHandler,
@@ -48,9 +47,7 @@ impl ThemedSliderTemplate {
 pub fn default_slider_template() -> Arc<dyn SliderTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SliderTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedSliderTemplate::new(default_slider_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSliderTemplate::new(default_slider_theme()))).clone()
 }
 
 impl SliderTemplate for ThemedSliderTemplate {
@@ -61,14 +58,7 @@ impl SliderTemplate for ThemedSliderTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let SliderTemplateHandlers {
-            track_bounds,
-            hover,
-            mouse_down,
-            mouse_up,
-            mouse_up_out,
-            drag_move,
-        } = handlers;
+        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
         let appearance = self.theme.resolve(model.state);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let fill_width = appearance.width * percentage;
@@ -124,12 +114,9 @@ impl SliderTemplate for ThemedSliderTemplate {
             .child(track)
             .child(thumb)
             .child(
-                canvas(
-                    move |bounds, window, cx| track_bounds(&bounds, window, cx),
-                    |_, _, _, _| {},
-                )
-                .absolute()
-                .size_full(),
+                canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
+                    .absolute()
+                    .size_full(),
             );
 
         if model.enabled {

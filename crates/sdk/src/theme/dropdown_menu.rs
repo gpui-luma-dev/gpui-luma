@@ -45,9 +45,7 @@ pub struct DefaultDropdownMenuTheme {
 pub fn default_dropdown_menu_theme() -> Arc<dyn DropdownMenuTheme> {
     static THEME: OnceLock<Arc<dyn DropdownMenuTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultDropdownMenuTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultDropdownMenuTheme::default())).clone()
 }
 
 impl DefaultDropdownMenuTheme {

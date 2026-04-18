@@ -32,9 +32,7 @@ pub struct DefaultSwitchTheme {
 pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
     static THEME: OnceLock<Arc<dyn SwitchTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultSwitchTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultSwitchTheme::default())).clone()
 }
 
 impl DefaultSwitchTheme {

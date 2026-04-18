@@ -1,6 +1,6 @@
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement,
-    MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
+    Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
 };
 
 use super::{SliderBuilder, SliderRenderModel, SliderTemplateHandlers};
@@ -8,8 +8,7 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
-    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_SLIDER_CONTEXT,
-    MoveToEnd, MoveToStart,
+    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_SLIDER_CONTEXT, MoveToEnd, MoveToStart,
 };
 
 #[derive(Clone, Debug)]
@@ -51,11 +50,7 @@ impl Slider {
     pub(crate) fn from_builder(builder: SliderBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
-        Self {
-            model: builder.model,
-            interaction: ControlInteraction::new(enabled, cx),
-            track_bounds: None,
-        }
+        Self { model: builder.model, interaction: ControlInteraction::new(enabled, cx), track_bounds: None }
     }
 
     pub fn value(&self) -> f32 {
@@ -129,12 +124,7 @@ impl Slider {
         true
     }
 
-    fn set_value_from_position(
-        &mut self,
-        position: Point<Pixels>,
-        emit: bool,
-        cx: &mut Context<Self>,
-    ) -> bool {
+    fn set_value_from_position(&mut self, position: Point<Pixels>, emit: bool, cx: &mut Context<Self>) -> bool {
         if !self.model.enabled {
             return false;
         }
@@ -153,12 +143,7 @@ impl Slider {
         self.set_value_internal(value, emit, cx)
     }
 
-    fn handle_track_bounds(
-        &mut self,
-        bounds: &Bounds<Pixels>,
-        _window: &mut Window,
-        _cx: &mut Context<Self>,
-    ) {
+    fn handle_track_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
         self.track_bounds = Some(*bounds);
     }
 
@@ -168,15 +153,8 @@ impl Slider {
         }
     }
 
-    fn handle_mouse_down(
-        &mut self,
-        event: &MouseDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let interaction_changed =
-            self.interaction
-                .handle_mouse_down(self.model.enabled, window, cx);
+    fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
         let value_changed = self.set_value_from_position(event.position, true, cx);
 
         if interaction_changed || value_changed {
@@ -184,23 +162,13 @@ impl Slider {
         }
     }
 
-    fn handle_mouse_up(
-        &mut self,
-        _event: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if self.interaction.handle_mouse_up() {
             cx.notify();
         }
     }
 
-    fn handle_drag_move(
-        &mut self,
-        event: &DragMoveEvent<SliderDrag>,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_drag_move(&mut self, event: &DragMoveEvent<SliderDrag>, _window: &mut Window, cx: &mut Context<Self>) {
         if event.drag(cx).id != self.model.id {
             return;
         }
@@ -225,48 +193,23 @@ impl Slider {
         self.set_value_internal(value, true, cx);
     }
 
-    fn handle_decrease_value(
-        &mut self,
-        _: &DecreaseValue,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_decrease_value(&mut self, _: &DecreaseValue, _window: &mut Window, cx: &mut Context<Self>) {
         self.adjust_value(-self.model.step, cx);
     }
 
-    fn handle_increase_value(
-        &mut self,
-        _: &IncreaseValue,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_increase_value(&mut self, _: &IncreaseValue, _window: &mut Window, cx: &mut Context<Self>) {
         self.adjust_value(self.model.step, cx);
     }
 
-    fn handle_decrease_value_large(
-        &mut self,
-        _: &DecreaseValueLarge,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_decrease_value_large(&mut self, _: &DecreaseValueLarge, _window: &mut Window, cx: &mut Context<Self>) {
         self.adjust_value(-(self.model.step * 10.0), cx);
     }
 
-    fn handle_increase_value_large(
-        &mut self,
-        _: &IncreaseValueLarge,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_increase_value_large(&mut self, _: &IncreaseValueLarge, _window: &mut Window, cx: &mut Context<Self>) {
         self.adjust_value(self.model.step * 10.0, cx);
     }
 
-    fn handle_move_to_start(
-        &mut self,
-        _: &MoveToStart,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_move_to_start(&mut self, _: &MoveToStart, _window: &mut Window, cx: &mut Context<Self>) {
         self.move_to_value(self.model.range.start, cx);
     }
 

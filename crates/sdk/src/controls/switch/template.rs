@@ -7,12 +7,7 @@ use crate::controls::state::focus_debug_border;
 use crate::theme::{SwitchTheme, default_switch_theme};
 
 pub trait SwitchTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &SwitchRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &SwitchRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedSwitchTemplate {
@@ -28,18 +23,11 @@ impl ThemedSwitchTemplate {
 pub fn default_switch_template() -> Arc<dyn SwitchTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SwitchTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedSwitchTemplate::new(default_switch_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSwitchTemplate::new(default_switch_theme()))).clone()
 }
 
 impl SwitchTemplate for ThemedSwitchTemplate {
-    fn render(
-        &self,
-        model: &SwitchRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
+    fn render(&self, model: &SwitchRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.on, model.state);
         let thumb_left = if model.on {
             appearance.width - appearance.thumb_size - appearance.padding

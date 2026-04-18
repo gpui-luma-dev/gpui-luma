@@ -9,12 +9,7 @@ use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait ButtonTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &ButtonRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &ButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedButtonTemplate {
@@ -30,24 +25,13 @@ impl ThemedButtonTemplate {
 pub fn default_button_template() -> Arc<dyn ButtonTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ButtonTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedButtonTemplate::new(default_button_family_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedButtonTemplate::new(default_button_family_theme()))).clone()
 }
 
 impl ButtonTemplate for ThemedButtonTemplate {
-    fn render(
-        &self,
-        model: &ButtonRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
-        let appearance = self.theme.resolve(
-            button_variant(model.kind),
-            ButtonFamilyRole::Text,
-            model.size,
-            model.state,
-        );
+    fn render(&self, model: &ButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let appearance =
+            self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
         let mut root = div()
             .id(model.id.clone())
             .flex()

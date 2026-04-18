@@ -80,27 +80,9 @@ impl Default for ColorTokens {
 impl Default for MetricTokens {
     fn default() -> Self {
         Self {
-            sm: ControlMetricTokens {
-                radius: 5.0,
-                control_height: 28.0,
-                padding_x: 10.0,
-                padding_y: 5.0,
-                gap: 6.0,
-            },
-            md: ControlMetricTokens {
-                radius: 6.0,
-                control_height: 36.0,
-                padding_x: 14.0,
-                padding_y: 8.0,
-                gap: 8.0,
-            },
-            lg: ControlMetricTokens {
-                radius: 7.0,
-                control_height: 44.0,
-                padding_x: 18.0,
-                padding_y: 10.0,
-                gap: 10.0,
-            },
+            sm: ControlMetricTokens { radius: 5.0, control_height: 28.0, padding_x: 10.0, padding_y: 5.0, gap: 6.0 },
+            md: ControlMetricTokens { radius: 6.0, control_height: 36.0, padding_x: 14.0, padding_y: 8.0, gap: 8.0 },
+            lg: ControlMetricTokens { radius: 7.0, control_height: 44.0, padding_x: 18.0, padding_y: 10.0, gap: 10.0 },
         }
     }
 }

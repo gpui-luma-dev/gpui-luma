@@ -18,10 +18,7 @@ impl ControlFocusState {
     pub fn from_focus_handle(enabled: bool, focus_handle: &FocusHandle, window: &Window) -> Self {
         let focused = enabled && focus_handle.is_focused(window);
 
-        Self {
-            focused,
-            focus_visible: focused && window.last_input_was_keyboard(),
-        }
+        Self { focused, focus_visible: focused && window.last_input_was_keyboard() }
     }
 }
 

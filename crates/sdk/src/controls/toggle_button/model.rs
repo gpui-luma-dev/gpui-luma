@@ -4,8 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::{ToggleButton, ToggleButtonTemplate, default_toggle_button_template};
 use crate::controls::button_family::{
-    ButtonInteractionState as ToggleButtonState, ButtonKind as ToggleButtonKind,
-    ButtonSize as ToggleButtonSize,
+    ButtonInteractionState as ToggleButtonState, ButtonKind as ToggleButtonKind, ButtonSize as ToggleButtonSize,
 };
 
 #[derive(Clone)]

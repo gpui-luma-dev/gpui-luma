@@ -34,9 +34,7 @@ pub struct DefaultRadioGroupTheme {
 pub fn default_radio_group_theme() -> Arc<dyn RadioGroupTheme> {
     static THEME: OnceLock<Arc<dyn RadioGroupTheme>> = OnceLock::new();
 
-    THEME
-        .get_or_init(|| Arc::new(DefaultRadioGroupTheme::default()))
-        .clone()
+    THEME.get_or_init(|| Arc::new(DefaultRadioGroupTheme::default())).clone()
 }
 
 impl DefaultRadioGroupTheme {
@@ -70,11 +68,7 @@ impl RadioGroupTheme for DefaultRadioGroupTheme {
             control_background: None,
             control_border: None,
             indicator_background,
-            indicator_border: if selected {
-                selected_color
-            } else {
-                colors.border
-            },
+            indicator_border: if selected { selected_color } else { colors.border },
             dot_color: selected_color,
             label_color: if state.disabled {
                 colors.text_disabled

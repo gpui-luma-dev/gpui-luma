@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent,
-    Stateful, Window, deferred, div, px, prelude::*, svg,
+    AnyElement, App, ClickEvent, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window,
+    deferred, div, px, prelude::*, svg,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -50,11 +50,7 @@ pub fn default_dropdown_menu_template() -> Arc<dyn DropdownMenuTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn DropdownMenuTemplate>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| {
-            Arc::new(ThemedDropdownMenuTemplate::new(
-                default_dropdown_menu_theme(),
-            ))
-        })
+        .get_or_init(|| Arc::new(ThemedDropdownMenuTemplate::new(default_dropdown_menu_theme())))
         .clone()
 }
 
@@ -175,10 +171,7 @@ impl DropdownMenuTemplate for ThemedDropdownMenuTemplate {
                             appearance.item_icon_size,
                         ));
 
-                    if model
-                        .active_path
-                        .is_some_and(|active_path| active_path.is_root(index))
-                    {
+                    if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
                         row = row.bg(appearance.item_hover_background);
                     }
 
@@ -229,9 +222,7 @@ fn render_submenu(
     let mut submenu = div()
         .id(format!("{}-submenu-{}", menu_id, item.id))
         .absolute()
-        .top(px(
-            appearance.menu_padding + (index as f32 * appearance.item_height)
-        ))
+        .top(px(appearance.menu_padding + (index as f32 * appearance.item_height)))
         .left(px(appearance.menu_min_width + appearance.submenu_offset_x))
         .min_w(px(appearance.menu_min_width))
         .p(px(appearance.menu_padding))
@@ -288,19 +279,11 @@ fn render_submenu(
     submenu
 }
 
-fn render_item_icon(
-    icon: Option<&DropdownMenuItemIcon>,
-    color: gpui::Hsla,
-    size: f32,
-) -> AnyElement {
+fn render_item_icon(icon: Option<&DropdownMenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
     if let Some(icon) = icon.and_then(DropdownMenuItemIcon::lucide) {
         render_lucide_icon(icon, color, size)
     } else if let Some(path) = icon.and_then(DropdownMenuItemIcon::svg_path) {
-        svg()
-            .external_path(path.clone())
-            .size(px(size))
-            .text_color(color)
-            .into_any_element()
+        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         div().size(px(size)).into_any_element()
     }

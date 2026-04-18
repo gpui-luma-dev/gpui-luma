@@ -7,12 +7,7 @@ use super::ProgressRenderModel;
 use crate::theme::{ProgressTheme, default_progress_theme};
 
 pub trait ProgressTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &ProgressRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &ProgressRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedProgressTemplate {
@@ -28,18 +23,11 @@ impl ThemedProgressTemplate {
 pub fn default_progress_template() -> Arc<dyn ProgressTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ProgressTemplate>> = OnceLock::new();
 
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedProgressTemplate::new(default_progress_theme())))
-        .clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedProgressTemplate::new(default_progress_theme()))).clone()
 }
 
 impl ProgressTemplate for ThemedProgressTemplate {
-    fn render(
-        &self,
-        model: &ProgressRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
+    fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve();
         let percentage = model.percentage.clamp(0.0, 1.0);
         let size = px(appearance.size);
@@ -55,23 +43,8 @@ impl ProgressTemplate for ThemedProgressTemplate {
                     let center_y = bounds.origin.y + bounds.size.height / 2.0;
                     let radius = (size / 2.0) - stroke_width;
 
-                    paint_circle(
-                        center_x,
-                        center_y,
-                        radius,
-                        stroke_width,
-                        track_color,
-                        window,
-                    );
-                    paint_progress_arc(
-                        center_x,
-                        center_y,
-                        radius,
-                        stroke_width,
-                        percentage,
-                        progress_color,
-                        window,
-                    );
+                    paint_circle(center_x, center_y, radius, stroke_width, track_color, window);
+                    paint_progress_arc(center_x, center_y, radius, stroke_width, percentage, progress_color, window);
                 },
             )
             .size_full(),
@@ -90,20 +63,8 @@ fn paint_circle(
     let mut builder = PathBuilder::stroke(stroke_width);
 
     builder.move_to(point(center_x + radius, center_y));
-    builder.arc_to(
-        point(radius, radius),
-        px(0.0),
-        false,
-        true,
-        point(center_x - radius, center_y),
-    );
-    builder.arc_to(
-        point(radius, radius),
-        px(0.0),
-        false,
-        true,
-        point(center_x + radius, center_y),
-    );
+    builder.arc_to(point(radius, radius), px(0.0), false, true, point(center_x - radius, center_y));
+    builder.arc_to(point(radius, radius), px(0.0), false, true, point(center_x + radius, center_y));
     builder.close();
 
     if let Ok(path) = builder.build() {
@@ -137,13 +98,7 @@ fn paint_progress_arc(
     let end_y = center_y + radius * angle.sin();
 
     builder.move_to(point(start_x, start_y));
-    builder.arc_to(
-        point(radius, radius),
-        px(0.0),
-        percentage > 0.5,
-        true,
-        point(end_x, end_y),
-    );
+    builder.arc_to(point(radius, radius), px(0.0), percentage > 0.5, true, point(end_x, end_y));
 
     if let Ok(path) = builder.build() {
         window.paint_path(path, color);

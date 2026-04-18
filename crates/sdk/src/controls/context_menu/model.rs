@@ -3,8 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, Pixels, Point, SharedString};
 
 use super::{
-    ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath,
-    default_context_menu_template,
+    ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template,
 };
 use crate::controls::dropdown_menu::DropdownMenuItem;
 

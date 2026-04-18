@@ -16,11 +16,7 @@ impl RadioGroupItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
-        Self {
-            label: id.clone(),
-            id,
-            enabled: true,
-        }
+        Self { label: id.clone(), id, enabled: true }
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {

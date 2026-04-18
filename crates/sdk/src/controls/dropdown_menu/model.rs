@@ -4,8 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{
-    ControlFocusState, DropdownMenu, DropdownMenuState, DropdownMenuTemplate, MenuPath,
-    default_dropdown_menu_template,
+    ControlFocusState, DropdownMenu, DropdownMenuState, DropdownMenuTemplate, MenuPath, default_dropdown_menu_template,
 };
 
 #[derive(Clone, Debug)]
@@ -67,13 +66,7 @@ impl DropdownMenuItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
-        Self {
-            label: id.clone(),
-            id,
-            icon: None,
-            submenu_items: Vec::new(),
-            enabled: true,
-        }
+        Self { label: id.clone(), id, icon: None, submenu_items: Vec::new(), enabled: true }
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {

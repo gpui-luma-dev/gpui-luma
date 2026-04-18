@@ -8,12 +8,7 @@ use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait ToggleButtonTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &ToggleButtonRenderModel<'_>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
+    fn render(&self, model: &ToggleButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedToggleButtonTemplate {
@@ -30,26 +25,15 @@ pub fn default_toggle_button_template() -> Arc<dyn ToggleButtonTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ToggleButtonTemplate>> = OnceLock::new();
 
     TEMPLATE
-        .get_or_init(|| {
-            Arc::new(ThemedToggleButtonTemplate::new(
-                default_button_family_theme(),
-            ))
-        })
+        .get_or_init(|| Arc::new(ThemedToggleButtonTemplate::new(default_button_family_theme())))
         .clone()
 }
 
 impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
-    fn render(
-        &self,
-        model: &ToggleButtonRenderModel<'_>,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
+    fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(
             button_variant(model.kind),
-            ButtonFamilyRole::Toggle {
-                selected: model.selected,
-            },
+            ButtonFamilyRole::Toggle { selected: model.selected },
             model.size,
             model.state,
         );

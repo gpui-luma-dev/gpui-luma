@@ -15,9 +15,7 @@ impl Progress {
     }
 
     pub(crate) fn from_builder(builder: ProgressBuilder, _cx: &mut Context<Self>) -> Self {
-        Self {
-            model: builder.model,
-        }
+        Self { model: builder.model }
     }
 
     pub fn value(&self) -> f32 {
@@ -53,8 +51,6 @@ impl Render for Progress {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model();
 
-        div()
-            .child(self.model.template.render(&model, window, cx))
-            .into_any_element()
+        div().child(self.model.template.render(&model, window, cx)).into_any_element()
     }
 }
