@@ -2,7 +2,9 @@
 
 ## 1. Purpose
 
-This document describes the real control architecture used by GPUI-Luma after the first SDK phase. It replaces the initial scaffold-oriented design notes as the working control design reference.
+This document describes the real control architecture used by GPUI-Luma after the first SDK phase. It replaces the initial scaffold-oriented design notes as the architecture and rationale reference for controls.
+
+For day-to-day implementation guidance when adding or changing controls, see `control-guidelines.md`. This document should explain why the control system has its current shape; the guidelines document should explain how to follow that shape in code.
 
 GPUI-Luma is a Rust control SDK built on top of GPUI. Its control model separates behavior, presentation structure, and appearance policy so that controls remain reusable while templates and themes can evolve independently.
 
@@ -27,6 +29,7 @@ The current SDK includes:
 - dropdown-menu-specific theme resolution
 - context-menu-specific theme resolution
 - shared interaction-state resolution
+- shared menu navigation
 - configurable theme tokens
 - a gallery app that acts as the first real consumer
 
@@ -159,6 +162,8 @@ crates/sdk/src/controls/
     template.rs
   button_family.rs
   interaction.rs
+  menu_navigation.rs
+  state.rs
   value.rs
 ```
 
@@ -247,19 +252,28 @@ The role lets the same theme resolve family-level concepts without forcing every
 
 ### 4.1 SDK Initialization
 
-SDK initialization is explicit and fallible.
+SDK initialization is explicit and fallible. Applications should also bind the SDK's default focus
+and control keys during startup.
 
 ```rust
 fn main() {
     gpui_platform::application().run(|cx| {
-        if let Err(error) = gpui_luma::init(cx).and_then(|_| app_shell::open(cx)) {
+        if let Err(error) = gpui_luma::init(cx).and_then(|_| {
+            gpui_luma::focus::bind_default_focus_keys(cx);
+            gpui_luma::keyhandling::bind_default_control_keys(cx);
+            app_shell::open(cx)
+        }) {
             eprintln!("failed to open GPUI-Luma gallery: {error:?}");
         }
     });
 }
 ```
 
-The SDK currently registers the bundled Lucide icon font because SDK templates can render Lucide-backed icons. Initialization failure must not be swallowed because missing icon fonts cause incorrect rendering.
+`gpui_luma::init(cx)` currently registers the bundled Lucide icon font because SDK templates can
+render Lucide-backed icons. Initialization failure must not be swallowed because missing icon fonts
+cause incorrect rendering. Focus and control key bindings are separate startup steps so applications
+can decide when to install the SDK defaults. The focus-scope behavior behind
+`bind_default_focus_keys(cx)` is described in `focus-handling.md`.
 
 ### 4.2 Button
 
@@ -534,7 +548,7 @@ Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons:
 
 ### 4.11 ContextMenu
 
-`ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target and emits semantic select events for enabled menu items.
+`ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target or a keyboard context-menu action and emits semantic select events for enabled menu items.
 
 ```rust
 use gpui_luma::controls::context_menu::ContextMenu;
@@ -564,7 +578,7 @@ let menu = ContextMenu::new("file-context-menu")
     .spawn(cx);
 ```
 
-Application code observes `ContextMenuEvent::Select { item_id, label }`. The open position and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open position, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the pointer position, so opening the menu does not affect surrounding layout.
+Application code observes `ContextMenuEvent::Select { item_id, label }`. The open position and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open position, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the pointer position for secondary-click opens or to the target's lower-left position for keyboard opens, so opening the menu does not affect surrounding layout.
 
 ## 5. Events And Application Ownership
 
@@ -621,7 +635,7 @@ Important boundary:
 
 - controls emit semantic events,
 - app entities subscribe to those events,
-- `main()` only boots the app and opens the root entity,
+- `main()` initializes SDK services, installs app-chosen key bindings, and opens the root entity,
 - application state does not live inside SDK controls.
 
 ## 6. Interaction State
@@ -684,6 +698,10 @@ selected item may be the active descendant that receives the visible keyboard fo
 Menus use `MenuPath` for active descendants so the active item is not confused with the hovered item,
 the selected item, or the open submenu.
 
+Dropdown and context menus also share `MenuNavigator`, which centralizes enabled-item traversal,
+wrapping behavior, and submenu traversal. New menu-like controls should reuse that navigation logic
+before adding another local copy.
+
 ### 6.1 Disabled Semantics
 
 Disabled controls must not:
@@ -697,24 +715,32 @@ The shared interaction helper is responsible for disabled tab-stop behavior. Con
 
 ### 6.2 Keyboard Activation
 
-Controls attach `.on_click(...)` to the focus-tracked GPUI element. GPUI converts Enter and Space on a focused clickable element into keyboard click events.
+Controls attach pointer handlers and action handlers to the focus-tracked GPUI element. The current
+SDK uses key contexts and actions such as `ActivateControl` rather than relying only on GPUI click
+conversion for keyboard activation.
 
 The SDK should keep keyboard and pointer activation on the same semantic event path:
 
 ```rust
-fn handle_click(
-    &mut self,
-    _event: &ClickEvent,
-    _window: &mut Window,
-    cx: &mut Context<Self>,
-) {
-    if self.model.enabled {
-        cx.emit(ButtonEvent::Click);
+fn activate(&mut self, cx: &mut Context<Self>) -> bool {
+    if !self.model.enabled {
+        return false;
     }
+
+    cx.emit(ButtonEvent::Click);
+    true
+}
+
+fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    self.activate(cx);
+}
+
+fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
+    self.activate(cx);
 }
 ```
 
-Do not create a separate keyboard-only event path unless GPUI behavior requires it.
+Do not create a separate keyboard-only event path unless control behavior requires it.
 
 ## 7. Render Models
 
@@ -823,6 +849,12 @@ let radius = match role {
 
 This keeps shape policy in the family theme instead of hardcoding it in `IconButton`.
 
+`focus_ring` is part of the theme appearance contract. The current default templates still draw
+focused state with `focus_debug_border()` in several places, so focus rendering is not yet fully
+theme-driven. Future focus styling work should consume the theme-provided focus affordance instead
+of moving focus policy back into controls. The implemented focus traversal model is documented in
+`focus-handling.md`.
+
 ### 9.1 Non-Button Theme Families
 
 Controls should only join `ButtonFamilyTheme` when they actually behave like members of the button interaction family. Controls with different shape or value affordance policy should define their own resolver.
@@ -841,7 +873,7 @@ The resolver still uses shared tokens and `InteractionState::layer()` for state 
 
 The SDK supports icon rendering, but app-level icon choice belongs to the app.
 
-Current icon representation:
+One current icon representation:
 
 ```rust
 pub enum IconButtonIcon {
@@ -849,6 +881,8 @@ pub enum IconButtonIcon {
     SvgPath(SharedString),
 }
 ```
+
+Menu item icons use the same Lucide-or-SVG-path contract through `DropdownMenuItemIcon`.
 
 Conversion rules:
 
@@ -858,7 +892,7 @@ Conversion rules:
 
 This prevents partial name support from becoming an accidental public contract.
 
-The SDK may use Lucide internally for SDK-owned affordances later, such as dropdown arrows. That is separate from application-owned icon choices.
+The SDK uses Lucide internally for SDK-owned affordances such as checkmarks and menu chevrons. That is separate from application-owned icon choices.
 
 SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state, and dropdown or context menus may render `lucide_icons::Icon::ChevronDown` and `lucide_icons::Icon::ChevronRight` internally because those chevrons communicate expandable affordances. App-owned icons, such as an add or save icon in an `IconButton` or an item icon in a menu, must still be passed explicitly by the consumer.
 
@@ -888,7 +922,8 @@ The gallery is allowed to have app-specific conveniences. Those conveniences sho
 
 ## 12. Adding New Controls
 
-When adding a new control:
+For the practical implementation sequence, use `control-guidelines.md`. At the design level, a new
+control should still satisfy these boundaries:
 
 1. Define the public model and builder.
 2. Define the semantic event surface.

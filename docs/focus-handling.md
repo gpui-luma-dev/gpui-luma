@@ -1,10 +1,10 @@
-# Focus Handling Design
+# Focus Handling
 
 ## 1. Purpose
 
-This document describes the intended keyboard focus navigation model for
-GPUI-Luma controls. It refines the earlier focus notes into an implementation
-starting point that matches GPUI's focus and action dispatch model.
+This document describes the keyboard focus navigation model implemented for
+GPUI-Luma controls. It records how the SDK uses GPUI focus handles, key
+contexts, and action dispatch after the focus-handling implementation pass.
 
 The goal is to make focus behavior:
 
@@ -14,19 +14,32 @@ The goal is to make focus behavior:
 - compatible with text inputs and composite controls,
 - stable across renders.
 
-## 2. Current State
+## 2. Implemented State
 
-SDK controls currently own focus locally. Most controls create a `FocusHandle`
-through `ControlInteraction`, attach it with `.track_focus(...)`, and expose it
-through `Focusable`.
+SDK controls own focus locally. Most interactive controls create a
+`FocusHandle` through `ControlInteraction`, attach it with `.track_focus(...)`,
+and expose it through `Focusable`.
 
-That part should stay. A control needs a stable focus identity, and enabled
-controls should remain GPUI tab stops.
+That part is intentional. A control needs a stable focus identity, and enabled
+controls are GPUI tab stops.
 
-The weaker part is keyboard policy. Several controls handle `Escape` through
-raw `.on_key_down(...)` callbacks and the shared `blur_on_escape` helper. That
-works for isolated controls, but it spreads focus policy across every control
-and does not model `Tab`, `Shift-Tab`, or `Escape` as typed SDK commands.
+Focus traversal is centralized through the public `gpui_luma::focus` module:
+
+- `NextFocus`,
+- `PreviousFocus`,
+- `EscapeFocus`,
+- `LUMA_FOCUS_CONTEXT`,
+- `bind_default_focus_keys(cx)`,
+- `LumaFocusScopeExt`.
+
+There is no shared `blur_on_escape` helper and the controls no longer use raw
+`.on_key_down(...)` callbacks for the SDK's default focus policy. `Tab`,
+`Shift-Tab`, and `Escape` are modeled as typed actions.
+
+Control-specific keyboard behavior is separate and lives in
+`gpui_luma::keyhandling`. That module owns actions such as `ActivateControl`,
+`SelectNextItem`, `IncreaseValue`, and `OpenContextMenu`, plus the control key
+contexts that individual controls attach to their focus-tracked elements.
 
 ## 3. GPUI Model
 
@@ -50,7 +63,7 @@ own more specific keyboard behavior.
 
 ## 4. Focus Actions
 
-The SDK should expose focus actions directly from a public focus module.
+The SDK exposes focus actions directly from the public `focus` module.
 
 ```rust
 pub mod focus {
@@ -84,8 +97,8 @@ structs in the current module; it does not create an `actions` module.
 A focus scope is a stable, view-owned `FocusHandle` attached to an existing root
 element. It is not an extra wrapper element.
 
-The SDK should provide a non-wrapper element extension that decorates the
-caller's existing root element:
+The SDK provides a non-wrapper element extension that decorates the caller's
+existing root element:
 
 ```rust
 pub trait LumaFocusScopeExt: InteractiveElement + Sized {
@@ -114,7 +127,7 @@ where
 }
 ```
 
-Host code should use it on the root element it already renders:
+Host code uses it on the root element it already renders:
 
 ```rust
 struct MyView {
@@ -142,7 +155,7 @@ focused node's dispatch path. Because `Tab`, `Shift-Tab`, and `Escape` are bound
 to `LUMA_FOCUS_CONTEXT`, the application must keep focus inside a rendered
 focus scope.
 
-Each top-level surface that wants SDK focus navigation must:
+Each top-level surface that wants SDK focus navigation should:
 
 - own a stable scope `FocusHandle`,
 - call `.luma_focus_scope(&self.focus_scope)` on its existing root element,
@@ -182,9 +195,19 @@ Do not use `window.blur()` for ordinary inert-background clicks inside a focus
 surface. A full blur removes the focused node from the dispatch path, so the
 next context-bound `Tab` may not dispatch `NextFocus`.
 
+The gallery implements this shape:
+
+- `apps/gallery/src/main.rs` calls `bind_default_focus_keys(cx)` during startup.
+- `GalleryApp` owns `focus_scope: FocusHandle`.
+- `GalleryApp::new` focuses the scope when the gallery opens.
+- `GalleryApp::render` calls `.luma_focus_scope(&self.focus_scope)` on the root
+  element.
+- The inert background handles left mouse down by focusing the scope and
+  stopping propagation.
+
 ## 7. Control Focus Ownership
 
-Controls should continue to own their own stable `FocusHandle`s.
+Controls own their own stable `FocusHandle`s.
 
 Enabled interactive controls should be tab stops:
 
@@ -202,6 +225,20 @@ focus_handle = focus_handle.clone().tab_stop(false);
 The focus scope itself should be focusable but normally should not be a tab
 stop. It exists as a stable action-dispatch anchor and escape target, not as a
 user-visible item in the tab order.
+
+`ControlInteraction` implements the common single-surface case:
+
+- `new(enabled, cx)` creates `cx.focus_handle().tab_stop(enabled)`,
+- `set_enabled(enabled)` updates the tab-stop state,
+- disabling clears hover and pressed state,
+- `handle_mouse_down` focuses the control when enabled,
+- `render_state(enabled, window)` projects focus into `InteractionState`.
+
+Composite controls can own focus directly. `RadioGroup` has one group
+`FocusHandle`, tracks focus on the rendered group, and projects active item
+state through `CompositeItemState`. Menus project root focus through
+`ControlFocusState`, whose `focus_visible` flag is true only when GPUI says the
+last input modality was keyboard.
 
 ## 8. Escape Semantics
 
@@ -257,8 +294,9 @@ absolute ownership claim over `Tab`.
 Most controls should not handle these actions. They should let the nearest focus
 scope move focus.
 
-Controls that legitimately own Tab behavior may override it with a deeper key
-context and local action handlers. Examples include:
+No current SDK control overrides `NextFocus` or `PreviousFocus`. Future controls
+that legitimately own Tab behavior may override it with a deeper key context and
+local action handlers. Examples include:
 
 - text inputs that insert a tab character,
 - editors that indent or outdent,
@@ -290,7 +328,7 @@ controls a clear escape hatch.
 
 ## 10. API Shape
 
-The SDK should expose a small public focus module:
+The SDK exposes a small public focus module:
 
 ```rust
 pub mod focus {
@@ -304,30 +342,31 @@ pub mod focus {
 }
 ```
 
-`bind_default_focus_keys(cx)` should be opt-in. Host applications may already
-own `Tab`, `Shift-Tab`, or `Escape` bindings. The gallery and simple apps can
-call the helper explicitly.
+`bind_default_focus_keys(cx)` is opt-in. Host applications may already own
+`Tab`, `Shift-Tab`, or `Escape` bindings. The gallery calls the helper
+explicitly.
 
-## 11. Implementation Plan
+## 11. Implementation Status
 
-1. Add `gpui_luma::focus` with `NextFocus`, `PreviousFocus`, `EscapeFocus`,
-   `LUMA_FOCUS_CONTEXT`, `bind_default_focus_keys(cx)`, and
-   `LumaFocusScopeExt`.
-2. Update the gallery to call `bind_default_focus_keys(cx)` during startup.
-3. Add a stable focus-scope handle to the gallery root and focus it when the
-   gallery opens.
-4. Replace gallery inert-background `window.blur()` with focus back to the
-   gallery scope.
-5. Remove simple-control `blur_on_escape` usage once `EscapeFocus` covers the
-   same behavior through the scope.
-6. Convert dropdown and context menu escape behavior to `EscapeFocus` action
-   handlers that consume when open and propagate when closed.
-7. Keep arrow-key, home/end, and menu navigation behavior inside the owning
-   controls where those keys affect control-specific state.
+Implemented:
+
+- `gpui_luma::focus` defines `NextFocus`, `PreviousFocus`, `EscapeFocus`,
+  `LUMA_FOCUS_CONTEXT`, `bind_default_focus_keys(cx)`, and
+  `LumaFocusScopeExt`.
+- The gallery calls `bind_default_focus_keys(cx)` during startup.
+- The gallery root owns a stable focus-scope handle and focuses it when the
+  gallery opens.
+- The gallery inert background focuses the gallery scope instead of blurring the
+  window.
+- Simple controls do not handle `EscapeFocus`; they let the scope consume it.
+- Dropdown and context menus handle `EscapeFocus`, close when open, and
+  propagate when closed.
+- Arrow-key, home/end, menu, context-menu, and slider navigation behavior stays
+  inside the owning controls through control-specific key contexts.
 
 ## 12. Verification
 
-The design should be verified in the gallery with these behaviors:
+Verify the implemented behavior in the gallery with these checks:
 
 - `Tab` moves through enabled controls in render/tab order.
 - `Shift-Tab` moves backward through enabled controls.
