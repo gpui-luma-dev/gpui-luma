@@ -6,6 +6,7 @@ use gpui::{
 use super::{ToggleButtonBuilder, ToggleButtonRenderModel};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::toggle_button::model::ToggleButtonModel;
+use crate::keyhandling::{ActivateControl, LUMA_COMMAND_CONTEXT};
 
 #[derive(Clone, Debug)]
 pub enum ToggleButtonEvent {
@@ -61,14 +62,30 @@ impl ToggleButton {
         }
     }
 
-    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.enabled {
-            self.model.selected = !self.model.selected;
-            cx.emit(ToggleButtonEvent::Change {
-                selected: self.model.selected,
-            });
-            cx.notify();
+    fn activate(&mut self, cx: &mut Context<Self>) -> bool {
+        if !self.model.enabled {
+            return false;
         }
+
+        self.model.selected = !self.model.selected;
+        cx.emit(ToggleButtonEvent::Change {
+            selected: self.model.selected,
+        });
+        cx.notify();
+        true
+    }
+
+    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.activate(cx);
+    }
+
+    fn handle_activate_control(
+        &mut self,
+        _: &ActivateControl,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.activate(cx);
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
@@ -119,6 +136,8 @@ impl Render for ToggleButton {
                     .template
                     .render(&model, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .key_context(LUMA_COMMAND_CONTEXT)
+                    .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))

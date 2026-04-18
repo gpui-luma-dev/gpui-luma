@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, KeyDownEvent, MouseDownEvent,
-    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
+    Render, SharedString, Window, div, prelude::*,
 };
 
 use super::{
@@ -9,9 +9,13 @@ use super::{
 };
 use crate::controls::dropdown_menu::model::DropdownMenuModel;
 use crate::controls::interaction::ControlInteraction;
-use crate::controls::menu_navigation::{MenuDirection, MenuKey, MenuNavigator};
+use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
+use crate::keyhandling::{
+    ActivateControl, CloseSubmenu, LUMA_MENU_CONTROL_CONTEXT, OpenSubmenu, SelectFirstItem,
+    SelectLastItem, SelectNextItem, SelectPreviousItem,
+};
 
 #[derive(Clone, Debug)]
 pub enum DropdownMenuEvent {
@@ -283,149 +287,239 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_key_down(
-        &mut self,
-        event: &KeyDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn open_menu_at_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
+        let navigator = MenuNavigator::new(&self.model.items);
+        let active_path = if first {
+            navigator.first_root()
+        } else {
+            navigator.last_root()
+        }
+        .map(MenuPath::Root);
+
+        if self.open_menu_with(active_path) {
+            cx.notify();
+        }
+    }
+
+    fn step_active_item(&mut self, direction: MenuDirection, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.open {
+            return;
+        }
+
+        let navigator = MenuNavigator::new(&self.model.items);
+        let next_path = match self.active_path {
+            Some(MenuPath::Submenu { parent, child }) => navigator
+                .step_submenu(parent, Some(child), direction)
+                .map(|child| MenuPath::Submenu { parent, child }),
+            _ => navigator
+                .step_root(navigator.active_root(self.active_path), direction)
+                .map(MenuPath::Root),
+        };
+
+        if let Some(next_path) = next_path
+            && self.active_path != Some(next_path)
+        {
+            self.active_path = Some(next_path);
+            if matches!(next_path, MenuPath::Root(_)) {
+                self.open_submenu = None;
+            }
+            cx.notify();
+        }
+    }
+
+    fn move_active_to_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.open {
+            return;
+        }
+
+        let navigator = MenuNavigator::new(&self.model.items);
+        let next_path = match self.active_path {
+            Some(MenuPath::Submenu { parent, .. }) => {
+                let child = if first {
+                    navigator.first_submenu(parent)
+                } else {
+                    navigator.last_submenu(parent)
+                };
+
+                child.map(|child| MenuPath::Submenu { parent, child })
+            }
+            _ => {
+                let root = if first {
+                    navigator.first_root()
+                } else {
+                    navigator.last_root()
+                };
+
+                root.map(MenuPath::Root)
+            }
+        };
+
+        if let Some(next_path) = next_path
+            && self.active_path != Some(next_path)
+        {
+            self.active_path = Some(next_path);
+            if matches!(next_path, MenuPath::Root(_)) {
+                self.open_submenu = None;
+            }
+            cx.notify();
+        }
+    }
+
+    fn open_active_submenu(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.open {
+            return;
+        }
+
+        let navigator = MenuNavigator::new(&self.model.items);
+        if let Some(parent) = navigator.active_root(self.active_path)
+            && let Some(child) = navigator.first_submenu(parent)
+        {
+            let next_path = Some(MenuPath::Submenu { parent, child });
+            if self.open_submenu != Some(parent) || self.active_path != next_path {
+                self.open_submenu = Some(parent);
+                self.active_path = next_path;
+                cx.notify();
+            }
+        }
+    }
+
+    fn close_active_submenu(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.open {
+            return;
+        }
+
+        if let Some(MenuPath::Submenu { parent, .. }) = self.active_path {
+            self.open_submenu = None;
+            self.active_path = Some(MenuPath::Root(parent));
+            cx.notify();
+        }
+    }
+
+    fn activate_active_item(&mut self, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
         }
 
         if !self.open {
-            let Some(key) = MenuKey::opening_key(event) else {
-                return;
-            };
-            let navigator = MenuNavigator::new(&self.model.items);
-            let active_path = match key {
-                MenuKey::OpenLast => navigator.last_root().map(MenuPath::Root),
-                _ => navigator.first_root().map(MenuPath::Root),
-            };
-
-            cx.stop_propagation();
-            if self.open_menu_with(active_path) {
-                cx.notify();
-            }
+            self.open_menu_at_boundary(true, cx);
             return;
         }
 
-        let Some(key) = MenuKey::from_key_down(event) else {
+        let navigator = MenuNavigator::new(&self.model.items);
+        let Some(active_path) = self.active_path else {
             return;
         };
 
-        cx.stop_propagation();
-
-        let navigator = MenuNavigator::new(&self.model.items);
-        let mut notify = false;
-
-        match key {
-            MenuKey::Previous | MenuKey::Next => {
-                let direction = if key == MenuKey::Previous {
-                    MenuDirection::Previous
-                } else {
-                    MenuDirection::Next
-                };
-
-                let next_path = match self.active_path {
-                    Some(MenuPath::Submenu { parent, child }) => navigator
-                        .step_submenu(parent, Some(child), direction)
-                        .map(|child| MenuPath::Submenu { parent, child }),
-                    _ => navigator
-                        .step_root(navigator.active_root(self.active_path), direction)
-                        .map(MenuPath::Root),
-                };
-
-                if let Some(next_path) = next_path
-                    && self.active_path != Some(next_path)
-                {
-                    self.active_path = Some(next_path);
-                    if matches!(next_path, MenuPath::Root(_)) {
-                        self.open_submenu = None;
-                    }
-                    notify = true;
-                }
-            }
-            MenuKey::First | MenuKey::Last => {
-                let next_path = match self.active_path {
-                    Some(MenuPath::Submenu { parent, .. }) => {
-                        let child = if key == MenuKey::First {
-                            navigator.first_submenu(parent)
-                        } else {
-                            navigator.last_submenu(parent)
-                        };
-
-                        child.map(|child| MenuPath::Submenu { parent, child })
-                    }
-                    _ => {
-                        let root = if key == MenuKey::First {
-                            navigator.first_root()
-                        } else {
-                            navigator.last_root()
-                        };
-
-                        root.map(MenuPath::Root)
-                    }
-                };
-
-                if let Some(next_path) = next_path
-                    && self.active_path != Some(next_path)
-                {
-                    self.active_path = Some(next_path);
-                    if matches!(next_path, MenuPath::Root(_)) {
-                        self.open_submenu = None;
-                    }
-                    notify = true;
-                }
-            }
-            MenuKey::OpenSubmenu => {
-                if let Some(parent) = navigator.active_root(self.active_path)
+        if let Some(item) = navigator.active_item(Some(active_path)) {
+            if !item.submenu_items().is_empty() {
+                if let MenuPath::Root(parent) = active_path
                     && let Some(child) = navigator.first_submenu(parent)
                 {
-                    let next_path = Some(MenuPath::Submenu { parent, child });
-                    if self.open_submenu != Some(parent) || self.active_path != next_path {
-                        self.open_submenu = Some(parent);
-                        self.active_path = next_path;
-                        notify = true;
-                    }
+                    self.open_submenu = Some(parent);
+                    self.active_path = Some(MenuPath::Submenu { parent, child });
+                    cx.notify();
                 }
-            }
-            MenuKey::CloseSubmenu => {
-                if let Some(MenuPath::Submenu { parent, .. }) = self.active_path {
-                    self.open_submenu = None;
-                    self.active_path = Some(MenuPath::Root(parent));
-                    notify = true;
-                }
-            }
-            MenuKey::Select => {
-                let Some(active_path) = self.active_path else {
-                    return;
+            } else {
+                let path = match active_path {
+                    MenuPath::Root(index) => vec![index],
+                    MenuPath::Submenu { parent, child } => vec![parent, child],
                 };
-
-                if let Some(item) = navigator.active_item(Some(active_path)) {
-                    if !item.submenu_items().is_empty() {
-                        if let MenuPath::Root(parent) = active_path
-                            && let Some(child) = navigator.first_submenu(parent)
-                        {
-                            self.open_submenu = Some(parent);
-                            self.active_path = Some(MenuPath::Submenu { parent, child });
-                            notify = true;
-                        }
-                    } else {
-                        let path = match active_path {
-                            MenuPath::Root(index) => vec![index],
-                            MenuPath::Submenu { parent, child } => vec![parent, child],
-                        };
-                        notify = self.select_item_at_path(&path, cx);
-                    }
+                if self.select_item_at_path(&path, cx) {
+                    cx.notify();
                 }
             }
-            MenuKey::OpenFirst | MenuKey::OpenLast => {}
         }
+    }
 
-        if notify {
-            cx.notify();
+    fn handle_select_previous_item(
+        &mut self,
+        _: &SelectPreviousItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.step_active_item(MenuDirection::Previous, cx);
+        } else {
+            self.open_menu_at_boundary(false, cx);
         }
+    }
+
+    fn handle_select_next_item(
+        &mut self,
+        _: &SelectNextItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.step_active_item(MenuDirection::Next, cx);
+        } else {
+            self.open_menu_at_boundary(true, cx);
+        }
+    }
+
+    fn handle_select_first_item(
+        &mut self,
+        _: &SelectFirstItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.move_active_to_boundary(true, cx);
+        } else if self.model.enabled {
+            cx.propagate();
+        }
+    }
+
+    fn handle_select_last_item(
+        &mut self,
+        _: &SelectLastItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.move_active_to_boundary(false, cx);
+        } else if self.model.enabled {
+            cx.propagate();
+        }
+    }
+
+    fn handle_open_submenu(
+        &mut self,
+        _: &OpenSubmenu,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.open_active_submenu(cx);
+        } else if self.model.enabled {
+            cx.propagate();
+        }
+    }
+
+    fn handle_close_submenu(
+        &mut self,
+        _: &CloseSubmenu,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.close_active_submenu(cx);
+        } else if self.model.enabled {
+            cx.propagate();
+        }
+    }
+
+    fn handle_activate_control(
+        &mut self,
+        _: &ActivateControl,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.activate_active_item(cx);
     }
 
     fn handle_escape_focus(
@@ -460,8 +554,15 @@ impl Render for DropdownMenu {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .key_context(LUMA_MENU_CONTROL_CONTEXT)
                     .on_action(cx.listener(Self::handle_escape_focus))
-                    .on_key_down(cx.listener(Self::handle_key_down)),
+                    .on_action(cx.listener(Self::handle_select_previous_item))
+                    .on_action(cx.listener(Self::handle_select_next_item))
+                    .on_action(cx.listener(Self::handle_select_first_item))
+                    .on_action(cx.listener(Self::handle_select_last_item))
+                    .on_action(cx.listener(Self::handle_open_submenu))
+                    .on_action(cx.listener(Self::handle_close_submenu))
+                    .on_action(cx.listener(Self::handle_activate_control)),
             )
             .into_any_element()
     }

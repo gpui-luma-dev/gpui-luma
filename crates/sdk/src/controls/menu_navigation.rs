@@ -1,5 +1,3 @@
-use gpui::KeyDownEvent;
-
 use crate::controls::dropdown_menu::DropdownMenuItem;
 use crate::controls::state::MenuPath;
 
@@ -7,50 +5,6 @@ use crate::controls::state::MenuPath;
 pub(crate) enum MenuDirection {
     Previous,
     Next,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum MenuKey {
-    OpenFirst,
-    OpenLast,
-    Previous,
-    Next,
-    First,
-    Last,
-    OpenSubmenu,
-    CloseSubmenu,
-    Select,
-}
-
-impl MenuKey {
-    pub(crate) fn from_key_down(event: &KeyDownEvent) -> Option<Self> {
-        if event.keystroke.modifiers.modified() {
-            return None;
-        }
-
-        match event.keystroke.key.as_str() {
-            "down" => Some(Self::Next),
-            "up" => Some(Self::Previous),
-            "home" => Some(Self::First),
-            "end" => Some(Self::Last),
-            "right" => Some(Self::OpenSubmenu),
-            "left" => Some(Self::CloseSubmenu),
-            "enter" | "space" => Some(Self::Select),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn opening_key(event: &KeyDownEvent) -> Option<Self> {
-        if event.keystroke.modifiers.modified() {
-            return None;
-        }
-
-        match event.keystroke.key.as_str() {
-            "down" | "enter" | "space" => Some(Self::OpenFirst),
-            "up" => Some(Self::OpenLast),
-            _ => None,
-        }
-    }
 }
 
 pub(crate) struct MenuNavigator<'a> {

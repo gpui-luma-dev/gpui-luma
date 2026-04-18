@@ -4,8 +4,9 @@ use gpui::{
 };
 
 use super::{IconButtonBuilder, IconButtonIcon, IconButtonRenderModel};
-use crate::controls::interaction::ControlInteraction;
 use crate::controls::icon_button::model::IconButtonModel;
+use crate::controls::interaction::ControlInteraction;
+use crate::keyhandling::{ActivateControl, LUMA_COMMAND_CONTEXT};
 
 #[derive(Clone, Debug)]
 pub enum IconButtonEvent {
@@ -55,10 +56,26 @@ impl IconButton {
         }
     }
 
-    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.enabled {
-            cx.emit(IconButtonEvent::Click);
+    fn activate(&mut self, cx: &mut Context<Self>) -> bool {
+        if !self.model.enabled {
+            return false;
         }
+
+        cx.emit(IconButtonEvent::Click);
+        true
+    }
+
+    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.activate(cx);
+    }
+
+    fn handle_activate_control(
+        &mut self,
+        _: &ActivateControl,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.activate(cx);
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
@@ -109,6 +126,8 @@ impl Render for IconButton {
                     .template
                     .render(&model, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .key_context(LUMA_COMMAND_CONTEXT)
+                    .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))

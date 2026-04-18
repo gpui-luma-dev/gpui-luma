@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, KeyDownEvent, MouseDownEvent,
-    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
+    Render, SharedString, Window, div, prelude::*,
 };
 
 use super::{
@@ -9,6 +9,9 @@ use super::{
 };
 use crate::controls::radio_group::model::RadioGroupModel;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
+use crate::keyhandling::{
+    LUMA_RADIO_GROUP_CONTEXT, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
+};
 
 #[derive(Clone, Debug)]
 pub enum RadioGroupEvent {
@@ -288,29 +291,66 @@ impl RadioGroup {
         self.select_index(index, cx);
     }
 
-    fn handle_key_down(
-        &mut self,
-        event: &KeyDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.model.enabled || event.keystroke.modifiers.modified() {
+    fn select_next_enabled(&mut self, direction: RadioGroupDirection, cx: &mut Context<Self>) {
+        if !self.model.enabled {
             return;
         }
 
-        let next_index = match event.keystroke.key.as_str() {
-            "left" | "up" => self.next_enabled_index(RadioGroupDirection::Previous),
-            "right" | "down" => self.next_enabled_index(RadioGroupDirection::Next),
-            "home" => self.first_enabled_index(),
-            "end" => self.last_enabled_index(),
-            _ => return,
-        };
+        if let Some(next_index) = self.next_enabled_index(direction) {
+            self.select_index(next_index, cx);
+        }
+    }
 
-        cx.stop_propagation();
+    fn select_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
+        let next_index = if first {
+            self.first_enabled_index()
+        } else {
+            self.last_enabled_index()
+        };
 
         if let Some(next_index) = next_index {
             self.select_index(next_index, cx);
         }
+    }
+
+    fn handle_select_previous_item(
+        &mut self,
+        _: &SelectPreviousItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.select_next_enabled(RadioGroupDirection::Previous, cx);
+    }
+
+    fn handle_select_next_item(
+        &mut self,
+        _: &SelectNextItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.select_next_enabled(RadioGroupDirection::Next, cx);
+    }
+
+    fn handle_select_first_item(
+        &mut self,
+        _: &SelectFirstItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.select_boundary(true, cx);
+    }
+
+    fn handle_select_last_item(
+        &mut self,
+        _: &SelectLastItem,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.select_boundary(false, cx);
     }
 }
 
@@ -337,7 +377,11 @@ impl Render for RadioGroup {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(&self.focus_handle)
-                    .on_key_down(cx.listener(Self::handle_key_down)),
+                    .key_context(LUMA_RADIO_GROUP_CONTEXT)
+                    .on_action(cx.listener(Self::handle_select_previous_item))
+                    .on_action(cx.listener(Self::handle_select_next_item))
+                    .on_action(cx.listener(Self::handle_select_first_item))
+                    .on_action(cx.listener(Self::handle_select_last_item)),
             )
             .into_any_element()
     }

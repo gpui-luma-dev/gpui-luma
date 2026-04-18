@@ -6,6 +6,7 @@ use gpui::{
 use super::{CheckboxBuilder, CheckboxRenderModel};
 use crate::controls::checkbox::model::CheckboxModel;
 use crate::controls::interaction::ControlInteraction;
+use crate::keyhandling::{ActivateControl, LUMA_CHOICE_CONTEXT};
 
 #[derive(Clone, Debug)]
 pub enum CheckboxEvent {
@@ -59,14 +60,30 @@ impl Checkbox {
         }
     }
 
-    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.model.enabled {
-            self.model.checked = !self.model.checked;
-            cx.emit(CheckboxEvent::Change {
-                checked: self.model.checked,
-            });
-            cx.notify();
+    fn activate(&mut self, cx: &mut Context<Self>) -> bool {
+        if !self.model.enabled {
+            return false;
         }
+
+        self.model.checked = !self.model.checked;
+        cx.emit(CheckboxEvent::Change {
+            checked: self.model.checked,
+        });
+        cx.notify();
+        true
+    }
+
+    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        self.activate(cx);
+    }
+
+    fn handle_activate_control(
+        &mut self,
+        _: &ActivateControl,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.activate(cx);
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
@@ -117,6 +134,8 @@ impl Render for Checkbox {
                     .template
                     .render(&model, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .key_context(LUMA_CHOICE_CONTEXT)
+                    .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))

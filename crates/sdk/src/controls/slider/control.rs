@@ -1,5 +1,5 @@
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, KeyDownEvent,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement,
     MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
 };
 
@@ -7,6 +7,10 @@ use super::{SliderBuilder, SliderRenderModel, SliderTemplateHandlers};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
+use crate::keyhandling::{
+    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_SLIDER_CONTEXT,
+    MoveToEnd, MoveToStart,
+};
 
 #[derive(Clone, Debug)]
 pub enum SliderEvent {
@@ -205,28 +209,69 @@ impl Slider {
         self.set_value_from_position(event.event.position, true, cx);
     }
 
-    fn handle_key_down(
-        &mut self,
-        event: &KeyDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.model.enabled || event.keystroke.modifiers.modified() {
+    fn adjust_value(&mut self, delta: f32, cx: &mut Context<Self>) {
+        if !self.model.enabled {
             return;
         }
 
-        let value = match event.keystroke.key.as_str() {
-            "left" | "down" => self.model.value - self.model.step,
-            "right" | "up" => self.model.value + self.model.step,
-            "pagedown" => self.model.value - (self.model.step * 10.0),
-            "pageup" => self.model.value + (self.model.step * 10.0),
-            "home" => self.model.range.start,
-            "end" => self.model.range.end,
-            _ => return,
-        };
+        self.set_value_internal(self.model.value + delta, true, cx);
+    }
 
-        cx.stop_propagation();
+    fn move_to_value(&mut self, value: f32, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         self.set_value_internal(value, true, cx);
+    }
+
+    fn handle_decrease_value(
+        &mut self,
+        _: &DecreaseValue,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.adjust_value(-self.model.step, cx);
+    }
+
+    fn handle_increase_value(
+        &mut self,
+        _: &IncreaseValue,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.adjust_value(self.model.step, cx);
+    }
+
+    fn handle_decrease_value_large(
+        &mut self,
+        _: &DecreaseValueLarge,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.adjust_value(-(self.model.step * 10.0), cx);
+    }
+
+    fn handle_increase_value_large(
+        &mut self,
+        _: &IncreaseValueLarge,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.adjust_value(self.model.step * 10.0, cx);
+    }
+
+    fn handle_move_to_start(
+        &mut self,
+        _: &MoveToStart,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.move_to_value(self.model.range.start, cx);
+    }
+
+    fn handle_move_to_end(&mut self, _: &MoveToEnd, _window: &mut Window, cx: &mut Context<Self>) {
+        self.move_to_value(self.model.range.end, cx);
     }
 }
 
@@ -247,7 +292,13 @@ impl Render for Slider {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .on_key_down(cx.listener(Self::handle_key_down)),
+                    .key_context(LUMA_SLIDER_CONTEXT)
+                    .on_action(cx.listener(Self::handle_decrease_value))
+                    .on_action(cx.listener(Self::handle_increase_value))
+                    .on_action(cx.listener(Self::handle_decrease_value_large))
+                    .on_action(cx.listener(Self::handle_increase_value_large))
+                    .on_action(cx.listener(Self::handle_move_to_start))
+                    .on_action(cx.listener(Self::handle_move_to_end)),
             )
             .into_any_element()
     }
