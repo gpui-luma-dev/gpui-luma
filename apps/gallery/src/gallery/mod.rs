@@ -25,15 +25,32 @@ struct GalleryCheckboxTheme {
     base: DefaultCheckboxTheme,
     control_border: Option<Hsla>,
     control_background: Option<Hsla>,
+    control_padding: Option<(f32, f32)>,
 }
 
 impl GalleryCheckboxTheme {
-    fn new(control_border: Option<Hsla>, control_background: Option<Hsla>) -> Self {
+    fn new() -> Self {
         Self {
             base: DefaultCheckboxTheme::default(),
-            control_border,
-            control_background,
+            control_border: None,
+            control_background: None,
+            control_padding: None,
         }
+    }
+
+    fn control_border(mut self, color: impl Into<Hsla>) -> Self {
+        self.control_border = Some(color.into());
+        self
+    }
+
+    fn control_background(mut self, color: impl Into<Hsla>) -> Self {
+        self.control_background = Some(color.into());
+        self
+    }
+
+    fn control_padding(mut self, x: f32, y: f32) -> Self {
+        self.control_padding = Some((x, y));
+        self
     }
 }
 
@@ -44,12 +61,15 @@ impl CheckboxTheme for GalleryCheckboxTheme {
         if !state.disabled {
             if let Some(control_border) = self.control_border {
                 appearance.control_border = Some(control_border);
-                appearance.control_padding_x = 10.0;
-                appearance.control_padding_y = 6.0;
             }
 
             if let Some(control_background) = self.control_background {
                 appearance.control_background = Some(control_background);
+            }
+
+            if let Some((x, y)) = self.control_padding {
+                appearance.control_padding_x = x;
+                appearance.control_padding_y = y;
             }
         }
 
@@ -106,14 +126,17 @@ pub struct GalleryApp {
 
 impl GalleryApp {
     pub fn new(cx: &mut Context<Self>) -> Self {
-        let border_checkbox_template = checkbox_template(Arc::new(GalleryCheckboxTheme::new(
-            Some(rgb(0x2563eb).into()),
-            None,
-        )));
-        let filled_checkbox_template = checkbox_template(Arc::new(GalleryCheckboxTheme::new(
-            Some(rgb(0xbe185d).into()),
-            Some(rgb(0xfce7f3).into()),
-        )));
+        let border_checkbox_template = checkbox_template(
+            GalleryCheckboxTheme::new()
+                .control_border(rgb(0x2563eb))
+                .control_padding(10.0, 6.0),
+        );
+        let filled_checkbox_template = checkbox_template(
+            GalleryCheckboxTheme::new()
+                .control_border(rgb(0xbe185d))
+                .control_background(rgb(0xfce7f3))
+                .control_padding(10.0, 6.0),
+        );
 
         let button = Button::new("button-example")
             .label("Click me")
@@ -559,8 +582,8 @@ impl Render for GalleryApp {
     }
 }
 
-fn checkbox_template(theme: Arc<dyn CheckboxTheme>) -> Arc<dyn CheckboxTemplate> {
-    Arc::new(ThemedCheckboxTemplate::new(theme))
+fn checkbox_template(theme: impl CheckboxTheme + 'static) -> Arc<dyn CheckboxTemplate> {
+    Arc::new(ThemedCheckboxTemplate::new(Arc::new(theme)))
 }
 
 fn default_context_menu_items() -> [DropdownMenuItem; 4] {

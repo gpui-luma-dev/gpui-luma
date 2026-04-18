@@ -1,6 +1,6 @@
 use gpui::{Context, KeyDownEvent, Window};
 
-pub(crate) fn blur_on_escape<T: 'static>(
+pub(crate) fn blur_on_escape<T>(
     event: &KeyDownEvent,
     window: &mut Window,
     cx: &mut Context<T>,
@@ -11,6 +11,5 @@ pub(crate) fn blur_on_escape<T: 'static>(
 
     window.blur();
     cx.stop_propagation();
-    cx.notify();
     true
 }

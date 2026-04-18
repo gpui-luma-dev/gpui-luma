@@ -24,18 +24,34 @@ type ContextMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut
 type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
-    Arc::new(GalleryRadialContextMenuTemplate::new(
-        default_context_menu_theme(),
-    ))
+    Arc::new(
+        GalleryRadialContextMenuTemplate::new()
+            .theme(default_context_menu_theme())
+            .focus_border(hsla(0.0, 0.95, 0.50, 1.0)),
+    )
 }
 
 struct GalleryRadialContextMenuTemplate {
     theme: Arc<dyn ContextMenuTheme>,
+    focus_border: gpui::Hsla,
 }
 
 impl GalleryRadialContextMenuTemplate {
-    fn new(theme: Arc<dyn ContextMenuTheme>) -> Self {
-        Self { theme }
+    fn new() -> Self {
+        Self {
+            theme: default_context_menu_theme(),
+            focus_border: hsla(0.0, 0.95, 0.50, 1.0),
+        }
+    }
+
+    fn theme(mut self, theme: Arc<dyn ContextMenuTheme>) -> Self {
+        self.theme = theme;
+        self
+    }
+
+    fn focus_border(mut self, color: impl Into<gpui::Hsla>) -> Self {
+        self.focus_border = color.into();
+        self
     }
 }
 
@@ -74,7 +90,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
         }
 
         if model.focus.focused {
-            target = target.border_1().border_color(hsla(0.0, 0.95, 0.50, 1.0));
+            target = target.border_1().border_color(self.focus_border);
         }
 
         let mut root = div()
