@@ -99,6 +99,12 @@ that tracks its control `FocusHandle`. The focus scope remains an ancestor with
 `LUMA_FOCUS_CONTEXT`, so focus traversal actions can still bubble through the
 same dispatch path.
 
+Contexts should normally be stable for the lifetime of the rendered focusable
+element. Do not split ordinary open, closed, active, selected, or expanded
+control modes into dynamically swapped contexts unless there is a specific
+measured need. Prefer a stable context plus action handlers that branch on
+control-owned state.
+
 ### 2.5 Composite Controls Own Internal Navigation
 
 Composite controls should usually expose one tab stop and manage internal
@@ -137,8 +143,6 @@ pub mod keyhandling {
         [
             ActivateControl,
             OpenControl,
-            OpenFirstItem,
-            OpenLastItem,
             CommitSelection,
             SelectNextItem,
             SelectPreviousItem,
@@ -160,9 +164,8 @@ pub mod keyhandling {
     pub const LUMA_CHOICE_CONTEXT: &str = "LumaChoiceControl";
     pub const LUMA_RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
     pub const LUMA_SLIDER_CONTEXT: &str = "LumaSlider";
-    pub const LUMA_MENU_BUTTON_CONTEXT: &str = "LumaMenuButton";
-    pub const LUMA_MENU_CONTEXT: &str = "LumaMenu";
-    pub const LUMA_CONTEXT_MENU_TARGET_CONTEXT: &str = "LumaContextMenuTarget";
+    pub const LUMA_MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
+    pub const LUMA_CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
 
     pub fn bind_default_control_keys(cx: &mut App) {
         cx.bind_keys([
@@ -183,20 +186,24 @@ pub mod keyhandling {
             KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_SLIDER_CONTEXT)),
             KeyBinding::new("home", MoveToStart, Some(LUMA_SLIDER_CONTEXT)),
             KeyBinding::new("end", MoveToEnd, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("down", OpenFirstItem, Some(LUMA_MENU_BUTTON_CONTEXT)),
-            KeyBinding::new("up", OpenLastItem, Some(LUMA_MENU_BUTTON_CONTEXT)),
-            KeyBinding::new("enter", OpenFirstItem, Some(LUMA_MENU_BUTTON_CONTEXT)),
-            KeyBinding::new("space", OpenFirstItem, Some(LUMA_MENU_BUTTON_CONTEXT)),
-            KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("end", SelectLastItem, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("right", OpenSubmenu, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("left", CloseSubmenu, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("enter", CommitSelection, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("space", CommitSelection, Some(LUMA_MENU_CONTEXT)),
-            KeyBinding::new("shift-f10", OpenContextMenu, Some(LUMA_CONTEXT_MENU_TARGET_CONTEXT)),
-            KeyBinding::new("menu", OpenContextMenu, Some(LUMA_CONTEXT_MENU_TARGET_CONTEXT)),
+            KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("end", SelectLastItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("right", OpenSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("left", CloseSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("enter", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("space", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("shift-f10", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("menu", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("down", SelectNextItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("home", SelectFirstItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("end", SelectLastItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("right", OpenSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("left", CloseSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("enter", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+            KeyBinding::new("space", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
         ]);
     }
 }
@@ -368,21 +375,23 @@ Controls:
 - `DropdownMenu`
 - future select-like menu buttons
 
-Default contexts:
+Default context:
 
 ```rust
-LUMA_MENU_BUTTON_CONTEXT
-LUMA_MENU_CONTEXT
+LUMA_MENU_CONTROL_CONTEXT
 ```
 
-Closed trigger bindings:
+Menus have two conceptual keyboard modes: closed trigger mode and open menu
+mode. Do not rely on dynamically swapping `.key_context(...)` between those
+modes for correctness. Prefer one stable menu-control context on the focusable
+trigger or root, and let action handlers branch on internal open state.
 
-- `Down` -> `OpenFirstItem`
-- `Up` -> `OpenLastItem`
-- `Enter` -> `OpenFirstItem`
-- `Space` -> `OpenFirstItem`
+This keeps the key dispatch path stable across renders. The control should
+still treat closed-trigger commands and open-menu commands as separate semantic
+modes, but the mode switch is ordinary control state rather than a key-context
+change.
 
-Open menu bindings:
+Default bindings:
 
 - `Down` -> `SelectNextItem`
 - `Up` -> `SelectPreviousItem`
@@ -390,13 +399,19 @@ Open menu bindings:
 - `End` -> `SelectLastItem`
 - `Right` -> `OpenSubmenu`
 - `Left` -> `CloseSubmenu`
-- `Enter` -> `CommitSelection`
-- `Space` -> `CommitSelection`
+- `Enter` -> `ActivateControl`
+- `Space` -> `ActivateControl`
 - `Escape` -> `EscapeFocus`
 
 Behavior:
 
-- closed menus open with an active enabled item,
+- when closed, `SelectNextItem` opens with the first enabled item active,
+- when closed, `SelectPreviousItem` opens with the last enabled item active,
+- when closed, `ActivateControl` opens with the first enabled item active,
+- when open, `SelectNextItem` and `SelectPreviousItem` move the active item,
+- when open, `SelectFirstItem` and `SelectLastItem` move to menu boundaries,
+- when open, `OpenSubmenu` and `CloseSubmenu` change submenu state,
+- when open, `ActivateControl` commits the active item,
 - open menus keep focus on the trigger-owned focus handle,
 - active item state is internal control state, not GPUI focus,
 - committing a leaf item closes the menu and emits select,
@@ -404,10 +419,9 @@ Behavior:
 - `EscapeFocus` closes an open menu and consumes,
 - `EscapeFocus` propagates when the menu is already closed.
 
-`LUMA_MENU_CONTEXT` can be attached when the menu is open. If GPUI element
-structure makes dynamic contexts awkward, the trigger can keep
-`LUMA_MENU_BUTTON_CONTEXT` and the control can conditionally interpret menu
-actions while open, but the conceptual distinction should remain in the design.
+Actions that do not make sense in the current open or closed state should be
+ignored or propagated intentionally. They should not require a key-context
+swap to become valid.
 
 ### 4.7 Context Menus
 
@@ -416,27 +430,37 @@ Controls:
 - `ContextMenu`
 - future context-menu targets
 
-Default contexts:
+Default context:
 
 ```rust
-LUMA_CONTEXT_MENU_TARGET_CONTEXT
-LUMA_MENU_CONTEXT
+LUMA_CONTEXT_MENU_CONTROL_CONTEXT
 ```
 
-Closed target bindings:
+Context menus also use a stable context. The target and open menu are
+conceptual modes of the same control, so action handlers should branch on
+whether `menu_position` is present.
+
+Default bindings:
 
 - `Shift-F10` -> `OpenContextMenu`
 - platform menu key -> `OpenContextMenu`
-
-Open menu bindings:
-
-- same menu navigation bindings as `DropdownMenu`,
-- `Escape` -> `EscapeFocus`.
+- `Down` -> `SelectNextItem`
+- `Up` -> `SelectPreviousItem`
+- `Home` -> `SelectFirstItem`
+- `End` -> `SelectLastItem`
+- `Right` -> `OpenSubmenu`
+- `Left` -> `CloseSubmenu`
+- `Enter` -> `ActivateControl`
+- `Space` -> `ActivateControl`
+- `Escape` -> `EscapeFocus`
 
 Behavior:
 
 - keyboard-opened context menus open at the target anchor,
 - pointer-opened context menus open at the pointer position,
+- when closed, `OpenContextMenu` opens with the first enabled item active,
+- when open, item navigation behaves like `DropdownMenu`,
+- when open, `ActivateControl` commits the active item,
 - active item state is internal control state,
 - `EscapeFocus` closes an open menu and consumes,
 - `EscapeFocus` propagates when the menu is already closed.
