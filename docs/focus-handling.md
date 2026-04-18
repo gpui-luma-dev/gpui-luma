@@ -1,0 +1,344 @@
+# Focus Handling Design
+
+## 1. Purpose
+
+This document describes the intended keyboard focus navigation model for
+GPUI-Luma controls. It refines the earlier focus notes into an implementation
+starting point that matches GPUI's focus and action dispatch model.
+
+The goal is to make focus behavior:
+
+- idiomatic to GPUI,
+- shared across controls,
+- predictable for host applications,
+- compatible with text inputs and composite controls,
+- stable across renders.
+
+## 2. Current State
+
+SDK controls currently own focus locally. Most controls create a `FocusHandle`
+through `ControlInteraction`, attach it with `.track_focus(...)`, and expose it
+through `Focusable`.
+
+That part should stay. A control needs a stable focus identity, and enabled
+controls should remain GPUI tab stops.
+
+The weaker part is keyboard policy. Several controls handle `Escape` through
+raw `.on_key_down(...)` callbacks and the shared `blur_on_escape` helper. That
+works for isolated controls, but it spreads focus policy across every control
+and does not model `Tab`, `Shift-Tab`, or `Escape` as typed SDK commands.
+
+## 3. GPUI Model
+
+GPUI's keyboard command path is action based:
+
+- define typed actions with `actions!(...)`,
+- bind physical keys with `cx.bind_keys(...)`,
+- attach key contexts with `.key_context(...)`,
+- track focus with `.track_focus(...)`,
+- handle commands with `.on_action(...)`,
+- move focus with `window.focus_next(cx)` and `window.focus_prev(cx)`.
+
+Action dispatch follows the focused node's element path. A focused child can
+handle an action first. If it calls `cx.propagate()`, an ancestor can handle the
+same action. Bubble-phase action handlers stop propagation by default, so
+fallback behavior must be explicit.
+
+This is the right fit for focus traversal: common traversal lives on a focus
+scope, while deeper controls can override or consume the same actions when they
+own more specific keyboard behavior.
+
+## 4. Focus Actions
+
+The SDK should expose focus actions directly from a public focus module.
+
+```rust
+pub mod focus {
+    use gpui::{actions, App, FocusHandle, InteractiveElement, KeyBinding, Window};
+
+    actions!(luma_focus, [NextFocus, PreviousFocus, EscapeFocus]);
+
+    pub const LUMA_FOCUS_CONTEXT: &str = "LumaFocus";
+
+    pub fn bind_default_focus_keys(cx: &mut App) {
+        cx.bind_keys([
+            KeyBinding::new("tab", NextFocus, Some(LUMA_FOCUS_CONTEXT)),
+            KeyBinding::new("shift-tab", PreviousFocus, Some(LUMA_FOCUS_CONTEXT)),
+            KeyBinding::new("escape", EscapeFocus, Some(LUMA_FOCUS_CONTEXT)),
+        ]);
+    }
+}
+```
+
+The action structs are declared in `pub mod focus`, so consumers import them as:
+
+```rust
+use gpui_luma::focus::{EscapeFocus, NextFocus, PreviousFocus};
+```
+
+Do not write `pub use actions::{...}`. GPUI's `actions!` macro declares action
+structs in the current module; it does not create an `actions` module.
+
+## 5. Focus Scope
+
+A focus scope is a stable, view-owned `FocusHandle` attached to an existing root
+element. It is not an extra wrapper element.
+
+The SDK should provide a non-wrapper element extension that decorates the
+caller's existing root element:
+
+```rust
+pub trait LumaFocusScopeExt: InteractiveElement + Sized {
+    fn luma_focus_scope(self, scope: &FocusHandle) -> Self;
+}
+
+impl<E> LumaFocusScopeExt for E
+where
+    E: InteractiveElement + Sized,
+{
+    fn luma_focus_scope(self, scope: &FocusHandle) -> Self {
+        let scope = scope.clone();
+
+        self.track_focus(&scope)
+            .key_context(LUMA_FOCUS_CONTEXT)
+            .on_action(|_: &NextFocus, window: &mut Window, cx: &mut App| {
+                window.focus_next(cx);
+            })
+            .on_action(|_: &PreviousFocus, window: &mut Window, cx: &mut App| {
+                window.focus_prev(cx);
+            })
+            .on_action(move |_: &EscapeFocus, window: &mut Window, cx: &mut App| {
+                window.focus(&scope, cx);
+            })
+    }
+}
+```
+
+Host code should use it on the root element it already renders:
+
+```rust
+struct MyView {
+    focus_scope: FocusHandle,
+    input_field: Entity<TextInput>,
+}
+
+impl Render for MyView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .luma_focus_scope(&self.focus_scope)
+            .child(self.input_field.clone())
+    }
+}
+```
+
+This avoids an artificial layout node. GPUI does not provide `display:
+contents`, so a generic wrapper `div()` can affect flex layout, hit testing,
+occlusion, and style inheritance.
+
+## 6. Scope Focus Lifecycle
+
+Context-bound key bindings only work when the matching key context is in the
+focused node's dispatch path. Because `Tab`, `Shift-Tab`, and `Escape` are bound
+to `LUMA_FOCUS_CONTEXT`, the application must keep focus inside a rendered
+focus scope.
+
+Each top-level surface that wants SDK focus navigation must:
+
+- own a stable scope `FocusHandle`,
+- call `.luma_focus_scope(&self.focus_scope)` on its existing root element,
+- focus the scope handle when the surface opens,
+- return focus to the scope handle when inert background areas are clicked.
+
+Startup example:
+
+```rust
+struct MyView {
+    focus_scope: FocusHandle,
+}
+
+impl MyView {
+    fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let focus_scope = cx.focus_handle();
+        window.focus(&focus_scope, cx);
+
+        Self { focus_scope }
+    }
+}
+```
+
+Background-click example:
+
+```rust
+let scope = self.focus_scope.clone();
+
+div()
+    .on_mouse_down(MouseButton::Left, move |_event, window, cx| {
+        window.focus(&scope, cx);
+        cx.stop_propagation();
+    });
+```
+
+Do not use `window.blur()` for ordinary inert-background clicks inside a focus
+surface. A full blur removes the focused node from the dispatch path, so the
+next context-bound `Tab` may not dispatch `NextFocus`.
+
+## 7. Control Focus Ownership
+
+Controls should continue to own their own stable `FocusHandle`s.
+
+Enabled interactive controls should be tab stops:
+
+```rust
+cx.focus_handle().tab_stop(true)
+```
+
+Disabled controls should remain focusable only by programmatic choice and
+should not be keyboard tab stops:
+
+```rust
+focus_handle = focus_handle.clone().tab_stop(false);
+```
+
+The focus scope itself should be focusable but normally should not be a tab
+stop. It exists as a stable action-dispatch anchor and escape target, not as a
+user-visible item in the tab order.
+
+## 8. Escape Semantics
+
+`EscapeFocus` is layered.
+
+The default scope behavior is:
+
+```rust
+window.focus(&scope, cx);
+```
+
+That clears the active control while keeping focus inside the surface, which
+keeps the next `Tab` reliable.
+
+Simple controls should not handle `EscapeFocus`. They should let the focus scope
+receive the action.
+
+Composite controls should handle `EscapeFocus` only when they have transient
+state to dismiss:
+
+- an open `DropdownMenu` closes the menu and consumes `EscapeFocus`,
+- a closed `DropdownMenu` calls `cx.propagate()`,
+- an open `ContextMenu` closes the menu and consumes `EscapeFocus`,
+- a closed `ContextMenu` calls `cx.propagate()`.
+
+Example:
+
+```rust
+fn handle_escape_focus(
+    &mut self,
+    _: &EscapeFocus,
+    _window: &mut Window,
+    cx: &mut Context<Self>,
+) {
+    if self.open {
+        self.close_menu();
+        cx.notify();
+    } else {
+        cx.propagate();
+    }
+}
+```
+
+Because GPUI action handlers stop propagation by default during the bubble
+phase, controls must call `cx.propagate()` when they intentionally decline to
+consume `EscapeFocus`.
+
+## 9. Tab Override Policy
+
+`NextFocus` and `PreviousFocus` are default focus traversal actions, not an
+absolute ownership claim over `Tab`.
+
+Most controls should not handle these actions. They should let the nearest focus
+scope move focus.
+
+Controls that legitimately own Tab behavior may override it with a deeper key
+context and local action handlers. Examples include:
+
+- text inputs that insert a tab character,
+- editors that indent or outdent,
+- grids that move within cells before leaving the grid,
+- composite widgets with an internal roving focus model.
+
+The policy is:
+
+- consume `NextFocus` or `PreviousFocus` when Tab changes internal control
+  state or inserts content,
+- call `cx.propagate()` when the control is at its internal boundary and wants
+  the outer scope to continue traversal,
+- expose an opt-out or mode flag for controls where both behaviors are useful.
+
+Example for a future text-like control:
+
+```rust
+fn handle_next_focus(&mut self, _: &NextFocus, _window: &mut Window, cx: &mut Context<Self>) {
+    if self.accepts_tab_input() {
+        self.insert_tab(cx);
+    } else {
+        cx.propagate();
+    }
+}
+```
+
+This preserves normal application focus traversal while giving specialized
+controls a clear escape hatch.
+
+## 10. API Shape
+
+The SDK should expose a small public focus module:
+
+```rust
+pub mod focus {
+    pub const LUMA_FOCUS_CONTEXT: &str = "LumaFocus";
+
+    pub fn bind_default_focus_keys(cx: &mut App);
+
+    pub trait LumaFocusScopeExt: InteractiveElement + Sized {
+        fn luma_focus_scope(self, scope: &FocusHandle) -> Self;
+    }
+}
+```
+
+`bind_default_focus_keys(cx)` should be opt-in. Host applications may already
+own `Tab`, `Shift-Tab`, or `Escape` bindings. The gallery and simple apps can
+call the helper explicitly.
+
+## 11. Implementation Plan
+
+1. Add `gpui_luma::focus` with `NextFocus`, `PreviousFocus`, `EscapeFocus`,
+   `LUMA_FOCUS_CONTEXT`, `bind_default_focus_keys(cx)`, and
+   `LumaFocusScopeExt`.
+2. Update the gallery to call `bind_default_focus_keys(cx)` during startup.
+3. Add a stable focus-scope handle to the gallery root and focus it when the
+   gallery opens.
+4. Replace gallery inert-background `window.blur()` with focus back to the
+   gallery scope.
+5. Remove simple-control `blur_on_escape` usage once `EscapeFocus` covers the
+   same behavior through the scope.
+6. Convert dropdown and context menu escape behavior to `EscapeFocus` action
+   handlers that consume when open and propagate when closed.
+7. Keep arrow-key, home/end, and menu navigation behavior inside the owning
+   controls where those keys affect control-specific state.
+
+## 12. Verification
+
+The design should be verified in the gallery with these behaviors:
+
+- `Tab` moves through enabled controls in render/tab order.
+- `Shift-Tab` moves backward through enabled controls.
+- disabled controls are skipped.
+- background clicks return focus to the gallery scope rather than blurring the
+  window.
+- `Escape` on a simple focused control returns focus to the scope root.
+- `Tab` still works after `Escape`.
+- `Escape` closes an open dropdown or context menu without leaving the scope.
+- a second `Escape` after closing a menu returns focus to the scope root.
+- control-specific keys still work, such as slider arrows and radio-group
+  arrows.
+- future text-like controls can consume or propagate `NextFocus` according to
+  their mode.
