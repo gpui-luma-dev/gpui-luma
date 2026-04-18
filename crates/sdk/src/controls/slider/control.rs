@@ -4,7 +4,6 @@ use gpui::{
 };
 
 use super::{SliderBuilder, SliderRenderModel, SliderTemplateHandlers};
-use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
@@ -209,13 +208,9 @@ impl Slider {
     fn handle_key_down(
         &mut self,
         event: &KeyDownEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if blur_on_escape(event, window, cx) {
-            return;
-        }
-
         if !self.model.enabled || event.keystroke.modifiers.modified() {
             return;
         }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    Context, Entity, Hsla, IntoElement, MouseButton, Render, Subscription, Window, div, prelude::*,
-    px, rgb,
+    Context, Entity, FocusHandle, Hsla, IntoElement, MouseButton, Render, Subscription, Window,
+    div, prelude::*, px, rgb,
 };
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
@@ -14,6 +14,7 @@ use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupIt
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
+use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
 use lucide_icons::Icon as LucideIcon;
 
@@ -91,6 +92,7 @@ enum ContextMenuPresentation {
 }
 
 pub struct GalleryApp {
+    focus_scope: FocusHandle,
     button: Entity<Button>,
     icon_button: Entity<IconButton>,
     toggle_button: Entity<ToggleButton>,
@@ -125,7 +127,10 @@ pub struct GalleryApp {
 }
 
 impl GalleryApp {
-    pub fn new(cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let focus_scope = cx.focus_handle();
+        window.focus(&focus_scope, cx);
+
         let border_checkbox_template = checkbox_template(
             GalleryCheckboxTheme::new()
                 .control_border(rgb(0x2563eb))
@@ -300,6 +305,7 @@ impl GalleryApp {
         ];
 
         Self {
+            focus_scope,
             button,
             icon_button,
             toggle_button,
@@ -460,7 +466,10 @@ impl GalleryApp {
 
 impl Render for GalleryApp {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let focus_scope = self.focus_scope.clone();
+
         div()
+            .luma_focus_scope(&self.focus_scope)
             .size_full()
             .relative()
             .flex()
@@ -471,10 +480,8 @@ impl Render for GalleryApp {
                     .absolute()
                     .size_full()
                     .bg(rgb(0xf8fafc))
-                    .on_mouse_down(MouseButton::Left, |_event, window, cx| {
-                        // The gallery background is inert; clicking it should clear focus
-                        // from the previously focused control so focus visuals reflect ownership.
-                        window.blur();
+                    .on_mouse_down(MouseButton::Left, move |_event, window, cx| {
+                        window.focus(&focus_scope, cx);
                         cx.stop_propagation();
                     }),
             )

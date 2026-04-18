@@ -1,11 +1,10 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, KeyDownEvent, MouseButton,
-    MouseDownEvent, MouseUpEvent, Render, SharedString, Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
+    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
 };
 
 use super::{ButtonBuilder, ButtonRenderModel};
 use crate::controls::button::model::ButtonModel;
-use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
 
 #[derive(Clone, Debug)]
@@ -96,15 +95,6 @@ impl Button {
             cx.notify();
         }
     }
-
-    fn handle_key_down(
-        &mut self,
-        event: &KeyDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        blur_on_escape(event, window, cx);
-    }
 }
 
 impl Focusable for Button {
@@ -127,7 +117,6 @@ impl Render for Button {
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-                    .on_key_down(cx.listener(Self::handle_key_down))
                     .on_click(cx.listener(Self::handle_click)),
             )
             .into_any_element()

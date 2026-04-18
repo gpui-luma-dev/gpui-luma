@@ -8,10 +8,10 @@ use super::{
     MenuPath,
 };
 use crate::controls::dropdown_menu::model::DropdownMenuModel;
-use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::{MenuDirection, MenuKey, MenuNavigator};
 use crate::controls::state::ControlFocusState;
+use crate::focus::EscapeFocus;
 
 #[derive(Clone, Debug)]
 pub enum DropdownMenuEvent {
@@ -286,7 +286,7 @@ impl DropdownMenu {
     fn handle_key_down(
         &mut self,
         event: &KeyDownEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if !self.model.enabled {
@@ -294,10 +294,6 @@ impl DropdownMenu {
         }
 
         if !self.open {
-            if blur_on_escape(event, window, cx) {
-                return;
-            }
-
             let Some(key) = MenuKey::opening_key(event) else {
                 return;
             };
@@ -324,10 +320,6 @@ impl DropdownMenu {
         let mut notify = false;
 
         match key {
-            MenuKey::Close => {
-                self.close_menu();
-                notify = true;
-            }
             MenuKey::Previous | MenuKey::Next => {
                 let direction = if key == MenuKey::Previous {
                     MenuDirection::Previous
@@ -435,6 +427,20 @@ impl DropdownMenu {
             cx.notify();
         }
     }
+
+    fn handle_escape_focus(
+        &mut self,
+        _: &EscapeFocus,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.open {
+            self.close_menu();
+            cx.notify();
+        } else {
+            cx.propagate();
+        }
+    }
 }
 
 impl Focusable for DropdownMenu {
@@ -454,6 +460,7 @@ impl Render for DropdownMenu {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .on_action(cx.listener(Self::handle_escape_focus))
                     .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()

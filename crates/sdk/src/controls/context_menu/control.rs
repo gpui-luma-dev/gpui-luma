@@ -7,10 +7,10 @@ use gpui::{
 use super::{ContextMenuBuilder, ContextMenuRenderModel, ContextMenuTemplateHandlers};
 use crate::controls::context_menu::model::ContextMenuModel;
 use crate::controls::dropdown_menu::DropdownMenuItem;
-use crate::controls::focus::blur_on_escape;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::{MenuDirection, MenuKey, MenuNavigator};
 use crate::controls::state::{ControlFocusState, MenuPath};
+use crate::focus::EscapeFocus;
 
 #[derive(Clone, Debug)]
 pub enum ContextMenuEvent {
@@ -303,7 +303,7 @@ impl ContextMenu {
     fn handle_key_down(
         &mut self,
         event: &KeyDownEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if !self.model.enabled {
@@ -311,10 +311,6 @@ impl ContextMenu {
         }
 
         if self.menu_position.is_none() {
-            if blur_on_escape(event, window, cx) {
-                return;
-            }
-
             if !is_context_menu_key(event) {
                 return;
             }
@@ -339,10 +335,6 @@ impl ContextMenu {
         let mut notify = false;
 
         match key {
-            MenuKey::Close => {
-                self.close_menu();
-                notify = true;
-            }
             MenuKey::Previous | MenuKey::Next => {
                 let direction = if key == MenuKey::Previous {
                     MenuDirection::Previous
@@ -450,6 +442,20 @@ impl ContextMenu {
             cx.notify();
         }
     }
+
+    fn handle_escape_focus(
+        &mut self,
+        _: &EscapeFocus,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.menu_position.is_some() {
+            self.close_menu();
+            cx.notify();
+        } else {
+            cx.propagate();
+        }
+    }
 }
 
 fn is_context_menu_key(event: &KeyDownEvent) -> bool {
@@ -478,6 +484,7 @@ impl Render for ContextMenu {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
+                    .on_action(cx.listener(Self::handle_escape_focus))
                     .on_key_down(cx.listener(Self::handle_key_down)),
             )
             .into_any_element()

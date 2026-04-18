@@ -20,7 +20,6 @@ pub(crate) enum MenuKey {
     OpenSubmenu,
     CloseSubmenu,
     Select,
-    Close,
 }
 
 impl MenuKey {
@@ -37,7 +36,6 @@ impl MenuKey {
             "right" => Some(Self::OpenSubmenu),
             "left" => Some(Self::CloseSubmenu),
             "enter" | "space" => Some(Self::Select),
-            "escape" => Some(Self::Close),
             _ => None,
         }
     }

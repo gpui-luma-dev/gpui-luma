@@ -10,7 +10,7 @@ pub fn open(cx: &mut App) -> anyhow::Result<()> {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             ..Default::default()
         },
-        |_window, cx| cx.new(GalleryApp::new),
+        |window, cx| cx.new(|cx| GalleryApp::new(window, cx)),
     )?;
 
     cx.activate(true);

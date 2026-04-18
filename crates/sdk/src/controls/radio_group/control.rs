@@ -7,7 +7,6 @@ use super::{
     RadioGroupBuilder, RadioGroupItem, RadioGroupRenderItem, RadioGroupRenderModel,
     RadioGroupTemplateHandlers,
 };
-use crate::controls::focus::blur_on_escape;
 use crate::controls::radio_group::model::RadioGroupModel;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 
@@ -292,13 +291,9 @@ impl RadioGroup {
     fn handle_key_down(
         &mut self,
         event: &KeyDownEvent,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if blur_on_escape(event, window, cx) {
-            return;
-        }
-
         if !self.model.enabled || event.keystroke.modifiers.modified() {
             return;
         }
