@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    Context, Entity, FocusHandle, Hsla, IntoElement, MouseButton, Render, Subscription, Window, div, prelude::*, px,
-    rgb,
+    AnyElement, Context, Entity, FocusHandle, Hsla, IntoElement, MouseButton, Render, Subscription, Window, div,
+    prelude::*, px, rgb,
 };
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
@@ -13,6 +13,7 @@ use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
 use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use gpui_luma::focus::LumaFocusScopeExt;
@@ -100,6 +101,7 @@ enum ScrollbarPresentation {
 
 pub struct GalleryApp {
     focus_scope: FocusHandle,
+    split_view: Entity<SplitView>,
     button: Entity<Button>,
     icon_button: Entity<IconButton>,
     toggle_button: Entity<ToggleButton>,
@@ -134,6 +136,8 @@ pub struct GalleryApp {
     dropdown_selection: String,
     default_context_selection: String,
     radial_context_selection: String,
+    split_sidebar_width: f32,
+    split_sidebar_collapsed: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -151,6 +155,14 @@ impl GalleryApp {
                 .control_padding(10.0, 6.0),
         );
 
+        let split_view = SplitView::new("gallery-shell")
+            .sidebar_width(px(280.0))
+            .sidebar_min_width(px(220.0))
+            .sidebar_max_width(px(420.0))
+            .sidebar_collapsed_width(px(0.0))
+            .collapsed(false)
+            .resizable(true)
+            .spawn(cx);
         let button = Button::new("button-example").label("Click me").kind(ButtonKind::Primary).spawn(cx);
         let icon_button =
             IconButton::new("icon-button-example", LucideIcon::Plus).kind(IconButtonKind::Primary).spawn(cx);
@@ -230,6 +242,9 @@ impl GalleryApp {
             Checkbox::new("disabled-checkbox").label("Disabled checkbox").checked(true).enabled(false).spawn(cx);
 
         let subscriptions = vec![
+            cx.subscribe(&split_view, |this, _, event: &SplitViewEvent, cx| {
+                this.handle_split_view_event(event, cx);
+            }),
             cx.subscribe(&button, |this, _, event: &ButtonEvent, cx| {
                 this.handle_button_event(event, cx);
             }),
@@ -276,6 +291,7 @@ impl GalleryApp {
 
         Self {
             focus_scope,
+            split_view,
             button,
             icon_button,
             toggle_button,
@@ -310,7 +326,23 @@ impl GalleryApp {
             dropdown_selection: "none".to_string(),
             default_context_selection: "none".to_string(),
             radial_context_selection: "none".to_string(),
+            split_sidebar_width: 280.0,
+            split_sidebar_collapsed: false,
             _subscriptions: subscriptions,
+        }
+    }
+
+    fn handle_split_view_event(&mut self, event: &SplitViewEvent, cx: &mut Context<Self>) {
+        match event {
+            SplitViewEvent::ResizeStart => {}
+            SplitViewEvent::SidebarWidthChanged { width } | SplitViewEvent::ResizeEnd { width } => {
+                self.split_sidebar_width = width.as_f32();
+                cx.notify();
+            }
+            SplitViewEvent::CollapsedChanged { collapsed } => {
+                self.split_sidebar_collapsed = *collapsed;
+                cx.notify();
+            }
         }
     }
 
@@ -457,10 +489,42 @@ impl GalleryApp {
             }
         }
     }
+
+    fn render_sidebar(&self) -> AnyElement {
+        div()
+            .size_full()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .p_3()
+            .bg(rgb(0xffffff))
+            .text_color(rgb(0x334155))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .pb_2()
+                    .child(div().text_size(px(14.0)).line_height(px(18.0)).text_color(rgb(0x0f172a)).child("GPUI-Luma"))
+                    .child(
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .text_color(rgb(0x64748b))
+                            .child("Control gallery"),
+                    ),
+            )
+            .child(gallery_nav_section("Command", &["Button", "Icon Button", "Toggle Button"], true))
+            .child(gallery_nav_section("Choice", &["Switch", "Checkbox", "Radio Group"], false))
+            .child(gallery_nav_section("Input", &["Slider", "Scrollbar"], false))
+            .child(gallery_nav_section("Menu", &["Dropdown Menu", "Context Menu"], false))
+            .child(gallery_nav_section("Feedback", &["Progress"], false))
+            .into_any_element()
+    }
 }
 
 impl Render for GalleryApp {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let focus_scope = self.focus_scope.clone();
         let mut demo_content = div()
             .absolute()
@@ -484,20 +548,14 @@ impl Render for GalleryApp {
             );
         }
 
-        div()
-            .luma_focus_scope(&self.focus_scope)
+        let sidebar = self.render_sidebar();
+        let work_content = div()
             .size_full()
             .relative()
             .flex()
             .items_center()
             .justify_center()
-            .child(div().absolute().size_full().bg(rgb(0xf8fafc)).on_mouse_down(
-                MouseButton::Left,
-                move |_event, window, cx| {
-                    window.focus(&focus_scope, cx);
-                    cx.stop_propagation();
-                },
-            ))
+            .overflow_hidden()
             .child(
                 div()
                     .relative()
@@ -580,6 +638,8 @@ impl Render for GalleryApp {
                             .items_center()
                             .gap_1()
                             .text_color(rgb(0x334155))
+                            .child(format!("Split sidebar: {:.0}px", self.split_sidebar_width))
+                            .child(format!("Split collapsed: {}", self.split_sidebar_collapsed))
                             .child(format!("Toggle selected: {}", self.toggle_selected))
                             .child(format!("Switch on: {}", self.switch_on))
                             .child(format!(
@@ -610,11 +670,54 @@ impl Render for GalleryApp {
                             .child(self.disabled_checkbox.clone()),
                     ),
             )
+            .into_any_element();
+
+        self.split_view.update(cx, |split_view, _cx| {
+            split_view.set_panes_once(sidebar, work_content);
+        });
+
+        div()
+            .luma_focus_scope(&self.focus_scope)
+            .size_full()
+            .relative()
+            .child(div().absolute().size_full().bg(rgb(0xf8fafc)).on_mouse_down(
+                MouseButton::Left,
+                move |_event, window, cx| {
+                    window.focus(&focus_scope, cx);
+                    cx.stop_propagation();
+                },
+            ))
+            .child(self.split_view.clone())
     }
 }
 
 fn checkbox_template(theme: impl CheckboxTheme + 'static) -> Arc<dyn CheckboxTemplate> {
     Arc::new(ThemedCheckboxTemplate::new(Arc::new(theme)))
+}
+
+fn gallery_nav_section(title: &'static str, items: &'static [&'static str], first_item_active: bool) -> AnyElement {
+    let mut section = div()
+        .flex()
+        .flex_col()
+        .gap_1()
+        .child(div().text_size(px(11.0)).line_height(px(14.0)).text_color(rgb(0x64748b)).child(title));
+
+    for (index, item) in items.iter().enumerate() {
+        let active = first_item_active && index == 0;
+        section = section.child(
+            div()
+                .rounded(px(5.0))
+                .px_2()
+                .py_1()
+                .text_size(px(13.0))
+                .line_height(px(18.0))
+                .text_color(if active { rgb(0x0f172a) } else { rgb(0x475569) })
+                .bg(if active { rgb(0xe0f2fe) } else { rgb(0xffffff) })
+                .child(*item),
+        );
+    }
+
+    section.into_any_element()
 }
 
 fn default_context_menu_items() -> [DropdownMenuItem; 4] {

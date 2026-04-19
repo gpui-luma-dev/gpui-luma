@@ -9,6 +9,7 @@ pub(crate) mod menu_navigation;
 pub mod progress;
 pub mod radio_group;
 pub mod scrollbar;
+pub mod split_view;
 pub mod slider;
 pub mod state;
 pub mod switch;
