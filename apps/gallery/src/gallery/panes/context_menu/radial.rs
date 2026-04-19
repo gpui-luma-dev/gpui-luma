@@ -21,7 +21,7 @@ type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'stati
 type ContextMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
-pub fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
+pub(in crate::gallery) fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
     Arc::new(
         GalleryRadialContextMenuTemplate::new()
             .theme(default_context_menu_theme())
@@ -126,19 +126,21 @@ fn render_target(
 ) -> Stateful<Div> {
     div()
         .id(format!("{}-target", model.id))
+        .w(px(180.0))
+        .h(px(128.0))
         .flex()
+        .flex_col()
         .items_center()
         .justify_center()
-        .min_w(px(appearance.target_min_width))
-        .px(px(appearance.target_padding_x))
-        .py(px(appearance.target_padding_y))
+        .gap_2()
         .bg(appearance.target_background)
         .text_color(appearance.target_foreground)
         .border_1()
         .border_color(appearance.target_border)
-        .rounded(px(appearance.target_radius))
+        .rounded(px(8.0))
         .font_weight(FontWeight::MEDIUM)
         .cursor_pointer()
+        .hover(move |style| style.bg(appearance.item_hover_background))
         .on_hover(target_hover)
         .on_mouse_down(MouseButton::Right, target_mouse_down)
         .on_mouse_up(MouseButton::Right, target_mouse_up)

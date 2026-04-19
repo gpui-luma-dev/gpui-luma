@@ -13,7 +13,7 @@ pub struct ProgressAppearance {
 }
 
 pub trait ProgressTheme: Send + Sync {
-    fn resolve(&self) -> ProgressAppearance;
+    fn resolve(&self, enabled: bool) -> ProgressAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -34,12 +34,16 @@ impl DefaultProgressTheme {
 }
 
 impl ProgressTheme for DefaultProgressTheme {
-    fn resolve(&self) -> ProgressAppearance {
+    fn resolve(&self, enabled: bool) -> ProgressAppearance {
         let colors = &self.tokens.colors;
 
         ProgressAppearance {
-            track_color: colors.surface_pressed,
-            progress_color: colors.selected,
+            track_color: if enabled {
+                colors.surface_pressed
+            } else {
+                colors.surface_disabled
+            },
+            progress_color: if enabled { colors.selected } else { colors.text_disabled },
             size: 64.0,
             stroke_width: 6.0,
         }

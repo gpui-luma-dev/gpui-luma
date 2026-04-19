@@ -29,6 +29,7 @@ const RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
 const SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
 const MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
 const CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
+const NAVIGATION_CONTEXT: &str = "LumaNavigationControl";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ControlKeyProfile {
@@ -39,6 +40,7 @@ pub enum ControlKeyProfile {
     ScrollOffset,
     Menu,
     ContextMenu,
+    Navigation,
 }
 
 impl ControlKeyProfile {
@@ -51,6 +53,7 @@ impl ControlKeyProfile {
             Self::ScrollOffset => SCROLL_OFFSET_CONTEXT,
             Self::Menu => MENU_CONTROL_CONTEXT,
             Self::ContextMenu => CONTEXT_MENU_CONTROL_CONTEXT,
+            Self::Navigation => NAVIGATION_CONTEXT,
         }
     }
 
@@ -113,6 +116,16 @@ impl ControlKeyProfile {
                 KeyBinding::new("enter", ActivateControl, Some(context)),
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
+            Self::Navigation => vec![
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("right", OpenSubmenu, Some(context)),
+                KeyBinding::new("left", CloseSubmenu, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
         }
     }
 }
@@ -130,6 +143,7 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding> {
         ControlKeyProfile::ScrollOffset,
         ControlKeyProfile::Menu,
         ControlKeyProfile::ContextMenu,
+        ControlKeyProfile::Navigation,
     ]
     .into_iter()
     .flat_map(ControlKeyProfile::default_bindings)
@@ -147,7 +161,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 43);
+        assert_eq!(default_control_key_bindings().len(), 51);
     }
 
     #[test]
@@ -159,6 +173,7 @@ mod tests {
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 10);
+        assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 8);
     }
 
     #[test]

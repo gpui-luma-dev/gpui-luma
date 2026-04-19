@@ -28,7 +28,7 @@ pub fn default_progress_template() -> Arc<dyn ProgressTemplate> {
 
 impl ProgressTemplate for ThemedProgressTemplate {
     fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve();
+        let appearance = self.theme.resolve(model.enabled);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let size = px(appearance.size);
         let stroke_width = px(appearance.stroke_width);

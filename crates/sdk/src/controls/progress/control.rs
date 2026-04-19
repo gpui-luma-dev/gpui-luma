@@ -26,6 +26,10 @@ impl Progress {
         self.model.range
     }
 
+    pub fn is_enabled(&self) -> bool {
+        self.model.enabled
+    }
+
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         self.model.value = self.model.range.clamp(value_from_input(value));
         cx.notify();
@@ -37,12 +41,22 @@ impl Progress {
         cx.notify();
     }
 
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        cx.notify();
+    }
+
     fn render_model(&self) -> ProgressRenderModel<'_> {
         ProgressRenderModel {
             id: &self.model.id,
             range: self.model.range,
             value: self.model.value,
             percentage: self.model.range.percentage(self.model.value),
+            enabled: self.model.enabled,
         }
     }
 }

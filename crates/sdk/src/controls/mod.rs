@@ -6,6 +6,7 @@ pub mod dropdown_menu;
 pub mod icon_button;
 pub(crate) mod interaction;
 pub(crate) mod menu_navigation;
+pub mod nav_view;
 pub mod progress;
 pub mod radio_group;
 pub mod scrollbar;

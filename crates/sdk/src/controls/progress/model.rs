@@ -10,6 +10,7 @@ pub struct ProgressModel {
     pub(crate) id: SharedString,
     pub(crate) range: ControlRange,
     pub(crate) value: f32,
+    pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ProgressTemplate>,
 }
 
@@ -18,6 +19,7 @@ pub struct ProgressRenderModel<'a> {
     pub range: ControlRange,
     pub value: f32,
     pub percentage: f32,
+    pub enabled: bool,
 }
 
 pub struct ProgressBuilder {
@@ -31,6 +33,7 @@ impl ProgressBuilder {
                 id: id.into(),
                 range: ControlRange::default(),
                 value: 0.0,
+                enabled: true,
                 template: default_progress_template(),
             },
         }
@@ -44,6 +47,11 @@ impl ProgressBuilder {
 
     pub fn value(mut self, value: impl Into<f64>) -> Self {
         self.model.value = self.model.range.clamp(value_from_input(value));
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.model.enabled = enabled;
         self
     }
 
