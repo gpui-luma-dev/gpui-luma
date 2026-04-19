@@ -8,8 +8,7 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::scrollbar::model::{ScrollbarModel, normalized_thumb_fraction};
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
-    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_SCROLL_OFFSET_CONTEXT, MoveToEnd,
-    MoveToStart,
+    ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
 };
 
 #[derive(Clone, Debug)]
@@ -393,7 +392,7 @@ impl Render for Scrollbar {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_SCROLL_OFFSET_CONTEXT)
+                    .key_context(ControlKeyProfile::ScrollOffset.context())
                     .on_action(cx.listener(Self::handle_decrease_value))
                     .on_action(cx.listener(Self::handle_increase_value))
                     .on_action(cx.listener(Self::handle_decrease_value_large))

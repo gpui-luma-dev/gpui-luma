@@ -6,7 +6,7 @@ use gpui::{
 use super::{RadioGroupBuilder, RadioGroupItem, RadioGroupRenderItem, RadioGroupRenderModel, RadioGroupTemplateHandlers};
 use crate::controls::radio_group::model::RadioGroupModel;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::keyhandling::{LUMA_RADIO_GROUP_CONTEXT, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem};
+use crate::keyhandling::{ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem};
 
 #[derive(Clone, Debug)]
 pub enum RadioGroupEvent {
@@ -318,7 +318,7 @@ impl Render for RadioGroup {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(&self.focus_handle)
-                    .key_context(LUMA_RADIO_GROUP_CONTEXT)
+                    .key_context(ControlKeyProfile::RadioGroup.context())
                     .on_action(cx.listener(Self::handle_select_previous_item))
                     .on_action(cx.listener(Self::handle_select_next_item))
                     .on_action(cx.listener(Self::handle_select_first_item))

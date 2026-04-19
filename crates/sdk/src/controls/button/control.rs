@@ -6,7 +6,7 @@ use gpui::{
 use super::{ButtonBuilder, ButtonRenderModel};
 use crate::controls::button::model::ButtonModel;
 use crate::controls::interaction::ControlInteraction;
-use crate::keyhandling::{ActivateControl, LUMA_COMMAND_CONTEXT};
+use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 
 #[derive(Clone, Debug)]
 pub enum ButtonEvent {
@@ -105,7 +105,7 @@ impl Render for Button {
                     .template
                     .render(&model, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_COMMAND_CONTEXT)
+                    .key_context(ControlKeyProfile::Command.context())
                     .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))

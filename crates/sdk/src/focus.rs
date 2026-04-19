@@ -2,13 +2,13 @@ use gpui::{App, FocusHandle, InteractiveElement, KeyBinding, Window, actions};
 
 actions!(luma_focus, [NextFocus, PreviousFocus, EscapeFocus]);
 
-pub const LUMA_FOCUS_CONTEXT: &str = "LumaFocus";
+const FOCUS_CONTEXT: &str = "LumaFocus";
 
 pub fn bind_default_focus_keys(cx: &mut App) {
     cx.bind_keys([
-        KeyBinding::new("tab", NextFocus, Some(LUMA_FOCUS_CONTEXT)),
-        KeyBinding::new("shift-tab", PreviousFocus, Some(LUMA_FOCUS_CONTEXT)),
-        KeyBinding::new("escape", EscapeFocus, Some(LUMA_FOCUS_CONTEXT)),
+        KeyBinding::new("tab", NextFocus, Some(FOCUS_CONTEXT)),
+        KeyBinding::new("shift-tab", PreviousFocus, Some(FOCUS_CONTEXT)),
+        KeyBinding::new("escape", EscapeFocus, Some(FOCUS_CONTEXT)),
     ]);
 }
 
@@ -24,7 +24,7 @@ where
         let scope = scope.clone();
 
         self.track_focus(&scope)
-            .key_context(LUMA_FOCUS_CONTEXT)
+            .key_context(FOCUS_CONTEXT)
             .on_action(|_: &NextFocus, window: &mut Window, cx: &mut App| {
                 window.focus_next(cx);
             })

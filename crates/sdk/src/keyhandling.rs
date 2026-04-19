@@ -22,72 +22,161 @@ actions!(
     ]
 );
 
-pub const LUMA_COMMAND_CONTEXT: &str = "LumaCommandControl";
-pub const LUMA_CHOICE_CONTEXT: &str = "LumaChoiceControl";
-pub const LUMA_RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
-pub const LUMA_RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
-pub const LUMA_SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
-pub const LUMA_MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
-pub const LUMA_CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
+const COMMAND_CONTEXT: &str = "LumaCommandControl";
+const CHOICE_CONTEXT: &str = "LumaChoiceControl";
+const RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
+const RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
+const SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
+const MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
+const CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum ControlKeyProfile {
+    Command,
+    Choice,
+    RadioGroup,
+    RangeValue,
+    ScrollOffset,
+    Menu,
+    ContextMenu,
+}
+
+impl ControlKeyProfile {
+    pub const fn context(self) -> &'static str {
+        match self {
+            Self::Command => COMMAND_CONTEXT,
+            Self::Choice => CHOICE_CONTEXT,
+            Self::RadioGroup => RADIO_GROUP_CONTEXT,
+            Self::RangeValue => RANGE_VALUE_CONTEXT,
+            Self::ScrollOffset => SCROLL_OFFSET_CONTEXT,
+            Self::Menu => MENU_CONTROL_CONTEXT,
+            Self::ContextMenu => CONTEXT_MENU_CONTROL_CONTEXT,
+        }
+    }
+
+    pub fn default_bindings(self) -> Vec<KeyBinding> {
+        let context = self.context();
+
+        match self {
+            Self::Command => vec![
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
+            Self::Choice => vec![KeyBinding::new("space", ActivateControl, Some(context))],
+            Self::RadioGroup => vec![
+                KeyBinding::new("left", SelectPreviousItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("right", SelectNextItem, Some(context)),
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+            ],
+            Self::RangeValue => vec![
+                KeyBinding::new("left", DecreaseValue, Some(context)),
+                KeyBinding::new("down", DecreaseValue, Some(context)),
+                KeyBinding::new("right", IncreaseValue, Some(context)),
+                KeyBinding::new("up", IncreaseValue, Some(context)),
+                KeyBinding::new("pagedown", DecreaseValueLarge, Some(context)),
+                KeyBinding::new("pageup", IncreaseValueLarge, Some(context)),
+                KeyBinding::new("home", MoveToStart, Some(context)),
+                KeyBinding::new("end", MoveToEnd, Some(context)),
+            ],
+            Self::ScrollOffset => vec![
+                KeyBinding::new("left", DecreaseValue, Some(context)),
+                KeyBinding::new("up", DecreaseValue, Some(context)),
+                KeyBinding::new("right", IncreaseValue, Some(context)),
+                KeyBinding::new("down", IncreaseValue, Some(context)),
+                KeyBinding::new("pagedown", IncreaseValueLarge, Some(context)),
+                KeyBinding::new("pageup", DecreaseValueLarge, Some(context)),
+                KeyBinding::new("home", MoveToStart, Some(context)),
+                KeyBinding::new("end", MoveToEnd, Some(context)),
+            ],
+            Self::Menu => vec![
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("right", OpenSubmenu, Some(context)),
+                KeyBinding::new("left", CloseSubmenu, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
+            Self::ContextMenu => vec![
+                KeyBinding::new("shift-f10", OpenContextMenu, Some(context)),
+                KeyBinding::new("menu", OpenContextMenu, Some(context)),
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("right", OpenSubmenu, Some(context)),
+                KeyBinding::new("left", CloseSubmenu, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
+        }
+    }
+}
 
 pub fn bind_default_control_keys(cx: &mut App) {
     cx.bind_keys(default_control_key_bindings());
 }
 
-fn default_control_key_bindings() -> Vec<KeyBinding> {
-    vec![
-        KeyBinding::new("enter", ActivateControl, Some(LUMA_COMMAND_CONTEXT)),
-        KeyBinding::new("space", ActivateControl, Some(LUMA_COMMAND_CONTEXT)),
-        KeyBinding::new("space", ActivateControl, Some(LUMA_CHOICE_CONTEXT)),
-        KeyBinding::new("left", SelectPreviousItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("up", SelectPreviousItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("right", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("down", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("home", SelectFirstItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("end", SelectLastItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("left", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("down", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("right", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("up", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("home", MoveToStart, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("end", MoveToEnd, Some(LUMA_RANGE_VALUE_CONTEXT)),
-        KeyBinding::new("left", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("up", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("right", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("down", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("pagedown", IncreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("pageup", DecreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("home", MoveToStart, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("end", MoveToEnd, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-        KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("end", SelectLastItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("right", OpenSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("left", CloseSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("enter", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("space", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("shift-f10", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("menu", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("down", SelectNextItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("up", SelectPreviousItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("home", SelectFirstItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("end", SelectLastItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("right", OpenSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("left", CloseSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("enter", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        KeyBinding::new("space", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
+pub fn default_control_key_bindings() -> Vec<KeyBinding> {
+    [
+        ControlKeyProfile::Command,
+        ControlKeyProfile::Choice,
+        ControlKeyProfile::RadioGroup,
+        ControlKeyProfile::RangeValue,
+        ControlKeyProfile::ScrollOffset,
+        ControlKeyProfile::Menu,
+        ControlKeyProfile::ContextMenu,
     ]
+    .into_iter()
+    .flat_map(ControlKeyProfile::default_bindings)
+    .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::default_control_key_bindings;
+    use gpui::{Action, KeyBinding};
+
+    use super::{
+        ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge,
+        default_control_key_bindings,
+    };
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
         assert_eq!(default_control_key_bindings().len(), 43);
+    }
+
+    #[test]
+    fn profile_binding_counts_are_stable() {
+        assert_eq!(ControlKeyProfile::Command.default_bindings().len(), 2);
+        assert_eq!(ControlKeyProfile::Choice.default_bindings().len(), 1);
+        assert_eq!(ControlKeyProfile::RadioGroup.default_bindings().len(), 6);
+        assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 10);
+    }
+
+    #[test]
+    fn range_value_and_scroll_offset_profiles_have_different_vertical_semantics() {
+        let range = ControlKeyProfile::RangeValue.default_bindings();
+        let scroll = ControlKeyProfile::ScrollOffset.default_bindings();
+
+        assert!(has_binding::<DecreaseValue>(&range, "down"));
+        assert!(has_binding::<IncreaseValueLarge>(&range, "pageup"));
+        assert!(has_binding::<IncreaseValue>(&scroll, "down"));
+        assert!(has_binding::<DecreaseValueLarge>(&scroll, "pageup"));
+    }
+
+    fn has_binding<A: Action>(bindings: &[KeyBinding], key: &str) -> bool {
+        bindings.iter().any(|binding| {
+            binding.keystrokes().len() == 1
+                && binding.keystrokes()[0].key() == key
+                && binding.action().as_any().is::<A>()
+        })
     }
 }

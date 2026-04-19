@@ -11,8 +11,8 @@ use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::{ControlFocusState, MenuPath};
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
-    ActivateControl, CloseSubmenu, LUMA_CONTEXT_MENU_CONTROL_CONTEXT, OpenContextMenu, OpenSubmenu, SelectFirstItem,
-    SelectLastItem, SelectNextItem, SelectPreviousItem,
+    ActivateControl, CloseSubmenu, ControlKeyProfile, OpenContextMenu, OpenSubmenu, SelectFirstItem, SelectLastItem,
+    SelectNextItem, SelectPreviousItem,
 };
 
 #[derive(Clone, Debug)]
@@ -474,7 +474,7 @@ impl Render for ContextMenu {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)
+                    .key_context(ControlKeyProfile::ContextMenu.context())
                     .on_action(cx.listener(Self::handle_escape_focus))
                     .on_action(cx.listener(Self::handle_open_context_menu))
                     .on_action(cx.listener(Self::handle_select_previous_item))

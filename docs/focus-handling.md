@@ -28,7 +28,6 @@ Focus traversal is centralized through the public `gpui_luma::focus` module:
 - `NextFocus`,
 - `PreviousFocus`,
 - `EscapeFocus`,
-- `LUMA_FOCUS_CONTEXT`,
 - `bind_default_focus_keys(cx)`,
 - `LumaFocusScopeExt`.
 
@@ -38,8 +37,8 @@ There is no shared `blur_on_escape` helper and the controls no longer use raw
 
 Control-specific keyboard behavior is separate and lives in
 `gpui_luma::keyhandling`. That module owns actions such as `ActivateControl`,
-`SelectNextItem`, `IncreaseValue`, and `OpenContextMenu`, plus the control key
-contexts that individual controls attach to their focus-tracked elements.
+`SelectNextItem`, `IncreaseValue`, and `OpenContextMenu`, plus control key
+profiles that individual controls attach to their focus-tracked elements.
 
 ## 3. GPUI Model
 
@@ -71,13 +70,13 @@ pub mod focus {
 
     actions!(luma_focus, [NextFocus, PreviousFocus, EscapeFocus]);
 
-    pub const LUMA_FOCUS_CONTEXT: &str = "LumaFocus";
+    const FOCUS_CONTEXT: &str = "LumaFocus";
 
     pub fn bind_default_focus_keys(cx: &mut App) {
         cx.bind_keys([
-            KeyBinding::new("tab", NextFocus, Some(LUMA_FOCUS_CONTEXT)),
-            KeyBinding::new("shift-tab", PreviousFocus, Some(LUMA_FOCUS_CONTEXT)),
-            KeyBinding::new("escape", EscapeFocus, Some(LUMA_FOCUS_CONTEXT)),
+            KeyBinding::new("tab", NextFocus, Some(FOCUS_CONTEXT)),
+            KeyBinding::new("shift-tab", PreviousFocus, Some(FOCUS_CONTEXT)),
+            KeyBinding::new("escape", EscapeFocus, Some(FOCUS_CONTEXT)),
         ]);
     }
 }
@@ -113,7 +112,7 @@ where
         let scope = scope.clone();
 
         self.track_focus(&scope)
-            .key_context(LUMA_FOCUS_CONTEXT)
+            .key_context(FOCUS_CONTEXT)
             .on_action(|_: &NextFocus, window: &mut Window, cx: &mut App| {
                 window.focus_next(cx);
             })
@@ -152,8 +151,8 @@ occlusion, and style inheritance.
 
 Context-bound key bindings only work when the matching key context is in the
 focused node's dispatch path. Because `Tab`, `Shift-Tab`, and `Escape` are bound
-to `LUMA_FOCUS_CONTEXT`, the application must keep focus inside a rendered
-focus scope.
+to the private focus key context, the application must keep focus inside a
+rendered focus scope.
 
 Each top-level surface that wants SDK focus navigation should:
 
@@ -332,8 +331,6 @@ The SDK exposes a small public focus module:
 
 ```rust
 pub mod focus {
-    pub const LUMA_FOCUS_CONTEXT: &str = "LumaFocus";
-
     pub fn bind_default_focus_keys(cx: &mut App);
 
     pub trait LumaFocusScopeExt: InteractiveElement + Sized {
@@ -351,8 +348,7 @@ explicitly.
 Implemented:
 
 - `gpui_luma::focus` defines `NextFocus`, `PreviousFocus`, `EscapeFocus`,
-  `LUMA_FOCUS_CONTEXT`, `bind_default_focus_keys(cx)`, and
-  `LumaFocusScopeExt`.
+  `bind_default_focus_keys(cx)`, and `LumaFocusScopeExt`.
 - The gallery calls `bind_default_focus_keys(cx)` during startup.
 - The gallery root owns a stable focus-scope handle and focuses it when the
   gallery opens.
@@ -361,8 +357,8 @@ Implemented:
 - Simple controls do not handle `EscapeFocus`; they let the scope consume it.
 - Dropdown and context menus handle `EscapeFocus`, close when open, and
   propagate when closed.
-- Arrow-key, home/end, menu, context-menu, and slider navigation behavior stays
-  inside the owning controls through control-specific key contexts.
+- Arrow-key, home/end, menu, context-menu, slider, and scrollbar navigation
+  behavior stays inside the owning controls through `ControlKeyProfile`.
 
 ## 12. Verification
 

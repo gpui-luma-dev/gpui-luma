@@ -28,7 +28,8 @@ of those profiles.
 - Adding a new control requires an explicit choice: reuse an existing profile
   or add a new profile with documented behavior.
 - Host applications can still bind the default keys with one call.
-- Advanced applications can inspect or bind profile-specific keys.
+- Advanced applications can inspect or bind profile-specific keys without
+  relying on raw context constants.
 - Existing typed actions remain shared and semantic.
 
 Non-goals:
@@ -80,8 +81,8 @@ impl ControlKeyProfile {
 }
 ```
 
-The string is still public and stable through the profile API, but the primary
-SDK vocabulary becomes behavior profiles.
+The string remains stable through the profile API, but raw context constants
+should not be part of the public surface. The profile is the source of truth.
 
 ## 4. Public API Shape
 
@@ -107,17 +108,13 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding>;
 pub fn bind_default_control_keys(cx: &mut App);
 ```
 
-The raw constants can remain only if there is a clear need for direct GPUI
-integration. If retained, they should be secondary exports and their names
-must match profile behavior:
+Raw `LUMA_*_CONTEXT` constants should not be public. Keeping them public would
+duplicate the profile API, increase the surface area, and make it easier for
+new controls to bypass the behavior-profile decision.
 
-```rust
-pub const LUMA_RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
-pub const LUMA_SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
-```
-
-Do not reintroduce control-type aliases such as `LUMA_SLIDER_CONTEXT` or
-`LUMA_SCROLLBAR_CONTEXT`.
+If constants are useful internally, keep them private to `keyhandling.rs` and
+return them from `ControlKeyProfile::context()`. Do not reintroduce
+control-type aliases such as `LUMA_SLIDER_CONTEXT` or `LUMA_SCROLLBAR_CONTEXT`.
 
 ## 5. Default Binding Assembly
 
@@ -252,13 +249,12 @@ to review.
 3. Rebuild `default_control_key_bindings()` from the profile list.
 4. Update existing controls to call `ControlKeyProfile::<Profile>.context()`.
 5. Remove direct use of raw context constants from control modules.
-6. Keep behavior-named constants only if needed by downstream app code.
-7. Update `docs/keyhandling.md` after the implementation lands.
+6. Remove public raw context constants from `keyhandling.rs`.
+7. Keep any remaining context constants private to `keyhandling.rs`.
+8. Update `docs/keyhandling.md` after the implementation lands.
 
 ## 10. Open Questions
 
-- Should behavior-named raw constants remain public, or should `context()` be
-  the only public path?
 - Should host apps be able to bind only selected profiles through a helper such
   as `bind_control_key_profiles(cx, profiles)`?
 - Should profiles expose a stable display name for documentation or debug UIs?
@@ -266,5 +262,6 @@ to review.
   helper to avoid allocation before `cx.bind_keys`?
 
 The recommendation is to start with the enum plus `context()` and
-`default_bindings()`. That is enough to prevent recurring naming mistakes
-without overcommitting the SDK to a large keymap framework.
+`default_bindings()`, with no public raw context constants. That is enough to
+prevent recurring naming mistakes without overcommitting the SDK to a large
+keymap framework.

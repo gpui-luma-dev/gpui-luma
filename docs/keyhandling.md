@@ -94,10 +94,10 @@ Examples:
 The SDK should use control-family key contexts instead of one global
 `LumaControl` context for every key.
 
-Each focusable control attaches its control-family context to the same element
-that tracks its control `FocusHandle`. The focus scope remains an ancestor with
-`LUMA_FOCUS_CONTEXT`, so focus traversal actions can still bubble through the
-same dispatch path.
+Each focusable control attaches its control-family profile context to the same
+element that tracks its control `FocusHandle`. The focus scope remains an
+ancestor with its private focus context, so focus traversal actions can still
+bubble through the same dispatch path.
 
 Contexts should normally be stable for the lifetime of the rendered focusable
 element. Do not split ordinary open, closed, active, selected, or expanded
@@ -160,61 +160,41 @@ pub mod keyhandling {
         ]
     );
 
-    pub const LUMA_COMMAND_CONTEXT: &str = "LumaCommandControl";
-    pub const LUMA_CHOICE_CONTEXT: &str = "LumaChoiceControl";
-    pub const LUMA_RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
-    pub const LUMA_RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
-    pub const LUMA_SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
-    pub const LUMA_MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
-    pub const LUMA_CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
+    #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+    pub enum ControlKeyProfile {
+        Command,
+        Choice,
+        RadioGroup,
+        RangeValue,
+        ScrollOffset,
+        Menu,
+        ContextMenu,
+    }
+
+    impl ControlKeyProfile {
+        pub const fn context(self) -> &'static str {
+            match self {
+                Self::Command => "LumaCommandControl",
+                Self::Choice => "LumaChoiceControl",
+                Self::RadioGroup => "LumaRadioGroup",
+                Self::RangeValue => "LumaRangeValue",
+                Self::ScrollOffset => "LumaScrollOffset",
+                Self::Menu => "LumaMenuControl",
+                Self::ContextMenu => "LumaContextMenuControl",
+            }
+        }
+
+        pub fn default_bindings(self) -> Vec<KeyBinding> {
+            // Each profile owns its default bindings.
+            todo!()
+        }
+    }
 
     pub fn bind_default_control_keys(cx: &mut App) {
-        cx.bind_keys([
-            KeyBinding::new("enter", ActivateControl, Some(LUMA_COMMAND_CONTEXT)),
-            KeyBinding::new("space", ActivateControl, Some(LUMA_COMMAND_CONTEXT)),
-            KeyBinding::new("space", ActivateControl, Some(LUMA_CHOICE_CONTEXT)),
-            KeyBinding::new("left", SelectPreviousItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("right", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("down", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("home", SelectFirstItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("end", SelectLastItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("left", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("down", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("right", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("up", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("home", MoveToStart, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("end", MoveToEnd, Some(LUMA_RANGE_VALUE_CONTEXT)),
-            KeyBinding::new("left", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("up", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("right", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("down", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("pagedown", IncreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("pageup", DecreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("home", MoveToStart, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("end", MoveToEnd, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
-            KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("end", SelectLastItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("right", OpenSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("left", CloseSubmenu, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("enter", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("space", ActivateControl, Some(LUMA_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("shift-f10", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("menu", OpenContextMenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("down", SelectNextItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("up", SelectPreviousItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("home", SelectFirstItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("end", SelectLastItem, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("right", OpenSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("left", CloseSubmenu, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("enter", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-            KeyBinding::new("space", ActivateControl, Some(LUMA_CONTEXT_MENU_CONTROL_CONTEXT)),
-        ]);
+        cx.bind_keys(default_control_key_bindings());
     }
+
+    pub fn default_control_key_bindings() -> Vec<KeyBinding>;
 }
 ```
 
@@ -222,7 +202,7 @@ The exact module name can change before implementation, but the important
 shape is:
 
 - public typed actions,
-- named key contexts,
+- behavior-named key profiles,
 - opt-in default key bindings,
 - per-control action handlers.
 
@@ -240,10 +220,10 @@ Controls:
 - `IconButton`
 - command-like future controls
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_COMMAND_CONTEXT
+ControlKeyProfile::Command
 ```
 
 Default bindings:
@@ -263,10 +243,10 @@ Controls:
 
 - `ToggleButton`
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_COMMAND_CONTEXT
+ControlKeyProfile::Command
 ```
 
 Default bindings:
@@ -292,10 +272,10 @@ Controls:
 - `Switch`
 - future standalone choice controls
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_CHOICE_CONTEXT
+ControlKeyProfile::Choice
 ```
 
 Default bindings:
@@ -319,10 +299,10 @@ Controls:
 - `RadioGroup`
 - future segmented single-select groups
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_RADIO_GROUP_CONTEXT
+ControlKeyProfile::RadioGroup
 ```
 
 Default bindings:
@@ -350,10 +330,10 @@ Controls:
 - `Slider`
 - future range-like input controls
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_RANGE_VALUE_CONTEXT
+ControlKeyProfile::RangeValue
 ```
 
 Default bindings:
@@ -373,7 +353,7 @@ Behavior:
 - actions consume when recognized.
 
 Orientation-specific controls may choose different arrow bindings by using a
-different context or by exposing an orientation mode before binding defaults.
+different profile or by exposing an orientation mode before binding defaults.
 The default horizontal slider policy should not become a hidden assumption for
 all future range controls.
 
@@ -383,10 +363,10 @@ Controls:
 
 - `Scrollbar`
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_SCROLL_OFFSET_CONTEXT
+ControlKeyProfile::ScrollOffset
 ```
 
 Default bindings:
@@ -412,15 +392,15 @@ Controls:
 - `DropdownMenu`
 - future select-like menu buttons
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_MENU_CONTROL_CONTEXT
+ControlKeyProfile::Menu
 ```
 
 Menus have two conceptual keyboard modes: closed trigger mode and open menu
 mode. Do not rely on dynamically swapping `.key_context(...)` between those
-modes for correctness. Prefer one stable menu-control context on the focusable
+modes for correctness. Prefer one stable menu-control profile on the focusable
 trigger or root, and let action handlers branch on internal open state.
 
 This keeps the key dispatch path stable across renders. The control should
@@ -467,13 +447,13 @@ Controls:
 - `ContextMenu`
 - future context-menu targets
 
-Default context:
+Default profile:
 
 ```rust
-LUMA_CONTEXT_MENU_CONTROL_CONTEXT
+ControlKeyProfile::ContextMenu
 ```
 
-Context menus also use a stable context. The target and open menu are
+Context menus also use a stable profile. The target and open menu are
 conceptual modes of the same control, so action handlers should branch on
 whether `menu_position` is present.
 

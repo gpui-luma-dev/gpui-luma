@@ -10,8 +10,8 @@ use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
-    ActivateControl, CloseSubmenu, LUMA_MENU_CONTROL_CONTEXT, OpenSubmenu, SelectFirstItem, SelectLastItem,
-    SelectNextItem, SelectPreviousItem,
+    ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
+    SelectPreviousItem,
 };
 
 #[derive(Clone, Debug)]
@@ -461,7 +461,7 @@ impl Render for DropdownMenu {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_MENU_CONTROL_CONTEXT)
+                    .key_context(ControlKeyProfile::Menu.context())
                     .on_action(cx.listener(Self::handle_escape_focus))
                     .on_action(cx.listener(Self::handle_select_previous_item))
                     .on_action(cx.listener(Self::handle_select_next_item))

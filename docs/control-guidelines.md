@@ -254,14 +254,15 @@ the Lucide icon font; app startup must bind focus and control keys where appropr
 does in `apps/gallery/src/main.rs`. See `focus-handling.md` for the focus-scope model behind
 `Tab`, `Shift-Tab`, and `Escape`.
 
-Use the existing key contexts:
+Use the existing key profiles:
 
-- `LUMA_COMMAND_CONTEXT`: enter/space activation for button-family command controls.
-- `LUMA_CHOICE_CONTEXT`: space activation for checkbox and switch.
-- `LUMA_RADIO_GROUP_CONTEXT`: arrows, home, and end.
-- `LUMA_RANGE_VALUE_CONTEXT`: arrows, page up/down, home, and end.
-- `LUMA_MENU_CONTROL_CONTEXT`: dropdown menu navigation and activation.
-- `LUMA_CONTEXT_MENU_CONTROL_CONTEXT`: context-menu open, navigation, and activation.
+- `ControlKeyProfile::Command`: enter/space activation for button-family command controls.
+- `ControlKeyProfile::Choice`: space activation for checkbox and switch.
+- `ControlKeyProfile::RadioGroup`: arrows, home, and end.
+- `ControlKeyProfile::RangeValue`: arrows, page up/down, home, and end.
+- `ControlKeyProfile::ScrollOffset`: scroll offset arrows, page up/down, home, and end.
+- `ControlKeyProfile::Menu`: dropdown menu navigation and activation.
+- `ControlKeyProfile::ContextMenu`: context-menu open, navigation, and activation.
 
 Attach action handlers to the focus-tracked element. For example, button-family controls track focus,
 set the key context, and handle `ActivateControl`.
@@ -347,7 +348,7 @@ Event:
 Implementation notes:
 
 - Uses `ControlInteraction`.
-- Uses `LUMA_CHOICE_CONTEXT`.
+- Uses `ControlKeyProfile::Choice`.
 - Uses `CheckboxTheme`.
 - The default template renders the checkmark as an SDK-owned Lucide `Check` affordance.
 
@@ -368,7 +369,7 @@ Event:
 Implementation notes:
 
 - Uses `ControlInteraction`.
-- Uses `LUMA_CHOICE_CONTEXT`.
+- Uses `ControlKeyProfile::Choice`.
 - Uses `SwitchTheme`.
 - The template derives thumb position from `on`; the control does not store visual positions.
 

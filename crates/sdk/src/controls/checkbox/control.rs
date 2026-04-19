@@ -6,7 +6,7 @@ use gpui::{
 use super::{CheckboxBuilder, CheckboxRenderModel};
 use crate::controls::checkbox::model::CheckboxModel;
 use crate::controls::interaction::ControlInteraction;
-use crate::keyhandling::{ActivateControl, LUMA_CHOICE_CONTEXT};
+use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 
 #[derive(Clone, Debug)]
 pub enum CheckboxEvent {
@@ -111,7 +111,7 @@ impl Render for Checkbox {
                     .template
                     .render(&model, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_CHOICE_CONTEXT)
+                    .key_context(ControlKeyProfile::Choice.context())
                     .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
