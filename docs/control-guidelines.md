@@ -18,6 +18,7 @@ The SDK currently ships these controls:
 - `Switch`: binary on/off control with optional label and change events.
 - `RadioGroup`: composite choice control with mutually exclusive item selection.
 - `Slider`: numeric input with range, step, pointer dragging, and keyboard value changes.
+- `Scrollbar`: horizontal or vertical range control with line/page movement and draggable thumb.
 - `Progress`: non-interactive circular status indicator.
 - `DropdownMenu`: trigger-owned menu with one level of submenu support.
 - `ContextMenu`: secondary-click or keyboard-opened menu with one level of submenu support.
@@ -215,8 +216,8 @@ pub enum ButtonFamilyRole {
 ```
 
 Create a specific theme resolver when the control has distinct policy, as `CheckboxTheme`,
-`SwitchTheme`, `RadioGroupTheme`, `SliderTheme`, `ProgressTheme`, `DropdownMenuTheme`, and
-`ContextMenuTheme` do.
+`SwitchTheme`, `RadioGroupTheme`, `SliderTheme`, `ScrollbarTheme`, `ProgressTheme`,
+`DropdownMenuTheme`, and `ContextMenuTheme` do.
 
 ## Interaction And Focus
 
@@ -258,7 +259,7 @@ Use the existing key contexts:
 - `LUMA_COMMAND_CONTEXT`: enter/space activation for button-family command controls.
 - `LUMA_CHOICE_CONTEXT`: space activation for checkbox and switch.
 - `LUMA_RADIO_GROUP_CONTEXT`: arrows, home, and end.
-- `LUMA_SLIDER_CONTEXT`: arrows, page up/down, home, and end.
+- `LUMA_RANGE_VALUE_CONTEXT`: arrows, page up/down, home, and end.
 - `LUMA_MENU_CONTROL_CONTEXT`: dropdown menu navigation and activation.
 - `LUMA_CONTEXT_MENU_CONTROL_CONTEXT`: context-menu open, navigation, and activation.
 
@@ -440,6 +441,58 @@ Implementation notes:
 - Pointer down and drag compute value from pointer position.
 - Keyboard actions adjust by `step`, `step * 10.0`, or jump to range boundaries.
 - Programmatic `set_value` notifies but does not emit `SliderEvent`; user interaction emits.
+
+### Scrollbar
+
+`Scrollbar` owns a numeric scroll offset, range, step, page step, orientation, thumb fraction,
+enabled state, and measured track/thumb geometry.
+
+Builder methods:
+
+- `orientation`,
+- `horizontal`,
+- `vertical`,
+- `range`,
+- `step`,
+- `page_step`,
+- `value`,
+- `thumb_fraction`,
+- `enabled`,
+- `template`,
+- `spawn`.
+
+Runtime mutation:
+
+- `value`,
+- `range`,
+- `orientation`,
+- `step`,
+- `page_step`,
+- `thumb_fraction`,
+- `set_value`,
+- `set_range`,
+- `set_orientation`,
+- `set_step`,
+- `set_page_step`,
+- `set_thumb_fraction`,
+- `set_enabled`.
+
+Event:
+
+- `ScrollbarEvent::Change { value }`.
+
+Implementation notes:
+
+- Uses `ControlInteraction`.
+- Uses `ControlRange` to clamp and snap values.
+- Invalid numeric inputs fall back to finite defaults through `value_from_input`.
+- Invalid line/page steps fall back to `1.0`.
+- Thumb fractions clamp to a visible range.
+- The template reports track and thumb bounds through canvas measurement callbacks.
+- Pointer down on the track pages toward the pointer; thumb dragging maps pointer movement to value.
+- Keyboard actions adjust by `step`, `page_step`, or jump to range boundaries.
+- Focused scrollbars handle trackpad and wheel input along their orientation axis.
+- Programmatic `set_value` notifies but does not emit `ScrollbarEvent`; user interaction emits.
 
 ### Progress
 

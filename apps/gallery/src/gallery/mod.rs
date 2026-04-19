@@ -11,6 +11,7 @@ use gpui_luma::controls::dropdown_menu::{DropdownMenu, DropdownMenuEvent, Dropdo
 use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
+use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::switch::{Switch, SwitchEvent};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
@@ -91,6 +92,12 @@ enum ContextMenuPresentation {
     Radial,
 }
 
+#[derive(Clone, Copy)]
+enum ScrollbarPresentation {
+    Horizontal,
+    Vertical,
+}
+
 pub struct GalleryApp {
     focus_scope: FocusHandle,
     button: Entity<Button>,
@@ -103,6 +110,8 @@ pub struct GalleryApp {
     radio_group: Entity<RadioGroup>,
     slider: Entity<Slider>,
     progress: Entity<Progress>,
+    horizontal_scrollbar: Entity<Scrollbar>,
+    vertical_scrollbar: Entity<Scrollbar>,
     dropdown_menu: Entity<DropdownMenu>,
     default_context_menu: Entity<ContextMenu>,
     radial_context_menu: Entity<ContextMenu>,
@@ -120,6 +129,8 @@ pub struct GalleryApp {
     filled_checkbox_checked: bool,
     radio_choice: String,
     slider_value: f32,
+    horizontal_scroll_value: f32,
+    vertical_scroll_value: f32,
     dropdown_selection: String,
     default_context_selection: String,
     radial_context_selection: String,
@@ -163,6 +174,22 @@ impl GalleryApp {
             .spawn(cx);
         let slider = Slider::new("slider-example").range(1..100).step(10).value(41).spawn(cx);
         let progress = Progress::new("progress-example").range(1..100).value(41).spawn(cx);
+        let horizontal_scrollbar = Scrollbar::new("scrollbar-horizontal-example")
+            .horizontal()
+            .range(0..220)
+            .step(20)
+            .page_step(80)
+            .value(40)
+            .thumb_fraction(0.54)
+            .spawn(cx);
+        let vertical_scrollbar = Scrollbar::new("scrollbar-vertical-example")
+            .vertical()
+            .range(0..240)
+            .step(20)
+            .page_step(80)
+            .value(80)
+            .thumb_fraction(0.45)
+            .spawn(cx);
         let dropdown_menu = DropdownMenu::new("dropdown-menu-example")
             .label("Actions")
             .items([
@@ -230,6 +257,12 @@ impl GalleryApp {
             cx.subscribe(&slider, |this, _, event: &SliderEvent, cx| {
                 this.handle_slider_event(event, cx);
             }),
+            cx.subscribe(&horizontal_scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+                this.handle_scrollbar_event(ScrollbarPresentation::Horizontal, event, cx);
+            }),
+            cx.subscribe(&vertical_scrollbar, |this, _, event: &ScrollbarEvent, cx| {
+                this.handle_scrollbar_event(ScrollbarPresentation::Vertical, event, cx);
+            }),
             cx.subscribe(&dropdown_menu, |this, _, event: &DropdownMenuEvent, cx| {
                 this.handle_dropdown_menu_event(event, cx);
             }),
@@ -253,6 +286,8 @@ impl GalleryApp {
             radio_group,
             slider,
             progress,
+            horizontal_scrollbar,
+            vertical_scrollbar,
             dropdown_menu,
             default_context_menu,
             radial_context_menu,
@@ -270,6 +305,8 @@ impl GalleryApp {
             filled_checkbox_checked: true,
             radio_choice: "Comfortable".to_string(),
             slider_value: 41.0,
+            horizontal_scroll_value: 40.0,
+            vertical_scroll_value: 80.0,
             dropdown_selection: "none".to_string(),
             default_context_selection: "none".to_string(),
             radial_context_selection: "none".to_string(),
@@ -379,6 +416,27 @@ impl GalleryApp {
         }
     }
 
+    fn handle_scrollbar_event(
+        &mut self,
+        presentation: ScrollbarPresentation,
+        event: &ScrollbarEvent,
+        cx: &mut Context<Self>,
+    ) {
+        match event {
+            ScrollbarEvent::Change { value } => {
+                match presentation {
+                    ScrollbarPresentation::Horizontal => {
+                        self.horizontal_scroll_value = *value;
+                    }
+                    ScrollbarPresentation::Vertical => {
+                        self.vertical_scroll_value = *value;
+                    }
+                }
+                cx.notify();
+            }
+        }
+    }
+
     fn handle_context_menu_event(
         &mut self,
         presentation: ContextMenuPresentation,
@@ -404,6 +462,27 @@ impl GalleryApp {
 impl Render for GalleryApp {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let focus_scope = self.focus_scope.clone();
+        let mut demo_content = div()
+            .absolute()
+            .left(px(-self.horizontal_scroll_value))
+            .top(px(-self.vertical_scroll_value))
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_3();
+
+        for row in 0..12 {
+            demo_content = demo_content.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(div().w(px(92.0)).text_color(rgb(0x0f172a)).child(format!("Row {:02}", row + 1)))
+                    .child(div().w(px(110.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbae6fd)))
+                    .child(div().w(px(150.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbbf7d0)))
+                    .child(div().w(px(96.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xfed7aa))),
+            );
+        }
 
         div()
             .luma_focus_scope(&self.focus_scope)
@@ -449,6 +528,32 @@ impl Render for GalleryApp {
                     )
                     .child(div().flex().items_center().gap_3().child(self.radio_group.clone()))
                     .child(div().flex().items_center().gap_4().child(self.slider.clone()).child(self.progress.clone()))
+                    .child(
+                        div()
+                            .flex()
+                            .items_start()
+                            .gap_2()
+                            .child(
+                                div()
+                                    .flex()
+                                    .flex_col()
+                                    .gap_2()
+                                    .child(
+                                        div()
+                                            .relative()
+                                            .w(px(260.0))
+                                            .h(px(180.0))
+                                            .overflow_hidden()
+                                            .rounded(px(6.0))
+                                            .border_1()
+                                            .border_color(rgb(0xcbd5e1))
+                                            .bg(rgb(0xffffff))
+                                            .child(demo_content),
+                                    )
+                                    .child(self.horizontal_scrollbar.clone()),
+                            )
+                            .child(self.vertical_scrollbar.clone()),
+                    )
                     .child(self.dropdown_menu.clone())
                     .child(
                         div()
@@ -485,6 +590,10 @@ impl Render for GalleryApp {
                             ))
                             .child(format!("Radio choice: {}", self.radio_choice))
                             .child(format!("Slider value: {:.0}", self.slider_value))
+                            .child(format!(
+                                "Scrollbar offset: x={:.0}, y={:.0}",
+                                self.horizontal_scroll_value, self.vertical_scroll_value
+                            ))
                             .child(format!("Dropdown selected: {}", self.dropdown_selection))
                             .child(format!("Default context selected: {}", self.default_context_selection))
                             .child(format!("Radial context selected: {}", self.radial_context_selection)),

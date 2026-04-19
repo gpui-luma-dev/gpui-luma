@@ -8,7 +8,8 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
-    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_SLIDER_CONTEXT, MoveToEnd, MoveToStart,
+    DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, LUMA_RANGE_VALUE_CONTEXT, MoveToEnd,
+    MoveToStart,
 };
 
 #[derive(Clone, Debug)]
@@ -235,7 +236,7 @@ impl Render for Slider {
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(LUMA_SLIDER_CONTEXT)
+                    .key_context(LUMA_RANGE_VALUE_CONTEXT)
                     .on_action(cx.listener(Self::handle_decrease_value))
                     .on_action(cx.listener(Self::handle_increase_value))
                     .on_action(cx.listener(Self::handle_decrease_value_large))

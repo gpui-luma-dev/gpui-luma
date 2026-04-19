@@ -126,7 +126,14 @@ impl SliderTemplate for ThemedSliderTemplate {
         }
 
         if model.state.focused {
-            root = root.border_1().border_color(focus_debug_border());
+            root = root.child(
+                div()
+                    .absolute()
+                    .size_full()
+                    .border_1()
+                    .border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border))
+                    .rounded(px(appearance.radius)),
+            );
         }
 
         root

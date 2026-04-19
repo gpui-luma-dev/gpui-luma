@@ -6,6 +6,7 @@ pub mod dropdown_menu;
 pub mod interaction;
 pub mod progress;
 pub mod radio_group;
+pub mod scrollbar;
 pub mod slider;
 pub mod switch;
 pub mod tokens;
@@ -20,6 +21,7 @@ pub use dropdown_menu::{DefaultDropdownMenuTheme, DropdownMenuAppearance, Dropdo
 pub use interaction::{InteractionLayer, InteractionState};
 pub use progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme, default_progress_theme};
 pub use radio_group::{DefaultRadioGroupTheme, RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};
+pub use scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme};
 pub use slider::{DefaultSliderTheme, SliderAppearance, SliderTheme, default_slider_theme};
 pub use switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme, default_switch_theme};
 pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};

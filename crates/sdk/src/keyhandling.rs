@@ -25,7 +25,8 @@ actions!(
 pub const LUMA_COMMAND_CONTEXT: &str = "LumaCommandControl";
 pub const LUMA_CHOICE_CONTEXT: &str = "LumaChoiceControl";
 pub const LUMA_RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
-pub const LUMA_SLIDER_CONTEXT: &str = "LumaSlider";
+pub const LUMA_RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
+pub const LUMA_SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
 pub const LUMA_MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
 pub const LUMA_CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
 
@@ -44,14 +45,22 @@ fn default_control_key_bindings() -> Vec<KeyBinding> {
         KeyBinding::new("down", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
         KeyBinding::new("home", SelectFirstItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
         KeyBinding::new("end", SelectLastItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-        KeyBinding::new("left", DecreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("down", DecreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("right", IncreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("up", IncreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("home", MoveToStart, Some(LUMA_SLIDER_CONTEXT)),
-        KeyBinding::new("end", MoveToEnd, Some(LUMA_SLIDER_CONTEXT)),
+        KeyBinding::new("left", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("down", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("right", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("up", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("home", MoveToStart, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("end", MoveToEnd, Some(LUMA_RANGE_VALUE_CONTEXT)),
+        KeyBinding::new("left", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("up", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("right", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("down", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("pagedown", IncreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("pageup", DecreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("home", MoveToStart, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+        KeyBinding::new("end", MoveToEnd, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
         KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
         KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
         KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
@@ -79,6 +88,6 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 35);
+        assert_eq!(default_control_key_bindings().len(), 43);
     }
 }

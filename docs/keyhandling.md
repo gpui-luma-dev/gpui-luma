@@ -163,7 +163,8 @@ pub mod keyhandling {
     pub const LUMA_COMMAND_CONTEXT: &str = "LumaCommandControl";
     pub const LUMA_CHOICE_CONTEXT: &str = "LumaChoiceControl";
     pub const LUMA_RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
-    pub const LUMA_SLIDER_CONTEXT: &str = "LumaSlider";
+    pub const LUMA_RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
+    pub const LUMA_SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
     pub const LUMA_MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
     pub const LUMA_CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
 
@@ -178,14 +179,22 @@ pub mod keyhandling {
             KeyBinding::new("down", SelectNextItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
             KeyBinding::new("home", SelectFirstItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
             KeyBinding::new("end", SelectLastItem, Some(LUMA_RADIO_GROUP_CONTEXT)),
-            KeyBinding::new("left", DecreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("down", DecreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("right", IncreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("up", IncreaseValue, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("home", MoveToStart, Some(LUMA_SLIDER_CONTEXT)),
-            KeyBinding::new("end", MoveToEnd, Some(LUMA_SLIDER_CONTEXT)),
+            KeyBinding::new("left", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("down", DecreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("right", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("up", IncreaseValue, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("pagedown", DecreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("pageup", IncreaseValueLarge, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("home", MoveToStart, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("end", MoveToEnd, Some(LUMA_RANGE_VALUE_CONTEXT)),
+            KeyBinding::new("left", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("up", DecreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("right", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("down", IncreaseValue, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("pagedown", IncreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("pageup", DecreaseValueLarge, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("home", MoveToStart, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
+            KeyBinding::new("end", MoveToEnd, Some(LUMA_SCROLL_OFFSET_CONTEXT)),
             KeyBinding::new("down", SelectNextItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
             KeyBinding::new("up", SelectPreviousItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
             KeyBinding::new("home", SelectFirstItem, Some(LUMA_MENU_CONTROL_CONTEXT)),
@@ -339,12 +348,12 @@ not move between radio items.
 Controls:
 
 - `Slider`
-- future `Scrollbar` or range-like input controls
+- future range-like input controls
 
 Default context:
 
 ```rust
-LUMA_SLIDER_CONTEXT
+LUMA_RANGE_VALUE_CONTEXT
 ```
 
 Default bindings:
@@ -368,7 +377,35 @@ different context or by exposing an orientation mode before binding defaults.
 The default horizontal slider policy should not become a hidden assumption for
 all future range controls.
 
-### 4.6 Dropdown Menus
+### 4.6 Scrollbars
+
+Controls:
+
+- `Scrollbar`
+
+Default context:
+
+```rust
+LUMA_SCROLL_OFFSET_CONTEXT
+```
+
+Default bindings:
+
+- `Left` / `Up` -> `DecreaseValue`
+- `Right` / `Down` -> `IncreaseValue`
+- `PageUp` -> `DecreaseValueLarge`
+- `PageDown` -> `IncreaseValueLarge`
+- `Home` -> `MoveToStart`
+- `End` -> `MoveToEnd`
+
+Behavior:
+
+- enabled controls snap values through the existing range and step logic,
+- large increments use the control's `page_step`,
+- disabled controls do nothing,
+- actions consume when recognized.
+
+### 4.7 Dropdown Menus
 
 Controls:
 
@@ -423,7 +460,7 @@ Actions that do not make sense in the current open or closed state should be
 ignored or propagated intentionally. They should not require a key-context
 swap to become valid.
 
-### 4.7 Context Menus
+### 4.8 Context Menus
 
 Controls:
 
@@ -465,7 +502,7 @@ Behavior:
 - `EscapeFocus` closes an open menu and consumes,
 - `EscapeFocus` propagates when the menu is already closed.
 
-### 4.8 Text-Like Controls
+### 4.9 Text-Like Controls
 
 Controls:
 
@@ -495,7 +532,7 @@ They should still participate in SDK focus actions:
 Expose an explicit mode flag when both Tab insertion and focus traversal are
 reasonable for the same control.
 
-### 4.9 Data And Composite Navigation Controls
+### 4.10 Data And Composite Navigation Controls
 
 Controls:
 

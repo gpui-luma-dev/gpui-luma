@@ -17,6 +17,7 @@ The current SDK includes:
 - `Switch`
 - `RadioGroup`
 - `Slider`
+- `Scrollbar`
 - `Progress`
 - `DropdownMenu`
 - `ContextMenu`
@@ -25,6 +26,7 @@ The current SDK includes:
 - switch-specific theme resolution
 - radio-group-specific theme resolution
 - slider-specific theme resolution
+- scrollbar-specific theme resolution
 - progress-specific theme resolution
 - dropdown-menu-specific theme resolution
 - context-menu-specific theme resolution
@@ -471,7 +473,35 @@ slider.update(cx, |slider, cx| {
 
 Application code observes `SliderEvent::Change { value }`. Drag and pointer math stay in the control, while the template owns the bar structure and passes measured bounds back through control-owned handlers.
 
-### 4.9 Progress
+### 4.9 Scrollbar
+
+`Scrollbar` owns a numeric scroll offset, coerces it through a configured range and step, and emits semantic change events.
+
+```rust
+use gpui_luma::controls::scrollbar::Scrollbar;
+
+let scrollbar = Scrollbar::new("results-scrollbar")
+    .vertical()
+    .range(0..240)
+    .step(20)
+    .page_step(80)
+    .thumb_fraction(0.45)
+    .spawn(cx);
+```
+
+The live control exposes value, range, orientation, line step, page step, thumb fraction, and enabled-state mutation:
+
+```rust
+scrollbar.update(cx, |scrollbar, cx| {
+    scrollbar.set_value(120, cx);
+    scrollbar.set_page_step(80, cx);
+    scrollbar.set_thumb_fraction(0.5, cx);
+});
+```
+
+Application code observes `ScrollbarEvent::Change { value }`. The control owns paging, dragging, keyboard movement, and value coercion; the template owns the track/thumb structure and passes measured bounds back through control-owned handlers.
+
+### 4.10 Progress
 
 `Progress` owns a numeric value and range, defaults to `0..100`, and renders as a circular progress indicator.
 
@@ -494,7 +524,7 @@ progress.update(cx, |progress, cx| {
 
 `Progress` is non-interactive status display. It has no hover, pressed, or focus behavior and emits no user events.
 
-### 4.10 DropdownMenu
+### 4.11 DropdownMenu
 
 `DropdownMenu` owns its open state internally and emits semantic select events for enabled menu items.
 
@@ -546,7 +576,7 @@ Application code observes `DropdownMenuEvent::Select { item_id, label }`. The op
 
 Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
 
-### 4.11 ContextMenu
+### 4.12 ContextMenu
 
 `ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target or a keyboard context-menu action and emits semantic select events for enabled menu items.
 
