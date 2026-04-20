@@ -5,6 +5,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::super::shared::gallery_pane;
 
+#[derive(Clone)]
 pub(in crate::gallery) struct ToggleButtonPane {
     toggle_button: Entity<ToggleButton>,
     disabled_toggle_button: Entity<ToggleButton>,

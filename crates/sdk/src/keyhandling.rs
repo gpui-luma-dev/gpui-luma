@@ -155,7 +155,8 @@ mod tests {
     use gpui::{Action, KeyBinding};
 
     use super::{
-        ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge,
+        ActivateControl, CloseSubmenu, ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue,
+        IncreaseValueLarge, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
         default_control_key_bindings,
     };
 
@@ -185,6 +186,20 @@ mod tests {
         assert!(has_binding::<IncreaseValueLarge>(&range, "pageup"));
         assert!(has_binding::<IncreaseValue>(&scroll, "down"));
         assert!(has_binding::<DecreaseValueLarge>(&scroll, "pageup"));
+    }
+
+    #[test]
+    fn navigation_profile_binds_collection_accelerators() {
+        let bindings = ControlKeyProfile::Navigation.default_bindings();
+
+        assert!(has_binding::<SelectPreviousItem>(&bindings, "up"));
+        assert!(has_binding::<SelectNextItem>(&bindings, "down"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "home"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "end"));
+        assert!(has_binding::<OpenSubmenu>(&bindings, "right"));
+        assert!(has_binding::<CloseSubmenu>(&bindings, "left"));
+        assert!(has_binding::<ActivateControl>(&bindings, "enter"));
+        assert!(has_binding::<ActivateControl>(&bindings, "space"));
     }
 
     fn has_binding<A: Action>(bindings: &[KeyBinding], key: &str) -> bool {

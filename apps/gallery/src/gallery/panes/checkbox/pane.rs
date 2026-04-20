@@ -64,6 +64,7 @@ impl CheckboxTheme for GalleryCheckboxTheme {
     }
 }
 
+#[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
     default_checkbox: Entity<Checkbox>,
     border_checkbox: Entity<Checkbox>,

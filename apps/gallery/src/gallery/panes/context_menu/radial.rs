@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window,
-    anchored, deferred, div, hsla, point, prelude::*, px, svg,
+    AnyElement, App, ClickEvent, Corner, Div, FontWeight, Stateful, Window, anchored, deferred, div, point, prelude::*,
+    px, svg,
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
-use gpui_luma::controls::dropdown_menu::{DropdownMenuItemIcon, DropdownMenuItem};
+use gpui_luma::controls::dropdown_menu::{DropdownMenuItem, DropdownMenuItemIcon};
 use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -18,34 +18,22 @@ const RADIAL_CENTER_MARKER_SIZE: f32 = 12.0;
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-type ContextMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub(in crate::gallery) fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
-    Arc::new(
-        GalleryRadialContextMenuTemplate::new()
-            .theme(default_context_menu_theme())
-            .focus_border(hsla(0.0, 0.95, 0.50, 1.0)),
-    )
+    Arc::new(GalleryRadialContextMenuTemplate::new().theme(default_context_menu_theme()))
 }
 
 struct GalleryRadialContextMenuTemplate {
     theme: Arc<dyn ContextMenuTheme>,
-    focus_border: gpui::Hsla,
 }
 
 impl GalleryRadialContextMenuTemplate {
     fn new() -> Self {
-        Self { theme: default_context_menu_theme(), focus_border: hsla(0.0, 0.95, 0.50, 1.0) }
+        Self { theme: default_context_menu_theme() }
     }
 
     fn theme(mut self, theme: Arc<dyn ContextMenuTheme>) -> Self {
         self.theme = theme;
-        self
-    }
-
-    fn focus_border(mut self, color: impl Into<gpui::Hsla>) -> Self {
-        self.focus_border = color.into();
         self
     }
 }
@@ -61,31 +49,19 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
         let ContextMenuTemplateHandlers {
             target_bounds,
             target_aux_click,
-            target_hover,
-            target_mouse_down,
-            target_mouse_up,
-            target_mouse_up_out,
+            target_hover: _,
+            target_mouse_down: _,
+            target_mouse_up: _,
+            target_mouse_up_out: _,
             root_mouse_down_out,
             item_hovers,
             item_clicks,
         } = handlers;
         let appearance = self.theme.resolve(model.state);
-        let mut target = render_target(
-            model,
-            &appearance,
-            target_aux_click,
-            target_hover,
-            target_mouse_down,
-            target_mouse_up,
-            target_mouse_up_out,
-        );
+        let mut target = render_target(model, &appearance, target_aux_click);
 
         if !model.enabled {
             target = target.opacity(0.56);
-        }
-
-        if model.focus.focused {
-            target = target.border_1().border_color(self.focus_border);
         }
 
         let mut root = div()
@@ -119,10 +95,6 @@ fn render_target(
     model: &ContextMenuRenderModel<'_>,
     appearance: &ContextMenuAppearance,
     target_aux_click: ContextMenuClickHandler,
-    target_hover: ContextMenuHoverHandler,
-    target_mouse_down: ContextMenuMouseDownHandler,
-    target_mouse_up: ContextMenuMouseUpHandler,
-    target_mouse_up_out: ContextMenuMouseUpHandler,
 ) -> Stateful<Div> {
     div()
         .id(format!("{}-target", model.id))
@@ -133,18 +105,7 @@ fn render_target(
         .items_center()
         .justify_center()
         .gap_2()
-        .bg(appearance.target_background)
         .text_color(appearance.target_foreground)
-        .border_1()
-        .border_color(appearance.target_border)
-        .rounded(px(8.0))
-        .font_weight(FontWeight::MEDIUM)
-        .cursor_pointer()
-        .hover(move |style| style.bg(appearance.item_hover_background))
-        .on_hover(target_hover)
-        .on_mouse_down(MouseButton::Right, target_mouse_down)
-        .on_mouse_up(MouseButton::Right, target_mouse_up)
-        .on_mouse_up_out(MouseButton::Right, target_mouse_up_out)
         .on_aux_click(target_aux_click)
         .child(model.label.clone())
 }

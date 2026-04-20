@@ -6,6 +6,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::super::shared::gallery_pane;
 
+#[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
     icon_button: Entity<IconButton>,
     disabled_icon_button: Entity<IconButton>,

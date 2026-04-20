@@ -5,8 +5,8 @@ use gpui::{
 
 use super::{
     NavButton, NavButtonRenderModel, NavButtonTemplateHandlers, NavItem, NavItemState, NavNodeItemRenderModel,
-    NavNodeItemTemplateHandlers, NavNodeRenderModel, NavNodeTemplateHandlers, NavRenderItem, NavViewBuilder,
-    NavViewRenderModel, NavViewTemplateHandlers,
+    NavNodeItemTemplateHandlers, NavNodeRenderModel, NavNodeTemplateHandlers, NavRenderItem,
+    NavRenderItemTemplateHandlers, NavViewBuilder, NavViewRenderModel, NavViewTemplateHandlers,
 };
 use crate::controls::nav_view::model::{NavLabelRenderModel, NavViewModel};
 use crate::controls::state::ControlFocusState;
@@ -122,13 +122,14 @@ impl NavView {
 
     fn render_model<'a>(&'a self, window: &Window) -> NavViewRenderModel<'a> {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
+        let active_path = focus.focused.then(|| self.effective_active_path()).flatten();
         let mut items = Vec::new();
 
         for (index, item) in self.model.items.iter().enumerate() {
             match item {
                 NavItem::Button(button) => {
                     let path = NavPath::Top(index);
-                    items.push(NavRenderItem::Button(self.button_render_model(button, path, 0, focus)));
+                    items.push(NavRenderItem::Button(self.button_render_model(button, path, 0, focus, active_path)));
                 }
                 NavItem::Label(label) => {
                     items.push(NavRenderItem::Label(NavLabelRenderModel { label: &label.label, depth: 0 }));
@@ -136,7 +137,7 @@ impl NavView {
                 NavItem::Node(node) => {
                     let path = NavPath::Top(index);
                     let enabled = self.model.enabled && node.enabled;
-                    let active = enabled && focus.focused && self.active_path == Some(path);
+                    let active = enabled && active_path == Some(path);
                     let mut children = Vec::new();
 
                     if node.expanded {
@@ -148,7 +149,7 @@ impl NavView {
                                 .selected_item_id
                                 .as_ref()
                                 .is_some_and(|selected_id| selected_id == &child.id);
-                            let child_active = child_enabled && focus.focused && self.active_path == Some(child_path);
+                            let child_active = child_enabled && active_path == Some(child_path);
 
                             children.push(NavNodeItemRenderModel {
                                 id: &child.id,
@@ -181,7 +182,7 @@ impl NavView {
             .bottom_items
             .iter()
             .enumerate()
-            .map(|(index, button)| self.button_render_model(button, NavPath::Bottom(index), 0, focus))
+            .map(|(index, button)| self.button_render_model(button, NavPath::Bottom(index), 0, focus, active_path))
             .collect();
 
         NavViewRenderModel {
@@ -189,7 +190,7 @@ impl NavView {
             items,
             bottom_items,
             selected_item_id: self.model.selected_item_id.as_ref(),
-            active_item_id: self.active_path.and_then(|path| self.id_for_path(path)),
+            active_item_id: active_path.and_then(|path| self.id_for_path(path)),
             enabled: self.model.enabled,
             focus,
             item_template: self.model.item_template.as_ref(),
@@ -202,10 +203,11 @@ impl NavView {
         path: NavPath,
         depth: usize,
         focus: ControlFocusState,
+        active_path: Option<NavPath>,
     ) -> NavButtonRenderModel<'a> {
         let enabled = self.model.enabled && button.enabled;
         let selected = self.model.selected_item_id.as_ref().is_some_and(|selected_id| selected_id == &button.id);
-        let active = enabled && focus.focused && self.active_path == Some(path);
+        let active = enabled && active_path == Some(path);
 
         NavButtonRenderModel {
             id: &button.id,
@@ -237,25 +239,32 @@ impl NavView {
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> NavViewTemplateHandlers {
-        let mut buttons = Vec::new();
-        let mut nodes = Vec::new();
-        let mut node_items = Vec::new();
+        let mut items = Vec::new();
         let mut bottom_buttons = Vec::new();
 
         for (index, item) in self.model.items.iter().enumerate() {
             match item {
-                NavItem::Button(_) => buttons.push(self.button_handlers(NavPath::Top(index), cx)),
-                NavItem::Label(_) => {}
+                NavItem::Button(_) => {
+                    items.push(NavRenderItemTemplateHandlers::Button(self.button_handlers(NavPath::Top(index), cx)));
+                }
+                NavItem::Label(_) => {
+                    items.push(NavRenderItemTemplateHandlers::Label);
+                }
                 NavItem::Node(node) => {
-                    nodes.push(self.node_handlers(NavPath::Top(index), cx));
-                    if node.expanded {
-                        node_items.extend(
-                            node.children
-                                .iter()
-                                .enumerate()
-                                .map(|(child, _)| self.node_item_handlers(NavPath::Child { parent: index, child }, cx)),
-                        );
-                    }
+                    let children = if node.expanded {
+                        node.children
+                            .iter()
+                            .enumerate()
+                            .map(|(child, _)| self.node_item_handlers(NavPath::Child { parent: index, child }, cx))
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+
+                    items.push(NavRenderItemTemplateHandlers::Node {
+                        node: self.node_handlers(NavPath::Top(index), cx),
+                        children,
+                    });
                 }
             }
         }
@@ -268,7 +277,7 @@ impl NavView {
                 .map(|(index, _)| self.button_handlers(NavPath::Bottom(index), cx)),
         );
 
-        NavViewTemplateHandlers { buttons, nodes, node_items, bottom_buttons }
+        NavViewTemplateHandlers { items, bottom_buttons }
     }
 
     fn button_handlers(&self, path: NavPath, cx: &mut Context<Self>) -> NavButtonTemplateHandlers {
@@ -417,27 +426,9 @@ impl NavView {
     }
 
     fn step_active_path(&mut self, direction: NavDirection, cx: &mut Context<Self>) {
-        if !self.model.enabled {
-            return;
-        }
-
-        let visible_paths = self.visible_enabled_paths();
-        if visible_paths.is_empty() {
-            return;
-        }
-
-        let next_index = match self.active_path.and_then(|active| visible_paths.iter().position(|path| *path == active))
+        if let Some(next_path) = next_active_path(&self.model, self.active_path, direction)
+            && self.active_path != Some(next_path)
         {
-            Some(index) => match direction {
-                NavDirection::Previous => index.checked_sub(1).unwrap_or(visible_paths.len() - 1),
-                NavDirection::Next => (index + 1) % visible_paths.len(),
-            },
-            None if direction == NavDirection::Previous => visible_paths.len() - 1,
-            None => selected_visible_index(&visible_paths, self.selected_path()).unwrap_or(0),
-        };
-        let next_path = visible_paths[next_index];
-
-        if self.active_path != Some(next_path) {
             self.active_path = Some(next_path);
             cx.notify();
         }
@@ -464,7 +455,7 @@ impl NavView {
     }
 
     fn open_active_node(&mut self, cx: &mut Context<Self>) {
-        let Some(NavPath::Top(index)) = self.active_path else {
+        let Some(NavPath::Top(index)) = self.effective_active_path() else {
             return;
         };
 
@@ -481,7 +472,7 @@ impl NavView {
     }
 
     fn close_active_node(&mut self, cx: &mut Context<Self>) {
-        let Some(active_path) = self.active_path else {
+        let Some(active_path) = self.effective_active_path() else {
             return;
         };
 
@@ -508,7 +499,7 @@ impl NavView {
     }
 
     fn activate_active_path(&mut self, cx: &mut Context<Self>) {
-        let Some(active_path) = self.active_path.or_else(|| self.visible_enabled_paths().first().copied()) else {
+        let Some(active_path) = self.effective_active_path() else {
             return;
         };
 
@@ -548,70 +539,15 @@ impl NavView {
     }
 
     fn visible_enabled_paths(&self) -> Vec<NavPath> {
-        let mut paths = Vec::new();
-
-        for (index, item) in self.model.items.iter().enumerate() {
-            match item {
-                NavItem::Button(button) if button.enabled => paths.push(NavPath::Top(index)),
-                NavItem::Button(_) | NavItem::Label(_) => {}
-                NavItem::Node(node) if node.enabled => {
-                    paths.push(NavPath::Top(index));
-
-                    if node.expanded {
-                        paths.extend(
-                            node.children
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, child)| child.enabled)
-                                .map(|(child, _)| NavPath::Child { parent: index, child }),
-                        );
-                    }
-                }
-                NavItem::Node(_) => {}
-            }
-        }
-
-        paths.extend(
-            self.model
-                .bottom_items
-                .iter()
-                .enumerate()
-                .filter(|(_, button)| button.enabled)
-                .map(|(index, _)| NavPath::Bottom(index)),
-        );
-
-        paths
-    }
-
-    fn selected_path(&self) -> Option<NavPath> {
-        let selected_id = self.model.selected_item_id.as_ref()?;
-
-        for (index, item) in self.model.items.iter().enumerate() {
-            match item {
-                NavItem::Button(button) if button.id == *selected_id && button.enabled => {
-                    return Some(NavPath::Top(index));
-                }
-                NavItem::Node(node) => {
-                    if let Some((child, _)) =
-                        node.children.iter().enumerate().find(|(_, child)| child.id == *selected_id && child.enabled)
-                    {
-                        return Some(NavPath::Child { parent: index, child });
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        self.model
-            .bottom_items
-            .iter()
-            .enumerate()
-            .find(|(_, button)| button.id == *selected_id && button.enabled)
-            .map(|(index, _)| NavPath::Bottom(index))
+        visible_enabled_paths_for_model(&self.model)
     }
 
     fn path_is_visible_and_enabled(&self, path: NavPath) -> bool {
         self.visible_enabled_paths().contains(&path)
+    }
+
+    fn effective_active_path(&self) -> Option<NavPath> {
+        effective_active_path_for_model(&self.model, self.active_path)
     }
 
     fn path_is_activatable(&self, path: NavPath) -> bool {
@@ -719,15 +655,117 @@ fn normalize_selected_item_id(model: &mut NavViewModel) {
     }
 }
 
-fn selected_visible_index(paths: &[NavPath], selected_path: Option<NavPath>) -> Option<usize> {
-    let selected_path = selected_path?;
+fn visible_enabled_paths_for_model(model: &NavViewModel) -> Vec<NavPath> {
+    if !model.enabled {
+        return Vec::new();
+    }
 
-    paths.iter().position(|path| *path == selected_path)
+    let mut paths = Vec::new();
+
+    for (index, item) in model.items.iter().enumerate() {
+        match item {
+            NavItem::Button(button) if button.enabled => paths.push(NavPath::Top(index)),
+            NavItem::Button(_) | NavItem::Label(_) => {}
+            NavItem::Node(node) if node.enabled => {
+                paths.push(NavPath::Top(index));
+
+                if node.expanded {
+                    paths.extend(
+                        node.children
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, child)| child.enabled)
+                            .map(|(child, _)| NavPath::Child { parent: index, child }),
+                    );
+                }
+            }
+            NavItem::Node(_) => {}
+        }
+    }
+
+    paths.extend(
+        model
+            .bottom_items
+            .iter()
+            .enumerate()
+            .filter(|(_, button)| button.enabled)
+            .map(|(index, _)| NavPath::Bottom(index)),
+    );
+
+    paths
+}
+
+fn selected_path_for_model(model: &NavViewModel) -> Option<NavPath> {
+    let selected_id = model.selected_item_id.as_ref()?;
+
+    for (index, item) in model.items.iter().enumerate() {
+        match item {
+            NavItem::Button(button) if button.id == *selected_id && button.enabled => {
+                return Some(NavPath::Top(index));
+            }
+            NavItem::Node(node) => {
+                if let Some((child, _)) =
+                    node.children.iter().enumerate().find(|(_, child)| child.id == *selected_id && child.enabled)
+                {
+                    return Some(NavPath::Child { parent: index, child });
+                }
+            }
+            _ => {}
+        }
+    }
+
+    model
+        .bottom_items
+        .iter()
+        .enumerate()
+        .find(|(_, button)| button.id == *selected_id && button.enabled)
+        .map(|(index, _)| NavPath::Bottom(index))
+}
+
+fn effective_active_path_for_model(model: &NavViewModel, active_path: Option<NavPath>) -> Option<NavPath> {
+    if !model.enabled {
+        return None;
+    }
+
+    let visible_paths = visible_enabled_paths_for_model(model);
+
+    active_path
+        .filter(|active| visible_paths.contains(active))
+        .or_else(|| selected_path_for_model(model).filter(|selected| visible_paths.contains(selected)))
+        .or_else(|| visible_paths.first().copied())
+}
+
+fn next_active_path(model: &NavViewModel, active_path: Option<NavPath>, direction: NavDirection) -> Option<NavPath> {
+    if !model.enabled {
+        return None;
+    }
+
+    let visible_paths = visible_enabled_paths_for_model(model);
+    if visible_paths.is_empty() {
+        return None;
+    }
+
+    let current_path = active_path
+        .filter(|active| visible_paths.contains(active))
+        .or_else(|| selected_path_for_model(model).filter(|selected| visible_paths.contains(selected)));
+    let next_index = match current_path.and_then(|active| visible_paths.iter().position(|path| *path == active)) {
+        Some(index) => match direction {
+            NavDirection::Previous => index.checked_sub(1).unwrap_or(visible_paths.len() - 1),
+            NavDirection::Next => (index + 1) % visible_paths.len(),
+        },
+        None if direction == NavDirection::Previous => visible_paths.len() - 1,
+        None => 0,
+    };
+
+    Some(visible_paths[next_index])
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{NavItem, NavViewModel, normalize_selected_item_id};
+    use super::{
+        NavDirection, NavItem, NavPath, NavViewModel, effective_active_path_for_model, next_active_path,
+        normalize_selected_item_id, visible_enabled_paths_for_model,
+    };
     use crate::controls::nav_view::{NavButton, NavNodeItem, default_nav_item_template, default_nav_view_template};
 
     #[test]
@@ -757,26 +795,71 @@ mod tests {
         assert_eq!(model.selected_item_id, None);
     }
 
+    #[test]
+    fn effective_active_path_uses_selected_visible_row() {
+        let model = model_with_selected(Some("button"));
+
+        assert_eq!(effective_active_path_for_model(&model, None), Some(NavPath::Child { parent: 2, child: 0 }));
+    }
+
+    #[test]
+    fn effective_active_path_falls_back_to_first_enabled_row() {
+        let model = model_with_selected(None);
+
+        assert_eq!(effective_active_path_for_model(&model, None), Some(NavPath::Top(0)));
+    }
+
+    #[test]
+    fn effective_active_path_is_empty_when_disabled() {
+        let mut model = model_with_selected(Some("button"));
+        model.enabled = false;
+
+        assert_eq!(visible_enabled_paths_for_model(&model), Vec::new());
+        assert_eq!(effective_active_path_for_model(&model, None), None);
+        assert_eq!(next_active_path(&model, None, NavDirection::Next), None);
+    }
+
+    #[test]
+    fn visible_enabled_paths_skip_labels_and_disabled_rows() {
+        let model = model_with_selected(None);
+
+        assert_eq!(
+            visible_enabled_paths_for_model(&model),
+            vec![NavPath::Top(0), NavPath::Top(2), NavPath::Child { parent: 2, child: 0 }, NavPath::Bottom(0)]
+        );
+    }
+
+    #[test]
+    fn arrow_movement_starts_from_effective_selected_row() {
+        let model = model_with_selected(Some("button"));
+
+        assert_eq!(next_active_path(&model, None, NavDirection::Next), Some(NavPath::Bottom(0)));
+    }
+
     fn model_with_selected(selected_item_id: Option<&str>) -> NavViewModel {
         NavViewModel {
             id: "gallery-nav".into(),
-            items: vec![
-                NavItem::button("all-controls").label("All Controls").into(),
-                NavItem::label("Controls"),
-                NavItem::node("command")
-                    .label("Command")
-                    .expanded(true)
-                    .children([
-                        NavNodeItem::new("button").label("Button"),
-                        NavNodeItem::new("icon-button").label("Icon Button").enabled(false),
-                    ])
-                    .into(),
-            ],
+            items: model_items(),
             bottom_items: vec![NavButton::new("settings").label("Settings")],
             selected_item_id: selected_item_id.map(|id| id.to_string().into()),
             enabled: true,
             template: default_nav_view_template(),
             item_template: default_nav_item_template(),
         }
+    }
+
+    fn model_items() -> Vec<NavItem> {
+        vec![
+            NavItem::button("all-controls").label("All Controls").into(),
+            NavItem::label("Controls"),
+            NavItem::node("command")
+                .label("Command")
+                .expanded(true)
+                .children([
+                    NavNodeItem::new("button").label("Button"),
+                    NavNodeItem::new("icon-button").label("Icon Button").enabled(false),
+                ])
+                .into(),
+        ]
     }
 }

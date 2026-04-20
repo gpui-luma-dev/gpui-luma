@@ -1,10 +1,10 @@
 use gpui::{
-    AnyElement, ClickEvent, Context, DragMoveEvent, EventEmitter, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
-    Render, SharedString, Window, div, prelude::*, px,
+    ClickEvent, Context, DragMoveEvent, EventEmitter, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
+    SharedString, Window, div, prelude::*, px,
 };
 
 use super::{
-    model::{SplitViewModel, clamp_sidebar_width, effective_sidebar_width},
+    model::{PaneRender, SplitViewModel, clamp_sidebar_width, effective_sidebar_width},
     template::SplitViewTemplateHandlers,
     SplitViewBuilder, SplitViewRenderModel,
 };
@@ -39,10 +39,9 @@ pub struct SplitView {
     separator_hovered: bool,
     dragging_separator: bool,
     drag_moved: bool,
+    suppress_next_separator_click: bool,
     drag_start_axis_px: f32,
     drag_start_width: Pixels,
-    sidebar_override: Option<AnyElement>,
-    content_override: Option<AnyElement>,
 }
 
 impl EventEmitter<SplitViewEvent> for SplitView {}
@@ -61,10 +60,9 @@ impl SplitView {
             separator_hovered: false,
             dragging_separator: false,
             drag_moved: false,
+            suppress_next_separator_click: false,
             drag_start_axis_px: 0.0,
             drag_start_width: px(0.0),
-            sidebar_override: None,
-            content_override: None,
         }
     }
 
@@ -80,9 +78,9 @@ impl SplitView {
         self.model.collapsed
     }
 
-    pub fn set_panes_once(&mut self, sidebar: AnyElement, content: AnyElement) {
-        self.sidebar_override = Some(sidebar);
-        self.content_override = Some(content);
+    pub fn set_panes(&mut self, sidebar: PaneRender, content: PaneRender) {
+        self.model.sidebar = sidebar;
+        self.model.content = content;
     }
 
     pub fn set_sidebar_width(&mut self, width: Pixels, cx: &mut Context<Self>) {
@@ -105,6 +103,7 @@ impl SplitView {
         self.separator_hovered = false;
         self.dragging_separator = false;
         self.drag_moved = false;
+        self.suppress_next_separator_click = false;
         cx.emit(SplitViewEvent::CollapsedChanged { collapsed });
         cx.notify();
     }
@@ -121,6 +120,8 @@ impl SplitView {
         self.model.enabled = enabled;
         if !enabled {
             self.dragging_separator = false;
+            self.drag_moved = false;
+            self.suppress_next_separator_click = false;
         }
         cx.notify();
     }
@@ -145,7 +146,7 @@ impl SplitView {
             separator_mouse_down: Box::new(cx.listener(Self::handle_separator_mouse_down)),
             separator_click: Box::new(cx.listener(Self::handle_separator_click)),
             mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
-            mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
+            mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up_out)),
             drag_move: Box::new(cx.listener(Self::handle_drag_move)),
         }
     }
@@ -166,6 +167,7 @@ impl SplitView {
 
         self.dragging_separator = true;
         self.drag_moved = false;
+        self.suppress_next_separator_click = false;
         self.drag_start_axis_px = event.position.x.as_f32();
         self.drag_start_width = self.model.sidebar_width;
         cx.notify();
@@ -176,7 +178,8 @@ impl SplitView {
             return;
         }
 
-        if self.drag_moved {
+        if self.suppress_next_separator_click {
+            self.suppress_next_separator_click = false;
             self.drag_moved = false;
             return;
         }
@@ -214,6 +217,21 @@ impl SplitView {
 
         self.dragging_separator = false;
         if self.drag_moved {
+            self.suppress_next_separator_click = true;
+            cx.emit(SplitViewEvent::ResizeEnd { width: self.model.sidebar_width });
+            cx.notify();
+        }
+    }
+
+    fn handle_mouse_up_out(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.dragging_separator {
+            return;
+        }
+
+        self.dragging_separator = false;
+        self.suppress_next_separator_click = false;
+        if self.drag_moved {
+            self.drag_moved = false;
             cx.emit(SplitViewEvent::ResizeEnd { width: self.model.sidebar_width });
             cx.notify();
         }
@@ -222,8 +240,8 @@ impl SplitView {
 
 impl Render for SplitView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let sidebar = self.sidebar_override.take().unwrap_or_else(|| (self.model.sidebar)());
-        let content = self.content_override.take().unwrap_or_else(|| (self.model.content)());
+        let sidebar = (self.model.sidebar)();
+        let content = (self.model.content)();
         let template = self.model.template.clone();
         let model = self.render_model();
         let handlers = self.template_handlers(cx);

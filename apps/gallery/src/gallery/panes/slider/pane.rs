@@ -5,6 +5,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::super::shared::gallery_pane;
 
+#[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
     slider: Entity<Slider>,
     disabled_slider: Entity<Slider>,

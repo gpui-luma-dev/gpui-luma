@@ -6,6 +6,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::super::shared::gallery_pane;
 
+#[derive(Clone)]
 pub(in crate::gallery) struct DropdownMenuPane {
     dropdown_menu: Entity<DropdownMenu>,
     disabled_dropdown_menu: Entity<DropdownMenu>,

@@ -42,10 +42,14 @@ pub struct NavNodeItemTemplateHandlers {
     pub click: NavClickHandler,
 }
 
+pub enum NavRenderItemTemplateHandlers {
+    Button(NavButtonTemplateHandlers),
+    Label,
+    Node { node: NavNodeTemplateHandlers, children: Vec<NavNodeItemTemplateHandlers> },
+}
+
 pub struct NavViewTemplateHandlers {
-    pub buttons: Vec<NavButtonTemplateHandlers>,
-    pub nodes: Vec<NavNodeTemplateHandlers>,
-    pub node_items: Vec<NavNodeItemTemplateHandlers>,
+    pub items: Vec<NavRenderItemTemplateHandlers>,
     pub bottom_buttons: Vec<NavButtonTemplateHandlers>,
 }
 
@@ -95,10 +99,16 @@ impl ThemedNavViewTemplate {
     }
 }
 
+impl Default for ThemedNavViewTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn default_nav_view_template() -> Arc<dyn NavViewTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn NavViewTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedNavViewTemplate::new())).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedNavViewTemplate)).clone()
 }
 
 impl NavViewTemplate for ThemedNavViewTemplate {
@@ -109,35 +119,36 @@ impl NavViewTemplate for ThemedNavViewTemplate {
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let NavViewTemplateHandlers { buttons, nodes, node_items, bottom_buttons } = handlers;
-        let mut buttons = buttons.into_iter();
-        let mut nodes = nodes.into_iter();
-        let mut node_items = node_items.into_iter();
+        let NavViewTemplateHandlers { items, bottom_buttons } = handlers;
+        let mut item_handlers = items.into_iter();
         let mut bottom_buttons = bottom_buttons.into_iter();
         let mut main = div().flex().flex_col().gap(px(2.0)).flex_1().min_h(px(0.0));
 
         for item in &model.items {
-            match item {
-                NavRenderItem::Button(button) => {
-                    if let Some(handlers) = buttons.next() {
-                        main = main.child(model.item_template.render_button(button, handlers, window, cx));
-                    }
+            match (item, item_handlers.next()) {
+                (NavRenderItem::Button(button), Some(NavRenderItemTemplateHandlers::Button(handlers))) => {
+                    main = main.child(model.item_template.render_button(button, handlers, window, cx));
                 }
-                NavRenderItem::Label(label) => {
+                (NavRenderItem::Label(label), Some(NavRenderItemTemplateHandlers::Label)) => {
                     main = main.child(model.item_template.render_label(label, window, cx));
                 }
-                NavRenderItem::Node(node) => {
-                    if let Some(handlers) = nodes.next() {
-                        main = main.child(model.item_template.render_node(node, handlers, window, cx));
-                    }
+                (
+                    NavRenderItem::Node(node),
+                    Some(NavRenderItemTemplateHandlers::Node { node: node_handlers, children }),
+                ) => {
+                    main = main.child(model.item_template.render_node(node, node_handlers, window, cx));
 
                     if node.expanded {
+                        let mut child_handlers = children.into_iter();
                         for child in &node.children {
-                            if let Some(handlers) = node_items.next() {
+                            if let Some(handlers) = child_handlers.next() {
                                 main = main.child(model.item_template.render_node_item(child, handlers, window, cx));
                             }
                         }
                     }
+                }
+                _ => {
+                    debug_assert!(false, "nav render model and handlers are out of sync");
                 }
             }
         }
@@ -191,12 +202,14 @@ impl NavItemTemplate for ThemedNavItemTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         self.render_action_row(
-            button.id,
-            button.label,
-            button.depth,
-            button.enabled,
-            button.state,
-            None,
+            ActionRow {
+                id: button.id,
+                label: button.label,
+                depth: button.depth,
+                enabled: button.enabled,
+                state: button.state,
+                disclosure: None,
+            },
             RowHandlers::Button(handlers),
         )
     }
@@ -224,16 +237,18 @@ impl NavItemTemplate for ThemedNavItemTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         self.render_action_row(
-            node.id,
-            node.label,
-            node.depth,
-            node.enabled,
-            node.state,
-            Some(if node.expanded {
-                LucideIcon::ChevronDown
-            } else {
-                LucideIcon::ChevronRight
-            }),
+            ActionRow {
+                id: node.id,
+                label: node.label,
+                depth: node.depth,
+                enabled: node.enabled,
+                state: node.state,
+                disclosure: Some(if node.expanded {
+                    LucideIcon::ChevronDown
+                } else {
+                    LucideIcon::ChevronRight
+                }),
+            },
             RowHandlers::Node(handlers),
         )
     }
@@ -246,85 +261,87 @@ impl NavItemTemplate for ThemedNavItemTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         self.render_action_row(
-            item.id,
-            item.label,
-            item.depth,
-            item.enabled,
-            item.state,
-            None,
+            ActionRow {
+                id: item.id,
+                label: item.label,
+                depth: item.depth,
+                enabled: item.enabled,
+                state: item.state,
+                disclosure: None,
+            },
             RowHandlers::NodeItem(handlers),
         )
     }
 }
 
 impl ThemedNavItemTemplate {
-    fn render_action_row(
-        &self,
-        id: &gpui::SharedString,
-        label: &gpui::SharedString,
-        depth: usize,
-        enabled: bool,
-        state: NavItemState,
-        disclosure: Option<LucideIcon>,
-        handlers: RowHandlers,
-    ) -> Stateful<Div> {
+    fn render_action_row(&self, model: ActionRow<'_>, handlers: RowHandlers) -> Stateful<Div> {
         let colors = &self.tokens.colors;
         let metrics = &self.tokens.metrics.md;
         let icon_size = 16.0;
-        let background = if state.selected && state.pressed {
+        let background = if model.state.selected && model.state.pressed {
             Some(colors.selected_pressed)
-        } else if state.selected && state.hovered {
+        } else if model.state.selected && model.state.hovered {
             Some(colors.selected_hover)
-        } else if state.selected {
+        } else if model.state.selected {
             Some(colors.selected)
-        } else if state.pressed {
+        } else if model.state.pressed {
             Some(colors.surface_pressed)
-        } else if state.hovered || state.active {
+        } else if model.state.hovered || model.state.active {
             Some(colors.surface_hover)
         } else {
             None
         };
-        let foreground = if !enabled {
+        let foreground = if !model.enabled {
             colors.text_disabled
-        } else if state.selected {
+        } else if model.state.selected {
             colors.text_inverse
         } else {
             colors.text
         };
         let mut row = div()
-            .id(id.clone())
+            .id(model.id.clone())
             .flex()
             .items_center()
             .gap(px(metrics.gap))
             .min_h(px(30.0))
-            .px(px(depth_padding(depth)))
+            .px(px(depth_padding(model.depth)))
             .rounded(px(metrics.radius))
             .text_size(px(13.0))
             .line_height(px(18.0))
             .text_color(foreground)
-            .child(match disclosure {
+            .child(match model.disclosure {
                 Some(icon) => render_lucide_icon(icon, foreground, icon_size),
-                None if depth > 0 => div().size(px(icon_size)).into_any_element(),
+                None if model.depth > 0 => div().size(px(icon_size)).into_any_element(),
                 None => div().size(px(0.0)).into_any_element(),
             })
-            .child(div().flex_1().child(label.clone()));
+            .child(div().flex_1().child(model.label.clone()));
 
         if let Some(background) = background {
             row = row.bg(background);
         }
 
-        if enabled {
+        if model.enabled {
             row = apply_handlers(row.cursor_pointer(), handlers);
         } else {
             row = row.opacity(0.56);
         }
 
-        if state.focus_visible {
+        if model.state.focus_visible {
             row = row.border_1().border_color(focus_debug_border());
         }
 
         row
     }
+}
+
+struct ActionRow<'a> {
+    id: &'a gpui::SharedString,
+    label: &'a gpui::SharedString,
+    depth: usize,
+    enabled: bool,
+    state: NavItemState,
+    disclosure: Option<LucideIcon>,
 }
 
 enum RowHandlers {

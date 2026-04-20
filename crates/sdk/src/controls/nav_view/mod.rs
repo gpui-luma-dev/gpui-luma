@@ -9,8 +9,9 @@ pub use model::{
 };
 pub use template::{
     NavButtonTemplateHandlers, NavClickHandler, NavHoverHandler, NavItemTemplate, NavMouseDownHandler,
-    NavMouseUpHandler, NavNodeItemTemplateHandlers, NavNodeTemplateHandlers, NavViewTemplate, NavViewTemplateHandlers,
-    ThemedNavItemTemplate, ThemedNavViewTemplate, default_nav_item_template, default_nav_view_template,
+    NavMouseUpHandler, NavNodeItemTemplateHandlers, NavNodeTemplateHandlers, NavRenderItemTemplateHandlers,
+    NavViewTemplate, NavViewTemplateHandlers, ThemedNavItemTemplate, ThemedNavViewTemplate, default_nav_item_template,
+    default_nav_view_template,
 };
 
 pub use crate::controls::state::{CompositeItemState as NavItemState, ControlFocusState};

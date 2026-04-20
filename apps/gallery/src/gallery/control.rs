@@ -1,5 +1,5 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
-use gpui_luma::controls::nav_view::{NavButton, NavItem, NavNodeItem, NavView, NavViewEvent};
+use gpui_luma::controls::nav_view::{NavView, NavViewEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 
 use super::panes::registry::GalleryPanes;
@@ -29,31 +29,11 @@ impl GalleryApp {
             .collapsed(false)
             .resizable(true)
             .spawn(cx);
+        let initial_selection = GalleryPanes::initial_selection();
         let nav_view = NavView::new("gallery-nav")
-            .item(NavItem::button("introduction").label("Introduction"))
-            .item(NavItem::button("search").label("Search"))
-            .item(NavItem::label("Controls"))
-            .item(NavItem::node("command").label("Command").expanded(true).children([
-                NavNodeItem::new("button").label("Button"),
-                NavNodeItem::new("icon-button").label("Icon Button"),
-                NavNodeItem::new("toggle-button").label("Toggle Button"),
-            ]))
-            .item(NavItem::node("choice").label("Choice").expanded(true).children([
-                NavNodeItem::new("switch").label("Switch"),
-                NavNodeItem::new("checkbox").label("Checkbox"),
-                NavNodeItem::new("radio-group").label("Radio Group"),
-            ]))
-            .item(NavItem::node("input").label("Input").children([
-                NavNodeItem::new("slider").label("Slider"),
-                NavNodeItem::new("scrollbar").label("Scrollbar"),
-            ]))
-            .item(NavItem::node("menu").label("Menu").children([
-                NavNodeItem::new("dropdown-menu").label("Dropdown Menu"),
-                NavNodeItem::new("context-menu").label("Context Menu"),
-            ]))
-            .item(NavItem::node("feedback").label("Feedback").child(NavNodeItem::new("progress").label("Progress")))
-            .bottom_items([NavButton::new("settings").label("Settings")])
-            .selected("introduction")
+            .items(GalleryPanes::nav_items())
+            .bottom_items(GalleryPanes::bottom_nav_items())
+            .selected(initial_selection)
             .spawn(cx);
         let panes = GalleryPanes::new(cx);
 
@@ -72,7 +52,7 @@ impl GalleryApp {
             split_view,
             nav_view,
             panes,
-            nav_selection: "introduction".to_string(),
+            nav_selection: initial_selection.to_string(),
             nav_toggle: "none".to_string(),
             split_sidebar_width: 280.0,
             split_sidebar_collapsed: false,

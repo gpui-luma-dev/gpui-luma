@@ -9,10 +9,10 @@ use super::radial::radial_context_menu_template;
 use super::super::shared::gallery_pane;
 use super::template::gallery_context_menu_template;
 
+#[derive(Clone)]
 pub(in crate::gallery) struct ContextMenuPane {
     default_context_menu: Entity<ContextMenu>,
     radial_context_menu: Entity<ContextMenu>,
-    disabled_context_menu: Entity<ContextMenu>,
     default_selection: String,
     radial_selection: String,
 }
@@ -27,20 +27,14 @@ impl ContextMenuPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
         Self {
             default_context_menu: ContextMenu::new("context-menu-default-example")
-                .label("Default surface")
+                .label("Right-click me: Default")
                 .items(default_context_menu_items())
                 .template(gallery_context_menu_template())
                 .spawn(cx),
             radial_context_menu: ContextMenu::new("context-menu-radial-example")
-                .label("Radial surface")
+                .label("Right-click me: Radial")
                 .items(radial_context_menu_items())
                 .template(radial_context_menu_template())
-                .spawn(cx),
-            disabled_context_menu: ContextMenu::new("disabled-context-menu-default-example")
-                .label("Disabled surface")
-                .items(default_context_menu_items())
-                .template(gallery_context_menu_template())
-                .enabled(false)
                 .spawn(cx),
             default_selection: "none".to_string(),
             radial_selection: "none".to_string(),
@@ -73,7 +67,6 @@ impl ContextMenuPane {
                         .gap_4()
                         .justify_center()
                         .child(self.default_context_menu.clone())
-                        .child(self.disabled_context_menu.clone())
                         .child(
                             div()
                                 .min_w(px(260.0))

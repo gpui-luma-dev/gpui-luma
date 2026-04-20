@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window,
-    anchored, deferred, div, px, prelude::*, svg,
+    AnyElement, App, ClickEvent, Corner, Div, FontWeight, Stateful, Window, anchored, deferred, div, px, prelude::*,
+    svg,
 };
 use gpui_luma::controls::context_menu::{
     ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers, DropdownMenuItem, DropdownMenuItemIcon,
@@ -13,8 +13,6 @@ use lucide_icons::Icon as LucideIcon;
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-type ContextMenuMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-type ContextMenuMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub(in crate::gallery) fn gallery_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
     Arc::new(GalleryContextMenuTemplate { theme: default_context_menu_theme() })
@@ -35,24 +33,16 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
         let ContextMenuTemplateHandlers {
             target_bounds,
             target_aux_click,
-            target_hover,
-            target_mouse_down,
-            target_mouse_up,
-            target_mouse_up_out,
+            target_hover: _,
+            target_mouse_down: _,
+            target_mouse_up: _,
+            target_mouse_up_out: _,
             root_mouse_down_out,
             item_hovers,
             item_clicks,
         } = handlers;
         let appearance = self.theme.resolve(model.state);
-        let mut target = render_gallery_target(
-            model,
-            &appearance,
-            target_aux_click,
-            target_hover,
-            target_mouse_down,
-            target_mouse_up,
-            target_mouse_up_out,
-        );
+        let mut target = render_gallery_target(model, &appearance, target_aux_click);
 
         if !model.enabled {
             target = target.opacity(0.56);
@@ -88,10 +78,6 @@ pub(super) fn render_gallery_target(
     model: &ContextMenuRenderModel<'_>,
     appearance: &ContextMenuAppearance,
     target_aux_click: ContextMenuClickHandler,
-    target_hover: ContextMenuHoverHandler,
-    target_mouse_down: ContextMenuMouseDownHandler,
-    target_mouse_up: ContextMenuMouseUpHandler,
-    target_mouse_up_out: ContextMenuMouseUpHandler,
 ) -> Stateful<Div> {
     div()
         .id(format!("{}-target", model.id))
@@ -102,18 +88,7 @@ pub(super) fn render_gallery_target(
         .items_center()
         .justify_center()
         .gap_2()
-        .bg(appearance.target_background)
         .text_color(appearance.target_foreground)
-        .border_1()
-        .border_color(appearance.target_border)
-        .rounded(px(8.0))
-        .font_weight(FontWeight::MEDIUM)
-        .cursor_pointer()
-        .hover(move |style| style.bg(appearance.item_hover_background))
-        .on_hover(target_hover)
-        .on_mouse_down(MouseButton::Right, target_mouse_down)
-        .on_mouse_up(MouseButton::Right, target_mouse_up)
-        .on_mouse_up_out(MouseButton::Right, target_mouse_up_out)
         .on_aux_click(target_aux_click)
         .child(model.label.clone())
 }

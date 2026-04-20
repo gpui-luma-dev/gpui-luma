@@ -43,10 +43,16 @@ impl ThemedSplitViewTemplate {
     }
 }
 
+impl Default for ThemedSplitViewTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn default_split_view_template() -> Arc<dyn SplitViewTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SplitViewTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedSplitViewTemplate::new())).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSplitViewTemplate)).clone()
 }
 
 impl SplitViewTemplate for ThemedSplitViewTemplate {
