@@ -229,8 +229,8 @@ root focus scope
     content: active gallery page
 ```
 
-The first gallery integration can use placeholder navigation if the tree view is not ready yet.
-That keeps `SplitView` independent from the tree-view effort.
+The first gallery integration can use placeholder navigation if `NavigationSidebar` is not ready yet.
+That keeps `SplitView` independent from the sidebar navigation effort.
 
 Recommended sequence:
 
@@ -239,7 +239,7 @@ Recommended sequence:
 3. Implement the default two-pane template and draggable separator.
 4. Add gallery shell usage with a simple sidebar.
 5. Move current gallery demos into content pages.
-6. Add real navigation tree after split view behavior is stable.
+6. Add `NavigationSidebar` after split view behavior is stable.
 
 ## Open Questions
 

@@ -2,6 +2,10 @@
 
 This document defines the first Luma navigation collection control: `NavView`.
 
+`NavView` is being replaced by `NavigationSidebar`; see `navigation-sidebar.md`. That document
+reframes navigation as a hierarchical sidebar of hosted controls rather than a widget that owns
+custom button-like rows.
+
 `NavView` is intentionally not a full arbitrary `TreeView`. It is a focused navigation control for
 application sidebars, beginning with the gallery app. It should support grouped navigation,
 selection, simple disclosure, and event emission without trying to model every possible tree-like
