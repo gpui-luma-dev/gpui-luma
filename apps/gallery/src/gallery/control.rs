@@ -6,6 +6,7 @@ use super::panes::registry::GalleryPanes;
 
 pub struct GalleryApp {
     pub(super) focus_scope: FocusHandle,
+    pub(super) pane_focus: FocusHandle,
     pub(super) split_view: Entity<SplitView>,
     pub(super) nav_view: Entity<NavView>,
     pub(super) panes: GalleryPanes,
@@ -19,6 +20,7 @@ pub struct GalleryApp {
 impl GalleryApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let focus_scope = cx.focus_handle();
+        let pane_focus = cx.focus_handle().tab_stop(true);
         window.focus(&focus_scope, cx);
 
         let split_view = SplitView::new("gallery-shell")
@@ -49,6 +51,7 @@ impl GalleryApp {
 
         Self {
             focus_scope,
+            pane_focus,
             split_view,
             nav_view,
             panes,

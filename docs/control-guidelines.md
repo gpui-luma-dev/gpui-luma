@@ -246,6 +246,24 @@ Composite controls may need explicit item state. `RadioGroup` uses one group foc
 per-item `CompositeItemState`. Menus use `MenuPath` to separate active descendants from hovered
 items and open submenus.
 
+Navigation controls such as `NavView` and future tab controls should also use a composite
+active-descendant model. The navigation control owns focus for its own item surface: pointer clicks
+and keyboard activation should focus the navigation control, set the active item, and render a
+visible affordance on that active item. Do not automatically move focus into the activated content
+pane from inside the navigation control.
+
+Activated content owns the focus handoff decision. The navigation control should emit a semantic
+activation event, and the application or destination pane should decide whether to:
+
+- keep focus on the navigation control,
+- focus the content pane root,
+- focus a primary child control inside the pane,
+- defer focus until after the activated content is rendered.
+
+This keeps route navigation, tab previews, passive documentation panes, forms, editors, and canvas
+surfaces from sharing one hard-coded focus policy. Gallery or app code should make the focus
+handoff explicit when a pane wants focus on activation.
+
 ## Keyboard Handling
 
 Install default control key bindings with `keyhandling::bind_default_control_keys(cx)` and default
@@ -263,6 +281,8 @@ Use the existing key profiles:
 - `ControlKeyProfile::ScrollOffset`: scroll offset arrows, page up/down, home, and end.
 - `ControlKeyProfile::Menu`: dropdown menu navigation and activation.
 - `ControlKeyProfile::ContextMenu`: context-menu open, navigation, and activation.
+- `ControlKeyProfile::Navigation`: navigation collection arrows, home/end, submenu open/close, and
+  activation.
 
 Attach action handlers to the focus-tracked element. For example, button-family controls track focus,
 set the key context, and handle `ActivateControl`.
@@ -649,6 +669,8 @@ Use explicit composite state when:
 - selection and active descendant are different concepts,
 - hover/pressed state is item-specific,
 - the template needs a handler per rendered item.
+- activation may change app content, but the destination content should decide whether and where to
+  take focus.
 
 Join `ButtonFamilyTheme` when:
 
@@ -688,5 +710,7 @@ Before considering a new control complete, verify:
 - Programmatic setters notify without emitting user events unless there is a deliberate exception.
 - User interactions emit semantic events with enough data for the app to update its state.
 - Composite controls skip disabled items during navigation and selection.
+- Navigation-style composites keep focus on their own active item unless application or pane code
+  explicitly transfers focus to activated content.
 - App-owned content, including icons, stays app-owned.
 - The gallery demonstrates the control through public SDK APIs.

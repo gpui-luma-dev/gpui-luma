@@ -1,6 +1,6 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Window, div, prelude::*,
+    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
+    SharedString, Window, div, prelude::*,
 };
 
 use super::{
@@ -234,7 +234,7 @@ impl NavView {
             pressed: enabled && self.pressed_path == Some(path),
             selected,
             active,
-            focus_visible: enabled && focus.focus_visible && active,
+            focus_visible: enabled && focus.focused && active,
         }
     }
 
@@ -326,6 +326,15 @@ impl NavView {
                 this.handle_activate_click(path, event, window, cx);
             })),
         }
+    }
+
+    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
+        self.focus_handle.focus(window, cx);
+        cx.notify();
     }
 
     fn handle_item_hover(&mut self, path: NavPath, hovered: bool, cx: &mut Context<Self>) {
@@ -626,6 +635,7 @@ impl Render for NavView {
                     .render(&model, handlers, window, cx)
                     .track_focus(&self.focus_handle)
                     .key_context(ControlKeyProfile::Navigation.context())
+                    .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
                     .on_action(cx.listener(Self::handle_select_previous_item))
                     .on_action(cx.listener(Self::handle_select_next_item))
                     .on_action(cx.listener(Self::handle_select_first_item))

@@ -1,4 +1,4 @@
-use gpui::{AnyElement, Context, IntoElement, MouseButton, Render, Window, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, Render, Window, div, prelude::*, px, rgb};
 use gpui_luma::controls::split_view::render_pane;
 use gpui_luma::focus::LumaFocusScopeExt;
 
@@ -6,7 +6,7 @@ use super::control::GalleryApp;
 
 impl Render for GalleryApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let focus_scope = self.focus_scope.clone();
+        let pane_focus = self.pane_focus.clone();
         let nav_view = self.nav_view.clone();
         let panes = self.panes.clone();
         let nav_selection = self.nav_selection.clone();
@@ -14,7 +14,7 @@ impl Render for GalleryApp {
         self.split_view.update(cx, |split_view, _cx| {
             split_view.set_panes(
                 render_pane(move || render_sidebar(nav_view.clone())),
-                render_pane(move || panes.render_selected(&nav_selection)),
+                render_pane(move || render_content_pane(panes.render_selected(&nav_selection), pane_focus.clone())),
             );
         });
 
@@ -22,13 +22,7 @@ impl Render for GalleryApp {
             .luma_focus_scope(&self.focus_scope)
             .size_full()
             .relative()
-            .child(div().absolute().size_full().bg(rgb(0xf8fafc)).on_mouse_down(
-                MouseButton::Left,
-                move |_event, window, cx| {
-                    window.focus(&focus_scope, cx);
-                    cx.stop_propagation();
-                },
-            ))
+            .bg(rgb(0xf8fafc))
             .child(self.split_view.clone())
     }
 }
@@ -54,5 +48,20 @@ fn render_sidebar(nav_view: gpui::Entity<gpui_luma::controls::nav_view::NavView>
                 ),
         )
         .child(div().flex_1().min_h(px(0.0)).child(nav_view))
+        .into_any_element()
+}
+
+fn render_content_pane(content: AnyElement, pane_focus: FocusHandle) -> AnyElement {
+    let focus = pane_focus.clone();
+
+    div()
+        .size_full()
+        .track_focus(&pane_focus)
+        .capture_any_mouse_down(move |event, window, cx| {
+            if event.button == MouseButton::Left {
+                window.focus(&focus, cx);
+            }
+        })
+        .child(content)
         .into_any_element()
 }
