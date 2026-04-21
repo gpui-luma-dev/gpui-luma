@@ -12,7 +12,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    button, checkbox, context_menu, dropdown_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
+    button, checkbox, context_menu, popup_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
     settings, shared::gallery_pane, slider, switch, toggle_button,
 };
 
@@ -36,7 +36,7 @@ enum GalleryPageKind {
     RadioGroup,
     Slider,
     Scrollbar,
-    DropdownMenu,
+    PopupMenu,
     ContextMenu,
     Progress,
     Settings,
@@ -92,8 +92,8 @@ const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
     GalleryPage { id: "scrollbar", label: "Scrollbar", icon: None, kind: GalleryPageKind::Scrollbar };
-const DROPDOWN_MENU_PAGE: GalleryPage =
-    GalleryPage { id: "dropdown-menu", label: "Dropdown Menu", icon: None, kind: GalleryPageKind::DropdownMenu };
+const POPUP_MENU_PAGE: GalleryPage =
+    GalleryPage { id: "popup-menu", label: "Popup Menu", icon: None, kind: GalleryPageKind::PopupMenu };
 const CONTEXT_MENU_PAGE: GalleryPage =
     GalleryPage { id: "context-menu", label: "Context Menu", icon: None, kind: GalleryPageKind::ContextMenu };
 const PROGRESS_PAGE: GalleryPage =
@@ -110,7 +110,7 @@ const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[SLIDER_PAGE, SCROLLBAR_PAGE];
-const MENU_PAGES: &[GalleryPage] = &[DROPDOWN_MENU_PAGE, CONTEXT_MENU_PAGE];
+const MENU_PAGES: &[GalleryPage] = &[POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
@@ -154,7 +154,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
-    pub(super) dropdown_menu: dropdown_menu::DropdownMenuPane,
+    pub(super) popup_menu: popup_menu::PopupMenuPane,
     pub(super) context_menu: context_menu::ContextMenuPane,
     pub(super) progress: progress::ProgressPane,
 }
@@ -202,7 +202,7 @@ impl GalleryPanes {
             radio_group: radio_group::RadioGroupPane::new(cx),
             slider: slider::SliderPane::new(cx),
             scrollbar: scrollbar::ScrollbarPane::new(cx),
-            dropdown_menu: dropdown_menu::DropdownMenuPane::new(cx),
+            popup_menu: popup_menu::PopupMenuPane::new(cx),
             context_menu: context_menu::ContextMenuPane::new(cx),
             progress: progress::ProgressPane::new(cx),
         }
@@ -217,7 +217,7 @@ impl GalleryPanes {
         self.radio_group.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
-        self.dropdown_menu.subscribe(cx, subscriptions);
+        self.popup_menu.subscribe(cx, subscriptions);
         self.context_menu.subscribe(cx, subscriptions);
     }
 
@@ -238,7 +238,7 @@ impl GalleryPanes {
             GalleryPageKind::RadioGroup => self.radio_group.render(),
             GalleryPageKind::Slider => self.slider.render(),
             GalleryPageKind::Scrollbar => self.scrollbar.render(),
-            GalleryPageKind::DropdownMenu => self.dropdown_menu.render(),
+            GalleryPageKind::PopupMenu => self.popup_menu.render(),
             GalleryPageKind::ContextMenu => self.context_menu.render(),
             GalleryPageKind::Progress => self.progress.render(),
             GalleryPageKind::Settings => settings::render(),

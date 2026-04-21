@@ -5,7 +5,7 @@ use gpui::Hsla;
 use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct DropdownMenuAppearance {
+pub struct PopupMenuAppearance {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_border: Hsla,
@@ -33,29 +33,29 @@ pub struct DropdownMenuAppearance {
     pub submenu_offset_x: f32,
 }
 
-pub trait DropdownMenuTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> DropdownMenuAppearance;
+pub trait PopupMenuTheme: Send + Sync {
+    fn resolve(&self, state: InteractionState) -> PopupMenuAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultDropdownMenuTheme {
+pub struct DefaultPopupMenuTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_dropdown_menu_theme() -> Arc<dyn DropdownMenuTheme> {
-    static THEME: OnceLock<Arc<dyn DropdownMenuTheme>> = OnceLock::new();
+pub fn default_popup_menu_theme() -> Arc<dyn PopupMenuTheme> {
+    static THEME: OnceLock<Arc<dyn PopupMenuTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultDropdownMenuTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultPopupMenuTheme::default())).clone()
 }
 
-impl DefaultDropdownMenuTheme {
+impl DefaultPopupMenuTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl DropdownMenuTheme for DefaultDropdownMenuTheme {
-    fn resolve(&self, state: InteractionState) -> DropdownMenuAppearance {
+impl PopupMenuTheme for DefaultPopupMenuTheme {
+    fn resolve(&self, state: InteractionState) -> PopupMenuAppearance {
         let colors = &self.tokens.colors;
         let metrics = &self.tokens.metrics;
         let size = ControlSize::Md;
@@ -72,7 +72,7 @@ impl DropdownMenuTheme for DefaultDropdownMenuTheme {
             colors.text
         };
 
-        DropdownMenuAppearance {
+        PopupMenuAppearance {
             trigger_background,
             trigger_foreground,
             trigger_border: colors.border,

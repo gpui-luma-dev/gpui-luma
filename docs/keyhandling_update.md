@@ -196,7 +196,7 @@ Expected current mappings:
 - `RadioGroup`: `RadioGroup`.
 - `Slider`: `RangeValue`.
 - `Scrollbar`: `ScrollOffset`.
-- `DropdownMenu`: `Menu`.
+- `PopupMenu`: `Menu`.
 - `ContextMenu`: `ContextMenu`.
 
 ## 7. Adding Future Controls

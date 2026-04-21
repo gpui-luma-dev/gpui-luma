@@ -5,13 +5,13 @@ use gpui::{AppContext, Entity, Pixels, Point, SharedString};
 use super::{
     ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template,
 };
-use crate::controls::dropdown_menu::DropdownMenuItem;
+use crate::controls::popup_menu::PopupMenuItem;
 
 #[derive(Clone)]
 pub struct ContextMenuModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
-    pub(crate) items: Vec<DropdownMenuItem>,
+    pub(crate) items: Vec<PopupMenuItem>,
     pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ContextMenuTemplate>,
 }
@@ -19,7 +19,7 @@ pub struct ContextMenuModel {
 pub struct ContextMenuRenderModel<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
-    pub items: &'a [DropdownMenuItem],
+    pub items: &'a [PopupMenuItem],
     pub menu_position: Option<Point<Pixels>>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
@@ -52,12 +52,12 @@ impl ContextMenuBuilder {
         self
     }
 
-    pub fn item(mut self, item: DropdownMenuItem) -> Self {
+    pub fn item(mut self, item: PopupMenuItem) -> Self {
         self.model.items.push(item);
         self
     }
 
-    pub fn items(mut self, items: impl IntoIterator<Item = DropdownMenuItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = PopupMenuItem>) -> Self {
         self.model.items = items.into_iter().collect();
         self
     }

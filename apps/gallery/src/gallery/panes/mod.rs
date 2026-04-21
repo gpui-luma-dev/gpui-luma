@@ -1,7 +1,7 @@
 mod button;
 mod checkbox;
 mod context_menu;
-mod dropdown_menu;
+mod popup_menu;
 mod icon_button;
 mod introduction;
 mod progress;

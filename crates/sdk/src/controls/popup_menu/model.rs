@@ -1,19 +1,17 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{AppContext, Bounds, Entity, Pixels, SharedString};
 use lucide_icons::Icon as LucideIcon;
 
-use super::{
-    ControlFocusState, DropdownMenu, DropdownMenuState, DropdownMenuTemplate, MenuPath, default_dropdown_menu_template,
-};
+use super::{ControlFocusState, PopupMenu, PopupMenuState, PopupMenuTemplate, MenuPath, default_popup_menu_template};
 
 #[derive(Clone, Debug)]
-pub enum DropdownMenuItemIcon {
+pub enum PopupMenuItemIcon {
     Lucide(LucideIcon),
     SvgPath(SharedString),
 }
 
-impl DropdownMenuItemIcon {
+impl PopupMenuItemIcon {
     pub fn lucide(&self) -> Option<LucideIcon> {
         match self {
             Self::Lucide(icon) => Some(*icon),
@@ -29,40 +27,40 @@ impl DropdownMenuItemIcon {
     }
 }
 
-impl From<LucideIcon> for DropdownMenuItemIcon {
+impl From<LucideIcon> for PopupMenuItemIcon {
     fn from(icon: LucideIcon) -> Self {
         Self::Lucide(icon)
     }
 }
 
-impl From<&str> for DropdownMenuItemIcon {
+impl From<&str> for PopupMenuItemIcon {
     fn from(icon: &str) -> Self {
         Self::SvgPath(icon.to_string().into())
     }
 }
 
-impl From<String> for DropdownMenuItemIcon {
+impl From<String> for PopupMenuItemIcon {
     fn from(icon: String) -> Self {
         Self::from(icon.as_str())
     }
 }
 
-impl From<SharedString> for DropdownMenuItemIcon {
+impl From<SharedString> for PopupMenuItemIcon {
     fn from(icon: SharedString) -> Self {
         Self::SvgPath(icon)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct DropdownMenuItem {
+pub struct PopupMenuItem {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
-    pub(crate) icon: Option<DropdownMenuItemIcon>,
-    pub(crate) submenu_items: Vec<DropdownMenuItem>,
+    pub(crate) icon: Option<PopupMenuItemIcon>,
+    pub(crate) submenu_items: Vec<PopupMenuItem>,
     pub(crate) enabled: bool,
 }
 
-impl DropdownMenuItem {
+impl PopupMenuItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
@@ -74,12 +72,12 @@ impl DropdownMenuItem {
         self
     }
 
-    pub fn icon(mut self, icon: impl Into<DropdownMenuItemIcon>) -> Self {
+    pub fn icon(mut self, icon: impl Into<PopupMenuItemIcon>) -> Self {
         self.icon = Some(icon.into());
         self
     }
 
-    pub fn submenu(mut self, items: impl IntoIterator<Item = DropdownMenuItem>) -> Self {
+    pub fn submenu(mut self, items: impl IntoIterator<Item = PopupMenuItem>) -> Self {
         self.submenu_items = items.into_iter().collect();
         self
     }
@@ -97,11 +95,11 @@ impl DropdownMenuItem {
         &self.label
     }
 
-    pub fn icon_ref(&self) -> Option<&DropdownMenuItemIcon> {
+    pub fn icon_ref(&self) -> Option<&PopupMenuItemIcon> {
         self.icon.as_ref()
     }
 
-    pub fn submenu_items(&self) -> &[DropdownMenuItem] {
+    pub fn submenu_items(&self) -> &[PopupMenuItem] {
         &self.submenu_items
     }
 
@@ -110,42 +108,54 @@ impl DropdownMenuItem {
     }
 }
 
-#[derive(Clone)]
-pub struct DropdownMenuModel {
-    pub(crate) id: SharedString,
-    pub(crate) label: SharedString,
-    pub(crate) items: Vec<DropdownMenuItem>,
-    pub(crate) enabled: bool,
-    pub(crate) template: Arc<dyn DropdownMenuTemplate>,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PopupMenuPlacement {
+    Smart,
+    BelowStart,
+    AboveStart,
+    CenteredOnTrigger,
 }
 
-pub struct DropdownMenuRenderModel<'a> {
+#[derive(Clone)]
+pub struct PopupMenuModel {
+    pub(crate) id: SharedString,
+    pub(crate) label: SharedString,
+    pub(crate) items: Vec<PopupMenuItem>,
+    pub(crate) enabled: bool,
+    pub(crate) placement: PopupMenuPlacement,
+    pub(crate) template: Arc<dyn PopupMenuTemplate>,
+}
+
+pub struct PopupMenuRenderModel<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
-    pub items: &'a [DropdownMenuItem],
+    pub items: &'a [PopupMenuItem],
     pub open: bool,
+    pub trigger_bounds: Option<Bounds<Pixels>>,
+    pub placement: PopupMenuPlacement,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
     pub enabled: bool,
     pub focus: ControlFocusState,
-    pub state: DropdownMenuState,
+    pub state: PopupMenuState,
 }
 
-pub struct DropdownMenuBuilder {
-    pub(crate) model: DropdownMenuModel,
+pub struct PopupMenuBuilder {
+    pub(crate) model: PopupMenuModel,
 }
 
-impl DropdownMenuBuilder {
+impl PopupMenuBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
         Self {
-            model: DropdownMenuModel {
+            model: PopupMenuModel {
                 label: id.clone(),
                 id,
                 items: Vec::new(),
                 enabled: true,
-                template: default_dropdown_menu_template(),
+                placement: PopupMenuPlacement::Smart,
+                template: default_popup_menu_template(),
             },
         }
     }
@@ -155,12 +165,12 @@ impl DropdownMenuBuilder {
         self
     }
 
-    pub fn item(mut self, item: DropdownMenuItem) -> Self {
+    pub fn item(mut self, item: PopupMenuItem) -> Self {
         self.model.items.push(item);
         self
     }
 
-    pub fn items(mut self, items: impl IntoIterator<Item = DropdownMenuItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = PopupMenuItem>) -> Self {
         self.model.items = items.into_iter().collect();
         self
     }
@@ -170,12 +180,17 @@ impl DropdownMenuBuilder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn DropdownMenuTemplate>) -> Self {
+    pub fn placement(mut self, placement: PopupMenuPlacement) -> Self {
+        self.model.placement = placement;
+        self
+    }
+
+    pub fn template(mut self, template: Arc<dyn PopupMenuTemplate>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<DropdownMenu> {
-        cx.new(|cx| DropdownMenu::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<PopupMenu> {
+        cx.new(|cx| PopupMenu::from_builder(self, cx))
     }
 }

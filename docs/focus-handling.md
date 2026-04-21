@@ -258,8 +258,8 @@ receive the action.
 Composite controls should handle `EscapeFocus` only when they have transient
 state to dismiss:
 
-- an open `DropdownMenu` closes the menu and consumes `EscapeFocus`,
-- a closed `DropdownMenu` calls `cx.propagate()`,
+- an open `PopupMenu` closes the menu and consumes `EscapeFocus`,
+- a closed `PopupMenu` calls `cx.propagate()`,
 - an open `ContextMenu` closes the menu and consumes `EscapeFocus`,
 - a closed `ContextMenu` calls `cx.propagate()`.
 
@@ -355,7 +355,7 @@ Implemented:
 - The gallery inert background focuses the gallery scope instead of blurring the
   window.
 - Simple controls do not handle `EscapeFocus`; they let the scope consume it.
-- Dropdown and context menus handle `EscapeFocus`, close when open, and
+- Popup and context menus handle `EscapeFocus`, close when open, and
   propagate when closed.
 - Arrow-key, home/end, menu, context-menu, slider, and scrollbar navigation
   behavior stays inside the owning controls through `ControlKeyProfile`.
@@ -371,7 +371,7 @@ Verify the implemented behavior in the gallery with these checks:
   window.
 - `Escape` on a simple focused control returns focus to the scope root.
 - `Tab` still works after `Escape`.
-- `Escape` closes an open dropdown or context menu without leaving the scope.
+- `Escape` closes an open popup or context menu without leaving the scope.
 - a second `Escape` after closing a menu returns focus to the scope root.
 - control-specific keys still work, such as slider arrows and radio-group
   arrows.

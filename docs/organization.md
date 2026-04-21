@@ -67,7 +67,7 @@ crates/sdk/src/
         mod.rs
 
     menu/
-      dropdown_menu/
+      popup_menu/
         control.rs
         model.rs
         template.rs
@@ -130,7 +130,7 @@ crates/sdk/src/
       mod.rs
       menu_surface.rs
       menu_item.rs
-      dropdown_menu.rs
+      popup_menu.rs
       context_menu.rs
 
     feedback/
@@ -184,7 +184,7 @@ Use these categories for new controls:
 - `command`: buttons and command-like invocations.
 - `choice`: checkboxes, radio buttons, switches, selects, and other choice controls.
 - `input`: text and value-entry controls, including sliders.
-- `menu`: dropdown menus, context menus, menu bars, and menu items.
+- `menu`: popup menus, context menus, menu bars, and menu items.
 - `feedback`: progress, spinners, alerts, badges, skeletons, and other status indicators.
 - `navigation`: tabs, sidebars, breadcrumbs, pagination, steppers, accordions, and collapsibles.
 - `data`: lists, tables, trees, and virtualized data surfaces.

@@ -5,7 +5,7 @@ use gpui::{
 
 use super::{ContextMenuBuilder, ContextMenuRenderModel, ContextMenuTemplateHandlers};
 use crate::controls::context_menu::model::ContextMenuModel;
-use crate::controls::dropdown_menu::DropdownMenuItem;
+use crate::controls::popup_menu::PopupMenuItem;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::{ControlFocusState, MenuPath};
@@ -55,7 +55,7 @@ impl ContextMenu {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = DropdownMenuItem>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = PopupMenuItem>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.close_menu();
         cx.notify();
@@ -196,7 +196,7 @@ impl ContextMenu {
         }
     }
 
-    fn item_at_path(&self, path: &[usize]) -> Option<&DropdownMenuItem> {
+    fn item_at_path(&self, path: &[usize]) -> Option<&PopupMenuItem> {
         match path {
             [index] => self.model.items.get(*index),
             [index, submenu_index] => self.model.items.get(*index)?.submenu_items.get(*submenu_index),

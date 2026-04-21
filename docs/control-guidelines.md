@@ -20,7 +20,7 @@ The SDK currently ships these controls:
 - `Slider`: numeric input with range, step, pointer dragging, and keyboard value changes.
 - `Scrollbar`: horizontal or vertical range control with line/page movement and draggable thumb.
 - `Progress`: non-interactive circular status indicator.
-- `DropdownMenu`: trigger-owned menu with one level of submenu support.
+- `PopupMenu`: trigger-owned menu with one level of submenu support.
 - `ContextMenu`: secondary-click or keyboard-opened menu with one level of submenu support.
 
 Each control is under `crates/sdk/src/controls/<control>/` and normally uses:
@@ -37,7 +37,7 @@ Shared helpers currently live in:
 - `controls/interaction.rs`: hover, pressed, disabled, focus handle, and tab-stop handling.
 - `controls/state.rs`: focus and composite item state projection.
 - `controls/value.rs`: numeric range, finite-value coercion, and step normalization.
-- `controls/menu_navigation.rs`: enabled-item navigation for dropdown and context menus.
+- `controls/menu_navigation.rs`: enabled-item navigation for popup and context menus.
 - `controls/button_family.rs`: shared button kind, size, and interaction aliases.
 - `theme/*`: appearance resolvers and data-backed theme tokens.
 - `keyhandling.rs`: action names, key contexts, and default key bindings.
@@ -217,7 +217,7 @@ pub enum ButtonFamilyRole {
 
 Create a specific theme resolver when the control has distinct policy, as `CheckboxTheme`,
 `SwitchTheme`, `RadioGroupTheme`, `SliderTheme`, `ScrollbarTheme`, `ProgressTheme`,
-`DropdownMenuTheme`, and `ContextMenuTheme` do.
+`PopupMenuTheme`, and `ContextMenuTheme` do.
 
 ## Interaction And Focus
 
@@ -279,7 +279,7 @@ Use the existing key profiles:
 - `ControlKeyProfile::RadioGroup`: arrows, home, and end.
 - `ControlKeyProfile::RangeValue`: arrows, page up/down, home, and end.
 - `ControlKeyProfile::ScrollOffset`: scroll offset arrows, page up/down, home, and end.
-- `ControlKeyProfile::Menu`: dropdown menu navigation and activation.
+- `ControlKeyProfile::Menu`: popup menu navigation and activation.
 - `ControlKeyProfile::ContextMenu`: context-menu open, navigation, and activation.
 - `ControlKeyProfile::Navigation`: navigation collection arrows, home/end, submenu open/close, and
   activation.
@@ -544,9 +544,9 @@ Implementation notes:
 - Render model includes `percentage`.
 - Default template paints the circular track and progress arc on a GPUI canvas.
 
-### DropdownMenu
+### PopupMenu
 
-`DropdownMenu` owns trigger state, open state, one active root item, and at most one open submenu.
+`PopupMenu` owns trigger state, open state, one active root item, and at most one open submenu.
 
 Builder methods:
 
@@ -554,6 +554,7 @@ Builder methods:
 - `item`,
 - `items`,
 - `enabled`,
+- `placement`,
 - `template`,
 - `spawn`.
 
@@ -562,10 +563,11 @@ Runtime mutation:
 - `set_label`,
 - `set_items`,
 - `set_enabled`.
+- `set_placement`.
 
 Event:
 
-- `DropdownMenuEvent::Select { item_id, label }`.
+- `PopupMenuEvent::Select { item_id, label }`.
 
 Implementation notes:
 
@@ -575,13 +577,14 @@ Implementation notes:
 - Root and submenu navigation use `MenuNavigator`.
 - Only enabled leaf items emit select events.
 - Current `MenuPath` supports root items and one submenu level.
-- The default template renders the menu as a deferred overlay anchored under the trigger.
+- The default template renders the menu as a deferred overlay anchored from the trigger according to
+  `PopupMenuPlacement`.
 - Menu item icons use the same explicit Lucide-or-SVG-path contract as icon buttons.
 - Chevron affordances are SDK-owned.
 
 ### ContextMenu
 
-`ContextMenu` reuses `DropdownMenuItem` as its item model and owns a pointer or keyboard menu
+`ContextMenu` reuses `PopupMenuItem` as its item model and owns a pointer or keyboard menu
 position.
 
 Builder methods:
@@ -610,7 +613,7 @@ Implementation notes:
 - Opens from keyboard through `OpenContextMenu`, currently bound to `shift-f10` and `menu`.
 - Records target bounds so keyboard-opened menus can appear at the target's lower-left corner.
 - Uses `anchored().snap_to_window_with_margin(...)` and `deferred(...)` for overlay placement.
-- Navigation, submenu support, and selection rules match `DropdownMenu`.
+- Navigation, submenu support, and selection rules match `PopupMenu`.
 - Custom templates can radically change presentation while preserving the event and item model; the
   gallery's radial context menu is the current example.
 
@@ -627,7 +630,7 @@ normalization to the SDK. If an app wants that mapping, it belongs in the app.
 SDK-owned affordance icons are allowed when they communicate built-in control state or structure:
 
 - checkbox checkmark,
-- dropdown chevron,
+- popup chevron,
 - submenu chevron,
 - other future structural affordances.
 

@@ -8,6 +8,6 @@ pub use template::{
     ContextMenuTemplate, ContextMenuTemplateHandlers, ThemedContextMenuTemplate, default_context_menu_template,
 };
 
-pub use crate::controls::dropdown_menu::{DropdownMenuItem, DropdownMenuItemIcon};
+pub use crate::controls::popup_menu::{PopupMenuItem, PopupMenuItemIcon};
 pub use crate::theme::InteractionState as ContextMenuState;
 pub use crate::controls::state::{ControlFocusState, MenuPath};

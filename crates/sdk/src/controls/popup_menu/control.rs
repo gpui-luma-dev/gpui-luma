@@ -1,10 +1,12 @@
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Window, div, prelude::*,
+    App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
+    Render, SharedString, Window, div, prelude::*,
 };
 
-use super::{DropdownMenuBuilder, DropdownMenuItem, DropdownMenuRenderModel, DropdownMenuTemplateHandlers, MenuPath};
-use crate::controls::dropdown_menu::model::DropdownMenuModel;
+use super::{
+    PopupMenuBuilder, PopupMenuItem, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath,
+};
+use crate::controls::popup_menu::model::PopupMenuModel;
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::ControlFocusState;
@@ -15,32 +17,34 @@ use crate::keyhandling::{
 };
 
 #[derive(Clone, Debug)]
-pub enum DropdownMenuEvent {
+pub enum PopupMenuEvent {
     Select { item_id: SharedString, label: SharedString },
 }
 
-pub struct DropdownMenu {
-    model: DropdownMenuModel,
+pub struct PopupMenu {
+    model: PopupMenuModel,
     open: bool,
+    trigger_bounds: Option<Bounds<Pixels>>,
     open_submenu: Option<usize>,
     active_path: Option<MenuPath>,
     interaction: ControlInteraction,
 }
 
-impl EventEmitter<DropdownMenuEvent> for DropdownMenu {}
+impl EventEmitter<PopupMenuEvent> for PopupMenu {}
 
-impl DropdownMenu {
+impl PopupMenu {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> DropdownMenuBuilder {
-        DropdownMenuBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> PopupMenuBuilder {
+        PopupMenuBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: DropdownMenuBuilder, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: PopupMenuBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
         Self {
             model: builder.model,
             open: false,
+            trigger_bounds: None,
             open_submenu: None,
             active_path: None,
             interaction: ControlInteraction::new(enabled, cx),
@@ -52,7 +56,7 @@ impl DropdownMenu {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = DropdownMenuItem>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = PopupMenuItem>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.close_menu();
         cx.notify();
@@ -67,12 +71,19 @@ impl DropdownMenu {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> DropdownMenuRenderModel<'a> {
-        DropdownMenuRenderModel {
+    pub fn set_placement(&mut self, placement: PopupMenuPlacement, cx: &mut Context<Self>) {
+        self.model.placement = placement;
+        cx.notify();
+    }
+
+    fn render_model<'a>(&'a self, window: &Window) -> PopupMenuRenderModel<'a> {
+        PopupMenuRenderModel {
             id: &self.model.id,
             label: &self.model.label,
             items: &self.model.items,
             open: self.open,
+            trigger_bounds: self.trigger_bounds.clone(),
+            placement: self.model.placement,
             open_submenu: self.open_submenu,
             active_path: self.active_path,
             enabled: self.model.enabled,
@@ -81,10 +92,11 @@ impl DropdownMenu {
         }
     }
 
-    fn template_handlers(&self, cx: &mut Context<Self>) -> DropdownMenuTemplateHandlers {
+    fn template_handlers(&self, cx: &mut Context<Self>) -> PopupMenuTemplateHandlers {
         let item_paths = self.item_click_paths();
 
-        DropdownMenuTemplateHandlers {
+        PopupMenuTemplateHandlers {
+            trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
             trigger_mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
@@ -162,8 +174,12 @@ impl DropdownMenu {
         let item_id = item.id.clone();
         let label = item.label.clone();
         self.close_menu();
-        cx.emit(DropdownMenuEvent::Select { item_id, label });
+        cx.emit(PopupMenuEvent::Select { item_id, label });
         true
+    }
+
+    fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
+        self.trigger_bounds = Some(bounds.clone());
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -191,7 +207,7 @@ impl DropdownMenu {
         }
     }
 
-    fn item_at_path(&self, path: &[usize]) -> Option<&DropdownMenuItem> {
+    fn item_at_path(&self, path: &[usize]) -> Option<&PopupMenuItem> {
         match path {
             [index] => self.model.items.get(*index),
             [index, submenu_index] => self.model.items.get(*index)?.submenu_items.get(*submenu_index),
@@ -452,13 +468,13 @@ impl DropdownMenu {
     }
 }
 
-impl Focusable for DropdownMenu {
+impl Focusable for PopupMenu {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.interaction.focus_handle().clone()
     }
 }
 
-impl Render for DropdownMenu {
+impl Render for PopupMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

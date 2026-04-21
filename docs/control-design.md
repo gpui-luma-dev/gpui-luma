@@ -19,7 +19,7 @@ The current SDK includes:
 - `Slider`
 - `Scrollbar`
 - `Progress`
-- `DropdownMenu`
+- `PopupMenu`
 - `ContextMenu`
 - shared button-family theme resolution
 - checkbox-specific theme resolution
@@ -28,7 +28,7 @@ The current SDK includes:
 - slider-specific theme resolution
 - scrollbar-specific theme resolution
 - progress-specific theme resolution
-- dropdown-menu-specific theme resolution
+- popup-menu-specific theme resolution
 - context-menu-specific theme resolution
 - shared interaction-state resolution
 - shared menu navigation
@@ -91,7 +91,7 @@ Templates may choose visual structure:
 
 Templates must not own persistent control behavior or mutate control state. A template can render state, but it should not become the source of that state.
 
-Controls with template-owned child interaction surfaces can pass control-owned event handlers into the template separately from the render model. `DropdownMenu` uses this shape for trigger and item clicks: the template owns where trigger and item nodes appear, while the control owns what those clicks mean and which semantic event is emitted.
+Controls with template-owned child interaction surfaces can pass control-owned event handlers into the template separately from the render model. `PopupMenu` uses this shape for trigger and item clicks: the template owns where trigger and item nodes appear, while the control owns what those clicks mean and which semantic event is emitted.
 
 ### 2.6 Themes Resolve Appearance Policy
 
@@ -154,7 +154,7 @@ crates/sdk/src/controls/
     control.rs
     model.rs
     template.rs
-  dropdown_menu/
+  popup_menu/
     control.rs
     model.rs
     template.rs
@@ -524,38 +524,38 @@ progress.update(cx, |progress, cx| {
 
 `Progress` is non-interactive status display. It has no hover, pressed, or focus behavior and emits no user events.
 
-### 4.11 DropdownMenu
+### 4.11 PopupMenu
 
-`DropdownMenu` owns its open state internally and emits semantic select events for enabled menu items.
+`PopupMenu` owns its open state internally and emits semantic select events for enabled menu items.
 
 ```rust
-use gpui_luma::controls::dropdown_menu::{
-    DropdownMenu, DropdownMenuItem,
+use gpui_luma::controls::popup_menu::{
+    PopupMenu, PopupMenuItem,
 };
 use lucide_icons::Icon as LucideIcon;
 
-let menu = DropdownMenu::new("actions-menu")
+let menu = PopupMenu::new("actions-menu")
     .label("Actions")
     .items([
-        DropdownMenuItem::new("new")
+        PopupMenuItem::new("new")
             .label("New file")
             .icon(LucideIcon::FilePlus),
-        DropdownMenuItem::new("rename")
+        PopupMenuItem::new("rename")
             .label("Rename")
             .icon(LucideIcon::Pencil),
-        DropdownMenuItem::new("archive").label("Archive"),
-        DropdownMenuItem::new("share")
+        PopupMenuItem::new("archive").label("Archive"),
+        PopupMenuItem::new("share")
             .label("Share")
             .icon(LucideIcon::Share2)
             .submenu([
-                DropdownMenuItem::new("copy-link")
+                PopupMenuItem::new("copy-link")
                     .label("Copy link")
                     .icon(LucideIcon::Link),
-                DropdownMenuItem::new("email")
+                PopupMenuItem::new("email")
                     .label("Email")
                     .icon(LucideIcon::Mail),
             ]),
-        DropdownMenuItem::new("disabled")
+        PopupMenuItem::new("disabled")
             .label("Unavailable")
             .enabled(false),
     ])
@@ -572,9 +572,9 @@ menu.update(cx, |menu, cx| {
 });
 ```
 
-Application code observes `DropdownMenuEvent::Select { item_id, label }`. The open state and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the trigger, so opening the menu does not change the trigger's layout footprint and the pane paints above later page content.
+Application code observes `PopupMenuEvent::Select { item_id, label }`. The open state and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the trigger, so opening the menu does not change the trigger's layout footprint and the pane paints above later page content.
 
-Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
+Popup menu item icons are app-owned content. The SDK supports typed `lucide_icons::Icon` values and explicit SVG paths for item icons, but it does not normalize strings into Lucide icon names.
 
 ### 4.12 ContextMenu
 
@@ -582,24 +582,24 @@ Dropdown item icons are app-owned content. The SDK supports typed `lucide_icons:
 
 ```rust
 use gpui_luma::controls::context_menu::ContextMenu;
-use gpui_luma::controls::dropdown_menu::DropdownMenuItem;
+use gpui_luma::controls::popup_menu::PopupMenuItem;
 use lucide_icons::Icon as LucideIcon;
 
 let menu = ContextMenu::new("file-context-menu")
     .label("Right-click target")
     .items([
-        DropdownMenuItem::new("open")
+        PopupMenuItem::new("open")
             .label("Open")
             .icon(LucideIcon::FolderOpen),
-        DropdownMenuItem::new("copy")
+        PopupMenuItem::new("copy")
             .label("Copy")
             .icon(LucideIcon::Copy),
-        DropdownMenuItem::new("inspect").label("Inspect"),
-        DropdownMenuItem::new("more")
+        PopupMenuItem::new("inspect").label("Inspect"),
+        PopupMenuItem::new("more")
             .label("More")
             .icon(LucideIcon::Ellipsis)
             .submenu([
-                DropdownMenuItem::new("download")
+                PopupMenuItem::new("download")
                     .label("Download")
                     .icon(LucideIcon::Download),
             ]),
@@ -728,7 +728,7 @@ selected item may be the active descendant that receives the visible keyboard fo
 Menus use `MenuPath` for active descendants so the active item is not confused with the hovered item,
 the selected item, or the open submenu.
 
-Dropdown and context menus also share `MenuNavigator`, which centralizes enabled-item traversal,
+Popup and context menus also share `MenuNavigator`, which centralizes enabled-item traversal,
 wrapping behavior, and submenu traversal. New menu-like controls should reuse that navigation logic
 before adding another local copy.
 
@@ -897,7 +897,7 @@ pub trait CheckboxTheme: Send + Sync {
 }
 ```
 
-The resolver still uses shared tokens and `InteractionState::layer()` for state precedence, but it owns control-specific policy such as checkbox container background and border, indicator size, checked background, dropdown trigger styling, context target styling, menu surface styling, item hover styling, label color, and affordance color. This keeps non-button controls from expanding `ButtonFamilyRole` into a catch-all enum.
+The resolver still uses shared tokens and `InteractionState::layer()` for state precedence, but it owns control-specific policy such as checkbox container background and border, indicator size, checked background, popup trigger styling, context target styling, menu surface styling, item hover styling, label color, and affordance color. This keeps non-button controls from expanding `ButtonFamilyRole` into a catch-all enum.
 
 ## 10. Icon Policy
 
@@ -912,7 +912,7 @@ pub enum IconButtonIcon {
 }
 ```
 
-Menu item icons use the same Lucide-or-SVG-path contract through `DropdownMenuItemIcon`.
+Menu item icons use the same Lucide-or-SVG-path contract through `PopupMenuItemIcon`.
 
 Conversion rules:
 
@@ -924,7 +924,7 @@ This prevents partial name support from becoming an accidental public contract.
 
 The SDK uses Lucide internally for SDK-owned affordances such as checkmarks and menu chevrons. That is separate from application-owned icon choices.
 
-SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state, and dropdown or context menus may render `lucide_icons::Icon::ChevronDown` and `lucide_icons::Icon::ChevronRight` internally because those chevrons communicate expandable affordances. App-owned icons, such as an add or save icon in an `IconButton` or an item icon in a menu, must still be passed explicitly by the consumer.
+SDK-owned affordance icons are part of a control's built-in structure. For example, a checked checkbox may render `lucide_icons::Icon::Check` internally because the checkmark communicates checkbox state, and popup or context menus may render `lucide_icons::Icon::ChevronDown` and `lucide_icons::Icon::ChevronRight` internally because those chevrons communicate expandable affordances. App-owned icons, such as an add or save icon in an `IconButton` or an item icon in a menu, must still be passed explicitly by the consumer.
 
 ## 11. Gallery Boundary
 

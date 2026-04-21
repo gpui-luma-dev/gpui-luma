@@ -86,7 +86,7 @@ Different control families need different meanings for the same keys.
 
 Examples:
 
-- `down` opens a closed dropdown menu,
+- `down` opens a closed popup menu,
 - `down` decreases or increases a vertical slider depending orientation,
 - `down` selects the next radio item,
 - `down` navigates an open menu.
@@ -113,7 +113,7 @@ selection or active-item state themselves.
 Examples:
 
 - `RadioGroup` has one focus handle and a selected item.
-- `DropdownMenu` has one trigger focus handle and an active menu path.
+- `PopupMenu` has one trigger focus handle and an active menu path.
 - `ContextMenu` has one target focus handle and an active menu path.
 - future `Tabs` should likely have one focus handle and an active tab.
 
@@ -385,11 +385,11 @@ Behavior:
 - disabled controls do nothing,
 - actions consume when recognized.
 
-### 4.7 Dropdown Menus
+### 4.7 Popup Menus
 
 Controls:
 
-- `DropdownMenu`
+- `PopupMenu`
 - future select-like menu buttons
 
 Default profile:
@@ -476,7 +476,7 @@ Behavior:
 - keyboard-opened context menus open at the target anchor,
 - pointer-opened context menus open at the pointer position,
 - when closed, `OpenContextMenu` opens with the first enabled item active,
-- when open, item navigation behaves like `DropdownMenu`,
+- when open, item navigation behaves like `PopupMenu`,
 - when open, `ActivateControl` commits the active item,
 - active item state is internal control state,
 - `EscapeFocus` closes an open menu and consumes,
@@ -657,7 +657,7 @@ template places those handlers; it does not decide what they mean.
 5. Convert `RadioGroup` arrow/home/end handling to shared item-selection
    actions.
 6. Convert `Slider` arrow/page/home/end handling to shared value actions.
-7. Convert dropdown and context menu non-Escape navigation to shared menu
+7. Convert popup and context menu non-Escape navigation to shared menu
    actions.
 8. Keep `EscapeFocus` in `gpui_luma::focus`; do not add a second Escape action
    for controls.
@@ -676,7 +676,7 @@ Verify keyboard behavior in the gallery after each migration step:
 - `Space` toggles checkbox-like controls.
 - radio-group arrows select the next or previous enabled item.
 - slider arrows, page keys, home, and end update value through range snapping.
-- dropdown keyboard open, navigation, submenu, commit, and Escape behavior work.
+- popup keyboard open, navigation, submenu, commit, and Escape behavior work.
 - context-menu keyboard open, navigation, submenu, commit, and Escape behavior
   work.
 - pointer and keyboard activation emit the same semantic events.

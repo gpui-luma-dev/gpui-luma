@@ -2,7 +2,7 @@ pub mod button;
 pub mod button_family;
 pub mod checkbox;
 pub mod context_menu;
-pub mod dropdown_menu;
+pub mod popup_menu;
 pub mod interaction;
 pub mod progress;
 pub mod radio_group;
@@ -17,7 +17,7 @@ pub use button_family::{
 };
 pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
 pub use context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme};
-pub use dropdown_menu::{DefaultDropdownMenuTheme, DropdownMenuAppearance, DropdownMenuTheme, default_dropdown_menu_theme};
+pub use popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 pub use interaction::{InteractionLayer, InteractionState};
 pub use progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme, default_progress_theme};
 pub use radio_group::{DefaultRadioGroupTheme, RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};

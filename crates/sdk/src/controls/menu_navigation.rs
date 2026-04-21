@@ -1,4 +1,4 @@
-use crate::controls::dropdown_menu::DropdownMenuItem;
+use crate::controls::popup_menu::PopupMenuItem;
 use crate::controls::state::MenuPath;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -8,11 +8,11 @@ pub(crate) enum MenuDirection {
 }
 
 pub(crate) struct MenuNavigator<'a> {
-    items: &'a [DropdownMenuItem],
+    items: &'a [PopupMenuItem],
 }
 
 impl<'a> MenuNavigator<'a> {
-    pub(crate) fn new(items: &'a [DropdownMenuItem]) -> Self {
+    pub(crate) fn new(items: &'a [PopupMenuItem]) -> Self {
         Self { items }
     }
 
@@ -53,10 +53,10 @@ impl<'a> MenuNavigator<'a> {
             Some(MenuPath::Submenu { parent, .. }) => Some(parent),
             None => None,
         }
-        .filter(|index| self.items.get(*index).is_some_and(DropdownMenuItem::is_enabled))
+        .filter(|index| self.items.get(*index).is_some_and(PopupMenuItem::is_enabled))
     }
 
-    pub(crate) fn active_item(&self, active_path: Option<MenuPath>) -> Option<&'a DropdownMenuItem> {
+    pub(crate) fn active_item(&self, active_path: Option<MenuPath>) -> Option<&'a PopupMenuItem> {
         match active_path {
             Some(MenuPath::Root(index)) => self.items.get(index),
             Some(MenuPath::Submenu { parent, child }) => self.items.get(parent)?.submenu_items().get(child),
@@ -99,14 +99,14 @@ fn step_enabled_index(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controls::dropdown_menu::DropdownMenuItem;
+    use crate::controls::popup_menu::PopupMenuItem;
 
     #[test]
     fn root_navigation_skips_disabled_items_and_wraps() {
         let items = vec![
-            DropdownMenuItem::new("first"),
-            DropdownMenuItem::new("disabled").enabled(false),
-            DropdownMenuItem::new("last"),
+            PopupMenuItem::new("first"),
+            PopupMenuItem::new("disabled").enabled(false),
+            PopupMenuItem::new("last"),
         ];
         let navigator = MenuNavigator::new(&items);
 
@@ -119,10 +119,10 @@ mod tests {
 
     #[test]
     fn submenu_navigation_skips_disabled_items_and_wraps() {
-        let items = vec![DropdownMenuItem::new("parent").submenu([
-            DropdownMenuItem::new("first"),
-            DropdownMenuItem::new("disabled").enabled(false),
-            DropdownMenuItem::new("last"),
+        let items = vec![PopupMenuItem::new("parent").submenu([
+            PopupMenuItem::new("first"),
+            PopupMenuItem::new("disabled").enabled(false),
+            PopupMenuItem::new("last"),
         ])];
         let navigator = MenuNavigator::new(&items);
 

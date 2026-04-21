@@ -5,7 +5,7 @@ use gpui::{
     svg,
 };
 use gpui_luma::controls::context_menu::{
-    ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers, DropdownMenuItem, DropdownMenuItemIcon,
+    ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers, PopupMenuItem, PopupMenuItemIcon,
     MenuPath,
 };
 use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
@@ -180,7 +180,7 @@ fn render_menu(
 
 fn render_submenu(
     menu_id: &gpui::SharedString,
-    item: &DropdownMenuItem,
+    item: &PopupMenuItem,
     appearance: &ContextMenuAppearance,
     item_clicks: &mut std::vec::IntoIter<ContextMenuClickHandler>,
     index: usize,
@@ -246,10 +246,10 @@ fn render_submenu(
     submenu
 }
 
-fn render_item_icon(icon: Option<&DropdownMenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(DropdownMenuItemIcon::lucide) {
+fn render_item_icon(icon: Option<&PopupMenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
+    if let Some(icon) = icon.and_then(PopupMenuItemIcon::lucide) {
         render_lucide_icon(icon, color, size)
-    } else if let Some(path) = icon.and_then(DropdownMenuItemIcon::svg_path) {
+    } else if let Some(path) = icon.and_then(PopupMenuItemIcon::svg_path) {
         svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         div().size(px(size)).into_any_element()
