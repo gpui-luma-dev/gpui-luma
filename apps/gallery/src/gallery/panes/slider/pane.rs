@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
@@ -13,14 +14,20 @@ pub(in crate::gallery) struct SliderPane {
 }
 
 impl SliderPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            slider: Slider::new("slider-example").range(1..100).step(10).value(41).spawn(cx),
+            slider: Slider::new("slider-example")
+                .range(1..100)
+                .step(10)
+                .value(41)
+                .template(theme.slider_template())
+                .spawn(cx),
             disabled_slider: Slider::new("disabled-slider-example")
                 .range(1..100)
                 .step(10)
                 .value(41)
                 .enabled(false)
+                .template(theme.slider_template())
                 .spawn(cx),
             value: 41.0,
         }
@@ -32,7 +39,9 @@ impl SliderPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Slider",
             div()
@@ -43,9 +52,15 @@ impl SliderPane {
                 .child(
                     div().flex().items_center().gap_3().child(self.slider.clone()).child(self.disabled_slider.clone()),
                 )
-                .child(div().text_color(rgb(0x334155)).child(format!("Value: {:.0}", self.value)))
+                .child(div().text_color(chrome.body_text).child(format!("Value: {:.0}", self.value)))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.slider, cx);
+        notify_entity(&self.disabled_slider, cx);
     }
 
     fn handle_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {

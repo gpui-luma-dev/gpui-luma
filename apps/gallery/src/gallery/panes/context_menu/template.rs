@@ -7,14 +7,16 @@ use gpui::{
 use gpui_luma::controls::context_menu::{
     ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers, MenuItem, MenuItemIcon, MenuPath,
 };
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
+use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme};
 use lucide_icons::Icon as LucideIcon;
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 
-pub(in crate::gallery) fn gallery_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
-    Arc::new(GalleryContextMenuTemplate { theme: default_context_menu_theme() })
+pub(in crate::gallery) fn gallery_context_menu_template(
+    theme: Arc<dyn ContextMenuTheme>,
+) -> Arc<dyn ContextMenuTemplate> {
+    Arc::new(GalleryContextMenuTemplate { theme })
 }
 
 struct GalleryContextMenuTemplate {

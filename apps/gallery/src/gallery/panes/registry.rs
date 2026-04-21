@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Div, Entity, FocusHandle, Focusable, FontFeatures, FontWeight, IntoElement, Stateful,
-    Subscription, Window, div, prelude::*, px, rgb,
+    Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonRenderModel, ToggleButtonTemplate};
-use gpui_luma::theme::ThemeTokens;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     button, checkbox, context_menu, popup_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
@@ -65,6 +65,7 @@ pub(in crate::gallery) struct GalleryRouteButton {
     pub(in crate::gallery) button: Entity<ToggleButton>,
 }
 
+#[derive(Clone)]
 pub(in crate::gallery) struct GalleryBranchButton {
     pub(in crate::gallery) node_id: &'static str,
     pub(in crate::gallery) button: Entity<ToggleButton>,
@@ -160,6 +161,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
+    pub(in crate::gallery) theme: GalleryThemePack,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle_button: toggle_button::ToggleButtonPane,
@@ -180,19 +182,24 @@ impl GalleryPanes {
         INTRODUCTION_PAGE.id
     }
 
-    pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>) -> GalleryNavigation {
+    pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> GalleryNavigation {
         let mut route_buttons = Vec::new();
         let mut branch_buttons = Vec::new();
         let mut nodes: Vec<NavNode> =
-            PRIMARY_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons)).collect();
+            PRIMARY_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
 
-        nodes.push(NavNode::new("controls-label").content_presenter(controls_label_presenter));
+        let label_theme = theme.clone();
+        nodes.push(NavNode::new("controls-label").content_presenter(
+            move |state: &NavNodeState, window: &mut Window, cx: &mut App| {
+                controls_label_presenter(state, window, cx, &label_theme)
+            },
+        ));
 
         nodes.extend(CONTROL_GROUPS.iter().map(|group| {
             let button = ToggleButton::new(format!("{}-branch", group.id))
                 .label(group.label)
                 .selected(group.expanded)
-                .template(sidebar_disclosure_template(group.icon))
+                .template(sidebar_disclosure_template(group.icon, theme))
                 .spawn(cx);
             let focus_handle = focus_handle_for(&button, cx);
             branch_buttons.push(GalleryBranchButton { node_id: group.id, button: button.clone() });
@@ -200,29 +207,31 @@ impl GalleryPanes {
             NavNode::new(group.id)
                 .content_presenter(hosted_entity_presenter(button, focus_handle))
                 .expanded(group.expanded)
-                .children(group.pages.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons)))
+                .children(group.pages.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)))
         }));
 
-        let footer_nodes = BOTTOM_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons)).collect();
+        let footer_nodes =
+            BOTTOM_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
 
         GalleryNavigation { nodes, footer_nodes, route_buttons, branch_buttons }
     }
 
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            button: button::ButtonPane::new(cx),
-            icon_button: icon_button::IconButtonPane::new(cx),
-            toggle_button: toggle_button::ToggleButtonPane::new(cx),
-            toggle_group: toggle_group::ToggleGroupPane::new(cx),
-            switch: switch::SwitchPane::new(cx),
-            checkbox: checkbox::CheckboxPane::new(cx),
-            radio_group: radio_group::RadioGroupPane::new(cx),
-            slider: slider::SliderPane::new(cx),
-            scrollbar: scrollbar::ScrollbarPane::new(cx),
-            popup_menu: popup_menu::PopupMenuPane::new(cx),
-            context_menu: context_menu::ContextMenuPane::new(cx),
-            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx),
-            progress: progress::ProgressPane::new(cx),
+            theme: theme.clone(),
+            button: button::ButtonPane::new(cx, theme),
+            icon_button: icon_button::IconButtonPane::new(cx, theme),
+            toggle_button: toggle_button::ToggleButtonPane::new(cx, theme),
+            toggle_group: toggle_group::ToggleGroupPane::new(cx, theme),
+            switch: switch::SwitchPane::new(cx, theme),
+            checkbox: checkbox::CheckboxPane::new(cx, theme),
+            radio_group: radio_group::RadioGroupPane::new(cx, theme),
+            slider: slider::SliderPane::new(cx, theme),
+            scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
+            popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
+            context_menu: context_menu::ContextMenuPane::new(cx, theme),
+            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, theme),
+            progress: progress::ProgressPane::new(cx, theme),
         }
     }
 
@@ -241,29 +250,45 @@ impl GalleryPanes {
         self.tabs_navigation.subscribe(cx, subscriptions);
     }
 
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.button.notify_controls(cx);
+        self.icon_button.notify_controls(cx);
+        self.toggle_button.notify_controls(cx);
+        self.toggle_group.notify_controls(cx);
+        self.switch.notify_controls(cx);
+        self.checkbox.notify_controls(cx);
+        self.radio_group.notify_controls(cx);
+        self.slider.notify_controls(cx);
+        self.scrollbar.notify_controls(cx);
+        self.popup_menu.notify_controls(cx);
+        self.context_menu.notify_controls(cx);
+        self.tabs_navigation.notify_controls(cx);
+        self.progress.notify_controls(cx);
+    }
+
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
         let Some(page) = page_for_id(selection) else {
             debug_assert!(false, "unknown gallery page id: {selection}");
-            return render_unknown_page(selection);
+            return render_unknown_page(selection, &self.theme);
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => introduction::render(),
-            GalleryPageKind::Search => search::render(),
-            GalleryPageKind::Button => self.button.render(),
-            GalleryPageKind::IconButton => self.icon_button.render(),
-            GalleryPageKind::ToggleButton => self.toggle_button.render(),
-            GalleryPageKind::ToggleGroup => self.toggle_group.render(),
-            GalleryPageKind::Switch => self.switch.render(),
-            GalleryPageKind::Checkbox => self.checkbox.render(),
-            GalleryPageKind::RadioGroup => self.radio_group.render(),
-            GalleryPageKind::Slider => self.slider.render(),
-            GalleryPageKind::Scrollbar => self.scrollbar.render(),
-            GalleryPageKind::PopupMenu => self.popup_menu.render(),
-            GalleryPageKind::ContextMenu => self.context_menu.render(),
-            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(),
-            GalleryPageKind::Progress => self.progress.render(),
-            GalleryPageKind::Settings => settings::render(),
+            GalleryPageKind::Introduction => introduction::render(&self.theme),
+            GalleryPageKind::Search => search::render(&self.theme),
+            GalleryPageKind::Button => self.button.render(&self.theme),
+            GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
+            GalleryPageKind::ToggleButton => self.toggle_button.render(&self.theme),
+            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),
+            GalleryPageKind::Switch => self.switch.render(&self.theme),
+            GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
+            GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
+            GalleryPageKind::Slider => self.slider.render(&self.theme),
+            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
+            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.theme),
+            GalleryPageKind::ContextMenu => self.context_menu.render(&self.theme),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.theme),
+            GalleryPageKind::Progress => self.progress.render(&self.theme),
+            GalleryPageKind::Settings => settings::render(&self.theme),
         }
     }
 }
@@ -281,12 +306,13 @@ fn nav_node_for_page(
     page: &GalleryPage,
     cx: &mut Context<GalleryApp>,
     route_buttons: &mut Vec<GalleryRouteButton>,
+    theme: &GalleryThemePack,
 ) -> NavNode {
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
     let button = ToggleButton::new(page.id)
         .label(page.label)
         .selected(page.id == INTRODUCTION_PAGE.id)
-        .template(sidebar_leaf_template(page.icon, reserve_icon_space))
+        .template(sidebar_leaf_template(page.icon, reserve_icon_space, theme))
         .spawn(cx);
     let focus_handle = focus_handle_for(&button, cx);
 
@@ -299,7 +325,14 @@ fn focus_handle_for<T: Focusable>(entity: &Entity<T>, cx: &mut Context<GalleryAp
     entity.read(cx).focus_handle(cx)
 }
 
-fn controls_label_presenter(_: &NavNodeState, _: &mut Window, _: &mut App) -> NavHostedContent {
+fn controls_label_presenter(
+    _: &NavNodeState,
+    _: &mut Window,
+    _: &mut App,
+    theme: &GalleryThemePack,
+) -> NavHostedContent {
+    let chrome = theme.chrome();
+
     NavHostedContent {
         element: div()
             .min_h(gpui::px(20.0))
@@ -307,7 +340,7 @@ fn controls_label_presenter(_: &NavNodeState, _: &mut Window, _: &mut App) -> Na
             .text_size(gpui::px(11.0))
             .line_height(gpui::px(14.0))
             .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
-            .text_color(rgb(0x94a3b8))
+            .text_color(chrome.section_label)
             .child("Controls")
             .into_any_element(),
         focus_handle: None,
@@ -316,14 +349,16 @@ fn controls_label_presenter(_: &NavNodeState, _: &mut Window, _: &mut App) -> Na
 
 struct SidebarDisclosureTemplate {
     icon: LucideIcon,
+    theme: GalleryThemePack,
 }
 
 impl ToggleButtonTemplate for SidebarDisclosureTemplate {
     fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let chrome = self.theme.chrome();
         let foreground: gpui::Hsla = if model.enabled {
-            rgb(0x334155).into()
+            chrome.body_text
         } else {
-            rgb(0x94a3b8).into()
+            chrome.section_label
         };
         let mut root = div()
             .id(model.id.clone())
@@ -342,9 +377,9 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
             .child(div().flex_1().child(model.label.clone()));
 
         if model.state.pressed {
-            root = root.bg(rgb(0xe2e8f0));
+            root = root.bg(self.theme.chrome().border);
         } else if model.state.hovered {
-            root = root.bg(rgb(0xf1f5f9));
+            root = root.bg(self.theme.chrome().content_background);
         }
 
         if model.enabled {
@@ -354,46 +389,46 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
         }
 
         if model.state.focused {
-            root = root.border_1().border_color(rgb(0xf59e0b));
+            root = root.border_1().border_color(chrome.focus_ring);
         }
 
         root
     }
 }
 
-fn sidebar_disclosure_template(icon: LucideIcon) -> Arc<dyn ToggleButtonTemplate> {
-    Arc::new(SidebarDisclosureTemplate { icon })
+fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ToggleButtonTemplate> {
+    Arc::new(SidebarDisclosureTemplate { icon, theme: theme.clone() })
 }
 
 struct SidebarLeafTemplate {
     icon: Option<LucideIcon>,
     reserve_icon_space: bool,
-    tokens: ThemeTokens,
+    theme: GalleryThemePack,
 }
 
 impl ToggleButtonTemplate for SidebarLeafTemplate {
     fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let colors = &self.tokens.colors;
-        let metrics = &self.tokens.metrics.md;
+        let chrome = self.theme.chrome();
+        let metrics = &gpui_luma::theme::ThemeTokens::light().metrics.md;
         let background = if model.selected && model.state.pressed {
-            Some(rgb(0xc5cede).into())
+            Some(chrome.border)
         } else if model.selected && model.state.hovered {
-            Some(rgb(0xcbd4e4).into())
+            Some(chrome.content_background)
         } else if model.selected {
-            Some(rgb(0xd6deee).into())
+            Some(chrome.content_background)
         } else if model.state.pressed {
-            Some(colors.surface_pressed)
+            Some(chrome.border)
         } else if model.state.hovered {
-            Some(colors.surface_hover)
+            Some(chrome.content_background)
         } else {
             None
         };
         let foreground = if !model.enabled {
-            colors.text_disabled
+            chrome.section_label
         } else if model.selected {
-            rgb(0x1f2937).into()
+            chrome.title_text
         } else {
-            colors.text
+            chrome.body_text
         };
         let padding_left = if self.reserve_icon_space { 26.0 } else { 8.0 };
         let placeholder_size = if self.reserve_icon_space { 16.0 } else { 0.0 };
@@ -427,15 +462,19 @@ impl ToggleButtonTemplate for SidebarLeafTemplate {
         }
 
         if model.state.focused {
-            row = row.border_1().border_color(rgb(0xf59e0b));
+            row = row.border_1().border_color(chrome.focus_ring);
         }
 
         row
     }
 }
 
-fn sidebar_leaf_template(icon: Option<LucideIcon>, reserve_icon_space: bool) -> Arc<dyn ToggleButtonTemplate> {
-    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, tokens: ThemeTokens::default() })
+fn sidebar_leaf_template(
+    icon: Option<LucideIcon>,
+    reserve_icon_space: bool,
+    theme: &GalleryThemePack,
+) -> Arc<dyn ToggleButtonTemplate> {
+    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.clone() })
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
@@ -453,12 +492,15 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .into_any_element()
 }
 
-fn render_unknown_page(selection: &str) -> AnyElement {
+fn render_unknown_page(selection: &str, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
     gallery_pane(
         "Unknown Page",
         div()
-            .text_color(rgb(0x334155))
+            .text_color(chrome.body_text)
             .child(format!("No gallery pane is registered for `{selection}`."))
             .into_any_element(),
+        theme,
     )
 }

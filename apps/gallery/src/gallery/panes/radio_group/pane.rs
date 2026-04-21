@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioGroupPane {
@@ -13,16 +14,18 @@ pub(in crate::gallery) struct RadioGroupPane {
 }
 
 impl RadioGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             radio_group: RadioGroup::new("density-radio-group")
                 .items(density_items())
                 .selected("comfortable")
+                .template(theme.radio_group_template())
                 .spawn(cx),
             disabled_radio_group: RadioGroup::new("disabled-density-radio-group")
                 .items(density_items())
                 .selected("comfortable")
                 .enabled(false)
+                .template(theme.radio_group_template())
                 .spawn(cx),
             choice: "Comfortable".to_string(),
         }
@@ -34,7 +37,9 @@ impl RadioGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Radio Group",
             div()
@@ -50,9 +55,15 @@ impl RadioGroupPane {
                         .child(self.radio_group.clone())
                         .child(self.disabled_radio_group.clone()),
                 )
-                .child(div().text_color(rgb(0x334155)).child(format!("Choice: {}", self.choice)))
+                .child(div().text_color(chrome.body_text).child(format!("Choice: {}", self.choice)))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.radio_group, cx);
+        notify_entity(&self.disabled_radio_group, cx);
     }
 
     fn handle_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {

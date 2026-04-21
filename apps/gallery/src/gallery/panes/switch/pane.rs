@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*};
 use gpui_luma::controls::switch::{Switch, SwitchEvent};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SwitchPane {
@@ -13,10 +14,14 @@ pub(in crate::gallery) struct SwitchPane {
 }
 
 impl SwitchPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            switch: Switch::new("switch-example").on(true).spawn(cx),
-            disabled_switch: Switch::new("disabled-switch").on(true).enabled(false).spawn(cx),
+            switch: Switch::new("switch-example").on(true).template(theme.switch_template()).spawn(cx),
+            disabled_switch: Switch::new("disabled-switch")
+                .on(true)
+                .enabled(false)
+                .template(theme.switch_template())
+                .spawn(cx),
             on: true,
         }
     }
@@ -27,7 +32,9 @@ impl SwitchPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Switch",
             div()
@@ -38,9 +45,15 @@ impl SwitchPane {
                 .child(
                     div().flex().items_center().gap_3().child(self.switch.clone()).child(self.disabled_switch.clone()),
                 )
-                .child(div().text_color(rgb(0x334155)).child(format!("On: {}", self.on)))
+                .child(div().text_color(chrome.body_text).child(format!("On: {}", self.on)))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.switch, cx);
+        notify_entity(&self.disabled_switch, cx);
     }
 
     fn handle_event(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {

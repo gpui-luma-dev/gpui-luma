@@ -1,17 +1,23 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
+use gpui_luma::controls::toggle_button::ToggleButton;
 use gpui_luma::controls::toggle_button::ToggleButtonEvent;
+use gpui_luma::theme::ThemeMode;
 
-use super::panes::registry::{GalleryPanes, GalleryRouteButton};
+use super::panes::registry::{GalleryBranchButton, GalleryPanes, GalleryRouteButton};
+use super::theme::GalleryThemePack;
 
 pub struct GalleryApp {
     pub(super) focus_scope: FocusHandle,
     pub(super) pane_focus: FocusHandle,
+    pub(super) theme: GalleryThemePack,
+    pub(super) theme_toggle: Entity<ToggleButton>,
     pub(super) split_view: Entity<SplitView>,
     pub(super) navigation_sidebar: Entity<NavigationSidebar>,
     pub(super) panes: GalleryPanes,
     pub(super) nav_route_buttons: Vec<GalleryRouteButton>,
+    pub(super) nav_branch_buttons: Vec<GalleryBranchButton>,
     pub(super) nav_selection: String,
     pub(super) nav_toggle: String,
     pub(super) split_sidebar_width: f32,
@@ -24,6 +30,7 @@ impl GalleryApp {
         let focus_scope = cx.focus_handle();
         let pane_focus = cx.focus_handle().tab_stop(true);
         window.focus(&focus_scope, cx);
+        let theme = GalleryThemePack::new();
 
         let split_view = SplitView::new("gallery-shell")
             .sidebar_width(px(280.0))
@@ -34,13 +41,18 @@ impl GalleryApp {
             .resizable(true)
             .spawn(cx);
         let initial_selection = GalleryPanes::initial_selection();
-        let navigation = GalleryPanes::navigation(cx);
+        let navigation = GalleryPanes::navigation(cx, &theme);
         let route_buttons = navigation.route_buttons.clone();
+        let branch_buttons = navigation.branch_buttons.clone();
+        let theme_toggle = ToggleButton::new("gallery-theme-toggle")
+            .label("Dark mode")
+            .template(theme.toggle_button_template())
+            .spawn(cx);
         let navigation_sidebar = NavigationSidebar::new("gallery-nav")
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
             .spawn(cx);
-        let panes = GalleryPanes::new(cx);
+        let panes = GalleryPanes::new(cx, &theme);
 
         let mut subscriptions = vec![
             cx.subscribe(&split_view, |this, _, event: &SplitViewEvent, cx| {
@@ -48,6 +60,10 @@ impl GalleryApp {
             }),
             cx.subscribe(&navigation_sidebar, |this, _, event: &NavigationSidebarEvent, cx| {
                 this.handle_navigation_sidebar_event(event, cx);
+            }),
+            cx.subscribe(&theme_toggle, |this, _, event: &ToggleButtonEvent, cx| {
+                let ToggleButtonEvent::Change { selected } = event;
+                this.set_theme_mode(if *selected { ThemeMode::Dark } else { ThemeMode::Light }, cx);
             }),
         ];
         for route_button in route_buttons.iter().cloned() {
@@ -71,10 +87,13 @@ impl GalleryApp {
         Self {
             focus_scope,
             pane_focus,
+            theme,
+            theme_toggle,
             split_view,
             navigation_sidebar,
             panes,
             nav_route_buttons: route_buttons,
+            nav_branch_buttons: branch_buttons,
             nav_selection: initial_selection.to_string(),
             nav_toggle: "none".to_string(),
             split_sidebar_width: 280.0,
@@ -118,6 +137,26 @@ impl GalleryApp {
             });
         }
 
+        cx.notify();
+    }
+
+    fn set_theme_mode(&mut self, mode: ThemeMode, cx: &mut Context<Self>) {
+        if self.theme.mode() == mode {
+            return;
+        }
+
+        self.theme.set_mode(mode);
+
+        for route_button in &self.nav_route_buttons {
+            route_button.button.update(cx, |_, cx| cx.notify());
+        }
+        for branch_button in &self.nav_branch_buttons {
+            branch_button.button.update(cx, |_, cx| cx.notify());
+        }
+        self.theme_toggle.update(cx, |_, cx| cx.notify());
+        self.navigation_sidebar.update(cx, |_, cx| cx.notify());
+        self.split_view.update(cx, |_, cx| cx.notify());
+        self.panes.notify_controls(cx);
         cx.notify();
     }
 }

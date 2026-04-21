@@ -2,8 +2,9 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
@@ -13,10 +14,18 @@ pub(in crate::gallery) struct ButtonPane {
 }
 
 impl ButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            button: Button::new("button-example").label("Click me").kind(ButtonKind::Primary).spawn(cx),
-            disabled_button: Button::new("disabled-button").label("Disabled").enabled(false).spawn(cx),
+            button: Button::new("button-example")
+                .label("Click me")
+                .kind(ButtonKind::Primary)
+                .template(theme.button_template())
+                .spawn(cx),
+            disabled_button: Button::new("disabled-button")
+                .label("Disabled")
+                .enabled(false)
+                .template(theme.button_template())
+                .spawn(cx),
             clicks: 0,
         }
     }
@@ -27,7 +36,7 @@ impl ButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane(
             "Button",
             div()
@@ -37,7 +46,13 @@ impl ButtonPane {
                 .child(self.button.clone())
                 .child(self.disabled_button.clone())
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.button, cx);
+        notify_entity(&self.disabled_button, cx);
     }
 
     fn handle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {

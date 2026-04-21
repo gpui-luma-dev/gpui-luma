@@ -34,4 +34,4 @@ pub use toggle_group::{
     DefaultToggleGroupTheme, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
     default_toggle_group_theme,
 };
-pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};
+pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeMode, ThemeModes, ThemeTokens};

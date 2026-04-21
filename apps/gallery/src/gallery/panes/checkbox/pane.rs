@@ -1,68 +1,10 @@
-use std::sync::Arc;
-
-use gpui::{AnyElement, Context, Entity, Hsla, IntoElement, Subscription, div, prelude::*, rgb};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxTemplate, ThemedCheckboxTemplate};
-use gpui_luma::theme::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, InteractionState};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
-
-struct GalleryCheckboxTheme {
-    base: DefaultCheckboxTheme,
-    control_border: Option<Hsla>,
-    control_background: Option<Hsla>,
-    control_padding: Option<(f32, f32)>,
-}
-
-impl GalleryCheckboxTheme {
-    fn new() -> Self {
-        Self {
-            base: DefaultCheckboxTheme::default(),
-            control_border: None,
-            control_background: None,
-            control_padding: None,
-        }
-    }
-
-    fn control_border(mut self, color: impl Into<Hsla>) -> Self {
-        self.control_border = Some(color.into());
-        self
-    }
-
-    fn control_background(mut self, color: impl Into<Hsla>) -> Self {
-        self.control_background = Some(color.into());
-        self
-    }
-
-    fn control_padding(mut self, x: f32, y: f32) -> Self {
-        self.control_padding = Some((x, y));
-        self
-    }
-}
-
-impl CheckboxTheme for GalleryCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
-        let mut appearance = self.base.resolve(checked, state);
-
-        if !state.disabled {
-            if let Some(control_border) = self.control_border {
-                appearance.control_border = Some(control_border);
-            }
-
-            if let Some(control_background) = self.control_background {
-                appearance.control_background = Some(control_background);
-            }
-
-            if let Some((x, y)) = self.control_padding {
-                appearance.control_padding_x = x;
-                appearance.control_padding_y = y;
-            }
-        }
-
-        appearance
-    }
-}
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
@@ -83,22 +25,27 @@ enum CheckboxPresentation {
 }
 
 impl CheckboxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_checkbox: Checkbox::new("checkbox-default").label("As-is").checked(true).spawn(cx),
+            default_checkbox: Checkbox::new("checkbox-default")
+                .label("As-is")
+                .checked(true)
+                .template(theme.checkbox_template())
+                .spawn(cx),
             border_checkbox: Checkbox::new("checkbox-border")
                 .label("Border")
-                .template(border_checkbox_template())
+                .template(theme.border_checkbox_template())
                 .spawn(cx),
             filled_checkbox: Checkbox::new("checkbox-border-background")
                 .label("Border + fill")
                 .checked(true)
-                .template(filled_checkbox_template())
+                .template(theme.filled_checkbox_template())
                 .spawn(cx),
             disabled_checkbox: Checkbox::new("disabled-checkbox")
                 .label("Disabled checkbox")
                 .checked(true)
                 .enabled(false)
+                .template(theme.checkbox_template())
                 .spawn(cx),
             default_checked: true,
             border_checked: false,
@@ -118,7 +65,9 @@ impl CheckboxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Checkbox",
             div()
@@ -136,12 +85,20 @@ impl CheckboxPane {
                         .child(self.filled_checkbox.clone())
                         .child(self.disabled_checkbox.clone()),
                 )
-                .child(div().text_color(rgb(0x334155)).child(format!(
+                .child(div().text_color(chrome.body_text).child(format!(
                     "Checked: as-is={}, border={}, border + fill={}",
                     self.default_checked, self.border_checked, self.filled_checked
                 )))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.default_checkbox, cx);
+        notify_entity(&self.border_checkbox, cx);
+        notify_entity(&self.filled_checkbox, cx);
+        notify_entity(&self.disabled_checkbox, cx);
     }
 
     fn handle_event(
@@ -167,21 +124,4 @@ impl CheckboxPane {
             }
         }
     }
-}
-
-fn border_checkbox_template() -> Arc<dyn CheckboxTemplate> {
-    checkbox_template(GalleryCheckboxTheme::new().control_border(rgb(0x2563eb)).control_padding(10.0, 6.0))
-}
-
-fn filled_checkbox_template() -> Arc<dyn CheckboxTemplate> {
-    checkbox_template(
-        GalleryCheckboxTheme::new()
-            .control_border(rgb(0xbe185d))
-            .control_background(rgb(0xfce7f3))
-            .control_padding(10.0, 6.0),
-    )
-}
-
-fn checkbox_template(theme: impl CheckboxTheme + 'static) -> Arc<dyn CheckboxTemplate> {
-    Arc::new(ThemedCheckboxTemplate::new(Arc::new(theme)))
 }

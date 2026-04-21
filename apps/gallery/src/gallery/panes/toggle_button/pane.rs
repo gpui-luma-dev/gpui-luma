@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleButtonPane {
@@ -13,13 +14,18 @@ pub(in crate::gallery) struct ToggleButtonPane {
 }
 
 impl ToggleButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            toggle_button: ToggleButton::new("toggle-button-example").label("Toggle").selected(true).spawn(cx),
+            toggle_button: ToggleButton::new("toggle-button-example")
+                .label("Toggle")
+                .selected(true)
+                .template(theme.toggle_button_template())
+                .spawn(cx),
             disabled_toggle_button: ToggleButton::new("disabled-toggle-button")
                 .label("Disabled toggle")
                 .selected(true)
                 .enabled(false)
+                .template(theme.toggle_button_template())
                 .spawn(cx),
             selected: true,
         }
@@ -31,7 +37,9 @@ impl ToggleButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Toggle Button",
             div()
@@ -47,9 +55,15 @@ impl ToggleButtonPane {
                         .child(self.toggle_button.clone())
                         .child(self.disabled_toggle_button.clone()),
                 )
-                .child(div().text_color(rgb(0x334155)).child(format!("Selected: {}", self.selected)))
+                .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selected)))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.toggle_button, cx);
+        notify_entity(&self.disabled_toggle_button, cx);
     }
 
     fn handle_event(&mut self, event: &ToggleButtonEvent, cx: &mut Context<GalleryApp>) {

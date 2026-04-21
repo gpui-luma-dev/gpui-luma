@@ -1,9 +1,10 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TabsNavigationPane {
@@ -13,13 +14,18 @@ pub(in crate::gallery) struct TabsNavigationPane {
 }
 
 impl TabsNavigationPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            tabs: TabsNavigation::new("project-tabs").items(project_tabs()).active("activity").spawn(cx),
+            tabs: TabsNavigation::new("project-tabs")
+                .items(project_tabs())
+                .active("activity")
+                .template(theme.tabs_navigation_template())
+                .spawn(cx),
             disabled_tabs: TabsNavigation::new("disabled-project-tabs")
                 .items(project_tabs())
                 .active("activity")
                 .enabled(false)
+                .template(theme.tabs_navigation_template())
                 .spawn(cx),
             active_label: "Activity".to_string(),
         }
@@ -31,7 +37,7 @@ impl TabsNavigationPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane(
             "Tabs Navigation",
             div()
@@ -46,11 +52,17 @@ impl TabsNavigationPane {
                         .items_center()
                         .gap_3()
                         .child(self.tabs.clone())
-                        .child(render_tab_content(&self.active_label)),
+                        .child(render_tab_content(&self.active_label, theme)),
                 )
                 .child(self.disabled_tabs.clone())
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.tabs, cx);
+        notify_entity(&self.disabled_tabs, cx);
     }
 
     fn handle_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
@@ -72,7 +84,9 @@ fn project_tabs() -> [TabsNavigationItem; 4] {
     ]
 }
 
-fn render_tab_content(active_label: &str) -> AnyElement {
+fn render_tab_content(active_label: &str, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
     div()
         .w(px(360.0))
         .min_h(px(112.0))
@@ -81,10 +95,10 @@ fn render_tab_content(active_label: &str) -> AnyElement {
         .gap_2()
         .rounded(px(8.0))
         .border_1()
-        .border_color(rgb(0xcbd5e1))
-        .bg(rgb(0xf8fafc))
+        .border_color(chrome.border)
+        .bg(chrome.panel_background)
         .p(px(16.0))
-        .text_color(rgb(0x334155))
+        .text_color(chrome.body_text)
         .child(
             div()
                 .text_size(px(14.0))

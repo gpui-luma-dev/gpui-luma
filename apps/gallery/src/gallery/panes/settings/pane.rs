@@ -1,7 +1,11 @@
-use gpui::{AnyElement, IntoElement, div, prelude::*, rgb};
+use gpui::{AnyElement, IntoElement, div, prelude::*};
+
+use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::gallery_pane;
 
-pub(in crate::gallery) fn render() -> AnyElement {
-    gallery_pane("Settings", div().text_color(rgb(0x334155)).child("Settings").into_any_element())
+pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
+    gallery_pane("Settings", div().text_color(chrome.body_text).child("Settings").into_any_element(), theme)
 }

@@ -2,8 +2,9 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollbarPane {
@@ -22,7 +23,7 @@ enum ScrollbarPresentation {
 }
 
 impl ScrollbarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             horizontal_scrollbar: Scrollbar::new("scrollbar-horizontal-example")
                 .horizontal()
@@ -31,6 +32,7 @@ impl ScrollbarPane {
                 .page_step(80)
                 .value(40)
                 .thumb_fraction(0.54)
+                .template(theme.scrollbar_template())
                 .spawn(cx),
             vertical_scrollbar: Scrollbar::new("scrollbar-vertical-example")
                 .vertical()
@@ -39,6 +41,7 @@ impl ScrollbarPane {
                 .page_step(80)
                 .value(80)
                 .thumb_fraction(0.45)
+                .template(theme.scrollbar_template())
                 .spawn(cx),
             disabled_horizontal_scrollbar: Scrollbar::new("disabled-scrollbar-horizontal-example")
                 .horizontal()
@@ -48,6 +51,7 @@ impl ScrollbarPane {
                 .value(40)
                 .thumb_fraction(0.54)
                 .enabled(false)
+                .template(theme.scrollbar_template())
                 .spawn(cx),
             disabled_vertical_scrollbar: Scrollbar::new("disabled-scrollbar-vertical-example")
                 .vertical()
@@ -57,6 +61,7 @@ impl ScrollbarPane {
                 .value(80)
                 .thumb_fraction(0.45)
                 .enabled(false)
+                .template(theme.scrollbar_template())
                 .spawn(cx),
             horizontal_value: 40.0,
             vertical_value: 80.0,
@@ -72,17 +77,25 @@ impl ScrollbarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane(
             "Scrollbar",
             div()
                 .flex()
                 .items_start()
                 .gap_4()
-                .child(self.scrollbar_example())
-                .child(self.disabled_scrollbar_example())
+                .child(self.scrollbar_example(theme))
+                .child(self.disabled_scrollbar_example(theme))
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.horizontal_scrollbar, cx);
+        notify_entity(&self.vertical_scrollbar, cx);
+        notify_entity(&self.disabled_horizontal_scrollbar, cx);
+        notify_entity(&self.disabled_vertical_scrollbar, cx);
     }
 
     fn handle_event(
@@ -106,21 +119,23 @@ impl ScrollbarPane {
         }
     }
 
-    fn scrollbar_example(&self) -> AnyElement {
+    fn scrollbar_example(&self, theme: &GalleryThemePack) -> AnyElement {
         scrollbar_pair(
             self.horizontal_value,
             self.vertical_value,
             self.horizontal_scrollbar.clone(),
             self.vertical_scrollbar.clone(),
+            theme,
         )
     }
 
-    fn disabled_scrollbar_example(&self) -> AnyElement {
+    fn disabled_scrollbar_example(&self, theme: &GalleryThemePack) -> AnyElement {
         scrollbar_pair(
             self.horizontal_value,
             self.vertical_value,
             self.disabled_horizontal_scrollbar.clone(),
             self.disabled_vertical_scrollbar.clone(),
+            theme,
         )
     }
 }
@@ -130,7 +145,9 @@ fn scrollbar_pair(
     vertical_value: f32,
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
+    theme: &GalleryThemePack,
 ) -> AnyElement {
+    let chrome = theme.chrome();
     let mut demo_content = div()
         .absolute()
         .left(px(-horizontal_value))
@@ -146,7 +163,7 @@ fn scrollbar_pair(
                 .flex()
                 .items_center()
                 .gap_2()
-                .child(div().w(px(92.0)).text_color(rgb(0x0f172a)).child(format!("Row {:02}", row + 1)))
+                .child(div().w(px(92.0)).text_color(chrome.title_text).child(format!("Row {:02}", row + 1)))
                 .child(div().w(px(110.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbae6fd)))
                 .child(div().w(px(150.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbbf7d0)))
                 .child(div().w(px(96.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xfed7aa))),
@@ -170,8 +187,8 @@ fn scrollbar_pair(
                         .overflow_hidden()
                         .rounded(px(6.0))
                         .border_1()
-                        .border_color(rgb(0xcbd5e1))
-                        .bg(rgb(0xffffff))
+                        .border_color(chrome.border)
+                        .bg(chrome.panel_background)
                         .child(demo_content),
                 )
                 .child(horizontal_scrollbar),

@@ -3,8 +3,9 @@ use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKi
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
@@ -14,12 +15,16 @@ pub(in crate::gallery) struct IconButtonPane {
 }
 
 impl IconButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             icon_button: IconButton::new("icon-button-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Primary)
+                .template(theme.icon_button_template())
                 .spawn(cx),
-            disabled_icon_button: IconButton::new("disabled-icon-button", LucideIcon::Check).enabled(false).spawn(cx),
+            disabled_icon_button: IconButton::new("disabled-icon-button", LucideIcon::Check)
+                .enabled(false)
+                .template(theme.icon_button_template())
+                .spawn(cx),
             icon_clicks: 0,
         }
     }
@@ -30,7 +35,7 @@ impl IconButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane(
             "Icon Button",
             div()
@@ -40,7 +45,13 @@ impl IconButtonPane {
                 .child(self.icon_button.clone())
                 .child(self.disabled_icon_button.clone())
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.icon_button, cx);
+        notify_entity(&self.disabled_icon_button, cx);
     }
 
     fn handle_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {

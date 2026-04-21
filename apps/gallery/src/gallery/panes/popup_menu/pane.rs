@@ -1,9 +1,12 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
+
+use super::super::shared::notify_entity;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct PopupMenuPane {
@@ -16,32 +19,37 @@ pub(in crate::gallery) struct PopupMenuPane {
 }
 
 impl PopupMenuPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             popup_smart: PopupMenu::new("popup-menu-smart-example")
                 .label("Smart popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::Smart)
+                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_below: PopupMenu::new("popup-menu-below-example")
                 .label("Below popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::BelowStart)
+                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_above: PopupMenu::new("popup-menu-above-example")
                 .label("Above popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::AboveStart)
+                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_centered: PopupMenu::new("popup-menu-centered-example")
                 .label("Centered popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
+                .template(theme.popup_menu_template())
                 .spawn(cx),
             disabled_popup: PopupMenu::new("disabled-popup-menu-example")
                 .label("Disabled popup")
                 .items(disabled_menu_items())
                 .enabled(false)
+                .template(theme.popup_menu_template())
                 .spawn(cx),
             selection: "none".to_string(),
         }
@@ -62,7 +70,9 @@ impl PopupMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         div()
             .size_full()
             .relative()
@@ -73,7 +83,8 @@ impl PopupMenuPane {
             .px(px(32.0))
             .pt(px(32.0))
             .pb(px(12.0))
-            .child(div().text_size(px(20.0)).line_height(px(28.0)).text_color(rgb(0x0f172a)).child("Popup Menu"))
+            .bg(chrome.content_background)
+            .child(div().text_size(px(20.0)).line_height(px(28.0)).text_color(chrome.title_text).child("Popup Menu"))
             .child(
                 div()
                     .flex_1()
@@ -99,10 +110,18 @@ impl PopupMenuPane {
                             .child(self.popup_centered.clone())
                             .child(self.disabled_popup.clone()),
                     )
-                    .child(div().text_color(rgb(0x334155)).child(format!("Selected: {}", self.selection))),
+                    .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection))),
             )
             .child(div().w_full().flex().items_center().justify_center().pb(px(8.0)).child(self.popup_smart.clone()))
             .into_any_element()
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.popup_smart, cx);
+        notify_entity(&self.popup_below, cx);
+        notify_entity(&self.popup_above, cx);
+        notify_entity(&self.popup_centered, cx);
+        notify_entity(&self.disabled_popup, cx);
     }
 
     fn handle_event(&mut self, event: &PopupMenuEvent, cx: &mut Context<GalleryApp>) {

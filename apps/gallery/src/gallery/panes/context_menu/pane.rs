@@ -1,12 +1,13 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::menu_item::MenuItem;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
 
 use super::radial::radial_context_menu_template;
-use super::super::shared::gallery_pane;
+use super::super::shared::{gallery_pane, notify_entity};
 use super::template::gallery_context_menu_template;
 
 #[derive(Clone)]
@@ -24,17 +25,17 @@ enum ContextMenuPresentation {
 }
 
 impl ContextMenuPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             default_context_menu: ContextMenu::new("context-menu-default-example")
                 .label("Right-click me: Default")
                 .items(default_context_menu_items())
-                .template(gallery_context_menu_template())
+                .template(gallery_context_menu_template(theme.context_menu_theme()))
                 .spawn(cx),
             radial_context_menu: ContextMenu::new("context-menu-radial-example")
                 .label("Right-click me: Radial")
                 .items(radial_context_menu_items())
-                .template(radial_context_menu_template())
+                .template(radial_context_menu_template(theme.context_menu_theme()))
                 .spawn(cx),
             default_selection: "none".to_string(),
             radial_selection: "none".to_string(),
@@ -50,7 +51,9 @@ impl ContextMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
         gallery_pane(
             "Context Menu",
             div()
@@ -78,13 +81,19 @@ impl ContextMenuPane {
                         ),
                 )
                 .child(
-                    div().text_color(rgb(0x334155)).child(format!(
+                    div().text_color(chrome.body_text).child(format!(
                         "Selected: default={}, radial={}",
                         self.default_selection, self.radial_selection
                     )),
                 )
                 .into_any_element(),
+            theme,
         )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.default_context_menu, cx);
+        notify_entity(&self.radial_context_menu, cx);
     }
 
     fn handle_event(

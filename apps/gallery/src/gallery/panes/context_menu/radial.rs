@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
+use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme};
 use lucide_icons::Icon as LucideIcon;
 
 const RADIAL_ITEM_COUNT: usize = 5;
@@ -19,23 +19,14 @@ const RADIAL_CENTER_MARKER_SIZE: f32 = 12.0;
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 type ContextMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 
-pub(in crate::gallery) fn radial_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
-    Arc::new(GalleryRadialContextMenuTemplate::new().theme(default_context_menu_theme()))
+pub(in crate::gallery) fn radial_context_menu_template(
+    theme: Arc<dyn ContextMenuTheme>,
+) -> Arc<dyn ContextMenuTemplate> {
+    Arc::new(GalleryRadialContextMenuTemplate { theme })
 }
 
 struct GalleryRadialContextMenuTemplate {
     theme: Arc<dyn ContextMenuTheme>,
-}
-
-impl GalleryRadialContextMenuTemplate {
-    fn new() -> Self {
-        Self { theme: default_context_menu_theme() }
-    }
-
-    fn theme(mut self, theme: Arc<dyn ContextMenuTheme>) -> Self {
-        self.theme = theme;
-        self
-    }
 }
 
 impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
