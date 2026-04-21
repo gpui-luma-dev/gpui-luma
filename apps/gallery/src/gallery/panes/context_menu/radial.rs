@@ -164,7 +164,7 @@ fn render_radial_item(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(RADIAL_BUTTON_SIZE))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .text_color(foreground)
         .child(render_item_icon(item.icon_ref(), foreground, appearance.item_icon_size));
 

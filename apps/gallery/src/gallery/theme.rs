@@ -22,11 +22,11 @@ use gpui_luma::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
     DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme, DefaultScrollbarTheme, DefaultSliderTheme,
-    DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultToggleGroupTheme, InteractionState, PopupMenuAppearance,
-    PopupMenuTheme, ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance,
-    ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance,
-    TabsNavigationListAppearance, TabsNavigationTheme, ThemeMode, ThemeModes, ThemeTokens, ToggleGroupItemAppearance,
-    ToggleGroupListAppearance, ToggleGroupTheme,
+    DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme,
+    PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme,
+    ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme,
+    TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme, ThemeMode, ThemeTokens,
+    ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
 };
 
 #[derive(Clone)]
@@ -46,7 +46,7 @@ pub(in crate::gallery) struct GalleryThemePack {
 }
 
 struct GalleryThemeState {
-    modes: ThemeModes,
+    theme: LumaTheme,
     mode: AtomicU8,
 }
 
@@ -67,7 +67,7 @@ pub(in crate::gallery) struct GalleryChrome {
 impl GalleryThemePack {
     pub(in crate::gallery) fn new() -> Self {
         let state = Arc::new(GalleryThemeState {
-            modes: ThemeModes::default(),
+            theme: LumaTheme::native(),
             mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
         });
 
@@ -96,32 +96,33 @@ impl GalleryThemePack {
     }
 
     pub(in crate::gallery) fn chrome(&self) -> GalleryChrome {
-        match self.mode() {
-            ThemeMode::Light => GalleryChrome {
-                app_background: rgb(0xf8fafc).into(),
-                sidebar_background: rgb(0xffffff).into(),
-                content_background: rgb(0xf8fafc).into(),
-                title_text: rgb(0x0f172a).into(),
-                body_text: rgb(0x334155).into(),
-                muted_text: rgb(0x64748b).into(),
-                section_label: rgb(0x94a3b8).into(),
-                border: rgb(0xcbd5e1).into(),
-                panel_background: rgb(0xffffff).into(),
-                focus_ring: rgb(0xf59e0b).into(),
-            },
-            ThemeMode::Dark => GalleryChrome {
-                app_background: rgb(0x0b1120).into(),
-                sidebar_background: rgb(0x111827).into(),
-                content_background: rgb(0x0b1120).into(),
-                title_text: rgb(0xf8fafc).into(),
-                body_text: rgb(0xcbd5e1).into(),
-                muted_text: rgb(0x94a3b8).into(),
-                section_label: rgb(0x64748b).into(),
-                border: rgb(0x334155).into(),
-                panel_background: rgb(0x111827).into(),
-                focus_ring: rgb(0xfbbf24).into(),
-            },
+        let tokens = self.state.tokens();
+        let palette = &tokens.palette;
+
+        GalleryChrome {
+            app_background: palette.app.background,
+            sidebar_background: palette.navigation.background,
+            content_background: palette.app.background,
+            title_text: palette.app.foreground,
+            body_text: palette.surface.subtle.foreground,
+            muted_text: palette.app.muted_foreground,
+            section_label: palette.navigation.muted_foreground,
+            border: palette.border.default,
+            panel_background: palette.surface.panel.background,
+            focus_ring: palette.focus.ring,
         }
+    }
+
+    pub(in crate::gallery) fn tokens(&self) -> ThemeTokens {
+        self.state.tokens()
+    }
+
+    pub(in crate::gallery) fn theme_name(&self) -> &str {
+        &self.state.theme.name
+    }
+
+    pub(in crate::gallery) fn theme_version(&self) -> u32 {
+        self.state.theme.version
     }
 
     pub(in crate::gallery) fn button_template(&self) -> Arc<dyn ButtonTemplate> {
@@ -199,7 +200,7 @@ impl Default for GalleryThemePack {
 
 impl GalleryThemeState {
     fn tokens(&self) -> ThemeTokens {
-        self.modes.tokens(u8_to_mode(self.mode.load(Ordering::Relaxed))).clone()
+        self.theme.mode(u8_to_mode(self.mode.load(Ordering::Relaxed))).clone()
     }
 }
 

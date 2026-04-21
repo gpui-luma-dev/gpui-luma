@@ -35,15 +35,19 @@ impl DefaultProgressTheme {
 
 impl ProgressTheme for DefaultProgressTheme {
     fn resolve(&self, enabled: bool) -> ProgressAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
 
         ProgressAppearance {
             track_color: if enabled {
-                colors.surface_pressed
+                palette.surface.subtle.background
             } else {
-                colors.surface_disabled
+                palette.state.disabled.background
             },
-            progress_color: if enabled { colors.selected } else { colors.text_disabled },
+            progress_color: if enabled {
+                palette.action.primary.background
+            } else {
+                palette.state.disabled.foreground
+            },
             size: 64.0,
             stroke_width: 6.0,
         }

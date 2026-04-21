@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonVariant {
@@ -28,6 +28,7 @@ pub struct ButtonFamilyAppearance {
     pub foreground: Hsla,
     pub border: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -70,41 +71,49 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
+        let typography = &self.tokens.typography;
         let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-        let variant = if selected { ButtonVariant::Primary } else { variant };
-        let foreground = match (variant, state.disabled) {
-            (_, true) => colors.text_disabled,
-            (ButtonVariant::Default, false) => colors.text,
-            _ => colors.text_inverse,
+        let foreground = match (variant, selected, state.disabled) {
+            (_, _, true) => palette.state.disabled.foreground,
+            (_, true, false) => palette.state.selected.foreground,
+            (ButtonVariant::Default, false, false) => palette.action.secondary.foreground,
+            (ButtonVariant::Primary, false, false) => palette.action.primary.foreground,
+            (ButtonVariant::Destructive, false, false) => palette.action.danger.foreground,
         };
 
         let background = match (variant, selected, state.layer()) {
-            (_, _, InteractionLayer::Disabled) => colors.surface_disabled,
-            (_, true, InteractionLayer::Pressed) => colors.selected_pressed,
-            (_, true, InteractionLayer::Hovered) => colors.selected_hover,
-            (_, true, InteractionLayer::Default) => colors.selected,
-            (ButtonVariant::Primary, _, InteractionLayer::Pressed) => colors.primary_pressed,
-            (ButtonVariant::Primary, _, InteractionLayer::Hovered) => colors.primary_hover,
-            (ButtonVariant::Primary, _, InteractionLayer::Default) => colors.primary,
-            (ButtonVariant::Destructive, _, InteractionLayer::Pressed) => colors.destructive_pressed,
-            (ButtonVariant::Destructive, _, InteractionLayer::Hovered) => colors.destructive_hover,
-            (ButtonVariant::Destructive, _, InteractionLayer::Default) => colors.destructive,
-            (ButtonVariant::Default, _, InteractionLayer::Pressed) => colors.surface_pressed,
-            (ButtonVariant::Default, _, InteractionLayer::Hovered) => colors.surface_hover,
-            (ButtonVariant::Default, _, InteractionLayer::Default) => colors.surface,
+            (_, _, InteractionLayer::Disabled) => palette.state.disabled.background,
+            (_, true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
+            (_, true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (_, true, InteractionLayer::Default) => palette.state.selected.background,
+            (ButtonVariant::Primary, _, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
+            (ButtonVariant::Primary, _, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (ButtonVariant::Primary, _, InteractionLayer::Default) => palette.action.primary.background,
+            (ButtonVariant::Destructive, _, InteractionLayer::Pressed) => palette.action.danger.pressed_background,
+            (ButtonVariant::Destructive, _, InteractionLayer::Hovered) => palette.action.danger.hover_background,
+            (ButtonVariant::Destructive, _, InteractionLayer::Default) => palette.action.danger.background,
+            (ButtonVariant::Default, _, InteractionLayer::Pressed) => palette.action.secondary.pressed_background,
+            (ButtonVariant::Default, _, InteractionLayer::Hovered) => palette.action.secondary.hover_background,
+            (ButtonVariant::Default, _, InteractionLayer::Default) => palette.action.secondary.background,
         };
 
         let height = metrics.control_height(size);
+        let border = match variant {
+            ButtonVariant::Default => palette.border.default,
+            ButtonVariant::Primary => palette.action.primary.background,
+            ButtonVariant::Destructive => palette.action.danger.background,
+        };
 
         ButtonFamilyAppearance {
             background,
             foreground,
-            border: colors.border,
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            border,
+            focus_ring: state.focused.then_some(palette.focus.ring),
+            typography: typography.text.label,
             radius: match role {
-                ButtonFamilyRole::Icon => height / 2.0,
+                ButtonFamilyRole::Icon => metrics.radius.pill,
                 _ => metrics.radius(size),
             },
             padding_x: match role {

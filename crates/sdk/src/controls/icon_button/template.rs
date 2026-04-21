@@ -44,7 +44,9 @@ impl IconButtonTemplate for ThemedIconButtonTemplate {
             .border_1()
             .border_color(appearance.border)
             .rounded(px(appearance.radius))
-            .font_weight(FontWeight::MEDIUM)
+            .text_size(px(appearance.typography.size))
+            .line_height(px(appearance.typography.line_height))
+            .font_weight(appearance.typography.weight)
             .child(render_icon(model.icon, appearance.foreground));
 
         if model.state.disabled {

@@ -109,7 +109,7 @@ fn render_menu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
     let mut item_clicks = item_clicks.into_iter();
     let mut submenu = None;
@@ -198,7 +198,7 @@ fn render_submenu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
 
     for (submenu_index, submenu_item) in item.submenu_items().iter().enumerate() {

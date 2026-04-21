@@ -1,0 +1,554 @@
+name = "Luma Native"
+version = 1
+
+[light.palette.app]
+background = "hsla(210 40% 98.0392% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+muted_foreground = "hsla(215.385 16.318% 46.8627% / 1)"
+
+[light.palette.surface.panel]
+background = "hsla(0 0% 100% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+border = "hsla(212.727 26.8293% 83.9216% / 1)"
+
+[light.palette.surface.floating]
+background = "hsla(0 0% 100% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+border = "hsla(212.727 26.8293% 83.9216% / 1)"
+
+[light.palette.surface.subtle]
+background = "hsla(210 40% 96.0784% / 1)"
+foreground = "hsla(215.294 25% 26.6667% / 1)"
+
+[light.palette.action.primary]
+background = "hsla(221.212 83.1933% 53.3333% / 1)"
+foreground = "hsla(0 0% 100% / 1)"
+hover_background = "hsla(224.278 76.3265% 48.0392% / 1)"
+pressed_background = "hsla(225.931 70.7317% 40.1961% / 1)"
+
+[light.palette.action.secondary]
+background = "hsla(210 40% 98.0392% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+hover_background = "hsla(214.286 31.8182% 91.3725% / 1)"
+pressed_background = "hsla(212.727 26.8293% 83.9216% / 1)"
+
+[light.palette.action.danger]
+background = "hsla(0 72.2222% 50.5882% / 1)"
+foreground = "hsla(0 0% 100% / 1)"
+hover_background = "hsla(0 73.7089% 41.7647% / 1)"
+pressed_background = "hsla(0 70% 35.2941% / 1)"
+
+[light.palette.state.hover]
+background = "hsla(214.286 31.8182% 91.3725% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+
+[light.palette.state.pressed]
+background = "hsla(212.727 26.8293% 83.9216% / 1)"
+
+[light.palette.state.selected]
+background = "hsla(221.212 83.1933% 53.3333% / 1)"
+foreground = "hsla(0 0% 100% / 1)"
+
+[light.palette.state.disabled]
+background = "hsla(210 40% 96.0784% / 1)"
+foreground = "hsla(215 20.2247% 65.098% / 1)"
+
+[light.palette.form.input]
+background = "hsla(0 0% 100% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+border = "hsla(215 20.2247% 65.098% / 1)"
+placeholder = "hsla(215 20.2247% 65.098% / 1)"
+
+[light.palette.focus]
+ring = "hsla(37.6923 92.126% 50.1961% / 1)"
+
+[light.palette.border]
+default = "hsla(212.727 26.8293% 83.9216% / 1)"
+strong = "hsla(215.385 16.318% 46.8627% / 1)"
+
+[light.palette.navigation]
+background = "hsla(0 0% 100% / 1)"
+foreground = "hsla(222.222 47.3684% 11.1765% / 1)"
+muted_foreground = "hsla(215.385 16.318% 46.8627% / 1)"
+hover_background = "hsla(210 40% 96.0784% / 1)"
+selected_background = "hsla(221.212 83.1933% 53.3333% / 1)"
+selected_foreground = "hsla(0 0% 100% / 1)"
+border = "hsla(212.727 26.8293% 83.9216% / 1)"
+focus_ring = "hsla(37.6923 92.126% 50.1961% / 1)"
+
+[light.palette.data]
+accent_1 = "hsla(221.212 83.1933% 53.3333% / 1)"
+accent_2 = "hsla(175.34 77.4436% 26.0784% / 1)"
+accent_3 = "hsla(17.4725 88.3495% 40.3922% / 1)"
+accent_4 = "hsla(262.123 83.2558% 57.8431% / 1)"
+accent_5 = "hsla(345.349 82.6923% 40.7843% / 1)"
+
+[light.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[light.metrics.radius]
+none = 0
+sm = 3
+md = 6
+lg = 8
+xl = 12
+pill = 999
+
+[light.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[light.metrics.focus]
+width = 1
+offset = 0
+
+[light.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[light.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[light.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[light.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[light.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.typography.font.sans]
+family = "System UI"
+
+[light.typography.font.mono]
+family = "Monaco"
+
+[light.typography.font.serif]
+family = "New York"
+
+[light.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[light.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[light.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[light.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[light.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[light.elevation.none]
+layers = []
+
+[[light.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.05)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.14)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.10)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.10)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = -1
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.12)"
+offset_x = 0
+offset_y = 4
+blur = 8
+spread = -2
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 2
+blur = 4
+spread = -1
+
+[[light.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.16)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.08)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[light.colors]
+surface = "hsla(210 40% 98.0392% / 1)"
+surface_hover = "hsla(214.286 31.8182% 91.3725% / 1)"
+surface_pressed = "hsla(212.727 26.8293% 83.9216% / 1)"
+surface_disabled = "hsla(210 40% 96.0784% / 1)"
+primary = "hsla(221.212 83.1933% 53.3333% / 1)"
+primary_hover = "hsla(224.278 76.3265% 48.0392% / 1)"
+primary_pressed = "hsla(225.931 70.7317% 40.1961% / 1)"
+destructive = "hsla(0 72.2222% 50.5882% / 1)"
+destructive_hover = "hsla(0 73.7089% 41.7647% / 1)"
+destructive_pressed = "hsla(0 70% 35.2941% / 1)"
+selected = "hsla(221.212 83.1933% 53.3333% / 1)"
+selected_hover = "hsla(224.278 76.3265% 48.0392% / 1)"
+selected_pressed = "hsla(225.931 70.7317% 40.1961% / 1)"
+text = "hsla(222.222 47.3684% 11.1765% / 1)"
+text_inverse = "hsla(0 0% 100% / 1)"
+text_disabled = "hsla(215 20.2247% 65.098% / 1)"
+border = "hsla(212.727 26.8293% 83.9216% / 1)"
+focus_ring = "hsla(37.6923 92.126% 50.1961% / 1)"
+
+[dark.palette.app]
+background = "hsla(222.857 48.8372% 8.43137% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+muted_foreground = "hsla(215 20.2247% 65.098% / 1)"
+
+[dark.palette.surface.panel]
+background = "hsla(220.909 39.2857% 10.9804% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+border = "hsla(215.294 25% 26.6667% / 1)"
+
+[dark.palette.surface.floating]
+background = "hsla(220.909 39.2857% 10.9804% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+border = "hsla(215.294 25% 26.6667% / 1)"
+
+[dark.palette.surface.subtle]
+background = "hsla(217.241 32.5843% 17.451% / 1)"
+foreground = "hsla(212.727 26.8293% 83.9216% / 1)"
+
+[dark.palette.action.primary]
+background = "hsla(213.117 93.9024% 67.8431% / 1)"
+foreground = "hsla(204 80.2469% 15.8824% / 1)"
+hover_background = "hsla(211.698 96.3636% 78.4314% / 1)"
+pressed_background = "hsla(213.333 96.9231% 87.2549% / 1)"
+
+[dark.palette.action.secondary]
+background = "hsla(217.241 32.5843% 17.451% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+hover_background = "hsla(215.294 25% 26.6667% / 1)"
+pressed_background = "hsla(215.294 19.3182% 34.5098% / 1)"
+
+[dark.palette.action.danger]
+background = "hsla(0 90.604% 70.7843% / 1)"
+foreground = "hsla(0 74.6835% 15.4902% / 1)"
+hover_background = "hsla(0 93.5484% 81.7647% / 1)"
+pressed_background = "hsla(0 96.2963% 89.4118% / 1)"
+
+[dark.palette.state.hover]
+background = "hsla(215.294 25% 26.6667% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+
+[dark.palette.state.pressed]
+background = "hsla(215.294 19.3182% 34.5098% / 1)"
+
+[dark.palette.state.selected]
+background = "hsla(213.117 93.9024% 67.8431% / 1)"
+foreground = "hsla(204 80.2469% 15.8824% / 1)"
+
+[dark.palette.state.disabled]
+background = "hsla(217.241 32.5843% 17.451% / 1)"
+foreground = "hsla(215.385 16.318% 46.8627% / 1)"
+
+[dark.palette.form.input]
+background = "hsla(222.222 47.3684% 11.1765% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+border = "hsla(215.294 19.3182% 34.5098% / 1)"
+placeholder = "hsla(215.385 16.318% 46.8627% / 1)"
+
+[dark.palette.focus]
+ring = "hsla(43.2558 96.4126% 56.2745% / 1)"
+
+[dark.palette.border]
+default = "hsla(215.294 25% 26.6667% / 1)"
+strong = "hsla(215 20.2247% 65.098% / 1)"
+
+[dark.palette.navigation]
+background = "hsla(220.909 39.2857% 10.9804% / 1)"
+foreground = "hsla(210 40% 98.0392% / 1)"
+muted_foreground = "hsla(215 20.2247% 65.098% / 1)"
+hover_background = "hsla(217.241 32.5843% 17.451% / 1)"
+selected_background = "hsla(213.117 93.9024% 67.8431% / 1)"
+selected_foreground = "hsla(204 80.2469% 15.8824% / 1)"
+border = "hsla(215.294 25% 26.6667% / 1)"
+focus_ring = "hsla(43.2558 96.4126% 56.2745% / 1)"
+
+[dark.palette.data]
+accent_1 = "hsla(213.117 93.9024% 67.8431% / 1)"
+accent_2 = "hsla(172.455 66.0079% 50.3922% / 1)"
+accent_3 = "hsla(27.0157 95.9799% 60.9804% / 1)"
+accent_4 = "hsla(255.135 91.7355% 76.2745% / 1)"
+accent_5 = "hsla(351.304 94.5205% 71.3725% / 1)"
+
+[dark.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[dark.metrics.radius]
+none = 0
+sm = 3
+md = 6
+lg = 8
+xl = 12
+pill = 999
+
+[dark.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[dark.metrics.focus]
+width = 1
+offset = 0
+
+[dark.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[dark.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[dark.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[dark.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[dark.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.typography.font.sans]
+family = "System UI"
+
+[dark.typography.font.mono]
+family = "Monaco"
+
+[dark.typography.font.serif]
+family = "New York"
+
+[dark.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[dark.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[dark.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[dark.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[dark.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[dark.elevation.none]
+layers = []
+
+[[dark.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 6
+blur = 16
+spread = -6
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.34)"
+offset_x = 0
+offset_y = 10
+blur = 24
+spread = -8
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.20)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.42)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.24)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[dark.colors]
+surface = "hsla(217.241 32.5843% 17.451% / 1)"
+surface_hover = "hsla(215.294 25% 26.6667% / 1)"
+surface_pressed = "hsla(215.294 19.3182% 34.5098% / 1)"
+surface_disabled = "hsla(217.241 32.5843% 17.451% / 1)"
+primary = "hsla(213.117 93.9024% 67.8431% / 1)"
+primary_hover = "hsla(211.698 96.3636% 78.4314% / 1)"
+primary_pressed = "hsla(213.333 96.9231% 87.2549% / 1)"
+destructive = "hsla(0 90.604% 70.7843% / 1)"
+destructive_hover = "hsla(0 93.5484% 81.7647% / 1)"
+destructive_pressed = "hsla(0 96.2963% 89.4118% / 1)"
+selected = "hsla(213.117 93.9024% 67.8431% / 1)"
+selected_hover = "hsla(211.698 96.3636% 78.4314% / 1)"
+selected_pressed = "hsla(213.333 96.9231% 87.2549% / 1)"
+text = "hsla(210 40% 98.0392% / 1)"
+text_inverse = "hsla(204 80.2469% 15.8824% / 1)"
+text_disabled = "hsla(215.385 16.318% 46.8627% / 1)"
+border = "hsla(215.294 25% 26.6667% / 1)"
+focus_ring = "hsla(43.2558 96.4126% 56.2745% / 1)"

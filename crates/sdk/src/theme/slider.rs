@@ -1,14 +1,16 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{BoxShadow, Hsla};
 
 use super::{InteractionLayer, InteractionState, ThemeTokens};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct SliderAppearance {
     pub track_background: Hsla,
     pub fill_background: Hsla,
     pub thumb_background: Hsla,
+    pub thumb_border: Hsla,
+    pub thumb_shadow: Vec<BoxShadow>,
     pub focus_ring: Option<Hsla>,
     pub width: f32,
     pub height: f32,
@@ -40,32 +42,40 @@ impl DefaultSliderTheme {
 
 impl SliderTheme for DefaultSliderTheme {
     fn resolve(&self, state: InteractionState) -> SliderAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
+        let metrics = &self.tokens.metrics;
+        let elevation = &self.tokens.elevation;
         let fill_background = match state.layer() {
-            InteractionLayer::Disabled => colors.surface_disabled,
-            InteractionLayer::Pressed => colors.selected_pressed,
-            InteractionLayer::Hovered => colors.selected_hover,
-            InteractionLayer::Default => colors.selected,
+            InteractionLayer::Disabled => palette.state.disabled.foreground,
+            InteractionLayer::Pressed => palette.action.primary.pressed_background,
+            InteractionLayer::Hovered => palette.action.primary.hover_background,
+            InteractionLayer::Default => palette.action.primary.background,
         };
 
         SliderAppearance {
             track_background: if state.disabled {
-                colors.surface_disabled
+                palette.state.disabled.background
             } else {
-                colors.surface_pressed
+                palette.surface.subtle.background
             },
             fill_background,
             thumb_background: if state.disabled {
-                colors.text_disabled
+                palette.state.disabled.foreground
             } else {
-                colors.text_inverse
+                palette.surface.panel.background
             },
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            thumb_border: if state.disabled {
+                palette.state.disabled.background
+            } else {
+                palette.action.primary.background
+            },
+            thumb_shadow: elevation.thumb.to_box_shadows(),
+            focus_ring: state.focused.then_some(palette.focus.ring),
             width: 260.0,
             height: 32.0,
             track_height: 8.0,
             thumb_size: 18.0,
-            radius: 999.0,
+            radius: metrics.radius.pill,
         }
     }
 }

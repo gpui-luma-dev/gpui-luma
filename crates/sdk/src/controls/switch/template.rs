@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::SwitchRenderModel;
 use crate::controls::state::focus_debug_border;
@@ -56,7 +56,7 @@ impl SwitchTemplate for ThemedSwitchTemplate {
                     .border_1()
                     .border_color(appearance.thumb_border)
                     .rounded(px(appearance.radius))
-                    .shadow_sm(),
+                    .shadow(appearance.thumb_shadow.clone()),
             );
 
         let mut root = div()
@@ -66,7 +66,9 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             .items_center()
             .gap(px(appearance.gap))
             .text_color(appearance.label_color)
-            .font_weight(FontWeight::MEDIUM)
+            .text_size(px(appearance.label_typography.size))
+            .line_height(px(appearance.label_typography.line_height))
+            .font_weight(appearance.label_typography.weight)
             .rounded(px(appearance.radius))
             .child(track);
 

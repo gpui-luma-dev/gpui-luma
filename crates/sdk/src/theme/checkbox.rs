@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CheckboxAppearance {
@@ -13,6 +13,7 @@ pub struct CheckboxAppearance {
     pub checkmark_color: Hsla,
     pub label_color: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
     pub control_padding_y: f32,
@@ -46,25 +47,26 @@ impl DefaultCheckboxTheme {
 
 impl CheckboxTheme for DefaultCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
+        let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
 
         let indicator_background = match (checked, layer) {
-            (_, InteractionLayer::Disabled) => colors.surface_disabled,
-            (true, InteractionLayer::Pressed) => colors.selected_pressed,
-            (true, InteractionLayer::Hovered) => colors.selected_hover,
-            (true, InteractionLayer::Default) => colors.selected,
-            (false, InteractionLayer::Pressed) => colors.surface_pressed,
-            (false, InteractionLayer::Hovered) => colors.surface_hover,
-            (false, InteractionLayer::Default) => colors.surface,
+            (_, InteractionLayer::Disabled) => palette.state.disabled.background,
+            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (false, InteractionLayer::Pressed) => palette.state.pressed.background,
+            (false, InteractionLayer::Hovered) => palette.state.hover.background,
+            (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
         let label_color = if state.disabled {
-            colors.text_disabled
+            palette.state.disabled.foreground
         } else {
-            colors.text
+            palette.app.foreground
         };
 
         CheckboxAppearance {
@@ -74,19 +76,20 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             indicator_border: if checked && !state.disabled {
                 indicator_background
             } else {
-                colors.border
+                palette.form.input.border
             },
             checkmark_color: if state.disabled {
-                colors.text_disabled
+                palette.state.disabled.foreground
             } else {
-                colors.text_inverse
+                palette.action.primary.foreground
             },
             label_color,
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            focus_ring: state.focused.then_some(palette.focus.ring),
+            label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,
             control_padding_y: 0.0,
-            indicator_radius: metrics.radius(size) * 0.5,
+            indicator_radius: metrics.radius.sm,
             indicator_size: metrics.control_height(size) * 0.5,
             checkmark_size: metrics.control_height(size) * 0.42,
             gap: metrics.gap(size),

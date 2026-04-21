@@ -1,17 +1,19 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{BoxShadow, Hsla};
 
-use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct SwitchAppearance {
     pub track_background: Hsla,
     pub track_border: Hsla,
     pub thumb_background: Hsla,
     pub thumb_border: Hsla,
+    pub thumb_shadow: Vec<BoxShadow>,
     pub label_color: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub label_typography: LumaTextStyle,
     pub width: f32,
     pub height: f32,
     pub thumb_size: f32,
@@ -43,17 +45,21 @@ impl DefaultSwitchTheme {
 
 impl SwitchTheme for DefaultSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
+        let typography = &self.tokens.typography;
+        let elevation = &self.tokens.elevation;
         let size = ControlSize::Md;
         let layer = state.layer();
 
         let track_background = match (on, layer) {
-            (_, InteractionLayer::Disabled) => colors.surface_disabled,
-            (true, _) => colors.text,
-            (false, InteractionLayer::Pressed) => colors.surface_pressed,
-            (false, InteractionLayer::Hovered) => colors.surface_hover,
-            (false, InteractionLayer::Default) => colors.surface,
+            (_, InteractionLayer::Disabled) => palette.state.disabled.background,
+            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (false, InteractionLayer::Pressed) => palette.state.pressed.background,
+            (false, InteractionLayer::Hovered) => palette.state.hover.background,
+            (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
         SwitchAppearance {
@@ -61,30 +67,36 @@ impl SwitchTheme for DefaultSwitchTheme {
             track_border: if on && !state.disabled {
                 track_background
             } else {
-                colors.border
+                palette.form.input.border
             },
             thumb_background: if state.disabled {
-                colors.text_disabled
+                palette.state.disabled.foreground
+            } else if on {
+                palette.action.primary.foreground
             } else {
-                colors.text_inverse
+                palette.surface.panel.background
             },
             thumb_border: if state.disabled {
-                colors.surface_disabled
+                palette.state.disabled.background
+            } else if on {
+                palette.action.primary.foreground
             } else {
-                colors.border
+                palette.border.default
             },
+            thumb_shadow: elevation.thumb.to_box_shadows(),
             label_color: if state.disabled {
-                colors.text_disabled
+                palette.state.disabled.foreground
             } else {
-                colors.text
+                palette.app.foreground
             },
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            focus_ring: state.focused.then_some(palette.focus.ring),
+            label_typography: typography.text.label,
             width: 42.0,
             height: 22.0,
             thumb_size: metrics.control_height(size) * 0.5,
             padding: 2.0,
             gap: metrics.gap(size),
-            radius: 999.0,
+            radius: metrics.radius.pill,
         }
     }
 }

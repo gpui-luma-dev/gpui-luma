@@ -91,9 +91,9 @@ impl SliderTemplate for ThemedSliderTemplate {
             .size(px(appearance.thumb_size))
             .bg(appearance.thumb_background)
             .border_1()
-            .border_color(appearance.fill_background)
+            .border_color(appearance.thumb_border)
             .rounded(px(appearance.radius))
-            .shadow_sm();
+            .shadow(appearance.thumb_shadow.clone());
 
         let mut root = div()
             .id(model.id.clone())

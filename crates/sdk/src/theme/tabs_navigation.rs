@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationListAppearance {
@@ -19,6 +19,7 @@ pub struct TabsNavigationItemAppearance {
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
     pub focus_ring: Option<Hsla>,
+    pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
     pub height: f32,
@@ -49,17 +50,17 @@ impl DefaultTabsNavigationTheme {
 
 impl TabsNavigationTheme for DefaultTabsNavigationTheme {
     fn resolve_list(&self, enabled: bool) -> TabsNavigationListAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let size = ControlSize::Md;
 
         TabsNavigationListAppearance {
             background: if enabled {
-                colors.surface
+                palette.surface.subtle.background
             } else {
-                colors.surface_disabled
+                palette.state.disabled.background
             },
-            border: colors.border,
+            border: palette.border.default,
             radius: metrics.radius(size),
             padding: 3.0,
             gap: 2.0,
@@ -67,34 +68,36 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
     }
 
     fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
+        let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
 
         let background = match (active, layer) {
             (_, InteractionLayer::Disabled) => None,
-            (true, InteractionLayer::Pressed) => Some(colors.selected_pressed),
-            (true, InteractionLayer::Hovered) => Some(colors.selected_hover),
-            (true, InteractionLayer::Default) => Some(colors.selected),
-            (false, InteractionLayer::Pressed) => Some(colors.surface_pressed),
-            (false, InteractionLayer::Hovered) => Some(colors.surface_hover),
+            (true, InteractionLayer::Pressed) => Some(palette.action.primary.pressed_background),
+            (true, InteractionLayer::Hovered) => Some(palette.action.primary.hover_background),
+            (true, InteractionLayer::Default) => Some(palette.state.selected.background),
+            (false, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
+            (false, InteractionLayer::Hovered) => Some(palette.state.hover.background),
             (false, InteractionLayer::Default) => None,
         };
 
         TabsNavigationItemAppearance {
             background,
             label_color: match (active, state.disabled) {
-                (_, true) => colors.text_disabled,
-                (true, false) => colors.text_inverse,
-                (false, false) => colors.text,
+                (_, true) => palette.state.disabled.foreground,
+                (true, false) => palette.state.selected.foreground,
+                (false, false) => palette.app.foreground,
             },
             indicator: active.then_some(if state.pressed {
-                colors.text_inverse
+                palette.state.selected.foreground
             } else {
-                colors.focus_ring
+                palette.focus.ring
             }),
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            focus_ring: state.focused.then_some(palette.focus.ring),
+            label_typography: typography.text.label,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),
             height: metrics.control_height(size),

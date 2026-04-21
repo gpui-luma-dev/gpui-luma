@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    App, ClickEvent, Div, ElementId, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
-    Window, div, px, prelude::*,
+    App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, Window, div,
+    px, prelude::*,
 };
 
 use super::TabsNavigationRenderModel;
@@ -152,7 +152,9 @@ fn render_tabs_navigation_item_visual(
         .px(px(appearance.padding_x))
         .rounded(px(appearance.radius))
         .text_color(appearance.label_color)
-        .font_weight(FontWeight::MEDIUM)
+        .text_size(px(appearance.label_typography.size))
+        .line_height(px(appearance.label_typography.line_height))
+        .font_weight(appearance.label_typography.weight)
         .child(model.label.clone());
 
     if let Some(background) = appearance.background {

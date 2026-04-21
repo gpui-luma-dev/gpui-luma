@@ -90,7 +90,9 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .border_1()
             .border_color(appearance.trigger_border)
             .rounded(px(appearance.trigger_radius))
-            .font_weight(FontWeight::MEDIUM)
+            .text_size(px(appearance.trigger_typography.size))
+            .line_height(px(appearance.trigger_typography.line_height))
+            .font_weight(appearance.trigger_typography.weight)
             .cursor_pointer()
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
@@ -131,7 +133,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .child(trigger);
 
         if model.open {
-            let menu = render_menu(model, appearance, item_hovers, item_clicks);
+            let menu = render_menu(model, appearance.clone(), item_hovers, item_clicks);
             let placement = resolve_popup_menu_placement(
                 model.trigger_bounds.clone(),
                 model.placement,
@@ -168,7 +170,7 @@ fn render_menu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
     let mut item_clicks = item_clicks.into_iter();
     let mut submenu = None;
@@ -187,6 +189,9 @@ fn render_menu(
             } else {
                 appearance.item_disabled_foreground
             })
+            .text_size(px(appearance.item_typography.size))
+            .line_height(px(appearance.item_typography.line_height))
+            .font_weight(appearance.item_typography.weight)
             .child(render_item_icon(
                 item.icon.as_ref(),
                 if item.enabled {
@@ -322,7 +327,7 @@ fn render_submenu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
 
     for (submenu_index, submenu_item) in item.submenu_items.iter().enumerate() {
@@ -339,6 +344,9 @@ fn render_submenu(
             } else {
                 appearance.item_disabled_foreground
             })
+            .text_size(px(appearance.item_typography.size))
+            .line_height(px(appearance.item_typography.line_height))
+            .font_weight(appearance.item_typography.weight)
             .child(render_item_icon(
                 submenu_item.icon.as_ref(),
                 if submenu_item.enabled {

@@ -89,7 +89,9 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             .border_1()
             .border_color(appearance.target_border)
             .rounded(px(appearance.target_radius))
-            .font_weight(FontWeight::MEDIUM)
+            .text_size(px(appearance.target_typography.size))
+            .line_height(px(appearance.target_typography.line_height))
+            .font_weight(appearance.target_typography.weight)
             .cursor_pointer()
             .on_hover(target_hover)
             .on_mouse_down(MouseButton::Right, target_mouse_down)
@@ -147,7 +149,7 @@ fn render_menu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
     let mut item_clicks = item_clicks.into_iter();
     let mut submenu = None;
@@ -166,6 +168,9 @@ fn render_menu(
             } else {
                 appearance.item_disabled_foreground
             })
+            .text_size(px(appearance.item_typography.size))
+            .line_height(px(appearance.item_typography.line_height))
+            .font_weight(appearance.item_typography.weight)
             .child(render_item_icon(
                 item.icon.as_ref(),
                 if item.enabled {
@@ -236,7 +241,7 @@ fn render_submenu(
         .border_1()
         .border_color(appearance.menu_border)
         .rounded(px(appearance.menu_radius))
-        .shadow_sm()
+        .shadow(appearance.menu_shadow.clone())
         .occlude();
 
     for (submenu_index, submenu_item) in item.submenu_items.iter().enumerate() {
@@ -253,6 +258,9 @@ fn render_submenu(
             } else {
                 appearance.item_disabled_foreground
             })
+            .text_size(px(appearance.item_typography.size))
+            .line_height(px(appearance.item_typography.line_height))
+            .font_weight(appearance.item_typography.weight)
             .child(render_item_icon(
                 submenu_item.icon.as_ref(),
                 if submenu_item.enabled {

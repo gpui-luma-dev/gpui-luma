@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, ElementId, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, SharedString,
-    Stateful, Window, div, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
+    Window, div, px, prelude::*,
 };
 
 use super::RadioGroupRenderModel;
@@ -155,7 +155,9 @@ fn render_radio_group_item_visual(
         .px(px(appearance.control_padding_x))
         .py(px(appearance.control_padding_y))
         .text_color(appearance.label_color)
-        .font_weight(FontWeight::MEDIUM)
+        .text_size(px(appearance.label_typography.size))
+        .line_height(px(appearance.label_typography.line_height))
+        .font_weight(appearance.label_typography.weight)
         .rounded(px(appearance.control_radius))
         .child(indicator)
         .child(model.label.clone());

@@ -12,8 +12,8 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    button, checkbox, context_menu, popup_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
-    settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button, toggle_group,
+    button, checkbox, context_menu, icon_button, introduction, palette, popup_menu, progress, radio_group, scrollbar,
+    search, settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -28,6 +28,7 @@ struct GalleryPage {
 enum GalleryPageKind {
     Introduction,
     Search,
+    Palette,
     Button,
     IconButton,
     ToggleButton,
@@ -79,6 +80,8 @@ const INTRODUCTION_PAGE: GalleryPage = GalleryPage {
 };
 const SEARCH_PAGE: GalleryPage =
     GalleryPage { id: "search", label: "Search", icon: Some(LucideIcon::Search), kind: GalleryPageKind::Search };
+const PALETTE_PAGE: GalleryPage =
+    GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
 const ICON_BUTTON_PAGE: GalleryPage =
@@ -112,7 +115,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE];
+const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
@@ -275,6 +278,7 @@ impl GalleryPanes {
         match page.kind {
             GalleryPageKind::Introduction => introduction::render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
+            GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::Button => self.button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
             GalleryPageKind::ToggleButton => self.toggle_button.render(&self.theme),

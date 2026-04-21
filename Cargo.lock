@@ -2092,7 +2092,9 @@ dependencies = [
  "gpui",
  "lucide-icons",
  "palette",
+ "serde",
  "tiny-skia",
+ "toml 0.8.23",
  "ttf-parser",
 ]
 

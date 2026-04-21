@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ToggleButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
@@ -51,7 +51,9 @@ impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
             .border_1()
             .border_color(appearance.border)
             .rounded(px(appearance.radius))
-            .font_weight(FontWeight::MEDIUM)
+            .text_size(px(appearance.typography.size))
+            .line_height(px(appearance.typography.line_height))
+            .font_weight(appearance.typography.weight)
             .child(model.label.clone());
 
         if !model.enabled {

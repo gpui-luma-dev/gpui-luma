@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{Hsla, hsla};
 
 use crate::controls::scrollbar::ScrollbarOrientation;
 
@@ -42,12 +42,13 @@ impl DefaultScrollbarTheme {
 
 impl ScrollbarTheme for DefaultScrollbarTheme {
     fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
+        let metrics = &self.tokens.metrics;
         let thumb_background = match state.layer() {
-            InteractionLayer::Disabled => colors.text_disabled,
-            InteractionLayer::Pressed => colors.selected_pressed,
-            InteractionLayer::Hovered => colors.selected_hover,
-            InteractionLayer::Default => colors.border,
+            InteractionLayer::Disabled => palette.state.disabled.foreground,
+            InteractionLayer::Pressed => palette.state.pressed.background,
+            InteractionLayer::Hovered => palette.state.hover.background,
+            InteractionLayer::Default => palette.border.default,
         };
 
         let length = match orientation {
@@ -57,18 +58,18 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
 
         ScrollbarAppearance {
             track_background: if state.disabled {
-                colors.surface_disabled
+                palette.state.disabled.background
             } else {
-                colors.surface_pressed
+                hsla(0.0, 0.0, 0.0, 0.0)
             },
             thumb_background,
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            focus_ring: state.focused.then_some(palette.focus.ring),
             length,
             thickness: 12.0,
             track_thickness: 4.0,
             thumb_thickness: 8.0,
             min_thumb_length: 28.0,
-            radius: 999.0,
+            radius: metrics.radius.pill,
         }
     }
 }

@@ -4,6 +4,7 @@ mod context_menu;
 mod popup_menu;
 mod icon_button;
 mod introduction;
+mod palette;
 mod progress;
 mod radio_group;
 pub(super) mod registry;

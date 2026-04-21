@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct RadioGroupItemAppearance {
@@ -13,6 +13,7 @@ pub struct RadioGroupItemAppearance {
     pub dot_color: Hsla,
     pub label_color: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
     pub control_padding_y: f32,
@@ -45,37 +46,50 @@ impl DefaultRadioGroupTheme {
 
 impl RadioGroupTheme for DefaultRadioGroupTheme {
     fn resolve_item(&self, selected: bool, state: InteractionState) -> RadioGroupItemAppearance {
-        let colors = &self.tokens.colors;
+        let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
+        let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
 
-        let indicator_background = match layer {
-            InteractionLayer::Disabled => colors.surface_disabled,
-            InteractionLayer::Pressed => colors.surface_pressed,
-            InteractionLayer::Hovered => colors.surface_hover,
-            InteractionLayer::Default => colors.surface,
+        let indicator_background = match (selected, layer) {
+            (_, InteractionLayer::Disabled) => palette.state.disabled.background,
+            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (false, InteractionLayer::Pressed) => palette.state.pressed.background,
+            (false, InteractionLayer::Hovered) => palette.state.hover.background,
+            (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
         let selected_color = match layer {
-            InteractionLayer::Disabled => colors.text_disabled,
-            InteractionLayer::Pressed => colors.selected_pressed,
-            InteractionLayer::Hovered => colors.selected_hover,
-            InteractionLayer::Default => colors.selected,
+            InteractionLayer::Disabled => palette.state.disabled.foreground,
+            InteractionLayer::Pressed => palette.action.primary.pressed_background,
+            InteractionLayer::Hovered => palette.action.primary.hover_background,
+            InteractionLayer::Default => palette.action.primary.background,
         };
 
         RadioGroupItemAppearance {
             control_background: None,
             control_border: None,
             indicator_background,
-            indicator_border: if selected { selected_color } else { colors.border },
-            dot_color: selected_color,
-            label_color: if state.disabled {
-                colors.text_disabled
+            indicator_border: if selected {
+                selected_color
             } else {
-                colors.text
+                palette.form.input.border
             },
-            focus_ring: state.focused.then_some(colors.focus_ring),
+            dot_color: if state.disabled {
+                palette.state.disabled.foreground
+            } else {
+                palette.action.primary.foreground
+            },
+            label_color: if state.disabled {
+                palette.state.disabled.foreground
+            } else {
+                palette.app.foreground
+            },
+            focus_ring: state.focused.then_some(palette.focus.ring),
+            label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,
             control_padding_y: 0.0,

@@ -10,5 +10,7 @@ gpui.workspace = true
 anyhow.workspace = true
 tiny-skia.workspace = true
 lucide-icons.workspace = true
+serde = { workspace = true, features = ["derive"] }
 ttf-parser = "0.25"
 palette = "0.7.6"
+toml.workspace = true
