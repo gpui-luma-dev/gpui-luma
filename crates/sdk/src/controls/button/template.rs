@@ -56,7 +56,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
         }
 
         if model.state.focused {
-            root = root.border_1().border_color(focus_debug_border());
+            root = root.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
         }
 
         root

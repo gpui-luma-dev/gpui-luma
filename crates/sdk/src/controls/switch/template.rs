@@ -61,6 +61,7 @@ impl SwitchTemplate for ThemedSwitchTemplate {
 
         let mut root = div()
             .id(model.id.clone())
+            .relative()
             .flex()
             .items_center()
             .gap(px(appearance.gap))
@@ -80,9 +81,14 @@ impl SwitchTemplate for ThemedSwitchTemplate {
         }
 
         if model.state.focused {
-            root = root.border_1().border_color(focus_debug_border());
+            root = root
+                .child(render_focus_ring(appearance.focus_ring.unwrap_or_else(focus_debug_border), appearance.radius));
         }
 
         root
     }
+}
+
+fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
+    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
 }

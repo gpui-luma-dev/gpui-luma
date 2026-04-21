@@ -107,7 +107,7 @@ impl DropdownMenuTemplate for ThemedDropdownMenuTemplate {
         }
 
         if model.focus.focused {
-            trigger = trigger.border_1().border_color(focus_debug_border());
+            trigger = trigger.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
         }
 
         let mut root = div()

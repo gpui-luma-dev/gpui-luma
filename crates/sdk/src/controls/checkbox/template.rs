@@ -43,6 +43,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
 
         let mut root = div()
             .id(model.id.clone())
+            .relative()
             .flex()
             .items_center()
             .gap(px(appearance.gap))
@@ -69,11 +70,18 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
         }
 
         if model.state.focused {
-            root = root.border_1().border_color(focus_debug_border());
+            root = root.child(render_focus_ring(
+                appearance.focus_ring.unwrap_or_else(focus_debug_border),
+                appearance.control_radius,
+            ));
         }
 
         root
     }
+}
+
+fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
+    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
 }
 
 fn render_checkmark(checked: bool, size: f32, color: gpui::Hsla) -> AnyElement {

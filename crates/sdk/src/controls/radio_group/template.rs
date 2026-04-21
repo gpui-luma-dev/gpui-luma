@@ -72,7 +72,7 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
             item_clicks,
         } = handlers;
 
-        let mut root = div().id(model.id.clone()).flex().items_center().gap(px(12.0));
+        let mut root = div().id(model.id.clone()).relative().flex().items_center().gap(px(12.0));
 
         let mut item_hovers = item_hovers.into_iter();
         let mut item_mouse_downs = item_mouse_downs.into_iter();
@@ -120,11 +120,15 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
         }
 
         if model.focus.focused {
-            root = root.border_1().border_color(focus_debug_border());
+            root = root.child(render_focus_ring(focus_debug_border(), 0.0));
         }
 
         root
     }
+}
+
+fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
+    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
 }
 
 fn render_radio_group_item_visual(

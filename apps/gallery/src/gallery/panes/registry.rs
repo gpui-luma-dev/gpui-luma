@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, Div, Entity, FocusHandle, Focusable, FontWeight, IntoElement, Stateful, Subscription,
-    Window, div, prelude::*, px, rgb,
+    AnyElement, App, Context, Div, Entity, FocusHandle, Focusable, FontFeatures, FontWeight, IntoElement, Stateful,
+    Subscription, Window, div, prelude::*, px, rgb,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonRenderModel, ToggleButtonTemplate};
@@ -284,6 +284,7 @@ fn controls_label_presenter(_: &NavNodeState, _: &mut Window, _: &mut App) -> Na
             .pt(gpui::px(8.0))
             .text_size(gpui::px(11.0))
             .line_height(gpui::px(14.0))
+            .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
             .text_color(rgb(0x94a3b8))
             .child("Controls")
             .into_any_element(),

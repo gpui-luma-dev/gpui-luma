@@ -103,7 +103,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
         }
 
         if model.focus.focused {
-            target = target.border_1().border_color(focus_debug_border());
+            target = target.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
         }
 
         let mut root = div()
