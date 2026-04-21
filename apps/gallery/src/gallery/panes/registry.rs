@@ -13,7 +13,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     button, checkbox, context_menu, popup_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
-    settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button,
+    settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -31,6 +31,7 @@ enum GalleryPageKind {
     Button,
     IconButton,
     ToggleButton,
+    ToggleGroup,
     Switch,
     Checkbox,
     RadioGroup,
@@ -83,6 +84,8 @@ const ICON_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "icon-button", label: "Icon Button", icon: None, kind: GalleryPageKind::IconButton };
 const TOGGLE_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "toggle-button", label: "Toggle Button", icon: None, kind: GalleryPageKind::ToggleButton };
+const TOGGLE_GROUP_PAGE: GalleryPage =
+    GalleryPage { id: "toggle-group", label: "Toggle Group", icon: None, kind: GalleryPageKind::ToggleGroup };
 const SWITCH_PAGE: GalleryPage =
     GalleryPage { id: "switch", label: "Switch", icon: None, kind: GalleryPageKind::Switch };
 const CHECKBOX_PAGE: GalleryPage =
@@ -111,7 +114,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
-const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE];
+const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[TABS_NAVIGATION_PAGE];
@@ -160,6 +163,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle_button: toggle_button::ToggleButtonPane,
+    pub(super) toggle_group: toggle_group::ToggleGroupPane,
     pub(super) switch: switch::SwitchPane,
     pub(super) checkbox: checkbox::CheckboxPane,
     pub(super) radio_group: radio_group::RadioGroupPane,
@@ -209,6 +213,7 @@ impl GalleryPanes {
             button: button::ButtonPane::new(cx),
             icon_button: icon_button::IconButtonPane::new(cx),
             toggle_button: toggle_button::ToggleButtonPane::new(cx),
+            toggle_group: toggle_group::ToggleGroupPane::new(cx),
             switch: switch::SwitchPane::new(cx),
             checkbox: checkbox::CheckboxPane::new(cx),
             radio_group: radio_group::RadioGroupPane::new(cx),
@@ -225,6 +230,7 @@ impl GalleryPanes {
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
         self.toggle_button.subscribe(cx, subscriptions);
+        self.toggle_group.subscribe(cx, subscriptions);
         self.switch.subscribe(cx, subscriptions);
         self.checkbox.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
@@ -247,6 +253,7 @@ impl GalleryPanes {
             GalleryPageKind::Button => self.button.render(),
             GalleryPageKind::IconButton => self.icon_button.render(),
             GalleryPageKind::ToggleButton => self.toggle_button.render(),
+            GalleryPageKind::ToggleGroup => self.toggle_group.render(),
             GalleryPageKind::Switch => self.switch.render(),
             GalleryPageKind::Checkbox => self.checkbox.render(),
             GalleryPageKind::RadioGroup => self.radio_group.render(),

@@ -14,6 +14,7 @@ The SDK currently ships these controls:
 - `Button`: command button with text label, kind, size, enabled state, and click events.
 - `IconButton`: command button with a required app-owned icon and click events.
 - `ToggleButton`: button-family control with owned selected state and change events.
+- `ToggleGroup`: composite collection of toggle buttons with single or multiple selection.
 - `Checkbox`: binary checked control with owned checked state and change events.
 - `Switch`: binary on/off control with optional label and change events.
 - `RadioGroup`: composite choice control with mutually exclusive item selection.
@@ -350,6 +351,52 @@ Implementation notes:
 - Uses `ControlInteraction`.
 - Activation toggles internal state, emits `Change`, and notifies.
 - Uses `ButtonFamilyTheme` with `ButtonFamilyRole::Toggle { selected }`.
+
+### ToggleGroup
+
+`ToggleGroup` owns a collection of toggle items, an active descendant, and selected item IDs. It
+supports `Single` mode for at most one selected item and `Multiple` mode for any number of selected
+items.
+
+Builder methods:
+
+- `item`,
+- `items`,
+- `selection_mode`,
+- `single`,
+- `multiple`,
+- `selected`,
+- `selected_ids`,
+- `kind`,
+- `size`,
+- `enabled`,
+- `template`,
+- `spawn`.
+
+Runtime mutation:
+
+- `selected_id`,
+- `selected_ids`,
+- `selection_mode`,
+- `set_selected_ids`,
+- `set_selection_mode`,
+- `set_items`,
+- `set_enabled`.
+
+Event:
+
+- `ToggleGroupEvent::Change { item_id, label, selected, selected_ids }`.
+
+Implementation notes:
+
+- Uses one group `FocusHandle` and per-item `CompositeItemState`.
+- Normalizes selected IDs by removing missing, disabled, and duplicate IDs.
+- Single mode keeps the first valid selected ID and allows toggling the selected item off.
+- Active item falls back to the first selected enabled item and then the first enabled item.
+- Arrow navigation moves the active item without changing selection.
+- Enter and space toggle the active item.
+- Template handlers are generated per item and passed separately from the render model.
+- Item appearance is resolved through `ToggleGroupTheme::resolve_item`.
 
 ### Checkbox
 

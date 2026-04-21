@@ -18,4 +18,5 @@ pub mod state;
 pub mod switch;
 pub mod tabs_navigation;
 pub mod toggle_button;
+pub mod toggle_group;
 pub mod value;

@@ -15,3 +15,4 @@ mod slider;
 mod switch;
 mod tabs_navigation;
 mod toggle_button;
+mod toggle_group;

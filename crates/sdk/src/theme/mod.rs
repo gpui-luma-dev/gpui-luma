@@ -10,6 +10,7 @@ pub mod scrollbar;
 pub mod slider;
 pub mod switch;
 pub mod tabs_navigation;
+pub mod toggle_group;
 pub mod tokens;
 
 pub use button_family::{
@@ -28,5 +29,9 @@ pub use switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme, default_swit
 pub use tabs_navigation::{
     DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
     default_tabs_navigation_theme,
+};
+pub use toggle_group::{
+    DefaultToggleGroupTheme, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
+    default_toggle_group_theme,
 };
 pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};
