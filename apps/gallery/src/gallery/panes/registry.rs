@@ -13,7 +13,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     button, checkbox, context_menu, popup_menu, icon_button, introduction, progress, radio_group, scrollbar, search,
-    settings, shared::gallery_pane, slider, switch, toggle_button,
+    settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button,
 };
 
 #[derive(Clone, Copy)]
@@ -38,6 +38,7 @@ enum GalleryPageKind {
     Scrollbar,
     PopupMenu,
     ContextMenu,
+    TabsNavigation,
     Progress,
     Settings,
 }
@@ -96,6 +97,8 @@ const POPUP_MENU_PAGE: GalleryPage =
     GalleryPage { id: "popup-menu", label: "Popup Menu", icon: None, kind: GalleryPageKind::PopupMenu };
 const CONTEXT_MENU_PAGE: GalleryPage =
     GalleryPage { id: "context-menu", label: "Context Menu", icon: None, kind: GalleryPageKind::ContextMenu };
+const TABS_NAVIGATION_PAGE: GalleryPage =
+    GalleryPage { id: "tabs-navigation", label: "Tabs Navigation", icon: None, kind: GalleryPageKind::TabsNavigation };
 const PROGRESS_PAGE: GalleryPage =
     GalleryPage { id: "progress", label: "Progress", icon: None, kind: GalleryPageKind::Progress };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
@@ -111,6 +114,7 @@ const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BU
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
+const NAVIGATION_PAGES: &[GalleryPage] = &[TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
@@ -136,6 +140,13 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     },
     GalleryNavGroup { id: "menu", label: "Menu", icon: LucideIcon::Menu, expanded: false, pages: MENU_PAGES },
     GalleryNavGroup {
+        id: "navigation",
+        label: "Navigation",
+        icon: LucideIcon::PanelTop,
+        expanded: false,
+        pages: NAVIGATION_PAGES,
+    },
+    GalleryNavGroup {
         id: "feedback",
         label: "Feedback",
         icon: LucideIcon::MessageSquare,
@@ -156,6 +167,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) popup_menu: popup_menu::PopupMenuPane,
     pub(super) context_menu: context_menu::ContextMenuPane,
+    pub(super) tabs_navigation: tabs_navigation::TabsNavigationPane,
     pub(super) progress: progress::ProgressPane,
 }
 
@@ -204,6 +216,7 @@ impl GalleryPanes {
             scrollbar: scrollbar::ScrollbarPane::new(cx),
             popup_menu: popup_menu::PopupMenuPane::new(cx),
             context_menu: context_menu::ContextMenuPane::new(cx),
+            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx),
             progress: progress::ProgressPane::new(cx),
         }
     }
@@ -219,6 +232,7 @@ impl GalleryPanes {
         self.scrollbar.subscribe(cx, subscriptions);
         self.popup_menu.subscribe(cx, subscriptions);
         self.context_menu.subscribe(cx, subscriptions);
+        self.tabs_navigation.subscribe(cx, subscriptions);
     }
 
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
@@ -240,6 +254,7 @@ impl GalleryPanes {
             GalleryPageKind::Scrollbar => self.scrollbar.render(),
             GalleryPageKind::PopupMenu => self.popup_menu.render(),
             GalleryPageKind::ContextMenu => self.context_menu.render(),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(),
             GalleryPageKind::Progress => self.progress.render(),
             GalleryPageKind::Settings => settings::render(),
         }

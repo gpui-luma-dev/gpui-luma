@@ -1,6 +1,6 @@
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
-use gpui_luma::controls::popup_menu::PopupMenuItem;
+use gpui_luma::controls::menu_item::MenuItem;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -109,24 +109,24 @@ impl ContextMenuPane {
     }
 }
 
-fn default_context_menu_items() -> [PopupMenuItem; 4] {
+fn default_context_menu_items() -> [MenuItem; 4] {
     [
-        PopupMenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
-        PopupMenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
-        PopupMenuItem::new("inspect").label("Inspect"),
-        PopupMenuItem::new("more").label("More").icon(LucideIcon::Ellipsis).submenu([
-            PopupMenuItem::new("download").label("Download").icon(LucideIcon::Download),
-            PopupMenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
+        MenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
+        MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+        MenuItem::new("inspect").label("Inspect"),
+        MenuItem::new("more").label("More").icon(LucideIcon::Ellipsis).submenu([
+            MenuItem::new("download").label("Download").icon(LucideIcon::Download),
+            MenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
         ]),
     ]
 }
 
-fn radial_context_menu_items() -> [PopupMenuItem; 5] {
+fn radial_context_menu_items() -> [MenuItem; 5] {
     [
-        PopupMenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
-        PopupMenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
-        PopupMenuItem::new("inspect").label("Inspect").icon(LucideIcon::ScanSearch),
-        PopupMenuItem::new("download").label("Download").icon(LucideIcon::Download),
-        PopupMenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
+        MenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
+        MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+        MenuItem::new("inspect").label("Inspect").icon(LucideIcon::ScanSearch),
+        MenuItem::new("download").label("Download").icon(LucideIcon::Download),
+        MenuItem::new("external").label("Open externally").icon(LucideIcon::ExternalLink),
     ]
 }

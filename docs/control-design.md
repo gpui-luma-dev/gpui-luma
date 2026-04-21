@@ -529,33 +529,32 @@ progress.update(cx, |progress, cx| {
 `PopupMenu` owns its open state internally and emits semantic select events for enabled menu items.
 
 ```rust
-use gpui_luma::controls::popup_menu::{
-    PopupMenu, PopupMenuItem,
-};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::PopupMenu;
 use lucide_icons::Icon as LucideIcon;
 
 let menu = PopupMenu::new("actions-menu")
     .label("Actions")
     .items([
-        PopupMenuItem::new("new")
+        MenuItem::new("new")
             .label("New file")
             .icon(LucideIcon::FilePlus),
-        PopupMenuItem::new("rename")
+        MenuItem::new("rename")
             .label("Rename")
             .icon(LucideIcon::Pencil),
-        PopupMenuItem::new("archive").label("Archive"),
-        PopupMenuItem::new("share")
+        MenuItem::new("archive").label("Archive"),
+        MenuItem::new("share")
             .label("Share")
             .icon(LucideIcon::Share2)
             .submenu([
-                PopupMenuItem::new("copy-link")
+                MenuItem::new("copy-link")
                     .label("Copy link")
                     .icon(LucideIcon::Link),
-                PopupMenuItem::new("email")
+                MenuItem::new("email")
                     .label("Email")
                     .icon(LucideIcon::Mail),
             ]),
-        PopupMenuItem::new("disabled")
+        MenuItem::new("disabled")
             .label("Unavailable")
             .enabled(false),
     ])
@@ -582,24 +581,24 @@ Popup menu item icons are app-owned content. The SDK supports typed `lucide_icon
 
 ```rust
 use gpui_luma::controls::context_menu::ContextMenu;
-use gpui_luma::controls::popup_menu::PopupMenuItem;
+use gpui_luma::controls::menu_item::MenuItem;
 use lucide_icons::Icon as LucideIcon;
 
 let menu = ContextMenu::new("file-context-menu")
     .label("Right-click target")
     .items([
-        PopupMenuItem::new("open")
+        MenuItem::new("open")
             .label("Open")
             .icon(LucideIcon::FolderOpen),
-        PopupMenuItem::new("copy")
+        MenuItem::new("copy")
             .label("Copy")
             .icon(LucideIcon::Copy),
-        PopupMenuItem::new("inspect").label("Inspect"),
-        PopupMenuItem::new("more")
+        MenuItem::new("inspect").label("Inspect"),
+        MenuItem::new("more")
             .label("More")
             .icon(LucideIcon::Ellipsis)
             .submenu([
-                PopupMenuItem::new("download")
+                MenuItem::new("download")
                     .label("Download")
                     .icon(LucideIcon::Download),
             ]),
@@ -912,7 +911,7 @@ pub enum IconButtonIcon {
 }
 ```
 
-Menu item icons use the same Lucide-or-SVG-path contract through `PopupMenuItemIcon`.
+Menu item icons use the same Lucide-or-SVG-path contract through `MenuItemIcon`.
 
 Conversion rules:
 

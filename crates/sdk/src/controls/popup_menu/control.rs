@@ -3,11 +3,10 @@ use gpui::{
     Render, SharedString, Window, div, prelude::*,
 };
 
-use super::{
-    PopupMenuBuilder, PopupMenuItem, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath,
-};
+use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
 use crate::controls::popup_menu::model::PopupMenuModel;
 use crate::controls::interaction::ControlInteraction;
+use crate::controls::menu_item::MenuItem;
 use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
@@ -56,7 +55,7 @@ impl PopupMenu {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = PopupMenuItem>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = MenuItem>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.close_menu();
         cx.notify();
@@ -207,7 +206,7 @@ impl PopupMenu {
         }
     }
 
-    fn item_at_path(&self, path: &[usize]) -> Option<&PopupMenuItem> {
+    fn item_at_path(&self, path: &[usize]) -> Option<&MenuItem> {
         match path {
             [index] => self.model.items.get(*index),
             [index, submenu_index] => self.model.items.get(*index)?.submenu_items.get(*submenu_index),

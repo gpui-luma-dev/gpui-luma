@@ -30,6 +30,7 @@ const SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
 const MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
 const CONTEXT_MENU_CONTROL_CONTEXT: &str = "LumaContextMenuControl";
 const NAVIGATION_CONTEXT: &str = "LumaNavigationControl";
+const TAB_LIST_CONTEXT: &str = "LumaTabList";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ControlKeyProfile {
@@ -41,6 +42,7 @@ pub enum ControlKeyProfile {
     Menu,
     ContextMenu,
     Navigation,
+    TabList,
 }
 
 impl ControlKeyProfile {
@@ -54,6 +56,7 @@ impl ControlKeyProfile {
             Self::Menu => MENU_CONTROL_CONTEXT,
             Self::ContextMenu => CONTEXT_MENU_CONTROL_CONTEXT,
             Self::Navigation => NAVIGATION_CONTEXT,
+            Self::TabList => TAB_LIST_CONTEXT,
         }
     }
 
@@ -126,6 +129,16 @@ impl ControlKeyProfile {
                 KeyBinding::new("enter", ActivateControl, Some(context)),
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
+            Self::TabList => vec![
+                KeyBinding::new("left", SelectPreviousItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("right", SelectNextItem, Some(context)),
+                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("home", SelectFirstItem, Some(context)),
+                KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
+            ],
         }
     }
 }
@@ -144,6 +157,7 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding> {
         ControlKeyProfile::Menu,
         ControlKeyProfile::ContextMenu,
         ControlKeyProfile::Navigation,
+        ControlKeyProfile::TabList,
     ]
     .into_iter()
     .flat_map(ControlKeyProfile::default_bindings)
@@ -162,7 +176,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 51);
+        assert_eq!(default_control_key_bindings().len(), 59);
     }
 
     #[test]
@@ -175,6 +189,7 @@ mod tests {
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 10);
         assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 8);
     }
 
     #[test]
@@ -198,6 +213,20 @@ mod tests {
         assert!(has_binding::<SelectLastItem>(&bindings, "end"));
         assert!(has_binding::<OpenSubmenu>(&bindings, "right"));
         assert!(has_binding::<CloseSubmenu>(&bindings, "left"));
+        assert!(has_binding::<ActivateControl>(&bindings, "enter"));
+        assert!(has_binding::<ActivateControl>(&bindings, "space"));
+    }
+
+    #[test]
+    fn tab_list_profile_binds_roving_tab_accelerators() {
+        let bindings = ControlKeyProfile::TabList.default_bindings();
+
+        assert!(has_binding::<SelectPreviousItem>(&bindings, "left"));
+        assert!(has_binding::<SelectPreviousItem>(&bindings, "up"));
+        assert!(has_binding::<SelectNextItem>(&bindings, "right"));
+        assert!(has_binding::<SelectNextItem>(&bindings, "down"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "home"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "end"));
         assert!(has_binding::<ActivateControl>(&bindings, "enter"));
         assert!(has_binding::<ActivateControl>(&bindings, "space"));
     }

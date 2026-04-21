@@ -584,8 +584,7 @@ Implementation notes:
 
 ### ContextMenu
 
-`ContextMenu` reuses `PopupMenuItem` as its item model and owns a pointer or keyboard menu
-position.
+`ContextMenu` uses the shared `MenuItem` model and owns a pointer or keyboard menu position.
 
 Builder methods:
 

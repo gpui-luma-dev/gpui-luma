@@ -1,4 +1,4 @@
-use crate::controls::popup_menu::PopupMenuItem;
+use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -8,11 +8,11 @@ pub(crate) enum MenuDirection {
 }
 
 pub(crate) struct MenuNavigator<'a> {
-    items: &'a [PopupMenuItem],
+    items: &'a [MenuItem],
 }
 
 impl<'a> MenuNavigator<'a> {
-    pub(crate) fn new(items: &'a [PopupMenuItem]) -> Self {
+    pub(crate) fn new(items: &'a [MenuItem]) -> Self {
         Self { items }
     }
 
@@ -53,10 +53,10 @@ impl<'a> MenuNavigator<'a> {
             Some(MenuPath::Submenu { parent, .. }) => Some(parent),
             None => None,
         }
-        .filter(|index| self.items.get(*index).is_some_and(PopupMenuItem::is_enabled))
+        .filter(|index| self.items.get(*index).is_some_and(MenuItem::is_enabled))
     }
 
-    pub(crate) fn active_item(&self, active_path: Option<MenuPath>) -> Option<&'a PopupMenuItem> {
+    pub(crate) fn active_item(&self, active_path: Option<MenuPath>) -> Option<&'a MenuItem> {
         match active_path {
             Some(MenuPath::Root(index)) => self.items.get(index),
             Some(MenuPath::Submenu { parent, child }) => self.items.get(parent)?.submenu_items().get(child),
@@ -99,15 +99,11 @@ fn step_enabled_index(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controls::popup_menu::PopupMenuItem;
+    use crate::controls::menu_item::MenuItem;
 
     #[test]
     fn root_navigation_skips_disabled_items_and_wraps() {
-        let items = vec![
-            PopupMenuItem::new("first"),
-            PopupMenuItem::new("disabled").enabled(false),
-            PopupMenuItem::new("last"),
-        ];
+        let items = vec![MenuItem::new("first"), MenuItem::new("disabled").enabled(false), MenuItem::new("last")];
         let navigator = MenuNavigator::new(&items);
 
         assert_eq!(navigator.first_root(), Some(0));
@@ -119,10 +115,10 @@ mod tests {
 
     #[test]
     fn submenu_navigation_skips_disabled_items_and_wraps() {
-        let items = vec![PopupMenuItem::new("parent").submenu([
-            PopupMenuItem::new("first"),
-            PopupMenuItem::new("disabled").enabled(false),
-            PopupMenuItem::new("last"),
+        let items = vec![MenuItem::new("parent").submenu([
+            MenuItem::new("first"),
+            MenuItem::new("disabled").enabled(false),
+            MenuItem::new("last"),
         ])];
         let navigator = MenuNavigator::new(&items);
 

@@ -1,112 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Bounds, Entity, Pixels, SharedString};
-use lucide_icons::Icon as LucideIcon;
 
 use super::{ControlFocusState, PopupMenu, PopupMenuState, PopupMenuTemplate, MenuPath, default_popup_menu_template};
-
-#[derive(Clone, Debug)]
-pub enum PopupMenuItemIcon {
-    Lucide(LucideIcon),
-    SvgPath(SharedString),
-}
-
-impl PopupMenuItemIcon {
-    pub fn lucide(&self) -> Option<LucideIcon> {
-        match self {
-            Self::Lucide(icon) => Some(*icon),
-            Self::SvgPath(_) => None,
-        }
-    }
-
-    pub fn svg_path(&self) -> Option<&SharedString> {
-        match self {
-            Self::Lucide(_) => None,
-            Self::SvgPath(path) => Some(path),
-        }
-    }
-}
-
-impl From<LucideIcon> for PopupMenuItemIcon {
-    fn from(icon: LucideIcon) -> Self {
-        Self::Lucide(icon)
-    }
-}
-
-impl From<&str> for PopupMenuItemIcon {
-    fn from(icon: &str) -> Self {
-        Self::SvgPath(icon.to_string().into())
-    }
-}
-
-impl From<String> for PopupMenuItemIcon {
-    fn from(icon: String) -> Self {
-        Self::from(icon.as_str())
-    }
-}
-
-impl From<SharedString> for PopupMenuItemIcon {
-    fn from(icon: SharedString) -> Self {
-        Self::SvgPath(icon)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct PopupMenuItem {
-    pub(crate) id: SharedString,
-    pub(crate) label: SharedString,
-    pub(crate) icon: Option<PopupMenuItemIcon>,
-    pub(crate) submenu_items: Vec<PopupMenuItem>,
-    pub(crate) enabled: bool,
-}
-
-impl PopupMenuItem {
-    pub fn new(id: impl Into<SharedString>) -> Self {
-        let id = id.into();
-
-        Self { label: id.clone(), id, icon: None, submenu_items: Vec::new(), enabled: true }
-    }
-
-    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
-        self.label = label.into();
-        self
-    }
-
-    pub fn icon(mut self, icon: impl Into<PopupMenuItemIcon>) -> Self {
-        self.icon = Some(icon.into());
-        self
-    }
-
-    pub fn submenu(mut self, items: impl IntoIterator<Item = PopupMenuItem>) -> Self {
-        self.submenu_items = items.into_iter().collect();
-        self
-    }
-
-    pub fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
-    pub fn id(&self) -> &SharedString {
-        &self.id
-    }
-
-    pub fn label_text(&self) -> &SharedString {
-        &self.label
-    }
-
-    pub fn icon_ref(&self) -> Option<&PopupMenuItemIcon> {
-        self.icon.as_ref()
-    }
-
-    pub fn submenu_items(&self) -> &[PopupMenuItem] {
-        &self.submenu_items
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-}
+use crate::controls::menu_item::MenuItem;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PopupMenuPlacement {
@@ -120,7 +17,7 @@ pub enum PopupMenuPlacement {
 pub struct PopupMenuModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
-    pub(crate) items: Vec<PopupMenuItem>,
+    pub(crate) items: Vec<MenuItem>,
     pub(crate) enabled: bool,
     pub(crate) placement: PopupMenuPlacement,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
@@ -129,7 +26,7 @@ pub struct PopupMenuModel {
 pub struct PopupMenuRenderModel<'a> {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
-    pub items: &'a [PopupMenuItem],
+    pub items: &'a [MenuItem],
     pub open: bool,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: PopupMenuPlacement,
@@ -165,12 +62,12 @@ impl PopupMenuBuilder {
         self
     }
 
-    pub fn item(mut self, item: PopupMenuItem) -> Self {
+    pub fn item(mut self, item: MenuItem) -> Self {
         self.model.items.push(item);
         self
     }
 
-    pub fn items(mut self, items: impl IntoIterator<Item = PopupMenuItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
         self.model.items = items.into_iter().collect();
         self
     }

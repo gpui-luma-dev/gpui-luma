@@ -9,6 +9,7 @@ pub mod radio_group;
 pub mod scrollbar;
 pub mod slider;
 pub mod switch;
+pub mod tabs_navigation;
 pub mod tokens;
 
 pub use button_family::{
@@ -24,4 +25,8 @@ pub use radio_group::{DefaultRadioGroupTheme, RadioGroupItemAppearance, RadioGro
 pub use scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme};
 pub use slider::{DefaultSliderTheme, SliderAppearance, SliderTheme, default_slider_theme};
 pub use switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme, default_switch_theme};
+pub use tabs_navigation::{
+    DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
+    default_tabs_navigation_theme,
+};
 pub use tokens::{ColorTokens, ControlMetricTokens, ControlSize, MetricTokens, ThemeTokens};

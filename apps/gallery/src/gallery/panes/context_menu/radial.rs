@@ -5,7 +5,7 @@ use gpui::{
     px, svg,
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
-use gpui_luma::controls::popup_menu::{PopupMenuItem, PopupMenuItemIcon};
+use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
 use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -150,7 +150,7 @@ fn render_radial_menu(
 fn render_radial_item(
     menu_id: &gpui::SharedString,
     index: usize,
-    item: &PopupMenuItem,
+    item: &MenuItem,
     appearance: &ContextMenuAppearance,
 ) -> Stateful<Div> {
     let (left, top) = radial_item_position(index);
@@ -202,10 +202,10 @@ fn radial_item_position(index: usize) -> (f32, f32) {
     (center + (angle.cos() * RADIAL_BUTTON_RADIUS), center + (angle.sin() * RADIAL_BUTTON_RADIUS))
 }
 
-fn render_item_icon(icon: Option<&PopupMenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(PopupMenuItemIcon::lucide) {
+fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
+    if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
         render_lucide_icon(icon, color, size)
-    } else if let Some(path) = icon.and_then(PopupMenuItemIcon::svg_path) {
+    } else if let Some(path) = icon.and_then(MenuItemIcon::svg_path) {
         svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         render_lucide_icon(LucideIcon::Circle, color, size)

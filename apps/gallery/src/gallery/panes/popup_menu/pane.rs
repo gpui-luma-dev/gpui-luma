@@ -1,5 +1,6 @@
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
-use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuItem, PopupMenuPlacement};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -118,23 +119,23 @@ impl PopupMenuPane {
     }
 }
 
-fn menu_items() -> [PopupMenuItem; 5] {
+fn menu_items() -> [MenuItem; 5] {
     [
-        PopupMenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
-        PopupMenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
-        PopupMenuItem::new("archive").label("Archive"),
-        PopupMenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
-            PopupMenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
-            PopupMenuItem::new("email").label("Email").icon(LucideIcon::Mail),
+        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
+        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::new("archive").label("Archive"),
+        MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
+            MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
+            MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
         ]),
-        PopupMenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
+        MenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
     ]
 }
 
-fn disabled_menu_items() -> [PopupMenuItem; 3] {
+fn disabled_menu_items() -> [MenuItem; 3] {
     [
-        PopupMenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
-        PopupMenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
-        PopupMenuItem::new("archive").label("Archive"),
+        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
+        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::new("archive").label("Archive"),
     ]
 }
