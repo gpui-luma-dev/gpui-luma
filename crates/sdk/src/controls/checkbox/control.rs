@@ -68,7 +68,11 @@ impl Checkbox {
         true
     }
 
-    fn handle_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.is_keyboard() {
+            return;
+        }
+
         self.activate(cx);
     }
 

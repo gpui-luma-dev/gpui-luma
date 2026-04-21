@@ -246,7 +246,7 @@ Composite controls may need explicit item state. `RadioGroup` uses one group foc
 per-item `CompositeItemState`. Menus use `MenuPath` to separate active descendants from hovered
 items and open submenus.
 
-Navigation controls such as `NavView` and future tab controls should also use a composite
+Navigation controls such as `NavigationSidebar` and future tab controls should also use a composite
 active-descendant model. The navigation control owns focus for its own item surface: pointer clicks
 and keyboard activation should focus the navigation control, set the active item, and render a
 visible affordance on that active item. Do not automatically move focus into the activated content

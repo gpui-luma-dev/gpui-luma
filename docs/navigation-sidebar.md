@@ -2,9 +2,8 @@
 
 ## Overview
 
-`NavigationSidebar` is a structural routing and focus-coordination control. It replaces rigid
-navigation-only row models such as `NavButton`, `NavNodeItem`, and `NavLabel` with a universal
-`NavNode` container that renders caller-provided content through a `ContentPresenter`.
+`NavigationSidebar` is a structural routing and focus-coordination control. Its core model is a
+universal `NavNode` container that renders caller-provided content through a `ContentPresenter`.
 
 In this design, `ContentPresenter` is not raw `AnyElement` introspection. It is an explicit hosted
 content contract. A presenter projects custom UI into a sidebar row and returns the GPUI focus target
@@ -270,10 +269,8 @@ During rendering, `NavRowPresenter` evaluates the node's `content_presenter`, pl
 `NavHostedContent.element` inside the row layout bounds, and records `NavHostedContent.focus_handle`
 for traversal.
 
-## Replacement Rules
+## Implementation Rules
 
-- Replace `NavView` with `NavigationSidebar`.
-- Do not preserve the old `NavButton`, `NavNodeItem`, or `NavViewEvent::Activate` model.
 - Do not use raw `AnyElement` presenters as the focus contract.
 - Do not recreate stateful GPUI controls inside presenters on each render.
 - Keep route/current state outside the sidebar.

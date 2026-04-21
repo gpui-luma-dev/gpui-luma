@@ -7,13 +7,13 @@ use super::control::GalleryApp;
 impl Render for GalleryApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pane_focus = self.pane_focus.clone();
-        let nav_view = self.nav_view.clone();
+        let navigation_sidebar = self.navigation_sidebar.clone();
         let panes = self.panes.clone();
         let nav_selection = self.nav_selection.clone();
 
         self.split_view.update(cx, |split_view, _cx| {
             split_view.set_panes(
-                render_pane(move || render_sidebar(nav_view.clone())),
+                render_pane(move || render_sidebar(navigation_sidebar.clone())),
                 render_pane(move || render_content_pane(panes.render_selected(&nav_selection), pane_focus.clone())),
             );
         });
@@ -27,7 +27,9 @@ impl Render for GalleryApp {
     }
 }
 
-fn render_sidebar(nav_view: gpui::Entity<gpui_luma::controls::nav_view::NavView>) -> AnyElement {
+fn render_sidebar(
+    navigation_sidebar: gpui::Entity<gpui_luma::controls::navigation_sidebar::NavigationSidebar>,
+) -> AnyElement {
     div()
         .size_full()
         .flex()
@@ -47,7 +49,7 @@ fn render_sidebar(nav_view: gpui::Entity<gpui_luma::controls::nav_view::NavView>
                     div().text_size(px(12.0)).line_height(px(16.0)).text_color(rgb(0x64748b)).child("Control gallery"),
                 ),
         )
-        .child(div().flex_1().min_h(px(0.0)).child(nav_view))
+        .child(div().flex_1().min_h(px(0.0)).child(navigation_sidebar))
         .into_any_element()
 }
 

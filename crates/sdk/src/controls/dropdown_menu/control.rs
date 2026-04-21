@@ -166,7 +166,11 @@ impl DropdownMenu {
         true
     }
 
-    fn handle_trigger_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.is_keyboard() {
+            return;
+        }
+
         if self.model.enabled {
             if self.open {
                 self.close_menu();
@@ -177,7 +181,11 @@ impl DropdownMenu {
         }
     }
 
-    fn handle_item_click(&mut self, path: &[usize], _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_item_click(&mut self, path: &[usize], event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.is_keyboard() {
+            return;
+        }
+
         if self.select_item_at_path(path, cx) {
             cx.notify();
         }

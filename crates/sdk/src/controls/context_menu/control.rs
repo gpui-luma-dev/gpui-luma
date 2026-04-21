@@ -186,7 +186,11 @@ impl ContextMenu {
         }
     }
 
-    fn handle_item_click(&mut self, path: &[usize], _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_item_click(&mut self, path: &[usize], event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if event.is_keyboard() {
+            return;
+        }
+
         if self.select_item_at_path(path, cx) {
             cx.notify();
         }
