@@ -6,6 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
 use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonRenderModel, ToggleButtonTemplate};
+use gpui_luma::theme::NavigationSidebarTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -13,7 +14,7 @@ use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     button, checkbox, context_menu, icon_button, introduction, palette, popup_menu, progress, radio_group, scrollbar,
-    search, settings, shared::gallery_pane, slider, switch, tabs_navigation, toggle_button, toggle_group,
+    search, settings, shared::gallery_pane, slider, switch, tabs_navigation, theme_usage, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -29,6 +30,7 @@ enum GalleryPageKind {
     Introduction,
     Search,
     Palette,
+    ThemeUsage,
     Button,
     IconButton,
     ToggleButton,
@@ -82,6 +84,12 @@ const SEARCH_PAGE: GalleryPage =
     GalleryPage { id: "search", label: "Search", icon: Some(LucideIcon::Search), kind: GalleryPageKind::Search };
 const PALETTE_PAGE: GalleryPage =
     GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
+const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
+    id: "theme-usage",
+    label: "Theme Usage",
+    icon: Some(LucideIcon::ListTree),
+    kind: GalleryPageKind::ThemeUsage,
+};
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
 const ICON_BUTTON_PAGE: GalleryPage =
@@ -115,7 +123,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE];
+const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
@@ -191,10 +199,10 @@ impl GalleryPanes {
         let mut nodes: Vec<NavNode> =
             PRIMARY_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
 
-        let label_theme = theme.clone();
+        let label_theme = theme.navigation_sidebar_theme();
         nodes.push(NavNode::new("controls-label").content_presenter(
             move |state: &NavNodeState, window: &mut Window, cx: &mut App| {
-                controls_label_presenter(state, window, cx, &label_theme)
+                controls_label_presenter(state, window, cx, label_theme.clone())
             },
         ));
 
@@ -279,6 +287,7 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => introduction::render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
             GalleryPageKind::Palette => palette::render(&self.theme),
+            GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
             GalleryPageKind::Button => self.button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
             GalleryPageKind::ToggleButton => self.toggle_button.render(&self.theme),
@@ -333,18 +342,19 @@ fn controls_label_presenter(
     _: &NavNodeState,
     _: &mut Window,
     _: &mut App,
-    theme: &GalleryThemePack,
+    theme: Arc<dyn NavigationSidebarTheme>,
 ) -> NavHostedContent {
-    let chrome = theme.chrome();
+    let appearance = theme.resolve_section();
 
     NavHostedContent {
         element: div()
-            .min_h(gpui::px(20.0))
+            .min_h(gpui::px(appearance.height))
             .pt(gpui::px(8.0))
-            .text_size(gpui::px(11.0))
-            .line_height(gpui::px(14.0))
+            .text_size(gpui::px(appearance.typography.size))
+            .line_height(gpui::px(appearance.typography.line_height))
+            .font_weight(appearance.typography.weight)
             .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
-            .text_color(chrome.section_label)
+            .text_color(appearance.label_color)
             .child("Controls")
             .into_any_element(),
         focus_handle: None,
@@ -353,37 +363,30 @@ fn controls_label_presenter(
 
 struct SidebarDisclosureTemplate {
     icon: LucideIcon,
-    theme: GalleryThemePack,
+    theme: Arc<dyn NavigationSidebarTheme>,
 }
 
 impl ToggleButtonTemplate for SidebarDisclosureTemplate {
     fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let chrome = self.theme.chrome();
-        let foreground: gpui::Hsla = if model.enabled {
-            chrome.body_text
-        } else {
-            chrome.section_label
-        };
+        let appearance = self.theme.resolve_branch(model.state, model.size);
         let mut root = div()
             .id(model.id.clone())
             .w_full()
-            .min_h(px(30.0))
+            .min_h(px(appearance.height))
             .flex()
             .items_center()
-            .gap(px(8.0))
-            .px(px(8.0))
-            .rounded(px(6.0))
-            .text_size(px(13.0))
-            .line_height(px(18.0))
-            .text_color(foreground)
-            .font_weight(FontWeight::MEDIUM)
-            .child(render_lucide_icon(self.icon, foreground, 16.0))
+            .gap(px(appearance.gap))
+            .px(px(appearance.padding_x))
+            .rounded(px(appearance.radius))
+            .text_size(px(appearance.typography.size))
+            .line_height(px(appearance.typography.line_height))
+            .text_color(appearance.foreground)
+            .font_weight(appearance.typography.weight)
+            .child(render_lucide_icon(self.icon, appearance.icon_color, appearance.icon_size))
             .child(div().flex_1().child(model.label.clone()));
 
-        if model.state.pressed {
-            root = root.bg(self.theme.chrome().border);
-        } else if model.state.hovered {
-            root = root.bg(self.theme.chrome().content_background);
+        if let Some(background) = appearance.background {
+            root = root.bg(background);
         }
 
         if model.enabled {
@@ -392,8 +395,8 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
             root = root.opacity(0.56);
         }
 
-        if model.state.focused {
-            root = root.border_1().border_color(chrome.focus_ring);
+        if let Some(focus_ring) = appearance.focus_ring {
+            root = root.border_1().border_color(focus_ring);
         }
 
         root
@@ -401,61 +404,49 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
 }
 
 fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ToggleButtonTemplate> {
-    Arc::new(SidebarDisclosureTemplate { icon, theme: theme.clone() })
+    Arc::new(SidebarDisclosureTemplate { icon, theme: theme.navigation_sidebar_theme() })
 }
 
 struct SidebarLeafTemplate {
     icon: Option<LucideIcon>,
     reserve_icon_space: bool,
-    theme: GalleryThemePack,
+    theme: Arc<dyn NavigationSidebarTheme>,
 }
 
 impl ToggleButtonTemplate for SidebarLeafTemplate {
     fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let chrome = self.theme.chrome();
-        let metrics = &gpui_luma::theme::ThemeTokens::light().metrics.md;
-        let background = if model.selected && model.state.pressed {
-            Some(chrome.border)
-        } else if model.selected && model.state.hovered {
-            Some(chrome.content_background)
-        } else if model.selected {
-            Some(chrome.content_background)
-        } else if model.state.pressed {
-            Some(chrome.border)
-        } else if model.state.hovered {
-            Some(chrome.content_background)
+        let appearance = self.theme.resolve_item(model.selected, model.state, model.size);
+        let padding_left = if self.reserve_icon_space {
+            appearance.padding_x + appearance.icon_size + appearance.gap
         } else {
-            None
+            appearance.padding_x
         };
-        let foreground = if !model.enabled {
-            chrome.section_label
-        } else if model.selected {
-            chrome.title_text
+        let placeholder_size = if self.reserve_icon_space {
+            appearance.icon_size
         } else {
-            chrome.body_text
+            0.0
         };
-        let padding_left = if self.reserve_icon_space { 26.0 } else { 8.0 };
-        let placeholder_size = if self.reserve_icon_space { 16.0 } else { 0.0 };
         let mut row = div()
             .id(model.id.clone())
             .w_full()
             .flex()
             .items_center()
-            .gap(px(metrics.gap))
-            .min_h(px(30.0))
+            .gap(px(appearance.gap))
+            .min_h(px(appearance.height))
             .pl(px(padding_left))
-            .pr(px(8.0))
-            .rounded(px(metrics.radius))
-            .text_size(px(13.0))
-            .line_height(px(18.0))
-            .text_color(foreground)
+            .pr(px(appearance.padding_x))
+            .rounded(px(appearance.radius))
+            .text_size(px(appearance.typography.size))
+            .line_height(px(appearance.typography.line_height))
+            .font_weight(appearance.typography.weight)
+            .text_color(appearance.foreground)
             .child(match self.icon {
-                Some(icon) => render_lucide_icon(icon, foreground, 16.0),
+                Some(icon) => render_lucide_icon(icon, appearance.icon_color, appearance.icon_size),
                 None => div().size(px(placeholder_size)).into_any_element(),
             })
             .child(div().flex_1().child(model.label.clone()));
 
-        if let Some(background) = background {
+        if let Some(background) = appearance.background {
             row = row.bg(background);
         }
 
@@ -465,8 +456,8 @@ impl ToggleButtonTemplate for SidebarLeafTemplate {
             row = row.opacity(0.56);
         }
 
-        if model.state.focused {
-            row = row.border_1().border_color(chrome.focus_ring);
+        if let Some(focus_ring) = appearance.focus_ring {
+            row = row.border_1().border_color(focus_ring);
         }
 
         row
@@ -478,7 +469,7 @@ fn sidebar_leaf_template(
     reserve_icon_space: bool,
     theme: &GalleryThemePack,
 ) -> Arc<dyn ToggleButtonTemplate> {
-    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.clone() })
+    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.navigation_sidebar_theme() })
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {

@@ -1,8 +1,8 @@
 # Gallery Enhancement: Theme Usage Documentation
 
-The gallery needs to explain how the active Luma theme is actually used by SDK controls. The current
-Palette page shows which semantic tokens exist and what values they resolve to, but it does not show
-which controls consume each token or which tokens share the same concrete value.
+The gallery needs to explain how the active Luma theme is actually used by SDK controls. The Palette
+page shows which semantic tokens exist and what values they resolve to, but it does not show which
+controls consume each token or which tokens share the same concrete value.
 
 Avoid documenting templates by hand in prose first. That will drift as resolvers and templates
 change. The gallery should be driven by structured metadata that lives close to the resolver code and
@@ -29,6 +29,10 @@ metrics, radii, typography, and elevation.
 Today, theme decisions are encoded in Rust resolver code. For example, a resolver may decide that a
 checked checkbox indicator uses `action.primary.background`, while the template only receives and
 applies `CheckboxAppearance.indicator_background`.
+
+Navigation sidebar styling is now part of the SDK theme layer through `NavigationSidebarTheme`. That
+means `navigation.*` tokens are real SDK-consumed theme roles, not gallery-only chrome values. The
+usage documentation should treat the navigation sidebar like any other themed SDK component.
 
 That means there are two useful layers to document:
 
@@ -93,6 +97,13 @@ action.primary.background
   Progress fill color
 ```
 
+Example for navigation:
+
+```text
+navigation.selected_background
+  Navigation Sidebar selected item background
+```
+
 ### By Component
 
 Show each component and the semantic tokens used by its resolver.
@@ -142,6 +153,7 @@ Implement only palette/color usage metadata.
 Include the current SDK controls:
 
 - Button
+- Navigation Sidebar
 - Icon Button
 - Toggle Button
 - Toggle Group
@@ -157,6 +169,9 @@ Include the current SDK controls:
 
 The first pass does not need runtime introspection of every state combination. Static metadata is
 enough, as long as it lives near the resolver code and is easy to keep in sync.
+
+Navigation sidebar usage metadata starts in `crates/sdk/src/theme/navigation_sidebar.rs`, alongside
+the `NavigationSidebarTheme` resolver, and is rendered by the gallery's `Theme Usage` page.
 
 ## Later Scope
 
@@ -192,6 +207,17 @@ Button / Primary / Hovered
   typography: text.label -> 13 / 18 / 500
 ```
 
+Example for navigation:
+
+```text
+Navigation Sidebar / Item / Selected
+  background: navigation.selected_background -> hsla(...)
+  foreground: navigation.selected_foreground -> hsla(...)
+  focus: navigation.focus_ring -> hsla(...)
+  radius: radius.md -> 6
+  typography: text.label -> 13 / 18 / 500
+```
+
 This should complement the usage metadata. The usage metadata explains intended recipe choices; the
 resolved inspector confirms the final values currently produced by the SDK.
 
@@ -199,6 +225,7 @@ resolved inspector confirms the final values currently produced by the SDK.
 
 - Keep semantic decisions in resolvers.
 - Keep templates focused on applying resolved appearance fields.
+- Treat navigation sidebar as a first-class SDK themed component.
 - Keep usage metadata close to resolver modules, not in gallery-only prose.
 - Avoid duplicating long hand-written explanations in docs and UI.
 - Use the gallery to render the metadata and make drift visible during development.

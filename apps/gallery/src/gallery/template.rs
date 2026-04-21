@@ -38,6 +38,7 @@ fn render_sidebar(
     theme: &crate::gallery::theme::GalleryThemePack,
 ) -> AnyElement {
     let chrome = theme.chrome();
+    let navigation = theme.navigation_sidebar_theme().resolve_container();
 
     div()
         .size_full()
@@ -45,8 +46,8 @@ fn render_sidebar(
         .flex_col()
         .gap_3()
         .p_3()
-        .bg(chrome.sidebar_background)
-        .text_color(chrome.body_text)
+        .bg(navigation.background)
+        .text_color(navigation.foreground)
         .child(
             div()
                 .flex()

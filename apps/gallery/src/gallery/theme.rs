@@ -23,10 +23,10 @@ use gpui_luma::theme::{
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
     DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme, DefaultScrollbarTheme, DefaultSliderTheme,
     DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme,
-    PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme,
-    ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme,
-    TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme, ThemeMode, ThemeTokens,
-    ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
+    NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme,
+    RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme,
+    SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
+    ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
 };
 
 #[derive(Clone)]
@@ -35,6 +35,7 @@ pub(in crate::gallery) struct GalleryThemePack {
     button_family_theme: Arc<dyn ButtonFamilyTheme>,
     checkbox_theme: Arc<dyn CheckboxTheme>,
     context_menu_theme: Arc<dyn ContextMenuTheme>,
+    navigation_sidebar_theme: Arc<dyn NavigationSidebarTheme>,
     popup_menu_theme: Arc<dyn PopupMenuTheme>,
     progress_theme: Arc<dyn ProgressTheme>,
     radio_group_theme: Arc<dyn RadioGroupTheme>,
@@ -53,15 +54,12 @@ struct GalleryThemeState {
 #[derive(Clone, Copy)]
 pub(in crate::gallery) struct GalleryChrome {
     pub app_background: Hsla,
-    pub sidebar_background: Hsla,
     pub content_background: Hsla,
     pub title_text: Hsla,
     pub body_text: Hsla,
     pub muted_text: Hsla,
-    pub section_label: Hsla,
     pub border: Hsla,
     pub panel_background: Hsla,
-    pub focus_ring: Hsla,
 }
 
 impl GalleryThemePack {
@@ -76,6 +74,7 @@ impl GalleryThemePack {
             button_family_theme: Arc::new(GalleryButtonFamilyTheme { state: state.clone() }),
             checkbox_theme: Arc::new(GalleryCheckboxTheme { state: state.clone() }),
             context_menu_theme: Arc::new(GalleryContextMenuTheme { state: state.clone() }),
+            navigation_sidebar_theme: Arc::new(GalleryNavigationSidebarTheme { state: state.clone() }),
             popup_menu_theme: Arc::new(GalleryPopupMenuTheme { state: state.clone() }),
             progress_theme: Arc::new(GalleryProgressTheme { state: state.clone() }),
             radio_group_theme: Arc::new(GalleryRadioGroupTheme { state: state.clone() }),
@@ -101,15 +100,12 @@ impl GalleryThemePack {
 
         GalleryChrome {
             app_background: palette.app.background,
-            sidebar_background: palette.navigation.background,
             content_background: palette.app.background,
             title_text: palette.app.foreground,
             body_text: palette.surface.subtle.foreground,
             muted_text: palette.app.muted_foreground,
-            section_label: palette.navigation.muted_foreground,
             border: palette.border.default,
             panel_background: palette.surface.panel.background,
-            focus_ring: palette.focus.ring,
         }
     }
 
@@ -181,6 +177,10 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn context_menu_theme(&self) -> Arc<dyn ContextMenuTheme> {
         self.context_menu_theme.clone()
+    }
+
+    pub(in crate::gallery) fn navigation_sidebar_theme(&self) -> Arc<dyn NavigationSidebarTheme> {
+        self.navigation_sidebar_theme.clone()
     }
 
     pub(in crate::gallery) fn tabs_navigation_template(&self) -> Arc<dyn TabsNavigationTemplate> {
@@ -318,6 +318,37 @@ struct GalleryPopupMenuTheme {
 impl PopupMenuTheme for GalleryPopupMenuTheme {
     fn resolve(&self, state: InteractionState) -> PopupMenuAppearance {
         DefaultPopupMenuTheme::new(self.state.tokens()).resolve(state)
+    }
+}
+
+struct GalleryNavigationSidebarTheme {
+    state: Arc<GalleryThemeState>,
+}
+
+impl NavigationSidebarTheme for GalleryNavigationSidebarTheme {
+    fn resolve_container(&self) -> gpui_luma::theme::NavigationSidebarContainerAppearance {
+        gpui_luma::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_container()
+    }
+
+    fn resolve_section(&self) -> gpui_luma::theme::NavigationSidebarSectionAppearance {
+        gpui_luma::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_section()
+    }
+
+    fn resolve_branch(
+        &self,
+        state: InteractionState,
+        size: gpui_luma::theme::ControlSize,
+    ) -> gpui_luma::theme::NavigationSidebarItemAppearance {
+        gpui_luma::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_branch(state, size)
+    }
+
+    fn resolve_item(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: gpui_luma::theme::ControlSize,
+    ) -> gpui_luma::theme::NavigationSidebarItemAppearance {
+        gpui_luma::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_item(selected, state, size)
     }
 }
 

@@ -4,6 +4,7 @@ pub mod checkbox;
 pub mod context_menu;
 pub mod popup_menu;
 pub mod interaction;
+pub mod navigation_sidebar;
 pub mod progress;
 pub mod radio_group;
 pub mod scrollbar;
@@ -12,6 +13,7 @@ pub mod switch;
 pub mod tabs_navigation;
 pub mod toggle_group;
 pub mod tokens;
+pub mod usage;
 
 pub use button_family::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
@@ -21,6 +23,11 @@ pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, defa
 pub use context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme};
 pub use popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 pub use interaction::{InteractionLayer, InteractionState};
+pub use navigation_sidebar::{
+    DefaultNavigationSidebarTheme, NavigationSidebarContainerAppearance, NavigationSidebarItemAppearance,
+    NavigationSidebarSectionAppearance, NavigationSidebarTheme, default_navigation_sidebar_theme,
+    navigation_sidebar_theme_usage,
+};
 pub use progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme, default_progress_theme};
 pub use radio_group::{DefaultRadioGroupTheme, RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};
 pub use scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme};
@@ -42,3 +49,4 @@ pub use tokens::{
     StateBackgroundPalette, StatePalette, StateTonePalette, SurfacePalette, SurfaceTonePalette,
     SurfaceWithBorderPalette, TextTokens, ThemeMode, ThemeModes, ThemeTokens,
 };
+pub use usage::{ThemePartUsage, ThemeUsage};

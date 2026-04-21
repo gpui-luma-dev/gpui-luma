@@ -15,5 +15,6 @@ mod shared;
 mod slider;
 mod switch;
 mod tabs_navigation;
+mod theme_usage;
 mod toggle_button;
 mod toggle_group;
