@@ -1,5 +1,16 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
-use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
+use std::sync::Arc;
+
+use gpui::{
+    AnyElement, App, Bounds, Context, DragMoveEvent, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
+    ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px, rgb,
+};
+use gpui_luma::controls::scrollbar::{
+    Scrollbar, ScrollbarBoundsHandler, ScrollbarDrag, ScrollbarDragMoveHandler, ScrollbarEvent, ScrollbarHoverHandler,
+    ScrollbarMouseDownHandler, ScrollbarMouseUpHandler, ScrollbarOrientation, ScrollbarRenderModel,
+    ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,
+};
+use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -10,8 +21,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 pub(in crate::gallery) struct ScrollbarPane {
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
-    disabled_horizontal_scrollbar: Entity<Scrollbar>,
-    disabled_vertical_scrollbar: Entity<Scrollbar>,
+    state_preview: Entity<ScrollbarStatePreview>,
     horizontal_value: f32,
     vertical_value: f32,
 }
@@ -43,26 +53,7 @@ impl ScrollbarPane {
                 .thumb_fraction(0.45)
                 .template(theme.scrollbar_template())
                 .spawn(cx),
-            disabled_horizontal_scrollbar: Scrollbar::new("disabled-scrollbar-horizontal-example")
-                .horizontal()
-                .range(0..220)
-                .step(20)
-                .page_step(80)
-                .value(40)
-                .thumb_fraction(0.54)
-                .enabled(false)
-                .template(theme.scrollbar_template())
-                .spawn(cx),
-            disabled_vertical_scrollbar: Scrollbar::new("disabled-scrollbar-vertical-example")
-                .vertical()
-                .range(0..240)
-                .step(20)
-                .page_step(80)
-                .value(80)
-                .thumb_fraction(0.45)
-                .enabled(false)
-                .template(theme.scrollbar_template())
-                .spawn(cx),
+            state_preview: cx.new(|_| ScrollbarStatePreview::new(theme)),
             horizontal_value: 40.0,
             vertical_value: 80.0,
         }
@@ -87,7 +78,7 @@ impl ScrollbarPane {
                 .items_center()
                 .gap_4()
                 .child(self.scrollbar_example(theme))
-                .child(self.disabled_scrollbar_example(theme))
+                .child(self.state_preview.clone())
                 .into_any_element(),
             theme,
         )
@@ -96,8 +87,7 @@ impl ScrollbarPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.horizontal_scrollbar, cx);
         notify_entity(&self.vertical_scrollbar, cx);
-        notify_entity(&self.disabled_horizontal_scrollbar, cx);
-        notify_entity(&self.disabled_vertical_scrollbar, cx);
+        notify_entity(&self.state_preview, cx);
     }
 
     fn handle_event(
@@ -130,17 +120,174 @@ impl ScrollbarPane {
             theme,
         )
     }
+}
 
-    fn disabled_scrollbar_example(&self, theme: &GalleryThemePack) -> AnyElement {
-        scrollbar_pair(
-            self.horizontal_value,
-            self.vertical_value,
-            self.disabled_horizontal_scrollbar.clone(),
-            self.disabled_vertical_scrollbar.clone(),
-            theme,
-        )
+#[derive(Clone)]
+struct ScrollbarStatePreview {
+    theme: GalleryThemePack,
+    template: Arc<dyn ScrollbarTemplate>,
+}
+
+struct ScrollbarStateSample {
+    id: &'static str,
+    label: &'static str,
+    state: InteractionState,
+}
+
+impl ScrollbarStatePreview {
+    fn new(theme: &GalleryThemePack) -> Self {
+        Self { theme: theme.clone(), template: theme.scrollbar_template() }
     }
 }
+
+impl Render for ScrollbarStatePreview {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.theme.chrome();
+        let samples = [
+            ScrollbarStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ScrollbarStateSample {
+                id: "hover",
+                label: "Hover",
+                state: InteractionState { hovered: true, ..InteractionState::default() },
+            },
+            ScrollbarStateSample {
+                id: "focus",
+                label: "Focus",
+                state: InteractionState { focused: true, ..InteractionState::default() },
+            },
+            ScrollbarStateSample {
+                id: "active",
+                label: "Active",
+                state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
+            },
+            ScrollbarStateSample {
+                id: "disabled",
+                label: "Disabled",
+                state: InteractionState { disabled: true, ..InteractionState::default() },
+            },
+        ];
+
+        div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(14.0))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Template state preview"),
+            )
+            .child(render_state_row(
+                &self.template,
+                "Horizontal",
+                ScrollbarOrientation::Horizontal,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "Vertical",
+                ScrollbarOrientation::Vertical,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+    }
+}
+
+fn render_state_row(
+    template: &Arc<dyn ScrollbarTemplate>,
+    row_label: &'static str,
+    orientation: ScrollbarOrientation,
+    samples: &[ScrollbarStateSample],
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(8.0))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
+        .child(
+            div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples
+                    .iter()
+                    .map(|sample| render_state_sample(template, orientation, sample, label_color, window, cx)),
+            ),
+        )
+        .into_any_element()
+}
+
+fn render_state_sample(
+    template: &Arc<dyn ScrollbarTemplate>,
+    orientation: ScrollbarOrientation,
+    sample: &ScrollbarStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let orientation_id = match orientation {
+        ScrollbarOrientation::Horizontal => "horizontal",
+        ScrollbarOrientation::Vertical => "vertical",
+    };
+    let id = SharedString::from(format!("scrollbar-preview-{}-{}", orientation_id, sample.id));
+    let range = ControlRange::from(0..220);
+    let value = 40.0;
+    let model = ScrollbarRenderModel {
+        id: &id,
+        orientation,
+        range,
+        step: 20.0,
+        page_step: 80.0,
+        value,
+        percentage: range.percentage(value),
+        thumb_fraction: 0.54,
+        enabled: !sample.state.disabled,
+        state: sample.state,
+    };
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(template.render(&model, scrollbar_preview_handlers(), window, cx))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .into_any_element()
+}
+
+fn scrollbar_preview_handlers() -> ScrollbarTemplateHandlers {
+    ScrollbarTemplateHandlers {
+        track_bounds: Box::new(noop_bounds) as ScrollbarBoundsHandler,
+        thumb_bounds: Box::new(noop_bounds) as ScrollbarBoundsHandler,
+        hover: Box::new(noop_hover) as ScrollbarHoverHandler,
+        mouse_down: Box::new(noop_mouse_down) as ScrollbarMouseDownHandler,
+        mouse_up: Box::new(noop_mouse_up) as ScrollbarMouseUpHandler,
+        mouse_up_out: Box::new(noop_mouse_up) as ScrollbarMouseUpHandler,
+        drag_move: Box::new(noop_drag_move) as ScrollbarDragMoveHandler,
+        scroll_wheel: Box::new(noop_scroll_wheel) as ScrollbarScrollWheelHandler,
+    }
+}
+
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_drag_move(_: &DragMoveEvent<ScrollbarDrag>, _: &mut Window, _: &mut App) {}
+
+fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
 
 fn scrollbar_pair(
     horizontal_value: f32,

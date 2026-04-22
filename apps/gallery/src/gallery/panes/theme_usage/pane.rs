@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
-use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
+use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{PaletteColorToken, ThemePartUsage, ThemeUsage, all_theme_usages, palette_color_tokens};
 
+use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::theme::GalleryThemePack;
 
 type UsageRef = (&'static str, &'static ThemePartUsage);
@@ -222,7 +223,7 @@ fn shared_value_groups(palette_tokens: &[PaletteColorToken]) -> Vec<(String, Vec
     let mut by_value: BTreeMap<String, Vec<&PaletteColorToken>> = BTreeMap::new();
 
     for token in palette_tokens {
-        by_value.entry(format_hsla(token.color)).or_default().push(token);
+        by_value.entry(format_compact_hsla(token.color)).or_default().push(token);
     }
 
     by_value.into_iter().filter(|(_, tokens)| tokens.len() > 1).collect()
@@ -290,7 +291,7 @@ fn render_token_header(token: &PaletteColorToken, used_by_sdk: bool, theme: &Gal
                         .text_size(px(11.0))
                         .line_height(px(15.0))
                         .text_color(chrome.muted_text)
-                        .child(format_hsla(token.color)),
+                        .child(format_compact_hsla(token.color)),
                 ),
         )
         .child(render_status_badge(token_status(token, used_by_sdk), theme))
@@ -375,8 +376,4 @@ fn token_label(token: &PaletteColorToken) -> String {
     } else {
         token.token.to_string()
     }
-}
-
-fn format_hsla(color: Hsla) -> String {
-    format!("hsla({:.1} {:.1}% {:.1}% / {:.2})", color.h * 360.0, color.s * 100.0, color.l * 100.0, color.a)
 }

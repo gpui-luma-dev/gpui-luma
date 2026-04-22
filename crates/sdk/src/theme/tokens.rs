@@ -1255,11 +1255,24 @@ impl RawShadowLayer {
 
 fn parse_hsla(value: &str) -> anyhow::Result<Hsla> {
     let value = value.trim();
-    let inner = value
-        .strip_prefix("hsla(")
-        .and_then(|value| value.strip_suffix(')'))
-        .ok_or_else(|| anyhow!("unsupported color syntax `{value}`"))?;
-    let (channels, alpha) = inner.split_once('/').ok_or_else(|| anyhow!("missing alpha channel in color `{value}`"))?;
+    let (inner, requires_alpha) =
+        if let Some(inner) = value.strip_prefix("hsla(").and_then(|value| value.strip_suffix(')')) {
+            (inner, true)
+        } else if let Some(inner) = value.strip_prefix("hsl(").and_then(|value| value.strip_suffix(')')) {
+            (inner, false)
+        } else {
+            return Err(anyhow!("unsupported color syntax `{value}`"));
+        };
+
+    let (channels, alpha) = match inner.split_once('/') {
+        Some((channels, alpha)) => (
+            channels,
+            alpha.trim().parse::<f32>().with_context(|| format!("invalid alpha channel in color `{value}`"))?,
+        ),
+        None if requires_alpha => return Err(anyhow!("missing alpha channel in color `{value}`")),
+        None => (inner, 1.0),
+    };
+
     let mut channels = channels.split_whitespace();
     let hue = parse_number(channels.next(), value, "hue")?;
     let saturation = parse_percent(channels.next(), value, "saturation")?;
@@ -1268,8 +1281,6 @@ fn parse_hsla(value: &str) -> anyhow::Result<Hsla> {
     if channels.next().is_some() {
         return Err(anyhow!("too many color channels in `{value}`"));
     }
-
-    let alpha = alpha.trim().parse::<f32>().with_context(|| format!("invalid alpha channel in color `{value}`"))?;
 
     Ok(hsla(hue / 360.0, saturation / 100.0, lightness / 100.0, alpha))
 }
@@ -1323,8 +1334,7 @@ mod tests {
 
     #[test]
     fn native_theme_rejects_unsupported_color_syntax() {
-        let source =
-            DEFAULT_THEME_TOML.replace("background = \"hsla(210 40% 98.0392% / 1)\"", "background = \"#f8fafc\"");
+        let source = DEFAULT_THEME_TOML.replace("background = \"hsl(210 40% 98%)\"", "background = \"#f8fafc\"");
 
         assert!(LumaTheme::from_toml_str(&source).is_err());
     }

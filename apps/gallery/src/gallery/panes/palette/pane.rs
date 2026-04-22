@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{LumaPalette, PaletteColorToken, ThemeTokens, palette_color_tokens};
 
+use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::theme::GalleryThemePack;
 
 struct ColorItem {
@@ -252,7 +253,7 @@ fn render_color_item(item: ColorItem, duplicate_count: usize, theme: &GalleryThe
                         .text_size(px(11.0))
                         .line_height(px(15.0))
                         .text_color(chrome.muted_text)
-                        .child(format_hsla(item.color)),
+                        .child(format_compact_hsla(item.color)),
                 ),
         )
         .when(duplicate_count > 1, |row| row.child(render_duplicate_badge(duplicate_count, theme)))
@@ -314,7 +315,7 @@ fn render_duplicate_group(group: DuplicateColorGroup, theme: &GalleryThemePack) 
                                 .text_size(px(11.0))
                                 .line_height(px(15.0))
                                 .text_color(chrome.muted_text)
-                                .child(format_hsla(group.color)),
+                                .child(format_compact_hsla(group.color)),
                         )
                         .child(
                             div()
@@ -373,8 +374,4 @@ fn duplicate_by_value(groups: &[DuplicateColorGroup]) -> BTreeMap<String, usize>
 
 fn color_key(color: Hsla) -> String {
     format!("{:.6}:{:.6}:{:.6}:{:.6}", color.h, color.s, color.l, color.a)
-}
-
-fn format_hsla(color: Hsla) -> String {
-    format!("hsla({:.3} {:.4}% {:.4}% / {:.2})", color.h * 360.0, color.s * 100.0, color.l * 100.0, color.a)
 }

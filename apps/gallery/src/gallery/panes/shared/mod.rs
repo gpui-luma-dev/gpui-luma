@@ -180,12 +180,27 @@ fn render_usage_part(
                     .text_size(px(10.0))
                     .line_height(px(14.0))
                     .text_color(chrome.muted_text)
-                    .child(format_hsla(color)),
+                    .child(format_compact_hsla(color)),
             )
         })
         .into_any_element()
 }
 
-fn format_hsla(color: Hsla) -> String {
-    format!("hsla({:.3} {:.4}% {:.4}% / {:.2})", color.h * 360.0, color.s * 100.0, color.l * 100.0, color.a)
+pub(in crate::gallery::panes) fn format_compact_hsla(color: Hsla) -> String {
+    format!(
+        "hsla({} {}% {}% / {})",
+        rounded_channel(color.h * 360.0),
+        rounded_channel(color.s * 100.0),
+        rounded_channel(color.l * 100.0),
+        compact_alpha(color.a)
+    )
+}
+
+fn rounded_channel(value: f32) -> i32 {
+    value.round() as i32
+}
+
+fn compact_alpha(value: f32) -> String {
+    let formatted = format!("{value:.3}");
+    formatted.trim_end_matches('0').trim_end_matches('.').to_string()
 }
