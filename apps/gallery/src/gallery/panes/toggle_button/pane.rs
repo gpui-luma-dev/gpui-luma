@@ -4,7 +4,7 @@ use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonEvent};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleButtonPane {
@@ -40,7 +40,8 @@ impl ToggleButtonPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Toggle Button",
             "Toggle Button",
             div()
                 .flex()

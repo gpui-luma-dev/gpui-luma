@@ -7,7 +7,7 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::radial::radial_context_menu_template;
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 use super::template::gallery_context_menu_template;
 
 #[derive(Clone)]
@@ -54,7 +54,8 @@ impl ContextMenuPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Context Menu",
             "Context Menu",
             div()
                 .flex()

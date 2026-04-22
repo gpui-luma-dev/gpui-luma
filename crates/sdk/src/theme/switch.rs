@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct SwitchAppearance {
@@ -36,6 +36,96 @@ pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultSwitchTheme::default())).clone()
 }
+
+pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Switch",
+    parts: &[
+        ThemePartUsage {
+            part: "off track background",
+            token: "form.input.background",
+            states: &["off"],
+            appearance_fields: &["SwitchAppearance.track_background"],
+        },
+        ThemePartUsage {
+            part: "off track hover background",
+            token: "state.hover.background",
+            states: &["off hovered"],
+            appearance_fields: &["SwitchAppearance.track_background"],
+        },
+        ThemePartUsage {
+            part: "off track pressed background",
+            token: "state.pressed.background",
+            states: &["off pressed"],
+            appearance_fields: &["SwitchAppearance.track_background"],
+        },
+        ThemePartUsage {
+            part: "off track border",
+            token: "form.input.border",
+            states: &["off", "off hovered", "off pressed"],
+            appearance_fields: &["SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on track background",
+            token: "action.primary.background",
+            states: &["on"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on track hover background",
+            token: "action.primary.hover_background",
+            states: &["on hovered"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on track pressed background",
+            token: "action.primary.pressed_background",
+            states: &["on pressed"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on thumb",
+            token: "action.primary.foreground",
+            states: &["on"],
+            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
+        },
+        ThemePartUsage {
+            part: "off thumb background",
+            token: "surface.panel.background",
+            states: &["off"],
+            appearance_fields: &["SwitchAppearance.thumb_background"],
+        },
+        ThemePartUsage {
+            part: "off thumb border",
+            token: "border.default",
+            states: &["off"],
+            appearance_fields: &["SwitchAppearance.thumb_border"],
+        },
+        ThemePartUsage {
+            part: "label",
+            token: "app.foreground",
+            states: &["default", "on"],
+            appearance_fields: &["SwitchAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "disabled fill",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.thumb_border"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["SwitchAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultSwitchTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{LumaPalette, ThemeTokens};
+use gpui_luma::theme::{LumaPalette, PaletteColorToken, ThemeTokens, palette_color_tokens};
 
 use crate::gallery::theme::GalleryThemePack;
 
@@ -14,10 +16,18 @@ struct PaletteSection {
     items: Vec<ColorItem>,
 }
 
+#[derive(Clone)]
+struct DuplicateColorGroup {
+    color: Hsla,
+    tokens: Vec<&'static str>,
+}
+
 pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
     let tokens = theme.tokens();
     let sections = palette_sections(&tokens);
+    let duplicate_groups = duplicate_color_groups(&palette_color_tokens(&tokens));
+    let duplicate_by_value = duplicate_by_value(&duplicate_groups);
 
     div()
         .size_full()
@@ -27,10 +37,12 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
         .overflow_hidden()
         .child(
             div()
+                .id("palette-content")
                 .size_full()
                 .flex()
                 .flex_col()
                 .gap(px(18.0))
+                .overflow_y_scroll()
                 .child(
                     div()
                         .flex()
@@ -64,7 +76,12 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                         .flex()
                         .flex_col()
                         .gap(px(20.0))
-                        .children(sections.into_iter().map(|section| render_section(section, theme))),
+                        .children(
+                            sections.into_iter().map(|section| render_section(section, &duplicate_by_value, theme)),
+                        )
+                        .when(!duplicate_groups.is_empty(), |content| {
+                            content.child(render_duplicate_values(duplicate_groups, theme))
+                        }),
                 ),
         )
         .into_any_element()
@@ -171,7 +188,11 @@ fn reserved_item(label: &'static str, color: Hsla) -> ColorItem {
     ColorItem { label, color, reserved: true }
 }
 
-fn render_section(section: PaletteSection, theme: &GalleryThemePack) -> AnyElement {
+fn render_section(
+    section: PaletteSection,
+    duplicate_by_value: &BTreeMap<String, usize>,
+    theme: &GalleryThemePack,
+) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -186,17 +207,15 @@ fn render_section(section: PaletteSection, theme: &GalleryThemePack) -> AnyEleme
                 .text_color(chrome.title_text)
                 .child(section.title),
         )
-        .child(
-            div()
-                .flex()
-                .flex_wrap()
-                .gap(px(12.0))
-                .children(section.items.into_iter().map(|item| render_color_item(item, theme))),
-        )
+        .child(div().flex().flex_wrap().gap(px(12.0)).children(section.items.into_iter().map(|item| {
+            let duplicate_count = duplicate_by_value.get(&color_key(item.color)).copied().unwrap_or_default();
+
+            render_color_item(item, duplicate_count, theme)
+        })))
         .into_any_element()
 }
 
-fn render_color_item(item: ColorItem, theme: &GalleryThemePack) -> AnyElement {
+fn render_color_item(item: ColorItem, duplicate_count: usize, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
     let name = if item.reserved {
         format!("{} *", item.label)
@@ -236,9 +255,126 @@ fn render_color_item(item: ColorItem, theme: &GalleryThemePack) -> AnyElement {
                         .child(format_hsla(item.color)),
                 ),
         )
+        .when(duplicate_count > 1, |row| row.child(render_duplicate_badge(duplicate_count, theme)))
         .into_any_element()
 }
 
+fn render_duplicate_values(groups: Vec<DuplicateColorGroup>, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.0))
+        .child(
+            div()
+                .text_size(px(13.0))
+                .line_height(px(18.0))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(chrome.title_text)
+                .child("Duplicate Values"),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .gap(px(12.0))
+                .children(groups.into_iter().map(|group| render_duplicate_group(group, theme))),
+        )
+        .into_any_element()
+}
+
+fn render_duplicate_group(group: DuplicateColorGroup, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
+    div()
+        .w(px(360.0))
+        .flex()
+        .flex_col()
+        .gap(px(8.0))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .p(px(10.0))
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(10.0))
+                .child(div().size(px(28.0)).bg(group.color).border_1().border_color(chrome.border).rounded(px(3.0)))
+                .child(
+                    div()
+                        .min_w(px(0.0))
+                        .flex()
+                        .flex_col()
+                        .gap(px(1.0))
+                        .child(
+                            div()
+                                .font_family("Monaco")
+                                .text_size(px(11.0))
+                                .line_height(px(15.0))
+                                .text_color(chrome.muted_text)
+                                .child(format_hsla(group.color)),
+                        )
+                        .child(
+                            div()
+                                .text_size(px(11.0))
+                                .line_height(px(15.0))
+                                .text_color(chrome.muted_text)
+                                .child(format!("{} keys", group.tokens.len())),
+                        ),
+                ),
+        )
+        .children(group.tokens.into_iter().map(|token| {
+            div()
+                .font_family("Monaco")
+                .text_size(px(12.0))
+                .line_height(px(17.0))
+                .text_color(chrome.title_text)
+                .child(token)
+        }))
+        .into_any_element()
+}
+
+fn render_duplicate_badge(count: usize, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
+    div()
+        .flex_none()
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(3.0))
+        .px(px(6.0))
+        .py(px(2.0))
+        .text_size(px(10.0))
+        .line_height(px(14.0))
+        .text_color(chrome.muted_text)
+        .child(format!("{count} keys"))
+        .into_any_element()
+}
+
+fn duplicate_color_groups(tokens: &[PaletteColorToken]) -> Vec<DuplicateColorGroup> {
+    let mut by_value: BTreeMap<String, DuplicateColorGroup> = BTreeMap::new();
+
+    for token in tokens {
+        by_value
+            .entry(color_key(token.color))
+            .or_insert_with(|| DuplicateColorGroup { color: token.color, tokens: Vec::new() })
+            .tokens
+            .push(token.token);
+    }
+
+    by_value.into_values().filter(|group| group.tokens.len() > 1).collect()
+}
+
+fn duplicate_by_value(groups: &[DuplicateColorGroup]) -> BTreeMap<String, usize> {
+    groups.iter().map(|group| (color_key(group.color), group.tokens.len())).collect()
+}
+
+fn color_key(color: Hsla) -> String {
+    format!("{:.6}:{:.6}:{:.6}:{:.6}", color.h, color.s, color.l, color.a)
+}
+
 fn format_hsla(color: Hsla) -> String {
-    format!("hsla({:.1} {:.1}% {:.1}% / {:.2})", color.h * 360.0, color.s * 100.0, color.l * 100.0, color.a)
+    format!("hsla({:.3} {:.4}% {:.4}% / {:.2})", color.h * 360.0, color.s * 100.0, color.l * 100.0, color.a)
 }

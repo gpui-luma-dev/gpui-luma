@@ -4,7 +4,7 @@ use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupIt
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioGroupPane {
@@ -40,7 +40,8 @@ impl RadioGroupPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Radio Group",
             "Radio Group",
             div()
                 .flex()
@@ -50,6 +51,7 @@ impl RadioGroupPane {
                 .child(
                     div()
                         .flex()
+                        .flex_col()
                         .items_center()
                         .gap_3()
                         .child(self.radio_group.clone())

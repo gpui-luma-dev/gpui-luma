@@ -148,13 +148,6 @@ impl GalleryThemePack {
         })))
     }
 
-    pub(in crate::gallery) fn filled_checkbox_template(&self) -> Arc<dyn CheckboxTemplate> {
-        Arc::new(ThemedCheckboxTemplate::new(Arc::new(GalleryCheckboxPresentationTheme {
-            state: self.state.clone(),
-            presentation: CheckboxPresentation::Filled,
-        })))
-    }
-
     pub(in crate::gallery) fn switch_template(&self) -> Arc<dyn SwitchTemplate> {
         Arc::new(ThemedSwitchTemplate::new(self.switch_theme.clone()))
     }
@@ -232,7 +225,6 @@ impl CheckboxTheme for GalleryCheckboxTheme {
 
 enum CheckboxPresentation {
     Border,
-    Filled,
 }
 
 struct GalleryCheckboxPresentationTheme {
@@ -252,14 +244,6 @@ impl CheckboxTheme for GalleryCheckboxPresentationTheme {
                 }
                 (ThemeMode::Dark, CheckboxPresentation::Border) => {
                     appearance.control_border = Some(rgb(0x60a5fa).into());
-                }
-                (ThemeMode::Light, CheckboxPresentation::Filled) => {
-                    appearance.control_border = Some(rgb(0xbe185d).into());
-                    appearance.control_background = Some(rgb(0xfce7f3).into());
-                }
-                (ThemeMode::Dark, CheckboxPresentation::Filled) => {
-                    appearance.control_border = Some(rgb(0xf472b6).into());
-                    appearance.control_background = Some(rgb(0x3b1327).into());
                 }
             }
 

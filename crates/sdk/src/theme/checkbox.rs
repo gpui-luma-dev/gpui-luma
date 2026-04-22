@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CheckboxAppearance {
@@ -38,6 +38,84 @@ pub fn default_checkbox_theme() -> Arc<dyn CheckboxTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultCheckboxTheme::default())).clone()
 }
+
+pub const CHECKBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Checkbox",
+    parts: &[
+        ThemePartUsage {
+            part: "unchecked indicator background",
+            token: "form.input.background",
+            states: &["unchecked"],
+            appearance_fields: &["CheckboxAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unchecked indicator hover background",
+            token: "state.hover.background",
+            states: &["unchecked hovered"],
+            appearance_fields: &["CheckboxAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unchecked indicator pressed background",
+            token: "state.pressed.background",
+            states: &["unchecked pressed"],
+            appearance_fields: &["CheckboxAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unchecked indicator border",
+            token: "form.input.border",
+            states: &["unchecked", "unchecked hovered", "unchecked pressed", "disabled"],
+            appearance_fields: &["CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked indicator background",
+            token: "action.primary.background",
+            states: &["checked"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked indicator hover background",
+            token: "action.primary.hover_background",
+            states: &["checked hovered"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked indicator pressed background",
+            token: "action.primary.pressed_background",
+            states: &["checked pressed"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked checkmark",
+            token: "action.primary.foreground",
+            states: &["checked"],
+            appearance_fields: &["CheckboxAppearance.checkmark_color"],
+        },
+        ThemePartUsage {
+            part: "label",
+            token: "app.foreground",
+            states: &["default", "checked"],
+            appearance_fields: &["CheckboxAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "disabled fill",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["CheckboxAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["CheckboxAppearance.label_color", "CheckboxAppearance.checkmark_color"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["CheckboxAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultCheckboxTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

@@ -4,7 +4,7 @@ use gpui_luma::controls::slider::{Slider, SliderEvent};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
@@ -42,7 +42,8 @@ impl SliderPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Slider",
             "Slider",
             div()
                 .flex()
@@ -50,7 +51,13 @@ impl SliderPane {
                 .items_center()
                 .gap_2()
                 .child(
-                    div().flex().items_center().gap_3().child(self.slider.clone()).child(self.disabled_slider.clone()),
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_3()
+                        .child(self.slider.clone())
+                        .child(self.disabled_slider.clone()),
                 )
                 .child(div().text_color(chrome.body_text).child(format!("Value: {:.0}", self.value)))
                 .into_any_element(),

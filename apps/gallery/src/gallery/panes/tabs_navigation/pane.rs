@@ -4,7 +4,7 @@ use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TabsNavigationPane {
@@ -38,7 +38,8 @@ impl TabsNavigationPane {
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Tabs Navigation",
             "Tabs Navigation",
             div()
                 .flex()

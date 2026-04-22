@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct ContextMenuAppearance {
@@ -47,6 +47,87 @@ pub fn default_context_menu_theme() -> Arc<dyn ContextMenuTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultContextMenuTheme::default())).clone()
 }
+
+pub const CONTEXT_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Context Menu",
+    parts: &[
+        ThemePartUsage {
+            part: "target background",
+            token: "action.secondary.background",
+            states: &["default"],
+            appearance_fields: &["ContextMenuAppearance.target_background"],
+        },
+        ThemePartUsage {
+            part: "target hover background",
+            token: "action.secondary.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ContextMenuAppearance.target_background"],
+        },
+        ThemePartUsage {
+            part: "target pressed background",
+            token: "action.secondary.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ContextMenuAppearance.target_background"],
+        },
+        ThemePartUsage {
+            part: "target foreground",
+            token: "action.secondary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ContextMenuAppearance.target_foreground"],
+        },
+        ThemePartUsage {
+            part: "target border",
+            token: "border.default",
+            states: &["default", "hovered", "pressed", "focused", "disabled"],
+            appearance_fields: &["ContextMenuAppearance.target_border"],
+        },
+        ThemePartUsage {
+            part: "menu background",
+            token: "surface.floating.background",
+            states: &["open"],
+            appearance_fields: &["ContextMenuAppearance.menu_background"],
+        },
+        ThemePartUsage {
+            part: "menu border",
+            token: "surface.floating.border",
+            states: &["open"],
+            appearance_fields: &["ContextMenuAppearance.menu_border"],
+        },
+        ThemePartUsage {
+            part: "item foreground",
+            token: "surface.floating.foreground",
+            states: &["open"],
+            appearance_fields: &["ContextMenuAppearance.item_foreground"],
+        },
+        ThemePartUsage {
+            part: "item hover background",
+            token: "state.hover.background",
+            states: &["item hovered"],
+            appearance_fields: &["ContextMenuAppearance.item_hover_background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled", "item disabled"],
+            appearance_fields: &[
+                "ContextMenuAppearance.target_foreground",
+                "ContextMenuAppearance.item_disabled_foreground",
+            ],
+        },
+        ThemePartUsage {
+            part: "disabled target background",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["ContextMenuAppearance.target_background"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["ContextMenuAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultContextMenuTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

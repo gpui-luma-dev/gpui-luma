@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationListAppearance {
@@ -41,6 +41,90 @@ pub fn default_tabs_navigation_theme() -> Arc<dyn TabsNavigationTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultTabsNavigationTheme::default())).clone()
 }
+
+pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Tabs Navigation",
+    parts: &[
+        ThemePartUsage {
+            part: "list background",
+            token: "surface.subtle.background",
+            states: &["enabled"],
+            appearance_fields: &["TabsNavigationListAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "list border",
+            token: "border.default",
+            states: &["default", "enabled", "disabled"],
+            appearance_fields: &["TabsNavigationListAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "inactive item hover background",
+            token: "state.hover.background",
+            states: &["inactive hovered"],
+            appearance_fields: &["TabsNavigationItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "inactive item pressed background",
+            token: "state.pressed.background",
+            states: &["inactive pressed"],
+            appearance_fields: &["TabsNavigationItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "active item background",
+            token: "state.selected.background",
+            states: &["active"],
+            appearance_fields: &["TabsNavigationItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "active item hover background",
+            token: "action.primary.hover_background",
+            states: &["active hovered"],
+            appearance_fields: &["TabsNavigationItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "active item pressed background",
+            token: "action.primary.pressed_background",
+            states: &["active pressed"],
+            appearance_fields: &["TabsNavigationItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "inactive label",
+            token: "app.foreground",
+            states: &["inactive"],
+            appearance_fields: &["TabsNavigationItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "active label and pressed indicator",
+            token: "state.selected.foreground",
+            states: &["active", "active pressed"],
+            appearance_fields: &["TabsNavigationItemAppearance.label_color", "TabsNavigationItemAppearance.indicator"],
+        },
+        ThemePartUsage {
+            part: "active indicator",
+            token: "focus.ring",
+            states: &["active"],
+            appearance_fields: &["TabsNavigationItemAppearance.indicator"],
+        },
+        ThemePartUsage {
+            part: "disabled list background",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["TabsNavigationListAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "disabled label",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["TabsNavigationItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["TabsNavigationItemAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultTabsNavigationTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

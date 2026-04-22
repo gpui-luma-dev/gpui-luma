@@ -1,14 +1,20 @@
 use std::collections::BTreeMap;
 
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{ThemePartUsage, ThemeTokens, ThemeUsage};
+use gpui_luma::theme::{PaletteColorToken, ThemePartUsage, ThemeUsage, all_theme_usages, palette_color_tokens};
 
 use crate::gallery::theme::GalleryThemePack;
 
+type UsageRef = (&'static str, &'static ThemePartUsage);
+
 pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
-    let usage = theme.navigation_sidebar_theme().usage();
     let tokens = theme.tokens();
+    let usages = all_theme_usages();
+    let palette_tokens = palette_color_tokens(&tokens);
+    let by_token = usage_by_token(usages);
+    let sdk_token_count = palette_tokens.iter().filter(|token| by_token.contains_key(token.token)).count();
+    let shared_value_count = shared_value_groups(&palette_tokens).len();
 
     div()
         .size_full()
@@ -45,25 +51,43 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                                 .child("SDK resolver metadata for semantic color token usage"),
                         ),
                 )
+                .child(div().flex().gap(px(8.0)).children([
+                    render_count_badge("Components", usages.len().to_string(), theme),
+                    render_count_badge("Palette tokens", palette_tokens.len().to_string(), theme),
+                    render_count_badge("Used by SDK", sdk_token_count.to_string(), theme),
+                    render_count_badge("Shared values", shared_value_count.to_string(), theme),
+                ]))
                 .child(
                     div()
                         .flex()
-                        .gap(px(28.0))
+                        .gap(px(20.0))
                         .items_start()
-                        .child(render_by_token(usage, &tokens, theme))
-                        .child(render_by_component(usage, theme)),
-                ),
+                        .child(render_by_token(&palette_tokens, &by_token, theme))
+                        .child(render_by_component(usages, theme)),
+                )
+                .child(render_shared_values(&palette_tokens, &by_token, theme)),
         )
         .into_any_element()
 }
 
-fn render_by_token(usage: &ThemeUsage, tokens: &ThemeTokens, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-    let mut by_token: BTreeMap<&'static str, Vec<&ThemePartUsage>> = BTreeMap::new();
+fn usage_by_token(usages: &'static [&'static ThemeUsage]) -> BTreeMap<&'static str, Vec<UsageRef>> {
+    let mut by_token: BTreeMap<&'static str, Vec<UsageRef>> = BTreeMap::new();
 
-    for part in usage.parts {
-        by_token.entry(part.token).or_default().push(part);
+    for usage in usages {
+        for part in usage.parts {
+            by_token.entry(part.token).or_default().push((usage.component, part));
+        }
     }
+
+    by_token
+}
+
+fn render_by_token(
+    palette_tokens: &[PaletteColorToken],
+    by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
+    theme: &GalleryThemePack,
+) -> AnyElement {
+    let chrome = theme.chrome();
 
     div()
         .flex_1()
@@ -72,29 +96,43 @@ fn render_by_token(usage: &ThemeUsage, tokens: &ThemeTokens, theme: &GalleryThem
         .flex_col()
         .gap(px(10.0))
         .child(section_title("By Token", theme))
-        .children(by_token.into_iter().map(|(token, parts)| {
+        .children(palette_tokens.iter().map(|token| {
+            let consumers = by_token.get(token.token);
+
             div()
                 .flex()
                 .flex_col()
-                .gap(px(6.0))
+                .gap(px(7.0))
                 .border_1()
                 .border_color(chrome.border)
                 .rounded(px(6.0))
                 .p(px(10.0))
-                .child(render_token_header(token, tokens, theme))
-                .children(parts.into_iter().map(|part| {
-                    div()
-                        .pl(px(44.0))
-                        .text_size(px(12.0))
-                        .line_height(px(17.0))
-                        .text_color(chrome.body_text)
-                        .child(format!("{} {}", usage.component, part.part))
+                .child(render_token_header(token, consumers.is_some(), theme))
+                .children(consumers.into_iter().flat_map(|parts| {
+                    parts.iter().map(|(component, part)| {
+                        div()
+                            .pl(px(44.0))
+                            .text_size(px(12.0))
+                            .line_height(px(17.0))
+                            .text_color(chrome.body_text)
+                            .child(format!("{component} {}", part.part))
+                    })
                 }))
+                .when(consumers.is_none(), |row| {
+                    row.child(
+                        div()
+                            .pl(px(44.0))
+                            .text_size(px(12.0))
+                            .line_height(px(17.0))
+                            .text_color(chrome.muted_text)
+                            .child("No current SDK resolver usage"),
+                    )
+                })
         }))
         .into_any_element()
 }
 
-fn render_by_component(usage: &ThemeUsage, theme: &GalleryThemePack) -> AnyElement {
+fn render_by_component(usages: &'static [&'static ThemeUsage], theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -104,7 +142,7 @@ fn render_by_component(usage: &ThemeUsage, theme: &GalleryThemePack) -> AnyEleme
         .flex_col()
         .gap(px(10.0))
         .child(section_title("By Component", theme))
-        .child(
+        .children(usages.iter().map(|usage| {
             div()
                 .flex()
                 .flex_col()
@@ -121,9 +159,73 @@ fn render_by_component(usage: &ThemeUsage, theme: &GalleryThemePack) -> AnyEleme
                         .text_color(chrome.title_text)
                         .child(usage.component),
                 )
-                .children(usage.parts.iter().map(|part| render_component_part(part, theme))),
-        )
+                .children(usage.parts.iter().map(|part| render_component_part(part, theme)))
+        }))
         .into_any_element()
+}
+
+fn render_shared_values(
+    palette_tokens: &[PaletteColorToken],
+    by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
+    theme: &GalleryThemePack,
+) -> AnyElement {
+    let chrome = theme.chrome();
+    let groups = shared_value_groups(palette_tokens);
+
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.0))
+        .child(section_title("Shared Values", theme))
+        .child(div().flex().flex_wrap().gap(px(12.0)).children(groups.into_iter().map(|(value, tokens)| {
+            div()
+                .w(px(360.0))
+                .min_h(px(0.0))
+                .flex()
+                .flex_col()
+                .gap(px(8.0))
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(6.0))
+                .p(px(10.0))
+                .child(
+                    div()
+                        .font_family("Monaco")
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .text_color(chrome.muted_text)
+                        .child(value),
+                )
+                .children(tokens.into_iter().map(|token| {
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(div().size(px(16.0)).bg(token.color).border_1().border_color(chrome.border))
+                        .child(
+                            div()
+                                .min_w(px(0.0))
+                                .truncate()
+                                .font_family("Monaco")
+                                .text_size(px(12.0))
+                                .line_height(px(17.0))
+                                .text_color(chrome.title_text)
+                                .child(token_label(token)),
+                        )
+                        .child(render_status_badge(token_status(token, by_token.contains_key(token.token)), theme))
+                }))
+        })))
+        .into_any_element()
+}
+
+fn shared_value_groups(palette_tokens: &[PaletteColorToken]) -> Vec<(String, Vec<&PaletteColorToken>)> {
+    let mut by_value: BTreeMap<String, Vec<&PaletteColorToken>> = BTreeMap::new();
+
+    for token in palette_tokens {
+        by_value.entry(format_hsla(token.color)).or_default().push(token);
+    }
+
+    by_value.into_iter().filter(|(_, tokens)| tokens.len() > 1).collect()
 }
 
 fn section_title(title: &'static str, theme: &GalleryThemePack) -> AnyElement {
@@ -138,25 +240,37 @@ fn section_title(title: &'static str, theme: &GalleryThemePack) -> AnyElement {
         .into_any_element()
 }
 
-fn render_token_header(token: &'static str, tokens: &ThemeTokens, theme: &GalleryThemePack) -> AnyElement {
+fn render_count_badge(label: &'static str, value: String, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
-    let color = resolve_token_color(tokens, token);
+
+    div()
+        .flex()
+        .items_center()
+        .gap(px(6.0))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(4.0))
+        .px(px(8.0))
+        .py(px(4.0))
+        .text_size(px(11.0))
+        .line_height(px(15.0))
+        .child(div().font_weight(FontWeight::SEMIBOLD).text_color(chrome.title_text).child(value))
+        .child(div().text_color(chrome.muted_text).child(label))
+        .into_any_element()
+}
+
+fn render_token_header(token: &PaletteColorToken, used_by_sdk: bool, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
 
     div()
         .flex()
         .items_center()
         .gap(px(10.0))
-        .child(
-            div()
-                .size(px(34.0))
-                .bg(color.unwrap_or(chrome.panel_background))
-                .border_1()
-                .border_color(chrome.border)
-                .rounded(px(3.0)),
-        )
+        .child(div().size(px(34.0)).bg(token.color).border_1().border_color(chrome.border).rounded(px(3.0)))
         .child(
             div()
                 .min_w(px(0.0))
+                .flex_1()
                 .flex()
                 .flex_col()
                 .gap(px(1.0))
@@ -167,7 +281,7 @@ fn render_token_header(token: &'static str, tokens: &ThemeTokens, theme: &Galler
                         .text_size(px(12.0))
                         .line_height(px(16.0))
                         .text_color(chrome.title_text)
-                        .child(token),
+                        .child(token_label(token)),
                 )
                 .child(
                     div()
@@ -176,9 +290,10 @@ fn render_token_header(token: &'static str, tokens: &ThemeTokens, theme: &Galler
                         .text_size(px(11.0))
                         .line_height(px(15.0))
                         .text_color(chrome.muted_text)
-                        .child(color.map(format_hsla).unwrap_or_else(|| "unresolved".to_string())),
+                        .child(format_hsla(token.color)),
                 ),
         )
+        .child(render_status_badge(token_status(token, used_by_sdk), theme))
         .into_any_element()
 }
 
@@ -196,7 +311,7 @@ fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> Any
                 .gap(px(8.0))
                 .child(
                     div()
-                        .min_w(px(160.0))
+                        .min_w(px(172.0))
                         .text_size(px(12.0))
                         .line_height(px(17.0))
                         .font_weight(FontWeight::MEDIUM)
@@ -216,7 +331,7 @@ fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> Any
         )
         .child(
             div()
-                .pl(px(168.0))
+                .pl(px(180.0))
                 .text_size(px(11.0))
                 .line_height(px(15.0))
                 .text_color(chrome.muted_text)
@@ -225,23 +340,40 @@ fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> Any
         .into_any_element()
 }
 
-fn resolve_token_color(tokens: &ThemeTokens, token: &str) -> Option<Hsla> {
-    let palette = &tokens.palette;
+fn render_status_badge(status: &'static str, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
 
-    match token {
-        "action.primary.hover_background" => Some(palette.action.primary.hover_background),
-        "action.primary.pressed_background" => Some(palette.action.primary.pressed_background),
-        "navigation.background" => Some(palette.navigation.background),
-        "navigation.foreground" => Some(palette.navigation.foreground),
-        "navigation.muted_foreground" => Some(palette.navigation.muted_foreground),
-        "navigation.hover_background" => Some(palette.navigation.hover_background),
-        "navigation.selected_background" => Some(palette.navigation.selected_background),
-        "navigation.selected_foreground" => Some(palette.navigation.selected_foreground),
-        "navigation.border" => Some(palette.navigation.border),
-        "navigation.focus_ring" => Some(palette.navigation.focus_ring),
-        "state.disabled.foreground" => Some(palette.state.disabled.foreground),
-        "state.pressed.background" => Some(palette.state.pressed.background),
-        _ => None,
+    div()
+        .flex_none()
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(3.0))
+        .px(px(6.0))
+        .py(px(2.0))
+        .text_size(px(10.0))
+        .line_height(px(14.0))
+        .text_color(chrome.muted_text)
+        .child(status)
+        .into_any_element()
+}
+
+fn token_status(token: &PaletteColorToken, used_by_sdk: bool) -> &'static str {
+    if used_by_sdk {
+        "Used by SDK"
+    } else if token.gallery_chrome {
+        "Gallery Chrome"
+    } else if token.reserved {
+        "Reserved"
+    } else {
+        "No current usage"
+    }
+}
+
+fn token_label(token: &PaletteColorToken) -> String {
+    if token.reserved {
+        format!("{} *", token.token)
+    } else {
+        token.token.to_string()
     }
 }
 

@@ -6,7 +6,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::notify_entity;
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct PopupMenuPane {
@@ -73,47 +73,32 @@ impl PopupMenuPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        div()
-            .size_full()
-            .relative()
-            .flex()
-            .flex_col()
-            .items_center()
-            .overflow_hidden()
-            .px(px(32.0))
-            .pt(px(32.0))
-            .pb(px(12.0))
-            .bg(chrome.content_background)
-            .child(div().text_size(px(20.0)).line_height(px(28.0)).text_color(chrome.title_text).child("Popup Menu"))
-            .child(
-                div()
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .justify_center()
-                    .gap_3()
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_3()
-                            .child(self.popup_below.clone())
-                            .child(self.popup_above.clone()),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_3()
-                            .child(self.popup_centered.clone())
-                            .child(self.disabled_popup.clone()),
-                    )
-                    .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection))),
-            )
-            .child(div().w_full().flex().items_center().justify_center().pb(px(8.0)).child(self.popup_smart.clone()))
-            .into_any_element()
+        gallery_pane_with_usage(
+            "Popup Menu",
+            "Popup Menu",
+            div()
+                .min_h(px(320.0))
+                .flex()
+                .flex_col()
+                .items_center()
+                .justify_center()
+                .gap_3()
+                .child(
+                    div().flex().items_center().gap_3().child(self.popup_below.clone()).child(self.popup_above.clone()),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .child(self.popup_centered.clone())
+                        .child(self.disabled_popup.clone()),
+                )
+                .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection)))
+                .child(self.popup_smart.clone())
+                .into_any_element(),
+            theme,
+        )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {

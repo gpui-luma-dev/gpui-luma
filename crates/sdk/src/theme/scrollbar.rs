@@ -4,7 +4,7 @@ use gpui::{Hsla, hsla};
 
 use crate::controls::scrollbar::ScrollbarOrientation;
 
-use super::{InteractionLayer, InteractionState, ThemeTokens};
+use super::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarAppearance {
@@ -33,6 +33,48 @@ pub fn default_scrollbar_theme() -> Arc<dyn ScrollbarTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultScrollbarTheme::default())).clone()
 }
+
+pub const SCROLLBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Scrollbar",
+    parts: &[
+        ThemePartUsage {
+            part: "thumb background",
+            token: "border.default",
+            states: &["default"],
+            appearance_fields: &["ScrollbarAppearance.thumb_background"],
+        },
+        ThemePartUsage {
+            part: "thumb hover background",
+            token: "state.hover.background",
+            states: &["hovered"],
+            appearance_fields: &["ScrollbarAppearance.thumb_background"],
+        },
+        ThemePartUsage {
+            part: "thumb pressed background",
+            token: "state.pressed.background",
+            states: &["pressed"],
+            appearance_fields: &["ScrollbarAppearance.thumb_background"],
+        },
+        ThemePartUsage {
+            part: "disabled track",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["ScrollbarAppearance.track_background"],
+        },
+        ThemePartUsage {
+            part: "disabled thumb",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["ScrollbarAppearance.thumb_background"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["ScrollbarAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultScrollbarTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

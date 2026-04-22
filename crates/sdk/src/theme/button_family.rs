@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonVariant {
@@ -56,6 +56,213 @@ pub fn default_button_family_theme() -> Arc<dyn ButtonFamilyTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultButtonFamilyTheme::default())).clone()
 }
+
+pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Button",
+    parts: &[
+        ThemePartUsage {
+            part: "default background",
+            token: "action.secondary.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "default hover background",
+            token: "action.secondary.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "default pressed background",
+            token: "action.secondary.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "default foreground",
+            token: "action.secondary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "default border",
+            token: "border.default",
+            states: &["default", "hovered", "pressed", "focused", "disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "primary background",
+            token: "action.primary.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "primary hover background",
+            token: "action.primary.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "primary pressed background",
+            token: "action.primary.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "primary foreground",
+            token: "action.primary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "destructive background",
+            token: "action.danger.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "destructive hover background",
+            token: "action.danger.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "destructive pressed background",
+            token: "action.danger.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "destructive foreground",
+            token: "action.danger.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "disabled background",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["ButtonFamilyAppearance.focus_ring"],
+        },
+    ],
+};
+
+pub const ICON_BUTTON_THEME_USAGE: ThemeUsage =
+    ThemeUsage { component: "Icon Button", parts: BUTTON_THEME_USAGE.parts };
+
+pub const TOGGLE_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Toggle Button",
+    parts: &[
+        ThemePartUsage {
+            part: "unselected default background",
+            token: "action.secondary.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected default hover background",
+            token: "action.secondary.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected default pressed background",
+            token: "action.secondary.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected default foreground",
+            token: "action.secondary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "selected background",
+            token: "state.selected.background",
+            states: &["selected"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "selected hover background",
+            token: "action.primary.hover_background",
+            states: &["selected hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "selected pressed background",
+            token: "action.primary.pressed_background",
+            states: &["selected pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "selected foreground",
+            token: "state.selected.foreground",
+            states: &["selected", "selected hovered", "selected pressed", "selected focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "primary background",
+            token: "action.primary.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "primary foreground",
+            token: "action.primary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "destructive background",
+            token: "action.danger.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "destructive foreground",
+            token: "action.danger.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "default border",
+            token: "border.default",
+            states: &["default", "hovered", "pressed", "focused", "disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "disabled background",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused", "selected focused"],
+            appearance_fields: &["ButtonFamilyAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultButtonFamilyTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

@@ -119,10 +119,6 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
             root = root.child(row);
         }
 
-        if model.focus.focused {
-            root = root.child(render_focus_ring(focus_debug_border(), 0.0));
-        }
-
         root
     }
 }
@@ -148,6 +144,7 @@ fn render_radio_group_item_visual(
 
     let mut root = div()
         .id(model.id)
+        .relative()
         .flex()
         .items_center()
         .gap(px(appearance.gap))
@@ -168,6 +165,12 @@ fn render_radio_group_item_visual(
 
     if let Some(border) = appearance.control_border {
         root = root.border_1().border_color(border);
+    }
+
+    if let Some(focus_ring) = appearance.focus_ring {
+        root = root.child(render_focus_ring(focus_ring, appearance.control_radius));
+    } else if model.state.active && model.state.focus_visible {
+        root = root.child(render_focus_ring(focus_debug_border(), appearance.control_radius));
     }
 
     if model.state.disabled {

@@ -2,7 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ButtonVariant, ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{
+    ButtonVariant, ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens,
+    ThemeUsage,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ToggleGroupListAppearance {
@@ -45,6 +48,126 @@ pub fn default_toggle_group_theme() -> Arc<dyn ToggleGroupTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultToggleGroupTheme::default())).clone()
 }
+
+pub const TOGGLE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Toggle Group",
+    parts: &[
+        ThemePartUsage {
+            part: "list background",
+            token: "surface.subtle.background",
+            states: &["enabled"],
+            appearance_fields: &["ToggleGroupListAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "list border and item dividers",
+            token: "border.default",
+            states: &["default", "enabled", "disabled"],
+            appearance_fields: &["ToggleGroupListAppearance.border", "ToggleGroupItemAppearance.divider"],
+        },
+        ThemePartUsage {
+            part: "unselected item background",
+            token: "surface.subtle.background",
+            states: &["unselected"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected item hover background",
+            token: "state.hover.background",
+            states: &["unselected hovered"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected item pressed background",
+            token: "state.pressed.background",
+            states: &["unselected pressed", "selected disabled"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "default selected background",
+            token: "state.selected.background",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "default selected foreground",
+            token: "state.selected.foreground",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "primary selected background",
+            token: "action.primary.background",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "primary selected foreground",
+            token: "action.primary.foreground",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "primary selected hover background",
+            token: "action.primary.hover_background",
+            states: &["selected hovered"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "primary selected pressed background",
+            token: "action.primary.pressed_background",
+            states: &["selected pressed"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "destructive selected background",
+            token: "action.danger.background",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "destructive selected foreground",
+            token: "action.danger.foreground",
+            states: &["selected"],
+            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "destructive selected hover background",
+            token: "action.danger.hover_background",
+            states: &["selected hovered"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "destructive selected pressed background",
+            token: "action.danger.pressed_background",
+            states: &["selected pressed"],
+            appearance_fields: &["ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "unselected label",
+            token: "app.foreground",
+            states: &["unselected"],
+            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "disabled background",
+            token: "state.disabled.background",
+            states: &["disabled", "unselected disabled"],
+            appearance_fields: &["ToggleGroupListAppearance.background", "ToggleGroupItemAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["ToggleGroupItemAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultToggleGroupTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

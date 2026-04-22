@@ -4,7 +4,7 @@ use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
@@ -37,7 +37,8 @@ impl ButtonPane {
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Button",
             "Button",
             div()
                 .flex()

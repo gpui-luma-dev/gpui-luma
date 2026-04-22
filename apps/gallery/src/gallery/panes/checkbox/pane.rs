@@ -4,24 +4,21 @@ use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
     default_checkbox: Entity<Checkbox>,
     border_checkbox: Entity<Checkbox>,
-    filled_checkbox: Entity<Checkbox>,
     disabled_checkbox: Entity<Checkbox>,
     default_checked: bool,
     border_checked: bool,
-    filled_checked: bool,
 }
 
 #[derive(Clone, Copy)]
 enum CheckboxPresentation {
     Default,
     Border,
-    BorderAndBackground,
 }
 
 impl CheckboxPane {
@@ -36,11 +33,6 @@ impl CheckboxPane {
                 .label("Border")
                 .template(theme.border_checkbox_template())
                 .spawn(cx),
-            filled_checkbox: Checkbox::new("checkbox-border-background")
-                .label("Border + fill")
-                .checked(true)
-                .template(theme.filled_checkbox_template())
-                .spawn(cx),
             disabled_checkbox: Checkbox::new("disabled-checkbox")
                 .label("Disabled checkbox")
                 .checked(true)
@@ -49,7 +41,6 @@ impl CheckboxPane {
                 .spawn(cx),
             default_checked: true,
             border_checked: false,
-            filled_checked: true,
         }
     }
 
@@ -60,15 +51,13 @@ impl CheckboxPane {
         subscriptions.push(cx.subscribe(&self.border_checkbox, |app, _, event: &CheckboxEvent, cx| {
             app.panes.checkbox.handle_event(CheckboxPresentation::Border, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.filled_checkbox, |app, _, event: &CheckboxEvent, cx| {
-            app.panes.checkbox.handle_event(CheckboxPresentation::BorderAndBackground, event, cx);
-        }));
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Checkbox",
             "Checkbox",
             div()
                 .flex()
@@ -82,13 +71,13 @@ impl CheckboxPane {
                         .gap_3()
                         .child(self.default_checkbox.clone())
                         .child(self.border_checkbox.clone())
-                        .child(self.filled_checkbox.clone())
                         .child(self.disabled_checkbox.clone()),
                 )
-                .child(div().text_color(chrome.body_text).child(format!(
-                    "Checked: as-is={}, border={}, border + fill={}",
-                    self.default_checked, self.border_checked, self.filled_checked
-                )))
+                .child(
+                    div()
+                        .text_color(chrome.body_text)
+                        .child(format!("Checked: as-is={}, border={}", self.default_checked, self.border_checked)),
+                )
                 .into_any_element(),
             theme,
         )
@@ -97,7 +86,6 @@ impl CheckboxPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_checkbox, cx);
         notify_entity(&self.border_checkbox, cx);
-        notify_entity(&self.filled_checkbox, cx);
         notify_entity(&self.disabled_checkbox, cx);
     }
 
@@ -115,9 +103,6 @@ impl CheckboxPane {
                     }
                     CheckboxPresentation::Border => {
                         self.border_checked = *checked;
-                    }
-                    CheckboxPresentation::BorderAndBackground => {
-                        self.filled_checked = *checked;
                     }
                 }
                 cx.notify();

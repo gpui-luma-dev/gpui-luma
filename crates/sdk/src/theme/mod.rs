@@ -49,4 +49,6 @@ pub use tokens::{
     StateBackgroundPalette, StatePalette, StateTonePalette, SurfacePalette, SurfaceTonePalette,
     SurfaceWithBorderPalette, TextTokens, ThemeMode, ThemeModes, ThemeTokens,
 };
-pub use usage::{ThemePartUsage, ThemeUsage};
+pub use usage::{
+    PaletteColorToken, ThemePartUsage, ThemeUsage, all_theme_usages, palette_color_tokens, resolve_palette_color,
+};

@@ -4,7 +4,7 @@ use gpui_luma::controls::scrollbar::{Scrollbar, ScrollbarEvent};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollbarPane {
@@ -78,11 +78,13 @@ impl ScrollbarPane {
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        gallery_pane(
+        gallery_pane_with_usage(
+            "Scrollbar",
             "Scrollbar",
             div()
                 .flex()
-                .items_start()
+                .flex_col()
+                .items_center()
                 .gap_4()
                 .child(self.scrollbar_example(theme))
                 .child(self.disabled_scrollbar_example(theme))

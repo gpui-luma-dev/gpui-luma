@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct PopupMenuAppearance {
@@ -50,6 +50,87 @@ pub fn default_popup_menu_theme() -> Arc<dyn PopupMenuTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultPopupMenuTheme::default())).clone()
 }
+
+pub const POPUP_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Popup Menu",
+    parts: &[
+        ThemePartUsage {
+            part: "trigger background",
+            token: "action.secondary.background",
+            states: &["default"],
+            appearance_fields: &["PopupMenuAppearance.trigger_background"],
+        },
+        ThemePartUsage {
+            part: "trigger hover background",
+            token: "action.secondary.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["PopupMenuAppearance.trigger_background"],
+        },
+        ThemePartUsage {
+            part: "trigger pressed background",
+            token: "action.secondary.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["PopupMenuAppearance.trigger_background"],
+        },
+        ThemePartUsage {
+            part: "trigger foreground",
+            token: "action.secondary.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["PopupMenuAppearance.trigger_foreground"],
+        },
+        ThemePartUsage {
+            part: "trigger border",
+            token: "border.default",
+            states: &["default", "hovered", "pressed", "focused", "disabled"],
+            appearance_fields: &["PopupMenuAppearance.trigger_border"],
+        },
+        ThemePartUsage {
+            part: "menu background",
+            token: "surface.floating.background",
+            states: &["open"],
+            appearance_fields: &["PopupMenuAppearance.menu_background"],
+        },
+        ThemePartUsage {
+            part: "menu border",
+            token: "surface.floating.border",
+            states: &["open"],
+            appearance_fields: &["PopupMenuAppearance.menu_border"],
+        },
+        ThemePartUsage {
+            part: "item foreground",
+            token: "surface.floating.foreground",
+            states: &["open"],
+            appearance_fields: &["PopupMenuAppearance.item_foreground"],
+        },
+        ThemePartUsage {
+            part: "item hover background",
+            token: "state.hover.background",
+            states: &["item hovered"],
+            appearance_fields: &["PopupMenuAppearance.item_hover_background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled", "item disabled"],
+            appearance_fields: &[
+                "PopupMenuAppearance.trigger_foreground",
+                "PopupMenuAppearance.item_disabled_foreground",
+            ],
+        },
+        ThemePartUsage {
+            part: "disabled trigger background",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["PopupMenuAppearance.trigger_background"],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["PopupMenuAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultPopupMenuTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

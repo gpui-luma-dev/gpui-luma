@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct RadioGroupItemAppearance {
@@ -37,6 +37,97 @@ pub fn default_radio_group_theme() -> Arc<dyn RadioGroupTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultRadioGroupTheme::default())).clone()
 }
+
+pub const RADIO_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Radio Group",
+    parts: &[
+        ThemePartUsage {
+            part: "unselected indicator background",
+            token: "form.input.background",
+            states: &["unselected"],
+            appearance_fields: &["RadioGroupItemAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unselected indicator hover background",
+            token: "state.hover.background",
+            states: &["unselected hovered"],
+            appearance_fields: &["RadioGroupItemAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unselected indicator pressed background",
+            token: "state.pressed.background",
+            states: &["unselected pressed"],
+            appearance_fields: &["RadioGroupItemAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "unselected indicator border",
+            token: "form.input.border",
+            states: &["unselected", "unselected hovered", "unselected pressed"],
+            appearance_fields: &["RadioGroupItemAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "selected indicator background",
+            token: "action.primary.background",
+            states: &["selected"],
+            appearance_fields: &[
+                "RadioGroupItemAppearance.indicator_background",
+                "RadioGroupItemAppearance.indicator_border",
+            ],
+        },
+        ThemePartUsage {
+            part: "selected indicator hover background",
+            token: "action.primary.hover_background",
+            states: &["selected hovered"],
+            appearance_fields: &[
+                "RadioGroupItemAppearance.indicator_background",
+                "RadioGroupItemAppearance.indicator_border",
+            ],
+        },
+        ThemePartUsage {
+            part: "selected indicator pressed background",
+            token: "action.primary.pressed_background",
+            states: &["selected pressed"],
+            appearance_fields: &[
+                "RadioGroupItemAppearance.indicator_background",
+                "RadioGroupItemAppearance.indicator_border",
+            ],
+        },
+        ThemePartUsage {
+            part: "selected dot",
+            token: "action.primary.foreground",
+            states: &["selected"],
+            appearance_fields: &["RadioGroupItemAppearance.dot_color"],
+        },
+        ThemePartUsage {
+            part: "label",
+            token: "app.foreground",
+            states: &["default", "selected"],
+            appearance_fields: &["RadioGroupItemAppearance.label_color"],
+        },
+        ThemePartUsage {
+            part: "disabled fill",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["RadioGroupItemAppearance.indicator_background"],
+        },
+        ThemePartUsage {
+            part: "disabled foreground",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &[
+                "RadioGroupItemAppearance.indicator_border",
+                "RadioGroupItemAppearance.dot_color",
+                "RadioGroupItemAppearance.label_color",
+            ],
+        },
+        ThemePartUsage {
+            part: "focus ring",
+            token: "focus.ring",
+            states: &["focused"],
+            appearance_fields: &["RadioGroupItemAppearance.focus_ring"],
+        },
+    ],
+};
 
 impl DefaultRadioGroupTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

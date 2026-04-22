@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::ThemeTokens;
+use super::{ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ProgressAppearance {
@@ -26,6 +26,36 @@ pub fn default_progress_theme() -> Arc<dyn ProgressTheme> {
 
     THEME.get_or_init(|| Arc::new(DefaultProgressTheme::default())).clone()
 }
+
+pub const PROGRESS_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Progress",
+    parts: &[
+        ThemePartUsage {
+            part: "track color",
+            token: "surface.subtle.background",
+            states: &["enabled"],
+            appearance_fields: &["ProgressAppearance.track_color"],
+        },
+        ThemePartUsage {
+            part: "progress color",
+            token: "action.primary.background",
+            states: &["enabled"],
+            appearance_fields: &["ProgressAppearance.progress_color"],
+        },
+        ThemePartUsage {
+            part: "disabled track",
+            token: "state.disabled.background",
+            states: &["disabled"],
+            appearance_fields: &["ProgressAppearance.track_color"],
+        },
+        ThemePartUsage {
+            part: "disabled progress",
+            token: "state.disabled.foreground",
+            states: &["disabled"],
+            appearance_fields: &["ProgressAppearance.progress_color"],
+        },
+    ],
+};
 
 impl DefaultProgressTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

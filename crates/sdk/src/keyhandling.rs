@@ -76,6 +76,8 @@ impl ControlKeyProfile {
                 KeyBinding::new("down", SelectNextItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("enter", ActivateControl, Some(context)),
+                KeyBinding::new("space", ActivateControl, Some(context)),
             ],
             Self::RangeValue => vec![
                 KeyBinding::new("left", DecreaseValue, Some(context)),
@@ -176,14 +178,14 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 59);
+        assert_eq!(default_control_key_bindings().len(), 61);
     }
 
     #[test]
     fn profile_binding_counts_are_stable() {
         assert_eq!(ControlKeyProfile::Command.default_bindings().len(), 2);
         assert_eq!(ControlKeyProfile::Choice.default_bindings().len(), 1);
-        assert_eq!(ControlKeyProfile::RadioGroup.default_bindings().len(), 6);
+        assert_eq!(ControlKeyProfile::RadioGroup.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);
