@@ -79,10 +79,15 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             .items_center()
             .gap(px(list_appearance.gap))
             .p(px(list_appearance.padding))
-            .rounded(px(list_appearance.radius))
-            .bg(list_appearance.background)
-            .border_1()
-            .border_color(list_appearance.border);
+            .rounded(px(list_appearance.radius));
+
+        if let Some(background) = list_appearance.background {
+            root = root.bg(background);
+        }
+
+        if let Some(border) = list_appearance.border {
+            root = root.border_1().border_color(border);
+        }
 
         let mut item_hovers = item_hovers.into_iter();
         let mut item_mouse_downs = item_mouse_downs.into_iter();
@@ -133,10 +138,6 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
     }
 }
 
-fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
-    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
-}
-
 fn render_tabs_navigation_item_visual(
     model: TabsNavigationItemVisualModel<'_>,
     appearance: TabsNavigationItemAppearance,
@@ -156,25 +157,17 @@ fn render_tabs_navigation_item_visual(
         .font_weight(appearance.label_typography.weight)
         .child(model.label.clone());
 
-    if let Some(background) = appearance.background {
-        root = root.bg(background);
-    }
-
     if let Some(indicator) = appearance.indicator {
         root = root.child(
             div()
                 .absolute()
-                .left(px(appearance.padding_x * 0.5))
-                .right(px(appearance.padding_x * 0.5))
-                .bottom(px(3.0))
+                .left(px(appearance.padding_x))
+                .right(px(appearance.padding_x))
+                .bottom(px(0.0))
                 .h(px(appearance.indicator_height))
                 .rounded(px(appearance.indicator_height))
                 .bg(indicator),
         );
-    }
-
-    if let Some(focus_ring) = appearance.focus_ring {
-        root = root.child(render_focus_ring(focus_ring, appearance.radius));
     }
 
     if model.state.disabled {

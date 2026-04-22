@@ -6,8 +6,8 @@ use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, Them
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationListAppearance {
-    pub background: Hsla,
-    pub border: Hsla,
+    pub background: Option<Hsla>,
+    pub border: Option<Hsla>,
     pub radius: f32,
     pub padding: f32,
     pub gap: f32,
@@ -15,10 +15,8 @@ pub struct TabsNavigationListAppearance {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationItemAppearance {
-    pub background: Option<Hsla>,
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
-    pub focus_ring: Option<Hsla>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -47,45 +45,15 @@ pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
     parts: &[
         ThemePartUsage {
             part: "list background",
-            token: "surface.subtle.background",
-            states: &["enabled"],
+            token: "none",
+            states: &["default"],
             appearance_fields: &["TabsNavigationListAppearance.background"],
         },
         ThemePartUsage {
             part: "list border",
-            token: "border.default",
-            states: &["default", "enabled", "disabled"],
+            token: "none",
+            states: &["default"],
             appearance_fields: &["TabsNavigationListAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "inactive item hover background",
-            token: "state.hover.background",
-            states: &["inactive hovered"],
-            appearance_fields: &["TabsNavigationItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "inactive item pressed background",
-            token: "state.pressed.background",
-            states: &["inactive pressed"],
-            appearance_fields: &["TabsNavigationItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "active item background",
-            token: "state.selected.background",
-            states: &["active"],
-            appearance_fields: &["TabsNavigationItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "active item hover background",
-            token: "action.primary.hover_background",
-            states: &["active hovered"],
-            appearance_fields: &["TabsNavigationItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "active item pressed background",
-            token: "action.primary.pressed_background",
-            states: &["active pressed"],
-            appearance_fields: &["TabsNavigationItemAppearance.background"],
         },
         ThemePartUsage {
             part: "inactive label",
@@ -94,15 +62,15 @@ pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["TabsNavigationItemAppearance.label_color"],
         },
         ThemePartUsage {
-            part: "active label and pressed indicator",
-            token: "state.selected.foreground",
-            states: &["active", "active pressed"],
+            part: "active label and indicator",
+            token: "action.primary.background",
+            states: &["active", "active hovered", "active pressed"],
             appearance_fields: &["TabsNavigationItemAppearance.label_color", "TabsNavigationItemAppearance.indicator"],
         },
         ThemePartUsage {
-            part: "active indicator",
+            part: "focus indicator",
             token: "focus.ring",
-            states: &["active"],
+            states: &["focused", "active focused"],
             appearance_fields: &["TabsNavigationItemAppearance.indicator"],
         },
         ThemePartUsage {
@@ -116,12 +84,6 @@ pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
             token: "state.disabled.foreground",
             states: &["disabled"],
             appearance_fields: &["TabsNavigationItemAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["TabsNavigationItemAppearance.focus_ring"],
         },
     ],
 };
@@ -139,15 +101,11 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
         let size = ControlSize::Md;
 
         TabsNavigationListAppearance {
-            background: if enabled {
-                palette.surface.subtle.background
-            } else {
-                palette.state.disabled.background
-            },
-            border: palette.border.default,
+            background: (!enabled).then_some(palette.state.disabled.background),
+            border: None,
             radius: metrics.radius(size),
-            padding: 3.0,
-            gap: 2.0,
+            padding: 0.0,
+            gap: metrics.spacing.s5,
         }
     }
 
@@ -158,33 +116,28 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
         let size = ControlSize::Md;
         let layer = state.layer();
 
-        let background = match (active, layer) {
-            (_, InteractionLayer::Disabled) => None,
-            (true, InteractionLayer::Pressed) => Some(palette.action.primary.pressed_background),
-            (true, InteractionLayer::Hovered) => Some(palette.action.primary.hover_background),
-            (true, InteractionLayer::Default) => Some(palette.state.selected.background),
-            (false, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
-            (false, InteractionLayer::Hovered) => Some(palette.state.hover.background),
-            (false, InteractionLayer::Default) => None,
+        let active_color = match layer {
+            InteractionLayer::Disabled => palette.state.disabled.foreground,
+            InteractionLayer::Pressed => palette.action.primary.pressed_background,
+            InteractionLayer::Hovered => palette.action.primary.hover_background,
+            InteractionLayer::Default => palette.action.primary.background,
         };
 
         TabsNavigationItemAppearance {
-            background,
             label_color: match (active, state.disabled) {
                 (_, true) => palette.state.disabled.foreground,
-                (true, false) => palette.state.selected.foreground,
+                (true, false) => active_color,
                 (false, false) => palette.app.foreground,
             },
-            indicator: active.then_some(if state.pressed {
-                palette.state.selected.foreground
-            } else {
+            indicator: active.then_some(if state.focused {
                 palette.focus.ring
+            } else {
+                active_color
             }),
-            focus_ring: state.focused.then_some(palette.focus.ring),
             label_typography: typography.text.label,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),
-            height: metrics.control_height(size),
+            height: typography.text.label.line_height + metrics.spacing.s2,
             indicator_height: 2.0,
         }
     }

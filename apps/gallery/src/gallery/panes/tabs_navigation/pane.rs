@@ -8,6 +8,11 @@ use gpui_luma::controls::tabs_navigation::{
     ControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent, TabsNavigationHoverHandler,
     TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
+    ThemedTabsNavigationTemplate,
+};
+use gpui_luma::theme::{
+    DefaultTabsNavigationTheme, InteractionState, TabsNavigationItemAppearance, TabsNavigationListAppearance,
+    TabsNavigationTheme,
 };
 
 use crate::gallery::control::GalleryApp;
@@ -18,8 +23,10 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct TabsNavigationPane {
     tabs: Entity<TabsNavigation>,
+    local_theme_tabs: Entity<TabsNavigation>,
     state_preview: Entity<TabsNavigationStatePreview>,
     active_label: String,
+    local_theme_active_label: String,
 }
 
 impl TabsNavigationPane {
@@ -30,14 +37,23 @@ impl TabsNavigationPane {
                 .active("activity")
                 .template(theme.tabs_navigation_template())
                 .spawn(cx),
+            local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
+                .items(project_tabs())
+                .active("activity")
+                .template(local_tabs_navigation_template(theme))
+                .spawn(cx),
             state_preview: cx.new(|_| TabsNavigationStatePreview::new(theme)),
             active_label: "Activity".to_string(),
+            local_theme_active_label: "Activity".to_string(),
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.tabs, |app, _, event: &TabsNavigationEvent, cx| {
             app.panes.tabs_navigation.handle_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.local_theme_tabs, |app, _, event: &TabsNavigationEvent, cx| {
+            app.panes.tabs_navigation.handle_local_theme_event(event, cx);
         }));
     }
 
@@ -60,6 +76,17 @@ impl TabsNavigationPane {
                         .child(render_tab_content(&self.active_label, theme)),
                 )
                 .child(self.state_preview.clone())
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_3()
+                        .mt(px(10.0))
+                        .child(render_example_label("Local theme customization", theme))
+                        .child(self.local_theme_tabs.clone())
+                        .child(render_tab_content(&self.local_theme_active_label, theme)),
+                )
                 .into_any_element(),
             theme,
         )
@@ -67,6 +94,7 @@ impl TabsNavigationPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.tabs, cx);
+        notify_entity(&self.local_theme_tabs, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -78,6 +106,35 @@ impl TabsNavigationPane {
             }
         }
     }
+
+    fn handle_local_theme_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            TabsNavigationEvent::Activate { label, .. } => {
+                self.local_theme_active_label = label.to_string();
+                cx.notify();
+            }
+        }
+    }
+}
+
+struct LocalTabsNavigationTheme {
+    theme: GalleryThemePack,
+}
+
+impl TabsNavigationTheme for LocalTabsNavigationTheme {
+    fn resolve_list(&self, enabled: bool) -> TabsNavigationListAppearance {
+        DefaultTabsNavigationTheme::new(self.theme.tokens()).resolve_list(enabled)
+    }
+
+    fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance {
+        let unfocused_state = InteractionState { focused: false, ..state };
+
+        DefaultTabsNavigationTheme::new(self.theme.tokens()).resolve_item(active, unfocused_state)
+    }
+}
+
+fn local_tabs_navigation_template(theme: &GalleryThemePack) -> Arc<dyn TabsNavigationTemplate> {
+    Arc::new(ThemedTabsNavigationTemplate::new(Arc::new(LocalTabsNavigationTheme { theme: theme.clone() })))
 }
 
 #[derive(Clone)]
@@ -291,6 +348,18 @@ fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
 fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+
+fn render_example_label(label: &'static str, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+
+    div()
+        .text_size(px(12.0))
+        .line_height(px(16.0))
+        .font_weight(gpui::FontWeight::MEDIUM)
+        .text_color(chrome.muted_text)
+        .child(label)
+        .into_any_element()
+}
 
 fn render_tab_content(active_label: &str, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
