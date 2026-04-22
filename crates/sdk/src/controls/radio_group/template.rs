@@ -1,12 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
-    Window, div, px, prelude::*,
+    AnyElement, App, ClickEvent, Div, ElementId, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, SharedString,
+    Stateful, Window, div, hsla, px, prelude::*,
 };
 
 use super::RadioGroupRenderModel;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};
 
 pub type RadioGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -123,10 +122,6 @@ impl RadioGroupTemplate for ThemedRadioGroupTemplate {
     }
 }
 
-fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
-    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
-}
-
 fn render_radio_group_item_visual(
     model: RadioGroupItemVisualModel<'_>,
     appearance: RadioGroupItemAppearance,
@@ -141,6 +136,7 @@ fn render_radio_group_item_visual(
         .border_color(appearance.indicator_border)
         .rounded(px(appearance.indicator_size))
         .child(render_dot(model.state.selected, appearance.dot_size, appearance.dot_color));
+    let indicator = render_radio_focus_ring(indicator, appearance.focus_ring, appearance.indicator_size);
 
     let mut root = div()
         .id(model.id)
@@ -167,17 +163,27 @@ fn render_radio_group_item_visual(
         root = root.border_1().border_color(border);
     }
 
-    if let Some(focus_ring) = appearance.focus_ring {
-        root = root.child(render_focus_ring(focus_ring, appearance.control_radius));
-    } else if model.state.active && model.state.focus_visible {
-        root = root.child(render_focus_ring(focus_debug_border(), appearance.control_radius));
-    }
-
     if model.state.disabled {
         root = root.opacity(0.56);
     }
 
     root
+}
+
+fn render_radio_focus_ring(indicator: Div, focus_ring: Option<Hsla>, radius: f32) -> Div {
+    let ring_gap = 1.0;
+    let ring_width = 1.0;
+    let ring_color = focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0));
+
+    div()
+        .flex()
+        .items_center()
+        .justify_center()
+        .p(px(ring_gap))
+        .border_1()
+        .border_color(ring_color)
+        .rounded(px(radius + ring_gap + ring_width))
+        .child(indicator)
 }
 
 fn render_dot(selected: bool, size: f32, color: gpui::Hsla) -> AnyElement {

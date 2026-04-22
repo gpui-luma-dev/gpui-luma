@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use super::{ScrollbarDrag, ScrollbarOrientation, ScrollbarRenderModel};
-use crate::controls::state::focus_debug_border;
 use crate::theme::{ScrollbarTheme, default_scrollbar_theme};
 
 pub type ScrollbarBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -184,15 +183,9 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             root = root.opacity(0.56);
         }
 
-        if model.state.focused {
-            root = root.child(
-                div()
-                    .absolute()
-                    .size_full()
-                    .border_1()
-                    .border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border))
-                    .rounded(px(appearance.radius)),
-            );
+        if let Some(focus_ring) = appearance.focus_ring {
+            root = root
+                .child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(appearance.radius)));
         }
 
         root

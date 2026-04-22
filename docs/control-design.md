@@ -878,11 +878,9 @@ let radius = match role {
 
 This keeps shape policy in the family theme instead of hardcoding it in `IconButton`.
 
-`focus_ring` is part of the theme appearance contract. The current default templates still draw
-focused state with `focus_debug_border()` in several places, so focus rendering is not yet fully
-theme-driven. Future focus styling work should consume the theme-provided focus affordance instead
-of moving focus policy back into controls. The implemented focus traversal model is documented in
-`focus-handling.md`.
+`focus_ring` is part of the theme appearance contract. Default templates consume the theme-provided
+focus affordance so focus policy stays in themes instead of moving back into controls. The
+implemented focus traversal model is documented in `focus-handling.md`.
 
 ### 9.1 Non-Button Theme Families
 

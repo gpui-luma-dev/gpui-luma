@@ -1,9 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use super::SwitchRenderModel;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{SwitchTheme, default_switch_theme};
 
 pub trait SwitchTemplate: Send + Sync {
@@ -58,6 +57,7 @@ impl SwitchTemplate for ThemedSwitchTemplate {
                     .rounded(px(appearance.radius))
                     .shadow(appearance.thumb_shadow.clone()),
             );
+        let track = render_switch_focus_ring(track, appearance.focus_ring, appearance.radius);
 
         let mut root = div()
             .id(model.id.clone())
@@ -82,15 +82,22 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             root = root.opacity(0.56);
         }
 
-        if model.state.focused {
-            root = root
-                .child(render_focus_ring(appearance.focus_ring.unwrap_or_else(focus_debug_border), appearance.radius));
-        }
-
         root
     }
 }
 
-fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
-    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
+fn render_switch_focus_ring(track: Stateful<Div>, focus_ring: Option<Hsla>, radius: f32) -> Div {
+    let ring_gap = 1.0;
+    let ring_width = 1.0;
+    let ring_color = focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0));
+
+    div()
+        .flex()
+        .items_center()
+        .justify_center()
+        .p(px(ring_gap))
+        .border_1()
+        .border_color(ring_color)
+        .rounded(px(radius + ring_gap + ring_width))
+        .child(track)
 }

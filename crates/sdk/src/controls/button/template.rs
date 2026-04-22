@@ -5,7 +5,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
-use crate::controls::state::focus_debug_border;
+use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 pub trait ButtonTemplate: Send + Sync {
@@ -32,8 +32,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance =
             self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
-        let mut root = div()
-            .id(model.id.clone())
+        let control = div()
             .flex()
             .items_center()
             .justify_center()
@@ -51,14 +50,13 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .font_weight(appearance.typography.weight)
             .child(model.label.clone());
 
+        let mut root =
+            render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
+
         if model.state.disabled {
             root = root.opacity(0.56);
         } else {
             root = root.cursor_pointer();
-        }
-
-        if model.state.focused {
-            root = root.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
         }
 
         root

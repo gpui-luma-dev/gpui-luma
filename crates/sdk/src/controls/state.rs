@@ -2,10 +2,6 @@ use gpui::{FocusHandle, Window};
 
 use crate::theme::InteractionState;
 
-pub(crate) fn focus_debug_border() -> gpui::Hsla {
-    gpui::hsla(0.0, 0.95, 0.50, 1.0)
-}
-
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ControlFocusState {
     /// The GPUI focus handle associated with the control is focused.
@@ -40,7 +36,7 @@ impl CompositeItemState {
         InteractionState {
             hovered: self.hovered,
             pressed: self.pressed,
-            focused: self.focus_visible,
+            focused: self.active,
             disabled: self.disabled,
         }
     }

@@ -7,7 +7,6 @@ use gpui::{
 
 use super::{ToggleGroupItemPosition, ToggleGroupRenderModel};
 use crate::controls::button_family::ButtonKind;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{ButtonVariant, ToggleGroupItemAppearance, ToggleGroupTheme, default_toggle_group_theme};
 
 pub type ToggleGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -137,10 +136,6 @@ impl ToggleGroupTemplate for ThemedToggleGroupTemplate {
             root = root.child(button);
         }
 
-        if model.items.is_empty() && model.focus.focused {
-            root = root.child(render_focus_ring(focus_debug_border(), list_appearance.radius));
-        }
-
         root
     }
 }
@@ -173,8 +168,6 @@ fn render_toggle_group_item_visual(
 
     if let Some(focus_ring) = appearance.focus_ring {
         root = root.child(render_focus_ring(focus_ring, appearance.radius));
-    } else if model.state.active && model.state.focus_visible {
-        root = root.child(render_focus_ring(focus_debug_border(), appearance.radius));
     }
 
     if model.state.disabled {

@@ -60,7 +60,7 @@ border = "hsl(215 20% 65%)"
 placeholder = "hsl(215 20% 65%)"
 
 [light.palette.focus]
-ring = "hsl(38 92% 50%)"
+ring = "hsl(0 84% 60%)"
 
 [light.palette.border]
 default = "hsl(213 27% 84%)"
@@ -336,7 +336,7 @@ border = "hsl(215 19% 35%)"
 placeholder = "hsl(215 16% 47%)"
 
 [dark.palette.focus]
-ring = "hsl(43 96% 56%)"
+ring = "hsl(0 84% 60%)"
 
 [dark.palette.border]
 default = "hsl(215 25% 27%)"

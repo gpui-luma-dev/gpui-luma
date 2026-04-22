@@ -174,8 +174,7 @@ Template guidelines:
 - The template must not emit SDK events directly.
 - Use named child IDs for repeated item children when the root ID is shared.
 
-The default templates currently draw focused state with `focus_debug_border()`. Theme appearance
-objects also expose `focus_ring`, but most default templates do not consume it yet. When improving
+The default templates draw focused state from theme appearance `focus_ring` values. When improving
 focus rendering, update templates and themes together rather than changing behavior in controls.
 
 ### Themes

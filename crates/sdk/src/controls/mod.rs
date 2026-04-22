@@ -1,5 +1,6 @@
 pub mod button;
 pub mod button_family;
+pub(crate) mod button_family_template;
 pub mod checkbox;
 pub mod content_presenter;
 pub mod context_menu;

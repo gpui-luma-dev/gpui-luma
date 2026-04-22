@@ -1,10 +1,9 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
+use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use super::CheckboxRenderModel;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 pub trait CheckboxTemplate: Send + Sync {
@@ -40,6 +39,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             .border_color(appearance.indicator_border)
             .rounded(px(appearance.indicator_radius))
             .child(render_checkmark(model.checked, appearance.checkmark_size, appearance.checkmark_color));
+        let indicator = render_checkbox_focus_ring(indicator, appearance.focus_ring, appearance.indicator_radius);
 
         let mut root = div()
             .id(model.id.clone())
@@ -71,19 +71,24 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             root = root.opacity(0.56);
         }
 
-        if model.state.focused {
-            root = root.child(render_focus_ring(
-                appearance.focus_ring.unwrap_or_else(focus_debug_border),
-                appearance.control_radius,
-            ));
-        }
-
         root
     }
 }
 
-fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
-    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
+fn render_checkbox_focus_ring(indicator: Div, focus_ring: Option<Hsla>, radius: f32) -> Div {
+    let ring_gap = 1.0;
+    let ring_width = 1.0;
+    let ring_color = focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0));
+
+    div()
+        .flex()
+        .items_center()
+        .justify_center()
+        .p(px(ring_gap))
+        .border_1()
+        .border_color(ring_color)
+        .rounded(px(radius + ring_gap + ring_width))
+        .child(indicator)
 }
 
 fn render_checkmark(checked: bool, size: f32, color: gpui::Hsla) -> AnyElement {

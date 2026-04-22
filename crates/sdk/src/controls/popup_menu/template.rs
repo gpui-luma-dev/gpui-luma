@@ -8,7 +8,6 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::floating_menu::render_floating_menu;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -114,8 +113,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             trigger = trigger.opacity(0.56);
         }
 
-        if model.focus.focused {
-            trigger = trigger.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
+        if let Some(focus_ring) = appearance.focus_ring {
+            trigger = trigger.border_1().border_color(focus_ring);
         }
 
         let mut root = div()

@@ -6,7 +6,6 @@ use gpui::{
 };
 
 use super::TabsNavigationRenderModel;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme};
 
 pub type TabsNavigationClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -176,8 +175,6 @@ fn render_tabs_navigation_item_visual(
 
     if let Some(focus_ring) = appearance.focus_ring {
         root = root.child(render_focus_ring(focus_ring, appearance.radius));
-    } else if model.state.active && model.state.focus_visible {
-        root = root.child(render_focus_ring(focus_debug_border(), appearance.radius));
     }
 
     if model.state.disabled {

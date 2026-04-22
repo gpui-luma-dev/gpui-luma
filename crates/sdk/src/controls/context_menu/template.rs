@@ -7,7 +7,6 @@ use gpui::{
 
 use super::ContextMenuRenderModel;
 use crate::controls::floating_menu::render_floating_menu;
-use crate::controls::state::focus_debug_border;
 use crate::theme::{ContextMenuTheme, default_context_menu_theme};
 
 pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -104,8 +103,8 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             target = target.opacity(0.56);
         }
 
-        if model.focus.focused {
-            target = target.border_1().border_color(appearance.focus_ring.unwrap_or_else(focus_debug_border));
+        if let Some(focus_ring) = appearance.focus_ring {
+            target = target.border_1().border_color(focus_ring);
         }
 
         let mut root = div()
