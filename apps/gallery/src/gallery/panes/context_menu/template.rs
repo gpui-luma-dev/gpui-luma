@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::context_menu::{
     ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers, MenuItem, MenuItemIcon, MenuPath,
 };
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme};
+use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, FloatingMenuAppearance};
 use lucide_icons::Icon as LucideIcon;
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -61,7 +61,7 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
             .child(target);
 
         if let Some(position) = model.menu_position {
-            let menu = render_menu(model, appearance, item_hovers, item_clicks);
+            let menu = render_menu(model, appearance.floating_menu, item_hovers, item_clicks);
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(Corner::TopLeft)
@@ -96,20 +96,20 @@ pub(super) fn render_gallery_target(
 
 fn render_menu(
     model: &ContextMenuRenderModel<'_>,
-    appearance: ContextMenuAppearance,
+    appearance: FloatingMenuAppearance,
     item_hovers: Vec<ContextMenuHoverHandler>,
     item_clicks: Vec<ContextMenuClickHandler>,
 ) -> Stateful<Div> {
     let mut menu = div()
         .id(format!("{}-menu", model.id))
-        .min_w(px(appearance.menu_min_width))
+        .min_w(px(appearance.min_width))
         .relative()
-        .p(px(appearance.menu_padding))
-        .bg(appearance.menu_background)
+        .p(px(appearance.padding))
+        .bg(appearance.background)
         .border_1()
-        .border_color(appearance.menu_border)
-        .rounded(px(appearance.menu_radius))
-        .shadow(appearance.menu_shadow.clone())
+        .border_color(appearance.border)
+        .rounded(px(appearance.radius))
+        .shadow(appearance.shadow.clone())
         .occlude();
     let mut item_clicks = item_clicks.into_iter();
     let mut submenu = None;
@@ -124,14 +124,14 @@ fn render_menu(
             .px(px(appearance.item_padding_x))
             .rounded(px(appearance.item_radius))
             .text_color(if item.is_enabled() {
-                appearance.item_foreground
+                appearance.foreground
             } else {
                 appearance.item_disabled_foreground
             })
             .child(render_item_icon(
                 item.icon_ref(),
                 if item.is_enabled() {
-                    appearance.item_foreground
+                    appearance.foreground
                 } else {
                     appearance.item_disabled_foreground
                 },
@@ -146,7 +146,7 @@ fn render_menu(
                 .hover(move |style| style.bg(appearance.item_hover_background))
                 .child(render_submenu_affordance(
                     !item.submenu_items().is_empty(),
-                    appearance.item_foreground,
+                    appearance.foreground,
                     appearance.item_icon_size,
                 ));
 
@@ -182,7 +182,7 @@ fn render_menu(
 fn render_submenu(
     menu_id: &gpui::SharedString,
     item: &MenuItem,
-    appearance: &ContextMenuAppearance,
+    appearance: &FloatingMenuAppearance,
     item_clicks: &mut std::vec::IntoIter<ContextMenuClickHandler>,
     index: usize,
     active_path: Option<MenuPath>,
@@ -190,15 +190,15 @@ fn render_submenu(
     let mut submenu = div()
         .id(format!("{}-submenu-{}", menu_id, item.id()))
         .absolute()
-        .top(px(appearance.menu_padding + (index as f32 * appearance.item_height)))
-        .left(px(appearance.menu_min_width + appearance.submenu_offset_x))
-        .min_w(px(appearance.menu_min_width))
-        .p(px(appearance.menu_padding))
-        .bg(appearance.menu_background)
+        .top(px(appearance.padding + (index as f32 * appearance.item_height)))
+        .left(px(appearance.min_width + appearance.submenu_offset_x))
+        .min_w(px(appearance.min_width))
+        .p(px(appearance.padding))
+        .bg(appearance.background)
         .border_1()
-        .border_color(appearance.menu_border)
-        .rounded(px(appearance.menu_radius))
-        .shadow(appearance.menu_shadow.clone())
+        .border_color(appearance.border)
+        .rounded(px(appearance.radius))
+        .shadow(appearance.shadow.clone())
         .occlude();
 
     for (submenu_index, submenu_item) in item.submenu_items().iter().enumerate() {
@@ -211,14 +211,14 @@ fn render_submenu(
             .px(px(appearance.item_padding_x))
             .rounded(px(appearance.item_radius))
             .text_color(if submenu_item.is_enabled() {
-                appearance.item_foreground
+                appearance.foreground
             } else {
                 appearance.item_disabled_foreground
             })
             .child(render_item_icon(
                 submenu_item.icon_ref(),
                 if submenu_item.is_enabled() {
-                    appearance.item_foreground
+                    appearance.foreground
                 } else {
                     appearance.item_disabled_foreground
                 },

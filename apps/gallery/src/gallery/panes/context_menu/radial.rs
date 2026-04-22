@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme};
+use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, FloatingMenuAppearance};
 use lucide_icons::Icon as LucideIcon;
 
 const RADIAL_ITEM_COUNT: usize = 5;
@@ -67,7 +67,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
             .child(target);
 
         if let Some(position) = model.menu_position {
-            let radial_menu = render_radial_menu(model, appearance, item_hovers, item_clicks);
+            let radial_menu = render_radial_menu(model, appearance.floating_menu, item_hovers, item_clicks);
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(Corner::TopLeft)
@@ -103,7 +103,7 @@ fn render_target(
 
 fn render_radial_menu(
     model: &ContextMenuRenderModel<'_>,
-    appearance: ContextMenuAppearance,
+    appearance: FloatingMenuAppearance,
     item_hovers: Vec<ContextMenuHoverHandler>,
     item_clicks: Vec<ContextMenuClickHandler>,
 ) -> Stateful<Div> {
@@ -115,7 +115,7 @@ fn render_radial_menu(
             .top(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
             .size(px(RADIAL_CENTER_MARKER_SIZE))
             .rounded(px(RADIAL_CENTER_MARKER_SIZE))
-            .bg(appearance.menu_border),
+            .bg(appearance.border),
     );
 
     for ((index, item), item_hover) in model.items.iter().take(RADIAL_ITEM_COUNT).enumerate().zip(item_hovers) {
@@ -129,7 +129,7 @@ fn render_radial_menu(
         }
 
         if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
-            button = button.bg(appearance.item_hover_background).border_color(appearance.item_foreground);
+            button = button.bg(appearance.item_hover_background).border_color(appearance.foreground);
         }
 
         menu = menu.child(button);
@@ -142,11 +142,11 @@ fn render_radial_item(
     menu_id: &gpui::SharedString,
     index: usize,
     item: &MenuItem,
-    appearance: &ContextMenuAppearance,
+    appearance: &FloatingMenuAppearance,
 ) -> Stateful<Div> {
     let (left, top) = radial_item_position(index);
     let foreground = if item.is_enabled() {
-        appearance.item_foreground
+        appearance.foreground
     } else {
         appearance.item_disabled_foreground
     };
@@ -160,18 +160,18 @@ fn render_radial_item(
         .flex()
         .items_center()
         .justify_center()
-        .bg(appearance.menu_background)
+        .bg(appearance.background)
         .border_1()
-        .border_color(appearance.menu_border)
+        .border_color(appearance.border)
         .rounded(px(RADIAL_BUTTON_SIZE))
-        .shadow(appearance.menu_shadow.clone())
+        .shadow(appearance.shadow.clone())
         .text_color(foreground)
         .child(render_item_icon(item.icon_ref(), foreground, appearance.item_icon_size));
 
     if item.is_enabled() && item.submenu_items().is_empty() {
         button = button
             .cursor_pointer()
-            .hover(move |style| style.bg(appearance.item_hover_background).border_color(appearance.item_foreground));
+            .hover(move |style| style.bg(appearance.item_hover_background).border_color(appearance.foreground));
     } else {
         button = button.opacity(0.56);
     }

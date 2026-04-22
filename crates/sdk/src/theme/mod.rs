@@ -2,6 +2,7 @@ pub mod button;
 pub mod button_family;
 pub mod checkbox;
 pub mod context_menu;
+pub mod floating_menu;
 pub mod popup_menu;
 pub mod interaction;
 pub mod navigation_sidebar;
@@ -21,6 +22,7 @@ pub use button_family::{
 };
 pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
 pub use context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme};
+pub use floating_menu::{FloatingMenuAppearance, FLOATING_MENU_THEME_USAGE};
 pub use popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 pub use interaction::{InteractionLayer, InteractionState};
 pub use navigation_sidebar::{

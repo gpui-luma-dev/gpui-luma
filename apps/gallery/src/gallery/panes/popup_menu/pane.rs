@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, Entity, FontWeight, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Render, SharedString, Subscription, Window, div, prelude::*, px,
+    AnyElement, App, Bounds, ClickEvent, Context, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
+    SharedString, Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
+use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
-    ControlFocusState, MenuPath, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel,
-    PopupMenuTemplate, PopupMenuTemplateHandlers,
+    ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
+    PopupMenuTemplateHandlers,
 };
-use gpui_luma::theme::{DefaultPopupMenuTheme, InteractionState, PopupMenuAppearance, PopupMenuTheme};
+use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -157,8 +157,6 @@ impl PopupMenuStatePreview {
 impl Render for PopupMenuStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
-        let popup_theme = DefaultPopupMenuTheme::new(self.theme.tokens());
-        let menu_appearance = popup_theme.resolve(InteractionState::default());
         let samples = [
             PopupMenuStateSample {
                 id: "default",
@@ -212,14 +210,6 @@ impl Render for PopupMenuStatePreview {
                         .map(|sample| render_trigger_sample(&self.template, sample, chrome.muted_text, window, cx)),
                 ),
             )
-            .child(
-                div()
-                    .flex()
-                    .items_start()
-                    .justify_center()
-                    .gap(px(12.0))
-                    .child(render_open_sample(&menu_appearance, chrome.muted_text)),
-            )
     }
 }
 
@@ -254,133 +244,6 @@ fn render_trigger_sample(
         .gap(px(6.0))
         .child(template.render(&model, popup_menu_preview_handlers(items.len(), 0), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
-        .into_any_element()
-}
-
-fn render_open_sample(appearance: &PopupMenuAppearance, label_color: gpui::Hsla) -> AnyElement {
-    let sample_label = "Open: active item";
-    let active_path = Some(MenuPath::Root(1));
-    let items = menu_items().into_iter().collect::<Vec<_>>();
-
-    div()
-        .flex()
-        .flex_col()
-        .items_center()
-        .gap(px(6.0))
-        .child(render_isolated_menu("popup-menu-preview-open-root".to_string(), &items, appearance, active_path))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample_label))
-        .into_any_element()
-}
-
-fn render_isolated_menu(
-    id: String,
-    items: &[MenuItem],
-    appearance: &PopupMenuAppearance,
-    active_path: Option<MenuPath>,
-) -> AnyElement {
-    div()
-        .flex()
-        .items_start()
-        .gap(px(appearance.submenu_offset_x))
-        .child(render_menu_panel(format!("{id}-menu"), items, appearance, active_path))
-        .into_any_element()
-}
-
-fn render_menu_panel(
-    id: String,
-    items: &[MenuItem],
-    appearance: &PopupMenuAppearance,
-    active_path: Option<MenuPath>,
-) -> AnyElement {
-    div()
-        .id(id)
-        .min_w(px(appearance.menu_min_width))
-        .p(px(appearance.menu_padding))
-        .bg(appearance.menu_background)
-        .border_1()
-        .border_color(appearance.menu_border)
-        .rounded(px(appearance.menu_radius))
-        .shadow(appearance.menu_shadow.clone())
-        .children(
-            items
-                .iter()
-                .enumerate()
-                .map(|(index, item)| render_menu_item_row(item, index, appearance, active_path)),
-        )
-        .into_any_element()
-}
-
-fn render_menu_item_row(
-    item: &MenuItem,
-    index: usize,
-    appearance: &PopupMenuAppearance,
-    active_path: Option<MenuPath>,
-) -> AnyElement {
-    let enabled = item.is_enabled();
-    let active = active_path.is_some_and(|path| path.is_root(index));
-    let color = if enabled {
-        appearance.item_foreground
-    } else {
-        appearance.item_disabled_foreground
-    };
-
-    let mut row = div()
-        .id(format!("popup-menu-preview-item-{}", item.id()))
-        .flex()
-        .items_center()
-        .gap(px(appearance.item_gap))
-        .min_h(px(appearance.item_height))
-        .px(px(appearance.item_padding_x))
-        .rounded(px(appearance.item_radius))
-        .text_color(color)
-        .text_size(px(appearance.item_typography.size))
-        .line_height(px(appearance.item_typography.line_height))
-        .font_weight(appearance.item_typography.weight)
-        .child(render_item_icon(item.icon_ref(), color, appearance.item_icon_size))
-        .child(div().flex_1().child(item.label_text().clone()))
-        .child(render_submenu_affordance(!item.submenu_items().is_empty(), color, appearance.item_icon_size));
-
-    if active && enabled {
-        row = row.bg(appearance.item_hover_background);
-    }
-
-    if enabled {
-        row = row.cursor_pointer();
-    } else {
-        row = row.opacity(0.56);
-    }
-
-    row.into_any_element()
-}
-
-fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
-        render_lucide_icon(icon, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_submenu_affordance(has_submenu: bool, color: gpui::Hsla, size: f32) -> AnyElement {
-    if has_submenu {
-        render_lucide_icon(LucideIcon::ChevronRight, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family("lucide")
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
         .into_any_element()
 }
 

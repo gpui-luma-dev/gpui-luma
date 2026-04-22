@@ -1,14 +1,14 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
-    Stateful, Window, anchored, deferred, div, px, prelude::*, svg,
+    App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful, Window,
+    anchored, deferred, div, px, prelude::*,
 };
-use lucide_icons::Icon as LucideIcon;
 
-use super::{ContextMenuRenderModel, MenuItem, MenuItemIcon};
-use crate::controls::state::{MenuPath, focus_debug_border};
-use crate::theme::{ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
+use super::ContextMenuRenderModel;
+use crate::controls::floating_menu::render_floating_menu;
+use crate::controls::state::focus_debug_border;
+use crate::theme::{ContextMenuTheme, default_context_menu_theme};
 
 pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -120,7 +120,15 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             .child(target);
 
         if let Some(position) = model.menu_position {
-            let menu = render_menu(model, appearance, item_hovers, item_clicks);
+            let menu = render_floating_menu(
+                model.id,
+                model.items,
+                model.open_submenu,
+                model.active_path,
+                appearance.floating_menu,
+                item_hovers,
+                item_clicks,
+            );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(Corner::TopLeft)
@@ -132,196 +140,4 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
 
         root
     }
-}
-
-fn render_menu(
-    model: &ContextMenuRenderModel<'_>,
-    appearance: ContextMenuAppearance,
-    item_hovers: Vec<ContextMenuHoverHandler>,
-    item_clicks: Vec<ContextMenuClickHandler>,
-) -> Stateful<Div> {
-    let mut menu = div()
-        .id(format!("{}-menu", model.id))
-        .min_w(px(appearance.menu_min_width))
-        .relative()
-        .p(px(appearance.menu_padding))
-        .bg(appearance.menu_background)
-        .border_1()
-        .border_color(appearance.menu_border)
-        .rounded(px(appearance.menu_radius))
-        .shadow(appearance.menu_shadow.clone())
-        .occlude();
-    let mut item_clicks = item_clicks.into_iter();
-    let mut submenu = None;
-
-    for ((index, item), item_hover) in model.items.iter().enumerate().zip(item_hovers) {
-        let mut row = div()
-            .id(format!("{}-item-{}", model.id, item.id))
-            .flex()
-            .items_center()
-            .gap(px(appearance.item_gap))
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
-            .text_color(if item.enabled {
-                appearance.item_foreground
-            } else {
-                appearance.item_disabled_foreground
-            })
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(render_item_icon(
-                item.icon.as_ref(),
-                if item.enabled {
-                    appearance.item_foreground
-                } else {
-                    appearance.item_disabled_foreground
-                },
-                appearance.item_icon_size,
-            ))
-            .child(div().flex_1().child(item.label.clone()));
-
-        if item.enabled {
-            row = row
-                .cursor_pointer()
-                .on_hover(item_hover)
-                .hover(move |style| style.bg(appearance.item_hover_background))
-                .child(render_submenu_affordance(
-                    !item.submenu_items.is_empty(),
-                    appearance.item_foreground,
-                    appearance.item_icon_size,
-                ));
-
-            if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
-                row = row.bg(appearance.item_hover_background);
-            }
-
-            if item.submenu_items.is_empty() {
-                if let Some(item_click) = item_clicks.next() {
-                    row = row.on_click(item_click);
-                }
-            } else if model.open_submenu == Some(index) {
-                submenu = Some(render_submenu(model.id, item, &appearance, &mut item_clicks, index, model.active_path));
-            }
-        } else {
-            row = row.opacity(0.56).child(render_submenu_affordance(
-                !item.submenu_items.is_empty(),
-                appearance.item_disabled_foreground,
-                appearance.item_icon_size,
-            ));
-        }
-
-        menu = menu.child(row);
-    }
-
-    if let Some(submenu) = submenu {
-        menu = menu.child(submenu);
-    }
-
-    menu
-}
-
-fn render_submenu(
-    menu_id: &gpui::SharedString,
-    item: &MenuItem,
-    appearance: &ContextMenuAppearance,
-    item_clicks: &mut std::vec::IntoIter<ContextMenuClickHandler>,
-    index: usize,
-    active_path: Option<MenuPath>,
-) -> Stateful<Div> {
-    let mut submenu = div()
-        .id(format!("{}-submenu-{}", menu_id, item.id))
-        .absolute()
-        .top(px(appearance.menu_padding + (index as f32 * appearance.item_height)))
-        .left(px(appearance.menu_min_width + appearance.submenu_offset_x))
-        .min_w(px(appearance.menu_min_width))
-        .p(px(appearance.menu_padding))
-        .bg(appearance.menu_background)
-        .border_1()
-        .border_color(appearance.menu_border)
-        .rounded(px(appearance.menu_radius))
-        .shadow(appearance.menu_shadow.clone())
-        .occlude();
-
-    for (submenu_index, submenu_item) in item.submenu_items.iter().enumerate() {
-        let mut row = div()
-            .id(format!("{}-submenu-item-{}", menu_id, submenu_item.id))
-            .flex()
-            .items_center()
-            .gap(px(appearance.item_gap))
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
-            .text_color(if submenu_item.enabled {
-                appearance.item_foreground
-            } else {
-                appearance.item_disabled_foreground
-            })
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(render_item_icon(
-                submenu_item.icon.as_ref(),
-                if submenu_item.enabled {
-                    appearance.item_foreground
-                } else {
-                    appearance.item_disabled_foreground
-                },
-                appearance.item_icon_size,
-            ))
-            .child(div().flex_1().child(submenu_item.label.clone()));
-
-        if submenu_item.enabled && submenu_item.submenu_items.is_empty() {
-            if let Some(item_click) = item_clicks.next() {
-                row = row
-                    .cursor_pointer()
-                    .hover(move |style| style.bg(appearance.item_hover_background))
-                    .on_click(item_click);
-            }
-
-            if active_path.is_some_and(|path| path.is_submenu(index, submenu_index)) {
-                row = row.bg(appearance.item_hover_background);
-            }
-        } else if !submenu_item.enabled {
-            row = row.opacity(0.56);
-        }
-
-        submenu = submenu.child(row);
-    }
-
-    submenu
-}
-
-fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
-        render_lucide_icon(icon, color, size)
-    } else if let Some(path) = icon.and_then(MenuItemIcon::svg_path) {
-        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_submenu_affordance(has_submenu: bool, color: gpui::Hsla, size: f32) -> AnyElement {
-    if has_submenu {
-        render_lucide_icon(LucideIcon::ChevronRight, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family("lucide")
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
-        .into_any_element()
 }

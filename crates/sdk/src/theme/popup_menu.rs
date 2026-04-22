@@ -1,8 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{BoxShadow, Hsla};
+use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use super::{
+    ControlSize, FloatingMenuAppearance, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage,
+    ThemeTokens, ThemeUsage, floating_menu::default_floating_menu_appearance,
+};
 
 #[derive(Clone, Debug)]
 pub struct PopupMenuAppearance {
@@ -17,23 +20,8 @@ pub struct PopupMenuAppearance {
     pub trigger_gap: f32,
     pub trigger_height: f32,
     pub trigger_icon_size: f32,
-    pub menu_background: Hsla,
-    pub menu_border: Hsla,
-    pub menu_shadow: Vec<BoxShadow>,
-    pub menu_radius: f32,
-    pub menu_padding: f32,
     pub menu_offset_y: f32,
-    pub menu_min_width: f32,
-    pub item_foreground: Hsla,
-    pub item_disabled_foreground: Hsla,
-    pub item_hover_background: Hsla,
-    pub item_typography: LumaTextStyle,
-    pub item_height: f32,
-    pub item_padding_x: f32,
-    pub item_gap: f32,
-    pub item_icon_size: f32,
-    pub item_radius: f32,
-    pub submenu_offset_x: f32,
+    pub floating_menu: FloatingMenuAppearance,
 }
 
 pub trait PopupMenuTheme: Send + Sync {
@@ -88,25 +76,25 @@ pub const POPUP_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "menu background",
             token: "surface.floating.background",
             states: &["open"],
-            appearance_fields: &["PopupMenuAppearance.menu_background"],
+            appearance_fields: &["PopupMenuAppearance.floating_menu.background"],
         },
         ThemePartUsage {
             part: "menu border",
             token: "surface.floating.border",
             states: &["open"],
-            appearance_fields: &["PopupMenuAppearance.menu_border"],
+            appearance_fields: &["PopupMenuAppearance.floating_menu.border"],
         },
         ThemePartUsage {
             part: "item foreground",
             token: "surface.floating.foreground",
             states: &["open"],
-            appearance_fields: &["PopupMenuAppearance.item_foreground"],
+            appearance_fields: &["PopupMenuAppearance.floating_menu.foreground"],
         },
         ThemePartUsage {
             part: "item hover background",
             token: "state.hover.background",
             states: &["item hovered"],
-            appearance_fields: &["PopupMenuAppearance.item_hover_background"],
+            appearance_fields: &["PopupMenuAppearance.floating_menu.item_hover_background"],
         },
         ThemePartUsage {
             part: "disabled foreground",
@@ -114,7 +102,7 @@ pub const POPUP_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
             states: &["disabled", "item disabled"],
             appearance_fields: &[
                 "PopupMenuAppearance.trigger_foreground",
-                "PopupMenuAppearance.item_disabled_foreground",
+                "PopupMenuAppearance.floating_menu.item_disabled_foreground",
             ],
         },
         ThemePartUsage {
@@ -143,7 +131,6 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
-        let elevation = &self.tokens.elevation;
         let size = ControlSize::Md;
 
         let trigger_background = match state.layer() {
@@ -170,23 +157,8 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
             trigger_gap: metrics.gap(size),
             trigger_height: metrics.control_height(size),
             trigger_icon_size: metrics.control_height(size) * 0.44,
-            menu_background: palette.surface.floating.background,
-            menu_border: palette.surface.floating.border,
-            menu_shadow: elevation.menu.to_box_shadows(),
-            menu_radius: metrics.radius.lg,
-            menu_padding: metrics.padding_y(size) * 0.5,
             menu_offset_y: metrics.gap(size) * 0.5,
-            menu_min_width: 160.0,
-            item_foreground: palette.surface.floating.foreground,
-            item_disabled_foreground: palette.state.disabled.foreground,
-            item_hover_background: palette.state.hover.background,
-            item_typography: typography.text.label,
-            item_height: metrics.control_height(size) * 0.9,
-            item_padding_x: metrics.padding_x(size) * 0.75,
-            item_gap: metrics.gap(size),
-            item_icon_size: metrics.control_height(size) * 0.44,
-            item_radius: metrics.radius.sm,
-            submenu_offset_x: metrics.gap(size) * 0.5,
+            floating_menu: default_floating_menu_appearance(&self.tokens, size),
         }
     }
 }

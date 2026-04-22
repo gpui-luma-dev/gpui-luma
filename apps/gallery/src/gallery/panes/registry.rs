@@ -13,8 +13,9 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    button, checkbox, context_menu, icon_button, introduction, palette, popup_menu, progress, radio_group, scrollbar,
-    search, settings, shared::gallery_pane, slider, switch, tabs_navigation, theme_usage, toggle_button, toggle_group,
+    button, checkbox, context_menu, floating_menu, icon_button, introduction, palette, popup_menu, progress,
+    radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation, theme_usage,
+    toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -40,6 +41,7 @@ enum GalleryPageKind {
     RadioGroup,
     Slider,
     Scrollbar,
+    FloatingMenu,
     PopupMenu,
     ContextMenu,
     TabsNavigation,
@@ -108,6 +110,8 @@ const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
     GalleryPage { id: "scrollbar", label: "Scrollbar", icon: None, kind: GalleryPageKind::Scrollbar };
+const FLOATING_MENU_PAGE: GalleryPage =
+    GalleryPage { id: "floating-menu", label: "Floating Menu", icon: None, kind: GalleryPageKind::FloatingMenu };
 const POPUP_MENU_PAGE: GalleryPage =
     GalleryPage { id: "popup-menu", label: "Popup Menu", icon: None, kind: GalleryPageKind::PopupMenu };
 const CONTEXT_MENU_PAGE: GalleryPage =
@@ -128,7 +132,7 @@ const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[SLIDER_PAGE, SCROLLBAR_PAGE];
-const MENU_PAGES: &[GalleryPage] = &[POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
+const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
@@ -182,6 +186,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
+    pub(super) floating_menu: floating_menu::FloatingMenuPane,
     pub(super) popup_menu: popup_menu::PopupMenuPane,
     pub(super) context_menu: context_menu::ContextMenuPane,
     pub(super) tabs_navigation: tabs_navigation::TabsNavigationPane,
@@ -239,6 +244,7 @@ impl GalleryPanes {
             radio_group: radio_group::RadioGroupPane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
+            floating_menu: floating_menu::FloatingMenuPane::new(),
             popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
             context_menu: context_menu::ContextMenuPane::new(cx, theme),
             tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, theme),
@@ -271,6 +277,7 @@ impl GalleryPanes {
         self.radio_group.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
+        self.floating_menu.notify_controls();
         self.popup_menu.notify_controls(cx);
         self.context_menu.notify_controls(cx);
         self.tabs_navigation.notify_controls(cx);
@@ -297,6 +304,7 @@ impl GalleryPanes {
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
+            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.theme),
             GalleryPageKind::PopupMenu => self.popup_menu.render(&self.theme),
             GalleryPageKind::ContextMenu => self.context_menu.render(&self.theme),
             GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.theme),

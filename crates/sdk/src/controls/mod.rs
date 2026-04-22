@@ -3,6 +3,7 @@ pub mod button_family;
 pub mod checkbox;
 pub mod content_presenter;
 pub mod context_menu;
+pub(crate) mod floating_menu;
 pub mod icon_button;
 pub(crate) mod interaction;
 pub mod menu_item;

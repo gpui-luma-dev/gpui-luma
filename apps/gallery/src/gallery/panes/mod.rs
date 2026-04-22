@@ -1,10 +1,11 @@
 mod button;
 mod checkbox;
 mod context_menu;
-mod popup_menu;
+mod floating_menu;
 mod icon_button;
 mod introduction;
 mod palette;
+mod popup_menu;
 mod progress;
 mod radio_group;
 pub(super) mod registry;
