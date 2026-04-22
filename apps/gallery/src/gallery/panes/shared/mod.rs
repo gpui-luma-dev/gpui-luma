@@ -4,27 +4,30 @@ use gpui_luma::theme::{ThemePartUsage, all_theme_usages, resolve_palette_color};
 use crate::gallery::{control::GalleryApp, theme::GalleryThemePack};
 
 pub(super) fn gallery_pane(title: &'static str, content: AnyElement, theme: &GalleryThemePack) -> AnyElement {
+    gallery_pane_with_description(title, None, content, theme)
+}
+
+pub(super) fn gallery_pane_with_description(
+    title: &'static str,
+    description: Option<&'static str>,
+    content: AnyElement,
+    theme: &GalleryThemePack,
+) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
         .size_full()
         .relative()
         .flex()
-        .items_center()
-        .justify_center()
+        .flex_col()
         .overflow_hidden()
         .bg(chrome.content_background)
+        .p(px(28.0))
+        .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
         .child(
-            div()
-                .relative()
-                .flex()
-                .flex_col()
-                .items_center()
-                .justify_center()
-                .gap_4()
-                .occlude()
-                .child(div().text_size(px(20.0)).line_height(px(28.0)).text_color(chrome.title_text).child(title))
-                .child(content),
+            div().min_h(px(0.0)).flex_1().flex().items_center().justify_center().child(
+                div().relative().flex().flex_col().items_center().justify_center().gap_4().occlude().child(content),
+            ),
         )
         .into_any_element()
 }
@@ -35,20 +38,31 @@ pub(super) fn gallery_pane_with_usage(
     content: AnyElement,
     theme: &GalleryThemePack,
 ) -> AnyElement {
+    gallery_pane_with_usage_description(title, None, usage_component, content, theme)
+}
+
+pub(super) fn gallery_pane_with_usage_description(
+    title: &'static str,
+    description: Option<&'static str>,
+    usage_component: &'static str,
+    content: AnyElement,
+    theme: &GalleryThemePack,
+) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
         .size_full()
         .relative()
         .flex()
-        .items_center()
-        .justify_center()
+        .flex_col()
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
+        .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
         .child(
             div()
-                .size_full()
+                .min_h(px(0.0))
+                .flex_1()
                 .flex()
                 .items_stretch()
                 .justify_center()
@@ -64,13 +78,42 @@ pub(super) fn gallery_pane_with_usage(
                         .justify_center()
                         .gap_4()
                         .occlude()
-                        .child(
-                            div().text_size(px(20.0)).line_height(px(28.0)).text_color(chrome.title_text).child(title),
-                        )
                         .child(content),
                 )
                 .child(div().flex().items_center().child(render_usage_panel(usage_component, theme))),
         )
+        .into_any_element()
+}
+
+fn render_pane_header(
+    title: &'static str,
+    description: Option<&'static str>,
+    title_color: Hsla,
+    description_color: Hsla,
+) -> AnyElement {
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .gap(px(4.0))
+        .child(
+            div()
+                .text_size(px(20.0))
+                .line_height(px(28.0))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(title_color)
+                .child(title),
+        )
+        .when_some(description, |header, description| {
+            header.child(
+                div()
+                    .max_w(px(760.0))
+                    .text_size(px(13.0))
+                    .line_height(px(18.0))
+                    .text_color(description_color)
+                    .child(description),
+            )
+        })
         .into_any_element()
 }
 

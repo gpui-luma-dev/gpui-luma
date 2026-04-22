@@ -12,7 +12,7 @@ use crate::keyhandling::{
 
 #[derive(Clone, Debug)]
 pub enum RadioGroupEvent {
-    Change { selected_id: SharedString, label: SharedString },
+    Change { selected_id: Option<SharedString>, label: Option<SharedString> },
 }
 
 pub struct RadioGroup {
@@ -53,6 +53,13 @@ impl RadioGroup {
         if self.can_select_id(&selected_id) {
             self.model.selected_id = Some(selected_id);
             self.active_item = self.selected_index();
+            cx.notify();
+        }
+    }
+
+    pub fn clear_selected(&mut self, cx: &mut Context<Self>) {
+        if self.model.allow_empty_selection && self.model.selected_id.is_some() {
+            self.model.selected_id = None;
             cx.notify();
         }
     }
@@ -223,14 +230,22 @@ impl RadioGroup {
 
         let item = &self.model.items[index];
         if self.model.selected_id.as_ref().is_some_and(|selected_id| selected_id == &item.id) {
-            return false;
+            if !self.model.allow_empty_selection {
+                return false;
+            }
+
+            self.model.selected_id = None;
+            self.active_item = Some(index);
+            cx.emit(RadioGroupEvent::Change { selected_id: None, label: None });
+            cx.notify();
+            return true;
         }
 
         let selected_id = item.id.clone();
         let label = item.label.clone();
         self.model.selected_id = Some(selected_id.clone());
         self.active_item = Some(index);
-        cx.emit(RadioGroupEvent::Change { selected_id, label });
+        cx.emit(RadioGroupEvent::Change { selected_id: Some(selected_id), label: Some(label) });
         cx.notify();
         true
     }
@@ -376,7 +391,11 @@ fn normalize_selected_id(model: &mut RadioGroupModel) {
         return;
     }
 
-    model.selected_id = model.items.iter().find(|item| item.enabled).map(|item| item.id.clone());
+    model.selected_id = if model.allow_empty_selection {
+        None
+    } else {
+        model.items.iter().find(|item| item.enabled).map(|item| item.id.clone())
+    };
 }
 
 #[cfg(test)]
@@ -411,8 +430,19 @@ mod tests {
                 RadioGroupItem::new("expanded").label("Expanded"),
             ],
             selected_id: selected_id.map(|id| id.to_string().into()),
+            allow_empty_selection: false,
             enabled: true,
             template: default_radio_group_template(),
         }
+    }
+
+    #[test]
+    fn normalize_allows_empty_selection() {
+        let mut model = model_with_selected(None);
+        model.allow_empty_selection = true;
+
+        normalize_selected_id(&mut model);
+
+        assert_eq!(model.selected_id.as_ref().map(|id| id.to_string()), None);
     }
 }

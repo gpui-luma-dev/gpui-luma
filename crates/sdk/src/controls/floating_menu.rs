@@ -5,10 +5,10 @@ use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::state::MenuPath;
 use crate::theme::FloatingMenuAppearance;
 
-pub(crate) type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub(crate) type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 
-pub(crate) fn render_floating_menu(
+pub fn render_floating_menu(
     id: &gpui::SharedString,
     items: &[MenuItem],
     open_submenu: Option<usize>,

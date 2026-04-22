@@ -13,13 +13,20 @@ use gpui_luma::controls::radio_group::{
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+
+const RADIO_GROUP_DESCRIPTION: &str = concat!(
+    "Radio groups select one option from a related set. ",
+    "The first sample allows returning to no selection; the second uses the default required-selection behavior."
+);
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioGroupPane {
     radio_group: Entity<RadioGroup>,
+    required_radio_group: Entity<RadioGroup>,
     state_preview: Entity<RadioGroupStatePreview>,
     choice: String,
+    required_choice: String,
 }
 
 impl RadioGroupPane {
@@ -27,39 +34,48 @@ impl RadioGroupPane {
         Self {
             radio_group: RadioGroup::new("density-radio-group")
                 .items(density_items())
+                .allow_empty_selection(true)
+                .template(theme.radio_group_template())
+                .spawn(cx),
+            required_radio_group: RadioGroup::new("required-density-radio-group")
+                .items(density_items())
                 .selected("comfortable")
                 .template(theme.radio_group_template())
                 .spawn(cx),
             state_preview: cx.new(|_| RadioGroupStatePreview::new(theme)),
-            choice: "Comfortable".to_string(),
+            choice: "None".to_string(),
+            required_choice: "Comfortable".to_string(),
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.radio_group, |app, _, event: &RadioGroupEvent, cx| {
-            app.panes.radio_group.handle_event(event, cx);
+            app.panes.radio_group.handle_optional_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.required_radio_group, |app, _, event: &RadioGroupEvent, cx| {
+            app.panes.radio_group.handle_required_event(event, cx);
         }));
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane_with_usage(
+        gallery_pane_with_usage_description(
             "Radio Group",
+            Some(RADIO_GROUP_DESCRIPTION),
             "Radio Group",
             div()
                 .flex()
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(self.radio_group.clone())
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.body_text)
-                        .child(format!("Choice: {}", self.choice)),
-                )
+                .child(render_live_example("Allow none", self.radio_group.clone(), &self.choice, chrome.body_text))
+                .child(render_live_example(
+                    "Required selection",
+                    self.required_radio_group.clone(),
+                    &self.required_choice,
+                    chrome.body_text,
+                ))
                 .child(self.state_preview.clone())
                 .into_any_element(),
             theme,
@@ -68,17 +84,58 @@ impl RadioGroupPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.radio_group, cx);
+        notify_entity(&self.required_radio_group, cx);
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_optional_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
             RadioGroupEvent::Change { label, .. } => {
-                self.choice = label.to_string();
+                self.choice = label.as_ref().map(ToString::to_string).unwrap_or_else(|| "None".to_string());
                 cx.notify();
             }
         }
     }
+
+    fn handle_required_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            RadioGroupEvent::Change { label: Some(label), .. } => {
+                self.required_choice = label.to_string();
+                cx.notify();
+            }
+            RadioGroupEvent::Change { label: None, .. } => {}
+        }
+    }
+}
+
+fn render_live_example(
+    label: &'static str,
+    radio_group: Entity<RadioGroup>,
+    choice: &str,
+    text_color: gpui::Hsla,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap_2()
+        .child(
+            div()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .font_weight(gpui::FontWeight::MEDIUM)
+                .text_color(text_color)
+                .child(label),
+        )
+        .child(radio_group)
+        .child(
+            div()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .text_color(text_color)
+                .child(format!("Choice: {choice}")),
+        )
+        .into_any_element()
 }
 
 #[derive(Clone)]

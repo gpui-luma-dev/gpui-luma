@@ -22,7 +22,10 @@ pub use button_family::{
 };
 pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
 pub use context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme};
-pub use floating_menu::{FloatingMenuAppearance, FLOATING_MENU_THEME_USAGE};
+pub use floating_menu::{
+    DefaultFloatingMenuTheme, FLOATING_MENU_THEME_USAGE, FloatingMenuAppearance, FloatingMenuTheme,
+    default_floating_menu_theme,
+};
 pub use popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 pub use interaction::{InteractionLayer, InteractionState};
 pub use navigation_sidebar::{

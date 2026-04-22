@@ -47,6 +47,7 @@ pub struct RadioGroupModel {
     pub(crate) id: SharedString,
     pub(crate) items: Vec<RadioGroupItem>,
     pub(crate) selected_id: Option<SharedString>,
+    pub(crate) allow_empty_selection: bool,
     pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn RadioGroupTemplate>,
 }
@@ -78,6 +79,7 @@ impl RadioGroupBuilder {
                 id: id.into(),
                 items: Vec::new(),
                 selected_id: None,
+                allow_empty_selection: false,
                 enabled: true,
                 template: default_radio_group_template(),
             },
@@ -96,6 +98,11 @@ impl RadioGroupBuilder {
 
     pub fn selected(mut self, selected_id: impl Into<SharedString>) -> Self {
         self.model.selected_id = Some(selected_id.into());
+        self
+    }
+
+    pub fn allow_empty_selection(mut self, allow_empty_selection: bool) -> Self {
+        self.model.allow_empty_selection = allow_empty_selection;
         self
     }
 

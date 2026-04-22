@@ -1,3 +1,5 @@
+use std::sync::{Arc, OnceLock};
+
 use gpui::{BoxShadow, Hsla};
 
 use super::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
@@ -20,6 +22,21 @@ pub struct FloatingMenuAppearance {
     pub item_icon_size: f32,
     pub item_radius: f32,
     pub submenu_offset_x: f32,
+}
+
+pub trait FloatingMenuTheme: Send + Sync {
+    fn resolve(&self) -> FloatingMenuAppearance;
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct DefaultFloatingMenuTheme {
+    tokens: ThemeTokens,
+}
+
+pub fn default_floating_menu_theme() -> Arc<dyn FloatingMenuTheme> {
+    static THEME: OnceLock<Arc<dyn FloatingMenuTheme>> = OnceLock::new();
+
+    THEME.get_or_init(|| Arc::new(DefaultFloatingMenuTheme::default())).clone()
 }
 
 pub const FLOATING_MENU_THEME_USAGE: ThemeUsage =
@@ -57,6 +74,18 @@ pub const FLOATING_MENU_THEME_PARTS: &[ThemePartUsage] = &[
         appearance_fields: &["FloatingMenuAppearance.item_disabled_foreground"],
     },
 ];
+
+impl DefaultFloatingMenuTheme {
+    pub fn new(tokens: ThemeTokens) -> Self {
+        Self { tokens }
+    }
+}
+
+impl FloatingMenuTheme for DefaultFloatingMenuTheme {
+    fn resolve(&self) -> FloatingMenuAppearance {
+        default_floating_menu_appearance(&self.tokens, ControlSize::Md)
+    }
+}
 
 pub(crate) fn default_floating_menu_appearance(tokens: &ThemeTokens, size: ControlSize) -> FloatingMenuAppearance {
     let palette = &tokens.palette;

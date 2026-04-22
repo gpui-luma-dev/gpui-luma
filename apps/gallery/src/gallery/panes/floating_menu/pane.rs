@@ -1,6 +1,8 @@
-use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
-use gpui_luma::theme::{DefaultPopupMenuTheme, FloatingMenuAppearance, InteractionState, PopupMenuTheme};
+use gpui::{AnyElement, App, ClickEvent, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::state::MenuPath;
+use gpui_luma::theme::{DefaultFloatingMenuTheme, FloatingMenuAppearance, FloatingMenuTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::theme::GalleryThemePack;
@@ -17,8 +19,7 @@ impl FloatingMenuPane {
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
-        let popup_theme = DefaultPopupMenuTheme::new(theme.tokens());
-        let appearance = popup_theme.resolve(InteractionState::default()).floating_menu;
+        let appearance = DefaultFloatingMenuTheme::new(theme.tokens()).resolve();
 
         gallery_pane_with_usage(
             "Floating Menu",
@@ -35,33 +36,27 @@ impl FloatingMenuPane {
                         .items_start()
                         .justify_center()
                         .gap(px(16.0))
-                        .child(render_state_sample(
-                            "Default",
-                            &appearance,
-                            chrome.muted_text,
-                            &default_items(),
-                            FloatingMenuSampleState::Default,
-                        ))
+                        .child(render_state_sample("Default", &appearance, chrome.muted_text, &default_items(), None))
                         .child(render_state_sample(
                             "Hover / active item",
                             &appearance,
                             chrome.muted_text,
                             &default_items(),
-                            FloatingMenuSampleState::Active(1),
+                            Some(MenuPath::Root(1)),
                         ))
                         .child(render_state_sample(
                             "Disabled item",
                             &appearance,
                             chrome.muted_text,
                             &disabled_items(),
-                            FloatingMenuSampleState::Default,
+                            None,
                         ))
                         .child(render_state_sample(
                             "Submenu affordance",
                             &appearance,
                             chrome.muted_text,
                             &submenu_items(),
-                            FloatingMenuSampleState::Default,
+                            None,
                         )),
                 )
                 .into_any_element(),
@@ -72,25 +67,30 @@ impl FloatingMenuPane {
     pub(in crate::gallery) fn notify_controls(&self) {}
 }
 
-#[derive(Clone, Copy)]
-enum FloatingMenuSampleState {
-    Default,
-    Active(usize),
-}
-
 fn render_state_sample(
     label: &'static str,
     appearance: &FloatingMenuAppearance,
     label_color: gpui::Hsla,
     items: &[MenuItem],
-    state: FloatingMenuSampleState,
+    active_path: Option<MenuPath>,
 ) -> AnyElement {
+    let id = SharedString::from(format!("floating-menu-sample-{}", sample_id(label)));
+    let root_count = items.len();
+
     div()
         .flex()
         .flex_col()
         .items_center()
         .gap(px(7.0))
-        .child(render_menu_panel(format!("floating-menu-sample-{}", sample_id(label)), items, appearance, state))
+        .child(render_floating_menu(
+            &id,
+            items,
+            None,
+            active_path,
+            appearance.clone(),
+            noop_hovers(root_count),
+            noop_clicks(root_count),
+        ))
         .child(
             div()
                 .text_size(px(11.0))
@@ -99,106 +99,6 @@ fn render_state_sample(
                 .text_color(label_color)
                 .child(label),
         )
-        .into_any_element()
-}
-
-fn render_menu_panel(
-    id: String,
-    items: &[MenuItem],
-    appearance: &FloatingMenuAppearance,
-    state: FloatingMenuSampleState,
-) -> AnyElement {
-    div()
-        .id(id.clone())
-        .min_w(px(appearance.min_width))
-        .p(px(appearance.padding))
-        .bg(appearance.background)
-        .border_1()
-        .border_color(appearance.border)
-        .rounded(px(appearance.radius))
-        .shadow(appearance.shadow.clone())
-        .children(
-            items
-                .iter()
-                .enumerate()
-                .map(|(index, item)| render_menu_item_row(&id, item, index, appearance, state)),
-        )
-        .into_any_element()
-}
-
-fn render_menu_item_row(
-    panel_id: &str,
-    item: &MenuItem,
-    index: usize,
-    appearance: &FloatingMenuAppearance,
-    state: FloatingMenuSampleState,
-) -> AnyElement {
-    let enabled = item.is_enabled();
-    let active = matches!(state, FloatingMenuSampleState::Active(active_index) if active_index == index);
-    let color = if enabled {
-        appearance.foreground
-    } else {
-        appearance.item_disabled_foreground
-    };
-
-    let mut row = div()
-        .id(format!("{panel_id}-item-{}", item.id()))
-        .flex()
-        .items_center()
-        .gap(px(appearance.item_gap))
-        .min_h(px(appearance.item_height))
-        .px(px(appearance.item_padding_x))
-        .rounded(px(appearance.item_radius))
-        .text_color(color)
-        .text_size(px(appearance.item_typography.size))
-        .line_height(px(appearance.item_typography.line_height))
-        .font_weight(appearance.item_typography.weight)
-        .child(render_item_icon(item.icon_ref(), color, appearance.item_icon_size))
-        .child(div().flex_1().child(item.label_text().clone()))
-        .child(render_submenu_affordance(!item.submenu_items().is_empty(), color, appearance.item_icon_size));
-
-    if active && enabled {
-        row = row.bg(appearance.item_hover_background);
-    }
-
-    if enabled {
-        let hover_background = appearance.item_hover_background;
-        row = row.cursor_pointer().hover(move |style| style.bg(hover_background));
-    } else {
-        row = row.opacity(0.56);
-    }
-
-    row.into_any_element()
-}
-
-fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
-        render_lucide_icon(icon, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_submenu_affordance(has_submenu: bool, color: gpui::Hsla, size: f32) -> AnyElement {
-    if has_submenu {
-        render_lucide_icon(LucideIcon::ChevronRight, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family("lucide")
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
         .into_any_element()
 }
 
@@ -241,3 +141,15 @@ fn sample_id(label: &str) -> String {
         })
         .collect()
 }
+
+fn noop_hovers(count: usize) -> Vec<FloatingMenuHoverHandler> {
+    (0..count).map(|_| Box::new(noop_hover) as FloatingMenuHoverHandler).collect()
+}
+
+fn noop_clicks(count: usize) -> Vec<FloatingMenuClickHandler> {
+    (0..count).map(|_| Box::new(noop_click) as FloatingMenuClickHandler).collect()
+}
+
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
