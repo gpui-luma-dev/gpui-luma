@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    App, AppContext as _, Bounds, Div, DragMoveEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful,
-    Window, canvas, div, px, prelude::*,
+    App, AppContext as _, Bounds, Div, DragMoveEvent, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
+    Stateful, Window, canvas, div, hsla, px, prelude::*,
 };
 
 use super::{SliderDrag, SliderRenderModel};
@@ -62,6 +62,7 @@ impl SliderTemplate for ThemedSliderTemplate {
         let percentage = model.percentage.clamp(0.0, 1.0);
         let fill_width = appearance.width * percentage;
         let thumb_left = (appearance.width - appearance.thumb_size).max(0.0) * percentage;
+        let thumb_top = (appearance.height - appearance.thumb_size) * 0.5;
 
         let track = div()
             .id(format!("{}-track", model.id))
@@ -85,14 +86,24 @@ impl SliderTemplate for ThemedSliderTemplate {
         let thumb = div()
             .id(format!("{}-thumb", model.id))
             .absolute()
-            .left(px(thumb_left))
-            .top(px((appearance.height - appearance.thumb_size) * 0.5))
-            .size(px(appearance.thumb_size))
-            .bg(appearance.thumb_background)
-            .border_1()
-            .border_color(appearance.thumb_border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.thumb_shadow.clone());
+            .left(px(thumb_left - thumb_focus_offset()))
+            .top(px(thumb_top - thumb_focus_offset()))
+            .flex()
+            .items_center()
+            .justify_center()
+            .p(px(THUMB_FOCUS_GAP))
+            .border(px(THUMB_FOCUS_WIDTH))
+            .border_color(focus_ring_color(appearance.focus_ring))
+            .rounded(px(appearance.radius + thumb_focus_offset()))
+            .child(
+                div()
+                    .size(px(appearance.thumb_size))
+                    .bg(appearance.thumb_background)
+                    .border_1()
+                    .border_color(appearance.thumb_border)
+                    .rounded(px(appearance.radius))
+                    .shadow(appearance.thumb_shadow.clone()),
+            );
 
         let mut root = div()
             .id(model.id.clone())
@@ -124,11 +135,17 @@ impl SliderTemplate for ThemedSliderTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
-            root = root
-                .child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(appearance.radius)));
-        }
-
         root
     }
+}
+
+const THUMB_FOCUS_GAP: f32 = 0.0;
+const THUMB_FOCUS_WIDTH: f32 = 2.0;
+
+fn thumb_focus_offset() -> f32 {
+    THUMB_FOCUS_GAP + THUMB_FOCUS_WIDTH
+}
+
+fn focus_ring_color(focus_ring: Option<Hsla>) -> Hsla {
+    focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0))
 }

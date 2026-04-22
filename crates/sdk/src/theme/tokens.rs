@@ -150,7 +150,6 @@ pub struct NavigationPalette {
     pub selected_background: Hsla,
     pub selected_foreground: Hsla,
     pub border: Hsla,
-    pub focus_ring: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -181,7 +180,6 @@ pub struct ColorTokens {
     pub text_inverse: Hsla,
     pub text_disabled: Hsla,
     pub border: Hsla,
-    pub focus_ring: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -465,7 +463,6 @@ impl LumaPalette {
                 selected_background: rgb(0x2563eb).into(),
                 selected_foreground: rgb(0xffffff).into(),
                 border: rgb(0xcbd5e1).into(),
-                focus_ring: rgb(0xf59e0b).into(),
             },
             data: DataPalette {
                 accent_1: rgb(0x2563eb).into(),
@@ -541,7 +538,6 @@ impl LumaPalette {
                 selected_background: rgb(0x60a5fa).into(),
                 selected_foreground: rgb(0x082f49).into(),
                 border: rgb(0x334155).into(),
-                focus_ring: rgb(0xfbbf24).into(),
             },
             data: DataPalette {
                 accent_1: rgb(0x60a5fa).into(),
@@ -588,7 +584,6 @@ impl ColorTokens {
             text_inverse: palette.state.selected.foreground,
             text_disabled: palette.state.disabled.foreground,
             border: palette.border.default,
-            focus_ring: palette.focus.ring,
         }
     }
 }
@@ -870,7 +865,6 @@ struct RawNavigationPalette {
     selected_background: String,
     selected_foreground: String,
     border: String,
-    focus_ring: String,
 }
 
 #[derive(Deserialize)]
@@ -901,7 +895,6 @@ struct RawColorTokens {
     text_inverse: String,
     text_disabled: String,
     border: String,
-    focus_ring: String,
 }
 
 #[derive(Deserialize)]
@@ -1141,7 +1134,6 @@ impl RawNavigationPalette {
             selected_background: parse_hsla(&self.selected_background)?,
             selected_foreground: parse_hsla(&self.selected_foreground)?,
             border: parse_hsla(&self.border)?,
-            focus_ring: parse_hsla(&self.focus_ring)?,
         })
     }
 }
@@ -1178,7 +1170,6 @@ impl RawColorTokens {
             text_inverse: parse_hsla(&self.text_inverse)?,
             text_disabled: parse_hsla(&self.text_disabled)?,
             border: parse_hsla(&self.border)?,
-            focus_ring: parse_hsla(&self.focus_ring)?,
         })
     }
 }

@@ -122,7 +122,7 @@ pub const NAVIGATION_SIDEBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "branch focus ring",
-            token: "navigation.focus_ring",
+            token: "focus.ring",
             states: &["focused"],
             appearance_fields: &["NavigationSidebarItemAppearance.focus_ring"],
         },
@@ -185,7 +185,7 @@ pub const NAVIGATION_SIDEBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "item focus ring",
-            token: "navigation.focus_ring",
+            token: "focus.ring",
             states: &["focused", "selected focused"],
             appearance_fields: &["NavigationSidebarItemAppearance.focus_ring"],
         },
@@ -212,7 +212,7 @@ impl DefaultNavigationSidebarTheme {
             background: None,
             foreground,
             icon_color: foreground,
-            focus_ring: state.focused.then_some(palette.navigation.focus_ring),
+            focus_ring: state.focused.then_some(palette.focus.ring),
             typography: typography.text.label,
             radius: metrics.radius(size),
             height: 30.0,

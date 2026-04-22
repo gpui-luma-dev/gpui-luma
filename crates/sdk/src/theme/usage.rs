@@ -74,7 +74,6 @@ pub fn palette_color_tokens(tokens: &super::ThemeTokens) -> Vec<PaletteColorToke
         token("navigation.selected_background", palette.navigation.selected_background),
         token("navigation.selected_foreground", palette.navigation.selected_foreground),
         token("navigation.border", palette.navigation.border),
-        token("navigation.focus_ring", palette.navigation.focus_ring),
         reserved_token("data.accent_1", palette.data.accent_1),
         reserved_token("data.accent_2", palette.data.accent_2),
         reserved_token("data.accent_3", palette.data.accent_3),

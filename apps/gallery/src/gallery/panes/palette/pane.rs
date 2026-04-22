@@ -148,7 +148,6 @@ fn palette_sections(tokens: &ThemeTokens) -> Vec<PaletteSection> {
                 item("selected_background", palette.navigation.selected_background),
                 item("selected_foreground", palette.navigation.selected_foreground),
                 item("border", palette.navigation.border),
-                item("focus_ring", palette.navigation.focus_ring),
             ],
         },
         PaletteSection {

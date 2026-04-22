@@ -74,7 +74,6 @@ hover_background = "hsl(210 40% 96%)"
 selected_background = "hsl(221 83% 53%)"
 selected_foreground = "hsl(0 0% 100%)"
 border = "hsl(213 27% 84%)"
-focus_ring = "hsl(38 92% 50%)"
 
 [light.palette.data]
 accent_1 = "hsl(221 83% 53%)"
@@ -275,7 +274,6 @@ text = "hsl(222 47% 11%)"
 text_inverse = "hsl(0 0% 100%)"
 text_disabled = "hsl(215 20% 65%)"
 border = "hsl(213 27% 84%)"
-focus_ring = "hsl(38 92% 50%)"
 
 [dark.palette.app]
 background = "hsl(223 49% 8%)"
@@ -350,7 +348,6 @@ hover_background = "hsl(217 33% 17%)"
 selected_background = "hsl(213 94% 68%)"
 selected_foreground = "hsl(204 80% 16%)"
 border = "hsl(215 25% 27%)"
-focus_ring = "hsl(43 96% 56%)"
 
 [dark.palette.data]
 accent_1 = "hsl(213 94% 68%)"
@@ -551,4 +548,3 @@ text = "hsl(210 40% 98%)"
 text_inverse = "hsl(204 80% 16%)"
 text_disabled = "hsl(215 16% 47%)"
 border = "hsl(215 25% 27%)"
-focus_ring = "hsl(43 96% 56%)"
