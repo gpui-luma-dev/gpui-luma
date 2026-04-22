@@ -167,7 +167,7 @@ fn render_toggle_group_item_visual(
     root = apply_item_radius(root, model.position, appearance.radius);
 
     if let Some(focus_ring) = appearance.focus_ring {
-        root = root.child(render_focus_ring(focus_ring, appearance.radius));
+        root = root.child(render_focus_ring(focus_ring, model.position, appearance.radius));
     }
 
     if model.state.disabled {
@@ -188,8 +188,30 @@ fn apply_item_radius(root: Stateful<Div>, position: ToggleGroupItemPosition, rad
     }
 }
 
-fn render_focus_ring(color: gpui::Hsla, radius: f32) -> Div {
-    div().absolute().size_full().border_1().border_color(color).rounded(px(radius))
+fn render_focus_ring(color: gpui::Hsla, position: ToggleGroupItemPosition, radius: f32) -> Div {
+    let inset = 1.0;
+    let radius = (radius - inset).max(0.0);
+    let ring = div()
+        .absolute()
+        .top(px(inset))
+        .right(px(inset))
+        .bottom(px(inset))
+        .left(px(inset))
+        .border_1()
+        .border_color(color);
+
+    apply_focus_ring_radius(ring, position, radius)
+}
+
+fn apply_focus_ring_radius(root: Div, position: ToggleGroupItemPosition, radius: f32) -> Div {
+    let radius = px(radius);
+
+    match position {
+        ToggleGroupItemPosition::Only => root.rounded(radius),
+        ToggleGroupItemPosition::First => root.rounded_tl(radius).rounded_bl(radius),
+        ToggleGroupItemPosition::Middle => root,
+        ToggleGroupItemPosition::Last => root.rounded_tr(radius).rounded_br(radius),
+    }
 }
 
 fn button_variant(kind: ButtonKind) -> ButtonVariant {

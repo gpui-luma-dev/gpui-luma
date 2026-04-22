@@ -33,12 +33,7 @@ pub struct CompositeItemState {
 
 impl CompositeItemState {
     pub fn interaction_state(self) -> InteractionState {
-        InteractionState {
-            hovered: self.hovered,
-            pressed: self.pressed,
-            focused: self.active,
-            disabled: self.disabled,
-        }
+        InteractionState { hovered: self.hovered, pressed: self.pressed, focused: self.active, disabled: self.disabled }
     }
 }
 
