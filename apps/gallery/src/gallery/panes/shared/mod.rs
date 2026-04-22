@@ -50,12 +50,13 @@ pub(super) fn gallery_pane_with_usage(
             div()
                 .size_full()
                 .flex()
-                .items_center()
+                .items_stretch()
                 .justify_center()
                 .gap(px(28.0))
                 .child(
                     div()
                         .min_w(px(0.0))
+                        .h_full()
                         .flex_1()
                         .flex()
                         .flex_col()
@@ -68,7 +69,7 @@ pub(super) fn gallery_pane_with_usage(
                         )
                         .child(content),
                 )
-                .child(render_usage_panel(usage_component, theme)),
+                .child(div().flex().items_center().child(render_usage_panel(usage_component, theme))),
         )
         .into_any_element()
 }

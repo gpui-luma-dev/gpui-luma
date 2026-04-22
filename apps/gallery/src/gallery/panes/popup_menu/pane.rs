@@ -1,6 +1,15 @@
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
+use std::sync::Arc;
+
+use gpui::{
+    AnyElement, App, Bounds, ClickEvent, Context, Entity, FontWeight, IntoElement, MouseDownEvent, MouseUpEvent,
+    Pixels, Render, SharedString, Subscription, Window, div, prelude::*, px,
+};
+use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
+use gpui_luma::controls::popup_menu::{
+    ControlFocusState, MenuPath, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel,
+    PopupMenuTemplate, PopupMenuTemplateHandlers,
+};
+use gpui_luma::theme::{DefaultPopupMenuTheme, InteractionState, PopupMenuAppearance, PopupMenuTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -14,7 +23,7 @@ pub(in crate::gallery) struct PopupMenuPane {
     popup_below: Entity<PopupMenu>,
     popup_above: Entity<PopupMenu>,
     popup_centered: Entity<PopupMenu>,
-    disabled_popup: Entity<PopupMenu>,
+    state_preview: Entity<PopupMenuStatePreview>,
     selection: String,
 }
 
@@ -45,12 +54,7 @@ impl PopupMenuPane {
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
                 .template(theme.popup_menu_template())
                 .spawn(cx),
-            disabled_popup: PopupMenu::new("disabled-popup-menu-example")
-                .label("Disabled popup")
-                .items(disabled_menu_items())
-                .enabled(false)
-                .template(theme.popup_menu_template())
-                .spawn(cx),
+            state_preview: cx.new(|_| PopupMenuStatePreview::new(theme)),
             selection: "none".to_string(),
         }
     }
@@ -77,24 +81,32 @@ impl PopupMenuPane {
             "Popup Menu",
             "Popup Menu",
             div()
-                .min_h(px(320.0))
+                .w_full()
+                .min_h(px(0.0))
+                .flex_1()
                 .flex()
                 .flex_col()
                 .items_center()
-                .justify_center()
-                .gap_3()
-                .child(
-                    div().flex().items_center().gap_3().child(self.popup_below.clone()).child(self.popup_above.clone()),
-                )
+                .justify_between()
+                .gap_4()
                 .child(
                     div()
                         .flex()
+                        .flex_col()
                         .items_center()
                         .gap_3()
-                        .child(self.popup_centered.clone())
-                        .child(self.disabled_popup.clone()),
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_3()
+                                .child(self.popup_below.clone())
+                                .child(self.popup_above.clone()),
+                        )
+                        .child(div().flex().items_center().gap_3().child(self.popup_centered.clone()))
+                        .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection)))
+                        .child(self.state_preview.clone()),
                 )
-                .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection)))
                 .child(self.popup_smart.clone())
                 .into_any_element(),
             theme,
@@ -106,7 +118,7 @@ impl PopupMenuPane {
         notify_entity(&self.popup_below, cx);
         notify_entity(&self.popup_above, cx);
         notify_entity(&self.popup_centered, cx);
-        notify_entity(&self.disabled_popup, cx);
+        notify_entity(&self.state_preview, cx);
     }
 
     fn handle_event(&mut self, event: &PopupMenuEvent, cx: &mut Context<GalleryApp>) {
@@ -123,6 +135,281 @@ impl PopupMenuPane {
     }
 }
 
+#[derive(Clone)]
+struct PopupMenuStatePreview {
+    theme: GalleryThemePack,
+    template: Arc<dyn PopupMenuTemplate>,
+}
+
+struct PopupMenuStateSample {
+    id: &'static str,
+    label: &'static str,
+    state: InteractionState,
+    focus: ControlFocusState,
+}
+
+impl PopupMenuStatePreview {
+    fn new(theme: &GalleryThemePack) -> Self {
+        Self { theme: theme.clone(), template: theme.popup_menu_template() }
+    }
+}
+
+impl Render for PopupMenuStatePreview {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.theme.chrome();
+        let popup_theme = DefaultPopupMenuTheme::new(self.theme.tokens());
+        let menu_appearance = popup_theme.resolve(InteractionState::default());
+        let samples = [
+            PopupMenuStateSample {
+                id: "default",
+                label: "Default",
+                state: InteractionState::default(),
+                focus: ControlFocusState::default(),
+            },
+            PopupMenuStateSample {
+                id: "hover",
+                label: "Hover",
+                state: InteractionState { hovered: true, ..InteractionState::default() },
+                focus: ControlFocusState::default(),
+            },
+            PopupMenuStateSample {
+                id: "focus",
+                label: "Focus",
+                state: InteractionState { focused: true, ..InteractionState::default() },
+                focus: ControlFocusState { focused: true, focus_visible: true },
+            },
+            PopupMenuStateSample {
+                id: "active",
+                label: "Active",
+                state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
+                focus: ControlFocusState { focused: true, focus_visible: true },
+            },
+            PopupMenuStateSample {
+                id: "disabled",
+                label: "Disabled",
+                state: InteractionState { disabled: true, ..InteractionState::default() },
+                focus: ControlFocusState::default(),
+            },
+        ];
+
+        div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(14.0))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Template state preview"),
+            )
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    samples
+                        .into_iter()
+                        .map(|sample| render_trigger_sample(&self.template, sample, chrome.muted_text, window, cx)),
+                ),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_start()
+                    .justify_center()
+                    .gap(px(12.0))
+                    .child(render_open_sample(&menu_appearance, chrome.muted_text)),
+            )
+    }
+}
+
+fn render_trigger_sample(
+    template: &Arc<dyn PopupMenuTemplate>,
+    sample: PopupMenuStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("popup-menu-preview-trigger-{}", sample.id));
+    let label = SharedString::from("Popup");
+    let items = menu_items().into_iter().collect::<Vec<_>>();
+    let model = PopupMenuRenderModel {
+        id: &id,
+        label: &label,
+        items: &items,
+        open: false,
+        trigger_bounds: None,
+        placement: PopupMenuPlacement::BelowStart,
+        open_submenu: None,
+        active_path: None,
+        enabled: !sample.state.disabled,
+        focus: sample.focus,
+        state: sample.state,
+    };
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(template.render(&model, popup_menu_preview_handlers(items.len(), 0), window, cx))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .into_any_element()
+}
+
+fn render_open_sample(appearance: &PopupMenuAppearance, label_color: gpui::Hsla) -> AnyElement {
+    let sample_label = "Open: active item";
+    let active_path = Some(MenuPath::Root(1));
+    let items = menu_items().into_iter().collect::<Vec<_>>();
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(render_isolated_menu("popup-menu-preview-open-root".to_string(), &items, appearance, active_path))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample_label))
+        .into_any_element()
+}
+
+fn render_isolated_menu(
+    id: String,
+    items: &[MenuItem],
+    appearance: &PopupMenuAppearance,
+    active_path: Option<MenuPath>,
+) -> AnyElement {
+    div()
+        .flex()
+        .items_start()
+        .gap(px(appearance.submenu_offset_x))
+        .child(render_menu_panel(format!("{id}-menu"), items, appearance, active_path))
+        .into_any_element()
+}
+
+fn render_menu_panel(
+    id: String,
+    items: &[MenuItem],
+    appearance: &PopupMenuAppearance,
+    active_path: Option<MenuPath>,
+) -> AnyElement {
+    div()
+        .id(id)
+        .min_w(px(appearance.menu_min_width))
+        .p(px(appearance.menu_padding))
+        .bg(appearance.menu_background)
+        .border_1()
+        .border_color(appearance.menu_border)
+        .rounded(px(appearance.menu_radius))
+        .shadow(appearance.menu_shadow.clone())
+        .children(
+            items
+                .iter()
+                .enumerate()
+                .map(|(index, item)| render_menu_item_row(item, index, appearance, active_path)),
+        )
+        .into_any_element()
+}
+
+fn render_menu_item_row(
+    item: &MenuItem,
+    index: usize,
+    appearance: &PopupMenuAppearance,
+    active_path: Option<MenuPath>,
+) -> AnyElement {
+    let enabled = item.is_enabled();
+    let active = active_path.is_some_and(|path| path.is_root(index));
+    let color = if enabled {
+        appearance.item_foreground
+    } else {
+        appearance.item_disabled_foreground
+    };
+
+    let mut row = div()
+        .id(format!("popup-menu-preview-item-{}", item.id()))
+        .flex()
+        .items_center()
+        .gap(px(appearance.item_gap))
+        .min_h(px(appearance.item_height))
+        .px(px(appearance.item_padding_x))
+        .rounded(px(appearance.item_radius))
+        .text_color(color)
+        .text_size(px(appearance.item_typography.size))
+        .line_height(px(appearance.item_typography.line_height))
+        .font_weight(appearance.item_typography.weight)
+        .child(render_item_icon(item.icon_ref(), color, appearance.item_icon_size))
+        .child(div().flex_1().child(item.label_text().clone()))
+        .child(render_submenu_affordance(!item.submenu_items().is_empty(), color, appearance.item_icon_size));
+
+    if active && enabled {
+        row = row.bg(appearance.item_hover_background);
+    }
+
+    if enabled {
+        row = row.cursor_pointer();
+    } else {
+        row = row.opacity(0.56);
+    }
+
+    row.into_any_element()
+}
+
+fn render_item_icon(icon: Option<&MenuItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
+    if let Some(icon) = icon.and_then(MenuItemIcon::lucide) {
+        render_lucide_icon(icon, color, size)
+    } else {
+        div().size(px(size)).into_any_element()
+    }
+}
+
+fn render_submenu_affordance(has_submenu: bool, color: gpui::Hsla, size: f32) -> AnyElement {
+    if has_submenu {
+        render_lucide_icon(LucideIcon::ChevronRight, color, size)
+    } else {
+        div().size(px(size)).into_any_element()
+    }
+}
+
+fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
+    div()
+        .size(px(size))
+        .flex()
+        .items_center()
+        .justify_center()
+        .font_family("lucide")
+        .font_weight(FontWeight::NORMAL)
+        .text_size(px(size))
+        .line_height(px(size))
+        .text_color(color)
+        .child(char::from(icon).to_string())
+        .into_any_element()
+}
+
+fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) -> PopupMenuTemplateHandlers {
+    let click_count = root_count + submenu_click_count;
+
+    PopupMenuTemplateHandlers {
+        trigger_bounds: Box::new(noop_bounds),
+        trigger_click: Box::new(noop_click),
+        trigger_hover: Box::new(noop_hover),
+        trigger_mouse_down: Box::new(noop_mouse_down),
+        trigger_mouse_up: Box::new(noop_mouse_up),
+        trigger_mouse_up_out: Box::new(noop_mouse_up),
+        root_mouse_down_out: Box::new(noop_mouse_down),
+        item_hovers: (0..root_count).map(|_| Box::new(noop_hover) as _).collect(),
+        item_clicks: (0..click_count).map(|_| Box::new(noop_click) as _).collect(),
+    }
+}
+
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+
 fn menu_items() -> [MenuItem; 5] {
     [
         MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
@@ -133,13 +420,5 @@ fn menu_items() -> [MenuItem; 5] {
             MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
         ]),
         MenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
-    ]
-}
-
-fn disabled_menu_items() -> [MenuItem; 3] {
-    [
-        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
-        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
-        MenuItem::new("archive").label("Archive"),
     ]
 }
