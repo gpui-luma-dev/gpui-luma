@@ -22,12 +22,13 @@ use gpui_luma::controls::{
 use gpui_luma::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme, DefaultScrollbarTheme, DefaultSliderTheme,
-    DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme,
-    NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme,
-    RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme,
-    SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
-    ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
+    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme,
+    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultToggleGroupTheme,
+    InteractionState, LumaTheme, NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme, ProgressAppearance,
+    ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance,
+    SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance,
+    TabsNavigationTheme, ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance,
+    ToggleGroupTheme,
 };
 
 #[derive(Clone)]
@@ -170,7 +171,10 @@ impl GalleryThemePack {
     }
 
     pub(in crate::gallery) fn navigation_sidebar_template(&self) -> Arc<dyn NavigationSidebarTemplate> {
-        Arc::new(ThemedNavigationSidebarTemplate::new(self.navigation_sidebar_theme.clone()))
+        Arc::new(ThemedNavigationSidebarTemplate::new_with_floating_menu_theme(
+            self.navigation_sidebar_theme.clone(),
+            Arc::new(DefaultFloatingMenuTheme::new(self.state.tokens())),
+        ))
     }
 
     pub(in crate::gallery) fn tabs_navigation_template(&self) -> Arc<dyn TabsNavigationTemplate> {

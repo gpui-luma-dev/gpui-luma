@@ -1,5 +1,7 @@
+use std::{cell::Cell, rc::Rc};
+
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
-use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
+use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -10,6 +12,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct NavigationSidebarPane {
     sidebar: Entity<NavigationSidebar>,
+    collapsed: Rc<Cell<bool>>,
 }
 
 #[derive(Clone, Copy)]
@@ -85,6 +88,7 @@ impl NavigationSidebarPane {
         let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Primary card")
+            .collapsible(true)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_nodes())
             .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
@@ -92,20 +96,29 @@ impl NavigationSidebarPane {
             .scrollbar_template(theme.scrollbar_template())
             .spawn(cx);
 
-        Self { sidebar }
+        Self { sidebar, collapsed: Rc::new(Cell::new(false)) }
     }
 
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
+    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        let collapsed = self.collapsed.clone();
+        subscriptions.push(cx.subscribe(&self.sidebar, move |_, _, event: &NavigationSidebarEvent, cx| {
+            if let NavigationSidebarEvent::CollapsedChanged { collapsed: next_collapsed } = event {
+                collapsed.set(*next_collapsed);
+                cx.notify();
+            }
+        }));
+    }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
+        let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
 
         gallery_pane_with_usage(
             "Navigation Sidebar",
             "Navigation Sidebar",
             div()
                 .flex_none()
-                .w(px(300.0))
+                .w(width)
                 .h(px(500.0))
                 .overflow_hidden()
                 .rounded(px(8.0))

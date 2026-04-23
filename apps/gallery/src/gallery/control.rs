@@ -34,7 +34,7 @@ impl GalleryApp {
             .sidebar_width(px(280.0))
             .sidebar_min_width(px(220.0))
             .sidebar_max_width(px(420.0))
-            .sidebar_collapsed_width(px(0.0))
+            .sidebar_collapsed_width(px(56.0))
             .collapsed(false)
             .resizable(true)
             .separator_color(chrome.border)
@@ -47,6 +47,7 @@ impl GalleryApp {
         let navigation_sidebar = NavigationSidebar::new("gallery-nav")
             .title("GPUI-Luma")
             .subtitle("Control gallery")
+            .collapsible(true)
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
             .template(theme.navigation_sidebar_template())
@@ -105,6 +106,9 @@ impl GalleryApp {
             }
             SplitViewEvent::CollapsedChanged { collapsed } => {
                 self.split_sidebar_collapsed = *collapsed;
+                self.navigation_sidebar.update(cx, |sidebar, cx| {
+                    sidebar.set_collapsed(*collapsed, cx);
+                });
                 cx.notify();
             }
         }
@@ -118,6 +122,11 @@ impl GalleryApp {
             NavigationSidebarEvent::BranchExpandedChanged { node_id, expanded } => {
                 self.nav_toggle = format!("{}: {}", node_id, expanded);
                 cx.notify();
+            }
+            NavigationSidebarEvent::CollapsedChanged { collapsed } => {
+                self.split_view.update(cx, |split_view, cx| {
+                    split_view.set_collapsed(*collapsed, cx);
+                });
             }
         }
     }

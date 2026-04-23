@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Entity, FocusHandle, IntoElement, SharedString, div, prelude::*};
+use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pixels, SharedString, div, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{NavigationSidebar, NavigationSidebarTemplate, default_navigation_sidebar_template};
 use crate::controls::content_presenter::{ContentPresenter, HostedContent, IntoContentPresenter};
+use crate::controls::menu_item::MenuItem;
+use crate::controls::state::MenuPath;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type NavHostedContent = HostedContent;
@@ -126,9 +128,28 @@ pub struct NavigationSidebarModel {
     pub(crate) nodes: Vec<NavNode>,
     pub(crate) footer_nodes: Vec<NavNode>,
     pub(crate) selected_id: Option<SharedString>,
+    pub(crate) collapsible: bool,
     pub(crate) collapsed: bool,
     pub(crate) template: Arc<dyn NavigationSidebarTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
+}
+
+pub struct RenderedCollapseTrigger {
+    pub id: SharedString,
+    pub collapsed: bool,
+    pub hovered: bool,
+    pub pressed: bool,
+    pub focused: bool,
+    pub focus_handle: FocusHandle,
+}
+
+pub struct RenderedRailSubmenu {
+    pub id: SharedString,
+    pub parent_node_id: SharedString,
+    pub parent_bounds: Bounds<Pixels>,
+    pub items: Vec<MenuItem>,
+    pub open_submenu: Option<usize>,
+    pub active_path: Option<MenuPath>,
 }
 
 pub struct NavigationSidebarRenderModel {
@@ -138,7 +159,12 @@ pub struct NavigationSidebarRenderModel {
     pub header_nodes: Vec<RenderedNavNode>,
     pub nodes: Vec<RenderedNavNode>,
     pub footer_nodes: Vec<RenderedNavNode>,
+    pub rail_nodes: Vec<RenderedNavNode>,
+    pub rail_footer_nodes: Vec<RenderedNavNode>,
+    pub rail_submenu: Option<RenderedRailSubmenu>,
+    pub collapse_trigger: Option<RenderedCollapseTrigger>,
     pub selected_id: Option<SharedString>,
+    pub collapsible: bool,
     pub collapsed: bool,
 }
 
@@ -169,6 +195,7 @@ impl NavigationSidebarBuilder {
                 nodes: Vec::new(),
                 footer_nodes: Vec::new(),
                 selected_id: None,
+                collapsible: false,
                 collapsed: false,
                 template: default_navigation_sidebar_template(),
                 scrollbar_template: default_scrollbar_template(),
@@ -223,6 +250,11 @@ impl NavigationSidebarBuilder {
 
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.model.collapsed = collapsed;
+        self
+    }
+
+    pub fn collapsible(mut self, collapsible: bool) -> Self {
+        self.model.collapsible = collapsible;
         self
     }
 

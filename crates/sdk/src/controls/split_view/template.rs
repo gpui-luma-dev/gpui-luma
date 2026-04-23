@@ -1,14 +1,13 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, DragMoveEvent, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window,
-    div, prelude::*, px,
+    AnyElement, App, ClickEvent, Div, DragMoveEvent, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Stateful,
+    Window, div, prelude::*, px,
 };
 
 use super::{SplitViewRenderModel, SplitViewSeparatorVisibility, control::SplitViewSeparatorDrag};
 
 const SEPARATOR_HITBOX_WIDTH: f32 = 20.0;
-const EXPAND_SEPARATOR_LEFT: f32 = 0.0;
 const EXPAND_SEPARATOR_INSET_Y: f32 = 10.0;
 const EXPAND_SEPARATOR_CUE_LEFT: f32 = 2.0;
 const SEPARATOR_CUE_INSET_Y: f32 = 16.0;
@@ -104,7 +103,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
                 div()
                     .id(format!("{}-expand-separator", model.id))
                     .absolute()
-                    .left(px(EXPAND_SEPARATOR_LEFT))
+                    .left(collapsed_expand_separator_left(model.effective_sidebar_width))
                     .top(px(EXPAND_SEPARATOR_INSET_Y))
                     .bottom(px(EXPAND_SEPARATOR_INSET_Y))
                     .w(px(SEPARATOR_HITBOX_WIDTH))
@@ -173,6 +172,10 @@ fn centered_separator_cue_left(width: f32) -> f32 {
     (SEPARATOR_HITBOX_WIDTH - width) * CENTERED_CUE_OFFSET_FACTOR
 }
 
+pub(crate) fn collapsed_expand_separator_left(effective_sidebar_width: Pixels) -> Pixels {
+    effective_sidebar_width.max(px(0.0))
+}
+
 fn render_separator_cue(left: f32, width: f32, color: Option<Hsla>) -> Div {
     let mut cue = div()
         .absolute()
@@ -187,4 +190,17 @@ fn render_separator_cue(left: f32, width: f32, color: Option<Hsla>) -> Div {
     }
 
     cue
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::px;
+
+    use super::collapsed_expand_separator_left;
+
+    #[test]
+    fn collapsed_expand_separator_starts_at_effective_sidebar_edge() {
+        assert_eq!(collapsed_expand_separator_left(px(0.0)), px(0.0));
+        assert_eq!(collapsed_expand_separator_left(px(56.0)), px(56.0));
+    }
 }

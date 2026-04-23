@@ -1,14 +1,19 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent,
-    SharedString, Stateful, Window, div, prelude::*, px,
+    AnyElement, App, Bounds, ClickEvent, Corner, Div, FocusHandle, FontFeatures, FontWeight, MouseButton,
+    MouseDownEvent, MouseUpEvent, Pixels, SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*,
+    px,
 };
 use lucide_icons::Icon as LucideIcon;
 
-use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedNavNode};
+use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
+use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
-use crate::theme::{ControlSize, InteractionState, NavigationSidebarTheme, default_navigation_sidebar_theme};
+use crate::theme::{
+    ControlSize, FloatingMenuAppearance, FloatingMenuTheme, InteractionState, NavigationSidebarTheme,
+    default_floating_menu_theme, default_navigation_sidebar_theme,
+};
 
 const CONTAINER_GAP: f32 = 8.0;
 const CONTAINER_PADDING: f32 = 8.0;
@@ -28,11 +33,18 @@ const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
 const DISCLOSURE_EXPANDED_ICON: LucideIcon = LucideIcon::ChevronDown;
 const DISCLOSURE_COLLAPSED_ICON: LucideIcon = LucideIcon::ChevronRight;
 const DISCLOSURE_ICON_SIZE: f32 = 14.0;
+const COLLAPSE_EXPANDED_ICON: LucideIcon = LucideIcon::PanelLeftClose;
+const COLLAPSE_COLLAPSED_ICON: LucideIcon = LucideIcon::PanelLeftOpen;
 const DISABLED_ROW_OPACITY: f32 = 0.56;
 const SCROLL_REGION_MIN_HEIGHT: f32 = 0.0;
+const RAIL_SUBMENU_OFFSET_X: f32 = 12.0;
+const RAIL_BRANCH_INDICATOR_ICON: LucideIcon = LucideIcon::ChevronRight;
+const RAIL_BRANCH_INDICATOR_SIZE: f32 = 18.0;
+const RAIL_BRANCH_INDICATOR_RIGHT: f32 = -10.0;
 const LUCIDE_FONT_FAMILY: &str = "lucide";
 const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
 
+pub type NavigationSidebarBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type NavigationSidebarClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type NavigationSidebarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type NavigationSidebarMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -40,11 +52,20 @@ pub type NavigationSidebarMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window
 
 #[derive(Default)]
 pub struct NavigationSidebarTemplateHandlers {
+    pub collapse_hover: Option<NavigationSidebarHoverHandler>,
+    pub collapse_mouse_down: Option<NavigationSidebarMouseDownHandler>,
+    pub collapse_mouse_up: Option<NavigationSidebarMouseUpHandler>,
+    pub collapse_mouse_up_out: Option<NavigationSidebarMouseUpHandler>,
+    pub collapse_click: Option<NavigationSidebarClickHandler>,
+    pub row_bounds: Vec<NavigationSidebarBoundsHandler>,
     pub row_hovers: Vec<NavigationSidebarHoverHandler>,
     pub row_mouse_downs: Vec<NavigationSidebarMouseDownHandler>,
     pub row_mouse_ups: Vec<NavigationSidebarMouseUpHandler>,
     pub row_mouse_up_outs: Vec<NavigationSidebarMouseUpHandler>,
     pub row_clicks: Vec<NavigationSidebarClickHandler>,
+    pub rail_submenu_mouse_down_out: Option<NavigationSidebarMouseDownHandler>,
+    pub rail_submenu_item_hovers: Vec<FloatingMenuHoverHandler>,
+    pub rail_submenu_item_clicks: Vec<FloatingMenuClickHandler>,
 }
 
 pub trait NavigationSidebarTemplate: Send + Sync {
@@ -60,11 +81,19 @@ pub trait NavigationSidebarTemplate: Send + Sync {
 
 pub struct ThemedNavigationSidebarTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
+    floating_menu_theme: Arc<dyn FloatingMenuTheme>,
 }
 
 impl ThemedNavigationSidebarTemplate {
     pub fn new(theme: Arc<dyn NavigationSidebarTheme>) -> Self {
-        Self { theme }
+        Self { theme, floating_menu_theme: default_floating_menu_theme() }
+    }
+
+    pub fn new_with_floating_menu_theme(
+        theme: Arc<dyn NavigationSidebarTheme>,
+        floating_menu_theme: Arc<dyn FloatingMenuTheme>,
+    ) -> Self {
+        Self { theme, floating_menu_theme }
     }
 }
 
@@ -91,12 +120,22 @@ impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
     ) -> Stateful<Div> {
         let container = self.theme.resolve_container();
         let NavigationSidebarTemplateHandlers {
+            collapse_hover,
+            collapse_mouse_down,
+            collapse_mouse_up,
+            collapse_mouse_up_out,
+            collapse_click,
+            mut row_bounds,
             mut row_hovers,
             mut row_mouse_downs,
             mut row_mouse_ups,
             mut row_mouse_up_outs,
             mut row_clicks,
+            rail_submenu_mouse_down_out,
+            rail_submenu_item_hovers,
+            rail_submenu_item_clicks,
         } = handlers;
+        let mut row_bounds = row_bounds.drain(..);
         let mut row_hovers = row_hovers.drain(..);
         let mut row_mouse_downs = row_mouse_downs.drain(..);
         let mut row_mouse_ups = row_mouse_ups.drain(..);
@@ -112,8 +151,86 @@ impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
             .bg(container.background)
             .text_color(container.foreground);
 
-        if model.title.is_some() || model.subtitle.is_some() {
-            root = root.child(render_title(model.title, model.subtitle));
+        if model.collapsed {
+            if let Some(trigger) = model.collapse_trigger {
+                root = root.child(div().flex().justify_center().child(render_collapse_trigger(
+                    trigger,
+                    RowHandlers {
+                        bounds: None,
+                        hover: collapse_hover,
+                        mouse_down: collapse_mouse_down,
+                        mouse_up: collapse_mouse_up,
+                        mouse_up_out: collapse_mouse_up_out,
+                        click: collapse_click,
+                    },
+                    &self.theme,
+                )));
+            }
+
+            root = root.child(
+                render_collapsed_rail_region(
+                    model.rail_nodes,
+                    &self.theme,
+                    &mut row_bounds,
+                    &mut row_hovers,
+                    &mut row_mouse_downs,
+                    &mut row_mouse_ups,
+                    &mut row_mouse_up_outs,
+                    &mut row_clicks,
+                )
+                .flex_1(),
+            );
+
+            if !model.rail_footer_nodes.is_empty() {
+                root = root.child(
+                    render_collapsed_rail_region(
+                        model.rail_footer_nodes,
+                        &self.theme,
+                        &mut row_bounds,
+                        &mut row_hovers,
+                        &mut row_mouse_downs,
+                        &mut row_mouse_ups,
+                        &mut row_mouse_up_outs,
+                        &mut row_clicks,
+                    )
+                    .pt(px(FOOTER_REGION_PADDING_TOP)),
+                );
+            }
+
+            if let Some(rail_submenu) = model.rail_submenu {
+                root = root
+                    .on_mouse_down_out(
+                        rail_submenu_mouse_down_out.expect("rail submenu should have outside click handler"),
+                    )
+                    .child(
+                        deferred(render_rail_submenu_overlay(
+                            rail_submenu,
+                            self.floating_menu_theme.resolve(),
+                            rail_submenu_item_hovers,
+                            rail_submenu_item_clicks,
+                        ))
+                        .with_priority(1),
+                    );
+            }
+
+            return root;
+        }
+
+        if model.title.is_some() || model.subtitle.is_some() || model.collapse_trigger.is_some() {
+            root = root.child(render_title(
+                model.title,
+                model.subtitle,
+                model.collapse_trigger,
+                RowHandlers {
+                    bounds: None,
+                    hover: collapse_hover,
+                    mouse_down: collapse_mouse_down,
+                    mouse_up: collapse_mouse_up,
+                    mouse_up_out: collapse_mouse_up_out,
+                    click: collapse_click,
+                },
+                &self.theme,
+            ));
         }
 
         if !model.header_nodes.is_empty() {
@@ -168,18 +285,34 @@ impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
     }
 }
 
-fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>) -> Div {
+fn render_title(
+    title: Option<SharedString>,
+    subtitle: Option<SharedString>,
+    collapse_trigger: Option<RenderedCollapseTrigger>,
+    collapse_handlers: RowHandlers,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+) -> Div {
     let mut header = div().flex().flex_col().gap(px(TITLE_GAP)).pb(px(TITLE_PADDING_BOTTOM));
+    let mut title_row = div().flex().items_center().gap(px(TITLE_GAP));
 
     if let Some(title) = title {
-        header = header.child(
+        title_row = title_row.child(
             div()
+                .flex_1()
                 .text_size(px(TITLE_FONT_SIZE))
                 .line_height(px(TITLE_LINE_HEIGHT))
                 .font_weight(TITLE_FONT_WEIGHT)
                 .child(title),
         );
+    } else {
+        title_row = title_row.child(div().flex_1());
     }
+
+    if let Some(trigger) = collapse_trigger {
+        title_row = title_row.child(render_collapse_trigger(trigger, collapse_handlers, theme));
+    }
+
+    header = header.child(title_row);
 
     if let Some(subtitle) = subtitle {
         header = header.child(
@@ -220,6 +353,36 @@ fn render_region(
     region
 }
 
+fn render_collapsed_rail_region(
+    nodes: Vec<RenderedNavNode>,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+    row_bounds: &mut impl Iterator<Item = NavigationSidebarBoundsHandler>,
+    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+) -> Div {
+    let mut region = div().flex().flex_col().items_center().gap(px(REGION_GAP));
+
+    for node in nodes {
+        region = region.child(render_collapsed_rail_node(
+            node,
+            RowHandlers {
+                bounds: row_bounds.next(),
+                hover: row_hovers.next(),
+                mouse_down: row_mouse_downs.next(),
+                mouse_up: row_mouse_ups.next(),
+                mouse_up_out: row_mouse_up_outs.next(),
+                click: row_clicks.next(),
+            },
+            theme,
+        ));
+    }
+
+    region
+}
+
 fn render_node(
     node: RenderedNavNode,
     theme: &Arc<dyn NavigationSidebarTheme>,
@@ -234,6 +397,7 @@ fn render_node(
     let mut root = div().id(id.clone()).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
         RowRenderInput { id, kind, label, icon, state, custom_element, focus_handle, has_children },
         RowHandlers {
+            bounds: None,
             hover: row_hovers.next(),
             mouse_down: row_mouse_downs.next(),
             mouse_up: row_mouse_ups.next(),
@@ -272,6 +436,7 @@ struct RowRenderInput {
 }
 
 struct RowHandlers {
+    bounds: Option<NavigationSidebarBoundsHandler>,
     hover: Option<NavigationSidebarHoverHandler>,
     mouse_down: Option<NavigationSidebarMouseDownHandler>,
     mouse_up: Option<NavigationSidebarMouseUpHandler>,
@@ -362,7 +527,7 @@ fn render_item_row(
         row = row.border_1().border_color(focus_ring);
     }
 
-    let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
+    let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
     let mut row = row;
     if state.enabled {
         if let Some(focus_handle) = focus_handle.as_ref() {
@@ -386,6 +551,215 @@ fn render_item_row(
     }
 
     row.into_any_element()
+}
+
+fn render_collapsed_rail_node(
+    node: RenderedNavNode,
+    handlers: RowHandlers,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+) -> AnyElement {
+    let RenderedNavNode { id, icon, state, focus_handle, has_children, .. } = node;
+    let interaction = InteractionState {
+        hovered: state.hovered,
+        pressed: state.pressed,
+        focused: state.focused,
+        disabled: !state.enabled,
+    };
+    let appearance = if has_children {
+        theme.resolve_branch(interaction, ControlSize::Md)
+    } else {
+        theme.resolve_item(state.selected, interaction, ControlSize::Md)
+    };
+    let row_width = if has_children {
+        rail_branch_button_width(appearance.height)
+    } else {
+        appearance.height
+    };
+    let mut row = div()
+        .id(format!("{id}-rail-row"))
+        .w(px(row_width))
+        .h(px(appearance.height))
+        .flex_none()
+        .flex()
+        .relative()
+        .items_center()
+        .justify_center()
+        .rounded(px(appearance.radius))
+        .text_color(appearance.foreground);
+
+    if has_children {
+        row = row.child(
+            div()
+                .absolute()
+                .left(px(centered_icon_left(appearance.height, appearance.icon_size)))
+                .top(px(centered_icon_left(appearance.height, appearance.icon_size)))
+                .child(render_lucide_icon(
+                    icon.expect("collapsed rail nodes always have icons"),
+                    appearance.icon_color,
+                    appearance.icon_size,
+                )),
+        );
+        row = row.child(
+            div()
+                .absolute()
+                .left(px(rail_branch_indicator_left(appearance.height)))
+                .top(px(centered_icon_left(appearance.height, RAIL_BRANCH_INDICATOR_SIZE)))
+                .child(render_lucide_icon(
+                    RAIL_BRANCH_INDICATOR_ICON,
+                    appearance.icon_color,
+                    RAIL_BRANCH_INDICATOR_SIZE,
+                )),
+        );
+    } else {
+        row = row.child(render_lucide_icon(
+            icon.expect("collapsed rail nodes always have icons"),
+            appearance.icon_color,
+            appearance.icon_size,
+        ));
+    }
+
+    if let Some(background) = appearance.background {
+        row = row.bg(background);
+    }
+
+    if state.enabled {
+        row = row.cursor_pointer();
+    } else {
+        row = row.opacity(DISABLED_ROW_OPACITY);
+    }
+
+    if let Some(focus_ring) = appearance.focus_ring {
+        row = row.border_1().border_color(focus_ring);
+    }
+
+    let RowHandlers { bounds, hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
+    if state.enabled {
+        if let Some(focus_handle) = focus_handle.as_ref() {
+            row = row.track_focus(focus_handle);
+        }
+        if let Some(hover) = hover {
+            row = row.on_hover(hover);
+        }
+        if let Some(mouse_down) = mouse_down {
+            row = row.on_mouse_down(MouseButton::Left, mouse_down);
+        }
+        if let Some(mouse_up) = mouse_up {
+            row = row.on_mouse_up(MouseButton::Left, mouse_up);
+        }
+        if let Some(mouse_up_out) = mouse_up_out {
+            row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+        }
+        if let Some(click) = click {
+            row = row.on_click(click);
+        }
+    }
+
+    if let Some(bounds) = bounds {
+        div()
+            .on_children_prepainted(move |child_bounds, window, cx| {
+                if let Some(child_bounds) = child_bounds.first() {
+                    bounds(child_bounds, window, cx);
+                }
+            })
+            .child(row)
+            .into_any_element()
+    } else {
+        row.into_any_element()
+    }
+}
+
+fn render_collapse_trigger(
+    trigger: RenderedCollapseTrigger,
+    handlers: RowHandlers,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+) -> AnyElement {
+    let interaction = InteractionState {
+        hovered: trigger.hovered,
+        pressed: trigger.pressed,
+        focused: trigger.focused,
+        disabled: false,
+    };
+    let appearance = theme.resolve_item(false, interaction, ControlSize::Md);
+    let icon = if trigger.collapsed {
+        COLLAPSE_COLLAPSED_ICON
+    } else {
+        COLLAPSE_EXPANDED_ICON
+    };
+    let mut row = div()
+        .id(trigger.id)
+        .size(px(appearance.height))
+        .flex_none()
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(px(appearance.radius))
+        .text_color(appearance.foreground)
+        .cursor_pointer()
+        .track_focus(&trigger.focus_handle)
+        .child(render_lucide_icon(icon, appearance.icon_color, appearance.icon_size));
+
+    if let Some(background) = appearance.background {
+        row = row.bg(background);
+    }
+
+    if let Some(focus_ring) = appearance.focus_ring {
+        row = row.border_1().border_color(focus_ring);
+    }
+
+    let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click, .. } = handlers;
+    if let Some(hover) = hover {
+        row = row.on_hover(hover);
+    }
+    if let Some(mouse_down) = mouse_down {
+        row = row.on_mouse_down(MouseButton::Left, mouse_down);
+    }
+    if let Some(mouse_up) = mouse_up {
+        row = row.on_mouse_up(MouseButton::Left, mouse_up);
+    }
+    if let Some(mouse_up_out) = mouse_up_out {
+        row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+    }
+    if let Some(click) = click {
+        row = row.on_click(click);
+    }
+
+    row.into_any_element()
+}
+
+fn render_rail_submenu_overlay(
+    submenu: RenderedRailSubmenu,
+    appearance: FloatingMenuAppearance,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+) -> impl IntoElement {
+    let menu = render_floating_menu(
+        &submenu.id,
+        &submenu.items,
+        submenu.open_submenu,
+        submenu.active_path,
+        appearance.clone(),
+        item_hovers,
+        item_clicks,
+    );
+
+    anchored()
+        .snap_to_window_with_margin(px(8.0))
+        .anchor(Corner::TopLeft)
+        .position(point(submenu.parent_bounds.right(), submenu.parent_bounds.top()))
+        .offset(point(px(RAIL_SUBMENU_OFFSET_X), px(0.0)))
+        .child(menu)
+}
+
+fn rail_branch_indicator_left(button_height: f32) -> f32 {
+    button_height - RAIL_BRANCH_INDICATOR_RIGHT - RAIL_BRANCH_INDICATOR_SIZE
+}
+
+fn rail_branch_button_width(button_height: f32) -> f32 {
+    button_height.max(rail_branch_indicator_left(button_height) + RAIL_BRANCH_INDICATOR_SIZE)
+}
+
+fn centered_icon_left(button_height: f32, icon_size: f32) -> f32 {
+    (button_height - icon_size) * 0.5
 }
 
 fn render_disclosure_icon(expanded: bool, color: gpui::Hsla) -> AnyElement {

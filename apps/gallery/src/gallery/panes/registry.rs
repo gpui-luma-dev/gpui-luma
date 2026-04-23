@@ -229,6 +229,8 @@ impl GalleryPanes {
             branch_buttons.push(GalleryBranchButton { node_id: group.id, button: button.clone() });
 
             NavNode::new(group.id)
+                .label(group.label)
+                .icon(group.icon)
                 .content_presenter(hosted_entity_presenter(button, focus_handle))
                 .expanded(group.expanded)
                 .children(group.pages.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)))
@@ -352,7 +354,14 @@ fn nav_node_for_page(
 
     route_buttons.push(GalleryRouteButton { page_id: page.id, button: button.clone() });
 
-    NavNode::new(page.id).content_presenter(hosted_entity_presenter(button, focus_handle))
+    let mut node = NavNode::new(page.id)
+        .label(page.label)
+        .content_presenter(hosted_entity_presenter(button, focus_handle));
+    if let Some(icon) = page.icon {
+        node = node.icon(icon);
+    }
+
+    node
 }
 
 fn focus_handle_for<T: Focusable>(entity: &Entity<T>, cx: &mut Context<GalleryApp>) -> FocusHandle {
@@ -390,6 +399,11 @@ struct SidebarDisclosureTemplate {
 impl ToggleButtonTemplate for SidebarDisclosureTemplate {
     fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_branch(model.state, model.size);
+        let disclosure_icon = if model.selected {
+            LucideIcon::ChevronDown
+        } else {
+            LucideIcon::ChevronRight
+        };
         let mut root = div()
             .id(model.id.clone())
             .w_full()
@@ -404,7 +418,8 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
             .text_color(appearance.foreground)
             .font_weight(appearance.typography.weight)
             .child(render_lucide_icon(self.icon, appearance.icon_color, appearance.icon_size))
-            .child(div().flex_1().child(model.label.clone()));
+            .child(div().flex_1().child(model.label.clone()))
+            .child(render_lucide_icon(disclosure_icon, appearance.icon_color, appearance.icon_size));
 
         if let Some(background) = appearance.background {
             root = root.bg(background);
