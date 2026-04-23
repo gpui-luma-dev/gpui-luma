@@ -250,6 +250,7 @@ fn render_state_sample(
         value,
         percentage: range.percentage(value),
         thumb_fraction: 0.54,
+        length: None,
         enabled: !sample.state.disabled,
         state: sample.state,
     };

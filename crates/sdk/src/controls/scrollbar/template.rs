@@ -96,7 +96,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             thumb_top,
         ) = match model.orientation {
             ScrollbarOrientation::Horizontal => {
-                let length = appearance.length;
+                let length = model.length.unwrap_or(appearance.length);
                 let thumb_length = (length * thumb_fraction).clamp(appearance.min_thumb_length.min(length), length);
                 let thumb_left = ((length - thumb_length).max(0.0) * percentage).clamp(0.0, length);
 
@@ -114,7 +114,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
                 )
             }
             ScrollbarOrientation::Vertical => {
-                let length = appearance.length;
+                let length = model.length.unwrap_or(appearance.length);
                 let thumb_length = (length * thumb_fraction).clamp(appearance.min_thumb_length.min(length), length);
                 let thumb_top = ((length - thumb_length).max(0.0) * percentage).clamp(0.0, length);
 

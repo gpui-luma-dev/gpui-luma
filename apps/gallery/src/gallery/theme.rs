@@ -14,6 +14,7 @@ use gpui_luma::controls::{
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
     switch::{SwitchTemplate, ThemedSwitchTemplate},
+    navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
     toggle_button::{ThemedToggleButtonTemplate, ToggleButtonTemplate},
     toggle_group::{ThemedToggleGroupTemplate, ToggleGroupTemplate},
@@ -84,14 +85,6 @@ impl GalleryThemePack {
             tabs_navigation_theme: Arc::new(GalleryTabsNavigationTheme { state: state.clone() }),
             toggle_group_theme: Arc::new(GalleryToggleGroupTheme { state }),
         }
-    }
-
-    pub(in crate::gallery) fn mode(&self) -> ThemeMode {
-        u8_to_mode(self.state.mode.load(Ordering::Relaxed))
-    }
-
-    pub(in crate::gallery) fn set_mode(&self, mode: ThemeMode) {
-        self.state.mode.store(mode_to_u8(mode), Ordering::Relaxed);
     }
 
     pub(in crate::gallery) fn chrome(&self) -> GalleryChrome {
@@ -174,6 +167,10 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn navigation_sidebar_theme(&self) -> Arc<dyn NavigationSidebarTheme> {
         self.navigation_sidebar_theme.clone()
+    }
+
+    pub(in crate::gallery) fn navigation_sidebar_template(&self) -> Arc<dyn NavigationSidebarTemplate> {
+        Arc::new(ThemedNavigationSidebarTemplate::new(self.navigation_sidebar_theme.clone()))
     }
 
     pub(in crate::gallery) fn tabs_navigation_template(&self) -> Arc<dyn TabsNavigationTemplate> {

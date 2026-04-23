@@ -14,6 +14,7 @@ pub mod popup_menu;
 pub mod progress;
 pub mod radio_group;
 pub mod scrollbar;
+pub mod scroll_container;
 pub mod split_view;
 pub mod slider;
 pub mod state;

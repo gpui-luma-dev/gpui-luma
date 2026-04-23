@@ -95,9 +95,13 @@ impl Scrollbar {
     }
 
     pub fn set_range(&mut self, range: impl Into<ControlRange>, cx: &mut Context<Self>) {
-        self.model.range = range.into();
-        self.model.value = self.model.range.snap(self.model.value, self.model.step);
-        cx.notify();
+        let range = range.into();
+        let value = range.snap(self.model.value, self.model.step);
+        if self.model.range != range || (self.model.value - value).abs() > f32::EPSILON {
+            self.model.range = range;
+            self.model.value = value;
+            cx.notify();
+        }
     }
 
     pub fn set_orientation(&mut self, orientation: ScrollbarOrientation, cx: &mut Context<Self>) {
@@ -108,20 +112,39 @@ impl Scrollbar {
     }
 
     pub fn set_step(&mut self, step: impl Into<f64>, cx: &mut Context<Self>) {
-        self.model.step = crate::controls::value::normalized_step(value_from_input(step));
-        self.model.value = self.model.range.snap(self.model.value, self.model.step);
-        self.scroll_remainder = 0.0;
-        cx.notify();
+        let step = crate::controls::value::normalized_step(value_from_input(step));
+        let value = self.model.range.snap(self.model.value, step);
+        if (self.model.step - step).abs() > f32::EPSILON || (self.model.value - value).abs() > f32::EPSILON {
+            self.model.step = step;
+            self.model.value = value;
+            self.scroll_remainder = 0.0;
+            cx.notify();
+        }
     }
 
     pub fn set_page_step(&mut self, page_step: impl Into<f64>, cx: &mut Context<Self>) {
-        self.model.page_step = crate::controls::value::normalized_step(value_from_input(page_step));
-        cx.notify();
+        let page_step = crate::controls::value::normalized_step(value_from_input(page_step));
+        if (self.model.page_step - page_step).abs() > f32::EPSILON {
+            self.model.page_step = page_step;
+            cx.notify();
+        }
     }
 
     pub fn set_thumb_fraction(&mut self, thumb_fraction: impl Into<f64>, cx: &mut Context<Self>) {
-        self.model.thumb_fraction = normalized_thumb_fraction(value_from_input(thumb_fraction));
-        cx.notify();
+        let thumb_fraction = normalized_thumb_fraction(value_from_input(thumb_fraction));
+        if (self.model.thumb_fraction - thumb_fraction).abs() > f32::EPSILON {
+            self.model.thumb_fraction = thumb_fraction;
+            cx.notify();
+        }
+    }
+
+    pub fn set_length(&mut self, length: impl Into<f64>, cx: &mut Context<Self>) {
+        let length = value_from_input(length);
+        let length = (length.is_finite() && length > 0.0).then_some(length);
+        if self.model.length != length {
+            self.model.length = length;
+            cx.notify();
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -144,6 +167,7 @@ impl Scrollbar {
             value: self.model.value,
             percentage: self.model.range.percentage(self.model.value),
             thumb_fraction: self.model.thumb_fraction,
+            length: self.model.length,
             enabled: self.model.enabled,
             state: self.interaction.render_state(self.model.enabled, window),
         }

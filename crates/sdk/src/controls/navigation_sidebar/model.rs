@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Entity, FocusHandle, IntoElement, SharedString, div, prelude::*};
+use lucide_icons::Icon as LucideIcon;
 
 use super::{NavigationSidebar, NavigationSidebarTemplate, default_navigation_sidebar_template};
 use crate::controls::content_presenter::{ContentPresenter, HostedContent, IntoContentPresenter};
+use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type NavHostedContent = HostedContent;
 pub type NavContentPresenter = ContentPresenter<NavNodeState>;
@@ -15,14 +17,27 @@ pub struct NavNodeState {
     pub sidebar_collapsed: bool,
     pub index: usize,
     pub sibling_count: usize,
+    pub selected: bool,
+    pub hovered: bool,
+    pub pressed: bool,
+    pub focused: bool,
     pub expanded: bool,
     pub enabled: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NavNodeKind {
+    Item,
+    Section,
 }
 
 #[derive(Clone)]
 pub struct NavNode {
     pub(crate) id: SharedString,
-    pub(crate) content_presenter: NavContentPresenter,
+    pub(crate) kind: NavNodeKind,
+    pub(crate) label: Option<SharedString>,
+    pub(crate) icon: Option<LucideIcon>,
+    pub(crate) content_presenter: Option<NavContentPresenter>,
     pub(crate) children: Vec<NavNode>,
     pub(crate) expanded: bool,
     pub(crate) enabled: bool,
@@ -33,10 +48,10 @@ impl NavNode {
     pub fn new(id: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
-            content_presenter: ContentPresenter::new(|_, _, _| NavHostedContent {
-                element: div().into_any_element(),
-                focus_handle: None,
-            }),
+            kind: NavNodeKind::Item,
+            label: None,
+            icon: None,
+            content_presenter: None,
             children: Vec::new(),
             expanded: false,
             enabled: true,
@@ -44,8 +59,27 @@ impl NavNode {
         }
     }
 
+    pub fn section(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
+        Self::new(id).label(label).kind(NavNodeKind::Section).enabled(false)
+    }
+
+    pub fn kind(mut self, kind: NavNodeKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    pub fn icon(mut self, icon: LucideIcon) -> Self {
+        self.icon = Some(icon);
+        self
+    }
+
     pub fn content_presenter(mut self, presenter: impl IntoContentPresenter<NavNodeState>) -> Self {
-        self.content_presenter = presenter.into_content_presenter();
+        self.content_presenter = Some(presenter.into_content_presenter());
         self
     }
 
@@ -86,25 +120,37 @@ impl NavNode {
 #[derive(Clone)]
 pub struct NavigationSidebarModel {
     pub(crate) id: SharedString,
+    pub(crate) title: Option<SharedString>,
+    pub(crate) subtitle: Option<SharedString>,
     pub(crate) header_nodes: Vec<NavNode>,
     pub(crate) nodes: Vec<NavNode>,
     pub(crate) footer_nodes: Vec<NavNode>,
+    pub(crate) selected_id: Option<SharedString>,
     pub(crate) collapsed: bool,
     pub(crate) template: Arc<dyn NavigationSidebarTemplate>,
+    pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
 }
 
 pub struct NavigationSidebarRenderModel {
     pub id: SharedString,
+    pub title: Option<SharedString>,
+    pub subtitle: Option<SharedString>,
     pub header_nodes: Vec<RenderedNavNode>,
     pub nodes: Vec<RenderedNavNode>,
     pub footer_nodes: Vec<RenderedNavNode>,
+    pub selected_id: Option<SharedString>,
     pub collapsed: bool,
 }
 
 pub struct RenderedNavNode {
     pub id: SharedString,
+    pub kind: NavNodeKind,
+    pub label: Option<SharedString>,
+    pub icon: Option<LucideIcon>,
     pub state: NavNodeState,
-    pub element: AnyElement,
+    pub custom_element: Option<AnyElement>,
+    pub focus_handle: Option<FocusHandle>,
+    pub has_children: bool,
     pub children: Vec<RenderedNavNode>,
 }
 
@@ -117,13 +163,27 @@ impl NavigationSidebarBuilder {
         Self {
             model: NavigationSidebarModel {
                 id: id.into(),
+                title: None,
+                subtitle: None,
                 header_nodes: Vec::new(),
                 nodes: Vec::new(),
                 footer_nodes: Vec::new(),
+                selected_id: None,
                 collapsed: false,
                 template: default_navigation_sidebar_template(),
+                scrollbar_template: default_scrollbar_template(),
             },
         }
+    }
+
+    pub fn title(mut self, title: impl Into<SharedString>) -> Self {
+        self.model.title = Some(title.into());
+        self
+    }
+
+    pub fn subtitle(mut self, subtitle: impl Into<SharedString>) -> Self {
+        self.model.subtitle = Some(subtitle.into());
+        self
     }
 
     pub fn header_node(mut self, node: NavNode) -> Self {
@@ -156,6 +216,11 @@ impl NavigationSidebarBuilder {
         self
     }
 
+    pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
+        self.model.selected_id = Some(selected_id.into());
+        self
+    }
+
     pub fn collapsed(mut self, collapsed: bool) -> Self {
         self.model.collapsed = collapsed;
         self
@@ -163,6 +228,11 @@ impl NavigationSidebarBuilder {
 
     pub fn template(mut self, template: Arc<dyn NavigationSidebarTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
+        self.model.scrollbar_template = template;
         self
     }
 

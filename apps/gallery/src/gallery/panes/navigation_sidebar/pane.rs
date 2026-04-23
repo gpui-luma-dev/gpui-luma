@@ -1,0 +1,151 @@
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
+use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
+use lucide_icons::Icon as LucideIcon;
+
+use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
+
+use super::super::shared::{gallery_pane_with_usage, notify_entity};
+
+#[derive(Clone)]
+pub(in crate::gallery) struct NavigationSidebarPane {
+    sidebar: Entity<NavigationSidebar>,
+}
+
+#[derive(Clone, Copy)]
+struct PropertyLeaf {
+    id: &'static str,
+    label: &'static str,
+    icon: Option<LucideIcon>,
+    enabled: bool,
+}
+
+#[derive(Clone, Copy)]
+struct PropertyGroup {
+    id: &'static str,
+    label: &'static str,
+    icon: LucideIcon,
+    expanded: bool,
+    leaves: &'static [PropertyLeaf],
+}
+
+const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";
+
+const PINNED_PROPERTIES: &[PropertyLeaf] = &[
+    PropertyLeaf { id: "summary", label: "Summary", icon: Some(LucideIcon::Info), enabled: true },
+    PropertyLeaf { id: "tokens", label: "Design Tokens", icon: Some(LucideIcon::Tags), enabled: true },
+];
+
+const LAYOUT_PROPERTIES: &[PropertyLeaf] = &[
+    PropertyLeaf { id: "position", label: "Position", icon: None, enabled: true },
+    PropertyLeaf { id: INITIAL_PROPERTY_SELECTION_ID, label: "Dimensions", icon: None, enabled: true },
+    PropertyLeaf { id: "constraints", label: "Constraints", icon: None, enabled: true },
+    PropertyLeaf { id: "grid", label: "Grid", icon: None, enabled: true },
+];
+
+const APPEARANCE_PROPERTIES: &[PropertyLeaf] = &[
+    PropertyLeaf { id: "fill", label: "Fill", icon: None, enabled: true },
+    PropertyLeaf { id: "stroke", label: "Stroke", icon: None, enabled: true },
+    PropertyLeaf { id: "typography", label: "Typography", icon: None, enabled: true },
+    PropertyLeaf { id: "effects", label: "Effects", icon: None, enabled: true },
+];
+
+const BEHAVIOR_PROPERTIES: &[PropertyLeaf] = &[
+    PropertyLeaf { id: "interactions", label: "Interactions", icon: None, enabled: true },
+    PropertyLeaf { id: "conditions", label: "Conditions", icon: None, enabled: true },
+    PropertyLeaf { id: "validation", label: "Validation", icon: None, enabled: true },
+    PropertyLeaf { id: "data-binding", label: "Data Binding", icon: None, enabled: false },
+];
+
+const PROPERTY_GROUPS: &[PropertyGroup] = &[
+    PropertyGroup { id: "layout", label: "Layout", icon: LucideIcon::Ruler, expanded: true, leaves: LAYOUT_PROPERTIES },
+    PropertyGroup {
+        id: "appearance",
+        label: "Appearance",
+        icon: LucideIcon::Palette,
+        expanded: true,
+        leaves: APPEARANCE_PROPERTIES,
+    },
+    PropertyGroup {
+        id: "behavior",
+        label: "Behavior",
+        icon: LucideIcon::MousePointer2,
+        expanded: false,
+        leaves: BEHAVIOR_PROPERTIES,
+    },
+];
+
+const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
+    PropertyLeaf { id: "audit-log", label: "Audit Log", icon: Some(LucideIcon::FileText), enabled: true },
+    PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
+];
+
+impl NavigationSidebarPane {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+        let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
+            .title("Properties")
+            .subtitle("Rectangle / Primary card")
+            .selected_id(INITIAL_PROPERTY_SELECTION_ID)
+            .items(property_nodes())
+            .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
+            .template(theme.navigation_sidebar_template())
+            .scrollbar_template(theme.scrollbar_template())
+            .spawn(cx);
+
+        Self { sidebar }
+    }
+
+    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
+
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
+        gallery_pane_with_usage(
+            "Navigation Sidebar",
+            "Navigation Sidebar",
+            div()
+                .flex_none()
+                .w(px(300.0))
+                .h(px(500.0))
+                .overflow_hidden()
+                .rounded(px(8.0))
+                .border_1()
+                .border_color(chrome.border)
+                .child(self.sidebar.clone())
+                .into_any_element(),
+            theme,
+        )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.sidebar, cx);
+    }
+}
+
+fn property_nodes() -> Vec<NavNode> {
+    let mut nodes = Vec::new();
+
+    nodes.push(NavNode::section("pinned-label", "Pinned"));
+    nodes.extend(PINNED_PROPERTIES.iter().map(property_leaf_node));
+
+    nodes.push(NavNode::section("properties-label", "Properties"));
+    nodes.extend(PROPERTY_GROUPS.iter().map(|group| {
+        NavNode::new(group.id)
+            .label(group.label)
+            .icon(group.icon)
+            .expanded(group.expanded)
+            .children(group.leaves.iter().map(property_leaf_node))
+    }));
+
+    nodes
+}
+
+fn property_leaf_node(leaf: &PropertyLeaf) -> NavNode {
+    let mut node = NavNode::new(leaf.id).label(leaf.label).enabled(leaf.enabled);
+
+    if let Some(icon) = leaf.icon {
+        node = node.icon(icon);
+    }
+
+    node
+}

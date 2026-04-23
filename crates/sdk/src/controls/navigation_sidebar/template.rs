@@ -1,73 +1,414 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{AnyElement, App, Div, Stateful, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, ClickEvent, Div, FocusHandle, FontFeatures, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent,
+    SharedString, Stateful, Window, div, prelude::*, px,
+};
+use lucide_icons::Icon as LucideIcon;
 
-use super::{NavigationSidebarRenderModel, RenderedNavNode};
+use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedNavNode};
+use crate::controls::scroll_container::ScrollContainer;
+use crate::theme::{ControlSize, InteractionState, NavigationSidebarTheme, default_navigation_sidebar_theme};
 
-pub trait NavigationSidebarTemplate: Send + Sync {
-    fn render(&self, model: NavigationSidebarRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+const CONTAINER_GAP: f32 = 8.0;
+const CONTAINER_PADDING: f32 = 8.0;
+const REGION_GAP: f32 = 4.0;
+const HEADER_REGION_PADDING_BOTTOM: f32 = 8.0;
+const FOOTER_REGION_PADDING_TOP: f32 = 8.0;
+const TITLE_GAP: f32 = 2.0;
+const TITLE_PADDING_BOTTOM: f32 = 4.0;
+const TITLE_FONT_SIZE: f32 = 14.0;
+const TITLE_LINE_HEIGHT: f32 = 18.0;
+const TITLE_FONT_WEIGHT: FontWeight = FontWeight::MEDIUM;
+const SUBTITLE_FONT_SIZE: f32 = 12.0;
+const SUBTITLE_LINE_HEIGHT: f32 = 16.0;
+const SUBTITLE_OPACITY: f32 = 0.72;
+const SECTION_PADDING_TOP: f32 = 8.0;
+const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
+const DISCLOSURE_EXPANDED_ICON: LucideIcon = LucideIcon::ChevronDown;
+const DISCLOSURE_COLLAPSED_ICON: LucideIcon = LucideIcon::ChevronRight;
+const DISCLOSURE_ICON_SIZE: f32 = 14.0;
+const DISABLED_ROW_OPACITY: f32 = 0.56;
+const SCROLL_REGION_MIN_HEIGHT: f32 = 0.0;
+const LUCIDE_FONT_FAMILY: &str = "lucide";
+const ICON_FONT_WEIGHT: FontWeight = FontWeight::NORMAL;
+
+pub type NavigationSidebarClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type NavigationSidebarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type NavigationSidebarMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type NavigationSidebarMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+
+#[derive(Default)]
+pub struct NavigationSidebarTemplateHandlers {
+    pub row_hovers: Vec<NavigationSidebarHoverHandler>,
+    pub row_mouse_downs: Vec<NavigationSidebarMouseDownHandler>,
+    pub row_mouse_ups: Vec<NavigationSidebarMouseUpHandler>,
+    pub row_mouse_up_outs: Vec<NavigationSidebarMouseUpHandler>,
+    pub row_clicks: Vec<NavigationSidebarClickHandler>,
 }
 
-pub struct ThemedNavigationSidebarTemplate;
+pub trait NavigationSidebarTemplate: Send + Sync {
+    fn render(
+        &self,
+        model: NavigationSidebarRenderModel,
+        main_scroll: &ScrollContainer,
+        handlers: NavigationSidebarTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div>;
+}
+
+pub struct ThemedNavigationSidebarTemplate {
+    theme: Arc<dyn NavigationSidebarTheme>,
+}
 
 impl ThemedNavigationSidebarTemplate {
-    pub fn new() -> Self {
-        Self
+    pub fn new(theme: Arc<dyn NavigationSidebarTheme>) -> Self {
+        Self { theme }
     }
 }
 
 impl Default for ThemedNavigationSidebarTemplate {
     fn default() -> Self {
-        Self::new()
+        Self::new(default_navigation_sidebar_theme())
     }
 }
 
 pub fn default_navigation_sidebar_template() -> Arc<dyn NavigationSidebarTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn NavigationSidebarTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedNavigationSidebarTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedNavigationSidebarTemplate::default())).clone()
 }
 
 impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
-    fn render(&self, model: NavigationSidebarRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let mut root = div().id(model.id).size_full().flex().flex_col().gap(px(8.0)).p(px(8.0));
+    fn render(
+        &self,
+        model: NavigationSidebarRenderModel,
+        main_scroll: &ScrollContainer,
+        handlers: NavigationSidebarTemplateHandlers,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> Stateful<Div> {
+        let container = self.theme.resolve_container();
+        let NavigationSidebarTemplateHandlers {
+            mut row_hovers,
+            mut row_mouse_downs,
+            mut row_mouse_ups,
+            mut row_mouse_up_outs,
+            mut row_clicks,
+        } = handlers;
+        let mut row_hovers = row_hovers.drain(..);
+        let mut row_mouse_downs = row_mouse_downs.drain(..);
+        let mut row_mouse_ups = row_mouse_ups.drain(..);
+        let mut row_mouse_up_outs = row_mouse_up_outs.drain(..);
+        let mut row_clicks = row_clicks.drain(..);
+        let mut root = div()
+            .id(model.id)
+            .size_full()
+            .flex()
+            .flex_col()
+            .gap(px(CONTAINER_GAP))
+            .p(px(CONTAINER_PADDING))
+            .bg(container.background)
+            .text_color(container.foreground);
 
-        if !model.header_nodes.is_empty() {
-            root = root.child(render_region(model.header_nodes).pb(px(8.0)));
+        if model.title.is_some() || model.subtitle.is_some() {
+            root = root.child(render_title(model.title, model.subtitle));
         }
 
-        root = root.child(render_region(model.nodes).flex_1().min_h(px(0.0)));
+        if !model.header_nodes.is_empty() {
+            root = root.child(
+                render_region(
+                    model.header_nodes,
+                    &self.theme,
+                    &mut row_hovers,
+                    &mut row_mouse_downs,
+                    &mut row_mouse_ups,
+                    &mut row_mouse_up_outs,
+                    &mut row_clicks,
+                )
+                .pb(px(HEADER_REGION_PADDING_BOTTOM)),
+            );
+        }
+
+        root = root.child(
+            main_scroll
+                .render(
+                    render_region(
+                        model.nodes,
+                        &self.theme,
+                        &mut row_hovers,
+                        &mut row_mouse_downs,
+                        &mut row_mouse_ups,
+                        &mut row_mouse_up_outs,
+                        &mut row_clicks,
+                    )
+                    .into_any_element(),
+                )
+                .flex_1()
+                .min_h(px(SCROLL_REGION_MIN_HEIGHT)),
+        );
 
         if !model.footer_nodes.is_empty() {
-            root = root.child(render_region(model.footer_nodes).pt(px(8.0)));
+            root = root.child(
+                render_region(
+                    model.footer_nodes,
+                    &self.theme,
+                    &mut row_hovers,
+                    &mut row_mouse_downs,
+                    &mut row_mouse_ups,
+                    &mut row_mouse_up_outs,
+                    &mut row_clicks,
+                )
+                .pt(px(FOOTER_REGION_PADDING_TOP)),
+            );
         }
 
         root
     }
 }
 
-fn render_region(nodes: Vec<RenderedNavNode>) -> Div {
-    let mut region = div().flex().flex_col().gap(px(4.0));
+fn render_title(title: Option<SharedString>, subtitle: Option<SharedString>) -> Div {
+    let mut header = div().flex().flex_col().gap(px(TITLE_GAP)).pb(px(TITLE_PADDING_BOTTOM));
+
+    if let Some(title) = title {
+        header = header.child(
+            div()
+                .text_size(px(TITLE_FONT_SIZE))
+                .line_height(px(TITLE_LINE_HEIGHT))
+                .font_weight(TITLE_FONT_WEIGHT)
+                .child(title),
+        );
+    }
+
+    if let Some(subtitle) = subtitle {
+        header = header.child(
+            div()
+                .text_size(px(SUBTITLE_FONT_SIZE))
+                .line_height(px(SUBTITLE_LINE_HEIGHT))
+                .opacity(SUBTITLE_OPACITY)
+                .child(subtitle),
+        );
+    }
+
+    header
+}
+
+fn render_region(
+    nodes: Vec<RenderedNavNode>,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+) -> Div {
+    let mut region = div().flex().flex_col().gap(px(REGION_GAP));
 
     for node in nodes {
-        region = region.child(render_node(node));
+        region = region.child(render_node(
+            node,
+            theme,
+            row_hovers,
+            row_mouse_downs,
+            row_mouse_ups,
+            row_mouse_up_outs,
+            row_clicks,
+        ));
     }
 
     region
 }
 
-fn render_node(node: RenderedNavNode) -> AnyElement {
-    let mut root = div().id(node.id).flex().flex_col().gap(px(4.0)).child(render_row(node.state.depth, node.element));
+fn render_node(
+    node: RenderedNavNode,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+    row_hovers: &mut impl Iterator<Item = NavigationSidebarHoverHandler>,
+    row_mouse_downs: &mut impl Iterator<Item = NavigationSidebarMouseDownHandler>,
+    row_mouse_ups: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_mouse_up_outs: &mut impl Iterator<Item = NavigationSidebarMouseUpHandler>,
+    row_clicks: &mut impl Iterator<Item = NavigationSidebarClickHandler>,
+) -> AnyElement {
+    let RenderedNavNode { id, kind, label, icon, state, custom_element, focus_handle, has_children, children } = node;
+    let expanded = state.expanded;
+    let mut root = div().id(id.clone()).flex().flex_col().gap(px(REGION_GAP)).child(render_row(
+        RowRenderInput { id, kind, label, icon, state, custom_element, focus_handle, has_children },
+        RowHandlers {
+            hover: row_hovers.next(),
+            mouse_down: row_mouse_downs.next(),
+            mouse_up: row_mouse_ups.next(),
+            mouse_up_out: row_mouse_up_outs.next(),
+            click: row_clicks.next(),
+        },
+        theme,
+    ));
 
-    if node.state.expanded {
-        for child in node.children {
-            root = root.child(render_node(child));
+    if expanded {
+        for child in children {
+            root = root.child(render_node(
+                child,
+                theme,
+                row_hovers,
+                row_mouse_downs,
+                row_mouse_ups,
+                row_mouse_up_outs,
+                row_clicks,
+            ));
         }
     }
 
     root.into_any_element()
 }
 
-fn render_row(_depth: usize, element: gpui::AnyElement) -> Div {
-    div().w_full().child(element)
+struct RowRenderInput {
+    id: SharedString,
+    kind: NavNodeKind,
+    label: Option<SharedString>,
+    icon: Option<LucideIcon>,
+    state: super::NavNodeState,
+    custom_element: Option<AnyElement>,
+    focus_handle: Option<FocusHandle>,
+    has_children: bool,
+}
+
+struct RowHandlers {
+    hover: Option<NavigationSidebarHoverHandler>,
+    mouse_down: Option<NavigationSidebarMouseDownHandler>,
+    mouse_up: Option<NavigationSidebarMouseUpHandler>,
+    mouse_up_out: Option<NavigationSidebarMouseUpHandler>,
+    click: Option<NavigationSidebarClickHandler>,
+}
+
+fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn NavigationSidebarTheme>) -> AnyElement {
+    if let Some(element) = input.custom_element {
+        return div().w_full().child(element).into_any_element();
+    }
+
+    match input.kind {
+        NavNodeKind::Section => render_section_row(input.label.unwrap_or(input.id), theme).into_any_element(),
+        NavNodeKind::Item => render_item_row(input, handlers, theme),
+    }
+}
+
+fn render_section_row(label: SharedString, theme: &Arc<dyn NavigationSidebarTheme>) -> Div {
+    let appearance = theme.resolve_section();
+
+    div()
+        .min_h(px(appearance.height))
+        .pt(px(SECTION_PADDING_TOP))
+        .text_size(px(appearance.typography.size))
+        .line_height(px(appearance.typography.line_height))
+        .font_weight(appearance.typography.weight)
+        .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
+        .text_color(appearance.label_color)
+        .child(label)
+}
+
+fn render_item_row(
+    input: RowRenderInput,
+    handlers: RowHandlers,
+    theme: &Arc<dyn NavigationSidebarTheme>,
+) -> AnyElement {
+    let RowRenderInput { id, label, icon, state, focus_handle, has_children, .. } = input;
+    let interaction = InteractionState {
+        hovered: state.hovered,
+        pressed: state.pressed,
+        focused: state.focused,
+        disabled: !state.enabled,
+    };
+    let appearance = if has_children {
+        theme.resolve_branch(interaction, ControlSize::Md)
+    } else {
+        theme.resolve_item(state.selected, interaction, ControlSize::Md)
+    };
+    let depth_indent = (appearance.icon_size + appearance.gap) * CHILD_DEPTH_INDENT_MULTIPLIER;
+    let padding_left = appearance.padding_x + state.depth as f32 * depth_indent;
+    let mut row = div()
+        .id(format!("{id}-row"))
+        .w_full()
+        .min_h(px(appearance.height))
+        .flex()
+        .items_center()
+        .gap(px(appearance.gap))
+        .pl(px(padding_left))
+        .pr(px(appearance.padding_x))
+        .rounded(px(appearance.radius))
+        .text_size(px(appearance.typography.size))
+        .line_height(px(appearance.typography.line_height))
+        .text_color(appearance.foreground)
+        .font_weight(appearance.typography.weight);
+
+    if let Some(icon) = icon {
+        row = row.child(render_lucide_icon(icon, appearance.icon_color, appearance.icon_size));
+    }
+
+    row = row.child(div().flex_1().child(label.unwrap_or(id)));
+
+    if has_children {
+        row = row.child(render_disclosure_icon(state.expanded, appearance.icon_color));
+    }
+
+    if let Some(background) = appearance.background {
+        row = row.bg(background);
+    }
+
+    if state.enabled {
+        row = row.cursor_pointer();
+    } else {
+        row = row.opacity(DISABLED_ROW_OPACITY);
+    }
+
+    if let Some(focus_ring) = appearance.focus_ring {
+        row = row.border_1().border_color(focus_ring);
+    }
+
+    let RowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
+    let mut row = row;
+    if state.enabled {
+        if let Some(focus_handle) = focus_handle.as_ref() {
+            row = row.track_focus(focus_handle);
+        }
+        if let Some(hover) = hover {
+            row = row.on_hover(hover);
+        }
+        if let Some(mouse_down) = mouse_down {
+            row = row.on_mouse_down(MouseButton::Left, mouse_down);
+        }
+        if let Some(mouse_up) = mouse_up {
+            row = row.on_mouse_up(MouseButton::Left, mouse_up);
+        }
+        if let Some(mouse_up_out) = mouse_up_out {
+            row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+        }
+        if let Some(click) = click {
+            row = row.on_click(click);
+        }
+    }
+
+    row.into_any_element()
+}
+
+fn render_disclosure_icon(expanded: bool, color: gpui::Hsla) -> AnyElement {
+    let icon = if expanded {
+        DISCLOSURE_EXPANDED_ICON
+    } else {
+        DISCLOSURE_COLLAPSED_ICON
+    };
+
+    render_lucide_icon(icon, color, DISCLOSURE_ICON_SIZE)
+}
+
+fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
+    div()
+        .size(px(size))
+        .flex()
+        .items_center()
+        .justify_center()
+        .font_family(LUCIDE_FONT_FAMILY)
+        .font_weight(ICON_FONT_WEIGHT)
+        .text_size(px(size))
+        .line_height(px(size))
+        .text_color(color)
+        .child(char::from(icon).to_string())
+        .into_any_element()
 }

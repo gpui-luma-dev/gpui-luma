@@ -137,6 +137,8 @@ impl SplitView {
             enabled: self.model.enabled,
             separator_hovered: self.separator_hovered,
             separator_visibility: self.model.separator_visibility,
+            separator_color: self.model.separator_color,
+            separator_hover_color: self.model.separator_hover_color,
         }
     }
 

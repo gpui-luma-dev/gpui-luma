@@ -21,6 +21,7 @@ pub struct ScrollbarModel {
     pub(crate) page_step: f32,
     pub(crate) value: f32,
     pub(crate) thumb_fraction: f32,
+    pub(crate) length: Option<f32>,
     pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ScrollbarTemplate>,
 }
@@ -34,6 +35,7 @@ pub struct ScrollbarRenderModel<'a> {
     pub value: f32,
     pub percentage: f32,
     pub thumb_fraction: f32,
+    pub length: Option<f32>,
     pub enabled: bool,
     pub state: ScrollbarState,
 }
@@ -53,6 +55,7 @@ impl ScrollbarBuilder {
                 page_step: 10.0,
                 value: 0.0,
                 thumb_fraction: 0.25,
+                length: None,
                 enabled: true,
                 template: default_scrollbar_template(),
             },
@@ -98,6 +101,12 @@ impl ScrollbarBuilder {
 
     pub fn thumb_fraction(mut self, thumb_fraction: impl Into<f64>) -> Self {
         self.model.thumb_fraction = normalized_thumb_fraction(value_from_input(thumb_fraction));
+        self
+    }
+
+    pub fn length(mut self, length: impl Into<f64>) -> Self {
+        let length = value_from_input(length);
+        self.model.length = (length.is_finite() && length > 0.0).then_some(length);
         self
     }
 

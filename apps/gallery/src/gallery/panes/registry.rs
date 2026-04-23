@@ -13,9 +13,9 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    button, checkbox, context_menu, floating_menu, icon_button, introduction, palette, popup_menu, progress,
-    radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation, theme_usage,
-    toggle_button, toggle_group,
+    button, checkbox, context_menu, floating_menu, icon_button, introduction, navigation_sidebar, palette, popup_menu,
+    progress, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation,
+    theme_usage, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -44,6 +44,7 @@ enum GalleryPageKind {
     FloatingMenu,
     PopupMenu,
     ContextMenu,
+    NavigationSidebar,
     TabsNavigation,
     Progress,
     Settings,
@@ -116,6 +117,12 @@ const POPUP_MENU_PAGE: GalleryPage =
     GalleryPage { id: "popup-menu", label: "Popup Menu", icon: None, kind: GalleryPageKind::PopupMenu };
 const CONTEXT_MENU_PAGE: GalleryPage =
     GalleryPage { id: "context-menu", label: "Context Menu", icon: None, kind: GalleryPageKind::ContextMenu };
+const NAVIGATION_SIDEBAR_PAGE: GalleryPage = GalleryPage {
+    id: "navigation-sidebar",
+    label: "Navigation Sidebar",
+    icon: None,
+    kind: GalleryPageKind::NavigationSidebar,
+};
 const TABS_NAVIGATION_PAGE: GalleryPage =
     GalleryPage { id: "tabs-navigation", label: "Tabs Navigation", icon: None, kind: GalleryPageKind::TabsNavigation };
 const PROGRESS_PAGE: GalleryPage =
@@ -133,7 +140,7 @@ const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BU
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
-const NAVIGATION_PAGES: &[GalleryPage] = &[TABS_NAVIGATION_PAGE];
+const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
@@ -189,6 +196,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) floating_menu: floating_menu::FloatingMenuPane,
     pub(super) popup_menu: popup_menu::PopupMenuPane,
     pub(super) context_menu: context_menu::ContextMenuPane,
+    pub(super) navigation_sidebar: navigation_sidebar::NavigationSidebarPane,
     pub(super) tabs_navigation: tabs_navigation::TabsNavigationPane,
     pub(super) progress: progress::ProgressPane,
 }
@@ -247,6 +255,7 @@ impl GalleryPanes {
             floating_menu: floating_menu::FloatingMenuPane::new(),
             popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
             context_menu: context_menu::ContextMenuPane::new(cx, theme),
+            navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, theme),
             tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, theme),
             progress: progress::ProgressPane::new(cx, theme),
         }
@@ -264,9 +273,11 @@ impl GalleryPanes {
         self.scrollbar.subscribe(cx, subscriptions);
         self.popup_menu.subscribe(cx, subscriptions);
         self.context_menu.subscribe(cx, subscriptions);
+        self.navigation_sidebar.subscribe(cx, subscriptions);
         self.tabs_navigation.subscribe(cx, subscriptions);
     }
 
+    #[allow(dead_code)]
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
@@ -280,6 +291,7 @@ impl GalleryPanes {
         self.floating_menu.notify_controls();
         self.popup_menu.notify_controls(cx);
         self.context_menu.notify_controls(cx);
+        self.navigation_sidebar.notify_controls(cx);
         self.tabs_navigation.notify_controls(cx);
         self.progress.notify_controls(cx);
     }
@@ -307,6 +319,7 @@ impl GalleryPanes {
             GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.theme),
             GalleryPageKind::PopupMenu => self.popup_menu.render(&self.theme),
             GalleryPageKind::ContextMenu => self.context_menu.render(&self.theme),
+            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.theme),
             GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.theme),
             GalleryPageKind::Progress => self.progress.render(&self.theme),
             GalleryPageKind::Settings => settings::render(&self.theme),

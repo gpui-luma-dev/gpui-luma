@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Entity, IntoElement, Pixels, SharedString, div, px};
+use gpui::{AnyElement, AppContext, Entity, Hsla, IntoElement, Pixels, SharedString, div, px};
 
 use super::{SplitView, SplitViewTemplate, default_split_view_template};
 
@@ -25,6 +25,8 @@ pub struct SplitViewModel {
     pub(crate) resizable: bool,
     pub(crate) enabled: bool,
     pub(crate) separator_visibility: SplitViewSeparatorVisibility,
+    pub(crate) separator_color: Option<Hsla>,
+    pub(crate) separator_hover_color: Option<Hsla>,
     pub(crate) sidebar: PaneRender,
     pub(crate) content: PaneRender,
     pub(crate) template: Arc<dyn SplitViewTemplate>,
@@ -40,6 +42,8 @@ pub struct SplitViewRenderModel<'a> {
     pub enabled: bool,
     pub separator_hovered: bool,
     pub separator_visibility: SplitViewSeparatorVisibility,
+    pub separator_color: Option<Hsla>,
+    pub separator_hover_color: Option<Hsla>,
 }
 
 pub struct SplitViewBuilder {
@@ -59,6 +63,8 @@ impl SplitViewBuilder {
                 resizable: true,
                 enabled: true,
                 separator_visibility: SplitViewSeparatorVisibility::Always,
+                separator_color: None,
+                separator_hover_color: None,
                 sidebar: render_pane(|| div()),
                 content: render_pane(|| div()),
                 template: default_split_view_template(),
@@ -109,6 +115,16 @@ impl SplitViewBuilder {
 
     pub fn separator_visibility(mut self, visibility: SplitViewSeparatorVisibility) -> Self {
         self.model.separator_visibility = visibility;
+        self
+    }
+
+    pub fn separator_color(mut self, color: impl Into<Hsla>) -> Self {
+        self.model.separator_color = Some(color.into());
+        self
+    }
+
+    pub fn separator_hover_color(mut self, color: impl Into<Hsla>) -> Self {
+        self.model.separator_hover_color = Some(color.into());
         self
     }
 
