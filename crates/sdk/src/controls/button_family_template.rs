@@ -5,7 +5,7 @@ const FOCUS_RING_WIDTH: f32 = 1.0;
 
 pub(crate) fn render_button_family_focus_ring(
     id: SharedString,
-    control: Div,
+    control: impl IntoElement,
     focus_ring: Option<Hsla>,
     radius: f32,
 ) -> Stateful<Div> {

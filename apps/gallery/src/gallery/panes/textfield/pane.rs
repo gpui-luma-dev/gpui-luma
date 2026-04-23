@@ -1,0 +1,414 @@
+use std::sync::Arc;
+
+use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::textfield::{
+    TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
+    TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
+    TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, Validator,
+};
+use lucide_icons::Icon as LucideIcon;
+
+use crate::gallery::control::GalleryApp;
+use crate::gallery::theme::GalleryThemePack;
+
+use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+
+#[derive(Clone)]
+pub(in crate::gallery) struct TextFieldPane {
+    text_field: Entity<TextField>,
+    state_preview: Entity<TextFieldStatePreview>,
+    set_sample_button: Entity<Button>,
+    clear_button: Entity<Button>,
+    toggle_enabled_button: Entity<Button>,
+    toggle_clean_on_escape_button: Entity<Button>,
+    toggle_validation_button: Entity<Button>,
+    enabled: bool,
+    clean_on_escape: bool,
+    strict_validation: bool,
+    value: SharedString,
+    change_count: usize,
+    submit_count: usize,
+    focus_count: usize,
+    blur_count: usize,
+    focused: bool,
+    last_event: SharedString,
+}
+
+impl TextFieldPane {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+        let button_template = theme.button_template();
+
+        Self {
+            text_field: TextField::new("gallery-textfield")
+                .placeholder("Type and press Enter")
+                .prefix_icon(LucideIcon::Search)
+                .full_width(true)
+                .clean_on_escape(true)
+                .select_all_on_tab_focus(true)
+                .template(theme.textfield_template())
+                .spawn(cx),
+            state_preview: cx.new(|_| TextFieldStatePreview::new(theme)),
+            set_sample_button: action_button("textfield-set-sample", "Set Sample", &button_template, cx),
+            clear_button: action_button("textfield-clear", "Clear", &button_template, cx),
+            toggle_enabled_button: action_button("textfield-toggle-enabled", "Toggle Enabled", &button_template, cx),
+            toggle_clean_on_escape_button: action_button(
+                "textfield-toggle-clean-on-escape",
+                "Toggle Escape Clear",
+                &button_template,
+                cx,
+            ),
+            toggle_validation_button: action_button(
+                "textfield-toggle-validation",
+                "Toggle Validation",
+                &button_template,
+                cx,
+            ),
+            enabled: true,
+            clean_on_escape: true,
+            strict_validation: false,
+            value: SharedString::default(),
+            change_count: 0,
+            submit_count: 0,
+            focus_count: 0,
+            blur_count: 0,
+            focused: false,
+            last_event: SharedString::from("None"),
+        }
+    }
+
+    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        subscriptions.push(cx.subscribe(&self.text_field, |app, _, event: &TextFieldEvent, cx| {
+            app.panes.textfield.handle_text_field_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, _: &ButtonEvent, cx| {
+            app.panes.textfield.set_sample_value(cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
+            app.panes.textfield.clear_value(cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.toggle_enabled_button, |app, _, _: &ButtonEvent, cx| {
+            app.panes.textfield.toggle_enabled(cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.toggle_clean_on_escape_button, |app, _, _: &ButtonEvent, cx| {
+            app.panes.textfield.toggle_clean_on_escape(cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.toggle_validation_button, |app, _, _: &ButtonEvent, cx| {
+            app.panes.textfield.toggle_validation(cx);
+        }));
+    }
+
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+        let chrome = theme.chrome();
+
+        gallery_pane_with_usage_description(
+            "TextField",
+            Some(
+                "Single-line input with selection, submit on Enter, escape-clear, validation, and optional prefix icon.",
+            ),
+            "TextField",
+            div()
+                .w(px(560.0))
+                .max_w_full()
+                .flex()
+                .flex_col()
+                .gap(px(16.0))
+                .child(self.text_field.clone())
+                .child(div().flex().flex_wrap().gap(px(8.0)).children([
+                    self.set_sample_button.clone().into_any_element(),
+                    self.clear_button.clone().into_any_element(),
+                    self.toggle_enabled_button.clone().into_any_element(),
+                    self.toggle_clean_on_escape_button.clone().into_any_element(),
+                    self.toggle_validation_button.clone().into_any_element(),
+                ]))
+                .child(self.state_preview.clone())
+                .child(render_telemetry(
+                    &[
+                        format!("Enabled: {}", self.enabled),
+                        format!("Escape clear: {}", self.clean_on_escape),
+                        format!("Strict validation: {}", self.strict_validation),
+                        format!("Focused: {}", self.focused),
+                        format!("Value: {:?}", self.value),
+                        format!(
+                            "Events: changes={}, submits={}, focuses={}, blurs={}",
+                            self.change_count, self.submit_count, self.focus_count, self.blur_count
+                        ),
+                        format!("Last event: {}", self.last_event),
+                    ],
+                    chrome.border,
+                    chrome.panel_background,
+                    chrome.body_text,
+                    chrome.muted_text,
+                ))
+                .into_any_element(),
+            theme,
+        )
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.text_field, cx);
+        notify_entity(&self.state_preview, cx);
+        notify_entity(&self.set_sample_button, cx);
+        notify_entity(&self.clear_button, cx);
+        notify_entity(&self.toggle_enabled_button, cx);
+        notify_entity(&self.toggle_clean_on_escape_button, cx);
+        notify_entity(&self.toggle_validation_button, cx);
+    }
+
+    fn current_validator(&self) -> Option<Validator> {
+        if !self.strict_validation {
+            return None;
+        }
+
+        Some(Arc::new(|value: &str| value.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == ' ')))
+    }
+
+    fn sync_text_field_settings(&mut self, cx: &mut Context<GalleryApp>) {
+        let enabled = self.enabled;
+        let clean_on_escape = self.clean_on_escape;
+        let validator = self.current_validator();
+
+        self.text_field.update(cx, move |text_field, cx| {
+            text_field.set_enabled(enabled, cx);
+            text_field.set_clean_on_escape(clean_on_escape, cx);
+            text_field.set_validator(validator, cx);
+        });
+    }
+
+    fn handle_text_field_event(&mut self, event: &TextFieldEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            TextFieldEvent::Change { value } => {
+                self.value = value.clone().into();
+                self.change_count += 1;
+                self.last_event = format!("Change: {value}").into();
+            }
+            TextFieldEvent::Submit { value } => {
+                self.value = value.clone().into();
+                self.submit_count += 1;
+                self.last_event = format!("Submit: {value}").into();
+            }
+            TextFieldEvent::Focus => {
+                self.focused = true;
+                self.focus_count += 1;
+                self.last_event = SharedString::from("Focus");
+            }
+            TextFieldEvent::Blur => {
+                self.focused = false;
+                self.blur_count += 1;
+                self.last_event = SharedString::from("Blur");
+            }
+        }
+
+        cx.notify();
+    }
+
+    fn set_sample_value(&mut self, cx: &mut Context<GalleryApp>) {
+        let value = SharedString::from("Hello GPUI-Luma");
+        self.value = value.clone();
+        self.text_field.update(cx, |text_field, cx| text_field.set_value(value.as_ref(), cx));
+        cx.notify();
+    }
+
+    fn clear_value(&mut self, cx: &mut Context<GalleryApp>) {
+        self.value = SharedString::default();
+        self.text_field.update(cx, |text_field, cx| text_field.set_value("", cx));
+        cx.notify();
+    }
+
+    fn toggle_enabled(&mut self, cx: &mut Context<GalleryApp>) {
+        self.enabled = !self.enabled;
+        self.sync_text_field_settings(cx);
+        cx.notify();
+    }
+
+    fn toggle_clean_on_escape(&mut self, cx: &mut Context<GalleryApp>) {
+        self.clean_on_escape = !self.clean_on_escape;
+        self.sync_text_field_settings(cx);
+        cx.notify();
+    }
+
+    fn toggle_validation(&mut self, cx: &mut Context<GalleryApp>) {
+        self.strict_validation = !self.strict_validation;
+        self.sync_text_field_settings(cx);
+        cx.notify();
+    }
+}
+
+fn action_button(
+    id: &'static str,
+    label: &'static str,
+    template: &Arc<dyn gpui_luma::controls::button::ButtonTemplate>,
+    cx: &mut Context<GalleryApp>,
+) -> Entity<Button> {
+    Button::new(id).label(label).template(template.clone()).spawn(cx)
+}
+
+fn render_telemetry(
+    lines: &[String],
+    border: gpui::Hsla,
+    background: gpui::Hsla,
+    body: gpui::Hsla,
+    muted: gpui::Hsla,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(6.0))
+        .border_1()
+        .border_color(border)
+        .rounded(px(8.0))
+        .bg(background)
+        .p(px(12.0))
+        .child(div().text_size(px(11.0)).line_height(px(16.0)).text_color(muted).child("Telemetry"))
+        .children(lines.iter().map(|line| {
+            div()
+                .font_family("Monaco")
+                .text_size(px(11.0))
+                .line_height(px(16.0))
+                .text_color(body)
+                .child(line.clone())
+        }))
+        .into_any_element()
+}
+
+#[derive(Clone)]
+struct TextFieldStatePreview {
+    theme: GalleryThemePack,
+    template: Arc<dyn TextFieldTemplate>,
+}
+
+#[derive(Clone, Copy)]
+struct TextFieldStateSample {
+    id: &'static str,
+    label: &'static str,
+    state: TextFieldState,
+    enabled: bool,
+}
+
+impl TextFieldStatePreview {
+    fn new(theme: &GalleryThemePack) -> Self {
+        Self { theme: theme.clone(), template: theme.textfield_template() }
+    }
+}
+
+impl Render for TextFieldStatePreview {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.theme.chrome();
+        let samples = [
+            TextFieldStateSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
+            TextFieldStateSample {
+                id: "hover",
+                label: "Hover",
+                state: TextFieldState { hovered: true, ..TextFieldState::default() },
+                enabled: true,
+            },
+            TextFieldStateSample {
+                id: "focus",
+                label: "Focus",
+                state: TextFieldState { focused: true, focus_visible: true, cursor: 7, ..TextFieldState::default() },
+                enabled: true,
+            },
+            TextFieldStateSample {
+                id: "active",
+                label: "Active",
+                state: TextFieldState {
+                    hovered: true,
+                    focused: true,
+                    focus_visible: true,
+                    cursor: 7,
+                    selection_anchor: Some(0),
+                    ..TextFieldState::default()
+                },
+                enabled: true,
+            },
+            TextFieldStateSample {
+                id: "disabled",
+                label: "Disabled",
+                state: TextFieldState::default(),
+                enabled: false,
+            },
+        ];
+
+        div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(10.0))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Template state preview"),
+            )
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    samples
+                        .into_iter()
+                        .map(|sample| render_state_sample(&self.template, sample, chrome.muted_text, window, cx)),
+                ),
+            )
+    }
+}
+
+fn render_state_sample(
+    template: &Arc<dyn TextFieldTemplate>,
+    sample: TextFieldStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("textfield-preview-{}", sample.id));
+    let placeholder = SharedString::from("Placeholder");
+    let value = SharedString::from("Preview");
+    let model = TextFieldRenderModel {
+        id: &id,
+        placeholder: &placeholder,
+        value: &value,
+        prefix_icon: None,
+        enabled: sample.enabled,
+        full_width: false,
+        state: sample.state,
+        caret_visible: sample.state.focused && sample.enabled,
+    };
+
+    div()
+        .w(px(180.0))
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(template.render(&model, textfield_preview_handlers(), window, cx))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .into_any_element()
+}
+
+fn textfield_preview_handlers() -> TextFieldTemplateHandlers {
+    TextFieldTemplateHandlers {
+        hover: Box::new(noop_hover) as TextFieldHoverHandler,
+        mouse_down: Box::new(noop_mouse_down) as TextFieldMouseDownHandler,
+        mouse_up: Box::new(noop_mouse_up) as TextFieldMouseUpHandler,
+        mouse_up_out: Box::new(noop_mouse_up) as TextFieldMouseUpHandler,
+        click: Box::new(noop_click) as TextFieldClickHandler,
+        key_down: Box::new(noop_key_down) as TextFieldKeyDownHandler,
+        cell_mouse_down: std::iter::repeat_with(|| Box::new(noop_mouse_down) as TextFieldMouseDownHandler)
+            .take(8)
+            .collect(),
+        cell_mouse_move: std::iter::repeat_with(|| Box::new(noop_mouse_move) as TextFieldMouseMoveHandler)
+            .take(8)
+            .collect(),
+    }
+}
+
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_down(_: &gpui::MouseDownEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_up(_: &gpui::MouseUpEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_click(_: &gpui::ClickEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}

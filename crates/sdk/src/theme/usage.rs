@@ -100,6 +100,8 @@ const THEME_USAGES: &[&ThemeUsage] = &[
     &super::switch::SWITCH_THEME_USAGE,
     &super::slider::SLIDER_THEME_USAGE,
     &super::scrollbar::SCROLLBAR_THEME_USAGE,
+    &super::textfield::TEXTFIELD_THEME_USAGE,
+    &super::textarea::TEXTAREA_THEME_USAGE,
     &super::floating_menu::FLOATING_MENU_THEME_USAGE,
     &super::popup_menu::POPUP_MENU_THEME_USAGE,
     &super::context_menu::CONTEXT_MENU_THEME_USAGE,

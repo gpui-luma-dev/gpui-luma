@@ -44,18 +44,6 @@ pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
     component: "Tabs Navigation",
     parts: &[
         ThemePartUsage {
-            part: "list background",
-            token: "none",
-            states: &["default"],
-            appearance_fields: &["TabsNavigationListAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "list border",
-            token: "none",
-            states: &["default"],
-            appearance_fields: &["TabsNavigationListAppearance.border"],
-        },
-        ThemePartUsage {
             part: "inactive label",
             token: "app.foreground",
             states: &["inactive"],
