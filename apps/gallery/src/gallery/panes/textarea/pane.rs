@@ -9,7 +9,7 @@ use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, ThemedTextAreaTemplate, Validator,
+    TextAreaTemplate, TextAreaTemplateHandlers, Validator,
 };
 use gpui_luma::theme::TextAreaTheme;
 
@@ -42,8 +42,7 @@ impl TextAreaPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let button_template = theme.button_template();
         let checkbox_template = theme.checkbox_template();
-        let textarea_template: Arc<dyn TextAreaTemplate> =
-            Arc::new(ThemedTextAreaTemplate::new(theme.textarea_theme()));
+        let textarea_template = theme.textarea_template();
 
         Self {
             text_area: TextArea::new("gallery-textarea")

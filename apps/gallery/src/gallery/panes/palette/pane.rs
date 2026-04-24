@@ -18,7 +18,7 @@ struct PaletteSection {
 }
 
 #[derive(Clone)]
-struct DuplicateColorGroup {
+struct SharedColorGroup {
     color: Hsla,
     tokens: Vec<&'static str>,
 }
@@ -27,8 +27,8 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
     let tokens = theme.tokens();
     let sections = palette_sections(&tokens);
-    let duplicate_groups = duplicate_color_groups(&palette_color_tokens(&tokens));
-    let duplicate_by_value = duplicate_by_value(&duplicate_groups);
+    let shared_groups = shared_color_groups(&palette_color_tokens(&tokens));
+    let shared_by_value = shared_by_value(&shared_groups);
 
     div()
         .size_full()
@@ -77,11 +77,9 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                         .flex()
                         .flex_col()
                         .gap(px(20.0))
-                        .children(
-                            sections.into_iter().map(|section| render_section(section, &duplicate_by_value, theme)),
-                        )
-                        .when(!duplicate_groups.is_empty(), |content| {
-                            content.child(render_duplicate_values(duplicate_groups, theme))
+                        .children(sections.into_iter().map(|section| render_section(section, &shared_by_value, theme)))
+                        .when(!shared_groups.is_empty(), |content| {
+                            content.child(render_shared_values(shared_groups, theme))
                         }),
                 ),
         )
@@ -190,7 +188,7 @@ fn reserved_item(label: &'static str, color: Hsla) -> ColorItem {
 
 fn render_section(
     section: PaletteSection,
-    duplicate_by_value: &BTreeMap<String, usize>,
+    shared_by_value: &BTreeMap<String, usize>,
     theme: &GalleryThemePack,
 ) -> AnyElement {
     let chrome = theme.chrome();
@@ -208,14 +206,14 @@ fn render_section(
                 .child(section.title),
         )
         .child(div().flex().flex_wrap().gap(px(12.0)).children(section.items.into_iter().map(|item| {
-            let duplicate_count = duplicate_by_value.get(&color_key(item.color)).copied().unwrap_or_default();
+            let shared_count = shared_by_value.get(&color_key(item.color)).copied().unwrap_or_default();
 
-            render_color_item(item, duplicate_count, theme)
+            render_color_item(item, shared_count, theme)
         })))
         .into_any_element()
 }
 
-fn render_color_item(item: ColorItem, duplicate_count: usize, theme: &GalleryThemePack) -> AnyElement {
+fn render_color_item(item: ColorItem, shared_count: usize, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
     let name = if item.reserved {
         format!("{} *", item.label)
@@ -255,11 +253,11 @@ fn render_color_item(item: ColorItem, duplicate_count: usize, theme: &GalleryThe
                         .child(format_compact_hsla(item.color)),
                 ),
         )
-        .when(duplicate_count > 1, |row| row.child(render_duplicate_badge(duplicate_count, theme)))
+        .when(shared_count > 1, |row| row.child(render_shared_badge(shared_count, theme)))
         .into_any_element()
 }
 
-fn render_duplicate_values(groups: Vec<DuplicateColorGroup>, theme: &GalleryThemePack) -> AnyElement {
+fn render_shared_values(groups: Vec<SharedColorGroup>, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -272,19 +270,19 @@ fn render_duplicate_values(groups: Vec<DuplicateColorGroup>, theme: &GalleryThem
                 .line_height(px(18.0))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(chrome.title_text)
-                .child("Duplicate Values"),
+                .child("Shared Values"),
         )
         .child(
             div()
                 .flex()
                 .flex_wrap()
                 .gap(px(12.0))
-                .children(groups.into_iter().map(|group| render_duplicate_group(group, theme))),
+                .children(groups.into_iter().map(|group| render_shared_group(group, theme))),
         )
         .into_any_element()
 }
 
-fn render_duplicate_group(group: DuplicateColorGroup, theme: &GalleryThemePack) -> AnyElement {
+fn render_shared_group(group: SharedColorGroup, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -336,7 +334,7 @@ fn render_duplicate_group(group: DuplicateColorGroup, theme: &GalleryThemePack) 
         .into_any_element()
 }
 
-fn render_duplicate_badge(count: usize, theme: &GalleryThemePack) -> AnyElement {
+fn render_shared_badge(count: usize, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -353,13 +351,13 @@ fn render_duplicate_badge(count: usize, theme: &GalleryThemePack) -> AnyElement 
         .into_any_element()
 }
 
-fn duplicate_color_groups(tokens: &[PaletteColorToken]) -> Vec<DuplicateColorGroup> {
-    let mut by_value: BTreeMap<String, DuplicateColorGroup> = BTreeMap::new();
+fn shared_color_groups(tokens: &[PaletteColorToken]) -> Vec<SharedColorGroup> {
+    let mut by_value: BTreeMap<String, SharedColorGroup> = BTreeMap::new();
 
     for token in tokens {
         by_value
             .entry(color_key(token.color))
-            .or_insert_with(|| DuplicateColorGroup { color: token.color, tokens: Vec::new() })
+            .or_insert_with(|| SharedColorGroup { color: token.color, tokens: Vec::new() })
             .tokens
             .push(token.token);
     }
@@ -367,7 +365,7 @@ fn duplicate_color_groups(tokens: &[PaletteColorToken]) -> Vec<DuplicateColorGro
     by_value.into_values().filter(|group| group.tokens.len() > 1).collect()
 }
 
-fn duplicate_by_value(groups: &[DuplicateColorGroup]) -> BTreeMap<String, usize> {
+fn shared_by_value(groups: &[SharedColorGroup]) -> BTreeMap<String, usize> {
     groups.iter().map(|group| (color_key(group.color), group.tokens.len())).collect()
 }
 
