@@ -81,7 +81,7 @@ pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "invalid border",
-            token: "action.danger.background",
+            token: "form.input.invalid_border",
             states: &["invalid"],
             appearance_fields: &["TextFieldAppearance.border"],
         },
@@ -133,7 +133,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
                 palette.form.input.background
             };
             let border = if state.invalid {
-                palette.action.danger.background
+                palette.form.input.invalid_border
             } else {
                 palette.form.input.border
             };

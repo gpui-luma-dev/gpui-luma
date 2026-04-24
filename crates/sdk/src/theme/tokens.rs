@@ -127,6 +127,7 @@ pub struct FormInputPalette {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
+    pub invalid_border: Hsla,
     pub placeholder: Hsla,
 }
 
@@ -450,6 +451,7 @@ impl LumaPalette {
                     background: rgb(0xffffff).into(),
                     foreground: rgb(0x0f172a).into(),
                     border: rgb(0x94a3b8).into(),
+                    invalid_border: rgb(0xdb2777).into(),
                     placeholder: rgb(0x94a3b8).into(),
                 },
             },
@@ -525,6 +527,7 @@ impl LumaPalette {
                     background: rgb(0x0f172a).into(),
                     foreground: rgb(0xf8fafc).into(),
                     border: rgb(0x475569).into(),
+                    invalid_border: rgb(0xf472b6).into(),
                     placeholder: rgb(0x64748b).into(),
                 },
             },
@@ -842,6 +845,7 @@ struct RawFormInputPalette {
     background: String,
     foreground: String,
     border: String,
+    invalid_border: String,
     placeholder: String,
 }
 
@@ -1107,6 +1111,7 @@ impl RawFormInputPalette {
             background: parse_hsla(&self.background)?,
             foreground: parse_hsla(&self.foreground)?,
             border: parse_hsla(&self.border)?,
+            invalid_border: parse_hsla(&self.invalid_border)?,
             placeholder: parse_hsla(&self.placeholder)?,
         })
     }

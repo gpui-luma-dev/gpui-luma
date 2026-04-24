@@ -63,6 +63,7 @@ pub fn palette_color_tokens(tokens: &super::ThemeTokens) -> Vec<PaletteColorToke
         token("form.input.background", palette.form.input.background),
         reserved_token("form.input.foreground", palette.form.input.foreground),
         token("form.input.border", palette.form.input.border),
+        token("form.input.invalid_border", palette.form.input.invalid_border),
         reserved_token("form.input.placeholder", palette.form.input.placeholder),
         token("focus.ring", palette.focus.ring),
         gallery_chrome_token("border.default", palette.border.default),

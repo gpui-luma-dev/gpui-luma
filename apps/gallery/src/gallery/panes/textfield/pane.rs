@@ -5,6 +5,7 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::textfield::{
     TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
@@ -25,9 +26,9 @@ pub(in crate::gallery) struct TextFieldPane {
     state_preview: Entity<TextFieldStatePreview>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
-    toggle_enabled_button: Entity<Button>,
-    toggle_clean_on_escape_button: Entity<Button>,
-    toggle_validation_button: Entity<Button>,
+    enabled_checkbox: Entity<Checkbox>,
+    clean_on_escape_checkbox: Entity<Checkbox>,
+    validation_checkbox: Entity<Checkbox>,
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
@@ -43,6 +44,7 @@ pub(in crate::gallery) struct TextFieldPane {
 impl TextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let button_template = theme.button_template();
+        let checkbox_template = theme.checkbox_template();
 
         Self {
             text_field: TextField::new("gallery-textfield")
@@ -63,19 +65,20 @@ impl TextFieldPane {
             state_preview: cx.new(|_| TextFieldStatePreview::new(theme)),
             set_sample_button: action_button("textfield-set-sample", "Set Sample", &button_template, cx),
             clear_button: action_button("textfield-clear", "Clear", &button_template, cx),
-            toggle_enabled_button: action_button("textfield-toggle-enabled", "Toggle Enabled", &button_template, cx),
-            toggle_clean_on_escape_button: action_button(
-                "textfield-toggle-clean-on-escape",
-                "Toggle Escape Clear",
-                &button_template,
-                cx,
-            ),
-            toggle_validation_button: action_button(
-                "textfield-toggle-validation",
-                "Toggle Validation",
-                &button_template,
-                cx,
-            ),
+            enabled_checkbox: Checkbox::new("textfield-enabled")
+                .label("Enabled")
+                .checked(true)
+                .template(checkbox_template.clone())
+                .spawn(cx),
+            clean_on_escape_checkbox: Checkbox::new("textfield-clean-on-escape")
+                .label("Escape clears")
+                .checked(true)
+                .template(checkbox_template.clone())
+                .spawn(cx),
+            validation_checkbox: Checkbox::new("textfield-validation")
+                .label("Strict validation")
+                .template(checkbox_template)
+                .spawn(cx),
             enabled: true,
             clean_on_escape: true,
             strict_validation: false,
@@ -102,14 +105,14 @@ impl TextFieldPane {
         subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
             app.panes.textfield.clear_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.toggle_enabled_button, |app, _, _: &ButtonEvent, cx| {
-            app.panes.textfield.toggle_enabled(cx);
+        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &CheckboxEvent, cx| {
+            app.panes.textfield.handle_option_changed(TextFieldOption::Enabled, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.toggle_clean_on_escape_button, |app, _, _: &ButtonEvent, cx| {
-            app.panes.textfield.toggle_clean_on_escape(cx);
+        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &CheckboxEvent, cx| {
+            app.panes.textfield.handle_option_changed(TextFieldOption::CleanOnEscape, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.toggle_validation_button, |app, _, _: &ButtonEvent, cx| {
-            app.panes.textfield.toggle_validation(cx);
+        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &CheckboxEvent, cx| {
+            app.panes.textfield.handle_option_changed(TextFieldOption::StrictValidation, event, cx);
         }));
     }
 
@@ -133,10 +136,17 @@ impl TextFieldPane {
                 .child(div().flex().flex_wrap().gap(px(8.0)).children([
                     self.set_sample_button.clone().into_any_element(),
                     self.clear_button.clone().into_any_element(),
-                    self.toggle_enabled_button.clone().into_any_element(),
-                    self.toggle_clean_on_escape_button.clone().into_any_element(),
-                    self.toggle_validation_button.clone().into_any_element(),
                 ]))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .gap(px(14.0))
+                        .child(self.enabled_checkbox.clone())
+                        .child(self.clean_on_escape_checkbox.clone())
+                        .child(self.validation_checkbox.clone()),
+                )
                 .child(self.state_preview.clone())
                 .child(render_telemetry(
                     &[
@@ -167,9 +177,9 @@ impl TextFieldPane {
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.set_sample_button, cx);
         notify_entity(&self.clear_button, cx);
-        notify_entity(&self.toggle_enabled_button, cx);
-        notify_entity(&self.toggle_clean_on_escape_button, cx);
-        notify_entity(&self.toggle_validation_button, cx);
+        notify_entity(&self.enabled_checkbox, cx);
+        notify_entity(&self.clean_on_escape_checkbox, cx);
+        notify_entity(&self.validation_checkbox, cx);
     }
 
     fn current_validator(&self) -> Option<Validator> {
@@ -240,23 +250,23 @@ impl TextFieldPane {
         cx.notify();
     }
 
-    fn toggle_enabled(&mut self, cx: &mut Context<GalleryApp>) {
-        self.enabled = !self.enabled;
+    fn handle_option_changed(&mut self, option: TextFieldOption, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
+        let CheckboxEvent::Change { checked } = event;
+        match option {
+            TextFieldOption::Enabled => self.enabled = *checked,
+            TextFieldOption::CleanOnEscape => self.clean_on_escape = *checked,
+            TextFieldOption::StrictValidation => self.strict_validation = *checked,
+        }
         self.sync_text_field_settings(cx);
         cx.notify();
     }
+}
 
-    fn toggle_clean_on_escape(&mut self, cx: &mut Context<GalleryApp>) {
-        self.clean_on_escape = !self.clean_on_escape;
-        self.sync_text_field_settings(cx);
-        cx.notify();
-    }
-
-    fn toggle_validation(&mut self, cx: &mut Context<GalleryApp>) {
-        self.strict_validation = !self.strict_validation;
-        self.sync_text_field_settings(cx);
-        cx.notify();
-    }
+#[derive(Clone, Copy)]
+enum TextFieldOption {
+    Enabled,
+    CleanOnEscape,
+    StrictValidation,
 }
 
 fn action_button(

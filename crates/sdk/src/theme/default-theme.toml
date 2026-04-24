@@ -57,6 +57,7 @@ foreground = "hsl(215 20% 65%)"
 background = "hsl(0 0% 100%)"
 foreground = "hsl(222 47% 11%)"
 border = "hsl(215 20% 65%)"
+invalid_border = "hsl(330 81% 60%)"
 placeholder = "hsl(215 20% 65%)"
 
 [light.palette.focus]
@@ -331,6 +332,7 @@ foreground = "hsl(215 16% 47%)"
 background = "hsl(222 47% 11%)"
 foreground = "hsl(210 40% 98%)"
 border = "hsl(215 19% 35%)"
+invalid_border = "hsl(330 81% 70%)"
 placeholder = "hsl(215 16% 47%)"
 
 [dark.palette.focus]
