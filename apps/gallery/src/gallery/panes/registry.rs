@@ -15,7 +15,7 @@ use crate::gallery::theme::GalleryThemePack;
 use super::{
     button, checkbox, context_menu, floating_menu, icon_button, introduction, navigation_sidebar, palette, popup_menu,
     progress, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation,
-    textfield, theme_usage, toggle_button, toggle_group,
+    textarea, textfield, theme_usage, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -41,6 +41,7 @@ enum GalleryPageKind {
     RadioGroup,
     Slider,
     Scrollbar,
+    TextArea,
     TextField,
     FloatingMenu,
     PopupMenu,
@@ -112,6 +113,8 @@ const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
     GalleryPage { id: "scrollbar", label: "Scrollbar", icon: None, kind: GalleryPageKind::Scrollbar };
+const TEXTAREA_PAGE: GalleryPage =
+    GalleryPage { id: "textarea", label: "Text Area", icon: None, kind: GalleryPageKind::TextArea };
 const TEXTFIELD_PAGE: GalleryPage =
     GalleryPage { id: "textfield", label: "Text Field", icon: None, kind: GalleryPageKind::TextField };
 const FLOATING_MENU_PAGE: GalleryPage =
@@ -141,7 +144,7 @@ const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
-const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
+const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
@@ -196,6 +199,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
+    pub(super) textarea: textarea::TextAreaPane,
     pub(super) textfield: textfield::TextFieldPane,
     pub(super) floating_menu: floating_menu::FloatingMenuPane,
     pub(super) popup_menu: popup_menu::PopupMenuPane,
@@ -258,6 +262,7 @@ impl GalleryPanes {
             radio_group: radio_group::RadioGroupPane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
+            textarea: textarea::TextAreaPane::new(cx, theme),
             textfield: textfield::TextFieldPane::new(cx, theme),
             floating_menu: floating_menu::FloatingMenuPane::new(),
             popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
@@ -278,6 +283,7 @@ impl GalleryPanes {
         self.radio_group.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
+        self.textarea.subscribe(cx, subscriptions);
         self.textfield.subscribe(cx, subscriptions);
         self.popup_menu.subscribe(cx, subscriptions);
         self.context_menu.subscribe(cx, subscriptions);
@@ -296,6 +302,7 @@ impl GalleryPanes {
         self.radio_group.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
+        self.textarea.notify_controls(cx);
         self.textfield.notify_controls(cx);
         self.floating_menu.notify_controls();
         self.popup_menu.notify_controls(cx);
@@ -325,6 +332,7 @@ impl GalleryPanes {
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
+            GalleryPageKind::TextArea => self.textarea.render(&self.theme),
             GalleryPageKind::TextField => self.textfield.render(&self.theme),
             GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.theme),
             GalleryPageKind::PopupMenu => self.popup_menu.render(&self.theme),

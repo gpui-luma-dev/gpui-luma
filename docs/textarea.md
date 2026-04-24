@@ -77,17 +77,32 @@ Those should be composed around `TextArea` later by a form-field wrapper.
 
 ## Design Principle
 
-Do not build a second editing engine.
+Do not touch the working `TextField` while building `TextArea`.
 
-`TextArea` should reuse the shared text editing helpers that now support
-`TextField`, with multiline policy enabled. If a behavior is common to
-single-line and multiline editing, it belongs in `controls/text/`, not in
-`controls/textarea/control.rs`.
+`TextArea` may use existing shared text editing helpers that already exist under
+`crates/sdk/src/controls/text/`, but this pass must not refactor `TextField`,
+rewrite the shared helpers, or move behavior around just because it looks
+shareable.
+
+The priority is to make the core `TextArea` work. Text area behavior is
+complicated enough on its own: multiline layout, selection across lines, pointer
+hit-testing, vertical scrolling, and caret visibility all interact. Broad
+"make it common" refactors should wait until both controls work and the common
+shape is proven by two stable implementations.
 
 At the same time, do not block `TextArea` on a large upstream-editor port. The
 next step is a pragmatic core control using the current SDK architecture. If we
 later need IME-perfect byte-offset state or advanced wrapping, that can be a
 targeted follow-up after the basic control is working.
+
+Hard rule for this implementation:
+
+- do not modify `crates/sdk/src/controls/textfield/*`,
+- do not change existing `TextField` behavior,
+- do not refactor unrelated controls,
+- do not redesign `controls/text/` as part of bringing `TextArea` back,
+- only touch existing shared helper code if a small bug fix is required for
+  `TextArea` and it does not change `TextField` semantics.
 
 ## Files To Add
 
@@ -116,6 +131,10 @@ apps/gallery/src/gallery/panes/mod.rs
 apps/gallery/src/gallery/panes/registry.rs
 apps/gallery/src/gallery/theme.rs
 ```
+
+Avoid changes outside this list unless they are strictly required to wire the
+new control into the SDK or gallery. In particular, avoid edits to the
+`textfield` module during this pass.
 
 ## Public API Shape
 
@@ -161,10 +180,9 @@ Do not add submit-on-enter. In a text area, Enter inserts a newline.
 
 ## State Contract
 
-For the initial control, use the same character-indexed selection model as
-`TextField` and the current `controls/text` helpers. This keeps the work
-bounded and prevents an offset-model rewrite from being mixed into the TextArea
-reintroduction.
+For the initial control, use a character-indexed selection model compatible with
+the current `controls/text` helpers. This keeps the work bounded and prevents an
+offset-model rewrite from being mixed into the TextArea reintroduction.
 
 ```rust
 pub struct TextAreaState {
@@ -186,8 +204,10 @@ Rules:
 - `preferred_column` is used by Up/Down movement.
 - `invalid` is a state flag only; messages are not part of core `TextArea`.
 
-This matches the stabilized `TextField` baseline. A future byte-offset migration
-should happen in the shared text layer, not as a private TextArea decision.
+This is intentionally compatible with the stabilized `TextField` baseline
+without requiring `TextField` changes. A future byte-offset migration should
+happen after both controls work, not as a private TextArea decision and not as a
+prerequisite for this pass.
 
 ## Editing Policy
 
@@ -536,8 +556,9 @@ prove multiline editing, selection, and vertical scrolling first.
 The second risk is offset correctness. The current shared helpers use character
 offsets. That matches the stabilized `TextField`, but it is not the final
 highest-fidelity model for IME and byte/UTF-16 boundaries. Do not solve that in
-private TextArea code. If it becomes necessary, migrate the shared text layer
-and both controls together.
+private TextArea code. Also do not solve it by changing `TextField` during this
+pass. If it becomes necessary, record it as follow-up work after `TextArea` is
+working.
 
 ## Definition Of Done
 

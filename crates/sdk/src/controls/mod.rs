@@ -21,6 +21,7 @@ pub mod state;
 pub mod switch;
 pub mod tabs_navigation;
 pub(crate) mod text;
+pub mod textarea;
 pub mod textfield;
 pub mod toggle_button;
 pub mod toggle_group;

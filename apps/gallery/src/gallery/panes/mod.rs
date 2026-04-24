@@ -17,6 +17,7 @@ mod shared;
 mod slider;
 mod switch;
 mod tabs_navigation;
+mod textarea;
 mod theme_usage;
 mod textfield;
 mod toggle_button;

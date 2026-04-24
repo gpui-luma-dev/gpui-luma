@@ -16,6 +16,7 @@ use gpui_luma::controls::{
     slider::{SliderTemplate, ThemedSliderTemplate},
     switch::{SwitchTemplate, ThemedSwitchTemplate},
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
+    textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
     toggle_button::{ThemedToggleButtonTemplate, ToggleButtonTemplate},
     toggle_group::{ThemedToggleGroupTemplate, ToggleGroupTemplate},
@@ -24,12 +25,13 @@ use gpui_luma::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
     DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme,
-    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultTextFieldTheme,
-    DefaultToggleGroupTheme, InteractionState, LumaTheme, NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme,
-    ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance, ScrollbarTheme,
-    SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance,
-    TabsNavigationListAppearance, TabsNavigationTheme, TextFieldAppearance, TextFieldTheme, ThemeMode, ThemeTokens,
-    ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
+    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultTextAreaTheme,
+    DefaultTextFieldTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme, NavigationSidebarTheme,
+    PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme,
+    ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme,
+    TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme, TextAreaAppearance, TextAreaTheme,
+    TextFieldAppearance, TextFieldTheme, ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance,
+    ToggleGroupTheme,
 };
 
 #[derive(Clone)]
@@ -46,6 +48,7 @@ pub(in crate::gallery) struct GalleryThemePack {
     slider_theme: Arc<dyn SliderTheme>,
     switch_theme: Arc<dyn SwitchTheme>,
     tabs_navigation_theme: Arc<dyn TabsNavigationTheme>,
+    textarea_theme: Arc<dyn TextAreaTheme>,
     textfield_theme: Arc<dyn TextFieldTheme>,
     toggle_group_theme: Arc<dyn ToggleGroupTheme>,
 }
@@ -86,6 +89,7 @@ impl GalleryThemePack {
             slider_theme: Arc::new(GallerySliderTheme { state: state.clone() }),
             switch_theme: Arc::new(GallerySwitchTheme { state: state.clone() }),
             tabs_navigation_theme: Arc::new(GalleryTabsNavigationTheme { state: state.clone() }),
+            textarea_theme: Arc::new(GalleryTextAreaTheme { state: state.clone() }),
             textfield_theme: Arc::new(GalleryTextFieldTheme { state: state.clone() }),
             toggle_group_theme: Arc::new(GalleryToggleGroupTheme { state }),
         }
@@ -167,6 +171,14 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn textfield_theme(&self) -> Arc<dyn TextFieldTheme> {
         self.textfield_theme.clone()
+    }
+
+    pub(in crate::gallery) fn textarea_template(&self) -> Arc<dyn TextAreaTemplate> {
+        Arc::new(ThemedTextAreaTemplate::new(self.textarea_theme.clone()))
+    }
+
+    pub(in crate::gallery) fn textarea_theme(&self) -> Arc<dyn TextAreaTheme> {
+        self.textarea_theme.clone()
     }
 
     pub(in crate::gallery) fn popup_menu_template(&self) -> Arc<dyn PopupMenuTemplate> {
@@ -314,6 +326,16 @@ struct GalleryTextFieldTheme {
 impl TextFieldTheme for GalleryTextFieldTheme {
     fn resolve(&self, state: gpui_luma::controls::textfield::TextFieldState, enabled: bool) -> TextFieldAppearance {
         DefaultTextFieldTheme::new(self.state.tokens()).resolve(state, enabled)
+    }
+}
+
+struct GalleryTextAreaTheme {
+    state: Arc<GalleryThemeState>,
+}
+
+impl TextAreaTheme for GalleryTextAreaTheme {
+    fn resolve(&self, state: gpui_luma::controls::textarea::TextAreaState, enabled: bool) -> TextAreaAppearance {
+        DefaultTextAreaTheme::new(self.state.tokens()).resolve(state, enabled)
     }
 }
 
