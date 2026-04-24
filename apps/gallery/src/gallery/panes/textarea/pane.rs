@@ -9,7 +9,7 @@ use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, Validator,
+    TextAreaTemplate, TextAreaTemplateHandlers, ThemedTextAreaTemplate, Validator,
 };
 use gpui_luma::theme::TextAreaTheme;
 
@@ -42,6 +42,8 @@ impl TextAreaPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let button_template = theme.button_template();
         let checkbox_template = theme.checkbox_template();
+        let textarea_template: Arc<dyn TextAreaTemplate> =
+            Arc::new(ThemedTextAreaTemplate::new(theme.textarea_theme()));
 
         Self {
             text_area: TextArea::new("gallery-textarea")
@@ -50,9 +52,10 @@ impl TextAreaPane {
                 .rows(6)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(theme.textarea_template())
+                .template(textarea_template.clone())
+                .theme(theme.textarea_theme())
                 .spawn(cx),
-            state_preview: cx.new(|_| TextAreaStatePreview::new(theme)),
+            state_preview: cx.new(|_| TextAreaStatePreview::new(theme, textarea_template.clone())),
             set_sample_button: action_button("textarea-set-sample", "Set Sample", &button_template, cx),
             clear_button: action_button("textarea-clear", "Clear", &button_template, cx),
             enabled_checkbox: Checkbox::new("textarea-enabled")
@@ -297,8 +300,8 @@ struct TextAreaStateSample {
 }
 
 impl TextAreaStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.textarea_template() }
+    fn new(theme: &GalleryThemePack, template: Arc<dyn TextAreaTemplate>) -> Self {
+        Self { theme: theme.clone(), template }
     }
 }
 

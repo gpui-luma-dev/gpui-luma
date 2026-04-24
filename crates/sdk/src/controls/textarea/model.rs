@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::{TextArea, TextAreaState, TextAreaTemplate, default_textarea_template};
+use crate::theme::{TextAreaTheme, default_textarea_theme};
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
@@ -18,6 +19,7 @@ pub struct TextAreaModel {
     pub(crate) select_all_on_tab_focus: bool,
     pub(crate) validator: Option<Validator>,
     pub(crate) template: Arc<dyn TextAreaTemplate>,
+    pub(crate) theme: Arc<dyn TextAreaTheme>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -61,6 +63,7 @@ impl TextAreaBuilder {
                 select_all_on_tab_focus: false,
                 validator: None,
                 template: default_textarea_template(),
+                theme: default_textarea_theme(),
             },
         }
     }
@@ -107,6 +110,11 @@ impl TextAreaBuilder {
 
     pub fn template(mut self, template: Arc<dyn TextAreaTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn theme(mut self, theme: Arc<dyn TextAreaTheme>) -> Self {
+        self.model.theme = theme;
         self
     }
 

@@ -13,6 +13,9 @@ const TEXTAREA_SELECTION_OPACITY: f32 = 0.28;
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
 const TEXTAREA_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const TEXTAREA_TRAILING_HITBOX_WIDTH: f32 = 4.0;
+const TEXTAREA_CARET_EDGE_OFFSET: f32 = 0.0;
+const TEXTAREA_MIN_WIDTH: f32 = 0.0;
+const TEXTAREA_DISABLED_OPACITY: f32 = 0.6;
 
 pub type TextAreaHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type TextAreaMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -77,7 +80,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
 
         let text_viewport = if show_placeholder {
             div()
-                .min_w(px(0.0))
+                .min_w(px(TEXTAREA_MIN_WIDTH))
                 .w_full()
                 .h(px(viewport_height))
                 .overflow_hidden()
@@ -121,8 +124,8 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                         cell.child(
                                             div()
                                                 .absolute()
-                                                .left(px(0.0))
-                                                .top(px(0.0))
+                                                .left(px(TEXTAREA_CARET_EDGE_OFFSET))
+                                                .top(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .w(px(TEXTAREA_CARET_WIDTH))
                                                 .h(px(caret_height))
                                                 .bg(appearance.caret),
@@ -143,8 +146,8 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                         cell.child(
                                             div()
                                                 .absolute()
-                                                .left(px(0.0))
-                                                .top(px(0.0))
+                                                .left(px(TEXTAREA_CARET_EDGE_OFFSET))
+                                                .top(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .w(px(TEXTAREA_CARET_WIDTH))
                                                 .h(px(caret_height))
                                                 .bg(appearance.caret),
@@ -158,7 +161,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                 lines = lines.child(row);
             }
 
-            div().min_w(px(0.0)).w_full().h(px(viewport_height)).overflow_hidden().child(lines)
+            div().min_w(px(TEXTAREA_MIN_WIDTH)).w_full().h(px(viewport_height)).overflow_hidden().child(lines)
         };
 
         let control = div()
@@ -175,10 +178,11 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             .rounded(px(appearance.radius))
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
+            .font_family(appearance.font_family.clone())
             .font_weight(appearance.typography.weight)
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
-            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
+            .when(!model.enabled, |root| root.cursor_not_allowed().opacity(TEXTAREA_DISABLED_OPACITY))
             .child(text_viewport);
 
         let mut root =

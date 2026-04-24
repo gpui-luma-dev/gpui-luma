@@ -8,12 +8,15 @@ use gpui::{
     size,
 };
 
+use lucide_icons::Icon as LucideIcon;
+
 use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::TextAreaModel};
 use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::default_textarea_theme;
+
+const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
 #[derive(Clone)]
 struct TextAreaCachedLine {
@@ -67,6 +70,23 @@ impl Render for TextAreaDrag {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct TextAreaResizeDrag {
+    id: SharedString,
+}
+
+impl TextAreaResizeDrag {
+    pub(crate) fn new(id: SharedString) -> Self {
+        Self { id }
+    }
+}
+
+impl Render for TextAreaResizeDrag {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        Empty
+    }
+}
+
 pub struct TextArea {
     model: TextAreaModel,
     state: TextAreaState,
@@ -88,6 +108,9 @@ pub struct TextArea {
     layout_cache: Option<TextAreaLayoutCache>,
     scrollbar: Entity<Scrollbar>,
     scrollbar_enabled: bool,
+    resize_dragging: bool,
+    resize_start_y: f32,
+    resize_start_rows: usize,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -101,6 +124,7 @@ impl TextArea {
 
     pub(crate) fn from_builder(builder: TextAreaBuilder, cx: &mut Context<Self>) -> Self {
         let mut state = TextAreaState { cursor: builder.model.value.chars().count(), ..Default::default() };
+        let initial_rows = builder.model.rows.max(1);
 
         let scrollbar = Scrollbar::new(format!("{}-scrollbar", builder.model.id))
             .orientation(ScrollbarOrientation::Vertical)
@@ -134,6 +158,9 @@ impl TextArea {
             layout_cache: None,
             scrollbar,
             scrollbar_enabled: false,
+            resize_dragging: false,
+            resize_start_y: 0.0,
+            resize_start_rows: initial_rows,
             _subscriptions: subscriptions,
         };
         state.clamp_cursor(this.model.value.chars().count());
@@ -360,6 +387,18 @@ impl TextArea {
     fn emit_change(&mut self, cx: &mut Context<Self>) {
         self.change_count += 1;
         cx.emit(TextAreaEvent::Change { value: self.model.value.to_string() });
+    }
+
+    fn resize_drag_id(&self) -> SharedString {
+        format!("{}-resize", self.model.id).into()
+    }
+
+    fn resize_line_height(&self) -> f32 {
+        self.layout_cache.as_ref().map(|cache| cache.line_height.as_f32()).unwrap_or(20.0).max(1.0)
+    }
+
+    fn stop_resize_drag(&mut self) {
+        self.resize_dragging = false;
     }
 
     fn max_vertical_scroll_for_cache(cache: &TextAreaLayoutCache) -> Pixels {
@@ -625,6 +664,55 @@ impl TextArea {
         line.start + Self::byte_to_char_offset_for_line(self.model.value.as_ref(), line.start, line.end, byte_index)
     }
 
+    fn handle_resize_mouse_down(&mut self, event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            cx.stop_propagation();
+            return;
+        }
+
+        self.resize_dragging = true;
+        self.resize_start_y = event.position.y.as_f32();
+        self.resize_start_rows = self.model.rows.max(1);
+        self.mouse_selecting = false;
+        self.stop_selection_autoscroll();
+        cx.stop_propagation();
+        cx.notify();
+    }
+
+    fn handle_resize_drag_move(
+        &mut self,
+        event: &DragMoveEvent<TextAreaResizeDrag>,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if event.drag(cx).id != self.resize_drag_id() || !self.model.enabled || !self.resize_dragging {
+            return;
+        }
+
+        let delta_rows =
+            ((event.event.position.y.as_f32() - self.resize_start_y) / self.resize_line_height()).round() as isize;
+        let next_rows = (self.resize_start_rows as isize + delta_rows).clamp(1, 40) as usize;
+
+        if next_rows != self.model.rows {
+            self.model.rows = next_rows;
+            self.layout_cache = None;
+            self.ensure_cursor_visible();
+            cx.notify();
+        }
+
+        cx.stop_propagation();
+    }
+
+    fn handle_resize_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.resize_dragging {
+            return;
+        }
+
+        self.stop_resize_drag();
+        cx.stop_propagation();
+        cx.notify();
+    }
+
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             cx.stop_propagation();
@@ -687,6 +775,12 @@ impl TextArea {
     }
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.resize_dragging {
+            self.stop_resize_drag();
+            cx.notify();
+            return;
+        }
+
         self.mouse_selecting = false;
         self.stop_selection_autoscroll();
         if self.state.selection_range().is_none() {
@@ -805,7 +899,7 @@ impl gpui::Element for TextAreaElement {
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
         let input = self.input.read(cx);
-        let appearance = default_textarea_theme().resolve(input.state, input.model.enabled);
+        let appearance = input.model.theme.resolve(input.state, input.model.enabled);
         let mut style = Style::default();
         style.size.width = relative(1.0).into();
         style.size.height = px(appearance.typography.line_height * input.model.rows.max(1) as f32).into();
@@ -822,7 +916,7 @@ impl gpui::Element for TextAreaElement {
         cx: &mut App,
     ) -> Self::PrepaintState {
         let input = self.input.read(cx);
-        let appearance = default_textarea_theme().resolve(input.state, input.model.enabled);
+        let appearance = input.model.theme.resolve(input.state, input.model.enabled);
         let line_height = px(appearance.typography.line_height);
         let font_size = px(appearance.typography.size);
         let mut lines = Vec::new();
@@ -831,12 +925,13 @@ impl gpui::Element for TextAreaElement {
         let selection = input.state.selection_range();
         let cursor = input.state.cursor.min(input.model.value.chars().count());
         let show_placeholder = input.model.value.is_empty() && !input.state.focused;
-
-        let run_for = |len: usize, color| TextRun {
+        let font_family = appearance.font_family.clone();
+        let font_weight = appearance.typography.weight;
+        let run_for = move |len: usize, color| TextRun {
             len,
             font: {
-                let mut font = font(".SystemUIFont");
-                font.weight = appearance.typography.weight;
+                let mut font = font(font_family.clone());
+                font.weight = font_weight;
                 font
             },
             color,
@@ -1013,9 +1108,38 @@ impl Render for TextArea {
         }
 
         self.sync_focus(window, cx);
-        let appearance = default_textarea_theme().resolve(self.state, self.model.enabled);
+        let appearance = self.model.theme.resolve(self.state, self.model.enabled);
         let show_scrollbar = self.is_scrollable();
         let scrollbar_width = px(12.0);
+        let resize_handle = div()
+            .id(format!("{}-resize-handle", self.model.id))
+            .absolute()
+            .right(px(3.0))
+            .bottom(px(3.0))
+            .w(px(12.0))
+            .h(px(12.0))
+            .cursor_pointer()
+            .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_resize_mouse_down))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_resize_mouse_up))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_resize_mouse_up))
+            .on_drag(TextAreaResizeDrag::new(self.resize_drag_id()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(cx.listener(Self::handle_resize_drag_move))
+            .child(
+                div()
+                    .size(px(TEXTAREA_RESIZE_ICON_SIZE))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .font_family("lucide")
+                    .text_size(px(TEXTAREA_RESIZE_ICON_SIZE))
+                    .line_height(px(TEXTAREA_RESIZE_ICON_SIZE))
+                    .text_color(appearance.border.opacity(0.75))
+                    .child(char::from(LucideIcon::Scaling).to_string()),
+            );
+
         let control = div()
             .id(format!("{}-control", self.model.id))
             .relative()
@@ -1031,6 +1155,7 @@ impl Render for TextArea {
             .overflow_hidden()
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
+            .font_family(appearance.font_family.clone())
             .font_weight(appearance.typography.weight)
             .when(self.model.full_width, |root| root.w_full())
             .when(self.model.enabled, |root| root.cursor_text())
@@ -1048,7 +1173,8 @@ impl Render for TextArea {
                         .justify_center()
                         .child(self.scrollbar.clone()),
                 )
-            });
+            })
+            .when(self.model.enabled, |root| root.child(resize_handle));
 
         let mut root =
             render_button_family_focus_ring(self.model.id.clone(), control, appearance.focus_ring, appearance.radius);

@@ -5,7 +5,7 @@ use gpui::Hsla;
 use super::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 use crate::controls::textarea::TextAreaState;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct TextAreaAppearance {
     pub background: Hsla,
     pub foreground: Hsla,
@@ -15,6 +15,7 @@ pub struct TextAreaAppearance {
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
     pub typography: LumaTextStyle,
+    pub font_family: String,
     pub min_height: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -162,6 +163,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
+            font_family: typography.font.sans.family.clone(),
             min_height: metrics.control_height(size),
             padding_x: metrics.padding_x(size),
             padding_y: metrics.padding_y(size),
