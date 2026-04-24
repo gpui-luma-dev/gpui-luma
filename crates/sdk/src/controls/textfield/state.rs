@@ -1,3 +1,5 @@
+use crate::controls::text::TextSelectionState;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TextFieldState {
     pub hovered: bool,
@@ -6,6 +8,7 @@ pub struct TextFieldState {
     pub invalid: bool,
     pub cursor: usize,
     pub selection_anchor: Option<usize>,
+    pub preferred_column: Option<usize>,
 }
 
 impl TextFieldState {
@@ -29,39 +32,49 @@ impl TextFieldState {
     }
 
     pub fn clamp_cursor(&mut self, len_chars: usize) {
-        self.cursor = self.cursor.min(len_chars);
-        if let Some(anchor) = self.selection_anchor {
-            self.selection_anchor = Some(anchor.min(len_chars));
-        }
+        <Self as TextSelectionState>::clamp_cursor(self, len_chars);
     }
 
     pub fn clear_selection(&mut self) {
-        self.selection_anchor = None;
+        <Self as TextSelectionState>::clear_selection(self);
     }
 
     pub fn set_cursor(&mut self, cursor: usize, selecting: bool) {
-        if selecting {
-            if self.selection_anchor.is_none() {
-                self.selection_anchor = Some(self.cursor);
-            }
-        } else {
-            self.selection_anchor = None;
-        }
-
-        self.cursor = cursor;
+        <Self as TextSelectionState>::set_cursor(self, cursor, selecting);
     }
 
     pub fn has_selection(&self) -> bool {
-        self.selection_range().is_some()
+        <Self as TextSelectionState>::has_selection(self)
     }
 
     pub fn selection_range(&self) -> Option<(usize, usize)> {
-        let anchor = self.selection_anchor?;
-        if anchor == self.cursor {
-            return None;
-        }
+        <Self as TextSelectionState>::selection_range(self)
+    }
+}
 
-        Some((anchor.min(self.cursor), anchor.max(self.cursor)))
+impl TextSelectionState for TextFieldState {
+    fn cursor(&self) -> usize {
+        self.cursor
+    }
+
+    fn set_cursor_raw(&mut self, cursor: usize) {
+        self.cursor = cursor;
+    }
+
+    fn selection_anchor(&self) -> Option<usize> {
+        self.selection_anchor
+    }
+
+    fn set_selection_anchor_raw(&mut self, anchor: Option<usize>) {
+        self.selection_anchor = anchor;
+    }
+
+    fn preferred_column(&self) -> Option<usize> {
+        self.preferred_column
+    }
+
+    fn set_preferred_column(&mut self, column: Option<usize>) {
+        self.preferred_column = column;
     }
 }
 

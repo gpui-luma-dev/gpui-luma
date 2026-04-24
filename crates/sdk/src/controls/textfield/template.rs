@@ -26,12 +26,11 @@ pub type TextFieldClickHandler = Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut
 pub struct TextFieldTemplateHandlers {
     pub hover: TextFieldHoverHandler,
     pub mouse_down: TextFieldMouseDownHandler,
+    pub mouse_move: TextFieldMouseMoveHandler,
     pub mouse_up: TextFieldMouseUpHandler,
     pub mouse_up_out: TextFieldMouseUpHandler,
     pub click: TextFieldClickHandler,
     pub key_down: TextFieldKeyDownHandler,
-    pub cell_mouse_down: Vec<TextFieldMouseDownHandler>,
-    pub cell_mouse_move: Vec<TextFieldMouseMoveHandler>,
 }
 
 pub trait TextFieldTemplate: Send + Sync {
@@ -74,38 +73,40 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         let cursor = model.state.cursor.min(chars.len());
         let selection = model.state.selection_range();
         let caret_height = appearance.typography.size + TEXTFIELD_CARET_HEIGHT_EXTRA;
-        let mut cell_mouse_down = handlers.cell_mouse_down.into_iter();
-        let mut cell_mouse_move = handlers.cell_mouse_move.into_iter();
 
-        let mut content = if show_placeholder {
+        let mut text_viewport = if show_placeholder {
             div()
                 .min_w(px(0.0))
                 .flex_1()
                 .flex()
                 .items_center()
+                .overflow_hidden()
                 .text_color(appearance.placeholder)
                 .child(model.placeholder.clone())
         } else {
-            let mut row = div().min_w(px(0.0)).flex_1().flex().items_center().text_color(appearance.foreground);
+            let mut row = div().min_w(px(0.0)).flex().items_center().text_color(appearance.foreground);
 
             for caret_ix in 0..=chars.len() {
-                let mouse_down = cell_mouse_down.next().expect("textfield cell mouse down handler");
-                let mouse_move = cell_mouse_move.next().expect("textfield cell mouse move handler");
-
                 if let Some(ch) = chars.get(caret_ix) {
                     let selected = selection.map(|(start, end)| caret_ix >= start && caret_ix < end).unwrap_or(false);
+                    let width = model
+                        .character_offsets
+                        .get(caret_ix + 1)
+                        .zip(model.character_offsets.get(caret_ix))
+                        .map(|(next, current)| (next - current).max(0.0))
+                        .unwrap_or(0.0);
 
                     row = row.child(
                         div()
                             .relative()
+                            .flex_none()
+                            .w(px(width))
                             .flex()
                             .items_center()
                             .h(px(caret_height))
                             .when(selected, |cell| {
                                 cell.bg(appearance.selection_background.opacity(TEXTFIELD_SELECTION_OPACITY))
                             })
-                            .on_mouse_down(gpui::MouseButton::Left, mouse_down)
-                            .on_mouse_move(mouse_move)
                             .child(ch.to_string())
                             .when(
                                 model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
@@ -124,48 +125,46 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                     );
                 } else {
                     row = row.child(
-                        div()
-                            .relative()
-                            .w(px(TEXTFIELD_TRAILING_HITBOX_WIDTH))
-                            .h(px(caret_height))
-                            .on_mouse_down(gpui::MouseButton::Left, mouse_down)
-                            .on_mouse_move(mouse_move)
-                            .when(
-                                model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
-                                |cell| {
-                                    cell.child(
-                                        div()
-                                            .absolute()
-                                            .left(px(CARET_EDGE_OFFSET))
-                                            .top(px(CARET_EDGE_OFFSET))
-                                            .w(px(TEXTFIELD_CARET_WIDTH))
-                                            .h(px(caret_height))
-                                            .bg(appearance.caret),
-                                    )
-                                },
-                            ),
+                        div().relative().flex_none().w(px(TEXTFIELD_TRAILING_HITBOX_WIDTH)).h(px(caret_height)).when(
+                            model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
+                            |cell| {
+                                cell.child(
+                                    div()
+                                        .absolute()
+                                        .left(px(CARET_EDGE_OFFSET))
+                                        .top(px(CARET_EDGE_OFFSET))
+                                        .w(px(TEXTFIELD_CARET_WIDTH))
+                                        .h(px(caret_height))
+                                        .bg(appearance.caret),
+                                )
+                            },
+                        ),
                     );
                 }
             }
 
-            row
+            div()
+                .min_w(px(0.0))
+                .flex_1()
+                .overflow_hidden()
+                .child(div().relative().left(px(-model.horizontal_scroll)).flex().items_center().child(row))
         };
 
         if let Some(icon) = model.prefix_icon {
-            content = div()
+            text_viewport = div()
                 .min_w(px(0.0))
                 .flex_1()
                 .flex()
                 .items_center()
                 .gap(px(appearance.gap))
                 .child(render_prefix_icon(icon, appearance.icon, appearance.icon_size))
-                .child(content);
+                .child(text_viewport);
         }
 
         let control = div()
             .id(format!("{}-control", model.id))
             .relative()
-            .min_h(px(appearance.min_height))
+            .h(px(appearance.min_height))
             .flex()
             .items_center()
             .px(px(appearance.padding_x))
@@ -180,13 +179,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
-            .on_hover(handlers.hover)
-            .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
-            .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
-            .on_mouse_up_out(gpui::MouseButton::Left, handlers.mouse_up_out)
-            .on_click(handlers.click)
-            .on_key_down(handlers.key_down)
-            .child(content);
+            .child(text_viewport);
 
         let mut root =
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
@@ -194,6 +187,15 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         if model.full_width {
             root = root.w_full();
         }
+
+        root = root
+            .on_hover(handlers.hover)
+            .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
+            .on_mouse_move(handlers.mouse_move)
+            .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
+            .on_mouse_up_out(gpui::MouseButton::Left, handlers.mouse_up_out)
+            .on_click(handlers.click)
+            .on_key_down(handlers.key_down);
 
         root
     }

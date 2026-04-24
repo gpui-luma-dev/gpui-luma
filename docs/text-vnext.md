@@ -59,30 +59,40 @@ control surface, but not the shared editor core that supported it originally.
 ## 4. Reference Implementation
 
 The correct source of truth is not `gpui-component/src/text`.
-It is:
+It is the input stack in the sibling `gpui-component` checkout:
 
-- [`/Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input>)
+- `../gpui-component/crates/ui/src/input/`
 
 That directory already has the architecture we are missing.
 
 Most important files:
 
-- [`input.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/input.rs>)
+- `../gpui-component/crates/ui/src/input/input.rs`
   wires one shared state object into GPUI actions, focus tracking, mouse
   handling, and rendering shells.
-- [`state.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/state.rs>)
+- `../gpui-component/crates/ui/src/input/state.rs`
   is the actual editor core: text storage, selection, clipboard behavior,
   paste normalization, mouse hit-testing, caret blink, focus lifecycle, and
   mode-aware mutation.
-- [`mode.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/mode.rs>)
+- `../gpui-component/crates/ui/src/input/mode.rs`
   defines single-line and multi-line as modes on one engine.
-- [`movement.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/movement.rs>)
+- `../gpui-component/crates/ui/src/input/movement.rs`
   owns horizontal and vertical movement, including preferred-column behavior.
-- [`selection.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/selection.rs>)
+- `../gpui-component/crates/ui/src/input/selection.rs`
   owns word and line selection semantics.
-- [`element.rs`](</Users/scg/Developer/GitHub/gpui-component/crates/ui/src/input/element.rs>)
+- `../gpui-component/crates/ui/src/input/element.rs`
   owns text layout, caret geometry, selection painting, and mouse-to-offset
   mapping.
+- `../gpui-component/crates/ui/src/input/cursor.rs`
+  defines the shared selection type and makes the upstream offset model
+  explicit.
+- `../gpui-component/crates/ui/src/input/blink_cursor.rs`
+  isolates caret visibility timing from the control wrappers.
+- `../gpui-component/crates/ui/src/input/text_wrapper.rs`
+  supplies the line and shaping data that layout and hit-testing depend on.
+- `../gpui-component/crates/ui/src/input/change.rs`
+  and the `EntityInputHandler` implementation in `state.rs` cover undo/redo and
+  the platform text-input boundary, including IME composition.
 
 ## 5. Why That Source Matters
 
@@ -119,12 +129,15 @@ Suggested split:
 controls/text/
   state.rs        shared editable state
   mode.rs         single-line vs multiline policy
+  cursor.rs       canonical cursor/selection types and direction
   movement.rs     cursor movement and preferred-column logic
   selection.rs    selection utilities and double/triple-click behavior
   clipboard.rs    copy/cut/paste helpers
   caret.rs        blink and focus-visible behavior
+  text.rs         text storage plus UTF-8/UTF-16 offset conversion helpers
   layout.rs       caret/selection geometry contracts
   keymap.rs       key event / action translation
+  input_handler.rs platform text-input / IME bridge
 ```
 
 `TextField` and `TextArea` should become thin wrappers over this shared layer.
@@ -158,9 +171,18 @@ We should not wholesale copy `gpui-component/src/input`.
 - mode concept from `mode.rs`
 - selection semantics from `selection.rs`
 - movement logic from `movement.rs`
+- selection and cursor primitives from `cursor.rs`
 - clipboard and mutation behavior from `state.rs`
-- caret/focus behavior from `state.rs`
+- caret/focus behavior from `state.rs` and `blink_cursor.rs`
 - geometry concepts from `element.rs`
+- text layout support from `text_wrapper.rs`
+- change tracking and undo/redo shape from `change.rs`
+- the platform text-input boundary from `EntityInputHandler` in `state.rs`
+
+This is the minimum extraction surface, not just the obvious files. In
+`gpui-component`, the editor behavior is spread across a cluster of support
+modules; if the SDK ports only the headline files, it will reproduce the same
+partial-editor problem in a different directory.
 
 ### Do not port as part of this text-control merge
 
@@ -178,10 +200,20 @@ The SDK needs the editor core, not the entire application editor platform.
 ## 8. Data Model Recommendations
 
 The shared state should be richer than the current SDK state structs.
+It should also standardize on one internal offset model.
+
+Recommendation:
+
+- store cursor and selection as UTF-8 byte offsets inside the shared text core,
+- convert to UTF-16 only at the `EntityInputHandler` or platform text-input
+  boundary,
+- expose char- or line-oriented helpers from wrapper methods if the SDK API
+  needs them, but do not store mixed index spaces in the core state.
 
 At minimum:
 
 ```rust
+/// All offsets are UTF-8 byte offsets into the canonical text storage.
 pub struct EditableTextState {
     pub hovered: bool,
     pub focused: bool,
@@ -190,9 +222,16 @@ pub struct EditableTextState {
     pub caret_visible: bool,
     pub selection_reversed: bool,
     pub selected_range: Range<usize>,
+    pub ime_marked_range: Option<Range<usize>>,
     pub preferred_column: Option<(f32, usize)>,
 }
 ```
+
+This should mirror the upstream contract more closely than the current SDK
+state. The existing `TextFieldState` and `TextAreaState` use character counts;
+that is acceptable in the wrapper today, but it is not a good long-term core
+representation once selection, IME composition, hit-testing, and clipboard
+integration all share one engine.
 
 Policy should be explicit:
 

@@ -12,7 +12,6 @@ pub mod scrollbar;
 pub mod slider;
 pub mod switch;
 pub mod tabs_navigation;
-pub mod textarea;
 pub mod textfield;
 pub mod toggle_group;
 pub mod tokens;
@@ -44,7 +43,6 @@ pub use tabs_navigation::{
     DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
     default_tabs_navigation_theme,
 };
-pub use textarea::{DefaultTextAreaTheme, TextAreaAppearance, TextAreaTheme, default_textarea_theme};
 pub use textfield::{DefaultTextFieldTheme, TextFieldAppearance, TextFieldTheme, default_textfield_theme};
 pub use toggle_group::{
     DefaultToggleGroupTheme, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,

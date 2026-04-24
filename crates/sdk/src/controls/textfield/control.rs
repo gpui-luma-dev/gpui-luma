@@ -1,11 +1,31 @@
-use std::time::Duration;
+use std::{ops::Range, time::Duration};
 
 use gpui::{
-    App, ClipboardItem, Context, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, Render, SharedString, Task, Window, div, prelude::*,
+    App, Bounds, ClipboardItem, Context, ElementInputHandler, EntityInputHandler, EventEmitter, FocusHandle, Focusable,
+    IntoElement, KeyDownEvent, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, SharedString,
+    ShapedLine, Task, TextRun, UTF16Selection, Window, canvas, div, font, point, px, prelude::*,
 };
 
 use super::{TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers, model::TextFieldModel};
+use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
+use crate::theme::default_textfield_theme;
+
+#[derive(Clone)]
+struct TextFieldLayoutCache {
+    bounds: Bounds<Pixels>,
+    text_viewport: Bounds<Pixels>,
+    text_origin: Point<Pixels>,
+    content_width: Pixels,
+    line: ShapedLine,
+}
+
+const TEXTFIELD_TRAILING_HITBOX_WIDTH: f32 = 4.0;
+const TEXTFIELD_SCROLL_REVEAL_PADDING: f32 = 24.0;
+
+#[derive(Clone)]
+struct TextFieldLayoutPreview {
+    character_offsets: Vec<f32>,
+}
 
 #[derive(Clone, Debug)]
 pub enum TextFieldEvent {
@@ -29,160 +49,12 @@ pub struct TextField {
     caret_task: Task<()>,
     mouse_selecting: bool,
     suppress_select_all_on_next_focus: bool,
+    marked_range: Option<Range<usize>>,
+    horizontal_scroll: Pixels,
+    layout_cache: Option<TextFieldLayoutCache>,
 }
 
 impl EventEmitter<TextFieldEvent> for TextField {}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CharClass {
-    Word,
-    Whitespace,
-    Other,
-}
-
-impl CharClass {
-    fn from_char(ch: char) -> Self {
-        if is_word_char(ch) {
-            Self::Word
-        } else if ch.is_whitespace() {
-            Self::Whitespace
-        } else {
-            Self::Other
-        }
-    }
-
-    fn is_connectable(self, ch: char) -> bool {
-        Self::from_char(ch) == self
-    }
-}
-
-fn is_word_char(ch: char) -> bool {
-    ch.is_alphanumeric() || ch == '_'
-}
-
-fn prev_word_boundary(chars: &[char], cursor: usize) -> usize {
-    if cursor == 0 {
-        return 0;
-    }
-
-    let mut ix = cursor;
-    while ix > 0 && chars.get(ix - 1).is_some_and(|ch| ch.is_whitespace()) {
-        ix -= 1;
-    }
-    while ix > 0 && chars.get(ix - 1).is_some_and(|ch| is_word_char(*ch)) {
-        ix -= 1;
-    }
-    ix
-}
-
-fn next_word_boundary(chars: &[char], cursor: usize) -> usize {
-    let mut ix = cursor.min(chars.len());
-    while ix < chars.len() && chars.get(ix).is_some_and(|ch| ch.is_whitespace()) {
-        ix += 1;
-    }
-    while ix < chars.len() && chars.get(ix).is_some_and(|ch| is_word_char(*ch)) {
-        ix += 1;
-    }
-    ix
-}
-
-fn typed_text_from_event(event: &KeyDownEvent) -> Option<&str> {
-    let modifiers = &event.keystroke.modifiers;
-    let shortcut_modifier = modifiers.secondary() || modifiers.control || modifiers.platform || modifiers.function;
-    if shortcut_modifier {
-        return None;
-    }
-
-    event
-        .keystroke
-        .key_char
-        .as_deref()
-        .filter(|text| !text.is_empty() && !text.chars().any(|ch| ch.is_control()))
-}
-
-fn move_left_target(chars: &[char], cursor: usize, modifiers: gpui::Modifiers) -> usize {
-    #[cfg(target_os = "macos")]
-    {
-        if modifiers.platform {
-            return 0;
-        }
-        if modifiers.alt {
-            return prev_word_boundary(chars, cursor);
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        if modifiers.control {
-            return prev_word_boundary(chars, cursor);
-        }
-    }
-
-    cursor.saturating_sub(1)
-}
-
-fn move_right_target(chars: &[char], cursor: usize, modifiers: gpui::Modifiers) -> usize {
-    #[cfg(target_os = "macos")]
-    {
-        if modifiers.platform {
-            return chars.len();
-        }
-        if modifiers.alt {
-            return next_word_boundary(chars, cursor);
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        if modifiers.control {
-            return next_word_boundary(chars, cursor);
-        }
-    }
-
-    (cursor + 1).min(chars.len())
-}
-
-fn delete_left_target(chars: &[char], cursor: usize, modifiers: gpui::Modifiers) -> usize {
-    #[cfg(target_os = "macos")]
-    {
-        if modifiers.platform {
-            return 0;
-        }
-        if modifiers.alt {
-            return prev_word_boundary(chars, cursor);
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        if modifiers.control {
-            return prev_word_boundary(chars, cursor);
-        }
-    }
-
-    cursor.saturating_sub(1)
-}
-
-fn delete_right_target(chars: &[char], cursor: usize, modifiers: gpui::Modifiers) -> usize {
-    #[cfg(target_os = "macos")]
-    {
-        if modifiers.platform {
-            return chars.len();
-        }
-        if modifiers.alt {
-            return next_word_boundary(chars, cursor);
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        if modifiers.control {
-            return next_word_boundary(chars, cursor);
-        }
-    }
-
-    (cursor + 1).min(chars.len())
-}
 
 impl TextField {
     #[allow(clippy::new_ret_no_self)]
@@ -208,6 +80,9 @@ impl TextField {
             caret_task: Task::ready(()),
             mouse_selecting: false,
             suppress_select_all_on_next_focus: false,
+            marked_range: None,
+            horizontal_scroll: px(0.0),
+            layout_cache: None,
         };
         this.focus_handle = this.focus_handle.clone().tab_stop(this.model.enabled);
         this.recompute_invalid();
@@ -256,6 +131,8 @@ impl TextField {
         self.model.value = value.into().into();
         self.state.cursor = self.model.value.chars().count();
         self.state.clear_selection();
+        self.state.preferred_column = None;
+        self.marked_range = None;
         self.recompute_invalid();
         cx.notify();
     }
@@ -276,7 +153,7 @@ impl TextField {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self) -> TextFieldRenderModel<'a> {
+    fn render_model_with_offsets<'a>(&'a self, character_offsets: Vec<f32>) -> TextFieldRenderModel<'a> {
         TextFieldRenderModel {
             id: &self.model.id,
             placeholder: &self.model.placeholder,
@@ -286,33 +163,48 @@ impl TextField {
             full_width: self.model.full_width,
             state: self.state,
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
+            horizontal_scroll: self.horizontal_scroll.as_f32(),
+            character_offsets,
         }
     }
 
-    fn template_handlers(&self, cx: &mut Context<Self>) -> TextFieldTemplateHandlers {
-        let char_count = self.model.value.chars().count() + 1;
+    fn layout_preview(&self, window: &mut Window) -> TextFieldLayoutPreview {
+        let appearance = default_textfield_theme().resolve(self.state, self.model.enabled);
+        let run = TextRun {
+            len: self.model.value.len(),
+            font: {
+                let mut font = font(".SystemUIFont");
+                font.weight = appearance.typography.weight;
+                font
+            },
+            color: appearance.foreground,
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        let line =
+            window
+                .text_system()
+                .shape_line(self.model.value.clone(), px(appearance.typography.size), &[run], None);
+        let chars = self.model.value.chars().count();
+        let mut character_offsets = Vec::with_capacity(chars + 1);
+        for char_offset in 0..=chars {
+            let byte_offset = Self::char_to_byte_offset(self.model.value.as_ref(), char_offset);
+            character_offsets.push(line.x_for_index(byte_offset).as_f32());
+        }
 
+        TextFieldLayoutPreview { character_offsets }
+    }
+
+    fn template_handlers(&self, cx: &mut Context<Self>) -> TextFieldTemplateHandlers {
         TextFieldTemplateHandlers {
             hover: Box::new(cx.listener(Self::handle_hover_changed)),
             mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
+            mouse_move: Box::new(cx.listener(Self::handle_mouse_move)),
             mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
             mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
             click: Box::new(cx.listener(Self::handle_click)),
             key_down: Box::new(cx.listener(Self::handle_key_down)),
-            cell_mouse_down: (0..char_count)
-                .map(|index| {
-                    Box::new(cx.listener(move |this: &mut Self, event: &MouseDownEvent, window: &mut Window, cx| {
-                        this.handle_cell_mouse_down(index, event, window, cx);
-                    })) as _
-                })
-                .collect(),
-            cell_mouse_move: (0..char_count)
-                .map(|index| {
-                    Box::new(cx.listener(move |this: &mut Self, event: &MouseMoveEvent, window: &mut Window, cx| {
-                        this.handle_cell_mouse_move(index, event, window, cx);
-                    })) as _
-                })
-                .collect(),
         }
     }
 
@@ -327,8 +219,9 @@ impl TextField {
         if focused {
             let keyboard_focus = window.last_input_was_keyboard();
             if self.model.select_all_on_tab_focus && keyboard_focus && !self.suppress_select_all_on_next_focus {
-                self.select_all(self.model.value.chars().count());
+                select_all(&mut self.state, self.model.value.chars().count());
             }
+            self.state.preferred_column = None;
             self.state.set_focus_visible(true);
             self.focus_count += 1;
             cx.emit(TextFieldEvent::Focus);
@@ -428,57 +321,6 @@ impl TextField {
         cx.emit(TextFieldEvent::Change { value: self.model.value.to_string() });
     }
 
-    fn delete_selection(&mut self, chars: &mut Vec<char>) -> bool {
-        let Some((start, end)) = self.state.selection_range() else {
-            return false;
-        };
-        chars.drain(start..end);
-        self.state.cursor = start;
-        self.state.clear_selection();
-        true
-    }
-
-    fn insert_text(&mut self, chars: &mut Vec<char>, value: &str) -> bool {
-        if value.is_empty() {
-            return false;
-        }
-
-        let _ = self.delete_selection(chars);
-        let mut inserted = 0usize;
-        for ch in value.chars() {
-            chars.insert(self.state.cursor + inserted, ch);
-            inserted += 1;
-        }
-        self.state.cursor += inserted;
-        self.state.clear_selection();
-        inserted > 0
-    }
-
-    fn word_cluster_range(chars: &[char], offset: usize) -> Option<(usize, usize)> {
-        if chars.is_empty() {
-            return None;
-        }
-
-        let target = offset.min(chars.len().saturating_sub(1));
-        let class = CharClass::from_char(chars[target]);
-        let mut start = target;
-        let mut end = target + 1;
-
-        while start > 0 && class.is_connectable(chars[start - 1]) {
-            start -= 1;
-        }
-        while end < chars.len() && class.is_connectable(chars[end]) {
-            end += 1;
-        }
-
-        Some((start, end))
-    }
-
-    fn select_all(&mut self, len: usize) {
-        self.state.selection_anchor = Some(0);
-        self.state.cursor = len;
-    }
-
     fn handle_hover_changed(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
@@ -486,6 +328,16 @@ impl TextField {
 
         self.state.set_hovered(*hovered);
         cx.notify();
+    }
+
+    fn char_offset_for_point(&self, point: Point<Pixels>) -> usize {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return self.model.value.chars().count();
+        };
+
+        let local_x = point.x - cache.text_origin.x;
+        let byte_index = cache.line.closest_index_for_x(local_x.max(px(0.0)));
+        Self::byte_to_char_offset(self.model.value.as_ref(), byte_index)
     }
 
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -496,39 +348,12 @@ impl TextField {
 
         self.suppress_select_all_on_next_focus = true;
         self.focus_handle.focus(window, cx);
-        let len = self.model.value.chars().count();
-        if event.modifiers.shift {
-            self.state.set_cursor(len, true);
-        } else {
-            self.state.set_cursor(len, false);
-        }
-        self.mouse_selecting = true;
-        self.pause_caret_blink(cx);
-        cx.notify();
-    }
-
-    fn handle_cell_mouse_down(
-        &mut self,
-        index: usize,
-        event: &MouseDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.model.enabled {
-            cx.stop_propagation();
-            return;
-        }
-
-        self.suppress_select_all_on_next_focus = true;
-        self.focus_handle.focus(window, cx);
-        cx.stop_propagation();
-
         let chars = self.model.value.chars().collect::<Vec<_>>();
         let len = chars.len();
-        let index = index.min(len);
+        let index = self.char_offset_for_point(event.position).min(len);
 
         if event.click_count >= 3 {
-            self.select_all(len);
+            select_all(&mut self.state, len);
             self.mouse_selecting = false;
             self.pause_caret_blink(cx);
             cx.notify();
@@ -536,9 +361,10 @@ impl TextField {
         }
 
         if event.click_count == 2 {
-            if let Some((start, end)) = Self::word_cluster_range(&chars, index) {
+            if let Some((start, end)) = word_cluster_range(&chars, index) {
                 self.state.selection_anchor = Some(start);
                 self.state.cursor = end;
+                self.state.preferred_column = None;
                 self.mouse_selecting = false;
                 self.pause_caret_blink(cx);
                 cx.notify();
@@ -551,24 +377,21 @@ impl TextField {
         } else {
             self.state.set_cursor(index, false);
         }
+        self.state.preferred_column = None;
 
         self.mouse_selecting = true;
         self.pause_caret_blink(cx);
         cx.notify();
     }
 
-    fn handle_cell_mouse_move(
-        &mut self,
-        index: usize,
-        _event: &MouseMoveEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_mouse_move(&mut self, event: &MouseMoveEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled || !self.mouse_selecting {
             return;
         }
 
-        self.state.set_cursor(index.min(self.model.value.chars().count()), true);
+        let index = self.char_offset_for_point(event.position).min(self.model.value.chars().count());
+        self.state.set_cursor(index, true);
+        self.state.preferred_column = None;
         self.pause_caret_blink(cx);
         cx.notify();
     }
@@ -593,147 +416,54 @@ impl TextField {
             return;
         }
 
-        let mut chars = self.model.value.chars().collect::<Vec<_>>();
-        self.state.clamp_cursor(chars.len());
-        let mut changed = false;
-        let mut handled = false;
-        let selecting = event.keystroke.modifiers.shift;
-        let secondary = event.keystroke.modifiers.secondary();
-        let modifiers = event.keystroke.modifiers;
+        let clipboard_text = if event.keystroke.modifiers.secondary() && event.keystroke.key == "v" {
+            cx.read_from_clipboard().and_then(|item| item.text())
+        } else {
+            None
+        };
+        let result = handle_key_down(
+            &mut self.state,
+            self.model.value.as_ref(),
+            event,
+            clipboard_text.as_deref(),
+            EditableTextPolicy {
+                multiline: false,
+                submit_on_enter: true,
+                strip_newlines_on_paste: true,
+                allow_tab_character: false,
+                clear_on_escape: self.model.clean_on_escape,
+            },
+        );
 
-        match event.keystroke.key.as_str() {
-            "backspace" => {
-                if self.delete_selection(&mut chars) {
-                    changed = true;
-                } else {
-                    let next = delete_left_target(&chars, self.state.cursor, modifiers);
-                    if next < self.state.cursor {
-                        chars.drain(next..self.state.cursor);
-                        self.state.cursor = next;
-                        changed = true;
-                    }
-                }
-                handled = true;
-            }
-            "delete" => {
-                if self.delete_selection(&mut chars) {
-                    changed = true;
-                } else {
-                    let next = delete_right_target(&chars, self.state.cursor, modifiers);
-                    if next > self.state.cursor {
-                        chars.drain(self.state.cursor..next);
-                        changed = true;
-                    }
-                }
-                handled = true;
-            }
-            "left" => {
-                let next = if !selecting {
-                    if let Some((start, _)) = self.state.selection_range() {
-                        start
-                    } else {
-                        move_left_target(&chars, self.state.cursor, modifiers)
-                    }
-                } else {
-                    move_left_target(&chars, self.state.cursor, modifiers)
-                };
-                self.state.set_cursor(next, selecting);
-                handled = true;
-            }
-            "right" => {
-                let next = if !selecting {
-                    if let Some((_, end)) = self.state.selection_range() {
-                        end
-                    } else {
-                        move_right_target(&chars, self.state.cursor, modifiers)
-                    }
-                } else {
-                    move_right_target(&chars, self.state.cursor, modifiers)
-                };
-                self.state.set_cursor(next, selecting);
-                handled = true;
-            }
-            "home" => {
-                self.state.set_cursor(0, selecting);
-                handled = true;
-            }
-            "end" => {
-                self.state.set_cursor(chars.len(), selecting);
-                handled = true;
-            }
-            "enter" => {
-                self.submit_count += 1;
-                cx.emit(TextFieldEvent::Submit { value: self.model.value.to_string() });
-                handled = true;
-            }
-            "tab" => {
-                let was_focused = self.focus_handle.is_focused(window);
-                if modifiers.shift {
-                    window.focus_prev(cx);
-                } else {
-                    window.focus_next(cx);
-                }
-                handled = was_focused && !self.focus_handle.is_focused(window);
-            }
-            "escape" => {
-                if self.model.clean_on_escape && !chars.is_empty() {
-                    chars.clear();
-                    self.state.cursor = 0;
-                    self.state.clear_selection();
-                    changed = true;
-                }
-                handled = true;
-            }
-            "a" if secondary => {
-                self.select_all(chars.len());
-                handled = true;
-            }
-            "c" if secondary => {
-                if let Some((start, end)) = self.state.selection_range() {
-                    let selected_text: String = self.model.value.chars().skip(start).take(end - start).collect();
-                    cx.write_to_clipboard(ClipboardItem::new_string(selected_text));
-                }
-                handled = true;
-            }
-            "x" if secondary => {
-                if let Some((start, end)) = self.state.selection_range() {
-                    let selected_text: String = self.model.value.chars().skip(start).take(end - start).collect();
-                    cx.write_to_clipboard(ClipboardItem::new_string(selected_text));
-                    if self.delete_selection(&mut chars) {
-                        changed = true;
-                    }
-                }
-                handled = true;
-            }
-            "v" if secondary => {
-                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
-                    let text = text.replace('\n', "");
-                    if !text.is_empty() {
-                        changed = self.insert_text(&mut chars, &text);
-                    }
-                }
-                handled = true;
-            }
-            _ => {
-                if let Some(typed) = typed_text_from_event(event) {
-                    changed = self.insert_text(&mut chars, typed);
-                    handled = true;
-                }
+        if let Some(text) = result.clipboard_write.clone() {
+            cx.write_to_clipboard(ClipboardItem::new_string(text));
+        }
+
+        if let Some(navigation) = result.focus_navigation {
+            match navigation {
+                FocusNavigation::Next => window.focus_next(cx),
+                FocusNavigation::Prev => window.focus_prev(cx),
             }
         }
 
-        if handled {
+        if result.submitted {
+            self.submit_count += 1;
+            cx.emit(TextFieldEvent::Submit { value: self.model.value.to_string() });
+        }
+
+        if result.handled {
             window.prevent_default();
             cx.stop_propagation();
         }
 
-        if changed {
-            self.model.value = chars.into_iter().collect::<String>().into();
+        if result.changed {
+            self.model.value = result.value.into();
+            self.marked_range = None;
             self.recompute_invalid();
             self.emit_change(cx);
         }
 
-        if changed || handled {
+        if result.changed || result.handled {
             self.pause_caret_blink(cx);
             cx.notify();
         }
@@ -753,76 +483,306 @@ impl Render for TextField {
         }
 
         self.sync_focus(window, cx);
+        let layout_preview = self.layout_preview(window);
+        let entity = cx.entity();
+        let input_focus_handle = self.focus_handle.clone();
+        let value = self.model.value.clone();
+        let state = self.state;
+        let enabled = self.model.enabled;
+        let has_prefix_icon = self.model.prefix_icon.is_some();
+        let horizontal_scroll = self.horizontal_scroll;
 
         div()
+            .relative()
             .child(
                 self.model
                     .template
-                    .render(&self.render_model(), self.template_handlers(cx), window, cx)
+                    .render(
+                        &self.render_model_with_offsets(layout_preview.character_offsets.clone()),
+                        self.template_handlers(cx),
+                        window,
+                        cx,
+                    )
                     .track_focus(&self.focus_handle)
                     .tab_stop(self.model.enabled),
+            )
+            .child(
+                canvas(
+                    move |bounds, window, _| {
+                        let appearance = default_textfield_theme().resolve(state, enabled);
+                        let run = TextRun {
+                            len: value.len(),
+                            font: {
+                                let mut font = font(".SystemUIFont");
+                                font.weight = appearance.typography.weight;
+                                font
+                            },
+                            color: appearance.foreground,
+                            background_color: None,
+                            underline: None,
+                            strikethrough: None,
+                        };
+                        let line = window.text_system().shape_line(
+                            value.clone(),
+                            px(appearance.typography.size),
+                            &[run],
+                            None,
+                        );
+                        let x_offset = appearance.padding_x
+                            + if has_prefix_icon {
+                                appearance.icon_size + appearance.gap
+                            } else {
+                                0.0
+                            };
+                        let text_viewport = Bounds::from_corners(
+                            point(bounds.left() + px(x_offset), bounds.top()),
+                            point(bounds.right() - px(appearance.padding_x), bounds.bottom()),
+                        );
+                        TextFieldLayoutCache {
+                            bounds,
+                            text_viewport,
+                            text_origin: point(text_viewport.left() - horizontal_scroll, bounds.top()),
+                            content_width: line.x_for_index(value.len()) + px(TEXTFIELD_TRAILING_HITBOX_WIDTH),
+                            line,
+                        }
+                    },
+                    move |bounds, cache, window, cx| {
+                        window.handle_input(&input_focus_handle, ElementInputHandler::new(bounds, entity.clone()), cx);
+                        let _ = entity.update(cx, |this, cx| {
+                            if this.sync_horizontal_scroll(&cache) {
+                                cx.notify();
+                            }
+                            this.layout_cache = Some(cache);
+                        });
+                    },
+                )
+                .absolute()
+                .size_full(),
             )
             .into_any_element()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use gpui::{KeyDownEvent, Keystroke, Modifiers};
+impl TextField {
+    fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
+        text.chars().take(char_offset).map(char::len_utf8).sum()
+    }
 
-    use super::{
-        TextField, delete_left_target, delete_right_target, move_left_target, move_right_target, typed_text_from_event,
-    };
+    fn byte_to_char_offset(text: &str, byte_offset: usize) -> usize {
+        let mut char_offset = 0usize;
+        let mut consumed = 0usize;
+        for ch in text.chars() {
+            if consumed >= byte_offset {
+                break;
+            }
+            consumed += ch.len_utf8();
+            char_offset += 1;
+        }
+        char_offset
+    }
 
-    #[test]
-    fn typed_text_uses_key_char() {
-        let event = KeyDownEvent {
-            keystroke: Keystroke { modifiers: Modifiers::none(), key: "a".into(), key_char: Some("A".into()) },
-            is_held: false,
-            prefer_character_input: false,
+    fn offset_from_utf16(&self, offset: usize) -> usize {
+        let mut char_offset = 0usize;
+        let mut utf16_count = 0usize;
+
+        for ch in self.model.value.chars() {
+            if utf16_count >= offset {
+                break;
+            }
+            utf16_count += ch.len_utf16();
+            char_offset += 1;
+        }
+
+        char_offset
+    }
+
+    fn offset_to_utf16(&self, offset: usize) -> usize {
+        self.model.value.chars().take(offset).map(char::len_utf16).sum()
+    }
+
+    fn range_from_utf16(&self, range_utf16: &Range<usize>) -> Range<usize> {
+        self.offset_from_utf16(range_utf16.start)..self.offset_from_utf16(range_utf16.end)
+    }
+
+    fn range_to_utf16(&self, range: &Range<usize>) -> Range<usize> {
+        self.offset_to_utf16(range.start)..self.offset_to_utf16(range.end)
+    }
+
+    fn selected_range(&self) -> Range<usize> {
+        self.state
+            .selection_range()
+            .map(|(start, end)| start..end)
+            .unwrap_or(self.state.cursor..self.state.cursor)
+    }
+
+    fn replace_char_range(
+        &mut self,
+        range: Range<usize>,
+        new_text: &str,
+        selected_range_utf16: Option<Range<usize>>,
+        mark_text: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let mut chars = self.model.value.chars().collect::<Vec<_>>();
+        chars.splice(range.clone(), new_text.chars());
+        self.model.value = chars.into_iter().collect::<String>().into();
+
+        let inserted_len = new_text.chars().count();
+        if let Some(range_utf16) = selected_range_utf16 {
+            let mut rel_start = 0usize;
+            let mut rel_end = inserted_len;
+            let mut utf16_count = 0usize;
+            for (ix, ch) in new_text.chars().enumerate() {
+                if utf16_count < range_utf16.start {
+                    rel_start = ix + 1;
+                }
+                if utf16_count < range_utf16.end {
+                    rel_end = ix + 1;
+                }
+                utf16_count += ch.len_utf16();
+            }
+            self.state.selection_anchor = Some(range.start + rel_start);
+            self.state.cursor = range.start + rel_end;
+        } else {
+            self.state.clear_selection();
+            self.state.cursor = range.start + inserted_len;
+        }
+
+        self.marked_range = if mark_text && inserted_len > 0 {
+            Some(range.start..range.start + inserted_len)
+        } else {
+            None
         };
-        assert_eq!(typed_text_from_event(&event), Some("A"));
+        self.state.preferred_column = None;
+        self.recompute_invalid();
+        self.emit_change(cx);
+        cx.notify();
     }
 
-    #[test]
-    fn typed_text_ignores_secondary_shortcuts() {
-        let event = KeyDownEvent {
-            keystroke: Keystroke { modifiers: Modifiers::secondary_key(), key: "a".into(), key_char: Some("a".into()) },
-            is_held: false,
-            prefer_character_input: false,
-        };
-        assert_eq!(typed_text_from_event(&event), None);
+    fn range_bounds_from_cache(cache: &TextFieldLayoutCache, text: &str, range: Range<usize>) -> Bounds<Pixels> {
+        let start = Self::char_to_byte_offset(text, range.start);
+        let end = Self::char_to_byte_offset(text, range.end);
+        let start_x = cache.text_origin.x + cache.line.x_for_index(start);
+        let end_x = cache.text_origin.x + cache.line.x_for_index(end);
+        Bounds::from_corners(point(start_x, cache.bounds.top()), point(end_x.max(start_x), cache.bounds.bottom()))
     }
 
-    #[test]
-    fn typed_text_ignores_tab_control_character() {
-        let event = KeyDownEvent {
-            keystroke: Keystroke { modifiers: Modifiers::none(), key: "tab".into(), key_char: Some("\t".into()) },
-            is_held: false,
-            prefer_character_input: false,
-        };
-        assert_eq!(typed_text_from_event(&event), None);
+    fn sync_horizontal_scroll(&mut self, cache: &TextFieldLayoutCache) -> bool {
+        let viewport_width = cache.text_viewport.size.width;
+        let max_scroll = (cache.content_width - viewport_width).max(px(0.0));
+        let clamped_current = self.horizontal_scroll.min(max_scroll).max(px(0.0));
+        let caret_bounds =
+            Self::range_bounds_from_cache(cache, self.model.value.as_ref(), self.state.cursor..self.state.cursor);
+        let reveal_padding = px(TEXTFIELD_SCROLL_REVEAL_PADDING);
+        let left_reveal_edge = cache.text_viewport.left() + reveal_padding.min(viewport_width);
+        let right_reveal_edge = cache.text_viewport.right() - reveal_padding.min(viewport_width);
+        let mut target = clamped_current;
+
+        if caret_bounds.left() < left_reveal_edge {
+            target -= left_reveal_edge - caret_bounds.left();
+        } else if caret_bounds.right() > right_reveal_edge {
+            target += caret_bounds.right() - right_reveal_edge;
+        }
+
+        target = target.max(px(0.0)).min(max_scroll);
+        if (target - self.horizontal_scroll).abs() <= px(0.5) {
+            self.horizontal_scroll = clamped_current;
+            return false;
+        }
+
+        self.horizontal_scroll = target;
+        true
+    }
+}
+
+impl EntityInputHandler for TextField {
+    fn text_for_range(
+        &mut self,
+        range_utf16: Range<usize>,
+        adjusted_range: &mut Option<Range<usize>>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> Option<String> {
+        let range = self.range_from_utf16(&range_utf16);
+        adjusted_range.replace(self.range_to_utf16(&range));
+        Some(self.model.value.chars().skip(range.start).take(range.end.saturating_sub(range.start)).collect())
     }
 
-    #[test]
-    fn movement_targets_clamp_to_bounds() {
-        let chars = "hello world".chars().collect::<Vec<_>>();
-        assert_eq!(move_left_target(&chars, 0, Modifiers::none()), 0);
-        assert_eq!(move_right_target(&chars, chars.len(), Modifiers::none()), chars.len());
-        assert_eq!(delete_left_target(&chars, 0, Modifiers::none()), 0);
-        assert_eq!(delete_right_target(&chars, chars.len(), Modifiers::none()), chars.len());
+    fn selected_text_range(
+        &mut self,
+        _ignore_disabled_input: bool,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> Option<UTF16Selection> {
+        Some(UTF16Selection { range: self.range_to_utf16(&self.selected_range()), reversed: false })
     }
 
-    #[test]
-    fn double_click_word_cluster_selects_word() {
-        let chars = "abc 123".chars().collect::<Vec<_>>();
-        assert_eq!(TextField::word_cluster_range(&chars, 1), Some((0, 3)));
-        assert_eq!(TextField::word_cluster_range(&chars, 4), Some((4, 7)));
+    fn marked_text_range(&self, _window: &mut Window, _cx: &mut Context<Self>) -> Option<Range<usize>> {
+        self.marked_range.as_ref().map(|range| self.range_to_utf16(range))
     }
 
-    #[test]
-    fn double_click_word_cluster_selects_whitespace_run() {
-        let chars = "a   b".chars().collect::<Vec<_>>();
-        assert_eq!(TextField::word_cluster_range(&chars, 2), Some((1, 4)));
+    fn unmark_text(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        self.marked_range = None;
+        cx.notify();
+    }
+
+    fn replace_text_in_range(
+        &mut self,
+        range_utf16: Option<Range<usize>>,
+        text: &str,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let range = range_utf16
+            .as_ref()
+            .map(|range| self.range_from_utf16(range))
+            .or_else(|| self.marked_range.clone())
+            .unwrap_or_else(|| self.selected_range());
+        let replacement = text.replace(['\n', '\r'], "");
+        self.replace_char_range(range, &replacement, None, false, cx);
+    }
+
+    fn replace_and_mark_text_in_range(
+        &mut self,
+        range_utf16: Option<Range<usize>>,
+        new_text: &str,
+        new_selected_range: Option<Range<usize>>,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let range = range_utf16
+            .as_ref()
+            .map(|range| self.range_from_utf16(range))
+            .or_else(|| self.marked_range.clone())
+            .unwrap_or_else(|| self.selected_range());
+        let replacement = new_text.replace(['\n', '\r'], "");
+        self.replace_char_range(range, &replacement, new_selected_range, true, cx);
+    }
+
+    fn bounds_for_range(
+        &mut self,
+        range_utf16: Range<usize>,
+        element_bounds: Bounds<Pixels>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> Option<Bounds<Pixels>> {
+        let range = self.range_from_utf16(&range_utf16);
+        self.layout_cache
+            .as_ref()
+            .map(|cache| Self::range_bounds_from_cache(cache, self.model.value.as_ref(), range))
+            .or(Some(element_bounds))
+    }
+
+    fn character_index_for_point(
+        &mut self,
+        point: Point<Pixels>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> Option<usize> {
+        let cache = self.layout_cache.as_ref()?;
+        let local_x = point.x - cache.text_origin.x;
+        let byte_index = cache.line.closest_index_for_x(local_x.max(px(0.0)));
+        let char_index = Self::byte_to_char_offset(self.model.value.as_ref(), byte_index);
+        Some(self.offset_to_utf16(char_index))
     }
 }

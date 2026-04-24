@@ -46,6 +46,46 @@ impl ScrollContainer {
         cx.notify();
     }
 
+    pub fn vertical_offset(&self) -> Pixels {
+        px((-self.scroll_handle.offset().y.as_f32()).max(0.0))
+    }
+
+    pub fn max_vertical_offset(&self) -> Pixels {
+        px(self.scroll_handle.max_offset().y.as_f32().max(0.0))
+    }
+
+    pub fn scroll_vertical_by<T: 'static>(&self, delta: Pixels, cx: &mut Context<T>) -> bool {
+        let current = self.vertical_offset().as_f32();
+        let target = (current + delta.as_f32()).clamp(0.0, self.max_vertical_offset().as_f32());
+        if (target - current).abs() <= 0.5 {
+            return false;
+        }
+
+        self.set_vertical_offset(target, cx);
+        true
+    }
+
+    pub fn ensure_vertical_bounds_visible<T: 'static>(&self, top: Pixels, bottom: Pixels, cx: &mut Context<T>) -> bool {
+        let viewport = self.scroll_handle.bounds();
+        let max_scroll = self.scroll_handle.max_offset().y.as_f32().max(0.0);
+        let current = self.vertical_offset().as_f32();
+        let mut target = current;
+
+        if top < viewport.top() {
+            target -= (viewport.top() - top).as_f32();
+        } else if bottom > viewport.bottom() {
+            target += (bottom - viewport.bottom()).as_f32();
+        }
+
+        target = target.clamp(0.0, max_scroll);
+        if (target - current).abs() <= 0.5 {
+            return false;
+        }
+
+        self.set_vertical_offset(target, cx);
+        true
+    }
+
     pub fn sync_scrollbar<T: 'static>(&self, cx: &mut Context<T>) {
         let viewport_height = self.scroll_handle.bounds().size.height.as_f32().max(0.0);
         let max_scroll = self.scroll_handle.max_offset().y.as_f32().max(0.0);

@@ -30,6 +30,8 @@ pub struct TextFieldRenderModel<'a> {
     pub full_width: bool,
     pub state: TextFieldState,
     pub caret_visible: bool,
+    pub horizontal_scroll: f32,
+    pub character_offsets: Vec<f32>,
 }
 
 pub struct TextFieldBuilder {
