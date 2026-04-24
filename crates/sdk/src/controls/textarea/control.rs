@@ -2,13 +2,16 @@ use std::{ops::Range, time::Duration};
 
 use gpui::{
     App, Bounds, ClipboardItem, Context, DragMoveEvent, ElementInputHandler, Empty, EntityInputHandler, EventEmitter,
-    FocusHandle, Focusable, GlobalElementId, IntoElement, KeyDownEvent, LayoutId, MouseButton, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render, SharedString, ShapedLine, Style, Task, TextAlign,
-    TextRun, UTF16Selection, Window, div, fill, font, point, prelude::*, px, relative, size,
+    Entity, FocusHandle, Focusable, GlobalElementId, IntoElement, KeyDownEvent, LayoutId, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render, ScrollWheelEvent, SharedString, ShapedLine, Style,
+    Subscription, Task, TextAlign, TextRun, UTF16Selection, Window, div, fill, font, point, prelude::*, px, relative,
+    size,
 };
 
 use super::{TextAreaBuilder, TextAreaState, TextAreaTemplateHandlers, model::TextAreaModel};
+use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
+use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::default_textarea_theme;
 
@@ -16,6 +19,7 @@ use crate::theme::default_textarea_theme;
 struct TextAreaCachedLine {
     start: usize,
     end: usize,
+    text: String,
     line: ShapedLine,
 }
 
@@ -36,6 +40,7 @@ struct TextAreaPrepaintState {
     caret_quad: Option<PaintQuad>,
     placeholder_line: Option<ShapedLine>,
     line_height: Pixels,
+    vertical_scroll: Pixels,
 }
 
 #[derive(Clone, Debug)]
@@ -74,10 +79,16 @@ pub struct TextArea {
     caret_epoch: usize,
     caret_task: Task<()>,
     mouse_selecting: bool,
+    selection_drag_position: Option<Point<Pixels>>,
+    selection_scroll_epoch: usize,
+    selection_scroll_task: Task<()>,
     suppress_select_all_on_next_focus: bool,
     marked_range: Option<Range<usize>>,
     vertical_scroll: Pixels,
     layout_cache: Option<TextAreaLayoutCache>,
+    scrollbar: Entity<Scrollbar>,
+    scrollbar_enabled: bool,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl EventEmitter<TextAreaEvent> for TextArea {}
@@ -91,6 +102,17 @@ impl TextArea {
     pub(crate) fn from_builder(builder: TextAreaBuilder, cx: &mut Context<Self>) -> Self {
         let mut state = TextAreaState { cursor: builder.model.value.chars().count(), ..Default::default() };
 
+        let scrollbar = Scrollbar::new(format!("{}-scrollbar", builder.model.id))
+            .orientation(ScrollbarOrientation::Vertical)
+            .spawn(cx);
+        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
+            ScrollbarEvent::Change { value } => {
+                this.vertical_scroll = px(*value);
+                this.clamp_vertical_scroll_to_cache();
+                cx.notify();
+            }
+        })];
+
         let mut this = Self {
             model: builder.model,
             state,
@@ -103,10 +125,16 @@ impl TextArea {
             caret_epoch: 0,
             caret_task: Task::ready(()),
             mouse_selecting: false,
+            selection_drag_position: None,
+            selection_scroll_epoch: 0,
+            selection_scroll_task: Task::ready(()),
             suppress_select_all_on_next_focus: false,
             marked_range: None,
             vertical_scroll: px(0.0),
             layout_cache: None,
+            scrollbar,
+            scrollbar_enabled: false,
+            _subscriptions: subscriptions,
         };
         state.clamp_cursor(this.model.value.chars().count());
         this.state = state;
@@ -145,6 +173,7 @@ impl TextArea {
         if !enabled {
             self.state.set_hovered(false);
             self.mouse_selecting = false;
+            self.stop_selection_autoscroll();
         }
         cx.notify();
     }
@@ -156,6 +185,7 @@ impl TextArea {
         self.state.preferred_column = None;
         self.marked_range = None;
         self.recompute_invalid();
+        self.ensure_cursor_visible();
         cx.notify();
     }
 
@@ -225,7 +255,9 @@ impl TextArea {
             cx.emit(TextAreaEvent::Focus);
             self.start_caret_blink(cx);
         } else {
-            self.mouse_selecting = false;
+            if !self.mouse_selecting {
+                self.stop_selection_autoscroll();
+            }
             if self.model.select_all_on_tab_focus {
                 self.state.clear_selection();
                 self.state.cursor = self.model.value.chars().count();
@@ -286,6 +318,17 @@ impl TextArea {
         });
     }
 
+    fn next_selection_scroll_epoch(&mut self) -> usize {
+        self.selection_scroll_epoch += 1;
+        self.selection_scroll_epoch
+    }
+
+    fn stop_selection_autoscroll(&mut self) {
+        self.selection_drag_position = None;
+        self.next_selection_scroll_epoch();
+        self.selection_scroll_task = Task::ready(());
+    }
+
     fn tick_caret_blink(&mut self, epoch: usize, cx: &mut Context<Self>) {
         if !self.state.focused {
             self.caret_visible = false;
@@ -317,6 +360,231 @@ impl TextArea {
     fn emit_change(&mut self, cx: &mut Context<Self>) {
         self.change_count += 1;
         cx.emit(TextAreaEvent::Change { value: self.model.value.to_string() });
+    }
+
+    fn max_vertical_scroll_for_cache(cache: &TextAreaLayoutCache) -> Pixels {
+        (cache.line_height * cache.lines.len() as f32 - cache.text_viewport.size.height).max(px(0.0))
+    }
+
+    fn clamped_vertical_scroll(cache: &TextAreaLayoutCache, scroll: Pixels) -> Pixels {
+        scroll.max(px(0.0)).min(Self::max_vertical_scroll_for_cache(cache))
+    }
+
+    fn clamp_vertical_scroll_to_cache(&mut self) -> bool {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return false;
+        };
+
+        let clamped = Self::clamped_vertical_scroll(cache, self.vertical_scroll);
+        if clamped == self.vertical_scroll {
+            return false;
+        }
+
+        self.vertical_scroll = clamped;
+        true
+    }
+
+    fn scroll_by(&mut self, delta: Pixels) -> bool {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return false;
+        };
+
+        let next = Self::clamped_vertical_scroll(cache, self.vertical_scroll + delta);
+        if next == self.vertical_scroll {
+            return false;
+        }
+
+        self.vertical_scroll = next;
+        true
+    }
+
+    fn selection_autoscroll_delta_for_point(&self, position: Point<Pixels>) -> Pixels {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return px(0.0);
+        };
+
+        Self::selection_autoscroll_delta_for_cache(cache, position)
+    }
+
+    fn selection_autoscroll_delta_for_cache(cache: &TextAreaLayoutCache, position: Point<Pixels>) -> Pixels {
+        if Self::max_vertical_scroll_for_cache(cache) <= px(0.5) {
+            return px(0.0);
+        }
+
+        let top = cache.text_viewport.top();
+        let bottom = cache.text_viewport.bottom();
+        let overflow = if position.y < top {
+            position.y - top
+        } else if position.y > bottom {
+            position.y - bottom
+        } else {
+            px(0.0)
+        };
+
+        if overflow == px(0.0) {
+            return px(0.0);
+        }
+
+        let direction = overflow.as_f32().signum();
+        let distance = overflow.as_f32().abs();
+        let line_height = cache.line_height.as_f32().max(1.0);
+        let lines_per_tick = (distance / line_height).clamp(1.0, 6.0);
+        px(direction * line_height * lines_per_tick)
+    }
+
+    fn selection_hit_position(&self, position: Point<Pixels>) -> Point<Pixels> {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return position;
+        };
+
+        Self::selection_hit_position_for_cache(cache, position)
+    }
+
+    fn selection_hit_position_for_cache(cache: &TextAreaLayoutCache, position: Point<Pixels>) -> Point<Pixels> {
+        let top = cache.text_viewport.top();
+        let bottom = cache.text_viewport.bottom();
+        let left = cache.text_viewport.left();
+        let right = cache.text_viewport.right() - px(0.5);
+
+        if position.y < top {
+            return point(left, top);
+        }
+
+        if position.y > bottom {
+            return point(right, bottom - px(0.5));
+        }
+
+        let x = position.x.max(left).min(right);
+        point(x, position.y)
+    }
+
+    fn update_drag_selection_at(&mut self, position: Point<Pixels>, cx: &mut Context<Self>) {
+        let hit_position = self.selection_hit_position(position);
+        let index = self.char_offset_for_point(hit_position).min(self.model.value.chars().count());
+        self.state.set_cursor(index, true);
+        self.state.preferred_column = None;
+        self.pause_caret_blink(cx);
+        cx.notify();
+    }
+
+    fn update_selection_autoscroll(&mut self, position: Point<Pixels>, cx: &mut Context<Self>) {
+        self.selection_drag_position = Some(position);
+        if self.selection_autoscroll_delta_for_point(position) == px(0.0) {
+            self.next_selection_scroll_epoch();
+            return;
+        }
+
+        let epoch = self.next_selection_scroll_epoch();
+        self.selection_scroll_task = cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(Duration::from_millis(33)).await;
+            if let Some(this) = this.upgrade() {
+                this.update(cx, |this, cx| this.tick_selection_autoscroll(epoch, cx));
+            }
+        });
+    }
+
+    fn tick_selection_autoscroll(&mut self, epoch: usize, cx: &mut Context<Self>) {
+        if epoch != self.selection_scroll_epoch || !self.model.enabled || !self.mouse_selecting {
+            return;
+        }
+
+        let Some(position) = self.selection_drag_position else {
+            return;
+        };
+
+        let delta = self.selection_autoscroll_delta_for_point(position);
+        if delta == px(0.0) {
+            return;
+        }
+
+        if self.scroll_by(delta) {
+            self.update_drag_selection_at(position, cx);
+        }
+
+        let epoch = self.next_selection_scroll_epoch();
+        self.selection_scroll_task = cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(Duration::from_millis(33)).await;
+            if let Some(this) = this.upgrade() {
+                this.update(cx, |this, cx| this.tick_selection_autoscroll(epoch, cx));
+            }
+        });
+    }
+
+    fn vertical_scroll_to_reveal_cursor(cache: &TextAreaLayoutCache, cursor: usize, scroll: Pixels) -> Pixels {
+        let current = Self::clamped_vertical_scroll(cache, scroll);
+        let Some((line_ix, _)) = cache
+            .lines
+            .iter()
+            .enumerate()
+            .find(|(_, line)| cursor >= line.start && cursor <= line.end)
+            .or_else(|| cache.lines.iter().enumerate().last())
+        else {
+            return current;
+        };
+
+        let line_top = cache.line_height * line_ix as f32;
+        let line_bottom = line_top + cache.line_height;
+        let viewport_bottom = current + cache.text_viewport.size.height;
+
+        if line_top < current {
+            return Self::clamped_vertical_scroll(cache, line_top);
+        }
+
+        if line_bottom > viewport_bottom {
+            return Self::clamped_vertical_scroll(cache, line_bottom - cache.text_viewport.size.height);
+        }
+
+        current
+    }
+
+    fn ensure_cursor_visible(&mut self) -> bool {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return false;
+        };
+
+        let next = Self::vertical_scroll_to_reveal_cursor(cache, self.state.cursor, self.vertical_scroll);
+        if next == self.vertical_scroll {
+            return false;
+        }
+
+        self.vertical_scroll = next;
+        true
+    }
+
+    fn is_scrollable(&self) -> bool {
+        self.layout_cache.as_ref().is_some_and(|cache| Self::max_vertical_scroll_for_cache(cache) > px(0.5))
+    }
+
+    fn sync_scrollbar(&mut self, cx: &mut Context<Self>) {
+        let Some(cache) = self.layout_cache.as_ref() else {
+            return;
+        };
+
+        let max_scroll = Self::max_vertical_scroll_for_cache(cache).as_f32().max(0.0);
+        let viewport_height = cache.text_viewport.size.height.as_f32().max(1.0);
+        let content_height = viewport_height + max_scroll;
+        let thumb_fraction = if content_height > 0.0 {
+            (viewport_height / content_height).clamp(0.05, 1.0)
+        } else {
+            1.0
+        };
+        let enabled = self.model.enabled && max_scroll > 0.5;
+        let value = self.vertical_scroll.as_f32().clamp(0.0, max_scroll);
+        let step = cache.line_height.as_f32().max(1.0);
+        let enabled_changed = self.scrollbar_enabled != enabled;
+
+        self.scrollbar.update(cx, |scrollbar, cx| {
+            scrollbar.set_length(viewport_height, cx);
+            scrollbar.set_range(ControlRange::new(0.0, max_scroll.max(1.0)), cx);
+            scrollbar.set_step(step, cx);
+            scrollbar.set_page_step((viewport_height * 0.85).max(step), cx);
+            scrollbar.set_thumb_fraction(thumb_fraction, cx);
+            scrollbar.set_value(value, cx);
+            if enabled_changed {
+                scrollbar.set_enabled(enabled, cx);
+            }
+        });
+        self.scrollbar_enabled = enabled;
     }
 
     fn handle_hover_changed(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
@@ -372,6 +640,7 @@ impl TextArea {
         if event.click_count >= 3 {
             select_all(&mut self.state, len);
             self.mouse_selecting = false;
+            self.stop_selection_autoscroll();
             self.pause_caret_blink(cx);
             cx.notify();
             return;
@@ -383,6 +652,7 @@ impl TextArea {
                 self.state.cursor = end;
                 self.state.preferred_column = None;
                 self.mouse_selecting = false;
+                self.stop_selection_autoscroll();
                 self.pause_caret_blink(cx);
                 cx.notify();
             }
@@ -392,6 +662,7 @@ impl TextArea {
         self.state.set_cursor(index, event.modifiers.shift);
         self.state.preferred_column = None;
         self.mouse_selecting = true;
+        self.selection_drag_position = Some(event.position);
         self.pause_caret_blink(cx);
         cx.notify();
     }
@@ -401,27 +672,23 @@ impl TextArea {
             return;
         }
 
-        let index = self.char_offset_for_point(event.position).min(self.model.value.chars().count());
-        self.state.set_cursor(index, true);
-        self.state.preferred_column = None;
-        self.pause_caret_blink(cx);
-        cx.notify();
+        self.update_drag_selection_at(event.position, cx);
+        self.update_selection_autoscroll(event.position, cx);
     }
 
     fn handle_drag_move(&mut self, event: &DragMoveEvent<TextAreaDrag>, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.drag(cx).id != self.model.id || !self.model.enabled || !self.mouse_selecting {
+        if event.drag(cx).id != self.model.id || !self.model.enabled {
             return;
         }
 
-        let index = self.char_offset_for_point(event.event.position).min(self.model.value.chars().count());
-        self.state.set_cursor(index, true);
-        self.state.preferred_column = None;
-        self.pause_caret_blink(cx);
-        cx.notify();
+        self.mouse_selecting = true;
+        self.update_drag_selection_at(event.event.position, cx);
+        self.update_selection_autoscroll(event.event.position, cx);
     }
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         self.mouse_selecting = false;
+        self.stop_selection_autoscroll();
         if self.state.selection_range().is_none() {
             self.state.clear_selection();
         }
@@ -431,6 +698,20 @@ impl TextArea {
     fn handle_click(&mut self, _event: &gpui::ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             cx.stop_propagation();
+        }
+    }
+
+    fn handle_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
+        let line_height = self.layout_cache.as_ref().map(|cache| cache.line_height).unwrap_or(px(20.0));
+        let delta = event.delta.pixel_delta(line_height).y;
+        if self.scroll_by(delta) {
+            self.pause_caret_blink(cx);
+            cx.stop_propagation();
+            cx.notify();
         }
     }
 
@@ -483,6 +764,7 @@ impl TextArea {
         }
 
         if result.changed || result.handled {
+            self.ensure_cursor_visible();
             self.pause_caret_blink(cx);
             cx.notify();
         }
@@ -570,20 +852,87 @@ impl gpui::Element for TextAreaElement {
             None
         };
 
-        for (line_ix, (start, end, text)) in TextArea::logical_lines(input.model.value.as_ref()).into_iter().enumerate()
-        {
-            let run = run_for(text.len(), appearance.foreground);
-            let shaped = window.text_system().shape_line(text.clone().into(), font_size, &[run], None);
-            let top = bounds.top() + line_height * line_ix as f32 - input.vertical_scroll;
+        let logical_lines = TextArea::logical_lines(input.model.value.as_ref());
+        let wrap_width = bounds.size.width.max(px(1.0));
+
+        for (hard_start, _hard_end, text) in logical_lines.into_iter() {
+            let full_run = run_for(text.len(), appearance.foreground);
+            let full_shaped = window.text_system().shape_line(text.clone().into(), font_size, &[full_run], None);
+            let line_chars = text.chars().collect::<Vec<_>>();
+            let char_count = line_chars.len();
+
+            if char_count == 0 {
+                lines.push(TextAreaCachedLine {
+                    start: hard_start,
+                    end: hard_start,
+                    text: String::new(),
+                    line: full_shaped,
+                });
+                continue;
+            }
+
+            let mut byte_offsets = Vec::with_capacity(char_count + 1);
+            for char_offset in 0..=char_count {
+                byte_offsets.push(TextArea::char_to_byte_offset(&text, char_offset));
+            }
+
+            let mut local_start = 0usize;
+            while local_start < char_count {
+                let start_x = full_shaped.x_for_index(byte_offsets[local_start]);
+                let mut fit_end = local_start + 1;
+                for probe in (local_start + 1)..=char_count {
+                    let probe_x = full_shaped.x_for_index(byte_offsets[probe]);
+                    if probe_x - start_x <= wrap_width {
+                        fit_end = probe;
+                    } else {
+                        break;
+                    }
+                }
+
+                let mut local_end = fit_end;
+                if fit_end < char_count {
+                    for probe in ((local_start + 1)..=fit_end).rev() {
+                        if line_chars[probe - 1].is_whitespace() {
+                            local_end = probe;
+                            break;
+                        }
+                    }
+                    local_end = local_end.max(local_start + 1);
+                }
+
+                let segment_text = line_chars[local_start..local_end].iter().collect::<String>();
+                let run = run_for(segment_text.len(), appearance.foreground);
+                let shaped = window.text_system().shape_line(segment_text.clone().into(), font_size, &[run], None);
+
+                lines.push(TextAreaCachedLine {
+                    start: hard_start + local_start,
+                    end: hard_start + local_end,
+                    text: segment_text,
+                    line: shaped,
+                });
+
+                local_start = local_end;
+            }
+        }
+
+        let content_height = line_height * lines.len() as f32;
+        let max_vertical_scroll = (content_height - bounds.size.height).max(px(0.0));
+        let vertical_scroll = input.vertical_scroll.max(px(0.0)).min(max_vertical_scroll);
+
+        for (line_ix, line) in lines.iter().enumerate() {
+            let top = bounds.top() + line_height * line_ix as f32 - vertical_scroll;
             let bottom = top + line_height;
 
             if bottom >= bounds.top() && top <= bounds.bottom() {
+                let start = line.start;
+                let end = line.end;
+
                 if let Some((selection_start, selection_end)) = selection {
                     let local_start = selection_start.max(start).min(end).saturating_sub(start);
                     let local_end = selection_end.max(start).min(end).saturating_sub(start);
                     if local_start < local_end || (selection_start <= end && selection_end > end && end == start) {
-                        let x1 = shaped.x_for_index(TextArea::char_to_byte_offset(&text, local_start));
-                        let x2 = shaped.x_for_index(TextArea::char_to_byte_offset(&text, local_end));
+                        let x1 = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_start));
+                        let x2 = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_end));
                         selection_quads.push(fill(
                             Bounds::from_corners(
                                 point(bounds.left() + x1, top),
@@ -596,18 +945,16 @@ impl gpui::Element for TextAreaElement {
 
                 if selection.is_none() && cursor >= start && cursor <= end {
                     let local_cursor = cursor.saturating_sub(start);
-                    let x = shaped.x_for_index(TextArea::char_to_byte_offset(&text, local_cursor));
+                    let x = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_cursor));
                     caret_quad = Some(fill(
                         Bounds::new(point(bounds.left() + x, top), size(px(1.5), line_height)),
                         appearance.caret,
                     ));
                 }
             }
-
-            lines.push(TextAreaCachedLine { start, end, line: shaped });
         }
 
-        TextAreaPrepaintState { lines, selection_quads, caret_quad, placeholder_line, line_height }
+        TextAreaPrepaintState { lines, selection_quads, caret_quad, placeholder_line, line_height, vertical_scroll }
     }
 
     fn paint(
@@ -630,9 +977,11 @@ impl gpui::Element for TextAreaElement {
         if let Some(line) = prepaint.placeholder_line.take() {
             line.paint(bounds.origin, prepaint.line_height, TextAlign::Left, None, window, cx).ok();
         } else {
-            let scroll = self.input.read(cx).vertical_scroll;
             for (line_ix, line) in prepaint.lines.iter().enumerate() {
-                let origin = point(bounds.left(), bounds.top() + prepaint.line_height * line_ix as f32 - scroll);
+                let origin = point(
+                    bounds.left(),
+                    bounds.top() + prepaint.line_height * line_ix as f32 - prepaint.vertical_scroll,
+                );
                 if origin.y + prepaint.line_height >= bounds.top() && origin.y <= bounds.bottom() {
                     line.line.paint(origin, prepaint.line_height, TextAlign::Left, None, window, cx).ok();
                 }
@@ -644,12 +993,15 @@ impl gpui::Element for TextAreaElement {
             window.paint_quad(caret);
         }
 
-        self.input.update(cx, |input, _cx| {
+        self.input.update(cx, |input, cx| {
+            input.vertical_scroll = prepaint.vertical_scroll;
             input.layout_cache = Some(TextAreaLayoutCache {
                 text_viewport: bounds,
                 line_height: prepaint.line_height,
                 lines: prepaint.lines.clone(),
             });
+            input.clamp_vertical_scroll_to_cache();
+            input.sync_scrollbar(cx);
         });
     }
 }
@@ -662,12 +1014,15 @@ impl Render for TextArea {
 
         self.sync_focus(window, cx);
         let appearance = default_textarea_theme().resolve(self.state, self.model.enabled);
+        let show_scrollbar = self.is_scrollable();
+        let scrollbar_width = px(12.0);
         let control = div()
             .id(format!("{}-control", self.model.id))
             .relative()
             .flex()
             .items_start()
-            .px(px(appearance.padding_x))
+            .pl(px(appearance.padding_x))
+            .pr(px(appearance.padding_x) + if show_scrollbar { scrollbar_width } else { px(0.0) })
             .py(px(appearance.padding_y))
             .bg(appearance.background)
             .border(px(appearance.border_width))
@@ -680,7 +1035,20 @@ impl Render for TextArea {
             .when(self.model.full_width, |root| root.w_full())
             .when(self.model.enabled, |root| root.cursor_text())
             .when(!self.model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
-            .child(TextAreaElement { input: cx.entity() });
+            .child(TextAreaElement { input: cx.entity() })
+            .when(show_scrollbar, |root| {
+                root.child(
+                    div()
+                        .absolute()
+                        .top(px(2.0))
+                        .right(px(2.0))
+                        .bottom(px(2.0))
+                        .w(scrollbar_width)
+                        .flex()
+                        .justify_center()
+                        .child(self.scrollbar.clone()),
+                )
+            });
 
         let mut root =
             render_button_family_focus_ring(self.model.id.clone(), control, appearance.focus_ring, appearance.radius);
@@ -696,7 +1064,13 @@ impl Render for TextArea {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
             .on_mouse_move(cx.listener(Self::handle_mouse_move))
             .on_click(cx.listener(Self::handle_click))
+            .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
             .on_key_down(cx.listener(Self::handle_key_down))
+            .on_drag(TextAreaDrag::new(self.model.id.clone()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(cx.listener(Self::handle_drag_move))
     }
 }
 
@@ -817,6 +1191,7 @@ impl TextArea {
         self.state.preferred_column = None;
         self.recompute_invalid();
         self.emit_change(cx);
+        self.ensure_cursor_visible();
         cx.notify();
     }
 
@@ -938,9 +1313,20 @@ impl EntityInputHandler for TextArea {
 
 #[cfg(test)]
 mod tests {
-    use gpui::px;
+    use gpui::{Bounds, ShapedLine, point, px, size};
 
-    use super::TextArea;
+    use super::{TextArea, TextAreaCachedLine, TextAreaLayoutCache};
+
+    fn cache_with_lines(lines: Vec<(usize, usize)>) -> TextAreaLayoutCache {
+        TextAreaLayoutCache {
+            text_viewport: Bounds::new(point(px(0.0), px(0.0)), size(px(100.0), px(60.0))),
+            line_height: px(20.0),
+            lines: lines
+                .into_iter()
+                .map(|(start, end)| TextAreaCachedLine { start, end, text: String::new(), line: ShapedLine::default() })
+                .collect(),
+        }
+    }
 
     #[test]
     fn local_axis_position_uses_window_coordinates() {
@@ -971,5 +1357,89 @@ mod tests {
     #[test]
     fn line_index_for_local_y_keeps_top_edge_as_first_line() {
         assert_eq!(TextArea::line_index_for_local_y(px(0.0), px(0.0), px(20.0), 4), 0);
+    }
+
+    #[test]
+    fn max_vertical_scroll_uses_content_minus_viewport_height() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::max_vertical_scroll_for_cache(&cache), px(40.0));
+    }
+
+    #[test]
+    fn clamped_vertical_scroll_stays_inside_scrollable_range() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::clamped_vertical_scroll(&cache, px(-10.0)), px(0.0));
+        assert_eq!(TextArea::clamped_vertical_scroll(&cache, px(30.0)), px(30.0));
+        assert_eq!(TextArea::clamped_vertical_scroll(&cache, px(100.0)), px(40.0));
+    }
+
+    #[test]
+    fn vertical_scroll_to_reveal_cursor_scrolls_down_to_caret_line() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::vertical_scroll_to_reveal_cursor(&cache, 21, px(0.0)), px(40.0));
+    }
+
+    #[test]
+    fn vertical_scroll_to_reveal_cursor_scrolls_up_to_caret_line() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::vertical_scroll_to_reveal_cursor(&cache, 2, px(40.0)), px(0.0));
+    }
+
+    #[test]
+    fn selection_autoscroll_delta_is_zero_inside_viewport() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::selection_autoscroll_delta_for_cache(&cache, point(px(10.0), px(30.0))), px(0.0));
+    }
+
+    #[test]
+    fn selection_autoscroll_delta_follows_pointer_overflow_direction() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(TextArea::selection_autoscroll_delta_for_cache(&cache, point(px(10.0), px(-10.0))), px(-20.0));
+        assert_eq!(TextArea::selection_autoscroll_delta_for_cache(&cache, point(px(10.0), px(70.0))), px(20.0));
+    }
+
+    #[test]
+    fn selection_autoscroll_delta_accelerates_and_caps_by_distance() {
+        let cache = cache_with_lines(vec![
+            (0, 4),
+            (5, 9),
+            (10, 14),
+            (15, 19),
+            (20, 24),
+            (25, 29),
+            (30, 34),
+            (35, 39),
+            (40, 44),
+        ]);
+
+        assert_eq!(TextArea::selection_autoscroll_delta_for_cache(&cache, point(px(10.0), px(260.0))), px(120.0));
+    }
+
+    #[test]
+    fn selection_hit_position_clamps_to_viewport_edges() {
+        let cache = cache_with_lines(vec![(0, 4), (5, 9), (10, 14), (15, 19), (20, 24)]);
+
+        assert_eq!(
+            TextArea::selection_hit_position_for_cache(&cache, point(px(-20.0), px(-10.0))),
+            point(px(0.0), px(0.0))
+        );
+        assert_eq!(
+            TextArea::selection_hit_position_for_cache(&cache, point(px(120.0), px(90.0))),
+            point(px(99.5), px(59.5))
+        );
+        assert_eq!(
+            TextArea::selection_hit_position_for_cache(&cache, point(px(-20.0), px(30.0))),
+            point(px(0.0), px(30.0))
+        );
+        assert_eq!(
+            TextArea::selection_hit_position_for_cache(&cache, point(px(120.0), px(30.0))),
+            point(px(99.5), px(30.0))
+        );
     }
 }
