@@ -14,3 +14,4 @@ serde = { workspace = true, features = ["derive"] }
 ttf-parser = "0.25"
 palette = "0.7.6"
 toml.workspace = true
+darling = "0.23.0"
