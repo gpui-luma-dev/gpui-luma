@@ -2,12 +2,12 @@ use std::sync::{Arc, OnceLock, RwLock};
 
 use gpui::{App, Div, FontWeight, Hsla, Stateful, Window, div, px, prelude::*};
 
-use super::ProtoButtonRenderModel;
-use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, ControlSize, InteractionState,
-    default_button_family_theme,
+use super::{
+    ProtoButtonDefaultsRequest, ProtoButtonDefaultsSource, ProtoButtonRenderModel, ProtoButtonResolvedStyle,
+    ThemeProtoButtonDefaultsSource, resolve_proto_button_style,
 };
+use crate::controls::button_family_template::render_button_family_focus_ring;
+use crate::theme::{ButtonFamilyTheme, ButtonVariant, ControlSize, InteractionState, default_button_family_theme};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProtoButtonVisualState {
@@ -313,65 +313,36 @@ pub trait ProtoButtonTemplate: Send + Sync {
 }
 
 pub struct ThemedProtoButtonTemplate {
-    theme: Arc<dyn ButtonFamilyTheme>,
+    defaults_source: Arc<dyn ProtoButtonDefaultsSource>,
     params: RwLock<ProtoButtonTemplateParams>,
 }
 
 impl ThemedProtoButtonTemplate {
     pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
-        Self { theme, params: RwLock::new(ProtoButtonTemplateParams::default()) }
+        Self::with_defaults_source(Arc::new(ThemeProtoButtonDefaultsSource::new(theme)))
+    }
+
+    pub fn with_defaults_source(defaults_source: Arc<dyn ProtoButtonDefaultsSource>) -> Self {
+        Self { defaults_source, params: RwLock::new(ProtoButtonTemplateParams::default()) }
     }
 
     pub fn with_params(self, params: ProtoButtonTemplateParams) -> Self {
-        Self { theme: self.theme, params: RwLock::new(params) }
+        Self { defaults_source: self.defaults_source, params: RwLock::new(params) }
     }
 
-    fn resolve_appearance(
+    fn resolve_style(
         &self,
         params: &ProtoButtonTemplateParams,
         model: &ProtoButtonRenderModel<'_>,
-    ) -> ButtonFamilyAppearance {
+    ) -> ProtoButtonResolvedStyle {
         let visual_state = ProtoButtonVisualState::from(model.state);
-        let mut appearance = self.theme.resolve(params.variant, ButtonFamilyRole::Text, params.size, model.state);
+        let defaults = self.defaults_source.resolve_defaults(ProtoButtonDefaultsRequest::text(
+            params.variant,
+            params.size,
+            model.state,
+        ));
 
-        if let Some(value) = params.background.resolve(visual_state).copied() {
-            appearance.background = value;
-        }
-        if let Some(value) = params.foreground.resolve(visual_state).copied() {
-            appearance.foreground = value;
-        }
-        if let Some(value) = params.border.resolve(visual_state).copied() {
-            appearance.border = value;
-        }
-
-        appearance.focus_ring = params.focus_ring.resolve(appearance.focus_ring.as_ref()).copied();
-
-        if let Some(value) = params.radius {
-            appearance.radius = value;
-        }
-        if let Some(value) = params.padding_x {
-            appearance.padding_x = value;
-        }
-        if let Some(value) = params.padding_y {
-            appearance.padding_y = value;
-        }
-        if let Some(value) = params.gap {
-            appearance.gap = value;
-        }
-        if let Some(value) = params.height {
-            appearance.height = value;
-        }
-        if let Some(value) = params.typography_size {
-            appearance.typography.size = value;
-        }
-        if let Some(value) = params.typography_line_height {
-            appearance.typography.line_height = value;
-        }
-        if let Some(value) = params.typography_weight {
-            appearance.typography.weight = value;
-        }
-
-        appearance
+        resolve_proto_button_style(&defaults, params, visual_state)
     }
 
     pub fn params(&self) -> ProtoButtonTemplateParams {
@@ -402,32 +373,32 @@ pub fn default_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
 impl ProtoButtonTemplate for ThemedProtoButtonTemplate {
     fn render(&self, model: &ProtoButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let params = self.params();
-        let appearance = self.resolve_appearance(&params, model);
+        let style = self.resolve_style(&params, model);
 
         let control = div()
             .flex()
             .items_center()
             .justify_center()
-            .gap(px(appearance.gap))
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .h(px(appearance.height))
-            .bg(appearance.background)
-            .text_color(appearance.foreground)
+            .gap(px(style.gap.value))
+            .px(px(style.padding_x.value))
+            .py(px(style.padding_y.value))
+            .h(px(style.height.value))
+            .bg(style.background.value)
+            .text_color(style.foreground.value)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_weight(appearance.typography.weight)
+            .border_color(style.border.value)
+            .rounded(px(style.radius.value))
+            .text_size(px(style.typography_size.value))
+            .line_height(px(style.typography_line_height.value))
+            .font_weight(style.typography_weight.value)
             .child(model.label.clone());
 
         let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
+            render_button_family_focus_ring(model.id.clone(), control, style.focus_ring.value, style.radius.value);
 
         if model.state.disabled {
-            root = root.opacity(params.disabled_opacity);
-        } else if params.pointer_cursor_when_enabled {
+            root = root.opacity(style.disabled_opacity.value);
+        } else if style.pointer_cursor_when_enabled.value {
             root = root.cursor_pointer();
         }
 
@@ -572,8 +543,8 @@ mod tests {
         params.background.base = Some(base_background);
         params.background.hovered = Some(hovered_background);
 
-        let appearance = template.resolve_appearance(&params, &model);
-        assert_eq!(appearance.background, hovered_background);
+        let style = template.resolve_style(&params, &model);
+        assert_eq!(style.background.value, hovered_background);
     }
 
     #[test]
@@ -592,8 +563,8 @@ mod tests {
         let base_background = gpui::Hsla { h: 0.15, s: 0.55, l: 0.42, a: 1.0 };
         params.background.base = Some(base_background);
 
-        let appearance = template.resolve_appearance(&params, &model);
-        assert_eq!(appearance.background, base_background);
+        let style = template.resolve_style(&params, &model);
+        assert_eq!(style.background.value, base_background);
     }
 
     #[test]
@@ -609,10 +580,10 @@ mod tests {
         };
 
         let params = ProtoButtonTemplateParams::default();
-        let appearance = template.resolve_appearance(&params, &model);
+        let style = template.resolve_style(&params, &model);
 
         let expected =
             default_button_family_theme().resolve(params.variant, ButtonFamilyRole::Text, params.size, model.state);
-        assert_eq!(appearance.background, expected.background);
+        assert_eq!(style.background.value, expected.background);
     }
 }

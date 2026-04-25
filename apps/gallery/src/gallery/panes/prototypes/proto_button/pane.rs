@@ -18,10 +18,10 @@ use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
 use super::super::super::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
 use super::param_panel::render_proto_button_param_panel;
 
-const EMERGENCY_DISABLED_OPACITY: f32 = 0.72;
-const EMERGENCY_RADIUS: f32 = 0.0;
-const EMERGENCY_BACKGROUND: Hsla = Hsla { h: 0.0, s: 0.83, l: 0.48, a: 1.0 };
-const EMERGENCY_FOREGROUND: Hsla = Hsla { h: 0.0, s: 0.0, l: 0.98, a: 1.0 };
+const DEMO_DISABLED_OPACITY: f32 = 0.72;
+const DEMO_RADIUS: f32 = 0.0;
+const DEMO_BACKGROUND: Hsla = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 1.0 };
+const DEMO_FOREGROUND: Hsla = Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 };
 
 const MIN_RADIUS: f32 = 0.0;
 const MAX_RADIUS: f32 = 24.0;
@@ -30,7 +30,7 @@ const RADIUS_STEP: f32 = 2.0;
 #[derive(Clone)]
 pub(in crate::gallery) struct ProtoButtonPane {
     default_button: Entity<ProtoButton>,
-    emergency_button: Entity<ProtoButton>,
+    demo_button: Entity<ProtoButton>,
     state_preview: Entity<ProtoButtonStatePreview>,
 
     radius_down_button: Entity<Button>,
@@ -39,25 +39,23 @@ pub(in crate::gallery) struct ProtoButtonPane {
     reset_button: Entity<Button>,
     state_cycle_button: Entity<Button>,
 
-    emergency_clicks: usize,
-    emergency_radius: f32,
-    emergency_colors_flipped: bool,
+    demo_clicks: usize,
+    demo_radius: f32,
+    demo_colors_flipped: bool,
     selected_visual_state: ProtoButtonVisualState,
-    emergency_background_overrides: ProtoButtonStatefulOverride<Hsla>,
-    emergency_foreground_overrides: ProtoButtonStatefulOverride<Hsla>,
+    demo_background_overrides: ProtoButtonStatefulOverride<Hsla>,
+    demo_foreground_overrides: ProtoButtonStatefulOverride<Hsla>,
 }
 
 impl ProtoButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let default_button = ProtoButton::new("proto-button-default").label("Default ProtoButton").spawn(cx);
 
-        let emergency_template = emergency_proto_button_template();
-        let emergency_button = ProtoButton::new("proto-button-emergency")
-            .label("Emergency Action")
-            .template(emergency_template.clone())
-            .spawn(cx);
-        let emergency_preview_template = emergency_template.clone();
-        let state_preview = cx.new(move |_| ProtoButtonStatePreview::new(theme, emergency_preview_template.clone()));
+        let demo_template = demo_proto_button_template();
+        let demo_button =
+            ProtoButton::new("proto-button-demo").label("Demo Action").template(demo_template.clone()).spawn(cx);
+        let demo_preview_template = demo_template.clone();
+        let state_preview = cx.new(move |_| ProtoButtonStatePreview::new(theme, demo_preview_template.clone()));
 
         let radius_down_button = Button::new("proto-button-radius-down")
             .label("Radius -")
@@ -78,7 +76,7 @@ impl ProtoButtonPane {
 
         let reset_button = Button::new("proto-button-reset")
             .label("Reset")
-            .kind(ButtonKind::Destructive)
+            .kind(ButtonKind::Default)
             .template(theme.button_template())
             .spawn(cx);
 
@@ -90,27 +88,30 @@ impl ProtoButtonPane {
 
         Self {
             default_button,
-            emergency_button,
+            demo_button,
             state_preview,
             radius_down_button,
             radius_up_button,
             flip_bg_fg_button,
             reset_button,
             state_cycle_button,
-            emergency_clicks: 0,
-            emergency_radius: EMERGENCY_RADIUS,
-            emergency_colors_flipped: false,
+            demo_clicks: 0,
+            demo_radius: DEMO_RADIUS,
+            demo_colors_flipped: false,
             selected_visual_state: ProtoButtonVisualState::Default,
-            emergency_background_overrides: ProtoButtonStatefulOverride {
-                base: Some(EMERGENCY_BACKGROUND),
+            demo_background_overrides: ProtoButtonStatefulOverride {
+                base: Some(DEMO_BACKGROUND),
                 ..Default::default()
             },
-            emergency_foreground_overrides: ProtoButtonStatefulOverride::default(),
+            demo_foreground_overrides: ProtoButtonStatefulOverride {
+                base: Some(DEMO_FOREGROUND),
+                ..Default::default()
+            },
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.emergency_button, |app, _, event: &ProtoButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.demo_button, |app, _, event: &ProtoButtonEvent, cx| {
             app.panes.proto_button.handle_proto_button_event(event, cx);
         }));
 
@@ -163,7 +164,7 @@ impl ProtoButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
-        notify_entity(&self.emergency_button, cx);
+        notify_entity(&self.demo_button, cx);
         notify_entity(&self.state_preview, cx);
 
         notify_entity(&self.radius_down_button, cx);
@@ -175,18 +176,18 @@ impl ProtoButtonPane {
 
     fn render_demo_column(&self, chrome: GalleryChrome, _theme: &GalleryThemePack) -> AnyElement {
         let theme_appearance = default_button_family_theme().resolve(
-            ButtonVariant::Destructive,
+            ButtonVariant::Default,
             ButtonFamilyRole::Text,
             ControlSize::Md,
             interaction_state_for_visual_state(self.selected_visual_state),
         );
         let (effective_background, background_source) = resolve_color_with_source(
-            &self.emergency_background_overrides,
+            &self.demo_background_overrides,
             self.selected_visual_state,
             theme_appearance.background,
         );
         let (effective_foreground, foreground_source) = resolve_color_with_source(
-            &self.emergency_foreground_overrides,
+            &self.demo_foreground_overrides,
             self.selected_visual_state,
             theme_appearance.foreground,
         );
@@ -201,7 +202,7 @@ impl ProtoButtonPane {
             .justify_center()
             .gap(px(16.0))
             .child(self.default_button.clone())
-            .child(self.emergency_button.clone())
+            .child(self.demo_button.clone())
             .child(self.state_preview.clone())
             .child(
                 div()
@@ -215,13 +216,14 @@ impl ProtoButtonPane {
                             .text_size(px(12.0))
                             .line_height(px(16.0))
                             .text_color(chrome.muted_text)
-                            .child(format!("radius: {:.1}px", self.emergency_radius)),
+                            .child(format!("radius: {:.1}px", self.demo_radius)),
                     )
                     .child(
-                        div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.muted_text).child(format!(
-                            "colors flipped: {}",
-                            if self.emergency_colors_flipped { "on" } else { "off" }
-                        )),
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .text_color(chrome.muted_text)
+                            .child(format!("colors flipped: {}", if self.demo_colors_flipped { "on" } else { "off" })),
                     )
                     .child(
                         div()
@@ -340,10 +342,10 @@ impl ProtoButtonPane {
 
     fn handle_proto_button_event(&mut self, event: &ProtoButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ProtoButtonEvent::Click) {
-            self.emergency_clicks += 1;
-            let label = format!("Emergency Action ({})", self.emergency_clicks);
+            self.demo_clicks += 1;
+            let label = format!("Demo Action ({})", self.demo_clicks);
 
-            self.emergency_button.update(cx, |button, cx| {
+            self.demo_button.update(cx, |button, cx| {
                 button.set_label(label, cx);
             });
         }
@@ -351,29 +353,29 @@ impl ProtoButtonPane {
 
     fn handle_radius_down(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.emergency_radius = (self.emergency_radius - RADIUS_STEP).clamp(MIN_RADIUS, MAX_RADIUS);
+            self.demo_radius = (self.demo_radius - RADIUS_STEP).clamp(MIN_RADIUS, MAX_RADIUS);
             self.apply_template_params(cx);
         }
     }
 
     fn handle_radius_up(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.emergency_radius = (self.emergency_radius + RADIUS_STEP).clamp(MIN_RADIUS, MAX_RADIUS);
+            self.demo_radius = (self.demo_radius + RADIUS_STEP).clamp(MIN_RADIUS, MAX_RADIUS);
             self.apply_template_params(cx);
         }
     }
 
     fn handle_flip_bg_fg(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.emergency_colors_flipped = !self.emergency_colors_flipped;
+            self.demo_colors_flipped = !self.demo_colors_flipped;
             self.apply_template_params(cx);
         }
     }
 
     fn handle_reset(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.emergency_radius = EMERGENCY_RADIUS;
-            self.emergency_colors_flipped = false;
+            self.demo_radius = DEMO_RADIUS;
+            self.demo_colors_flipped = false;
 
             self.apply_template_params(cx);
         }
@@ -393,26 +395,25 @@ impl ProtoButtonPane {
     }
 
     fn apply_template_params(&mut self, cx: &mut Context<GalleryApp>) {
-        let radius = self.emergency_radius;
-        let foreground = if self.emergency_colors_flipped {
-            Some(EMERGENCY_BACKGROUND)
+        let radius = self.demo_radius;
+        let foreground = if self.demo_colors_flipped {
+            Some(DEMO_BACKGROUND)
         } else {
-            None
+            Some(DEMO_FOREGROUND)
         };
-        let background = if self.emergency_colors_flipped {
-            Some(EMERGENCY_FOREGROUND)
+        let background = if self.demo_colors_flipped {
+            Some(DEMO_FOREGROUND)
         } else {
-            Some(EMERGENCY_BACKGROUND)
+            Some(DEMO_BACKGROUND)
         };
 
-        write_state_override(&mut self.emergency_background_overrides, self.selected_visual_state, background.clone());
-        write_state_override(&mut self.emergency_foreground_overrides, self.selected_visual_state, foreground.clone());
+        write_state_override(&mut self.demo_background_overrides, self.selected_visual_state, background.clone());
+        write_state_override(&mut self.demo_foreground_overrides, self.selected_visual_state, foreground.clone());
 
-        self.emergency_button.update(cx, |button, cx| {
+        self.demo_button.update(cx, |button, cx| {
             let mut params = button.template_params().unwrap_or_default();
-            params.variant = ButtonVariant::Destructive;
             params.size = ControlSize::Md;
-            params.disabled_opacity = EMERGENCY_DISABLED_OPACITY;
+            params.disabled_opacity = DEMO_DISABLED_OPACITY;
             params.radius = Some(radius);
             write_state_override(&mut params.background, self.selected_visual_state, background);
             write_state_override(&mut params.foreground, self.selected_visual_state, foreground);
@@ -580,13 +581,14 @@ fn resolve_color_with_source(
     }
 }
 
-fn emergency_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
+fn demo_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
     let params = ProtoButtonTemplateParams {
-        variant: ButtonVariant::Destructive,
+        variant: ButtonVariant::Default,
         size: ControlSize::Md,
-        disabled_opacity: EMERGENCY_DISABLED_OPACITY,
-        radius: Some(EMERGENCY_RADIUS),
-        background: ProtoButtonStatefulOverride { base: Some(EMERGENCY_BACKGROUND), ..Default::default() },
+        disabled_opacity: DEMO_DISABLED_OPACITY,
+        radius: Some(DEMO_RADIUS),
+        background: ProtoButtonStatefulOverride { base: Some(DEMO_BACKGROUND), ..Default::default() },
+        foreground: ProtoButtonStatefulOverride { base: Some(DEMO_FOREGROUND), ..Default::default() },
         ..Default::default()
     };
 
