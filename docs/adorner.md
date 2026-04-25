@@ -235,3 +235,29 @@ choice at the call site.
 | `controls/navigation_sidebar/template.rs` | Replace direct border mutation + add leading caret adorner for active rows |
 | `controls/toggle_group/template.rs` | Align existing absolute overlay to shared primitive |
 | `controls/mod.rs` | Export `adorner` module |
+
+## Implementation Insights and Findings
+
+### Complexity of Real Adorner System
+
+The prototype implementation reveals several important complexities in the adorner system that weren't fully apparent from the initial documentation:
+
+1. **Multiple Adorner Types Required**: The system needs to support various adorner types beyond just focus rings:
+   - Focus ring (border around entire control)
+   - Caret/accent bar (thin vertical/horizontal bar)  
+   - Badge/indicator dot (small overlay)
+   - Underline (horizontal bar for text)
+
+2. **Theme-Driven Configuration**: Adorners should be driven by theme configurations rather than hardcoded values, requiring a more sophisticated theming system that can provide:
+   - Different adorner styles per control type
+   - Flexible positioning strategies
+   - Style-specific parameters (color, size, inset, etc.)
+
+3. **Extensibility Challenges**: The system needs to be easily extensible to support new adorner types without major architectural changes
+
+4. **Template Integration Complexity**: While templates must be updated to use adorner injection, the complexity increases when trying to support multiple adorner types per control, requiring more sophisticated template composition logic
+
+5. **Configuration vs. Implementation**: The distinction between what configuration is needed (theme-driven) versus what implementation details are required (positioning, rendering) adds significant complexity to the system design
+
+This shows that the adorner system is more complex than initially apparent - it requires careful design of both the primitive functions and the overall architecture to support the full range of decoration types that might be needed across different controls.
+
