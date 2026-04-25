@@ -5,6 +5,8 @@ use gpui::{
     Stateful, Window, canvas, div, hsla, px, prelude::*,
 };
 
+const DISABLED_OPACITY: f32 = 0.56;
+
 use super::{SliderDrag, SliderRenderModel};
 use crate::theme::{SliderTheme, default_slider_theme};
 
@@ -132,7 +134,7 @@ impl SliderTemplate for ThemedSliderTemplate {
         if model.enabled {
             root = root.cursor_pointer();
         } else {
-            root = root.opacity(0.56);
+            root = root.opacity(DISABLED_OPACITY);
         }
 
         root

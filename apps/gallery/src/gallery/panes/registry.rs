@@ -14,8 +14,8 @@ use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     button, checkbox, context_menu, floating_menu, icon_button, introduction, navigation_sidebar, palette, popup_menu,
-    progress, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation,
-    textarea, textfield, theme_usage, toggle_button, toggle_group,
+    progress, prototypes, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch,
+    tabs_navigation, textarea, textfield, theme_usage, toggle_button, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -33,6 +33,7 @@ enum GalleryPageKind {
     Palette,
     ThemeUsage,
     Button,
+    ProtoButton,
     IconButton,
     ToggleButton,
     ToggleGroup,
@@ -133,6 +134,8 @@ const TABS_NAVIGATION_PAGE: GalleryPage =
     GalleryPage { id: "tabs-navigation", label: "Tabs Navigation", icon: None, kind: GalleryPageKind::TabsNavigation };
 const PROGRESS_PAGE: GalleryPage =
     GalleryPage { id: "progress", label: "Progress", icon: None, kind: GalleryPageKind::Progress };
+const PROTO_BUTTON_PAGE: GalleryPage =
+    GalleryPage { id: "proto-button", label: "ProtoButton", icon: None, kind: GalleryPageKind::ProtoButton };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
     id: "settings",
     label: "Settings",
@@ -148,6 +151,7 @@ const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[PROTO_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -185,11 +189,19 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
         expanded: false,
         pages: FEEDBACK_PAGES,
     },
+    GalleryNavGroup {
+        id: "prototypes",
+        label: "Prototypes",
+        icon: LucideIcon::Command,
+        expanded: false,
+        pages: PROTOTYPES_PAGES,
+    },
 ];
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
+    pub(super) proto_button: prototypes::ProtoButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle_button: toggle_button::ToggleButtonPane,
@@ -253,6 +265,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
+            proto_button: prototypes::ProtoButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
             toggle_button: toggle_button::ToggleButtonPane::new(cx, theme),
@@ -274,6 +287,7 @@ impl GalleryPanes {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        self.proto_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
         self.toggle_button.subscribe(cx, subscriptions);
@@ -293,6 +307,7 @@ impl GalleryPanes {
 
     #[allow(dead_code)]
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.proto_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
         self.toggle_button.notify_controls(cx);
@@ -324,6 +339,7 @@ impl GalleryPanes {
             GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
             GalleryPageKind::Button => self.button.render(&self.theme),
+            GalleryPageKind::ProtoButton => self.proto_button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
             GalleryPageKind::ToggleButton => self.toggle_button.render(&self.theme),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),

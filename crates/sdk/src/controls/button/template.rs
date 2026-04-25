@@ -8,6 +8,8 @@ use crate::controls::button_family::ButtonKind;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
+const DISABLED_OPACITY: f32 = 0.56;
+
 pub trait ButtonTemplate: Send + Sync {
     fn render(&self, model: &ButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
@@ -54,7 +56,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
 
         if model.state.disabled {
-            root = root.opacity(0.56);
+            root = root.opacity(DISABLED_OPACITY);
         } else {
             root = root.cursor_pointer();
         }

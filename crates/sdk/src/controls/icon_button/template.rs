@@ -7,6 +7,9 @@ use crate::controls::button_family::ButtonKind;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
+const DISABLED_OPACITY: f32 = 0.56;
+const ICON_SIZE: f32 = 16.0;
+
 pub trait IconButtonTemplate: Send + Sync {
     fn render(&self, model: &IconButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
@@ -52,7 +55,7 @@ impl IconButtonTemplate for ThemedIconButtonTemplate {
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
 
         if model.state.disabled {
-            root = root.opacity(0.56);
+            root = root.opacity(DISABLED_OPACITY);
         } else {
             root = root.cursor_pointer();
         }
@@ -64,21 +67,21 @@ impl IconButtonTemplate for ThemedIconButtonTemplate {
 fn render_icon(icon: &IconButtonIcon, color: gpui::Hsla) -> AnyElement {
     if let Some(icon) = icon.lucide() {
         div()
-            .size(px(16.0))
+            .size(px(ICON_SIZE))
             .flex()
             .items_center()
             .justify_center()
             .font_family("lucide")
             .font_weight(FontWeight::NORMAL)
-            .text_size(px(16.0))
-            .line_height(px(16.0))
+            .text_size(px(ICON_SIZE))
+            .line_height(px(ICON_SIZE))
             .text_color(color)
             .child(char::from(icon).to_string())
             .into_any_element()
     } else if let Some(path) = icon.svg_path() {
-        svg().external_path(path.clone()).size(px(16.0)).text_color(color).into_any_element()
+        svg().external_path(path.clone()).size(px(ICON_SIZE)).text_color(color).into_any_element()
     } else {
-        div().size(px(16.0)).into_any_element()
+        div().size(px(ICON_SIZE)).into_any_element()
     }
 }
 
