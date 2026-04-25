@@ -5,7 +5,8 @@ use gpui::{App, Div, FontWeight, Hsla, Stateful, Window, div, px, prelude::*};
 use super::ProtoButtonRenderModel;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::{
-    ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, ControlSize, InteractionState, default_button_family_theme,
+    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, ControlSize, InteractionState,
+    default_button_family_theme,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,6 +60,23 @@ impl<T> ProtoButtonStatefulOverride<T> {
 }
 
 #[derive(Clone, Debug)]
+pub enum ProtoButtonNullableOverride<T> {
+    Inherit,
+    Set(T),
+    Clear,
+}
+
+impl<T> ProtoButtonNullableOverride<T> {
+    pub fn resolve<'a>(&'a self, inherited: Option<&'a T>) -> Option<&'a T> {
+        match self {
+            Self::Inherit => inherited,
+            Self::Set(value) => Some(value),
+            Self::Clear => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ProtoButtonTemplateParams {
     pub variant: ButtonVariant,
     pub size: ControlSize,
@@ -67,7 +85,7 @@ pub struct ProtoButtonTemplateParams {
     pub background: ProtoButtonStatefulOverride<Hsla>,
     pub foreground: ProtoButtonStatefulOverride<Hsla>,
     pub border: ProtoButtonStatefulOverride<Hsla>,
-    pub focus_ring: Option<Hsla>,
+    pub focus_ring: ProtoButtonNullableOverride<Hsla>,
     pub radius: Option<f32>,
     pub padding_x: Option<f32>,
     pub padding_y: Option<f32>,
@@ -88,7 +106,7 @@ impl Default for ProtoButtonTemplateParams {
             background: ProtoButtonStatefulOverride::default(),
             foreground: ProtoButtonStatefulOverride::default(),
             border: ProtoButtonStatefulOverride::default(),
-            focus_ring: None,
+            focus_ring: ProtoButtonNullableOverride::Inherit,
             radius: None,
             padding_x: None,
             padding_y: None,
@@ -209,7 +227,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
         },
         ProtoButtonTemplateParamUsage {
             name: "focus ring",
-            description: "Focus ring override applied when focused.",
+            description: "Focus ring override semantics: Inherit uses theme, Set(color) forces a color, Clear removes the ring.",
             states: &["focused"],
             param_type: ProtoButtonTemplateParamType::Color,
             param_fields: &["ProtoButtonTemplateParams.focus_ring"],
@@ -308,6 +326,54 @@ impl ThemedProtoButtonTemplate {
         Self { theme: self.theme, params: RwLock::new(params) }
     }
 
+    fn resolve_appearance(
+        &self,
+        params: &ProtoButtonTemplateParams,
+        model: &ProtoButtonRenderModel<'_>,
+    ) -> ButtonFamilyAppearance {
+        let visual_state = ProtoButtonVisualState::from(model.state);
+        let mut appearance = self.theme.resolve(params.variant, ButtonFamilyRole::Text, params.size, model.state);
+
+        if let Some(value) = params.background.resolve(visual_state).copied() {
+            appearance.background = value;
+        }
+        if let Some(value) = params.foreground.resolve(visual_state).copied() {
+            appearance.foreground = value;
+        }
+        if let Some(value) = params.border.resolve(visual_state).copied() {
+            appearance.border = value;
+        }
+
+        appearance.focus_ring = params.focus_ring.resolve(appearance.focus_ring.as_ref()).copied();
+
+        if let Some(value) = params.radius {
+            appearance.radius = value;
+        }
+        if let Some(value) = params.padding_x {
+            appearance.padding_x = value;
+        }
+        if let Some(value) = params.padding_y {
+            appearance.padding_y = value;
+        }
+        if let Some(value) = params.gap {
+            appearance.gap = value;
+        }
+        if let Some(value) = params.height {
+            appearance.height = value;
+        }
+        if let Some(value) = params.typography_size {
+            appearance.typography.size = value;
+        }
+        if let Some(value) = params.typography_line_height {
+            appearance.typography.line_height = value;
+        }
+        if let Some(value) = params.typography_weight {
+            appearance.typography.weight = value;
+        }
+
+        appearance
+    }
+
     pub fn params(&self) -> ProtoButtonTemplateParams {
         self.params.read().expect("ProtoButton template params lock poisoned").clone()
     }
@@ -336,45 +402,7 @@ pub fn default_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
 impl ProtoButtonTemplate for ThemedProtoButtonTemplate {
     fn render(&self, model: &ProtoButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let params = self.params();
-        let visual_state = ProtoButtonVisualState::from(model.state);
-        let mut appearance = self.theme.resolve(params.variant, ButtonFamilyRole::Text, params.size, model.state);
-
-        if let Some(value) = params.background.resolve(visual_state).copied() {
-            appearance.background = value;
-        }
-        if let Some(value) = params.foreground.resolve(visual_state).copied() {
-            appearance.foreground = value;
-        }
-        if let Some(value) = params.border.resolve(visual_state).copied() {
-            appearance.border = value;
-        }
-        if let Some(value) = params.focus_ring {
-            appearance.focus_ring = Some(value);
-        }
-        if let Some(value) = params.radius {
-            appearance.radius = value;
-        }
-        if let Some(value) = params.padding_x {
-            appearance.padding_x = value;
-        }
-        if let Some(value) = params.padding_y {
-            appearance.padding_y = value;
-        }
-        if let Some(value) = params.gap {
-            appearance.gap = value;
-        }
-        if let Some(value) = params.height {
-            appearance.height = value;
-        }
-        if let Some(value) = params.typography_size {
-            appearance.typography.size = value;
-        }
-        if let Some(value) = params.typography_line_height {
-            appearance.typography.line_height = value;
-        }
-        if let Some(value) = params.typography_weight {
-            appearance.typography.weight = value;
-        }
+        let appearance = self.resolve_appearance(&params, model);
 
         let control = div()
             .flex()
@@ -419,9 +447,11 @@ impl ProtoButtonTemplate for ThemedProtoButtonTemplate {
 #[cfg(test)]
 mod tests {
     use super::{
-        ProtoButtonStatefulOverride, ProtoButtonVisualState, ThemedProtoButtonTemplate, proto_button_template_usage,
+        ProtoButtonNullableOverride, ProtoButtonRenderModel, ProtoButtonStatefulOverride, ProtoButtonTemplateParams,
+        ProtoButtonVisualState, ThemedProtoButtonTemplate, proto_button_template_usage,
     };
-    use crate::theme::{ButtonVariant, default_button_family_theme};
+    use crate::controls::prototypes::proto_button::ProtoButtonSize;
+    use crate::theme::{ButtonFamilyRole, ButtonVariant, InteractionState, default_button_family_theme};
 
     #[test]
     fn template_usage_metadata_is_well_formed() {
@@ -495,5 +525,94 @@ mod tests {
         assert_eq!(overrides.resolve(ProtoButtonVisualState::Pressed), None);
         assert_eq!(overrides.resolve(ProtoButtonVisualState::Focused), None);
         assert_eq!(overrides.resolve(ProtoButtonVisualState::Disabled), None);
+    }
+
+    #[test]
+    fn nullable_override_inherit_uses_inherited_value() {
+        let override_value = ProtoButtonNullableOverride::<i32>::Inherit;
+        let inherited = 42;
+
+        assert_eq!(override_value.resolve(Some(&inherited)).copied(), Some(42));
+        assert_eq!(override_value.resolve(None), None);
+    }
+
+    #[test]
+    fn nullable_override_set_wins_over_inherited_value() {
+        let override_value = ProtoButtonNullableOverride::Set(7);
+        let inherited = 42;
+
+        assert_eq!(override_value.resolve(Some(&inherited)).copied(), Some(7));
+        assert_eq!(override_value.resolve(None).copied(), Some(7));
+    }
+
+    #[test]
+    fn nullable_override_clear_removes_value() {
+        let override_value = ProtoButtonNullableOverride::<i32>::Clear;
+        let inherited = 42;
+
+        assert_eq!(override_value.resolve(Some(&inherited)), None);
+        assert_eq!(override_value.resolve(None), None);
+    }
+
+    #[test]
+    fn resolve_appearance_prefers_state_override_over_base_and_theme() {
+        let template = ThemedProtoButtonTemplate::new(default_button_family_theme());
+        let id = gpui::SharedString::from("proto-button-test-state-precedence");
+        let label = gpui::SharedString::from("Proto");
+        let model = ProtoButtonRenderModel {
+            id: &id,
+            label: &label,
+            size: ProtoButtonSize::Md,
+            state: InteractionState { hovered: true, ..InteractionState::default() },
+        };
+
+        let mut params = ProtoButtonTemplateParams::default();
+        let base_background = gpui::Hsla { h: 0.10, s: 0.30, l: 0.40, a: 1.0 };
+        let hovered_background = gpui::Hsla { h: 0.60, s: 0.70, l: 0.35, a: 1.0 };
+        params.background.base = Some(base_background);
+        params.background.hovered = Some(hovered_background);
+
+        let appearance = template.resolve_appearance(&params, &model);
+        assert_eq!(appearance.background, hovered_background);
+    }
+
+    #[test]
+    fn resolve_appearance_falls_back_to_base_override_when_state_override_missing() {
+        let template = ThemedProtoButtonTemplate::new(default_button_family_theme());
+        let id = gpui::SharedString::from("proto-button-test-base-fallback");
+        let label = gpui::SharedString::from("Proto");
+        let model = ProtoButtonRenderModel {
+            id: &id,
+            label: &label,
+            size: ProtoButtonSize::Md,
+            state: InteractionState { pressed: true, ..InteractionState::default() },
+        };
+
+        let mut params = ProtoButtonTemplateParams::default();
+        let base_background = gpui::Hsla { h: 0.15, s: 0.55, l: 0.42, a: 1.0 };
+        params.background.base = Some(base_background);
+
+        let appearance = template.resolve_appearance(&params, &model);
+        assert_eq!(appearance.background, base_background);
+    }
+
+    #[test]
+    fn resolve_appearance_uses_theme_when_no_overrides_are_present() {
+        let template = ThemedProtoButtonTemplate::new(default_button_family_theme());
+        let id = gpui::SharedString::from("proto-button-test-theme-fallback");
+        let label = gpui::SharedString::from("Proto");
+        let model = ProtoButtonRenderModel {
+            id: &id,
+            label: &label,
+            size: ProtoButtonSize::Md,
+            state: InteractionState::default(),
+        };
+
+        let params = ProtoButtonTemplateParams::default();
+        let appearance = template.resolve_appearance(&params, &model);
+
+        let expected =
+            default_button_family_theme().resolve(params.variant, ButtonFamilyRole::Text, params.size, model.state);
+        assert_eq!(appearance.background, expected.background);
     }
 }

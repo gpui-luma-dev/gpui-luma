@@ -102,12 +102,35 @@ Formalize and enforce precedence.
 3. Theme-resolved value
 
 ### Deliverables
-- Centralized resolve path in prototype template
+- Centralized resolve path in prototype template (`ThemedProtoButtonTemplate::resolve_appearance`)
 - Short spec section documenting exact merge behavior
+
+### ProtoButton precedence spec (Proto2)
+For each render pass:
+
+1. Resolve theme appearance using:
+   - `variant`
+   - `role = ButtonFamilyRole::Text`
+   - `size`
+   - runtime interaction state
+2. Resolve visual state from interaction state with fixed priority:
+   - `disabled > pressed > hovered > focused > default`
+3. Apply color-like stateful overrides with precedence:
+   - state-specific override
+   - base override
+   - theme value
+4. Apply nullable override semantics (focus ring):
+   - `Inherit` => keep theme value
+   - `Set(T)` => force value `T`
+   - `Clear` => force `None`
+5. Apply non-stateful structural overrides (`radius`, padding, gap, height, typography) last.
+6. Apply behavioral flags during render (`disabled_opacity`, pointer cursor policy).
+
+This order is deterministic and side-effect free: same inputs must yield the same appearance.
 
 ### Acceptance
 - Same inputs always produce same output
-- Covered by unit tests
+- Covered by unit tests (state > base > theme fallback and inherit/set/clear semantics)
 
 ---
 
@@ -130,7 +153,7 @@ Extend metadata entries with:
 
 ---
 
-## 5) Two-Way Parameter Panel Enhancements
+## 5) Two-Way Parameter Panel Enhancements (Optional)
 
 ### Goal
 Turn the panel from descriptive + controls into a true editor/inspector loop.
@@ -188,7 +211,7 @@ Turn the panel from descriptive + controls into a true editor/inspector loop.
 
 ## Phase B — Metadata + UI
 4. Upgrade metadata schema
-5. Update parameter panel for selected-state editing and effective-value display
+5. (Optional) Update parameter panel for selected-state editing and effective-value display
 
 ## Phase C — Hardening
 6. Add precedence and semantic tests
