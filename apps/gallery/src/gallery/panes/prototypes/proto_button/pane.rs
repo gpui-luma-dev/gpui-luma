@@ -1,17 +1,21 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
+    px,
+};
 use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::prototypes::proto_button::{
-    ProtoButton, ProtoButtonEvent, ProtoButtonTemplate, ProtoButtonTemplateParams, ThemedProtoButtonTemplate,
+    ProtoButton, ProtoButtonEvent, ProtoButtonRenderModel, ProtoButtonSize, ProtoButtonStatefulOverride,
+    ProtoButtonTemplate, ProtoButtonTemplateParams, ProtoButtonVisualState, ThemedProtoButtonTemplate,
     proto_button_template_usage,
 };
-use gpui_luma::theme::{ButtonVariant, ControlSize, default_button_family_theme};
+use gpui_luma::theme::{ButtonFamilyRole, ButtonVariant, ControlSize, InteractionState, default_button_family_theme};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
 
-use super::super::super::shared::{gallery_pane_with_description, notify_entity};
+use super::super::super::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
 use super::param_panel::render_proto_button_param_panel;
 
 const EMERGENCY_DISABLED_OPACITY: f32 = 0.72;
@@ -27,24 +31,33 @@ const RADIUS_STEP: f32 = 2.0;
 pub(in crate::gallery) struct ProtoButtonPane {
     default_button: Entity<ProtoButton>,
     emergency_button: Entity<ProtoButton>,
+    state_preview: Entity<ProtoButtonStatePreview>,
 
     radius_down_button: Entity<Button>,
     radius_up_button: Entity<Button>,
     flip_bg_fg_button: Entity<Button>,
     reset_button: Entity<Button>,
+    state_cycle_button: Entity<Button>,
 
     emergency_clicks: usize,
     emergency_radius: f32,
     emergency_colors_flipped: bool,
+    selected_visual_state: ProtoButtonVisualState,
+    emergency_background_overrides: ProtoButtonStatefulOverride<Hsla>,
+    emergency_foreground_overrides: ProtoButtonStatefulOverride<Hsla>,
 }
 
 impl ProtoButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let default_button = ProtoButton::new("proto-button-default").label("Default ProtoButton").spawn(cx);
+
+        let emergency_template = emergency_proto_button_template();
         let emergency_button = ProtoButton::new("proto-button-emergency")
             .label("Emergency Action")
-            .template(emergency_proto_button_template())
+            .template(emergency_template.clone())
             .spawn(cx);
+        let emergency_preview_template = emergency_template.clone();
+        let state_preview = cx.new(move |_| ProtoButtonStatePreview::new(theme, emergency_preview_template.clone()));
 
         let radius_down_button = Button::new("proto-button-radius-down")
             .label("Radius -")
@@ -69,16 +82,30 @@ impl ProtoButtonPane {
             .template(theme.button_template())
             .spawn(cx);
 
+        let state_cycle_button = Button::new("proto-button-state-cycle")
+            .label(format!("State: {}", visual_state_label(ProtoButtonVisualState::Default)))
+            .kind(ButtonKind::Default)
+            .template(theme.button_template())
+            .spawn(cx);
+
         Self {
             default_button,
             emergency_button,
+            state_preview,
             radius_down_button,
             radius_up_button,
             flip_bg_fg_button,
             reset_button,
+            state_cycle_button,
             emergency_clicks: 0,
             emergency_radius: EMERGENCY_RADIUS,
             emergency_colors_flipped: false,
+            selected_visual_state: ProtoButtonVisualState::Default,
+            emergency_background_overrides: ProtoButtonStatefulOverride {
+                base: Some(EMERGENCY_BACKGROUND),
+                ..Default::default()
+            },
+            emergency_foreground_overrides: ProtoButtonStatefulOverride::default(),
         }
     }
 
@@ -101,6 +128,10 @@ impl ProtoButtonPane {
         subscriptions.push(cx.subscribe(&self.reset_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.proto_button.handle_reset(event, cx);
         }));
+
+        subscriptions.push(cx.subscribe(&self.state_cycle_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.proto_button.handle_cycle_state(event, cx);
+        }));
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
@@ -118,8 +149,13 @@ impl ProtoButtonPane {
                 .items_stretch()
                 .justify_center()
                 .gap(px(28.0))
-                .child(self.render_demo_column(chrome))
-                .child(render_proto_button_param_panel(usage, chrome, theme))
+                .child(self.render_demo_column(chrome, theme))
+                .child(render_proto_button_param_panel(
+                    usage,
+                    chrome,
+                    theme,
+                    visual_state_label(self.selected_visual_state),
+                ))
                 .into_any_element(),
             theme,
         )
@@ -128,14 +164,33 @@ impl ProtoButtonPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
         notify_entity(&self.emergency_button, cx);
+        notify_entity(&self.state_preview, cx);
 
         notify_entity(&self.radius_down_button, cx);
         notify_entity(&self.radius_up_button, cx);
         notify_entity(&self.flip_bg_fg_button, cx);
         notify_entity(&self.reset_button, cx);
+        notify_entity(&self.state_cycle_button, cx);
     }
 
-    fn render_demo_column(&self, chrome: GalleryChrome) -> AnyElement {
+    fn render_demo_column(&self, chrome: GalleryChrome, _theme: &GalleryThemePack) -> AnyElement {
+        let theme_appearance = default_button_family_theme().resolve(
+            ButtonVariant::Destructive,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            interaction_state_for_visual_state(self.selected_visual_state),
+        );
+        let (effective_background, background_source) = resolve_color_with_source(
+            &self.emergency_background_overrides,
+            self.selected_visual_state,
+            theme_appearance.background,
+        );
+        let (effective_foreground, foreground_source) = resolve_color_with_source(
+            &self.emergency_foreground_overrides,
+            self.selected_visual_state,
+            theme_appearance.foreground,
+        );
+
         div()
             .min_w(px(0.0))
             .h_full()
@@ -147,6 +202,7 @@ impl ProtoButtonPane {
             .gap(px(16.0))
             .child(self.default_button.clone())
             .child(self.emergency_button.clone())
+            .child(self.state_preview.clone())
             .child(
                 div()
                     .mt(px(8.0))
@@ -161,9 +217,98 @@ impl ProtoButtonPane {
                             .text_color(chrome.muted_text)
                             .child(format!("radius: {:.1}px", self.emergency_radius)),
                     )
-                    .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.muted_text).child(
-                        format!("colors flipped: {}", if self.emergency_colors_flipped { "on" } else { "off" }),
-                    )),
+                    .child(
+                        div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.muted_text).child(format!(
+                            "colors flipped: {}",
+                            if self.emergency_colors_flipped { "on" } else { "off" }
+                        )),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .text_color(chrome.muted_text)
+                            .child(format!("selected state: {}", visual_state_label(self.selected_visual_state))),
+                    ),
+            )
+            .child(
+                div()
+                    .w(px(420.0))
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.0))
+                    .border_1()
+                    .border_color(chrome.border)
+                    .rounded(px(6.0))
+                    .p(px(10.0))
+                    .child(
+                        div()
+                            .text_size(px(11.0))
+                            .line_height(px(15.0))
+                            .font_family("Monaco")
+                            .text_color(chrome.muted_text)
+                            .child("effective/source inspector"),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_between()
+                            .gap(px(8.0))
+                            .child(
+                                div()
+                                    .text_size(px(12.0))
+                                    .line_height(px(16.0))
+                                    .text_color(chrome.body_text)
+                                    .child("background"),
+                            )
+                            .child(
+                                div()
+                                    .font_family("Monaco")
+                                    .text_size(px(11.0))
+                                    .line_height(px(15.0))
+                                    .text_color(chrome.muted_text)
+                                    .child(format_compact_hsla(effective_background)),
+                            )
+                            .child(
+                                div()
+                                    .font_family("Monaco")
+                                    .text_size(px(10.0))
+                                    .line_height(px(14.0))
+                                    .text_color(chrome.muted_text)
+                                    .child(background_source),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .justify_between()
+                            .gap(px(8.0))
+                            .child(
+                                div()
+                                    .text_size(px(12.0))
+                                    .line_height(px(16.0))
+                                    .text_color(chrome.body_text)
+                                    .child("foreground"),
+                            )
+                            .child(
+                                div()
+                                    .font_family("Monaco")
+                                    .text_size(px(11.0))
+                                    .line_height(px(15.0))
+                                    .text_color(chrome.muted_text)
+                                    .child(format_compact_hsla(effective_foreground)),
+                            )
+                            .child(
+                                div()
+                                    .font_family("Monaco")
+                                    .text_size(px(10.0))
+                                    .line_height(px(14.0))
+                                    .text_color(chrome.muted_text)
+                                    .child(foreground_source),
+                            ),
+                    ),
             )
             .child(
                 div()
@@ -186,7 +331,8 @@ impl ProtoButtonPane {
                             .items_center()
                             .gap(px(8.0))
                             .child(self.flip_bg_fg_button.clone())
-                            .child(self.reset_button.clone()),
+                            .child(self.reset_button.clone())
+                            .child(self.state_cycle_button.clone()),
                     ),
             )
             .into_any_element()
@@ -233,6 +379,19 @@ impl ProtoButtonPane {
         }
     }
 
+    fn handle_cycle_state(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        if matches!(event, ButtonEvent::Click) {
+            self.selected_visual_state = next_visual_state(self.selected_visual_state);
+            let label = format!("State: {}", visual_state_label(self.selected_visual_state));
+
+            self.state_cycle_button.update(cx, |button, cx| {
+                button.set_label(label, cx);
+            });
+
+            cx.notify();
+        }
+    }
+
     fn apply_template_params(&mut self, cx: &mut Context<GalleryApp>) {
         let radius = self.emergency_radius;
         let foreground = if self.emergency_colors_flipped {
@@ -246,18 +405,178 @@ impl ProtoButtonPane {
             Some(EMERGENCY_BACKGROUND)
         };
 
+        write_state_override(&mut self.emergency_background_overrides, self.selected_visual_state, background.clone());
+        write_state_override(&mut self.emergency_foreground_overrides, self.selected_visual_state, foreground.clone());
+
         self.emergency_button.update(cx, |button, cx| {
             let mut params = button.template_params().unwrap_or_default();
             params.variant = ButtonVariant::Destructive;
             params.size = ControlSize::Md;
             params.disabled_opacity = EMERGENCY_DISABLED_OPACITY;
             params.radius = Some(radius);
-            params.background = background;
-            params.foreground = foreground;
+            write_state_override(&mut params.background, self.selected_visual_state, background);
+            write_state_override(&mut params.foreground, self.selected_visual_state, foreground);
             let _ = button.set_template_params(params, cx);
         });
 
         cx.notify();
+    }
+}
+
+#[derive(Clone)]
+struct ProtoButtonStatePreview {
+    theme: GalleryThemePack,
+    template: Arc<dyn ProtoButtonTemplate>,
+}
+
+struct ProtoButtonStateSample {
+    id: &'static str,
+    label: &'static str,
+    state: InteractionState,
+}
+
+impl ProtoButtonStatePreview {
+    fn new(theme: &GalleryThemePack, template: Arc<dyn ProtoButtonTemplate>) -> Self {
+        Self { theme: theme.clone(), template }
+    }
+}
+
+impl Render for ProtoButtonStatePreview {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.theme.chrome();
+        let samples = [
+            ProtoButtonStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ProtoButtonStateSample {
+                id: "hover",
+                label: "Hover",
+                state: InteractionState { hovered: true, ..InteractionState::default() },
+            },
+            ProtoButtonStateSample {
+                id: "focus",
+                label: "Focus",
+                state: InteractionState { focused: true, ..InteractionState::default() },
+            },
+            ProtoButtonStateSample {
+                id: "active",
+                label: "Active",
+                state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
+            },
+            ProtoButtonStateSample {
+                id: "disabled",
+                label: "Disabled",
+                state: InteractionState { disabled: true, ..InteractionState::default() },
+            },
+        ];
+
+        div()
+            .mt(px(2.0))
+            .flex()
+            .flex_col()
+            .gap(px(10.0))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Template state preview"),
+            )
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    samples
+                        .into_iter()
+                        .map(|sample| render_proto_state_sample(&self.template, sample, chrome.muted_text, window, cx)),
+                ),
+            )
+    }
+}
+
+fn render_proto_state_sample(
+    template: &Arc<dyn ProtoButtonTemplate>,
+    sample: ProtoButtonStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("proto-button-preview-{}", sample.id));
+    let label = SharedString::from("ProtoButton");
+    let model = ProtoButtonRenderModel { id: &id, label: &label, size: ProtoButtonSize::Md, state: sample.state };
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(template.render(&model, window, cx))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .into_any_element()
+}
+
+fn visual_state_label(state: ProtoButtonVisualState) -> &'static str {
+    match state {
+        ProtoButtonVisualState::Default => "default",
+        ProtoButtonVisualState::Hovered => "hovered",
+        ProtoButtonVisualState::Pressed => "pressed",
+        ProtoButtonVisualState::Focused => "focused",
+        ProtoButtonVisualState::Disabled => "disabled",
+    }
+}
+
+fn next_visual_state(state: ProtoButtonVisualState) -> ProtoButtonVisualState {
+    match state {
+        ProtoButtonVisualState::Default => ProtoButtonVisualState::Hovered,
+        ProtoButtonVisualState::Hovered => ProtoButtonVisualState::Pressed,
+        ProtoButtonVisualState::Pressed => ProtoButtonVisualState::Focused,
+        ProtoButtonVisualState::Focused => ProtoButtonVisualState::Disabled,
+        ProtoButtonVisualState::Disabled => ProtoButtonVisualState::Default,
+    }
+}
+
+fn write_state_override<T>(
+    overrides: &mut ProtoButtonStatefulOverride<T>,
+    state: ProtoButtonVisualState,
+    value: Option<T>,
+) {
+    match state {
+        ProtoButtonVisualState::Default => overrides.base = value,
+        ProtoButtonVisualState::Hovered => overrides.hovered = value,
+        ProtoButtonVisualState::Pressed => overrides.pressed = value,
+        ProtoButtonVisualState::Focused => overrides.focused = value,
+        ProtoButtonVisualState::Disabled => overrides.disabled = value,
+    }
+}
+
+fn interaction_state_for_visual_state(state: ProtoButtonVisualState) -> InteractionState {
+    match state {
+        ProtoButtonVisualState::Default => {
+            InteractionState { hovered: false, pressed: false, focused: false, disabled: false }
+        }
+        ProtoButtonVisualState::Hovered => {
+            InteractionState { hovered: true, pressed: false, focused: false, disabled: false }
+        }
+        ProtoButtonVisualState::Pressed => {
+            InteractionState { hovered: false, pressed: true, focused: false, disabled: false }
+        }
+        ProtoButtonVisualState::Focused => {
+            InteractionState { hovered: false, pressed: false, focused: true, disabled: false }
+        }
+        ProtoButtonVisualState::Disabled => {
+            InteractionState { hovered: false, pressed: false, focused: false, disabled: true }
+        }
+    }
+}
+
+fn resolve_color_with_source(
+    overrides: &ProtoButtonStatefulOverride<Hsla>,
+    state: ProtoButtonVisualState,
+    theme_value: Hsla,
+) -> (Hsla, &'static str) {
+    if let Some(value) = overrides.for_state(state).copied() {
+        (value, "state override")
+    } else if let Some(value) = overrides.base {
+        (value, "base override")
+    } else {
+        (theme_value, "theme")
     }
 }
 
@@ -267,7 +586,7 @@ fn emergency_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
         size: ControlSize::Md,
         disabled_opacity: EMERGENCY_DISABLED_OPACITY,
         radius: Some(EMERGENCY_RADIUS),
-        background: Some(EMERGENCY_BACKGROUND),
+        background: ProtoButtonStatefulOverride { base: Some(EMERGENCY_BACKGROUND), ..Default::default() },
         ..Default::default()
     };
 

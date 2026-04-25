@@ -9,6 +9,7 @@ pub(in crate::gallery) fn render_proto_button_param_panel(
     usage: &ProtoButtonTemplateUsage,
     chrome: GalleryChrome,
     theme: &GalleryThemePack,
+    selected_visual_state_label: &str,
 ) -> AnyElement {
     div()
         .id("proto-button-template-usage")
@@ -29,7 +30,7 @@ pub(in crate::gallery) fn render_proto_button_param_panel(
                 .line_height(px(18.0))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(chrome.title_text)
-                .child("Template Parameters"),
+                .child(format!("Template Parameters · state: {}", selected_visual_state_label)),
         )
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(chrome.muted_text).child(usage.component))
         .children(usage.parameters.iter().map(|parameter| render_template_usage_param(parameter, theme)))
