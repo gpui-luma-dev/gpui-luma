@@ -103,11 +103,11 @@ Rationale:
 ### Implementation note (selected direction)
 Adopt a derive-driven metadata plan for prototype params, e.g. `#[derive(ProtoComponent)]` with field-level `#[proto(...)]` attributes for defaults/state applicability and docs-derived descriptions. The intended effect is to remove hand-authored string field paths (for example, `"ProtoButtonTemplateParams.variant"`) from usage registration and generate that shape consistently.
 
-Remembered derive sketch:
+The actual struct definition would look like:
 ```rust
 #[derive(ProtoComponent)]
 #[proto(prefix = "ProtoButton")] // Automates "ProtoButtonTemplateParams.variant"
-pub struct ButtonParams {
+pub struct ProtoButtonTemplateParams {
     /// Base variant resolved from theme before applying parameter overrides.
     #[proto(default = "ButtonVariant::Primary", states = "standard")]
     pub variant: ButtonVariant,
@@ -115,8 +115,71 @@ pub struct ButtonParams {
     /// Base size resolved from theme.
     #[proto(default = "ControlSize::Md", states = "standard")]
     pub size: ControlSize,
+    
+    /// Opacity applied when the control is disabled.
+    #[proto(default = "0.56", states = "disabled")]
+    pub disabled_opacity: f32,
+    
+    /// Whether to set pointer cursor when enabled.
+    #[proto(default = "true", states = "standard")]
+    pub pointer_cursor_when_enabled: bool,
+    
+    /// Background override with base + per-state values applied after theme resolution.
+    #[proto(states = "standard")]
+    pub background: ProtoButtonStatefulOverride<Hsla>,
+    
+    /// Foreground override with base + per-state values applied after theme resolution.
+    #[proto(states = "standard")]
+    pub foreground: ProtoButtonStatefulOverride<Hsla>,
+    
+    /// Border color override with base + per-state values applied after theme resolution.
+    #[proto(states = "standard")]
+    pub border: ProtoButtonStatefulOverride<Hsla>,
+    
+    /// Focus ring override semantics: Inherit uses theme, Set(color) forces a color, Clear removes the ring.
+    #[proto(states = "focused")]
+    pub focus_ring: ProtoButtonNullableOverride<Hsla>,
+    
+    /// Corner radius override.
+    #[proto(states = "standard")]
+    pub radius: Option<f32>,
+    
+    /// Horizontal padding override.
+    #[proto(states = "standard")]
+    pub padding_x: Option<f32>,
+    
+    /// Vertical padding override.
+    #[proto(states = "standard")]
+    pub padding_y: Option<f32>,
+    
+    /// Content gap override.
+    #[proto(states = "standard")]
+    pub gap: Option<f32>,
+    
+    /// Control height override.
+    #[proto(states = "standard")]
+    pub height: Option<f32>,
+    
+    /// Typography size override.
+    #[proto(states = "standard")]
+    pub typography_size: Option<f32>,
+    
+    /// Typography line height override.
+    #[proto(states = "standard")]
+    pub typography_line_height: Option<f32>,
+    
+    /// Typography weight override.
+    #[proto(states = "standard")]
+    pub typography_weight: Option<FontWeight>,
 }
 ```
+
+This approach would generate the metadata automatically, eliminating the need for manually maintained string paths in `PROTO_BUTTON_TEMPLATE_USAGE`. The derive macro would:
+- Automatically generate field identifiers for all parameters
+- Create typed `ProtoButtonTemplateParamField` enum variants
+- Handle state-specific field mapping (base, hovered, pressed, etc.)
+- Generate documentation from field comments
+- Provide compile-time safety against field name drift
 
 This plan requires introducing a proc-macro parsing stack and using `darling` for attribute parsing/validation in the derive crate.
 
@@ -140,7 +203,7 @@ Rationale:
 
 Rationale:
 - eliminates ambiguity during runtime editing
-- matches prototype’s purpose as future architecture exemplar.
+- matches prototype's purpose as future architecture exemplar.
 
 ---
 

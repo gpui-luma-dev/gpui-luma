@@ -1,6 +1,7 @@
 use gpui::{AnyElement, FontWeight, div, prelude::*, px};
 use gpui_luma::controls::prototypes::proto_button::{
-    ProtoButtonTemplateParamType, ProtoButtonTemplateParamUsage, ProtoButtonTemplateUsage,
+    ProtoButtonTemplateParamField, ProtoButtonTemplateParamType, ProtoButtonTemplateParamUsage,
+    ProtoButtonTemplateUsage,
 };
 
 use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
@@ -95,7 +96,7 @@ fn render_template_usage_param(parameter: &ProtoButtonTemplateParamUsage, theme:
                 .text_size(px(10.0))
                 .line_height(px(14.0))
                 .text_color(chrome.muted_text)
-                .child(format!("fields: {}", parameter.param_fields.join(", "))),
+                .child(format!("fields: {}", format_param_fields(parameter.param_fields))),
         )
         .child(
             div()
@@ -106,6 +107,43 @@ fn render_template_usage_param(parameter: &ProtoButtonTemplateParamUsage, theme:
                 .child(format!("default: {}", parameter.default_source)),
         )
         .into_any_element()
+}
+
+fn format_param_fields(fields: &[ProtoButtonTemplateParamField]) -> String {
+    let field_names: Vec<String> = fields
+        .iter()
+        .map(|field| match field {
+            ProtoButtonTemplateParamField::Variant => "variant".to_string(),
+            ProtoButtonTemplateParamField::Size => "size".to_string(),
+            ProtoButtonTemplateParamField::DisabledOpacity => "disabled_opacity".to_string(),
+            ProtoButtonTemplateParamField::PointerCursorWhenEnabled => "pointer_cursor_when_enabled".to_string(),
+            ProtoButtonTemplateParamField::BackgroundBase => "background.base".to_string(),
+            ProtoButtonTemplateParamField::BackgroundHovered => "background.hovered".to_string(),
+            ProtoButtonTemplateParamField::BackgroundPressed => "background.pressed".to_string(),
+            ProtoButtonTemplateParamField::BackgroundFocused => "background.focused".to_string(),
+            ProtoButtonTemplateParamField::BackgroundDisabled => "background.disabled".to_string(),
+            ProtoButtonTemplateParamField::ForegroundBase => "foreground.base".to_string(),
+            ProtoButtonTemplateParamField::ForegroundHovered => "foreground.hovered".to_string(),
+            ProtoButtonTemplateParamField::ForegroundPressed => "foreground.pressed".to_string(),
+            ProtoButtonTemplateParamField::ForegroundFocused => "foreground.focused".to_string(),
+            ProtoButtonTemplateParamField::ForegroundDisabled => "foreground.disabled".to_string(),
+            ProtoButtonTemplateParamField::BorderBase => "border.base".to_string(),
+            ProtoButtonTemplateParamField::BorderHovered => "border.hovered".to_string(),
+            ProtoButtonTemplateParamField::BorderPressed => "border.pressed".to_string(),
+            ProtoButtonTemplateParamField::BorderFocused => "border.focused".to_string(),
+            ProtoButtonTemplateParamField::BorderDisabled => "border.disabled".to_string(),
+            ProtoButtonTemplateParamField::FocusRing => "focus_ring".to_string(),
+            ProtoButtonTemplateParamField::Radius => "radius".to_string(),
+            ProtoButtonTemplateParamField::PaddingX => "padding_x".to_string(),
+            ProtoButtonTemplateParamField::PaddingY => "padding_y".to_string(),
+            ProtoButtonTemplateParamField::Gap => "gap".to_string(),
+            ProtoButtonTemplateParamField::Height => "height".to_string(),
+            ProtoButtonTemplateParamField::TypographySize => "typography_size".to_string(),
+            ProtoButtonTemplateParamField::TypographyLineHeight => "typography_line_height".to_string(),
+            ProtoButtonTemplateParamField::TypographyWeight => "typography_weight".to_string(),
+        })
+        .collect();
+    field_names.join(", ")
 }
 
 fn param_type_label(param_type: ProtoButtonTemplateParamType) -> &'static str {

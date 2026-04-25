@@ -16,6 +16,7 @@ pub use resolved_style::{
 pub use resolver::{resolve_nullable_with_source, resolve_proto_button_style, resolve_stateful_with_source};
 pub use template::{
     PROTO_BUTTON_TEMPLATE_USAGE, ProtoButtonNullableOverride, ProtoButtonStatefulOverride, ProtoButtonTemplate,
-    ProtoButtonTemplateParamType, ProtoButtonTemplateParamUsage, ProtoButtonTemplateParams, ProtoButtonTemplateUsage,
-    ProtoButtonVisualState, ThemedProtoButtonTemplate, default_proto_button_template, proto_button_template_usage,
+    ProtoButtonTemplateParamField, ProtoButtonTemplateParamType, ProtoButtonTemplateParamUsage,
+    ProtoButtonTemplateParams, ProtoButtonTemplateUsage, ProtoButtonVisualState, ThemedProtoButtonTemplate,
+    default_proto_button_template, proto_button_template_usage,
 };

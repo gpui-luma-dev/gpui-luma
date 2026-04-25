@@ -120,6 +120,38 @@ impl Default for ProtoButtonTemplateParams {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProtoButtonTemplateParamField {
+    Variant,
+    Size,
+    DisabledOpacity,
+    PointerCursorWhenEnabled,
+    BackgroundBase,
+    BackgroundHovered,
+    BackgroundPressed,
+    BackgroundFocused,
+    BackgroundDisabled,
+    ForegroundBase,
+    ForegroundHovered,
+    ForegroundPressed,
+    ForegroundFocused,
+    ForegroundDisabled,
+    BorderBase,
+    BorderHovered,
+    BorderPressed,
+    BorderFocused,
+    BorderDisabled,
+    FocusRing,
+    Radius,
+    PaddingX,
+    PaddingY,
+    Gap,
+    Height,
+    TypographySize,
+    TypographyLineHeight,
+    TypographyWeight,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProtoButtonTemplateParamType {
     Color,
     Pixels,
@@ -134,7 +166,7 @@ pub struct ProtoButtonTemplateParamUsage {
     pub description: &'static str,
     pub states: &'static [&'static str],
     pub param_type: ProtoButtonTemplateParamType,
-    pub param_fields: &'static [&'static str],
+    pub param_fields: &'static [ProtoButtonTemplateParamField],
     pub default_source: &'static str,
 }
 
@@ -156,7 +188,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Base variant resolved from theme before applying parameter overrides.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Enum,
-            param_fields: &["ProtoButtonTemplateParams.variant"],
+            param_fields: &[ProtoButtonTemplateParamField::Variant],
             default_source: "ButtonVariant::Primary",
         },
         ProtoButtonTemplateParamUsage {
@@ -164,7 +196,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Base size resolved from theme before applying parameter overrides.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Enum,
-            param_fields: &["ProtoButtonTemplateParams.size"],
+            param_fields: &[ProtoButtonTemplateParamField::Size],
             default_source: "ControlSize::Md",
         },
         ProtoButtonTemplateParamUsage {
@@ -172,7 +204,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Opacity applied when the control is disabled.",
             states: &["disabled"],
             param_type: ProtoButtonTemplateParamType::Number,
-            param_fields: &["ProtoButtonTemplateParams.disabled_opacity"],
+            param_fields: &[ProtoButtonTemplateParamField::DisabledOpacity],
             default_source: "0.56",
         },
         ProtoButtonTemplateParamUsage {
@@ -180,7 +212,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Whether to set pointer cursor when enabled.",
             states: &["default", "hovered", "pressed", "focused"],
             param_type: ProtoButtonTemplateParamType::Bool,
-            param_fields: &["ProtoButtonTemplateParams.pointer_cursor_when_enabled"],
+            param_fields: &[ProtoButtonTemplateParamField::PointerCursorWhenEnabled],
             default_source: "true",
         },
         ProtoButtonTemplateParamUsage {
@@ -189,11 +221,11 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Color,
             param_fields: &[
-                "ProtoButtonTemplateParams.background.base",
-                "ProtoButtonTemplateParams.background.hovered",
-                "ProtoButtonTemplateParams.background.pressed",
-                "ProtoButtonTemplateParams.background.focused",
-                "ProtoButtonTemplateParams.background.disabled",
+                ProtoButtonTemplateParamField::BackgroundBase,
+                ProtoButtonTemplateParamField::BackgroundHovered,
+                ProtoButtonTemplateParamField::BackgroundPressed,
+                ProtoButtonTemplateParamField::BackgroundFocused,
+                ProtoButtonTemplateParamField::BackgroundDisabled,
             ],
             default_source: "theme",
         },
@@ -203,11 +235,11 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Color,
             param_fields: &[
-                "ProtoButtonTemplateParams.foreground.base",
-                "ProtoButtonTemplateParams.foreground.hovered",
-                "ProtoButtonTemplateParams.foreground.pressed",
-                "ProtoButtonTemplateParams.foreground.focused",
-                "ProtoButtonTemplateParams.foreground.disabled",
+                ProtoButtonTemplateParamField::ForegroundBase,
+                ProtoButtonTemplateParamField::ForegroundHovered,
+                ProtoButtonTemplateParamField::ForegroundPressed,
+                ProtoButtonTemplateParamField::ForegroundFocused,
+                ProtoButtonTemplateParamField::ForegroundDisabled,
             ],
             default_source: "theme",
         },
@@ -217,11 +249,11 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Color,
             param_fields: &[
-                "ProtoButtonTemplateParams.border.base",
-                "ProtoButtonTemplateParams.border.hovered",
-                "ProtoButtonTemplateParams.border.pressed",
-                "ProtoButtonTemplateParams.border.focused",
-                "ProtoButtonTemplateParams.border.disabled",
+                ProtoButtonTemplateParamField::BorderBase,
+                ProtoButtonTemplateParamField::BorderHovered,
+                ProtoButtonTemplateParamField::BorderPressed,
+                ProtoButtonTemplateParamField::BorderFocused,
+                ProtoButtonTemplateParamField::BorderDisabled,
             ],
             default_source: "theme",
         },
@@ -230,7 +262,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Focus ring override semantics: Inherit uses theme, Set(color) forces a color, Clear removes the ring.",
             states: &["focused"],
             param_type: ProtoButtonTemplateParamType::Color,
-            param_fields: &["ProtoButtonTemplateParams.focus_ring"],
+            param_fields: &[ProtoButtonTemplateParamField::FocusRing],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -238,7 +270,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Corner radius override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.radius"],
+            param_fields: &[ProtoButtonTemplateParamField::Radius],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -246,7 +278,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Horizontal padding override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.padding_x"],
+            param_fields: &[ProtoButtonTemplateParamField::PaddingX],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -254,7 +286,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Vertical padding override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.padding_y"],
+            param_fields: &[ProtoButtonTemplateParamField::PaddingY],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -262,7 +294,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Content gap override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.gap"],
+            param_fields: &[ProtoButtonTemplateParamField::Gap],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -270,7 +302,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Control height override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.height"],
+            param_fields: &[ProtoButtonTemplateParamField::Height],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -278,7 +310,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Typography size override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.typography_size"],
+            param_fields: &[ProtoButtonTemplateParamField::TypographySize],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -286,7 +318,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Typography line height override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Pixels,
-            param_fields: &["ProtoButtonTemplateParams.typography_line_height"],
+            param_fields: &[ProtoButtonTemplateParamField::TypographyLineHeight],
             default_source: "theme",
         },
         ProtoButtonTemplateParamUsage {
@@ -294,7 +326,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             description: "Typography weight override.",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Enum,
-            param_fields: &["ProtoButtonTemplateParams.typography_weight"],
+            param_fields: &[ProtoButtonTemplateParamField::TypographyWeight],
             default_source: "theme",
         },
     ],
