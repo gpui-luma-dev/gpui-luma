@@ -16,8 +16,11 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
     default_icon_button: Entity<IconButton>,
+    ghost_icon_button: Entity<IconButton>,
     primary_icon_button: Entity<IconButton>,
     state_preview: Entity<IconButtonStatePreview>,
+    default_icon_clicks: usize,
+    ghost_icon_clicks: usize,
     primary_icon_clicks: usize,
 }
 
@@ -27,17 +30,28 @@ impl IconButtonPane {
             default_icon_button: IconButton::new("icon-button-default-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Default)
                 .spawn(cx),
+            ghost_icon_button: IconButton::new("icon-button-ghost-example", LucideIcon::Plus)
+                .kind(IconButtonKind::Ghost)
+                .spawn(cx),
             primary_icon_button: IconButton::new("icon-button-primary-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Primary)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
+            default_icon_clicks: 0,
+            ghost_icon_clicks: 0,
             primary_icon_clicks: 0,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        subscriptions.push(cx.subscribe(&self.default_icon_button, |app, _, event: &IconButtonEvent, cx| {
+            app.panes.icon_button.handle_default_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.ghost_icon_button, |app, _, event: &IconButtonEvent, cx| {
+            app.panes.icon_button.handle_ghost_event(event, cx);
+        }));
         subscriptions.push(cx.subscribe(&self.primary_icon_button, |app, _, event: &IconButtonEvent, cx| {
-            app.panes.icon_button.handle_event(event, cx);
+            app.panes.icon_button.handle_primary_event(event, cx);
         }));
     }
 
@@ -56,6 +70,7 @@ impl IconButtonPane {
                         .items_center()
                         .gap(px(12.0))
                         .child(self.default_icon_button.clone())
+                        .child(self.ghost_icon_button.clone())
                         .child(self.primary_icon_button.clone()),
                 )
                 .child(self.state_preview.clone())
@@ -66,25 +81,43 @@ impl IconButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_icon_button, cx);
+        notify_entity(&self.ghost_icon_button, cx);
         notify_entity(&self.primary_icon_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn toggle_icon(
+        button: &Entity<IconButton>,
+        clicks: &mut usize,
+        event: &IconButtonEvent,
+        cx: &mut Context<GalleryApp>,
+    ) {
         match event {
             IconButtonEvent::Click => {
-                self.primary_icon_clicks += 1;
-                let icon = if self.primary_icon_clicks.is_multiple_of(2) {
+                *clicks += 1;
+                let icon = if clicks.is_multiple_of(2) {
                     LucideIcon::Plus
                 } else {
                     LucideIcon::Check
                 };
 
-                self.primary_icon_button.update(cx, |button, cx| {
+                button.update(cx, |button, cx| {
                     button.set_icon(icon, cx);
                 });
             }
         }
+    }
+
+    fn handle_default_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+        Self::toggle_icon(&self.default_icon_button, &mut self.default_icon_clicks, event, cx);
+    }
+
+    fn handle_ghost_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+        Self::toggle_icon(&self.ghost_icon_button, &mut self.ghost_icon_clicks, event, cx);
+    }
+
+    fn handle_primary_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+        Self::toggle_icon(&self.primary_icon_button, &mut self.primary_icon_clicks, event, cx);
     }
 }
 
@@ -150,6 +183,16 @@ impl Render for IconButtonStatePreview {
                 "default",
                 "Default",
                 IconButtonKind::Default,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "ghost",
+                "Ghost",
+                IconButtonKind::Ghost,
                 &samples,
                 chrome.muted_text,
                 window,
