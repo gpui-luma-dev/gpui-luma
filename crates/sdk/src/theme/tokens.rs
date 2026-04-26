@@ -87,7 +87,6 @@ pub struct SurfaceTonePalette {
 pub struct ActionPalette {
     pub primary: ActionRolePalette,
     pub secondary: ActionRolePalette,
-    pub danger: ActionRolePalette,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -171,9 +170,6 @@ pub struct ColorTokens {
     pub primary: Hsla,
     pub primary_hover: Hsla,
     pub primary_pressed: Hsla,
-    pub destructive: Hsla,
-    pub destructive_hover: Hsla,
-    pub destructive_pressed: Hsla,
     pub selected: Hsla,
     pub selected_hover: Hsla,
     pub selected_pressed: Hsla,
@@ -433,12 +429,6 @@ impl LumaPalette {
                     hover_background: rgb(0xe2e8f0).into(),
                     pressed_background: rgb(0xcbd5e1).into(),
                 },
-                danger: ActionRolePalette {
-                    background: rgb(0xdc2626).into(),
-                    foreground: rgb(0xffffff).into(),
-                    hover_background: rgb(0xb91c1c).into(),
-                    pressed_background: rgb(0x991b1b).into(),
-                },
             },
             state: StatePalette {
                 hover: StateTonePalette { background: rgb(0xe2e8f0).into(), foreground: rgb(0x0f172a).into() },
@@ -509,12 +499,6 @@ impl LumaPalette {
                     hover_background: rgb(0x334155).into(),
                     pressed_background: rgb(0x475569).into(),
                 },
-                danger: ActionRolePalette {
-                    background: rgb(0xf87171).into(),
-                    foreground: rgb(0x450a0a).into(),
-                    hover_background: rgb(0xfca5a5).into(),
-                    pressed_background: rgb(0xfecaca).into(),
-                },
             },
             state: StatePalette {
                 hover: StateTonePalette { background: rgb(0x334155).into(), foreground: rgb(0xf8fafc).into() },
@@ -577,9 +561,6 @@ impl ColorTokens {
             primary: palette.action.primary.background,
             primary_hover: palette.action.primary.hover_background,
             primary_pressed: palette.action.primary.pressed_background,
-            destructive: palette.action.danger.background,
-            destructive_hover: palette.action.danger.hover_background,
-            destructive_pressed: palette.action.danger.pressed_background,
             selected: palette.state.selected.background,
             selected_hover: palette.action.primary.hover_background,
             selected_pressed: palette.action.primary.pressed_background,
@@ -805,7 +786,6 @@ struct RawSurfaceTonePalette {
 struct RawActionPalette {
     primary: RawActionRolePalette,
     secondary: RawActionRolePalette,
-    danger: RawActionRolePalette,
 }
 
 #[derive(Deserialize)]
@@ -889,9 +869,6 @@ struct RawColorTokens {
     primary: String,
     primary_hover: String,
     primary_pressed: String,
-    destructive: String,
-    destructive_hover: String,
-    destructive_pressed: String,
     selected: String,
     selected_hover: String,
     selected_pressed: String,
@@ -1060,7 +1037,6 @@ impl RawActionPalette {
         Ok(ActionPalette {
             primary: self.primary.try_into_action_role()?,
             secondary: self.secondary.try_into_action_role()?,
-            danger: self.danger.try_into_action_role()?,
         })
     }
 }
@@ -1165,9 +1141,6 @@ impl RawColorTokens {
             primary: parse_hsla(&self.primary)?,
             primary_hover: parse_hsla(&self.primary_hover)?,
             primary_pressed: parse_hsla(&self.primary_pressed)?,
-            destructive: parse_hsla(&self.destructive)?,
-            destructive_hover: parse_hsla(&self.destructive_hover)?,
-            destructive_pressed: parse_hsla(&self.destructive_pressed)?,
             selected: parse_hsla(&self.selected)?,
             selected_hover: parse_hsla(&self.selected_hover)?,
             selected_pressed: parse_hsla(&self.selected_pressed)?,
