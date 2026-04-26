@@ -137,8 +137,8 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
 pub const ICON_BUTTON_THEME_USAGE: ThemeUsage =
     ThemeUsage { component: "Icon Button", parts: BUTTON_THEME_USAGE.parts };
 
-pub const TOGGLE_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Toggle Button",
+pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Toggle",
     parts: &[
         ThemePartUsage {
             part: "unselected default background",
@@ -226,6 +226,8 @@ pub const TOGGLE_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
     ],
 };
+
+pub const TOGGLE_BUTTON_THEME_USAGE: ThemeUsage = TOGGLE_THEME_USAGE;
 
 impl DefaultButtonFamilyTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

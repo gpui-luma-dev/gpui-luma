@@ -5,7 +5,7 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
-use gpui_luma::controls::toggle_button::{ToggleButton, ToggleButtonRenderModel, ToggleButtonTemplate};
+use gpui_luma::controls::toggle::{Toggle, ToggleRenderModel, ToggleTemplate};
 use gpui_luma::theme::NavigationSidebarTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -15,7 +15,7 @@ use crate::gallery::theme::GalleryThemePack;
 use super::{
     button, checkbox, context_menu, floating_menu, icon_button, introduction, navigation_sidebar, palette, popup_menu,
     progress, prototypes, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch,
-    tabs_navigation, textarea, textfield, theme_usage, toggle_button, toggle_group,
+    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -35,7 +35,7 @@ enum GalleryPageKind {
     Button,
     ProtoButton,
     IconButton,
-    ToggleButton,
+    Toggle,
     ToggleGroup,
     Switch,
     Checkbox,
@@ -71,13 +71,13 @@ pub(in crate::gallery) struct GalleryNavigation {
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryRouteButton {
     pub(in crate::gallery) page_id: &'static str,
-    pub(in crate::gallery) button: Entity<ToggleButton>,
+    pub(in crate::gallery) button: Entity<Toggle>,
 }
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryBranchButton {
     pub(in crate::gallery) node_id: &'static str,
-    pub(in crate::gallery) button: Entity<ToggleButton>,
+    pub(in crate::gallery) button: Entity<Toggle>,
 }
 
 const INTRODUCTION_PAGE: GalleryPage = GalleryPage {
@@ -100,8 +100,8 @@ const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
 const ICON_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "icon-button", label: "Icon Button", icon: None, kind: GalleryPageKind::IconButton };
-const TOGGLE_BUTTON_PAGE: GalleryPage =
-    GalleryPage { id: "toggle-button", label: "Toggle Button", icon: None, kind: GalleryPageKind::ToggleButton };
+const TOGGLE_PAGE: GalleryPage =
+    GalleryPage { id: "toggle", label: "Toggle", icon: None, kind: GalleryPageKind::Toggle };
 const TOGGLE_GROUP_PAGE: GalleryPage =
     GalleryPage { id: "toggle-group", label: "Toggle Group", icon: None, kind: GalleryPageKind::ToggleGroup };
 const SWITCH_PAGE: GalleryPage =
@@ -145,8 +145,8 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
-const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, TOGGLE_BUTTON_PAGE];
-const CHOICE_PAGES: &[GalleryPage] = &[SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
+const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE];
+const CHOICE_PAGES: &[GalleryPage] = &[TOGGLE_PAGE, SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
@@ -205,7 +205,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) proto_button: prototypes::ProtoButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
-    pub(super) toggle_button: toggle_button::ToggleButtonPane,
+    pub(super) toggle: toggle::TogglePane,
     pub(super) toggle_group: toggle_group::ToggleGroupPane,
     pub(super) switch: switch::SwitchPane,
     pub(super) checkbox: checkbox::CheckboxPane,
@@ -241,7 +241,7 @@ impl GalleryPanes {
         ));
 
         nodes.extend(CONTROL_GROUPS.iter().map(|group| {
-            let button = ToggleButton::new(format!("{}-branch", group.id))
+            let button = Toggle::new(format!("{}-branch", group.id))
                 .label(group.label)
                 .selected(group.expanded)
                 .template(sidebar_disclosure_template(group.icon, theme))
@@ -270,7 +270,7 @@ impl GalleryPanes {
             proto_button: prototypes::ProtoButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
-            toggle_button: toggle_button::ToggleButtonPane::new(cx, theme),
+            toggle: toggle::TogglePane::new(cx, theme),
             toggle_group: toggle_group::ToggleGroupPane::new(cx, theme),
             switch: switch::SwitchPane::new(cx, theme),
             checkbox: checkbox::CheckboxPane::new(cx, theme),
@@ -293,7 +293,7 @@ impl GalleryPanes {
         self.proto_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
-        self.toggle_button.subscribe(cx, subscriptions);
+        self.toggle.subscribe(cx, subscriptions);
         self.toggle_group.subscribe(cx, subscriptions);
         self.switch.subscribe(cx, subscriptions);
         self.checkbox.subscribe(cx, subscriptions);
@@ -314,7 +314,7 @@ impl GalleryPanes {
         self.proto_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
-        self.toggle_button.notify_controls(cx);
+        self.toggle.notify_controls(cx);
         self.toggle_group.notify_controls(cx);
         self.switch.notify_controls(cx);
         self.checkbox.notify_controls(cx);
@@ -345,7 +345,7 @@ impl GalleryPanes {
             GalleryPageKind::Button => self.button.render(&self.theme),
             GalleryPageKind::ProtoButton => self.proto_button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
-            GalleryPageKind::ToggleButton => self.toggle_button.render(&self.theme),
+            GalleryPageKind::Toggle => self.toggle.render(&self.theme),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),
             GalleryPageKind::Switch => self.switch.render(&self.theme),
             GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
@@ -381,7 +381,7 @@ fn nav_node_for_page(
     theme: &GalleryThemePack,
 ) -> NavNode {
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
-    let button = ToggleButton::new(page.id)
+    let button = Toggle::new(page.id)
         .label(page.label)
         .selected(page.id == INTRODUCTION_PAGE.id)
         .template(sidebar_leaf_template(page.icon, reserve_icon_space, theme))
@@ -432,8 +432,8 @@ struct SidebarDisclosureTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
 }
 
-impl ToggleButtonTemplate for SidebarDisclosureTemplate {
-    fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+impl ToggleTemplate for SidebarDisclosureTemplate {
+    fn render(&self, model: &ToggleRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_branch(model.state, model.size);
         let disclosure_icon = if model.selected {
             LucideIcon::ChevronDown
@@ -475,7 +475,7 @@ impl ToggleButtonTemplate for SidebarDisclosureTemplate {
     }
 }
 
-fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ToggleButtonTemplate> {
+fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ToggleTemplate> {
     Arc::new(SidebarDisclosureTemplate { icon, theme: theme.navigation_sidebar_theme() })
 }
 
@@ -485,8 +485,8 @@ struct SidebarLeafTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
 }
 
-impl ToggleButtonTemplate for SidebarLeafTemplate {
-    fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+impl ToggleTemplate for SidebarLeafTemplate {
+    fn render(&self, model: &ToggleRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_item(model.selected, model.state, model.size);
         let padding_left = if self.reserve_icon_space {
             appearance.padding_x + appearance.icon_size + appearance.gap
@@ -540,7 +540,7 @@ fn sidebar_leaf_template(
     icon: Option<LucideIcon>,
     reserve_icon_space: bool,
     theme: &GalleryThemePack,
-) -> Arc<dyn ToggleButtonTemplate> {
+) -> Arc<dyn ToggleTemplate> {
     Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.navigation_sidebar_theme() })
 }
 

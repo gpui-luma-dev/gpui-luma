@@ -18,7 +18,7 @@ use gpui_luma::controls::{
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
     textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
-    toggle_button::{ThemedToggleButtonTemplate, ToggleButtonTemplate},
+    toggle::{ThemedToggleTemplate, ToggleTemplate},
     toggle_group::{ThemedToggleGroupTemplate, ToggleGroupTemplate},
 };
 use gpui_luma::theme::{
@@ -143,8 +143,8 @@ impl GalleryThemePack {
         Arc::new(ThemedIconButtonTemplate::new(self.button_family_theme.clone()))
     }
 
-    pub(in crate::gallery) fn toggle_button_template(&self) -> Arc<dyn ToggleButtonTemplate> {
-        Arc::new(ThemedToggleButtonTemplate::new(self.button_family_theme.clone()))
+    pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ToggleTemplate> {
+        Arc::new(ThemedToggleTemplate::new(self.button_family_theme.clone()))
     }
 
     pub(in crate::gallery) fn toggle_group_template(&self) -> Arc<dyn ToggleGroupTemplate> {

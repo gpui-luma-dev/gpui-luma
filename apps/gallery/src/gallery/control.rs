@@ -1,7 +1,7 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
-use gpui_luma::controls::toggle_button::ToggleButtonEvent;
+use gpui_luma::controls::toggle::ToggleEvent;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
 use super::theme::GalleryThemePack;
@@ -65,15 +65,15 @@ impl GalleryApp {
         ];
         for route_button in route_buttons.iter().cloned() {
             let page_id = route_button.page_id.to_string();
-            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, event: &ToggleButtonEvent, cx| {
-                let ToggleButtonEvent::Change { .. } = event;
+            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, event: &ToggleEvent, cx| {
+                let ToggleEvent::Change { .. } = event;
                 this.set_nav_selection(&page_id, cx);
             }));
         }
         for branch_button in branch_buttons {
             let node_id = branch_button.node_id.to_string();
-            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, event: &ToggleButtonEvent, cx| {
-                let ToggleButtonEvent::Change { selected } = event;
+            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, event: &ToggleEvent, cx| {
+                let ToggleEvent::Change { selected } = event;
                 this.navigation_sidebar.update(cx, |sidebar, cx| {
                     sidebar.set_node_expanded(node_id.clone(), *selected, cx);
                 });
