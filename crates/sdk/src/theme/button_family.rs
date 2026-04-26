@@ -9,7 +9,6 @@ pub enum ButtonVariant {
     #[default]
     Default,
     Primary,
-    Destructive,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -115,30 +114,6 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
         ThemePartUsage {
-            part: "destructive background",
-            token: "action.danger.background",
-            states: &["default"],
-            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "destructive hover background",
-            token: "action.danger.hover_background",
-            states: &["hovered"],
-            appearance_fields: &["ButtonFamilyAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "destructive pressed background",
-            token: "action.danger.pressed_background",
-            states: &["pressed"],
-            appearance_fields: &["ButtonFamilyAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "destructive foreground",
-            token: "action.danger.foreground",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["ButtonFamilyAppearance.foreground"],
-        },
-        ThemePartUsage {
             part: "disabled background",
             token: "state.disabled.background",
             states: &["disabled"],
@@ -226,18 +201,6 @@ pub const TOGGLE_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
         ThemePartUsage {
-            part: "destructive background",
-            token: "action.danger.background",
-            states: &["default"],
-            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "destructive foreground",
-            token: "action.danger.foreground",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["ButtonFamilyAppearance.foreground"],
-        },
-        ThemePartUsage {
             part: "default border",
             token: "border.default",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
@@ -287,7 +250,6 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             (_, true, false) => palette.state.selected.foreground,
             (ButtonVariant::Default, false, false) => palette.action.secondary.foreground,
             (ButtonVariant::Primary, false, false) => palette.action.primary.foreground,
-            (ButtonVariant::Destructive, false, false) => palette.action.danger.foreground,
         };
 
         let background = match (variant, selected, state.layer()) {
@@ -298,9 +260,6 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             (ButtonVariant::Primary, _, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
             (ButtonVariant::Primary, _, InteractionLayer::Hovered) => palette.action.primary.hover_background,
             (ButtonVariant::Primary, _, InteractionLayer::Default) => palette.action.primary.background,
-            (ButtonVariant::Destructive, _, InteractionLayer::Pressed) => palette.action.danger.pressed_background,
-            (ButtonVariant::Destructive, _, InteractionLayer::Hovered) => palette.action.danger.hover_background,
-            (ButtonVariant::Destructive, _, InteractionLayer::Default) => palette.action.danger.background,
             (ButtonVariant::Default, _, InteractionLayer::Pressed) => palette.action.secondary.pressed_background,
             (ButtonVariant::Default, _, InteractionLayer::Hovered) => palette.action.secondary.hover_background,
             (ButtonVariant::Default, _, InteractionLayer::Default) => palette.action.secondary.background,
@@ -310,7 +269,6 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let border = match variant {
             ButtonVariant::Default => palette.border.default,
             ButtonVariant::Primary => palette.action.primary.background,
-            ButtonVariant::Destructive => palette.action.danger.background,
         };
 
         ButtonFamilyAppearance {

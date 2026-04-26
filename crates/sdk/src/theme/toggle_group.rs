@@ -119,30 +119,6 @@ pub const TOGGLE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["ToggleGroupItemAppearance.background"],
         },
         ThemePartUsage {
-            part: "destructive selected background",
-            token: "action.danger.background",
-            states: &["selected"],
-            appearance_fields: &["ToggleGroupItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "destructive selected foreground",
-            token: "action.danger.foreground",
-            states: &["selected"],
-            appearance_fields: &["ToggleGroupItemAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "destructive selected hover background",
-            token: "action.danger.hover_background",
-            states: &["selected hovered"],
-            appearance_fields: &["ToggleGroupItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "destructive selected pressed background",
-            token: "action.danger.pressed_background",
-            states: &["selected pressed"],
-            appearance_fields: &["ToggleGroupItemAppearance.background"],
-        },
-        ThemePartUsage {
             part: "unselected label",
             token: "app.foreground",
             states: &["unselected"],
@@ -205,24 +181,11 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
         let selected_background = match variant {
             ButtonVariant::Default => palette.state.selected.background,
             ButtonVariant::Primary => palette.action.primary.background,
-            ButtonVariant::Destructive => palette.action.danger.background,
         };
-        let selected_hover = match variant {
-            ButtonVariant::Default => palette.action.primary.hover_background,
-            ButtonVariant::Primary => palette.action.primary.hover_background,
-            ButtonVariant::Destructive => palette.action.danger.hover_background,
-        };
-        let selected_pressed = match variant {
-            ButtonVariant::Default => palette.action.primary.pressed_background,
-            ButtonVariant::Primary => palette.action.primary.pressed_background,
-            ButtonVariant::Destructive => palette.action.danger.pressed_background,
-        };
+        let selected_hover = palette.action.primary.hover_background;
+        let selected_pressed = palette.action.primary.pressed_background;
 
-        let disabled_selected_background = match variant {
-            ButtonVariant::Default => palette.state.pressed.background,
-            ButtonVariant::Primary => palette.state.pressed.background,
-            ButtonVariant::Destructive => palette.state.pressed.background,
-        };
+        let disabled_selected_background = palette.state.pressed.background;
 
         let background = match (selected, state.layer()) {
             (true, InteractionLayer::Disabled) => disabled_selected_background,
@@ -240,7 +203,6 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
             (_, true, false) => match variant {
                 ButtonVariant::Default => palette.state.selected.foreground,
                 ButtonVariant::Primary => palette.action.primary.foreground,
-                ButtonVariant::Destructive => palette.action.danger.foreground,
             },
             (_, false, false) => palette.app.foreground,
         };

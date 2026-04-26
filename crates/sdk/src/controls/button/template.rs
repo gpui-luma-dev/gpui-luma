@@ -69,6 +69,5 @@ fn button_variant(kind: ButtonKind) -> ButtonVariant {
     match kind {
         ButtonKind::Default => ButtonVariant::Default,
         ButtonKind::Primary => ButtonVariant::Primary,
-        ButtonKind::Destructive => ButtonVariant::Destructive,
     }
 }

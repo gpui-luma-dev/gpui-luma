@@ -5,7 +5,6 @@ pub enum ButtonKind {
     #[default]
     Default,
     Primary,
-    Destructive,
 }
 
 pub type ButtonSize = ControlSize;

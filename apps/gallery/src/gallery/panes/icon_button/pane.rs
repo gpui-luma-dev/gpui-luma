@@ -15,24 +15,28 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
-    icon_button: Entity<IconButton>,
+    default_icon_button: Entity<IconButton>,
+    primary_icon_button: Entity<IconButton>,
     state_preview: Entity<IconButtonStatePreview>,
-    icon_clicks: usize,
+    primary_icon_clicks: usize,
 }
 
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            icon_button: IconButton::new("icon-button-example", LucideIcon::Plus)
+            default_icon_button: IconButton::new("icon-button-default-example", LucideIcon::Plus)
+                .kind(IconButtonKind::Default)
+                .spawn(cx),
+            primary_icon_button: IconButton::new("icon-button-primary-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Primary)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
-            icon_clicks: 0,
+            primary_icon_clicks: 0,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.icon_button, |app, _, event: &IconButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.primary_icon_button, |app, _, event: &IconButtonEvent, cx| {
             app.panes.icon_button.handle_event(event, cx);
         }));
     }
@@ -46,7 +50,14 @@ impl IconButtonPane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(self.icon_button.clone())
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(12.0))
+                        .child(self.default_icon_button.clone())
+                        .child(self.primary_icon_button.clone()),
+                )
                 .child(self.state_preview.clone())
                 .into_any_element(),
             theme,
@@ -54,21 +65,22 @@ impl IconButtonPane {
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.icon_button, cx);
+        notify_entity(&self.default_icon_button, cx);
+        notify_entity(&self.primary_icon_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
     fn handle_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             IconButtonEvent::Click => {
-                self.icon_clicks += 1;
-                let icon = if self.icon_clicks.is_multiple_of(2) {
+                self.primary_icon_clicks += 1;
+                let icon = if self.primary_icon_clicks.is_multiple_of(2) {
                     LucideIcon::Plus
                 } else {
                     LucideIcon::Check
                 };
 
-                self.icon_button.update(cx, |button, cx| {
+                self.primary_icon_button.update(cx, |button, cx| {
                     button.set_icon(icon, cx);
                 });
             }
@@ -133,32 +145,67 @@ impl Render for IconButtonStatePreview {
                     .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
-            .child(
-                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                    samples
-                        .into_iter()
-                        .map(|sample| render_state_sample(&self.template, sample, chrome.muted_text, window, cx)),
-                ),
-            )
+            .child(render_state_row(
+                &self.template,
+                "default",
+                "Default",
+                IconButtonKind::Default,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "primary",
+                "Primary",
+                IconButtonKind::Primary,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
     }
 }
 
-fn render_state_sample(
+fn render_state_row(
     template: &Arc<dyn IconButtonTemplate>,
-    sample: IconButtonStateSample,
+    row_id: &'static str,
+    row_label: &'static str,
+    kind: IconButtonKind,
+    samples: &[IconButtonStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("icon-button-preview-{}", sample.id));
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(8.0))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
+        .child(
+            div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples
+                    .iter()
+                    .map(|sample| render_state_sample(template, row_id, kind, sample, label_color, window, cx)),
+            ),
+        )
+        .into_any_element()
+}
+
+fn render_state_sample(
+    template: &Arc<dyn IconButtonTemplate>,
+    row_id: &'static str,
+    kind: IconButtonKind,
+    sample: &IconButtonStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("icon-button-preview-{}-{}", row_id, sample.id));
     let icon = IconButtonIcon::from(LucideIcon::Plus);
-    let model = IconButtonRenderModel {
-        id: &id,
-        icon: &icon,
-        kind: IconButtonKind::Primary,
-        size: IconButtonSize::Md,
-        state: sample.state,
-    };
+    let model = IconButtonRenderModel { id: &id, icon: &icon, kind, size: IconButtonSize::Md, state: sample.state };
 
     div()
         .flex()

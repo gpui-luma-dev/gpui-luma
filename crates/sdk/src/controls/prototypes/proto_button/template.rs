@@ -480,13 +480,13 @@ mod tests {
         assert_eq!(initial.variant, ButtonVariant::Primary);
 
         template.update_params(|params| {
-            params.variant = ButtonVariant::Destructive;
+            params.variant = ButtonVariant::Default;
             params.disabled_opacity = 0.72;
             params.radius = Some(10.0);
         });
 
         let updated = template.params();
-        assert_eq!(updated.variant, ButtonVariant::Destructive);
+        assert_eq!(updated.variant, ButtonVariant::Default);
         assert_eq!(updated.disabled_opacity, 0.72);
         assert_eq!(updated.radius, Some(10.0));
     }

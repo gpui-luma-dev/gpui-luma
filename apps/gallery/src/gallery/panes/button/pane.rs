@@ -11,27 +11,38 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
-    button: Entity<Button>,
+    default_button: Entity<Button>,
+    primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
-    clicks: usize,
+    default_clicks: usize,
+    primary_clicks: usize,
 }
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            button: Button::new("button-example")
-                .label("Click me")
+            default_button: Button::new("button-default-example")
+                .label("Default")
+                .kind(ButtonKind::Default)
+                .template(theme.button_template())
+                .spawn(cx),
+            primary_button: Button::new("button-primary-example")
+                .label("Primary")
                 .kind(ButtonKind::Primary)
                 .template(theme.button_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
-            clicks: 0,
+            default_clicks: 0,
+            primary_clicks: 0,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.default_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_default_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.primary_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_primary_event(event, cx);
         }));
     }
 
@@ -44,7 +55,14 @@ impl ButtonPane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(self.button.clone())
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(12.0))
+                        .child(self.default_button.clone())
+                        .child(self.primary_button.clone()),
+                )
                 .child(self.state_preview.clone())
                 .into_any_element(),
             theme,
@@ -52,17 +70,31 @@ impl ButtonPane {
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.button, cx);
+        notify_entity(&self.default_button, cx);
+        notify_entity(&self.primary_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_default_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
-                self.clicks += 1;
-                let label = format!("Clicked {}", self.clicks);
+                self.default_clicks += 1;
+                let label = format!("Default {}", self.default_clicks);
 
-                self.button.update(cx, |button, cx| {
+                self.default_button.update(cx, |button, cx| {
+                    button.set_label(label, cx);
+                });
+            }
+        }
+    }
+
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ButtonEvent::Click => {
+                self.primary_clicks += 1;
+                let label = format!("Primary {}", self.primary_clicks);
+
+                self.primary_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -127,32 +159,59 @@ impl Render for ButtonStatePreview {
                     .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
-            .child(
-                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                    samples
-                        .into_iter()
-                        .map(|sample| render_state_sample(&self.template, sample, chrome.muted_text, window, cx)),
-                ),
-            )
+            .child(render_state_row(
+                &self.template,
+                "Default variant",
+                ButtonKind::Default,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "Primary variant",
+                ButtonKind::Primary,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
     }
 }
 
-fn render_state_sample(
+fn render_state_row(
     template: &Arc<dyn ButtonTemplate>,
-    sample: ButtonStateSample,
+    row_label: &'static str,
+    kind: ButtonKind,
+    samples: &[ButtonStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("button-preview-{}", sample.id));
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(8.0))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
+        .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+            samples.iter().map(|sample| render_state_sample(template, kind, sample, label_color, window, cx)),
+        ))
+        .into_any_element()
+}
+
+fn render_state_sample(
+    template: &Arc<dyn ButtonTemplate>,
+    kind: ButtonKind,
+    sample: &ButtonStateSample,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("button-preview-{:?}-{}", kind, sample.id));
     let label = SharedString::from("Button");
-    let model = ButtonRenderModel {
-        id: &id,
-        label: &label,
-        kind: ButtonKind::Primary,
-        size: ButtonSize::Md,
-        state: sample.state,
-    };
+    let model = ButtonRenderModel { id: &id, label: &label, kind, size: ButtonSize::Md, state: sample.state };
 
     div()
         .flex()
