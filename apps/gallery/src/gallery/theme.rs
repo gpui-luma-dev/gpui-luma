@@ -114,6 +114,19 @@ impl GalleryThemePack {
         self.state.tokens()
     }
 
+    pub(in crate::gallery) fn mode(&self) -> ThemeMode {
+        self.state.current_mode()
+    }
+
+    pub(in crate::gallery) fn toggle_mode(&self) -> ThemeMode {
+        let next = match self.mode() {
+            ThemeMode::Light => ThemeMode::Dark,
+            ThemeMode::Dark => ThemeMode::Light,
+        };
+        self.state.set_mode(next);
+        next
+    }
+
     pub(in crate::gallery) fn theme_name(&self) -> &str {
         &self.state.theme.name
     }
@@ -216,8 +229,16 @@ impl Default for GalleryThemePack {
 }
 
 impl GalleryThemeState {
+    fn current_mode(&self) -> ThemeMode {
+        u8_to_mode(self.mode.load(Ordering::Relaxed))
+    }
+
+    fn set_mode(&self, mode: ThemeMode) {
+        self.mode.store(mode_to_u8(mode), Ordering::Relaxed);
+    }
+
     fn tokens(&self) -> ThemeTokens {
-        self.theme.mode(u8_to_mode(self.mode.load(Ordering::Relaxed))).clone()
+        self.theme.mode(self.current_mode()).clone()
     }
 }
 

@@ -2142,6 +2142,7 @@ dependencies = [
  "gpui-luma",
  "gpui_platform",
  "lucide-icons",
+ "tracing",
 ]
 
 [[package]]
