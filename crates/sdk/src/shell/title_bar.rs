@@ -23,12 +23,20 @@ pub struct TitleBar {
     style: StyleRefinement,
     children: Vec<AnyElement>,
     on_close_window: Option<CloseWindowHandler>,
+    background_color: Option<Hsla>,
+    border_color: Option<Hsla>,
 }
 
 impl TitleBar {
     /// Create a new TitleBar.
     pub fn new() -> Self {
-        Self { style: StyleRefinement::default(), children: Vec::new(), on_close_window: None }
+        Self {
+            style: StyleRefinement::default(),
+            children: Vec::new(),
+            on_close_window: None,
+            background_color: None,
+            border_color: None,
+        }
     }
 
     /// Default title bar options compatible with this `TitleBar`.
@@ -47,6 +55,18 @@ impl TitleBar {
         if cfg!(target_os = "linux") {
             self.on_close_window = Some(Rc::new(f));
         }
+        self
+    }
+
+    /// Set a custom title bar background color.
+    pub fn background_color(mut self, color: Hsla) -> Self {
+        self.background_color = Some(color);
+        self
+    }
+
+    /// Set a custom title bar bottom border color.
+    pub fn border_color(mut self, color: Hsla) -> Self {
+        self.border_color = Some(color);
         self
     }
 }
@@ -246,6 +266,8 @@ impl RenderOnce for TitleBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let is_client_decorated = matches!(window.window_decorations(), Decorations::Client { .. });
         let is_linux = cfg!(target_os = "linux");
+        let border_color = self.border_color.unwrap_or(hsla(0.0, 0.0, 1.0, 0.1));
+        let background_color = self.background_color.unwrap_or(hsla(0.0, 0.0, 0.11, 1.0));
 
         let state = window.use_state(cx, |_, _| TitleBarState { should_move: false });
 
@@ -259,8 +281,8 @@ impl RenderOnce for TitleBar {
                 .h(TITLE_BAR_HEIGHT)
                 .pl(TITLE_BAR_LEFT_PADDING)
                 .border_b_1()
-                .border_color(hsla(0.0, 0.0, 1.0, 0.1))
-                .bg(hsla(0.0, 0.0, 0.11, 1.0))
+                .border_color(border_color)
+                .bg(background_color)
                 .on_mouse_down_out(window.listener_for(&state, |state, _, _, _| {
                     state.should_move = false;
                 }))

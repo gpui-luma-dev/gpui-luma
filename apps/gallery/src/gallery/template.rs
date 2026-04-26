@@ -29,7 +29,7 @@ impl Render for GalleryApp {
             );
         });
 
-        let title_bar = TitleBar::new().child(
+        let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
                 .id("gallery-titlebar")
                 .h_full()
@@ -51,7 +51,7 @@ impl Render for GalleryApp {
                         .font_family("lucide")
                         .text_size(px(14.0))
                         .line_height(px(14.0))
-                        .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
+                        .text_color(chrome.title_text)
                         .cursor_pointer()
                         .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
                         .active(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.18)))
