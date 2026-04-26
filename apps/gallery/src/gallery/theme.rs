@@ -5,9 +5,11 @@ use std::sync::{
 
 use gpui::{Hsla, rgb};
 use gpui_luma::controls::{
-    button::{ButtonTemplate, ThemedButtonTemplate},
     checkbox::{CheckboxTemplate, ThemedCheckboxTemplate},
-    icon_button::{IconButtonTemplate, ThemedIconButtonTemplate},
+    command::{
+        button::{ButtonTemplate, ThemedButtonTemplate},
+        icon_button::{IconButtonTemplate, ThemedIconButtonTemplate},
+    },
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},

@@ -1,11 +1,11 @@
-pub mod button;
+pub mod command;
 pub mod button_family;
 pub(crate) mod button_family_template;
 pub mod checkbox;
 pub mod content_presenter;
 pub mod context_menu;
 pub mod floating_menu;
-pub mod icon_button;
+
 pub(crate) mod interaction;
 pub mod menu_item;
 pub(crate) mod menu_navigation;

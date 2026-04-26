@@ -7,7 +7,7 @@ use gpui::{
 
 use super::TextFieldRenderModel;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::controls::icon_button::IconButtonIcon;
+use crate::controls::command::icon_button::IconButtonIcon;
 use crate::theme::{TextFieldTheme, default_textfield_theme};
 
 const TEXTFIELD_SELECTION_OPACITY: f32 = 0.28;

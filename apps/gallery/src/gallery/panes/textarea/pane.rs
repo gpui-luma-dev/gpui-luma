@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent};
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
@@ -250,7 +250,7 @@ enum TextAreaOption {
 fn action_button(
     id: &'static str,
     label: &'static str,
-    template: &Arc<dyn gpui_luma::controls::button::ButtonTemplate>,
+    template: &Arc<dyn gpui_luma::controls::command::button::ButtonTemplate>,
     cx: &mut Context<GalleryApp>,
 ) -> Entity<Button> {
     Button::new(id).label(label).template(template.clone()).spawn(cx)

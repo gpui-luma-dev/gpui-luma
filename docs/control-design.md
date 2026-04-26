@@ -10,8 +10,9 @@ GPUI-Luma is a Rust control SDK built on top of GPUI. Its control model separate
 
 The current SDK includes:
 
-- `Button`
-- `IconButton`
+- `Command` (shared abstract behavior core for command-like controls)
+- `Button` (text-command presentation)
+- `IconButton` (icon-command presentation)
 - `ToggleButton`
 - `Checkbox`
 - `Switch`
@@ -108,7 +109,9 @@ Themes should not know how to emit events, focus controls, or update application
 
 ### 3.1 Control Layers
 
-Each control family follows the same broad module split:
+Each control family follows the same broad module split.
+
+For command-like controls, GPUI-Luma uses a shared abstract behavior layer (`command/core.rs`) that owns semantic activation behavior, interaction-state transitions, and event emission. Presentation modules such as `button` and `icon_button` remain responsible for rendering structure and template selection.
 
 - `model.rs`
   Defines public configuration, builder state, render model data, and spawn helpers.
@@ -121,6 +124,9 @@ Current SDK layout:
 
 ```text
 crates/sdk/src/controls/
+  command/
+    core.rs
+    mod.rs
   button/
     control.rs
     model.rs

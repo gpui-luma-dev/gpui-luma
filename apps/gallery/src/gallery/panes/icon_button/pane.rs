@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::icon_button::{
+use gpui_luma::controls::command::icon_button::{
     IconButton, IconButtonEvent, IconButtonIcon, IconButtonKind, IconButtonRenderModel, IconButtonSize,
     IconButtonTemplate,
 };
@@ -43,7 +43,7 @@ impl IconButtonPane {
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane_with_usage(
-            "Icon Button",
+            "Command (Icon)",
             "Icon Button",
             div()
                 .flex()

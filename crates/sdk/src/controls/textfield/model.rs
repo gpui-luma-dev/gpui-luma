@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::{TextField, TextFieldState, TextFieldTemplate, default_textfield_template};
-use crate::controls::icon_button::IconButtonIcon;
+use crate::controls::command::icon_button::IconButtonIcon;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 

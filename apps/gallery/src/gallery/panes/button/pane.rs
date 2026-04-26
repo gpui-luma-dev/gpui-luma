@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind, ButtonRenderModel, ButtonSize, ButtonTemplate};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind, ButtonRenderModel, ButtonSize, ButtonTemplate};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
@@ -48,7 +48,7 @@ impl ButtonPane {
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane_with_usage(
-            "Button",
+            "Command (Text)",
             "Button",
             div()
                 .flex()

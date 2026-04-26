@@ -1,7 +1,7 @@
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, SharedString, Subscription, div, prelude::*, px};
-use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
-use gpui_luma::controls::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
+use gpui_luma::controls::command::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use gpui_luma::controls::progress::Progress;

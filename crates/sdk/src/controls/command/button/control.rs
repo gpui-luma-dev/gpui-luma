@@ -4,18 +4,15 @@ use gpui::{
 };
 
 use super::{ButtonBuilder, ButtonRenderModel};
-use crate::controls::button::model::ButtonModel;
-use crate::controls::interaction::ControlInteraction;
+use crate::controls::command::button::model::ButtonModel;
+use crate::controls::command::{CommandCore, CommandEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 
-#[derive(Clone, Debug)]
-pub enum ButtonEvent {
-    Click,
-}
+pub type ButtonEvent = CommandEvent;
 
 pub struct Button {
     model: ButtonModel,
-    interaction: ControlInteraction,
+    command: CommandCore,
 }
 
 impl EventEmitter<ButtonEvent> for Button {}
@@ -29,7 +26,7 @@ impl Button {
     pub(crate) fn from_builder(builder: ButtonBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
-        Self { model: builder.model, interaction: ControlInteraction::new(enabled, cx) }
+        Self { model: builder.model, command: CommandCore::new(enabled, cx) }
     }
 
     pub fn set_label(&mut self, label: impl Into<SharedString>, cx: &mut Context<Self>) {
@@ -39,7 +36,7 @@ impl Button {
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
-        self.interaction.set_enabled(enabled);
+        self.command.set_enabled(enabled);
         cx.notify();
     }
 
@@ -49,45 +46,32 @@ impl Button {
             label: &self.model.label,
             kind: self.model.kind,
             size: self.model.size,
-            state: self.interaction.render_state(self.model.enabled, window),
+            state: self.command.render_state(self.model.enabled, window),
         }
-    }
-
-    fn activate(&mut self, cx: &mut Context<Self>) -> bool {
-        if !self.model.enabled {
-            return false;
-        }
-
-        cx.emit(ButtonEvent::Click);
-        true
     }
 
     fn handle_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
-            return;
-        }
-
-        self.activate(cx);
+        self.command.handle_click(self.model.enabled, event, cx);
     }
 
-    fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
-        self.activate(cx);
+    fn handle_activate_control(&mut self, event: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
+        self.command.handle_activate_control(self.model.enabled, event, cx);
     }
 
     fn handle_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.interaction.handle_hover(*hovered) {
+        if self.command.handle_hover(*hovered) {
             cx.notify();
         }
     }
 
-    fn handle_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
+    fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if self.command.handle_mouse_down(self.model.enabled, event, window, cx) {
             cx.notify();
         }
     }
 
-    fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if self.interaction.handle_mouse_up() {
+    fn handle_mouse_up(&mut self, event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.command.handle_mouse_up(event) {
             cx.notify();
         }
     }
@@ -95,7 +79,7 @@ impl Button {
 
 impl Focusable for Button {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
-        self.interaction.focus_handle().clone()
+        self.command.focus_handle().clone()
     }
 }
 
@@ -108,7 +92,7 @@ impl Render for Button {
                 self.model
                     .template
                     .render(&model, window, cx)
-                    .track_focus(self.interaction.focus_handle())
+                    .track_focus(self.command.focus_handle())
                     .key_context(ControlKeyProfile::Command.context())
                     .on_action(cx.listener(Self::handle_activate_control))
                     .on_hover(cx.listener(Self::handle_hover))

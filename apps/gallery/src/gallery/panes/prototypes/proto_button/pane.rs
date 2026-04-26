@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
     px,
 };
-use gpui_luma::controls::button::{Button, ButtonEvent, ButtonKind};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::prototypes::proto_button::{
     ProtoButton, ProtoButtonEvent, ProtoButtonRenderModel, ProtoButtonSize, ProtoButtonStatefulOverride,
     ProtoButtonTemplate, ProtoButtonTemplateParams, ProtoButtonVisualState, ThemedProtoButtonTemplate,
