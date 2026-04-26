@@ -4,6 +4,7 @@ use crate::theme::{ControlSize, InteractionState};
 pub enum ButtonKind {
     #[default]
     Default,
+    Ghost,
     Primary,
 }
 

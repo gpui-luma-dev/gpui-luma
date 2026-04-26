@@ -73,6 +73,7 @@ impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
 fn button_variant(kind: ButtonKind) -> ButtonVariant {
     match kind {
         ButtonKind::Default => ButtonVariant::Default,
+        ButtonKind::Ghost => ButtonVariant::Ghost,
         ButtonKind::Primary => ButtonVariant::Primary,
     }
 }

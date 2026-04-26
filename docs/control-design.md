@@ -583,7 +583,7 @@ Popup menu item icons are app-owned content. The SDK supports typed `lucide_icon
 
 ### 4.12 ContextMenu
 
-`ContextMenu` owns its open position and active submenu state internally. It opens from a secondary click on its target or a keyboard context-menu action and emits semantic select events for enabled menu items.
+`ContextMenu` owns its open position and active submenu state internally. It opens from a ghost click on its target or a keyboard context-menu action and emits semantic select events for enabled menu items.
 
 ```rust
 use gpui_luma::controls::context_menu::ContextMenu;
@@ -613,7 +613,7 @@ let menu = ContextMenu::new("file-context-menu")
     .spawn(cx);
 ```
 
-Application code observes `ContextMenuEvent::Select { item_id, label }`. The open position and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open position, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the pointer position for secondary-click opens or to the target's lower-left position for keyboard opens, so opening the menu does not affect surrounding layout.
+Application code observes `ContextMenuEvent::Select { item_id, label }`. The open position and active submenu state are internal interaction state; callers do not set hover, pressed, focused, open position, or submenu state directly. The default template renders the menu pane as a deferred overlay anchored to the pointer position for ghost-click opens or to the target's lower-left position for keyboard opens, so opening the menu does not affect surrounding layout.
 
 ## 5. Events And Application Ownership
 

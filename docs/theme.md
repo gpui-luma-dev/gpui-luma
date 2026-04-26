@@ -98,10 +98,10 @@ action.primary.foreground
 action.primary.hover_background
 action.primary.pressed_background
 
-action.secondary.background
-action.secondary.foreground
-action.secondary.hover_background
-action.secondary.pressed_background
+action.ghost.background
+action.ghost.foreground
+action.ghost.hover_background
+action.ghost.pressed_background
 
 action.danger.background
 action.danger.foreground
@@ -270,10 +270,10 @@ Initial recipe table:
 
 ```text
 Button default
-  background: action.secondary.background
-  foreground: action.secondary.foreground
-  hover: action.secondary.hover_background
-  pressed: action.secondary.pressed_background
+  background: action.ghost.background
+  foreground: action.ghost.foreground
+  hover: action.ghost.hover_background
+  pressed: action.ghost.pressed_background
   border: border.default
   radius: radius.md
   typography: text.label
@@ -379,8 +379,8 @@ Progress
   radius: radius.pill
 
 Popup menu trigger
-  background: action.secondary.background
-  foreground: action.secondary.foreground
+  background: action.ghost.background
+  foreground: action.ghost.foreground
   border: border.default
   radius: radius.md
 
@@ -460,7 +460,7 @@ foreground = "hsla(60 8% 98% / 1)"
 hover_background = "hsla(35 85% 36% / 1)"
 pressed_background = "hsla(35 85% 30% / 1)"
 
-[light.action.secondary]
+[light.action.ghost]
 background = "hsla(0 0% 96% / 1)"
 foreground = "hsla(0 0% 20% / 1)"
 hover_background = "hsla(0 0% 92% / 1)"
@@ -654,7 +654,7 @@ visual guesses from isolated controls.
 - Should selected navigation use `navigation.selected_*`, `state.selected_*`, or
   `action.primary_*` by default?
 - Should switch thumbs use `action.primary.foreground` or `surface.panel.background` when checked?
-- Should default buttons be secondary-filled, panel-filled, or outline-style?
+- Should default buttons be ghost-filled, panel-filled, or outline-style?
 - Which controls are semantically pill-shaped and should always use `radius.pill`?
 - How many shadow roles does the SDK need before themes become too granular?
 - Should component recipes be fully configurable in TOML, or should the first TOML format only define

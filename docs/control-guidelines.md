@@ -22,7 +22,7 @@ The SDK currently ships these controls:
 - `Scrollbar`: horizontal or vertical range control with line/page movement and draggable thumb.
 - `Progress`: non-interactive circular status indicator.
 - `PopupMenu`: trigger-owned menu with one level of submenu support.
-- `ContextMenu`: secondary-click or keyboard-opened menu with one level of submenu support.
+- `ContextMenu`: ghost-click or keyboard-opened menu with one level of submenu support.
 
 Each control is under `crates/sdk/src/controls/<control>/` and normally uses:
 

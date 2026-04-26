@@ -59,7 +59,7 @@ ThemeUsage {
     parts: vec![
         ThemePartUsage {
             part: "default background",
-            token: "action.secondary.background",
+            token: "action.ghost.background",
             states: vec!["default"],
             appearance_field: "ButtonFamilyAppearance.background",
         },

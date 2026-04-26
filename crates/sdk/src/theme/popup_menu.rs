@@ -44,25 +44,25 @@ pub const POPUP_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
     parts: &[
         ThemePartUsage {
             part: "trigger background",
-            token: "action.secondary.background",
+            token: "action.ghost.background",
             states: &["default"],
             appearance_fields: &["PopupMenuAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger hover background",
-            token: "action.secondary.hover_background",
+            token: "action.ghost.hover_background",
             states: &["hovered"],
             appearance_fields: &["PopupMenuAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger pressed background",
-            token: "action.secondary.pressed_background",
+            token: "action.ghost.pressed_background",
             states: &["pressed"],
             appearance_fields: &["PopupMenuAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger foreground",
-            token: "action.secondary.foreground",
+            token: "action.ghost.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["PopupMenuAppearance.trigger_foreground"],
         },
@@ -135,14 +135,14 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
 
         let trigger_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.background,
-            InteractionLayer::Pressed => palette.action.secondary.pressed_background,
-            InteractionLayer::Hovered => palette.action.secondary.hover_background,
-            InteractionLayer::Default => palette.action.secondary.background,
+            InteractionLayer::Pressed => palette.action.ghost.pressed_background,
+            InteractionLayer::Hovered => palette.action.ghost.hover_background,
+            InteractionLayer::Default => palette.action.ghost.background,
         };
         let trigger_foreground = if state.disabled {
             palette.state.disabled.foreground
         } else {
-            palette.action.secondary.foreground
+            palette.action.ghost.foreground
         };
 
         PopupMenuAppearance {

@@ -86,7 +86,7 @@ pub struct SurfaceTonePalette {
 #[derive(Clone, Copy, Debug)]
 pub struct ActionPalette {
     pub primary: ActionRolePalette,
-    pub secondary: ActionRolePalette,
+    pub ghost: ActionRolePalette,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -423,7 +423,7 @@ impl LumaPalette {
                     hover_background: rgb(0x1d4ed8).into(),
                     pressed_background: rgb(0x1e40af).into(),
                 },
-                secondary: ActionRolePalette {
+                ghost: ActionRolePalette {
                     background: rgb(0xf8fafc).into(),
                     foreground: rgb(0x0f172a).into(),
                     hover_background: rgb(0xe2e8f0).into(),
@@ -493,7 +493,7 @@ impl LumaPalette {
                     hover_background: rgb(0x93c5fd).into(),
                     pressed_background: rgb(0xbfdbfe).into(),
                 },
-                secondary: ActionRolePalette {
+                ghost: ActionRolePalette {
                     background: rgb(0x1e293b).into(),
                     foreground: rgb(0xf8fafc).into(),
                     hover_background: rgb(0x334155).into(),
@@ -554,9 +554,9 @@ impl ColorTokens {
 
     pub fn from_palette(palette: &LumaPalette) -> Self {
         Self {
-            surface: palette.action.secondary.background,
-            surface_hover: palette.action.secondary.hover_background,
-            surface_pressed: palette.action.secondary.pressed_background,
+            surface: palette.action.ghost.background,
+            surface_hover: palette.action.ghost.hover_background,
+            surface_pressed: palette.action.ghost.pressed_background,
             surface_disabled: palette.state.disabled.background,
             primary: palette.action.primary.background,
             primary_hover: palette.action.primary.hover_background,
@@ -785,7 +785,7 @@ struct RawSurfaceTonePalette {
 #[derive(Deserialize)]
 struct RawActionPalette {
     primary: RawActionRolePalette,
-    secondary: RawActionRolePalette,
+    ghost: RawActionRolePalette,
 }
 
 #[derive(Deserialize)]
@@ -1036,7 +1036,7 @@ impl RawActionPalette {
     fn try_into_action(self) -> anyhow::Result<ActionPalette> {
         Ok(ActionPalette {
             primary: self.primary.try_into_action_role()?,
-            secondary: self.secondary.try_into_action_role()?,
+            ghost: self.ghost.try_into_action_role()?,
         })
     }
 }

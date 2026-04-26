@@ -167,10 +167,10 @@ fn action_items(palette: &LumaPalette) -> Vec<ColorItem> {
         item("primary.foreground", palette.action.primary.foreground),
         item("primary.hover_background", palette.action.primary.hover_background),
         item("primary.pressed_background", palette.action.primary.pressed_background),
-        item("secondary.background", palette.action.secondary.background),
-        item("secondary.foreground", palette.action.secondary.foreground),
-        item("secondary.hover_background", palette.action.secondary.hover_background),
-        item("secondary.pressed_background", palette.action.secondary.pressed_background),
+        item("ghost.background", palette.action.ghost.background),
+        item("ghost.foreground", palette.action.ghost.foreground),
+        item("ghost.hover_background", palette.action.ghost.hover_background),
+        item("ghost.pressed_background", palette.action.ghost.pressed_background),
     ]
 }
 

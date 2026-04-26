@@ -41,25 +41,25 @@ pub const CONTEXT_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
     parts: &[
         ThemePartUsage {
             part: "target background",
-            token: "action.secondary.background",
+            token: "action.ghost.background",
             states: &["default"],
             appearance_fields: &["ContextMenuAppearance.target_background"],
         },
         ThemePartUsage {
             part: "target hover background",
-            token: "action.secondary.hover_background",
+            token: "action.ghost.hover_background",
             states: &["hovered"],
             appearance_fields: &["ContextMenuAppearance.target_background"],
         },
         ThemePartUsage {
             part: "target pressed background",
-            token: "action.secondary.pressed_background",
+            token: "action.ghost.pressed_background",
             states: &["pressed"],
             appearance_fields: &["ContextMenuAppearance.target_background"],
         },
         ThemePartUsage {
             part: "target foreground",
-            token: "action.secondary.foreground",
+            token: "action.ghost.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ContextMenuAppearance.target_foreground"],
         },
@@ -132,14 +132,14 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
 
         let target_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.background,
-            InteractionLayer::Pressed => palette.action.secondary.pressed_background,
-            InteractionLayer::Hovered => palette.action.secondary.hover_background,
-            InteractionLayer::Default => palette.action.secondary.background,
+            InteractionLayer::Pressed => palette.action.ghost.pressed_background,
+            InteractionLayer::Hovered => palette.action.ghost.hover_background,
+            InteractionLayer::Default => palette.action.ghost.background,
         };
         let target_foreground = if state.disabled {
             palette.state.disabled.foreground
         } else {
-            palette.action.secondary.foreground
+            palette.action.ghost.foreground
         };
 
         ContextMenuAppearance {

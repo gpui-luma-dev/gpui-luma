@@ -88,6 +88,7 @@ fn render_icon(icon: &IconButtonIcon, color: gpui::Hsla) -> AnyElement {
 fn button_variant(kind: ButtonKind) -> ButtonVariant {
     match kind {
         ButtonKind::Primary => ButtonVariant::Primary,
+        ButtonKind::Ghost => ButtonVariant::Ghost,
         ButtonKind::Default => ButtonVariant::Default,
     }
 }

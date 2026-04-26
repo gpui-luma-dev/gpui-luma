@@ -179,7 +179,7 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
         let typography = &self.tokens.typography;
 
         let selected_background = match variant {
-            ButtonVariant::Default => palette.state.selected.background,
+            ButtonVariant::Default | ButtonVariant::Ghost => palette.state.selected.background,
             ButtonVariant::Primary => palette.action.primary.background,
         };
         let selected_hover = palette.action.primary.hover_background;
@@ -201,7 +201,7 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
         let label_color = match (variant, selected, state.disabled) {
             (_, _, true) => palette.state.disabled.foreground,
             (_, true, false) => match variant {
-                ButtonVariant::Default => palette.state.selected.foreground,
+                ButtonVariant::Default | ButtonVariant::Ghost => palette.state.selected.foreground,
                 ButtonVariant::Primary => palette.action.primary.foreground,
             },
             (_, false, false) => palette.app.foreground,

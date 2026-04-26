@@ -12,9 +12,11 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
     default_button: Entity<Button>,
+    ghost_button: Entity<Button>,
     primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
     default_clicks: usize,
+    ghost_clicks: usize,
     primary_clicks: usize,
 }
 
@@ -26,6 +28,11 @@ impl ButtonPane {
                 .kind(ButtonKind::Default)
                 .template(theme.button_template())
                 .spawn(cx),
+            ghost_button: Button::new("button-ghost-example")
+                .label("Ghost")
+                .kind(ButtonKind::Ghost)
+                .template(theme.button_template())
+                .spawn(cx),
             primary_button: Button::new("button-primary-example")
                 .label("Primary")
                 .kind(ButtonKind::Primary)
@@ -33,6 +40,7 @@ impl ButtonPane {
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
             default_clicks: 0,
+            ghost_clicks: 0,
             primary_clicks: 0,
         }
     }
@@ -40,6 +48,9 @@ impl ButtonPane {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.default_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_default_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.ghost_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_ghost_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.primary_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_primary_event(event, cx);
@@ -61,6 +72,7 @@ impl ButtonPane {
                         .items_center()
                         .gap(px(12.0))
                         .child(self.default_button.clone())
+                        .child(self.ghost_button.clone())
                         .child(self.primary_button.clone()),
                 )
                 .child(self.state_preview.clone())
@@ -71,6 +83,7 @@ impl ButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
+        notify_entity(&self.ghost_button, cx);
         notify_entity(&self.primary_button, cx);
         notify_entity(&self.state_preview, cx);
     }
@@ -82,6 +95,19 @@ impl ButtonPane {
                 let label = format!("Default {}", self.default_clicks);
 
                 self.default_button.update(cx, |button, cx| {
+                    button.set_label(label, cx);
+                });
+            }
+        }
+    }
+
+    fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ButtonEvent::Click => {
+                self.ghost_clicks += 1;
+                let label = format!("Ghost {}", self.ghost_clicks);
+
+                self.ghost_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -163,6 +189,15 @@ impl Render for ButtonStatePreview {
                 &self.template,
                 "Default variant",
                 ButtonKind::Default,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "Ghost variant",
+                ButtonKind::Ghost,
                 &samples,
                 chrome.muted_text,
                 window,

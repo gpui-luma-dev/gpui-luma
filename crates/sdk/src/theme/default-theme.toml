@@ -26,7 +26,7 @@ foreground = "hsl(0 0% 100%)"
 hover_background = "hsl(224 76% 48%)"
 pressed_background = "hsl(226 71% 40%)"
 
-[light.palette.action.secondary]
+[light.palette.action.ghost]
 background = "hsl(210 40% 98%)"
 foreground = "hsl(222 47% 11%)"
 hover_background = "hsl(214 32% 91%)"
@@ -301,7 +301,7 @@ foreground = "hsl(204 80% 16%)"
 hover_background = "hsl(212 96% 78%)"
 pressed_background = "hsl(213 97% 87%)"
 
-[dark.palette.action.secondary]
+[dark.palette.action.ghost]
 background = "hsl(217 33% 17%)"
 foreground = "hsl(210 40% 98%)"
 hover_background = "hsl(215 25% 27%)"
