@@ -25,7 +25,6 @@ impl IconButtonPane {
         Self {
             icon_button: IconButton::new("icon-button-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Primary)
-                .template(theme.icon_button_template())
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
             icon_clicks: 0,

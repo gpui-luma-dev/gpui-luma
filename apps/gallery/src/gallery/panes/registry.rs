@@ -201,6 +201,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
+    pub(super) introduction: introduction::IntroductionPane,
     pub(super) proto_button: prototypes::ProtoButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
@@ -265,6 +266,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
+            introduction: introduction::IntroductionPane::new(cx, theme),
             proto_button: prototypes::ProtoButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
@@ -287,6 +289,7 @@ impl GalleryPanes {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        self.introduction.subscribe(cx, subscriptions);
         self.proto_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
@@ -307,6 +310,7 @@ impl GalleryPanes {
 
     #[allow(dead_code)]
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.introduction.notify_controls(cx);
         self.proto_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
@@ -334,7 +338,7 @@ impl GalleryPanes {
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => introduction::render(&self.theme),
+            GalleryPageKind::Introduction => self.introduction.render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
             GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),

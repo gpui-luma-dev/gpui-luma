@@ -1,3 +1,3 @@
 mod pane;
 
-pub(super) use pane::render;
+pub(super) use pane::IntroductionPane;
