@@ -189,7 +189,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Enum,
             param_fields: &[ProtoButtonTemplateParamField::Variant],
-            default_source: "ButtonVariant::Prominent",
+            default_source: "ButtonVariant::Standard",
         },
         ProtoButtonTemplateParamUsage {
             name: "size",
