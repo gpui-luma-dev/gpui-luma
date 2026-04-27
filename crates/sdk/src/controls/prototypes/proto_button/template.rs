@@ -99,7 +99,7 @@ pub struct ProtoButtonTemplateParams {
 impl Default for ProtoButtonTemplateParams {
     fn default() -> Self {
         Self {
-            variant: ButtonVariant::Prominent,
+            variant: ButtonVariant::Standard,
             size: ControlSize::Md,
             disabled_opacity: 0.56,
             pointer_cursor_when_enabled: true,
