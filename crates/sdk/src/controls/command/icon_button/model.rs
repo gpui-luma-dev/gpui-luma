@@ -17,9 +17,9 @@ pub struct IconButtonModel {
     pub(crate) template: Arc<dyn IconButtonTemplate>,
 }
 
-pub struct IconButtonRenderModel<'a> {
-    pub id: &'a SharedString,
-    pub icon: &'a IconButtonIcon,
+pub struct IconButtonRenderModel {
+    pub id: SharedString,
+    pub icon: IconButtonIcon,
     pub kind: IconButtonKind,
     pub size: IconButtonSize,
     pub state: IconButtonState,

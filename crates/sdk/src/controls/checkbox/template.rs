@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+
 
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
@@ -6,28 +6,23 @@ use lucide_icons::Icon as LucideIcon;
 use super::CheckboxRenderModel;
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
+use crate::controls::template::TemplateWithModifiers;
+use crate::define_control_template;
+
 pub trait CheckboxTemplate: Send + Sync {
-    fn render(&self, model: &CheckboxRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+    fn render(&self, model: &CheckboxRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-pub struct ThemedCheckboxTemplate {
-    theme: Arc<dyn CheckboxTheme>,
-}
-
-impl ThemedCheckboxTemplate {
-    pub fn new(theme: Arc<dyn CheckboxTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-pub fn default_checkbox_template() -> Arc<dyn CheckboxTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn CheckboxTemplate>> = OnceLock::new();
-
-    TEMPLATE.get_or_init(|| Arc::new(ThemedCheckboxTemplate::new(default_checkbox_theme()))).clone()
-}
+define_control_template!(
+    ThemedCheckboxTemplate,
+    dyn CheckboxTheme,
+    CheckboxRenderModel,
+    CheckboxTemplate,
+    default_checkbox_theme()
+);
 
 impl CheckboxTemplate for ThemedCheckboxTemplate {
-    fn render(&self, model: &CheckboxRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &CheckboxRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.checked, model.state);
         let indicator = div()
             .flex()
@@ -71,7 +66,8 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             root = root.opacity(0.56);
         }
 
-        root
+        // Apply modifiers from the pipeline
+        self.apply_modifiers(root, model)
     }
 }
 

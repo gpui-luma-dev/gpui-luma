@@ -40,10 +40,10 @@ impl Button {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> ButtonRenderModel<'a> {
+    fn render_model(&self, window: &Window) -> ButtonRenderModel {
         ButtonRenderModel {
-            id: &self.model.id,
-            label: &self.model.label,
+            id: self.model.id.clone(),
+            label: self.model.label.clone(),
             kind: self.model.kind,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),

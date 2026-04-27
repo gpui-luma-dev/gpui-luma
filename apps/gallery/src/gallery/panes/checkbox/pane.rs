@@ -258,7 +258,7 @@ fn render_state_sample(
     let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", presentation_id, checked, sample.id));
     let label = SharedString::from("Checkbox");
     let model =
-        CheckboxRenderModel { id: &id, label: &label, checked, enabled: !sample.state.disabled, state: sample.state };
+        CheckboxRenderModel { id, label, checked, enabled: !sample.state.disabled, state: sample.state };
 
     div()
         .flex()

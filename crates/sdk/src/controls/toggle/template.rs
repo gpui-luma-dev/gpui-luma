@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+
 
 use gpui::{App, Div, Stateful, Window, div, prelude::*, px};
 
@@ -9,30 +9,23 @@ use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_b
 const DISABLED_OPACITY: f32 = 0.56;
 
 /// Canonical template contract for `Toggle`.
+use crate::controls::template::TemplateWithModifiers;
+use crate::define_control_template;
+
 pub trait ToggleTemplate: Send + Sync {
-    fn render(&self, model: &ToggleRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+    fn render(&self, model: &ToggleRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-/// Default SDK implementation of [`ToggleTemplate`], backed by [`ButtonFamilyTheme`].
-pub struct ThemedToggleTemplate {
-    theme: Arc<dyn ButtonFamilyTheme>,
-}
-
-impl ThemedToggleTemplate {
-    pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-/// Shared default template instance for `Toggle`.
-pub fn default_toggle_template() -> Arc<dyn ToggleTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ToggleTemplate>> = OnceLock::new();
-
-    TEMPLATE.get_or_init(|| Arc::new(ThemedToggleTemplate::new(default_button_family_theme()))).clone()
-}
+define_control_template!(
+    ThemedToggleTemplate,
+    dyn ButtonFamilyTheme,
+    ToggleRenderModel,
+    ToggleTemplate,
+    default_button_family_theme()
+);
 
 impl ToggleTemplate for ThemedToggleTemplate {
-    fn render(&self, model: &ToggleRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &ToggleRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(
             toggle_variant(model.kind),
             ButtonFamilyRole::Toggle { selected: model.selected },
@@ -41,6 +34,7 @@ impl ToggleTemplate for ThemedToggleTemplate {
         );
 
         let control = div()
+            .id(format!("{}-control", model.id))
             .flex()
             .items_center()
             .justify_center()
@@ -57,6 +51,9 @@ impl ToggleTemplate for ThemedToggleTemplate {
             .line_height(px(appearance.typography.line_height))
             .font_weight(appearance.typography.weight)
             .child(model.label.clone());
+
+        // Apply modifiers from the pipeline
+        let control = self.apply_modifiers(control, model);
 
         let mut root =
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
@@ -81,14 +78,11 @@ fn toggle_variant(kind: ToggleKind) -> ButtonVariant {
 
 // ---- Compatibility aliases (legacy toggle_button naming) ----
 
-pub trait ToggleButtonTemplate: ToggleTemplate {}
+// ---- Compatibility aliases (legacy toggle_button naming) ----
 
-impl<T> ToggleButtonTemplate for T where T: ToggleTemplate + ?Sized {}
+pub trait ToggleButtonTemplate: ToggleTemplate {}
+impl<T: ToggleTemplate + ?Sized> ToggleButtonTemplate for T {}
 
 pub type ThemedToggleButtonTemplate = ThemedToggleTemplate;
 
-pub fn default_toggle_button_template() -> Arc<dyn ToggleButtonTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ToggleButtonTemplate>> = OnceLock::new();
-
-    TEMPLATE.get_or_init(|| Arc::new(ThemedToggleTemplate::new(default_button_family_theme()))).clone()
-}
+pub use default_template as default_toggle_button_template;

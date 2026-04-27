@@ -21,6 +21,7 @@ pub mod slider;
 pub mod state;
 pub mod switch;
 pub mod tabs_navigation;
+pub mod template;
 pub(crate) mod text;
 pub mod textarea;
 pub mod textfield;

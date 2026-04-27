@@ -3,34 +3,33 @@ use gpui::{
     SharedString, Window, div, prelude::*,
 };
 
-use super::{IconButtonBuilder, IconButtonIcon, IconButtonRenderModel};
+use super::{ModButtonBuilder, ModButtonRenderModel};
 use crate::controls::command::{CommandCore, CommandEvent};
-use crate::controls::command::icon_button::model::IconButtonModel;
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 
-pub type IconButtonEvent = CommandEvent;
+pub type ModButtonEvent = CommandEvent;
 
-pub struct IconButton {
-    model: IconButtonModel,
+pub struct ModButton {
+    model: super::model::ModButtonModel,
     command: CommandCore,
 }
 
-impl EventEmitter<IconButtonEvent> for IconButton {}
+impl EventEmitter<ModButtonEvent> for ModButton {}
 
-impl IconButton {
+impl ModButton {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>, icon: impl Into<IconButtonIcon>) -> IconButtonBuilder {
-        IconButtonBuilder::new(id, icon)
+    pub fn new(id: impl Into<SharedString>) -> ModButtonBuilder {
+        ModButtonBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: IconButtonBuilder, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: ModButtonBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
         Self { model: builder.model, command: CommandCore::new(enabled, cx) }
     }
 
-    pub fn set_icon(&mut self, icon: impl Into<IconButtonIcon>, cx: &mut Context<Self>) {
-        self.model.icon = icon.into();
+    pub fn set_label(&mut self, label: impl Into<SharedString>, cx: &mut Context<Self>) {
+        self.model.label = label.into();
         cx.notify();
     }
 
@@ -40,10 +39,10 @@ impl IconButton {
         cx.notify();
     }
 
-    fn render_model(&self, window: &Window) -> IconButtonRenderModel {
-        IconButtonRenderModel {
+    fn render_model(&self, window: &Window) -> ModButtonRenderModel {
+        ModButtonRenderModel {
             id: self.model.id.clone(),
-            icon: self.model.icon.clone(),
+            label: self.model.label.clone(),
             kind: self.model.kind,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),
@@ -77,13 +76,13 @@ impl IconButton {
     }
 }
 
-impl Focusable for IconButton {
+impl Focusable for ModButton {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.command.focus_handle().clone()
     }
 }
 
-impl Render for IconButton {
+impl Render for ModButton {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
 

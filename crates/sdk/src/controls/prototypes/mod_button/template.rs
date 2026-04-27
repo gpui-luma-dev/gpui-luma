@@ -2,7 +2,7 @@
 
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
-use super::ButtonRenderModel;
+use super::ModButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
@@ -12,23 +12,25 @@ const DISABLED_OPACITY: f32 = 0.56;
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 
-pub trait ButtonTemplate: Send + Sync {
-    fn render(&self, model: &ButtonRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+
+pub trait ModButtonTemplate: Send + Sync {
+    fn render(&self, model: &ModButtonRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 define_control_template!(
-    ThemedButtonTemplate,
-    dyn ButtonFamilyTheme,
-    ButtonRenderModel,
     ButtonTemplate,
+    dyn ButtonFamilyTheme,
+    ModButtonRenderModel,
+    ModButtonTemplate,
     default_button_family_theme()
 );
 
-impl ButtonTemplate for ThemedButtonTemplate {
-    fn render(&self, model: &ButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+impl ModButtonTemplate for ButtonTemplate {
+    fn render(&self, model: &ModButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance =
             self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
-        let control = div()
+
+        let mut control = div()
             .id(format!("{}-control", model.id))
             .flex()
             .items_center()
@@ -47,8 +49,8 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .font_weight(appearance.typography.weight)
             .child(model.label.clone());
 
-        // Apply modifiers from the pipeline
-        let control = self.apply_modifiers(control, model);
+        // Generic pipeline call
+        control = self.apply_modifiers(control, model);
 
         let mut root =
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);

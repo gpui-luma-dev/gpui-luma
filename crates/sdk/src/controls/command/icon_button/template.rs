@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+
 
 use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, svg, prelude::*};
 
@@ -10,33 +10,27 @@ use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_b
 const DISABLED_OPACITY: f32 = 0.56;
 const ICON_SIZE: f32 = 16.0;
 
+use crate::controls::template::TemplateWithModifiers;
+use crate::define_control_template;
+
 pub trait IconButtonTemplate: Send + Sync {
-    fn render(&self, model: &IconButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+    fn render(&self, model: &IconButtonRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-pub struct ThemedIconButtonTemplate {
-    theme: Arc<dyn ButtonFamilyTheme>,
-}
-
-impl ThemedIconButtonTemplate {
-    pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-pub fn default_icon_button_template() -> Arc<dyn IconButtonTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn IconButtonTemplate>> = OnceLock::new();
-
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedIconButtonTemplate::new(default_button_family_theme())))
-        .clone()
-}
+define_control_template!(
+    ThemedIconButtonTemplate,
+    dyn ButtonFamilyTheme,
+    IconButtonRenderModel,
+    IconButtonTemplate,
+    default_button_family_theme()
+);
 
 impl IconButtonTemplate for ThemedIconButtonTemplate {
-    fn render(&self, model: &IconButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &IconButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance =
             self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Icon, model.size, model.state);
         let control = div()
+            .id(format!("{}-control", model.id))
             .flex()
             .items_center()
             .justify_center()
@@ -49,7 +43,10 @@ impl IconButtonTemplate for ThemedIconButtonTemplate {
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
             .font_weight(appearance.typography.weight)
-            .child(render_icon(model.icon, appearance.foreground));
+            .child(render_icon(&model.icon, appearance.foreground));
+
+        // Apply modifiers from the pipeline
+        let control = self.apply_modifiers(control, model);
 
         let mut root =
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);

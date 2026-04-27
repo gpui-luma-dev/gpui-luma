@@ -34,6 +34,7 @@ enum GalleryPageKind {
     ThemeUsage,
     Button,
     ProtoButton,
+    ModButton,
     IconButton,
     Toggle,
     ToggleGroup,
@@ -136,6 +137,8 @@ const PROGRESS_PAGE: GalleryPage =
     GalleryPage { id: "progress", label: "Progress", icon: None, kind: GalleryPageKind::Progress };
 const PROTO_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "proto-button", label: "ProtoButton", icon: None, kind: GalleryPageKind::ProtoButton };
+const MOD_BUTTON_PAGE: GalleryPage =
+    GalleryPage { id: "mod-button", label: "ModButton", icon: None, kind: GalleryPageKind::ModButton };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
     id: "settings",
     label: "Settings",
@@ -151,7 +154,7 @@ const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[PROTO_BUTTON_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[PROTO_BUTTON_PAGE, MOD_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -203,6 +206,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) proto_button: prototypes::ProtoButtonPane,
+    pub(super) mod_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle: toggle::TogglePane,
@@ -268,6 +272,7 @@ impl GalleryPanes {
             theme: theme.clone(),
             introduction: introduction::IntroductionPane::new(cx, theme),
             proto_button: prototypes::ProtoButtonPane::new(cx, theme),
+            mod_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
             toggle: toggle::TogglePane::new(cx, theme),
@@ -291,6 +296,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
         self.proto_button.subscribe(cx, subscriptions);
+        self.mod_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
         self.toggle.subscribe(cx, subscriptions);
@@ -312,6 +318,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.introduction.notify_controls(cx);
         self.proto_button.notify_controls(cx);
+        self.mod_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
         self.toggle.notify_controls(cx);
@@ -344,6 +351,7 @@ impl GalleryPanes {
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
             GalleryPageKind::Button => self.button.render(&self.theme),
             GalleryPageKind::ProtoButton => self.proto_button.render(&self.theme),
+            GalleryPageKind::ModButton => self.mod_button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
             GalleryPageKind::Toggle => self.toggle.render(&self.theme),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),
@@ -433,7 +441,7 @@ struct SidebarDisclosureTemplate {
 }
 
 impl ToggleTemplate for SidebarDisclosureTemplate {
-    fn render(&self, model: &ToggleRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &ToggleRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_branch(model.state, model.size);
         let disclosure_icon = if model.selected {
             LucideIcon::ChevronDown
@@ -486,7 +494,7 @@ struct SidebarLeafTemplate {
 }
 
 impl ToggleTemplate for SidebarLeafTemplate {
-    fn render(&self, model: &ToggleRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &ToggleRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_item(model.selected, model.state, model.size);
         let padding_left = if self.reserve_icon_space {
             appearance.padding_x + appearance.icon_size + appearance.gap

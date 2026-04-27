@@ -18,9 +18,9 @@ pub struct ToggleModel {
     pub(crate) template: Arc<dyn ToggleTemplate>,
 }
 
-pub struct ToggleRenderModel<'a> {
-    pub id: &'a SharedString,
-    pub label: &'a SharedString,
+pub struct ToggleRenderModel {
+    pub id: SharedString,
+    pub label: SharedString,
     pub kind: ToggleKind,
     pub size: ToggleSize,
     pub enabled: bool,
@@ -86,5 +86,5 @@ impl ToggleBuilder {
 
 // Backward-compatible aliases while callers migrate from ToggleButton naming.
 pub type ToggleButtonModel = ToggleModel;
-pub type ToggleButtonRenderModel<'a> = ToggleRenderModel<'a>;
+pub type ToggleButtonRenderModel = ToggleRenderModel;
 pub type ToggleButtonBuilder = ToggleBuilder;

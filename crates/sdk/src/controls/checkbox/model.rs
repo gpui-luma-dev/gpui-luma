@@ -14,9 +14,9 @@ pub struct CheckboxModel {
     pub(crate) template: Arc<dyn CheckboxTemplate>,
 }
 
-pub struct CheckboxRenderModel<'a> {
-    pub id: &'a SharedString,
-    pub label: &'a SharedString,
+pub struct CheckboxRenderModel {
+    pub id: SharedString,
+    pub label: SharedString,
     pub checked: bool,
     pub enabled: bool,
     pub state: CheckboxState,

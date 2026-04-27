@@ -9,30 +9,23 @@ use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_b
 
 const DISABLED_OPACITY: f32 = 0.56;
 
+use crate::controls::template::{ControlTemplate, TemplateWithModifiers};
+use crate::define_control_template;
+
 pub trait ToggleButtonTemplate: Send + Sync {
-    fn render(&self, model: &ToggleButtonRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+    fn render(&self, model: &ToggleButtonRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-pub struct ThemedToggleButtonTemplate {
-    theme: Arc<dyn ButtonFamilyTheme>,
-}
-
-impl ThemedToggleButtonTemplate {
-    pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-pub fn default_toggle_button_template() -> Arc<dyn ToggleButtonTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ToggleButtonTemplate>> = OnceLock::new();
-
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedToggleButtonTemplate::new(default_button_family_theme())))
-        .clone()
-}
+define_control_template!(
+    ThemedToggleButtonTemplate,
+    dyn ButtonFamilyTheme,
+    ToggleButtonRenderModel,
+    ToggleButtonTemplate,
+    default_button_family_theme()
+);
 
 impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
-    fn render(&self, model: &ToggleButtonRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &ToggleButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(
             button_variant(model.kind),
             ButtonFamilyRole::Toggle { selected: model.selected },
@@ -56,6 +49,9 @@ impl ToggleButtonTemplate for ThemedToggleButtonTemplate {
             .line_height(px(appearance.typography.line_height))
             .font_weight(appearance.typography.weight)
             .child(model.label.clone());
+
+        // Apply modifiers from the pipeline
+        let control = self.apply_modifiers(control, model);
 
         let mut root =
             render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);

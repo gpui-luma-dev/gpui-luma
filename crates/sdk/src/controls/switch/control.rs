@@ -47,10 +47,10 @@ impl Switch {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> SwitchRenderModel<'a> {
+    fn render_model(&self, window: &Window) -> SwitchRenderModel {
         SwitchRenderModel {
-            id: &self.model.id,
-            label: self.model.label.as_ref(),
+            id: self.model.id.clone(),
+            label: self.model.label.clone(),
             on: self.model.on,
             enabled: self.model.enabled,
             state: self.interaction.render_state(self.model.enabled, window),

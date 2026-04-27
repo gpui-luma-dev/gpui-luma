@@ -174,8 +174,8 @@ fn render_state_sample(
     let id = SharedString::from(format!("toggle-preview-{}-{}", selected, sample.id));
     let label = SharedString::from("Toggle");
     let model = ToggleRenderModel {
-        id: &id,
-        label: &label,
+        id,
+        label,
         kind: ToggleKind::Standard,
         size: ToggleSize::Md,
         enabled: !sample.state.disabled,

@@ -166,7 +166,7 @@ fn render_state_sample(
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!("switch-preview-{}-{}", on, sample.id));
-    let model = SwitchRenderModel { id: &id, label: None, on, enabled: !sample.state.disabled, state: sample.state };
+    let model = SwitchRenderModel { id, label: None, on, enabled: !sample.state.disabled, state: sample.state };
 
     div()
         .flex()

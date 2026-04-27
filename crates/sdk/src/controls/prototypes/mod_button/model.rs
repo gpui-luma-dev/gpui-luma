@@ -2,20 +2,20 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{Button, ButtonTemplate, default_button_template};
+use super::{ModButton, ModButtonTemplate, default_mod_button_template};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
 
 #[derive(Clone)]
-pub struct ButtonModel {
+pub struct ModButtonModel {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) kind: ButtonKind,
     pub(crate) size: ButtonSize,
     pub(crate) enabled: bool,
-    pub(crate) template: Arc<dyn ButtonTemplate>,
+    pub(crate) template: Arc<dyn ModButtonTemplate>,
 }
 
-pub struct ButtonRenderModel {
+pub struct ModButtonRenderModel {
     pub id: SharedString,
     pub label: SharedString,
     pub kind: ButtonKind,
@@ -23,22 +23,22 @@ pub struct ButtonRenderModel {
     pub state: ButtonState,
 }
 
-pub struct ButtonBuilder {
-    pub(crate) model: ButtonModel,
+pub struct ModButtonBuilder {
+    pub(crate) model: ModButtonModel,
 }
 
-impl ButtonBuilder {
+impl ModButtonBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
         Self {
-            model: ButtonModel {
+            model: ModButtonModel {
                 label: id.clone(),
                 id,
                 kind: ButtonKind::Standard,
                 size: ButtonSize::Md,
                 enabled: true,
-                template: default_button_template(),
+                template: default_mod_button_template(),
             },
         }
     }
@@ -63,12 +63,12 @@ impl ButtonBuilder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn ButtonTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn ModButtonTemplate>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Button> {
-        cx.new(|cx| Button::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ModButton> {
+        cx.new(|cx| ModButton::from_builder(self, cx))
     }
 }

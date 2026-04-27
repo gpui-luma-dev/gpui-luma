@@ -47,10 +47,10 @@ impl Toggle {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> ToggleButtonRenderModel<'a> {
+    fn render_model(&self, window: &Window) -> ToggleButtonRenderModel {
         ToggleButtonRenderModel {
-            id: &self.model.id,
-            label: &self.model.label,
+            id: self.model.id.clone(),
+            label: self.model.label.clone(),
             kind: self.model.kind,
             size: self.model.size,
             enabled: self.model.enabled,

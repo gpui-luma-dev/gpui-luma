@@ -14,9 +14,9 @@ pub struct SwitchModel {
     pub(crate) template: Arc<dyn SwitchTemplate>,
 }
 
-pub struct SwitchRenderModel<'a> {
-    pub id: &'a SharedString,
-    pub label: Option<&'a SharedString>,
+pub struct SwitchRenderModel {
+    pub id: SharedString,
+    pub label: Option<SharedString>,
     pub on: bool,
     pub enabled: bool,
     pub state: SwitchState,

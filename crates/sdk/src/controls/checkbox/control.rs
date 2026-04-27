@@ -47,10 +47,10 @@ impl Checkbox {
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> CheckboxRenderModel<'a> {
+    fn render_model(&self, window: &Window) -> CheckboxRenderModel {
         CheckboxRenderModel {
-            id: &self.model.id,
-            label: &self.model.label,
+            id: self.model.id.clone(),
+            label: self.model.label.clone(),
             checked: self.model.checked,
             enabled: self.model.enabled,
             state: self.interaction.render_state(self.model.enabled, window),

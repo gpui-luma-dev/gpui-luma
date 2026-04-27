@@ -1,32 +1,27 @@
-use std::sync::{Arc, OnceLock};
+
 
 use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
 use super::SwitchRenderModel;
 use crate::theme::{SwitchTheme, default_switch_theme};
 
+use crate::controls::template::TemplateWithModifiers;
+use crate::define_control_template;
+
 pub trait SwitchTemplate: Send + Sync {
-    fn render(&self, model: &SwitchRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+    fn render(&self, model: &SwitchRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-pub struct ThemedSwitchTemplate {
-    theme: Arc<dyn SwitchTheme>,
-}
-
-impl ThemedSwitchTemplate {
-    pub fn new(theme: Arc<dyn SwitchTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-pub fn default_switch_template() -> Arc<dyn SwitchTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn SwitchTemplate>> = OnceLock::new();
-
-    TEMPLATE.get_or_init(|| Arc::new(ThemedSwitchTemplate::new(default_switch_theme()))).clone()
-}
+define_control_template!(
+    ThemedSwitchTemplate,
+    dyn SwitchTheme,
+    SwitchRenderModel,
+    SwitchTemplate,
+    default_switch_theme()
+);
 
 impl SwitchTemplate for ThemedSwitchTemplate {
-    fn render(&self, model: &SwitchRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+    fn render(&self, model: &SwitchRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.on, model.state);
         let thumb_left = if model.on {
             appearance.width - appearance.thumb_size - appearance.padding
@@ -72,7 +67,7 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             .rounded(px(appearance.radius))
             .child(track);
 
-        if let Some(label) = model.label {
+        if let Some(label) = &model.label {
             root = root.child(label.clone());
         }
 
@@ -82,7 +77,8 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             root = root.opacity(0.56);
         }
 
-        root
+        // Apply modifiers from the pipeline
+        self.apply_modifiers(root, model)
     }
 }
 

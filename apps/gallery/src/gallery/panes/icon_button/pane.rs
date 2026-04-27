@@ -248,7 +248,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("icon-button-preview-{}-{}", row_id, sample.id));
     let icon = IconButtonIcon::from(LucideIcon::Plus);
-    let model = IconButtonRenderModel { id: &id, icon: &icon, kind, size: IconButtonSize::Md, state: sample.state };
+    let model = IconButtonRenderModel { id, icon, kind, size: IconButtonSize::Md, state: sample.state };
 
     div()
         .flex()
