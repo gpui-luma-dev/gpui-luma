@@ -1,35 +1,69 @@
+use std::sync::Arc;
+
 use gpui::{
-    App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
-    SharedString, Window, div, prelude::*,
+    AnyElement, App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
+    SharedString, Window, div, prelude::*, px,
 };
 
-use super::{ModButtonBuilder, ModButtonRenderModel};
-use crate::controls::command::{CommandCore, CommandEvent};
+pub use crate::controls::content_presenter::{ControlContent, HasContent};
+
+use super::{ButtonBuilder, ButtonRenderModel};
+pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
+use lucide_icons::Icon as LucideIcon;
 
-pub type ModButtonEvent = CommandEvent;
-
-pub struct ModButton {
-    model: super::model::ModButtonModel,
+pub struct Button<D = ()> {
+    model: super::model::ButtonModel<D>,
     command: CommandCore,
 }
 
-impl EventEmitter<ModButtonEvent> for ModButton {}
+impl<D: 'static> EventEmitter<ButtonEvent> for Button<D> {}
 
-impl ModButton {
+impl Button<()> {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> ModButtonBuilder {
-        ModButtonBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<()> {
+        ButtonBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: ModButtonBuilder, cx: &mut Context<Self>) -> Self {
-        let enabled = builder.model.enabled;
+    pub fn icon(id: impl Into<SharedString>, icon: LucideIcon) -> ButtonBuilder<()> {
+        ButtonBuilder::new(id)
+            .round(true)
+            .content(move |_, _| {
+                div()
+                    .font_family("lucide")
+                    .text_size(px(16.0))
+                    .child(char::from(icon).to_string())
+            })
+    }
+}
 
+impl<D: Clone + 'static> Button<D> {
+
+    pub(crate) fn from_builder(builder: ButtonBuilder<D>, cx: &mut Context<Self>) -> Self {
+        let enabled = builder.model.enabled;
         Self { model: builder.model, command: CommandCore::new(enabled, cx) }
     }
 
-    pub fn set_label(&mut self, label: impl Into<SharedString>, cx: &mut Context<Self>) {
-        self.model.label = label.into();
+    pub fn set_content(
+        &mut self,
+        content: ControlContent<ButtonRenderModel<D>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.content = content;
+        cx.notify();
+    }
+
+    pub fn set_label(&mut self, label: impl Into<SharedString>, cx: &mut Context<Self>)
+    where
+        D: Default + 'static,
+    {
+        let label = label.into();
+        self.model.content = Arc::new(move |_, _| div().child(label.clone()).into_any_element());
+        cx.notify();
+    }
+
+    pub fn set_data(&mut self, data: D, cx: &mut Context<Self>) {
+        self.model.data = data;
         cx.notify();
     }
 
@@ -39,13 +73,20 @@ impl ModButton {
         cx.notify();
     }
 
-    fn render_model(&self, window: &Window) -> ModButtonRenderModel {
-        ModButtonRenderModel {
+    pub fn data(&self) -> &D {
+        &self.model.data
+    }
+
+    pub fn render_model(&self, window: &Window) -> ButtonRenderModel<D> {
+        ButtonRenderModel {
             id: self.model.id.clone(),
-            label: self.model.label.clone(),
+            data: self.model.data.clone(),
+            content: self.model.content.clone(),
             kind: self.model.kind,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),
+            round: self.model.round,
+            radius_override: std::cell::Cell::new(None),
         }
     }
 
@@ -76,13 +117,13 @@ impl ModButton {
     }
 }
 
-impl Focusable for ModButton {
+impl<D: 'static> Focusable for Button<D> {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.command.focus_handle().clone()
     }
 }
 
-impl Render for ModButton {
+impl<D: Clone + 'static> Render for Button<D> {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
 
@@ -101,5 +142,19 @@ impl Render for ModButton {
                     .on_click(cx.listener(Self::handle_click)),
             )
             .into_any_element()
+    }
+}
+
+impl<D: Clone + 'static> IntoElement for Button<D> {
+    type Element = AnyElement;
+
+    fn into_element(self) -> Self::Element {
+        self.into_any_element()
+    }
+}
+
+impl<D: Clone + 'static> From<Button<D>> for AnyElement {
+    fn from(button: Button<D>) -> Self {
+        button.into_element()
     }
 }
