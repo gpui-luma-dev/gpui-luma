@@ -103,13 +103,13 @@ Rationale:
 ### Implementation note (selected direction)
 Adopt a derive-driven metadata plan for prototype params, e.g. `#[derive(ProtoComponent)]` with field-level `#[proto(...)]` attributes for defaults/state applicability and docs-derived descriptions. The intended effect is to remove hand-authored string field paths (for example, `"ProtoButtonTemplateParams.variant"`) from usage registration and generate that shape consistently.
 
-The actual struct definition would look like:
+The actual struct definition would look like (using current variant naming, where `Standard` is the neutral default, `Prominent` is the loud/solid action style, and `Ghost` is the quiet/transparent style):
 ```rust
 #[derive(ProtoComponent)]
 #[proto(prefix = "ProtoButton")] // Automates "ProtoButtonTemplateParams.variant"
 pub struct ProtoButtonTemplateParams {
     /// Base variant resolved from theme before applying parameter overrides.
-    #[proto(default = "ButtonVariant::Primary", states = "standard")]
+    #[proto(default = "ButtonVariant::Standard", states = "standard")]
     pub variant: ButtonVariant,
 
     /// Base size resolved from theme.
@@ -174,7 +174,7 @@ pub struct ProtoButtonTemplateParams {
 }
 ```
 
-This approach would generate the metadata automatically, eliminating the need for manually maintained string paths in `PROTO_BUTTON_TEMPLATE_USAGE`. The derive macro would:
+When implemented, this approach would generate the metadata automatically, eliminating the need for manually maintained string paths in `PROTO_BUTTON_TEMPLATE_USAGE`. The derive macro would:
 - Automatically generate field identifiers for all parameters
 - Create typed `ProtoButtonTemplateParamField` enum variants
 - Handle state-specific field mapping (base, hovered, pressed, etc.)
