@@ -59,7 +59,7 @@ The SDK should prefer typed Rust APIs over stringly typed configuration.
 Acceptable examples:
 
 ```rust
-ButtonKind::Primary
+ButtonKind::Prominent
 ControlSize::Md
 LucideIcon::Plus
 ButtonFamilyRole::Icon
@@ -98,7 +98,7 @@ Controls with template-owned child interaction surfaces can pass control-owned e
 
 Themes answer visual questions:
 
-- What background does a primary pressed button use?
+- What background does a prominent pressed button use?
 - What foreground does a disabled icon button use?
 - What radius does a medium icon button use?
 - What focus-ring color is used when focused?
@@ -292,7 +292,7 @@ use gpui_luma::controls::button::{Button, ButtonKind};
 
 let button = Button::new("save-button")
     .label("Save")
-    .kind(ButtonKind::Primary)
+    .kind(ButtonKind::Prominent)
     .enabled(true)
     .spawn(cx);
 ```
@@ -319,7 +319,7 @@ use gpui_luma::controls::icon_button::{IconButton, IconButtonKind};
 use lucide_icons::Icon as LucideIcon;
 
 let icon_button = IconButton::new("add-button", LucideIcon::Plus)
-    .kind(IconButtonKind::Primary)
+    .kind(IconButtonKind::Prominent)
     .enabled(true)
     .spawn(cx);
 ```
@@ -635,7 +635,7 @@ impl ExampleApp {
     fn new(cx: &mut Context<Self>) -> Self {
         let button = Button::new("button-example")
             .label("Click me")
-            .kind(ButtonKind::Primary)
+            .kind(ButtonKind::Prominent)
             .spawn(cx);
 
         let subscriptions = vec![
@@ -947,7 +947,7 @@ use gpui_luma::controls::icon_button::{IconButton, IconButtonKind};
 use lucide_icons::Icon as LucideIcon;
 
 let icon_button = IconButton::new("icon-button-example", LucideIcon::Plus)
-    .kind(IconButtonKind::Primary)
+    .kind(IconButtonKind::Prominent)
     .spawn(cx);
 ```
 

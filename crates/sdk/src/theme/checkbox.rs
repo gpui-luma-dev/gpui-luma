@@ -68,25 +68,25 @@ pub const CHECKBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "checked indicator background",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["checked"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
             part: "checked indicator hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["checked hovered"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
             part: "checked indicator pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["checked pressed"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
             part: "checked checkmark",
-            token: "action.primary.foreground",
+            token: "action.prominent.foreground",
             states: &["checked"],
             appearance_fields: &["CheckboxAppearance.checkmark_color"],
         },
@@ -133,9 +133,9 @@ impl CheckboxTheme for DefaultCheckboxTheme {
 
         let indicator_background = match (checked, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
-            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
+            (true, InteractionLayer::Default) => palette.action.prominent.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -159,7 +159,7 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             checkmark_color: if state.disabled {
                 palette.state.disabled.foreground
             } else {
-                palette.action.primary.foreground
+                palette.action.prominent.foreground
             },
             label_color,
             focus_ring: state.focused.then_some(palette.focus.ring),

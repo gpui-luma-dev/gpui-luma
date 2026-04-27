@@ -20,11 +20,17 @@ border = "hsl(213 27% 84%)"
 background = "hsl(210 40% 96%)"
 foreground = "hsl(215 25% 27%)"
 
-[light.palette.action.primary]
+[light.palette.action.prominent]
 background = "hsl(221 83% 53%)"
 foreground = "hsl(0 0% 100%)"
 hover_background = "hsl(224 76% 48%)"
 pressed_background = "hsl(226 71% 40%)"
+
+[light.palette.action.standard]
+background = "hsl(210 40% 98%)"
+foreground = "hsl(222 47% 11%)"
+hover_background = "hsl(214 32% 91%)"
+pressed_background = "hsl(213 27% 84%)"
 
 [light.palette.action.ghost]
 background = "hsl(210 40% 98%)"
@@ -262,9 +268,9 @@ surface = "hsl(210 40% 98%)"
 surface_hover = "hsl(214 32% 91%)"
 surface_pressed = "hsl(213 27% 84%)"
 surface_disabled = "hsl(210 40% 96%)"
-primary = "hsl(221 83% 53%)"
-primary_hover = "hsl(224 76% 48%)"
-primary_pressed = "hsl(226 71% 40%)"
+prominent = "hsl(221 83% 53%)"
+prominent_hover = "hsl(224 76% 48%)"
+prominent_pressed = "hsl(226 71% 40%)"
 destructive = "hsl(0 72% 51%)"
 destructive_hover = "hsl(0 74% 42%)"
 destructive_pressed = "hsl(0 70% 35%)"
@@ -295,11 +301,17 @@ border = "hsl(215 25% 27%)"
 background = "hsl(217 33% 17%)"
 foreground = "hsl(213 27% 84%)"
 
-[dark.palette.action.primary]
+[dark.palette.action.prominent]
 background = "hsl(213 94% 68%)"
 foreground = "hsl(204 80% 16%)"
 hover_background = "hsl(212 96% 78%)"
 pressed_background = "hsl(213 97% 87%)"
+
+[dark.palette.action.standard]
+background = "hsl(217 33% 17%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(215 25% 27%)"
+pressed_background = "hsl(215 19% 35%)"
 
 [dark.palette.action.ghost]
 background = "hsl(217 33% 17%)"
@@ -537,9 +549,9 @@ surface = "hsl(217 33% 17%)"
 surface_hover = "hsl(215 25% 27%)"
 surface_pressed = "hsl(215 19% 35%)"
 surface_disabled = "hsl(217 33% 17%)"
-primary = "hsl(213 94% 68%)"
-primary_hover = "hsl(212 96% 78%)"
-primary_pressed = "hsl(213 97% 87%)"
+prominent = "hsl(213 94% 68%)"
+prominent_hover = "hsl(212 96% 78%)"
+prominent_pressed = "hsl(213 97% 87%)"
 destructive = "hsl(0 91% 71%)"
 destructive_hover = "hsl(0 94% 82%)"
 destructive_pressed = "hsl(0 96% 89%)"

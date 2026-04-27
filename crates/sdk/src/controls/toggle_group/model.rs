@@ -105,7 +105,7 @@ impl ToggleGroupBuilder {
                 selected_ids: Vec::new(),
                 active_id: None,
                 selection_mode: ToggleGroupSelectionMode::Single,
-                kind: ToggleGroupKind::Default,
+                kind: ToggleGroupKind::Standard,
                 size: ToggleGroupSize::Md,
                 enabled: true,
                 template: default_toggle_group_template(),

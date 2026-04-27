@@ -91,15 +91,13 @@ enum IntroField {
 impl IntroductionPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
         Self {
-            submit_button: Button::new("intro-submit").label("Submit").kind(ButtonKind::Primary).spawn(cx),
+            submit_button: Button::new("intro-submit").label("Submit").kind(ButtonKind::Prominent).spawn(cx),
             cancel_button: Button::new("intro-cancel").label("Cancel").spawn(cx),
 
             refresh_icon_button: IconButton::new("intro-refresh-workspace", LucideIcon::RefreshCw)
-                .kind(IconButtonKind::Primary)
+                .kind(IconButtonKind::Prominent)
                 .spawn(cx),
-            favorite_icon_button: IconButton::new("intro-favorite-workspace", LucideIcon::Star)
-                .kind(IconButtonKind::Primary)
-                .spawn(cx),
+            favorite_icon_button: IconButton::new("intro-favorite-workspace", LucideIcon::Star).spawn(cx),
             workspace_popup_menu: PopupMenu::new("intro-workspace-popup")
                 .label("Workspace Menu")
                 .items(workspace_menu_items())

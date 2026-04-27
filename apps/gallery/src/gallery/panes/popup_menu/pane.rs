@@ -160,7 +160,7 @@ impl Render for PopupMenuStatePreview {
         let samples = [
             PopupMenuStateSample {
                 id: "default",
-                label: "Default",
+                label: "Standard",
                 state: InteractionState::default(),
                 focus: ControlFocusState::default(),
             },

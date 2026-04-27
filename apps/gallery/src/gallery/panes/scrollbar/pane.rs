@@ -144,7 +144,7 @@ impl Render for ScrollbarStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ScrollbarStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ScrollbarStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ScrollbarStateSample {
                 id: "hover",
                 label: "Hover",

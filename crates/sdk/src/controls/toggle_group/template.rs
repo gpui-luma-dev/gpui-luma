@@ -216,8 +216,8 @@ fn apply_focus_ring_radius(root: Div, position: ToggleGroupItemPosition, radius:
 
 fn button_variant(kind: ButtonKind) -> ButtonVariant {
     match kind {
-        ButtonKind::Default => ButtonVariant::Default,
+        ButtonKind::Standard => ButtonVariant::Standard,
         ButtonKind::Ghost => ButtonVariant::Ghost,
-        ButtonKind::Primary => ButtonVariant::Primary,
+        ButtonKind::Prominent => ButtonVariant::Prominent,
     }
 }

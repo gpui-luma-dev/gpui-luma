@@ -308,7 +308,7 @@ impl Render for TextAreaStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            TextAreaStateSample { id: "default", label: "Default", state: TextAreaState::default(), enabled: true },
+            TextAreaStateSample { id: "default", label: "Standard", state: TextAreaState::default(), enabled: true },
             TextAreaStateSample {
                 id: "hover",
                 label: "Hover",

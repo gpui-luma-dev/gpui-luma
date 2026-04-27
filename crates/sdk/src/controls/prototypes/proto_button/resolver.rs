@@ -119,7 +119,7 @@ mod tests {
     }
 
     fn params() -> ProtoButtonTemplateParams {
-        ProtoButtonTemplateParams { variant: ButtonVariant::Primary, size: ControlSize::Md, ..Default::default() }
+        ProtoButtonTemplateParams { variant: ButtonVariant::Prominent, size: ControlSize::Md, ..Default::default() }
     }
 
     #[test]

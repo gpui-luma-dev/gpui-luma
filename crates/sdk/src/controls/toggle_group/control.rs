@@ -536,7 +536,7 @@ mod tests {
             selected_ids: selected_ids.into_iter().map(|selected_id| selected_id.to_string().into()).collect(),
             active_id: active_id.map(|active_id| active_id.to_string().into()),
             selection_mode,
-            kind: ButtonKind::Default,
+            kind: ButtonKind::Standard,
             size: ToggleGroupSize::Md,
             enabled: true,
             template: default_toggle_group_template(),

@@ -51,7 +51,7 @@ pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "active label and indicator",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["active", "active hovered", "active pressed"],
             appearance_fields: &["TabsNavigationItemAppearance.label_color", "TabsNavigationItemAppearance.indicator"],
         },
@@ -106,9 +106,9 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
 
         let active_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.primary.pressed_background,
-            InteractionLayer::Hovered => palette.action.primary.hover_background,
-            InteractionLayer::Default => palette.action.primary.background,
+            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
+            InteractionLayer::Hovered => palette.action.prominent.hover_background,
+            InteractionLayer::Default => palette.action.prominent.background,
         };
 
         TabsNavigationItemAppearance {

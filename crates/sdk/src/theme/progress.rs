@@ -38,7 +38,7 @@ pub const PROGRESS_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "progress color",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["enabled"],
             appearance_fields: &["ProgressAppearance.progress_color"],
         },
@@ -74,7 +74,7 @@ impl ProgressTheme for DefaultProgressTheme {
                 palette.state.disabled.background
             },
             progress_color: if enabled {
-                palette.action.primary.background
+                palette.action.prominent.background
             } else {
                 palette.state.disabled.foreground
             },

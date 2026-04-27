@@ -2,7 +2,7 @@
 
 This document defines v3 of template customization for GPUI-Luma.
 
-v3 replaces "public appearance structs as the primary customization surface" with a binding-style slot model inspired by WPF concepts (`TemplateBinding`, resource lookup), while preserving Rust ergonomics and type safety.
+v3 replaces "public appearance structs as the prominent customization surface" with a binding-style slot model inspired by WPF concepts (`TemplateBinding`, resource lookup), while preserving Rust ergonomics and type safety.
 
 ---
 
@@ -108,7 +108,7 @@ Theme remains token/semantic-focused:
 
 - palette/tokens
 - typography/metric scale
-- semantic roles (primary/danger/etc)
+- semantic roles (prominent/danger/etc)
 - mode (light/dark)
 
 Theme does **not** require callers to construct control-specific `Appearance`.
@@ -126,7 +126,7 @@ Templates expose:
 Control appearance structs are implementation detail:
 
 - may remain in codebase for clarity/perf
-- not intended as primary external customization contract
+- not intended as prominent external customization contract
 - can evolve without broad downstream breakage
 
 ---
@@ -266,7 +266,7 @@ fn emergency_button_template() -> Arc<dyn ButtonTemplate> {
 pub fn spawn_emergency_button(cx: &mut Context<MyView>) -> Entity<Button> {
     Button::new("shutdown-now")
         .label("Emergency Shutdown")
-        .kind(ButtonKind::Primary)
+        .kind(ButtonKind::Prominent)
         .template(emergency_button_template())
         .spawn(cx)
 }

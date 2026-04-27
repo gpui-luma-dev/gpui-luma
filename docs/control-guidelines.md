@@ -257,7 +257,7 @@ activation event, and the application or destination pane should decide whether 
 
 - keep focus on the navigation control,
 - focus the content pane root,
-- focus a primary child control inside the pane,
+- focus a prominent child control inside the pane,
 - defer focus until after the activated content is rendered.
 
 This keeps route navigation, tab previews, passive documentation panes, forms, editors, and canvas

@@ -163,10 +163,14 @@ fn palette_sections(tokens: &ThemeTokens) -> Vec<PaletteSection> {
 
 fn action_items(palette: &LumaPalette) -> Vec<ColorItem> {
     vec![
-        item("primary.background", palette.action.primary.background),
-        item("primary.foreground", palette.action.primary.foreground),
-        item("primary.hover_background", palette.action.primary.hover_background),
-        item("primary.pressed_background", palette.action.primary.pressed_background),
+        item("prominent.background", palette.action.prominent.background),
+        item("prominent.foreground", palette.action.prominent.foreground),
+        item("prominent.hover_background", palette.action.prominent.hover_background),
+        item("prominent.pressed_background", palette.action.prominent.pressed_background),
+        item("standard.background", palette.action.standard.background),
+        item("standard.foreground", palette.action.standard.foreground),
+        item("standard.hover_background", palette.action.standard.hover_background),
+        item("standard.pressed_background", palette.action.standard.pressed_background),
         item("ghost.background", palette.action.ghost.background),
         item("ghost.foreground", palette.action.ghost.foreground),
         item("ghost.hover_background", palette.action.ghost.hover_background),

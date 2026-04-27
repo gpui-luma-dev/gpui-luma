@@ -95,26 +95,26 @@ pub const TOGGLE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["ToggleGroupItemAppearance.label_color"],
         },
         ThemePartUsage {
-            part: "primary selected background",
-            token: "action.primary.background",
+            part: "prominent selected background",
+            token: "action.prominent.background",
             states: &["selected"],
             appearance_fields: &["ToggleGroupItemAppearance.background"],
         },
         ThemePartUsage {
-            part: "primary selected foreground",
-            token: "action.primary.foreground",
+            part: "prominent selected foreground",
+            token: "action.prominent.foreground",
             states: &["selected"],
             appearance_fields: &["ToggleGroupItemAppearance.label_color"],
         },
         ThemePartUsage {
-            part: "primary selected hover background",
-            token: "action.primary.hover_background",
+            part: "prominent selected hover background",
+            token: "action.prominent.hover_background",
             states: &["selected hovered"],
             appearance_fields: &["ToggleGroupItemAppearance.background"],
         },
         ThemePartUsage {
-            part: "primary selected pressed background",
-            token: "action.primary.pressed_background",
+            part: "prominent selected pressed background",
+            token: "action.prominent.pressed_background",
             states: &["selected pressed"],
             appearance_fields: &["ToggleGroupItemAppearance.background"],
         },
@@ -179,11 +179,11 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
         let typography = &self.tokens.typography;
 
         let selected_background = match variant {
-            ButtonVariant::Default | ButtonVariant::Ghost => palette.state.selected.background,
-            ButtonVariant::Primary => palette.action.primary.background,
+            ButtonVariant::Standard | ButtonVariant::Ghost => palette.state.selected.background,
+            ButtonVariant::Prominent => palette.action.prominent.background,
         };
-        let selected_hover = palette.action.primary.hover_background;
-        let selected_pressed = palette.action.primary.pressed_background;
+        let selected_hover = palette.action.prominent.hover_background;
+        let selected_pressed = palette.action.prominent.pressed_background;
 
         let disabled_selected_background = palette.state.pressed.background;
 
@@ -201,8 +201,8 @@ impl ToggleGroupTheme for DefaultToggleGroupTheme {
         let label_color = match (variant, selected, state.disabled) {
             (_, _, true) => palette.state.disabled.foreground,
             (_, true, false) => match variant {
-                ButtonVariant::Default | ButtonVariant::Ghost => palette.state.selected.foreground,
-                ButtonVariant::Primary => palette.action.primary.foreground,
+                ButtonVariant::Standard | ButtonVariant::Ghost => palette.state.selected.foreground,
+                ButtonVariant::Prominent => palette.action.prominent.foreground,
             },
             (_, false, false) => palette.app.foreground,
         };
@@ -230,8 +230,8 @@ mod tests {
         let theme = DefaultToggleGroupTheme::default();
         let disabled = InteractionState { disabled: true, ..Default::default() };
 
-        let selected = theme.resolve_item(ButtonVariant::Default, true, disabled, ControlSize::Md);
-        let unselected = theme.resolve_item(ButtonVariant::Default, false, disabled, ControlSize::Md);
+        let selected = theme.resolve_item(ButtonVariant::Standard, true, disabled, ControlSize::Md);
+        let unselected = theme.resolve_item(ButtonVariant::Standard, false, disabled, ControlSize::Md);
 
         assert_ne!(selected.background, unselected.background);
         assert_eq!(selected.label_color, unselected.label_color);

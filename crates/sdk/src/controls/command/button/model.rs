@@ -35,7 +35,7 @@ impl ButtonBuilder {
             model: ButtonModel {
                 label: id.clone(),
                 id,
-                kind: ButtonKind::Default,
+                kind: ButtonKind::Standard,
                 size: ButtonSize::Md,
                 enabled: true,
                 template: default_button_template(),

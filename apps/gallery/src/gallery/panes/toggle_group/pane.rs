@@ -140,7 +140,7 @@ impl Render for ToggleGroupStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ToggleGroupStateSample { id: "default", label: "Default", state: ToggleGroupItemState::default() },
+            ToggleGroupStateSample { id: "default", label: "Standard", state: ToggleGroupItemState::default() },
             ToggleGroupStateSample {
                 id: "hover",
                 label: "Hover",
@@ -260,7 +260,7 @@ fn render_state_sample(
         selected_ids: &selected_ids,
         active_id,
         selection_mode: ToggleGroupSelectionMode::Single,
-        kind: ToggleGroupKind::Default,
+        kind: ToggleGroupKind::Standard,
         size: ToggleGroupSize::Md,
         enabled,
         focus,

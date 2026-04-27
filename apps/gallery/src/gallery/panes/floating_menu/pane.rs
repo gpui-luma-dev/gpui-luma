@@ -36,7 +36,7 @@ impl FloatingMenuPane {
                         .items_start()
                         .justify_center()
                         .gap(px(16.0))
-                        .child(render_state_sample("Default", &appearance, chrome.muted_text, &default_items(), None))
+                        .child(render_state_sample("Standard", &appearance, chrome.muted_text, &default_items(), None))
                         .child(render_state_sample(
                             "Hover / active item",
                             &appearance,

@@ -7,9 +7,9 @@ use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, Them
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonVariant {
     #[default]
-    Default,
+    Standard,
     Ghost,
-    Primary,
+    Prominent,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -61,56 +61,56 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
     component: "Button",
     parts: &[
         ThemePartUsage {
-            part: "default background",
-            token: "action.ghost.background",
+            part: "standard background",
+            token: "action.standard.background",
             states: &["default"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "default hover background",
-            token: "action.ghost.hover_background",
+            part: "standard hover background",
+            token: "action.standard.hover_background",
             states: &["hovered"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "default pressed background",
-            token: "action.ghost.pressed_background",
+            part: "standard pressed background",
+            token: "action.standard.pressed_background",
             states: &["pressed"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "default foreground",
-            token: "action.ghost.foreground",
+            part: "standard foreground",
+            token: "action.standard.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
         ThemePartUsage {
-            part: "default border",
+            part: "standard border",
             token: "border.default",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             appearance_fields: &["ButtonFamilyAppearance.border"],
         },
         ThemePartUsage {
-            part: "primary background",
-            token: "action.primary.background",
+            part: "prominent background",
+            token: "action.prominent.background",
             states: &["default"],
             appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
         },
         ThemePartUsage {
-            part: "primary hover background",
-            token: "action.primary.hover_background",
+            part: "prominent hover background",
+            token: "action.prominent.hover_background",
             states: &["hovered"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "primary pressed background",
-            token: "action.primary.pressed_background",
+            part: "prominent pressed background",
+            token: "action.prominent.pressed_background",
             states: &["pressed"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "primary foreground",
-            token: "action.primary.foreground",
+            part: "prominent foreground",
+            token: "action.prominent.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
@@ -142,26 +142,26 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
     component: "Toggle",
     parts: &[
         ThemePartUsage {
-            part: "unselected default background",
-            token: "action.ghost.background",
+            part: "unselected standard background",
+            token: "action.standard.background",
             states: &["default"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected default hover background",
-            token: "action.ghost.hover_background",
+            part: "unselected standard hover background",
+            token: "action.standard.hover_background",
             states: &["hovered"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected default pressed background",
-            token: "action.ghost.pressed_background",
+            part: "unselected standard pressed background",
+            token: "action.standard.pressed_background",
             states: &["pressed"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected default foreground",
-            token: "action.ghost.foreground",
+            part: "unselected standard foreground",
+            token: "action.standard.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
@@ -173,13 +173,13 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["selected hovered"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
             part: "selected pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["selected pressed"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
@@ -190,19 +190,19 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
         ThemePartUsage {
-            part: "primary background",
-            token: "action.primary.background",
+            part: "prominent background",
+            token: "action.prominent.background",
             states: &["default"],
             appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
         },
         ThemePartUsage {
-            part: "primary foreground",
-            token: "action.primary.foreground",
+            part: "prominent foreground",
+            token: "action.prominent.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
         ThemePartUsage {
-            part: "default border",
+            part: "standard border",
             token: "border.default",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             appearance_fields: &["ButtonFamilyAppearance.border"],
@@ -253,22 +253,22 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let foreground = match (variant, selected, state.disabled) {
             (_, _, true) => palette.state.disabled.foreground,
             (_, true, false) => palette.state.selected.foreground,
-            (ButtonVariant::Default, false, false) => palette.action.ghost.foreground,
+            (ButtonVariant::Standard, false, false) => palette.action.standard.foreground,
             (ButtonVariant::Ghost, false, false) => palette.action.ghost.foreground,
-            (ButtonVariant::Primary, false, false) => palette.action.primary.foreground,
+            (ButtonVariant::Prominent, false, false) => palette.action.prominent.foreground,
         };
 
         let background = match (variant, selected, state.layer()) {
             (_, _, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (_, true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
-            (_, true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
+            (_, true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
+            (_, true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
             (_, true, InteractionLayer::Default) => palette.state.selected.background,
-            (ButtonVariant::Primary, _, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
-            (ButtonVariant::Primary, _, InteractionLayer::Hovered) => palette.action.primary.hover_background,
-            (ButtonVariant::Primary, _, InteractionLayer::Default) => palette.action.primary.background,
-            (ButtonVariant::Default, _, InteractionLayer::Pressed) => palette.action.ghost.pressed_background,
-            (ButtonVariant::Default, _, InteractionLayer::Hovered) => palette.action.ghost.hover_background,
-            (ButtonVariant::Default, _, InteractionLayer::Default) => palette.action.ghost.background,
+            (ButtonVariant::Prominent, _, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
+            (ButtonVariant::Prominent, _, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
+            (ButtonVariant::Prominent, _, InteractionLayer::Default) => palette.action.prominent.background,
+            (ButtonVariant::Standard, _, InteractionLayer::Pressed) => palette.action.standard.pressed_background,
+            (ButtonVariant::Standard, _, InteractionLayer::Hovered) => palette.action.standard.hover_background,
+            (ButtonVariant::Standard, _, InteractionLayer::Default) => palette.action.standard.background,
             (ButtonVariant::Ghost, _, InteractionLayer::Pressed) => palette.state.pressed.background,
             (ButtonVariant::Ghost, _, InteractionLayer::Hovered) => palette.state.hover.background,
             (ButtonVariant::Ghost, _, InteractionLayer::Default) => transparent,
@@ -276,9 +276,9 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
 
         let height = metrics.control_height(size);
         let border = match variant {
-            ButtonVariant::Default => palette.border.default,
+            ButtonVariant::Standard => palette.border.default,
             ButtonVariant::Ghost => transparent,
-            ButtonVariant::Primary => palette.action.primary.background,
+            ButtonVariant::Prominent => palette.action.prominent.background,
         };
 
         ButtonFamilyAppearance {

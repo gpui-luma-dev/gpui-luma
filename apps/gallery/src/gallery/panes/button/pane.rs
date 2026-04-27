@@ -13,19 +13,19 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 pub(in crate::gallery) struct ButtonPane {
     default_button: Entity<Button>,
     ghost_button: Entity<Button>,
-    primary_button: Entity<Button>,
+    prominent_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
     default_clicks: usize,
     ghost_clicks: usize,
-    primary_clicks: usize,
+    prominent_clicks: usize,
 }
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             default_button: Button::new("button-default-example")
-                .label("Default")
-                .kind(ButtonKind::Default)
+                .label("Standard")
+                .kind(ButtonKind::Standard)
                 .template(theme.button_template())
                 .spawn(cx),
             ghost_button: Button::new("button-ghost-example")
@@ -33,15 +33,15 @@ impl ButtonPane {
                 .kind(ButtonKind::Ghost)
                 .template(theme.button_template())
                 .spawn(cx),
-            primary_button: Button::new("button-primary-example")
-                .label("Primary")
-                .kind(ButtonKind::Primary)
+            prominent_button: Button::new("button-prominent-example")
+                .label("Prominent")
+                .kind(ButtonKind::Prominent)
                 .template(theme.button_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
             default_clicks: 0,
             ghost_clicks: 0,
-            primary_clicks: 0,
+            prominent_clicks: 0,
         }
     }
 
@@ -52,8 +52,8 @@ impl ButtonPane {
         subscriptions.push(cx.subscribe(&self.ghost_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_ghost_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_primary_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.prominent_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_prominent_event(event, cx);
         }));
     }
 
@@ -73,7 +73,7 @@ impl ButtonPane {
                         .gap(px(12.0))
                         .child(self.default_button.clone())
                         .child(self.ghost_button.clone())
-                        .child(self.primary_button.clone()),
+                        .child(self.prominent_button.clone()),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
@@ -84,7 +84,7 @@ impl ButtonPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
         notify_entity(&self.ghost_button, cx);
-        notify_entity(&self.primary_button, cx);
+        notify_entity(&self.prominent_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -114,13 +114,13 @@ impl ButtonPane {
         }
     }
 
-    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
-                self.primary_clicks += 1;
-                let label = format!("Primary {}", self.primary_clicks);
+                self.prominent_clicks += 1;
+                let label = format!("Prominent {}", self.prominent_clicks);
 
-                self.primary_button.update(cx, |button, cx| {
+                self.prominent_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -150,7 +150,7 @@ impl Render for ButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ButtonStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ButtonStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ButtonStateSample {
                 id: "hover",
                 label: "Hover",
@@ -187,8 +187,8 @@ impl Render for ButtonStatePreview {
             )
             .child(render_state_row(
                 &self.template,
-                "Default variant",
-                ButtonKind::Default,
+                "Standard variant",
+                ButtonKind::Standard,
                 &samples,
                 chrome.muted_text,
                 window,
@@ -205,8 +205,8 @@ impl Render for ButtonStatePreview {
             ))
             .child(render_state_row(
                 &self.template,
-                "Primary variant",
-                ButtonKind::Primary,
+                "Prominent variant",
+                ButtonKind::Prominent,
                 &samples,
                 chrome.muted_text,
                 window,

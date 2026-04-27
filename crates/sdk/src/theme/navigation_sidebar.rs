@@ -173,13 +173,13 @@ pub const NAVIGATION_SIDEBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected item hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["selected hovered"],
             appearance_fields: &["NavigationSidebarItemAppearance.background"],
         },
         ThemePartUsage {
             part: "selected item pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["selected pressed"],
             appearance_fields: &["NavigationSidebarItemAppearance.background"],
         },
@@ -266,8 +266,8 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
 
         appearance.background = match (selected, state.layer()) {
             (_, InteractionLayer::Disabled) => None,
-            (true, InteractionLayer::Pressed) => Some(palette.action.primary.pressed_background),
-            (true, InteractionLayer::Hovered) => Some(palette.action.primary.hover_background),
+            (true, InteractionLayer::Pressed) => Some(palette.action.prominent.pressed_background),
+            (true, InteractionLayer::Hovered) => Some(palette.action.prominent.hover_background),
             (true, InteractionLayer::Default) => Some(palette.navigation.selected_background),
             (false, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
             (false, InteractionLayer::Hovered) => Some(palette.navigation.hover_background),

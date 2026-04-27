@@ -66,25 +66,25 @@ pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "on track background",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["on"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
             part: "on track hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["on hovered"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
             part: "on track pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["on pressed"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
             part: "on thumb",
-            token: "action.primary.foreground",
+            token: "action.prominent.foreground",
             states: &["on"],
             appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
         },
@@ -144,9 +144,9 @@ impl SwitchTheme for DefaultSwitchTheme {
 
         let track_background = match (on, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
-            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
+            (true, InteractionLayer::Default) => palette.action.prominent.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -162,14 +162,14 @@ impl SwitchTheme for DefaultSwitchTheme {
             thumb_background: if state.disabled {
                 palette.state.disabled.foreground
             } else if on {
-                palette.action.primary.foreground
+                palette.action.prominent.foreground
             } else {
                 palette.surface.panel.background
             },
             thumb_border: if state.disabled {
                 palette.state.disabled.background
             } else if on {
-                palette.action.primary.foreground
+                palette.action.prominent.foreground
             } else {
                 palette.border.default
             },

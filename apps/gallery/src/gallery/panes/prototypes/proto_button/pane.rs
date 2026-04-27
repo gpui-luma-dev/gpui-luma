@@ -59,30 +59,30 @@ impl ProtoButtonPane {
 
         let radius_down_button = Button::new("proto-button-radius-down")
             .label("Radius -")
-            .kind(ButtonKind::Default)
+            .kind(ButtonKind::Standard)
             .template(theme.button_template())
             .spawn(cx);
         let radius_up_button = Button::new("proto-button-radius-up")
             .label("Radius +")
-            .kind(ButtonKind::Default)
+            .kind(ButtonKind::Standard)
             .template(theme.button_template())
             .spawn(cx);
 
         let flip_bg_fg_button = Button::new("proto-button-flip-bg-fg")
             .label("Flip bg/fg")
-            .kind(ButtonKind::Default)
+            .kind(ButtonKind::Standard)
             .template(theme.button_template())
             .spawn(cx);
 
         let reset_button = Button::new("proto-button-reset")
             .label("Reset")
-            .kind(ButtonKind::Default)
+            .kind(ButtonKind::Standard)
             .template(theme.button_template())
             .spawn(cx);
 
         let state_cycle_button = Button::new("proto-button-state-cycle")
             .label(format!("State: {}", visual_state_label(ProtoButtonVisualState::Default)))
-            .kind(ButtonKind::Default)
+            .kind(ButtonKind::Standard)
             .template(theme.button_template())
             .spawn(cx);
 
@@ -176,7 +176,7 @@ impl ProtoButtonPane {
 
     fn render_demo_column(&self, chrome: GalleryChrome, _theme: &GalleryThemePack) -> AnyElement {
         let theme_appearance = default_button_family_theme().resolve(
-            ButtonVariant::Default,
+            ButtonVariant::Standard,
             ButtonFamilyRole::Text,
             ControlSize::Md,
             interaction_state_for_visual_state(self.selected_visual_state),
@@ -446,7 +446,7 @@ impl Render for ProtoButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ProtoButtonStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ProtoButtonStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ProtoButtonStateSample {
                 id: "hover",
                 label: "Hover",
@@ -583,7 +583,7 @@ fn resolve_color_with_source(
 
 fn demo_proto_button_template() -> Arc<dyn ProtoButtonTemplate> {
     let params = ProtoButtonTemplateParams {
-        variant: ButtonVariant::Default,
+        variant: ButtonVariant::Standard,
         size: ControlSize::Md,
         disabled_opacity: DEMO_DISABLED_OPACITY,
         radius: Some(DEMO_RADIUS),

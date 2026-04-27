@@ -27,7 +27,7 @@ metrics, radii, typography, and elevation.
 ## Problem
 
 Today, theme decisions are encoded in Rust resolver code. For example, a resolver may decide that a
-checked checkbox indicator uses `action.primary.background`, while the template only receives and
+checked checkbox indicator uses `action.prominent.background`, while the template only receives and
 applies `CheckboxAppearance.indicator_background`.
 
 Navigation sidebar styling is now part of the SDK theme layer through `NavigationSidebarTheme`. That
@@ -38,7 +38,7 @@ That means there are two useful layers to document:
 
 ```text
 resolver recipe:
-  checked checkbox indicator background -> action.primary.background
+  checked checkbox indicator background -> action.prominent.background
 
 template application:
   CheckboxAppearance.indicator_background -> rendered indicator bg()
@@ -58,14 +58,14 @@ ThemeUsage {
     component: "Button",
     parts: vec![
         ThemePartUsage {
-            part: "default background",
+            part: "standard background",
             token: "action.ghost.background",
             states: vec!["default"],
             appearance_field: "ButtonFamilyAppearance.background",
         },
         ThemePartUsage {
-            part: "primary background",
-            token: "action.primary.background",
+            part: "prominent background",
+            token: "action.prominent.background",
             states: vec!["default"],
             appearance_field: "ButtonFamilyAppearance.background",
         },
@@ -88,8 +88,8 @@ Show each token and where it is consumed.
 Example:
 
 ```text
-action.primary.background
-  Button primary background
+action.prominent.background
+  Button prominent background
   Checkbox checked indicator background
   Radio selected indicator background
   Switch checked track background
@@ -114,8 +114,8 @@ Example:
 Checkbox
   unchecked indicator background -> form.input.background
   unchecked indicator border -> form.input.border
-  checked indicator background -> action.primary.background
-  checked checkmark -> action.primary.foreground
+  checked indicator background -> action.prominent.background
+  checked checkmark -> action.prominent.foreground
   focus ring -> focus.ring
 ```
 
@@ -127,7 +127,7 @@ Example:
 
 ```text
 hsla(221.2 83.2% 53.3% / 1)
-  action.primary.background
+  action.prominent.background
   state.selected.background
   data.accent_1 *
 ```
@@ -199,10 +199,10 @@ state.
 Example:
 
 ```text
-Button / Primary / Hovered
-  background: action.primary.hover_background -> hsla(...)
-  foreground: action.primary.foreground -> hsla(...)
-  border: action.primary.background -> hsla(...)
+Button / Prominent / Hovered
+  background: action.prominent.hover_background -> hsla(...)
+  foreground: action.prominent.foreground -> hsla(...)
+  border: action.prominent.background -> hsla(...)
   radius: radius.md -> 6
   typography: text.label -> 13 / 18 / 500
 ```

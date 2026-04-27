@@ -161,7 +161,7 @@ impl Render for RadioGroupStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            RadioGroupStateSample { id: "default", label: "Default", state: RadioGroupItemState::default() },
+            RadioGroupStateSample { id: "default", label: "Standard", state: RadioGroupItemState::default() },
             RadioGroupStateSample {
                 id: "hover",
                 label: "Hover",

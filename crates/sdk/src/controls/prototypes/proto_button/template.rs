@@ -99,7 +99,7 @@ pub struct ProtoButtonTemplateParams {
 impl Default for ProtoButtonTemplateParams {
     fn default() -> Self {
         Self {
-            variant: ButtonVariant::Primary,
+            variant: ButtonVariant::Prominent,
             size: ControlSize::Md,
             disabled_opacity: 0.56,
             pointer_cursor_when_enabled: true,
@@ -189,7 +189,7 @@ pub const PROTO_BUTTON_TEMPLATE_USAGE: ProtoButtonTemplateUsage = ProtoButtonTem
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             param_type: ProtoButtonTemplateParamType::Enum,
             param_fields: &[ProtoButtonTemplateParamField::Variant],
-            default_source: "ButtonVariant::Primary",
+            default_source: "ButtonVariant::Prominent",
         },
         ProtoButtonTemplateParamUsage {
             name: "size",
@@ -477,16 +477,16 @@ mod tests {
         let template = ThemedProtoButtonTemplate::new(default_button_family_theme());
         let initial = template.params();
 
-        assert_eq!(initial.variant, ButtonVariant::Primary);
+        assert_eq!(initial.variant, ButtonVariant::Prominent);
 
         template.update_params(|params| {
-            params.variant = ButtonVariant::Default;
+            params.variant = ButtonVariant::Standard;
             params.disabled_opacity = 0.72;
             params.radius = Some(10.0);
         });
 
         let updated = template.params();
-        assert_eq!(updated.variant, ButtonVariant::Default);
+        assert_eq!(updated.variant, ButtonVariant::Standard);
         assert_eq!(updated.disabled_opacity, 0.72);
         assert_eq!(updated.radius, Some(10.0));
     }

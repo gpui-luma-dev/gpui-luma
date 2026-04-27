@@ -17,29 +17,29 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 pub(in crate::gallery) struct IconButtonPane {
     default_icon_button: Entity<IconButton>,
     ghost_icon_button: Entity<IconButton>,
-    primary_icon_button: Entity<IconButton>,
+    prominent_icon_button: Entity<IconButton>,
     state_preview: Entity<IconButtonStatePreview>,
     default_icon_clicks: usize,
     ghost_icon_clicks: usize,
-    primary_icon_clicks: usize,
+    prominent_icon_clicks: usize,
 }
 
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             default_icon_button: IconButton::new("icon-button-default-example", LucideIcon::Plus)
-                .kind(IconButtonKind::Default)
+                .kind(IconButtonKind::Standard)
                 .spawn(cx),
             ghost_icon_button: IconButton::new("icon-button-ghost-example", LucideIcon::Plus)
                 .kind(IconButtonKind::Ghost)
                 .spawn(cx),
-            primary_icon_button: IconButton::new("icon-button-primary-example", LucideIcon::Plus)
-                .kind(IconButtonKind::Primary)
+            prominent_icon_button: IconButton::new("icon-button-prominent-example", LucideIcon::Plus)
+                .kind(IconButtonKind::Prominent)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
             default_icon_clicks: 0,
             ghost_icon_clicks: 0,
-            primary_icon_clicks: 0,
+            prominent_icon_clicks: 0,
         }
     }
 
@@ -50,8 +50,8 @@ impl IconButtonPane {
         subscriptions.push(cx.subscribe(&self.ghost_icon_button, |app, _, event: &IconButtonEvent, cx| {
             app.panes.icon_button.handle_ghost_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.primary_icon_button, |app, _, event: &IconButtonEvent, cx| {
-            app.panes.icon_button.handle_primary_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.prominent_icon_button, |app, _, event: &IconButtonEvent, cx| {
+            app.panes.icon_button.handle_prominent_event(event, cx);
         }));
     }
 
@@ -71,7 +71,7 @@ impl IconButtonPane {
                         .gap(px(12.0))
                         .child(self.default_icon_button.clone())
                         .child(self.ghost_icon_button.clone())
-                        .child(self.primary_icon_button.clone()),
+                        .child(self.prominent_icon_button.clone()),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
@@ -82,7 +82,7 @@ impl IconButtonPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_icon_button, cx);
         notify_entity(&self.ghost_icon_button, cx);
-        notify_entity(&self.primary_icon_button, cx);
+        notify_entity(&self.prominent_icon_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -116,8 +116,8 @@ impl IconButtonPane {
         Self::toggle_icon(&self.ghost_icon_button, &mut self.ghost_icon_clicks, event, cx);
     }
 
-    fn handle_primary_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
-        Self::toggle_icon(&self.primary_icon_button, &mut self.primary_icon_clicks, event, cx);
+    fn handle_prominent_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+        Self::toggle_icon(&self.prominent_icon_button, &mut self.prominent_icon_clicks, event, cx);
     }
 }
 
@@ -143,7 +143,7 @@ impl Render for IconButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            IconButtonStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            IconButtonStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             IconButtonStateSample {
                 id: "hover",
                 label: "Hover",
@@ -181,8 +181,8 @@ impl Render for IconButtonStatePreview {
             .child(render_state_row(
                 &self.template,
                 "default",
-                "Default",
-                IconButtonKind::Default,
+                "Standard",
+                IconButtonKind::Standard,
                 &samples,
                 chrome.muted_text,
                 window,
@@ -200,9 +200,9 @@ impl Render for IconButtonStatePreview {
             ))
             .child(render_state_row(
                 &self.template,
-                "primary",
-                "Primary",
-                IconButtonKind::Primary,
+                "prominent",
+                "Prominent",
+                IconButtonKind::Prominent,
                 &samples,
                 chrome.muted_text,
                 window,

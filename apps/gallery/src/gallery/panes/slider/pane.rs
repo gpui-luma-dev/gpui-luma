@@ -105,7 +105,7 @@ impl Render for SliderStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            SliderStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            SliderStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             SliderStateSample {
                 id: "hover",
                 label: "Hover",

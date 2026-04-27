@@ -68,7 +68,7 @@ LumaTheme
 Templates should consume resolved appearance structs only. They should not know whether a color came
 from a TOML file, Rust code, a future shadcn importer, or a hand-built theme pack.
 
-Theme resolvers own semantic decisions such as "checked switch track uses primary action" or "menu
+Theme resolvers own semantic decisions such as "checked switch track uses prominent action" or "menu
 surface uses floating surface." Templates own GPUI structure and final style application.
 
 ## Semantic Palette
@@ -93,10 +93,15 @@ surface.floating.border
 surface.subtle.background
 surface.subtle.foreground
 
-action.primary.background
-action.primary.foreground
-action.primary.hover_background
-action.primary.pressed_background
+action.prominent.background
+action.prominent.foreground
+action.prominent.hover_background
+action.prominent.pressed_background
+
+action.standard.background
+action.standard.foreground
+action.standard.hover_background
+action.standard.pressed_background
 
 action.ghost.background
 action.ghost.foreground
@@ -141,7 +146,7 @@ data.accent_4
 data.accent_5
 ```
 
-This shape intentionally does not use `background`, `foreground`, and `primary` by themselves. Those
+This shape intentionally does not use `background`, `foreground`, and `prominent` by themselves. Those
 names are too broad for SDK-level decisions. Luma roles should say where a value is intended to be
 used.
 
@@ -269,22 +274,32 @@ Every SDK theme resolver needs a documented recipe. This is the central missing 
 Initial recipe table:
 
 ```text
-Button default
-  background: action.ghost.background
-  foreground: action.ghost.foreground
-  hover: action.ghost.hover_background
-  pressed: action.ghost.pressed_background
+Button standard
+  background: action.standard.background
+  foreground: action.standard.foreground
+  hover: action.standard.hover_background
+  pressed: action.standard.pressed_background
   border: border.default
   radius: radius.md
   typography: text.label
   focus: focus.ring
 
-Button primary
-  background: action.primary.background
-  foreground: action.primary.foreground
-  hover: action.primary.hover_background
-  pressed: action.primary.pressed_background
-  border: action.primary.background
+Button prominent
+  background: action.prominent.background
+  foreground: action.prominent.foreground
+  hover: action.prominent.hover_background
+  pressed: action.prominent.pressed_background
+  border: action.prominent.background
+  radius: radius.md
+  typography: text.label
+  focus: focus.ring
+
+Button ghost
+  background: transparent
+  foreground: action.ghost.foreground
+  hover: state.hover.background
+  pressed: state.pressed.background
+  border: transparent
   radius: radius.md
   typography: text.label
   focus: focus.ring
@@ -305,13 +320,13 @@ Icon button
   size: control size height
 
 Toggle button unselected
-  same as button default
+  same as button standard
 
 Toggle button selected
   background: state.selected.background
   foreground: state.selected.foreground
-  hover: action.primary.hover_background or state.hover.background
-  pressed: action.primary.pressed_background or state.pressed.background
+  hover: action.prominent.hover_background or state.hover.background
+  pressed: action.prominent.pressed_background or state.pressed.background
 
 Toggle group list
   background: surface.subtle.background
@@ -329,9 +344,9 @@ Checkbox unchecked
   radius: radius.sm
 
 Checkbox checked
-  indicator background: action.primary.background
-  indicator foreground: action.primary.foreground
-  indicator border: action.primary.background
+  indicator background: action.prominent.background
+  indicator foreground: action.prominent.foreground
+  indicator border: action.prominent.background
 
 Radio unchecked
   indicator background: form.input.background
@@ -339,9 +354,9 @@ Radio unchecked
   label: app.foreground
 
 Radio selected
-  indicator background: action.primary.background
-  indicator foreground: action.primary.foreground
-  indicator border: action.primary.background
+  indicator background: action.prominent.background
+  indicator foreground: action.prominent.foreground
+  indicator border: action.prominent.background
 
 Switch unchecked
   track background: form.input.background or surface.subtle.background
@@ -352,18 +367,18 @@ Switch unchecked
   radius: radius.pill
 
 Switch checked
-  track background: action.primary.background
-  track border: action.primary.background
-  thumb background: action.primary.foreground or surface.panel.background
-  thumb border: transparent or action.primary.foreground
+  track background: action.prominent.background
+  track border: action.prominent.background
+  thumb background: action.prominent.foreground or surface.panel.background
+  thumb border: transparent or action.prominent.foreground
   thumb shadow: shadow.thumb
   radius: radius.pill
 
 Slider
   track background: surface.subtle.background
-  fill background: action.primary.background
+  fill background: action.prominent.background
   thumb background: surface.panel.background
-  thumb border: action.primary.background
+  thumb border: action.prominent.background
   thumb shadow: shadow.thumb
   radius: radius.pill
 
@@ -375,7 +390,7 @@ Scrollbar
 
 Progress
   track background: surface.subtle.background
-  fill background: action.primary.background
+  fill background: action.prominent.background
   radius: radius.pill
 
 Popup menu trigger
@@ -454,14 +469,20 @@ border = "hsla(0 0% 88% / 1)"
 background = "hsla(0 0% 94% / 1)"
 foreground = "hsla(0 0% 20% / 1)"
 
-[light.action.primary]
+[light.action.prominent]
 background = "hsla(35 85% 42% / 1)"
 foreground = "hsla(60 8% 98% / 1)"
 hover_background = "hsla(35 85% 36% / 1)"
 pressed_background = "hsla(35 85% 30% / 1)"
 
-[light.action.ghost]
+[light.action.standard]
 background = "hsla(0 0% 96% / 1)"
+foreground = "hsla(0 0% 20% / 1)"
+hover_background = "hsla(0 0% 92% / 1)"
+pressed_background = "hsla(0 0% 88% / 1)"
+
+[light.action.ghost]
+background = "hsla(0 0% 0% / 0)"
 foreground = "hsla(0 0% 20% / 1)"
 hover_background = "hsla(0 0% 92% / 1)"
 pressed_background = "hsla(0 0% 88% / 1)"
@@ -652,9 +673,9 @@ visual guesses from isolated controls.
 ## Open Questions
 
 - Should selected navigation use `navigation.selected_*`, `state.selected_*`, or
-  `action.primary_*` by default?
-- Should switch thumbs use `action.primary.foreground` or `surface.panel.background` when checked?
-- Should default buttons be ghost-filled, panel-filled, or outline-style?
+  `action.prominent_*` by default?
+- Should switch thumbs use `action.prominent.foreground` or `surface.panel.background` when checked?
+- Should standard buttons be panel-filled or outline-style by default across all control families?
 - Which controls are semantically pill-shaped and should always use `radius.pill`?
 - How many shadow roles does the SDK need before themes become too granular?
 - Should component recipes be fully configurable in TOML, or should the first TOML format only define

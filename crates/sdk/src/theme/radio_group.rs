@@ -67,7 +67,7 @@ pub const RADIO_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected indicator background",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["selected"],
             appearance_fields: &[
                 "RadioGroupItemAppearance.indicator_background",
@@ -76,7 +76,7 @@ pub const RADIO_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected indicator hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["selected hovered"],
             appearance_fields: &[
                 "RadioGroupItemAppearance.indicator_background",
@@ -85,7 +85,7 @@ pub const RADIO_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected indicator pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["selected pressed"],
             appearance_fields: &[
                 "RadioGroupItemAppearance.indicator_background",
@@ -94,7 +94,7 @@ pub const RADIO_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "selected dot",
-            token: "action.primary.foreground",
+            token: "action.prominent.foreground",
             states: &["selected"],
             appearance_fields: &["RadioGroupItemAppearance.dot_color"],
         },
@@ -145,9 +145,9 @@ impl RadioGroupTheme for DefaultRadioGroupTheme {
 
         let indicator_background = match (selected, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.primary.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.primary.hover_background,
-            (true, InteractionLayer::Default) => palette.action.primary.background,
+            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
+            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
+            (true, InteractionLayer::Default) => palette.action.prominent.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -155,9 +155,9 @@ impl RadioGroupTheme for DefaultRadioGroupTheme {
 
         let selected_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.primary.pressed_background,
-            InteractionLayer::Hovered => palette.action.primary.hover_background,
-            InteractionLayer::Default => palette.action.primary.background,
+            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
+            InteractionLayer::Hovered => palette.action.prominent.hover_background,
+            InteractionLayer::Default => palette.action.prominent.background,
         };
 
         RadioGroupItemAppearance {
@@ -172,7 +172,7 @@ impl RadioGroupTheme for DefaultRadioGroupTheme {
             dot_color: if state.disabled {
                 palette.state.disabled.foreground
             } else {
-                palette.action.primary.foreground
+                palette.action.prominent.foreground
             },
             label_color: if state.disabled {
                 palette.state.disabled.foreground

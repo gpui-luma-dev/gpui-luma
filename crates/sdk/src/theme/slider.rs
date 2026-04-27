@@ -45,19 +45,19 @@ pub const SLIDER_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "fill background",
-            token: "action.primary.background",
+            token: "action.prominent.background",
             states: &["default"],
             appearance_fields: &["SliderAppearance.fill_background", "SliderAppearance.thumb_border"],
         },
         ThemePartUsage {
             part: "fill hover background",
-            token: "action.primary.hover_background",
+            token: "action.prominent.hover_background",
             states: &["hovered"],
             appearance_fields: &["SliderAppearance.fill_background"],
         },
         ThemePartUsage {
             part: "fill pressed background",
-            token: "action.primary.pressed_background",
+            token: "action.prominent.pressed_background",
             states: &["pressed"],
             appearance_fields: &["SliderAppearance.fill_background"],
         },
@@ -101,9 +101,9 @@ impl SliderTheme for DefaultSliderTheme {
         let elevation = &self.tokens.elevation;
         let fill_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.primary.pressed_background,
-            InteractionLayer::Hovered => palette.action.primary.hover_background,
-            InteractionLayer::Default => palette.action.primary.background,
+            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
+            InteractionLayer::Hovered => palette.action.prominent.hover_background,
+            InteractionLayer::Default => palette.action.prominent.background,
         };
 
         SliderAppearance {
@@ -121,7 +121,7 @@ impl SliderTheme for DefaultSliderTheme {
             thumb_border: if state.disabled {
                 palette.state.disabled.background
             } else {
-                palette.action.primary.background
+                palette.action.prominent.background
             },
             thumb_shadow: elevation.thumb.to_box_shadows(),
             focus_ring: state.focused.then_some(palette.focus.ring),

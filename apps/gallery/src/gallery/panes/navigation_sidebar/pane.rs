@@ -87,7 +87,7 @@ impl NavigationSidebarPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
             .title("Properties")
-            .subtitle("Rectangle / Primary card")
+            .subtitle("Rectangle / Prominent card")
             .collapsible(true)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_nodes())

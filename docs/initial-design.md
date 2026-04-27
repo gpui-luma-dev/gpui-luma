@@ -108,7 +108,7 @@ A template must not:
 - mutate control data as part of presentation,
 - reach across control boundaries to coordinate unrelated components.
 
-Templates are the primary design boundary of the system. They keep controls free of presentation code while preventing theme code from leaking into control logic. If a template swap requires a control rewrite, the control boundary is wrong. If a different theme system requires a control rewrite, the template boundary is wrong.
+Templates are the prominent design boundary of the system. They keep controls free of presentation code while preventing theme code from leaking into control logic. If a template swap requires a control rewrite, the control boundary is wrong. If a different theme system requires a control rewrite, the template boundary is wrong.
 
 ### 2.4 Theme Responsibilities
 
@@ -206,7 +206,7 @@ Templates must not hardcode styling literals into the control contract. They may
 
 Valid theme styles include:
 
-- typed theme keys such as `theme.color(ColorKey::BrandPrimary)`,
+- typed theme keys such as `theme.color(ColorKey::BrandProminent)`,
 - control-family style APIs such as `button_style.background(kind, state)`,
 - fixed look packs with no generic theme API,
 - other strongly typed appearance models.
@@ -264,7 +264,7 @@ use gpui::SharedString;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ButtonKind {
     Default,
-    Primary,
+    Prominent,
     Destructive,
 }
 
@@ -302,7 +302,7 @@ impl Button {
         Self {
             model: ButtonModel {
                 label: label.into(),
-                kind: ButtonKind::Default,
+                kind: ButtonKind::Standard,
                 size: ButtonSize::Md,
                 icon: None,
             },
@@ -459,7 +459,7 @@ The template still decides structure:
 - how parts are grouped,
 - which GPUI elements are emitted.
 
-The template does not decide the appearance matrix for `Default`, `Hover`, `Pressed`, `Disabled`, `Primary`, or `Destructive`. That belongs to the theme.
+The template does not decide the appearance matrix for `Default`, `Hover`, `Pressed`, `Disabled`, `Prominent`, or `Destructive`. That belongs to the theme.
 
 #### Theme-Backed Proof
 
@@ -480,9 +480,9 @@ impl ButtonTheme for ButtonThemePack {
     ) -> ButtonAppearance {
         let background = match (kind, state.disabled, state.pressed, state.hovered) {
             (_, true, _, _) => self.colors.surface_disabled,
-            (ButtonKind::Primary, false, true, _) => self.colors.primary_pressed,
-            (ButtonKind::Primary, false, false, true) => self.colors.primary_hover,
-            (ButtonKind::Primary, false, false, false) => self.colors.primary,
+            (ButtonKind::Prominent, false, true, _) => self.colors.prominent_pressed,
+            (ButtonKind::Prominent, false, false, true) => self.colors.prominent_hover,
+            (ButtonKind::Prominent, false, false, false) => self.colors.prominent,
             (_, false, true, _) => self.colors.surface_pressed,
             (_, false, false, true) => self.colors.surface_hover,
             _ => self.colors.surface,
@@ -679,7 +679,7 @@ In scope for the first slice:
 
 Optional but acceptable if they fall out naturally:
 
-- `Default` and `Primary` button kinds,
+- `Default` and `Prominent` button kinds,
 - a small size set such as `Md` only or `Sm` and `Md`,
 - icon support if it does not complicate the contract.
 
@@ -705,7 +705,7 @@ Suggested layout:
 - `crates/sdk`
   Owns the reusable lookless framework and the button verification slice.
 - `apps/gallery`
-  Acts as the primary example application and the first end-to-end integration surface.
+  Acts as the prominent example application and the first end-to-end integration surface.
 - `apps/examples` or additional small example crates
   Optional home for tiny focused demos if they become useful beyond the gallery.
 
@@ -729,7 +729,7 @@ Suggested example layout:
 - `apps/gallery/src/app_shell.rs`
   Holds application-level initialization and window setup helpers.
 - `apps/gallery/src/gallery/...`
-  Hosts the primary button example and any follow-on exploratory pages.
+  Hosts the prominent button example and any follow-on exploratory pages.
 
 Responsibility split:
 

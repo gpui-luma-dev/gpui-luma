@@ -97,7 +97,7 @@ impl Render for ToggleStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ToggleStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            ToggleStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ToggleStateSample {
                 id: "hover",
                 label: "Hover",
@@ -176,7 +176,7 @@ fn render_state_sample(
     let model = ToggleRenderModel {
         id: &id,
         label: &label,
-        kind: ToggleKind::Default,
+        kind: ToggleKind::Standard,
         size: ToggleSize::Md,
         enabled: !sample.state.disabled,
         selected,

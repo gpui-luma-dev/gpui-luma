@@ -141,7 +141,7 @@ This ensures deterministic behavior and supports live editing.
    - Prototype code path avoids destabilizing stable controls.
 
 2. **Better API boundaries**
-   - Keeps theme focused and avoids leaking internals as primary public API.
+   - Keeps theme focused and avoids leaking internals as prominent public API.
 
 3. **Tooling-friendly**
    - Metadata allows dynamic UI generation and auditability.

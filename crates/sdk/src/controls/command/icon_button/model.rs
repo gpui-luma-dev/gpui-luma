@@ -37,7 +37,7 @@ impl IconButtonBuilder {
             model: IconButtonModel {
                 icon: icon.into(),
                 id,
-                kind: IconButtonKind::Default,
+                kind: IconButtonKind::Standard,
                 size: IconButtonSize::Md,
                 enabled: true,
                 template: default_icon_button_template(),

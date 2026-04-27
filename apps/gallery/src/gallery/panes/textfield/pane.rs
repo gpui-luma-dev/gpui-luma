@@ -330,7 +330,7 @@ impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            TextFieldStateSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
+            TextFieldStateSample { id: "default", label: "Standard", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {
                 id: "hover",
                 label: "Hover",

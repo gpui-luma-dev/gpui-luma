@@ -138,7 +138,7 @@ impl Render for CheckboxStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            CheckboxStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            CheckboxStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             CheckboxStateSample {
                 id: "hover",
                 label: "Hover",
@@ -177,7 +177,7 @@ impl Render for CheckboxStatePreview {
             .child(render_presentation(
                 &self.default_template,
                 "default",
-                "Default",
+                "Standard",
                 &samples,
                 chrome.muted_text,
                 window,

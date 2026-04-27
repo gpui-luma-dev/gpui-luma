@@ -93,7 +93,7 @@ impl Render for SwitchStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            SwitchStateSample { id: "default", label: "Default", state: InteractionState::default() },
+            SwitchStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             SwitchStateSample {
                 id: "hover",
                 label: "Hover",

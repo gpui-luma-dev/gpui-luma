@@ -3,9 +3,9 @@ use crate::theme::{ControlSize, InteractionState};
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonKind {
     #[default]
-    Default,
+    Standard,
     Ghost,
-    Primary,
+    Prominent,
 }
 
 pub type ButtonSize = ControlSize;

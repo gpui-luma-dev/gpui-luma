@@ -85,7 +85,8 @@ pub struct SurfaceTonePalette {
 
 #[derive(Clone, Copy, Debug)]
 pub struct ActionPalette {
-    pub primary: ActionRolePalette,
+    pub prominent: ActionRolePalette,
+    pub standard: ActionRolePalette,
     pub ghost: ActionRolePalette,
 }
 
@@ -167,9 +168,9 @@ pub struct ColorTokens {
     pub surface_hover: Hsla,
     pub surface_pressed: Hsla,
     pub surface_disabled: Hsla,
-    pub primary: Hsla,
-    pub primary_hover: Hsla,
-    pub primary_pressed: Hsla,
+    pub prominent: Hsla,
+    pub prominent_hover: Hsla,
+    pub prominent_pressed: Hsla,
     pub selected: Hsla,
     pub selected_hover: Hsla,
     pub selected_pressed: Hsla,
@@ -417,11 +418,17 @@ impl LumaPalette {
                 subtle: SurfaceTonePalette { background: rgb(0xf1f5f9).into(), foreground: rgb(0x334155).into() },
             },
             action: ActionPalette {
-                primary: ActionRolePalette {
+                prominent: ActionRolePalette {
                     background: rgb(0x2563eb).into(),
                     foreground: rgb(0xffffff).into(),
                     hover_background: rgb(0x1d4ed8).into(),
                     pressed_background: rgb(0x1e40af).into(),
+                },
+                standard: ActionRolePalette {
+                    background: rgb(0xf8fafc).into(),
+                    foreground: rgb(0x0f172a).into(),
+                    hover_background: rgb(0xe2e8f0).into(),
+                    pressed_background: rgb(0xcbd5e1).into(),
                 },
                 ghost: ActionRolePalette {
                     background: rgb(0xf8fafc).into(),
@@ -487,11 +494,17 @@ impl LumaPalette {
                 subtle: SurfaceTonePalette { background: rgb(0x1e293b).into(), foreground: rgb(0xcbd5e1).into() },
             },
             action: ActionPalette {
-                primary: ActionRolePalette {
+                prominent: ActionRolePalette {
                     background: rgb(0x60a5fa).into(),
                     foreground: rgb(0x082f49).into(),
                     hover_background: rgb(0x93c5fd).into(),
                     pressed_background: rgb(0xbfdbfe).into(),
+                },
+                standard: ActionRolePalette {
+                    background: rgb(0x1e293b).into(),
+                    foreground: rgb(0xf8fafc).into(),
+                    hover_background: rgb(0x334155).into(),
+                    pressed_background: rgb(0x475569).into(),
                 },
                 ghost: ActionRolePalette {
                     background: rgb(0x1e293b).into(),
@@ -558,12 +571,12 @@ impl ColorTokens {
             surface_hover: palette.action.ghost.hover_background,
             surface_pressed: palette.action.ghost.pressed_background,
             surface_disabled: palette.state.disabled.background,
-            primary: palette.action.primary.background,
-            primary_hover: palette.action.primary.hover_background,
-            primary_pressed: palette.action.primary.pressed_background,
+            prominent: palette.action.prominent.background,
+            prominent_hover: palette.action.prominent.hover_background,
+            prominent_pressed: palette.action.prominent.pressed_background,
             selected: palette.state.selected.background,
-            selected_hover: palette.action.primary.hover_background,
-            selected_pressed: palette.action.primary.pressed_background,
+            selected_hover: palette.action.prominent.hover_background,
+            selected_pressed: palette.action.prominent.pressed_background,
             text: palette.app.foreground,
             text_inverse: palette.state.selected.foreground,
             text_disabled: palette.state.disabled.foreground,
@@ -784,11 +797,13 @@ struct RawSurfaceTonePalette {
 
 #[derive(Deserialize)]
 struct RawActionPalette {
-    primary: RawActionRolePalette,
+    prominent: RawActionRolePalette,
+    #[serde(default)]
+    standard: Option<RawActionRolePalette>,
     ghost: RawActionRolePalette,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct RawActionRolePalette {
     background: String,
     foreground: String,
@@ -866,9 +881,9 @@ struct RawColorTokens {
     surface_hover: String,
     surface_pressed: String,
     surface_disabled: String,
-    primary: String,
-    primary_hover: String,
-    primary_pressed: String,
+    prominent: String,
+    prominent_hover: String,
+    prominent_pressed: String,
     selected: String,
     selected_hover: String,
     selected_pressed: String,
@@ -1034,8 +1049,11 @@ impl RawSurfaceTonePalette {
 
 impl RawActionPalette {
     fn try_into_action(self) -> anyhow::Result<ActionPalette> {
+        let standard = self.standard.unwrap_or_else(|| self.ghost.clone());
+
         Ok(ActionPalette {
-            primary: self.primary.try_into_action_role()?,
+            prominent: self.prominent.try_into_action_role()?,
+            standard: standard.try_into_action_role()?,
             ghost: self.ghost.try_into_action_role()?,
         })
     }
@@ -1138,9 +1156,9 @@ impl RawColorTokens {
             surface_hover: parse_hsla(&self.surface_hover)?,
             surface_pressed: parse_hsla(&self.surface_pressed)?,
             surface_disabled: parse_hsla(&self.surface_disabled)?,
-            primary: parse_hsla(&self.primary)?,
-            primary_hover: parse_hsla(&self.primary_hover)?,
-            primary_pressed: parse_hsla(&self.primary_pressed)?,
+            prominent: parse_hsla(&self.prominent)?,
+            prominent_hover: parse_hsla(&self.prominent_hover)?,
+            prominent_pressed: parse_hsla(&self.prominent_pressed)?,
             selected: parse_hsla(&self.selected)?,
             selected_hover: parse_hsla(&self.selected_hover)?,
             selected_pressed: parse_hsla(&self.selected_pressed)?,

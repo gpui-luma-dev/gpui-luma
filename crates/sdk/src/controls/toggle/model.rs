@@ -40,7 +40,7 @@ impl ToggleBuilder {
             model: ToggleModel {
                 label: id.clone(),
                 id,
-                kind: ToggleKind::Default,
+                kind: ToggleKind::Standard,
                 size: ToggleSize::Md,
                 enabled: true,
                 selected: false,
