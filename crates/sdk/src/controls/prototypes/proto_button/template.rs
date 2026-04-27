@@ -470,6 +470,27 @@ mod tests {
             assert!(!parameter.param_fields.is_empty());
             assert!(!parameter.default_source.is_empty());
         }
+
+        let variant_parameter = usage
+            .parameters
+            .iter()
+            .find(|parameter| parameter.name == "variant")
+            .expect("variant parameter metadata should be present");
+
+        assert_eq!(variant_parameter.default_source, "ButtonVariant::Standard");
+    }
+
+    #[test]
+    fn default_variant_and_metadata_default_source_stay_in_sync() {
+        let usage = proto_button_template_usage();
+        let variant_parameter = usage
+            .parameters
+            .iter()
+            .find(|parameter| parameter.name == "variant")
+            .expect("variant parameter metadata should be present");
+
+        assert_eq!(ProtoButtonTemplateParams::default().variant, ButtonVariant::Standard);
+        assert_eq!(variant_parameter.default_source, "ButtonVariant::Standard");
     }
 
     #[test]
@@ -477,7 +498,7 @@ mod tests {
         let template = ThemedProtoButtonTemplate::new(default_button_family_theme());
         let initial = template.params();
 
-        assert_eq!(initial.variant, ButtonVariant::Prominent);
+        assert_eq!(initial.variant, ButtonVariant::Standard);
 
         template.update_params(|params| {
             params.variant = ButtonVariant::Standard;

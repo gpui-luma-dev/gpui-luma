@@ -2,15 +2,18 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
-    px,
+    px, rgb,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
 use gpui_luma::controls::prototypes::proto_button::{
-    ProtoButton, ProtoButtonEvent, ProtoButtonRenderModel, ProtoButtonSize, ProtoButtonStatefulOverride,
-    ProtoButtonTemplate, ProtoButtonTemplateParams, ProtoButtonVisualState, ThemedProtoButtonTemplate,
-    proto_button_template_usage,
+    ProtoButton, ProtoButtonDefaults, ProtoButtonDefaultsRequest, ProtoButtonDefaultsSource, ProtoButtonEvent,
+    ProtoButtonRenderModel, ProtoButtonSize, ProtoButtonStatefulOverride, ProtoButtonTemplate,
+    ProtoButtonTemplateParams, ProtoButtonVisualState, ThemedProtoButtonTemplate, proto_button_template_usage,
 };
-use gpui_luma::theme::{ButtonFamilyRole, ButtonVariant, ControlSize, InteractionState, default_button_family_theme};
+use gpui_luma::theme::{
+    ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, ControlSize, DefaultButtonFamilyTheme, InteractionLayer,
+    InteractionState, ThemeMode, default_button_family_theme,
+};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
@@ -30,6 +33,7 @@ const RADIUS_STEP: f32 = 2.0;
 #[derive(Clone)]
 pub(in crate::gallery) struct ProtoButtonPane {
     default_button: Entity<ProtoButton>,
+    danger_button: Entity<ProtoButton>,
     demo_button: Entity<ProtoButton>,
     state_preview: Entity<ProtoButtonStatePreview>,
 
@@ -50,6 +54,19 @@ pub(in crate::gallery) struct ProtoButtonPane {
 impl ProtoButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let default_button = ProtoButton::new("proto-button-default").label("Default ProtoButton").spawn(cx);
+
+        let danger_template = Arc::new(
+            ThemedProtoButtonTemplate::with_defaults_source(Arc::new(GalleryDangerProtoButtonDefaultsSource::new(
+                theme.clone(),
+            )))
+            .with_params(ProtoButtonTemplateParams {
+                variant: ButtonVariant::Standard,
+                size: ControlSize::Md,
+                ..Default::default()
+            }),
+        );
+        let danger_button =
+            ProtoButton::new("proto-button-danger").label("Danger Action").template(danger_template).spawn(cx);
 
         let demo_template = demo_proto_button_template();
         let demo_button =
@@ -88,6 +105,7 @@ impl ProtoButtonPane {
 
         Self {
             default_button,
+            danger_button,
             demo_button,
             state_preview,
             radius_down_button,
@@ -164,6 +182,7 @@ impl ProtoButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
+        notify_entity(&self.danger_button, cx);
         notify_entity(&self.demo_button, cx);
         notify_entity(&self.state_preview, cx);
 
@@ -202,6 +221,7 @@ impl ProtoButtonPane {
             .justify_center()
             .gap(px(16.0))
             .child(self.default_button.clone())
+            .child(self.danger_button.clone())
             .child(self.demo_button.clone())
             .child(self.state_preview.clone())
             .child(
@@ -511,6 +531,58 @@ fn render_proto_state_sample(
         .child(template.render(&model, window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
+}
+
+struct GalleryDangerProtoButtonDefaultsSource {
+    theme: GalleryThemePack,
+}
+
+impl GalleryDangerProtoButtonDefaultsSource {
+    fn new(theme: GalleryThemePack) -> Self {
+        Self { theme }
+    }
+}
+
+impl ProtoButtonDefaultsSource for GalleryDangerProtoButtonDefaultsSource {
+    fn resolve_defaults(&self, request: ProtoButtonDefaultsRequest) -> ProtoButtonDefaults {
+        let tokens = self.theme.tokens();
+        let palette = tokens.palette;
+        let appearance = DefaultButtonFamilyTheme::new(self.theme.tokens()).resolve(
+            ButtonVariant::Standard,
+            request.role,
+            request.size,
+            request.state,
+        );
+        let mut defaults: ProtoButtonDefaults = appearance.into();
+
+        if request.state.disabled {
+            defaults.background = palette.state.disabled.background;
+            defaults.foreground = palette.state.disabled.foreground;
+            defaults.border = palette.state.disabled.background;
+            return defaults;
+        }
+
+        let (danger_background, danger_hover_background, danger_pressed_background, danger_foreground) = match self
+            .theme
+            .mode()
+        {
+            ThemeMode::Light => {
+                (rgb(0xdc2626).into(), rgb(0xb91c1c).into(), rgb(0x991b1b).into(), rgb(0xffffff).into())
+            }
+            ThemeMode::Dark => (rgb(0xf87171).into(), rgb(0xfca5a5).into(), rgb(0xfecaca).into(), rgb(0x450a0a).into()),
+        };
+
+        defaults.background = match request.state.layer() {
+            InteractionLayer::Pressed => danger_pressed_background,
+            InteractionLayer::Hovered => danger_hover_background,
+            InteractionLayer::Default => danger_background,
+            InteractionLayer::Disabled => palette.state.disabled.background,
+        };
+        defaults.foreground = danger_foreground;
+        defaults.border = defaults.background;
+
+        defaults
+    }
 }
 
 fn visual_state_label(state: ProtoButtonVisualState) -> &'static str {
