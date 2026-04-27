@@ -11,8 +11,9 @@ pub struct ButtonModel {
     pub(crate) label: SharedString,
     pub(crate) kind: ButtonKind,
     pub(crate) size: ButtonSize,
-    pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ButtonTemplate>,
+    pub(crate) enabled: bool,
+    pub(crate) radius: Option<f32>,
 }
 
 pub struct ButtonRenderModel {
@@ -21,6 +22,7 @@ pub struct ButtonRenderModel {
     pub kind: ButtonKind,
     pub size: ButtonSize,
     pub state: ButtonState,
+    pub radius: Option<f32>,
 }
 
 pub struct ButtonBuilder {
@@ -39,6 +41,7 @@ impl ButtonBuilder {
                 size: ButtonSize::Md,
                 enabled: true,
                 template: default_button_template(),
+                radius: None,
             },
         }
     }
@@ -60,6 +63,11 @@ impl ButtonBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.model.radius = Some(radius);
         self
     }
 

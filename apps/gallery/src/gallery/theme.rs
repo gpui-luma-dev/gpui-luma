@@ -137,6 +137,10 @@ impl GalleryThemePack {
         self.state.theme.version
     }
 
+    pub(in crate::gallery) fn button_family_theme(&self) -> Arc<dyn ButtonFamilyTheme> {
+        self.button_family_theme.clone()
+    }
+
     pub(in crate::gallery) fn button_template(&self) -> Arc<dyn ButtonTemplate> {
         Arc::new(ThemedButtonTemplate::new(self.button_family_theme.clone()))
     }

@@ -246,7 +246,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{:?}-{}", kind, sample.id));
     let label = SharedString::from("Button");
-    let model = ButtonRenderModel { id, label, kind, size: ButtonSize::Md, state: sample.state };
+    let model = ButtonRenderModel { id, label, kind, size: ButtonSize::Md, state: sample.state, radius: None };
 
     div()
         .flex()

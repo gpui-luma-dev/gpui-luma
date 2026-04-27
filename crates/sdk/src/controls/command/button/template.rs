@@ -28,6 +28,8 @@ impl ButtonTemplate for ThemedButtonTemplate {
     fn render(&self, model: &ButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance =
             self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
+        let radius = model.radius.unwrap_or(appearance.radius);
+
         let control = div()
             .id(format!("{}-control", model.id))
             .flex()
@@ -41,7 +43,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
             .text_color(appearance.foreground)
             .border_1()
             .border_color(appearance.border)
-            .rounded(px(appearance.radius))
+            .rounded(px(radius))
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
             .font_weight(appearance.typography.weight)
@@ -50,8 +52,7 @@ impl ButtonTemplate for ThemedButtonTemplate {
         // Apply modifiers from the pipeline
         let control = self.apply_modifiers(control, model);
 
-        let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
+        let mut root = render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, radius);
 
         if model.state.disabled {
             root = root.opacity(DISABLED_OPACITY);

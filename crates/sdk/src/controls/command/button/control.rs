@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use gpui::{
     App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
     SharedString, Window, div, prelude::*,
 };
 
-use super::{ButtonBuilder, ButtonRenderModel};
+use super::{ButtonBuilder, ButtonRenderModel, ButtonTemplate};
 use crate::controls::command::button::model::ButtonModel;
 use crate::controls::command::{CommandCore, CommandEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
@@ -40,6 +42,16 @@ impl Button {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: Arc<dyn ButtonTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_radius(&mut self, radius: f32, cx: &mut Context<Self>) {
+        self.model.radius = Some(radius);
+        cx.notify();
+    }
+
     fn render_model(&self, window: &Window) -> ButtonRenderModel {
         ButtonRenderModel {
             id: self.model.id.clone(),
@@ -47,6 +59,7 @@ impl Button {
             kind: self.model.kind,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),
+            radius: self.model.radius,
         }
     }
 
