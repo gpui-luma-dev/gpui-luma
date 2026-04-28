@@ -1,7 +1,7 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
-use gpui_luma::controls::prototypes::mod_button::ButtonEvent;
+use gpui_luma::controls::command::button::ButtonEvent;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
 use super::theme::GalleryThemePack;

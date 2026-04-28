@@ -1,54 +1,88 @@
+use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 
-use super::{Button, ButtonTemplate, default_button_template};
+use super::control::Button;
+use super::template::ButtonTemplate;
+pub use crate::controls::content_presenter::{ControlContent, HasContent};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
+use lucide_icons::Icon as LucideIcon;
 
 #[derive(Clone)]
-pub struct ButtonModel {
-    pub(crate) id: SharedString,
-    pub(crate) label: SharedString,
-    pub(crate) kind: ButtonKind,
-    pub(crate) size: ButtonSize,
-    pub(crate) template: Arc<dyn ButtonTemplate>,
-    pub(crate) enabled: bool,
-    pub(crate) radius: Option<f32>,
+pub enum ControlIcon {
+    Lucide(LucideIcon),
+    SvgPath(SharedString),
 }
 
-pub struct ButtonRenderModel {
+impl From<LucideIcon> for ControlIcon {
+    fn from(icon: LucideIcon) -> Self {
+        Self::Lucide(icon)
+    }
+}
+
+#[derive(Clone)]
+pub struct ButtonModel<D = ()> {
+    pub(crate) id: SharedString,
+    pub(crate) data: D,
+    pub(crate) content: ControlContent<ButtonRenderModel<D>>,
+    pub(crate) kind: ButtonKind,
+    pub(crate) size: ButtonSize,
+    pub(crate) enabled: bool,
+    pub(crate) round: bool,
+    pub(crate) template: Arc<dyn ButtonTemplate<D>>,
+}
+
+pub struct ButtonRenderModel<D> {
     pub id: SharedString,
-    pub label: SharedString,
+    pub data: D,
+    pub content: ControlContent<ButtonRenderModel<D>>,
     pub kind: ButtonKind,
     pub size: ButtonSize,
     pub state: ButtonState,
-    pub radius: Option<f32>,
+    pub round: bool,
+    pub radius_override: Cell<Option<f32>>,
 }
 
-pub struct ButtonBuilder {
-    pub(crate) model: ButtonModel,
+pub struct ButtonBuilder<D = ()> {
+    pub(crate) model: ButtonModel<D>,
 }
 
-impl ButtonBuilder {
-    pub fn new(id: impl Into<SharedString>) -> Self {
+impl ButtonBuilder<()> {
+    pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<()> {
         let id = id.into();
 
-        Self {
+        ButtonBuilder {
             model: ButtonModel {
-                label: id.clone(),
-                id,
+                id: id.clone(),
+                data: (),
+                content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
                 kind: ButtonKind::Standard,
                 size: ButtonSize::Md,
                 enabled: true,
-                template: default_button_template(),
-                radius: None,
+                round: false,
+                template: super::template::default_button_template(),
             },
         }
     }
+}
 
-    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
-        self.model.label = label.into();
-        self
+impl<D: Clone + 'static> ButtonBuilder<D> {
+    pub fn data<NewD: Clone + 'static>(self, data: NewD) -> ButtonBuilder<NewD> {
+        let old = self.model;
+        let id = old.id.clone();
+        ButtonBuilder {
+            model: ButtonModel {
+                id: old.id,
+                data: data.clone(),
+                content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
+                kind: old.kind,
+                size: old.size,
+                enabled: old.enabled,
+                round: old.round,
+                template: super::template::default_button_template(),
+            },
+        }
     }
 
     pub fn kind(mut self, kind: ButtonKind) -> Self {
@@ -61,22 +95,28 @@ impl ButtonBuilder {
         self
     }
 
+    pub fn round(mut self, round: bool) -> Self {
+        self.model.round = round;
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
         self
     }
 
-    pub fn radius(mut self, radius: f32) -> Self {
-        self.model.radius = Some(radius);
-        self
-    }
-
-    pub fn template(mut self, template: Arc<dyn ButtonTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn ButtonTemplate<D>>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Button> {
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<Button<D>> {
         cx.new(|cx| Button::from_builder(self, cx))
+    }
+}
+
+impl<D: 'static> HasContent<ButtonRenderModel<D>> for ButtonBuilder<D> {
+    fn set_content(&mut self, content: ControlContent<ButtonRenderModel<D>>) {
+        self.model.content = content;
     }
 }

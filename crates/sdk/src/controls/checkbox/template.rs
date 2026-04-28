@@ -3,7 +3,7 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
-use crate::controls::prototypes::mod_button::{ButtonRenderModel, ButtonTemplate};
+use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 use crate::controls::template::TemplateWithModifiers;

@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
     px, rgb,
 };
-use gpui_luma::controls::prototypes::mod_button::{
+use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasContent,
 };
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
@@ -552,7 +552,7 @@ fn render_button_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{}", sample.id));
     let label = SharedString::from("Button");
-    let content: gpui_luma::controls::prototypes::mod_button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
     let model = ButtonRenderModel {
         id,
         data: (),

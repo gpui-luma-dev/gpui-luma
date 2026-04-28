@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
@@ -21,7 +22,7 @@ pub(in crate::gallery) struct CheckboxPane {
 impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_checkbox: Button::new("checkbox-default")
+            default_checkbox: Checkbox::new("checkbox-default")
                 .data(true)
                 .content(|_, _| div().child("As-is").into_any_element())
                 .template(theme.checkbox_template())

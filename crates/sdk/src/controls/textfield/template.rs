@@ -7,7 +7,7 @@ use gpui::{
 
 use super::TextFieldRenderModel;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::controls::command::icon_button::IconButtonIcon;
+use crate::controls::command::button::ControlIcon;
 use crate::theme::{TextFieldTheme, default_textfield_theme};
 
 const TEXTFIELD_SELECTION_OPACITY: f32 = 0.28;
@@ -201,9 +201,9 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
     }
 }
 
-fn render_prefix_icon(icon: &IconButtonIcon, color: gpui::Hsla, size: f32) -> AnyElement {
+fn render_prefix_icon(icon: &ControlIcon, color: gpui::Hsla, size: f32) -> AnyElement {
     match icon {
-        IconButtonIcon::Lucide(icon) => div()
+        ControlIcon::Lucide(icon) => div()
             .size(px(size))
             .flex()
             .items_center()
@@ -215,6 +215,6 @@ fn render_prefix_icon(icon: &IconButtonIcon, color: gpui::Hsla, size: f32) -> An
             .text_color(color)
             .child(char::from(*icon).to_string())
             .into_any_element(),
-        IconButtonIcon::SvgPath(path) => svg().size(px(size)).text_color(color).path(path.clone()).into_any_element(),
+        ControlIcon::SvgPath(path) => svg().size(px(size)).text_color(color).path(path.clone()).into_any_element(),
     }
 }

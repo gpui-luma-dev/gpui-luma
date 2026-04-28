@@ -6,8 +6,7 @@ use std::sync::{
 use gpui::{Hsla, Styled};
 use gpui_luma::controls::{
     checkbox::ThemedCheckboxTemplate,
-    command::button::{ButtonTemplate, ThemedButtonTemplate},
-    prototypes::mod_button::{ButtonTemplate as ModButtonTemplate, DefaultButtonTemplate},
+    command::button::{ButtonTemplate, DefaultButtonTemplate},
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
@@ -138,11 +137,11 @@ impl GalleryThemePack {
         self.button_family_theme.clone()
     }
 
-    pub(in crate::gallery) fn button_template(&self) -> Arc<dyn ButtonTemplate> {
-        Arc::new(ThemedButtonTemplate::new(self.button_family_theme.clone()))
+    pub(in crate::gallery) fn button_template(&self) -> Arc<dyn ButtonTemplate<()>> {
+        Arc::new(DefaultButtonTemplate::new(self.button_family_theme.clone()))
     }
 
-    pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ModButtonTemplate<bool>> {
+    pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         let button_family_theme = self.button_family_theme.clone();
         Arc::new(
             DefaultButtonTemplate::new(self.button_family_theme.clone()).with_modifier(move |element, model| {
@@ -169,7 +168,7 @@ impl GalleryThemePack {
         Arc::new(ThemedToggleGroupTemplate::new(self.toggle_group_theme.clone()))
     }
 
-    pub(in crate::gallery) fn checkbox_template(&self) -> Arc<dyn ModButtonTemplate<bool>> {
+    pub(in crate::gallery) fn checkbox_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         Arc::new(ThemedCheckboxTemplate::new(self.checkbox_theme.clone()))
     }
 

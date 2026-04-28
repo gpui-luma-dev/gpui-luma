@@ -1,4 +1,4 @@
-
+use std::sync::Arc;
 
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
@@ -9,48 +9,83 @@ use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_b
 
 const DISABLED_OPACITY: f32 = 0.56;
 
-use crate::controls::template::TemplateWithModifiers;
-use crate::define_control_template;
+use crate::controls::template::{Modifier, TemplateWithModifiers};
 
-pub trait ButtonTemplate: Send + Sync {
-    fn render(&self, model: &ButtonRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
+
+pub trait ButtonTemplate<D = ()>: Send + Sync {
+    fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
-define_control_template!(
-    ThemedButtonTemplate,
-    dyn ButtonFamilyTheme,
-    ButtonRenderModel,
-    ButtonTemplate,
-    default_button_family_theme()
-);
+pub struct DefaultButtonTemplate<D = ()> {
+    pub theme: Arc<dyn ButtonFamilyTheme>,
+    pub modifiers: Vec<Modifier<ButtonRenderModel<D>>>,
+}
 
-impl ButtonTemplate for ThemedButtonTemplate {
-    fn render(&self, model: &ButtonRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+impl<D> DefaultButtonTemplate<D> {
+    pub fn new(theme: Arc<dyn ButtonFamilyTheme>) -> Self {
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ButtonRenderModel<D>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+}
+
+impl<D: 'static> TemplateWithModifiers<ButtonRenderModel<D>> for DefaultButtonTemplate<D> {
+    fn modifiers(&self) -> &[Modifier<ButtonRenderModel<D>>] {
+        &self.modifiers
+    }
+}
+
+pub fn default_button_template<D: 'static>() -> Arc<dyn ButtonTemplate<D>> {
+    Arc::new(DefaultButtonTemplate::new(default_button_family_theme()))
+}
+
+impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
+    fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let appearance =
             self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
-        let radius = model.radius.unwrap_or(appearance.radius);
 
-        let control = div()
+        let mut control = div()
             .id(format!("{}-control", model.id))
             .flex()
             .items_center()
             .justify_center()
             .gap(px(appearance.gap))
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .h(px(appearance.height))
             .bg(appearance.background)
             .text_color(appearance.foreground)
             .border_1()
             .border_color(appearance.border)
-            .rounded(px(radius))
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
             .font_weight(appearance.typography.weight)
-            .child(model.label.clone());
+            .h(px(appearance.height));
 
-        // Apply modifiers from the pipeline
-        let control = self.apply_modifiers(control, model);
+        if model.round {
+            control = control.w(px(appearance.height)).p_0().rounded_full();
+        } else {
+            control = control
+                .px(px(appearance.padding_x))
+                .py(px(appearance.padding_y))
+                .rounded(px(appearance.radius));
+        }
+
+        control = control.child((model.content)(model, cx));
+
+        // Generic pipeline call
+        control = self.apply_modifiers(control, model);
+
+        let radius = if let Some(r) = model.radius_override.get() {
+            r
+        } else if model.round {
+            appearance.height / 2.0
+        } else {
+            appearance.radius
+        };
 
         let mut root = render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, radius);
 

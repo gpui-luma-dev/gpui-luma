@@ -5,7 +5,7 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
-use gpui_luma::controls::prototypes::mod_button::{Button, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasContent};
 use gpui_luma::theme::NavigationSidebarTheme;
 use lucide_icons::Icon as LucideIcon;
 

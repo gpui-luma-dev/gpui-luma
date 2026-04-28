@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::toggle::Toggle;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
@@ -20,7 +21,7 @@ pub(in crate::gallery) struct TogglePane {
 impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            toggle: Button::new("toggle-example")
+            toggle: Toggle::new("toggle-example")
                 .data(true)
                 .content(|_, _| div().child("Toggle").into_any_element())
                 .template(theme.toggle_template())

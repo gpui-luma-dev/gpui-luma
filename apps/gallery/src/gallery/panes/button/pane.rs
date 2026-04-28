@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel, HasContent};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel, HasContent};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
@@ -140,7 +140,7 @@ struct ButtonStateSample {
 
 impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: gpui_luma::controls::prototypes::mod_button::default_button_template() }
+        Self { theme: theme.clone(), template: gpui_luma::controls::command::button::default_button_template() }
     }
 }
 
@@ -244,7 +244,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{:?}-{}", kind, sample.id));
     let label = SharedString::from("Button");
-    let content: gpui_luma::controls::prototypes::mod_button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
     let model = ButtonRenderModel {
         id,
         data: (),

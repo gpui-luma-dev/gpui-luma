@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::{TextField, TextFieldState, TextFieldTemplate, default_textfield_template};
-use crate::controls::command::icon_button::IconButtonIcon;
+use crate::controls::command::button::ControlIcon;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
@@ -12,7 +12,7 @@ pub struct TextFieldModel {
     pub(crate) id: SharedString,
     pub(crate) placeholder: SharedString,
     pub(crate) value: SharedString,
-    pub(crate) prefix_icon: Option<IconButtonIcon>,
+    pub(crate) prefix_icon: Option<ControlIcon>,
     pub(crate) enabled: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
@@ -25,7 +25,7 @@ pub struct TextFieldRenderModel<'a> {
     pub id: &'a SharedString,
     pub placeholder: &'a SharedString,
     pub value: &'a SharedString,
-    pub prefix_icon: Option<&'a IconButtonIcon>,
+    pub prefix_icon: Option<&'a ControlIcon>,
     pub enabled: bool,
     pub full_width: bool,
     pub state: TextFieldState,
@@ -66,7 +66,7 @@ impl TextFieldBuilder {
         self
     }
 
-    pub fn prefix_icon(mut self, icon: impl Into<IconButtonIcon>) -> Self {
+    pub fn prefix_icon(mut self, icon: impl Into<ControlIcon>) -> Self {
         self.model.prefix_icon = Some(icon.into());
         self
     }

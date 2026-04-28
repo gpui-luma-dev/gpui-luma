@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb,
 };
 use gpui_luma::controls::command::button::ButtonKind;
-use gpui_luma::controls::prototypes::mod_button::{
+use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasContent,
 };
 use gpui_luma::theme::{

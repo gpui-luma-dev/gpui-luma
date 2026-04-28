@@ -5,7 +5,7 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::prototypes::mod_button::{Button as ModButton, ButtonEvent as ModButtonEvent};
+
 use gpui_luma::controls::content_presenter::HasContent;
 // Checkbox was migrated to Button<bool>
 use gpui_luma::controls::textfield::{
@@ -28,9 +28,9 @@ pub(in crate::gallery) struct TextFieldPane {
     state_preview: Entity<TextFieldStatePreview>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
-    enabled_checkbox: Entity<ModButton<bool>>,
-    clean_on_escape_checkbox: Entity<ModButton<bool>>,
-    validation_checkbox: Entity<ModButton<bool>>,
+    enabled_checkbox: Entity<Button<bool>>,
+    clean_on_escape_checkbox: Entity<Button<bool>>,
+    validation_checkbox: Entity<Button<bool>>,
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
@@ -67,17 +67,17 @@ impl TextFieldPane {
             state_preview: cx.new(|_| TextFieldStatePreview::new(theme)),
             set_sample_button: action_button("textfield-set-sample", "Set Sample", &button_template, cx),
             clear_button: action_button("textfield-clear", "Clear", &button_template, cx),
-            enabled_checkbox: ModButton::new("textfield-enabled")
+            enabled_checkbox: Button::new("textfield-enabled")
                 .data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            clean_on_escape_checkbox: ModButton::new("textfield-clean-on-escape")
+            clean_on_escape_checkbox: Button::new("textfield-clean-on-escape")
                 .data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            validation_checkbox: ModButton::new("textfield-validation")
+            validation_checkbox: Button::new("textfield-validation")
                 .data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
                 .template(checkbox_template)
@@ -108,13 +108,13 @@ impl TextFieldPane {
         subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
             app.panes.textfield.clear_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &ModButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &ButtonEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::Enabled, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &ModButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &ButtonEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::CleanOnEscape, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &ModButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &ButtonEvent, cx| {
             app.panes.textfield.handle_option_changed(TextFieldOption::StrictValidation, event, cx);
         }));
     }
@@ -253,7 +253,7 @@ impl TextFieldPane {
         cx.notify();
     }
 
-    fn handle_option_changed(&mut self, option: TextFieldOption, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_option_changed(&mut self, option: TextFieldOption, _event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match option {
                 TextFieldOption::Enabled => {
                     self.enabled = !self.enabled;

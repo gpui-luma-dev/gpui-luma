@@ -1,13 +1,11 @@
-mod control;
-mod icon;
-mod model;
-mod template;
+use gpui::SharedString;
 
-pub use control::{IconButton, IconButtonEvent};
-pub use icon::IconButtonIcon;
-pub use model::{IconButtonBuilder, IconButtonModel, IconButtonRenderModel};
-pub use template::{IconButtonTemplate, ThemedIconButtonTemplate, default_template as default_icon_button_template};
+use crate::controls::command::button::{Button, ButtonBuilder, ControlIcon};
 
-pub use crate::controls::button_family::{
-    ButtonInteractionState as IconButtonState, ButtonKind as IconButtonKind, ButtonSize as IconButtonSize,
-};
+pub struct IconButton;
+
+impl IconButton {
+    pub fn new(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
+        Button::icon(id, icon)
+    }
+}
