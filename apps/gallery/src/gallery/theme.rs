@@ -6,10 +6,7 @@ use std::sync::{
 use gpui::{Hsla, rgb};
 use gpui_luma::controls::{
     checkbox::{CheckboxTemplate, ThemedCheckboxTemplate},
-    command::{
-        button::{ButtonTemplate, ThemedButtonTemplate},
-        icon_button::{IconButtonTemplate, ThemedIconButtonTemplate},
-    },
+    command::button::{ButtonTemplate, ThemedButtonTemplate},
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
@@ -143,10 +140,6 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn button_template(&self) -> Arc<dyn ButtonTemplate> {
         Arc::new(ThemedButtonTemplate::new(self.button_family_theme.clone()))
-    }
-
-    pub(in crate::gallery) fn icon_button_template(&self) -> Arc<dyn IconButtonTemplate> {
-        Arc::new(ThemedIconButtonTemplate::new(self.button_family_theme.clone()))
     }
 
     pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ToggleTemplate> {

@@ -1,3 +1,3 @@
 mod pane;
 
-pub(in crate::gallery) use pane::ProtoButtonPane;
+pub(in crate::gallery) use pane::ButtonPane;

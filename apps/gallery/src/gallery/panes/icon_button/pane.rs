@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::icon_button::{
-    IconButton, IconButtonEvent, IconButtonIcon, IconButtonKind, IconButtonRenderModel, IconButtonSize,
-    IconButtonTemplate,
-};
+use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel};
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
 
@@ -15,9 +13,9 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
-    default_icon_button: Entity<IconButton>,
-    ghost_icon_button: Entity<IconButton>,
-    prominent_icon_button: Entity<IconButton>,
+    default_icon_button: Entity<Button>,
+    ghost_icon_button: Entity<Button>,
+    prominent_icon_button: Entity<Button>,
     state_preview: Entity<IconButtonStatePreview>,
     default_icon_clicks: usize,
     ghost_icon_clicks: usize,
@@ -27,14 +25,14 @@ pub(in crate::gallery) struct IconButtonPane {
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_icon_button: IconButton::new("icon-button-default-example", LucideIcon::Plus)
-                .kind(IconButtonKind::Standard)
+            default_icon_button: Button::icon("icon-button-default-example", LucideIcon::Plus)
+                .kind(ButtonKind::Standard)
                 .spawn(cx),
-            ghost_icon_button: IconButton::new("icon-button-ghost-example", LucideIcon::Plus)
-                .kind(IconButtonKind::Ghost)
+            ghost_icon_button: Button::icon("icon-button-ghost-example", LucideIcon::Plus)
+                .kind(ButtonKind::Ghost)
                 .spawn(cx),
-            prominent_icon_button: IconButton::new("icon-button-prominent-example", LucideIcon::Plus)
-                .kind(IconButtonKind::Prominent)
+            prominent_icon_button: Button::icon("icon-button-prominent-example", LucideIcon::Plus)
+                .kind(ButtonKind::Prominent)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
             default_icon_clicks: 0,
@@ -44,13 +42,13 @@ impl IconButtonPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.default_icon_button, |app, _, event: &IconButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.default_icon_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.icon_button.handle_default_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.ghost_icon_button, |app, _, event: &IconButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.ghost_icon_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.icon_button.handle_ghost_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_icon_button, |app, _, event: &IconButtonEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.prominent_icon_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.icon_button.handle_prominent_event(event, cx);
         }));
     }
@@ -87,13 +85,13 @@ impl IconButtonPane {
     }
 
     fn toggle_icon(
-        button: &Entity<IconButton>,
+        button: &Entity<Button>,
         clicks: &mut usize,
-        event: &IconButtonEvent,
+        event: &ButtonEvent,
         cx: &mut Context<GalleryApp>,
     ) {
         match event {
-            IconButtonEvent::Click => {
+            ButtonEvent::Click => {
                 *clicks += 1;
                 let icon = if clicks.is_multiple_of(2) {
                     LucideIcon::Plus
@@ -102,21 +100,28 @@ impl IconButtonPane {
                 };
 
                 button.update(cx, |button, cx| {
-                    button.set_icon(icon, cx);
+                    let content: gpui_luma::controls::prototypes::mod_button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_, _| {
+                        div()
+                            .font_family("lucide")
+                            .text_size(px(16.0))
+                            .child(char::from(icon).to_string())
+                            .into_any_element()
+                    });
+                    button.set_content(content, cx);
                 });
             }
         }
     }
 
-    fn handle_default_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_default_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         Self::toggle_icon(&self.default_icon_button, &mut self.default_icon_clicks, event, cx);
     }
 
-    fn handle_ghost_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         Self::toggle_icon(&self.ghost_icon_button, &mut self.ghost_icon_clicks, event, cx);
     }
 
-    fn handle_prominent_event(&mut self, event: &IconButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         Self::toggle_icon(&self.prominent_icon_button, &mut self.prominent_icon_clicks, event, cx);
     }
 }
@@ -124,7 +129,7 @@ impl IconButtonPane {
 #[derive(Clone)]
 struct IconButtonStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn IconButtonTemplate>,
+    template: Arc<dyn ButtonTemplate<()>>,
 }
 
 struct IconButtonStateSample {
@@ -135,7 +140,7 @@ struct IconButtonStateSample {
 
 impl IconButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.icon_button_template() }
+        Self { theme: theme.clone(), template: gpui_luma::controls::prototypes::mod_button::default_button_template() }
     }
 }
 
@@ -182,7 +187,7 @@ impl Render for IconButtonStatePreview {
                 &self.template,
                 "default",
                 "Standard",
-                IconButtonKind::Standard,
+                ButtonKind::Standard,
                 &samples,
                 chrome.muted_text,
                 window,
@@ -192,7 +197,7 @@ impl Render for IconButtonStatePreview {
                 &self.template,
                 "ghost",
                 "Ghost",
-                IconButtonKind::Ghost,
+                ButtonKind::Ghost,
                 &samples,
                 chrome.muted_text,
                 window,
@@ -202,7 +207,7 @@ impl Render for IconButtonStatePreview {
                 &self.template,
                 "prominent",
                 "Prominent",
-                IconButtonKind::Prominent,
+                ButtonKind::Prominent,
                 &samples,
                 chrome.muted_text,
                 window,
@@ -212,10 +217,10 @@ impl Render for IconButtonStatePreview {
 }
 
 fn render_state_row(
-    template: &Arc<dyn IconButtonTemplate>,
+    template: &Arc<dyn ButtonTemplate<()>>,
     row_id: &'static str,
     row_label: &'static str,
-    kind: IconButtonKind,
+    kind: ButtonKind,
     samples: &[IconButtonStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
@@ -238,17 +243,33 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn IconButtonTemplate>,
+    template: &Arc<dyn ButtonTemplate<()>>,
     row_id: &'static str,
-    kind: IconButtonKind,
+    kind: ButtonKind,
     sample: &IconButtonStateSample,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!("icon-button-preview-{}-{}", row_id, sample.id));
-    let icon = IconButtonIcon::from(LucideIcon::Plus);
-    let model = IconButtonRenderModel { id, icon, kind, size: IconButtonSize::Md, state: sample.state };
+    let icon = LucideIcon::Plus;
+    let content: gpui_luma::controls::prototypes::mod_button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| {
+        div()
+            .font_family("lucide")
+            .text_size(px(16.0))
+            .child(char::from(icon).to_string())
+            .into_any_element()
+    });
+    let model = ButtonRenderModel {
+        id,
+        data: (),
+        content,
+        kind,
+        size: ButtonSize::Md,
+        state: sample.state,
+        round: true,
+        radius_override: std::cell::Cell::new(None),
+    };
 
     div()
         .flex()

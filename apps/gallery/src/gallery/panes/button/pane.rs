@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind, ButtonRenderModel, ButtonSize, ButtonTemplate};
+use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel, HasContent};
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
@@ -26,17 +27,14 @@ impl ButtonPane {
             default_button: Button::new("button-default-example")
                 .label("Standard")
                 .kind(ButtonKind::Standard)
-                .template(theme.button_template())
                 .spawn(cx),
             ghost_button: Button::new("button-ghost-example")
                 .label("Ghost")
                 .kind(ButtonKind::Ghost)
-                .template(theme.button_template())
                 .spawn(cx),
             prominent_button: Button::new("button-prominent-example")
                 .label("Prominent")
                 .kind(ButtonKind::Prominent)
-                .template(theme.button_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
             default_clicks: 0,
@@ -131,7 +129,7 @@ impl ButtonPane {
 #[derive(Clone)]
 struct ButtonStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn ButtonTemplate>,
+    template: Arc<dyn ButtonTemplate<()>>,
 }
 
 struct ButtonStateSample {
@@ -142,7 +140,7 @@ struct ButtonStateSample {
 
 impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.button_template() }
+        Self { theme: theme.clone(), template: gpui_luma::controls::prototypes::mod_button::default_button_template() }
     }
 }
 
@@ -216,7 +214,7 @@ impl Render for ButtonStatePreview {
 }
 
 fn render_state_row(
-    template: &Arc<dyn ButtonTemplate>,
+    template: &Arc<dyn ButtonTemplate<()>>,
     row_label: &'static str,
     kind: ButtonKind,
     samples: &[ButtonStateSample],
@@ -237,7 +235,7 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn ButtonTemplate>,
+    template: &Arc<dyn ButtonTemplate<()>>,
     kind: ButtonKind,
     sample: &ButtonStateSample,
     label_color: gpui::Hsla,
@@ -246,7 +244,17 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{:?}-{}", kind, sample.id));
     let label = SharedString::from("Button");
-    let model = ButtonRenderModel { id, label, kind, size: ButtonSize::Md, state: sample.state, radius: None };
+    let content: gpui_luma::controls::prototypes::mod_button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let model = ButtonRenderModel {
+        id,
+        data: (),
+        content,
+        kind,
+        size: ButtonSize::Md,
+        state: sample.state,
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+    };
 
     div()
         .flex()

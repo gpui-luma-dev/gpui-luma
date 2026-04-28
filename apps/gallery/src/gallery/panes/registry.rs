@@ -34,7 +34,7 @@ enum GalleryPageKind {
     ThemeUsage,
     Button,
     DecoratedButton,
-    ModButton,
+    CustomButton,
     IconButton,
     Toggle,
     ToggleGroup,
@@ -137,8 +137,8 @@ const PROGRESS_PAGE: GalleryPage =
     GalleryPage { id: "progress", label: "Progress", icon: None, kind: GalleryPageKind::Progress };
 const DECORATED_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "decorated-button", label: "Decorated Button", icon: None, kind: GalleryPageKind::DecoratedButton };
-const MOD_BUTTON_PAGE: GalleryPage =
-    GalleryPage { id: "mod-button", label: "ModButton", icon: None, kind: GalleryPageKind::ModButton };
+const CUSTOM_BUTTON_PAGE: GalleryPage =
+    GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
     id: "settings",
     label: "Settings",
@@ -148,13 +148,13 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
-const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE];
+const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[TOGGLE_PAGE, SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, MOD_BUTTON_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -205,8 +205,8 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
     pub(super) introduction: introduction::IntroductionPane,
-    pub(super) decorated_button: prototypes::ProtoButtonPane,
-    pub(super) mod_button: prototypes::ModButtonPane,
+    pub(super) decorated_button: prototypes::ButtonPane,
+    pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle: toggle::TogglePane,
@@ -271,8 +271,8 @@ impl GalleryPanes {
         Self {
             theme: theme.clone(),
             introduction: introduction::IntroductionPane::new(cx, theme),
-            decorated_button: prototypes::ProtoButtonPane::new(cx, theme),
-            mod_button: prototypes::ModButtonPane::new(cx, theme),
+            decorated_button: prototypes::ButtonPane::new(cx, theme),
+            custom_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
             toggle: toggle::TogglePane::new(cx, theme),
@@ -296,7 +296,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
-        self.mod_button.subscribe(cx, subscriptions);
+        self.custom_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
         self.toggle.subscribe(cx, subscriptions);
@@ -318,7 +318,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.introduction.notify_controls(cx);
         self.decorated_button.notify_controls(cx);
-        self.mod_button.notify_controls(cx);
+        self.custom_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
         self.toggle.notify_controls(cx);
@@ -351,7 +351,7 @@ impl GalleryPanes {
             GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
             GalleryPageKind::Button => self.button.render(&self.theme),
-            GalleryPageKind::ModButton => self.mod_button.render(&self.theme),
+            GalleryPageKind::CustomButton => self.custom_button.render(&self.theme),
             GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
             GalleryPageKind::Toggle => self.toggle.render(&self.theme),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),

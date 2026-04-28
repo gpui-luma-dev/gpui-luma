@@ -168,19 +168,19 @@ impl ModButtonPane {
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.basic_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.mod_button.handle_basic_event(event, cx);
+            app.panes.custom_button.handle_basic_event(event, cx);
         }));
 
         subscriptions.push(cx.subscribe(&self.modified_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.mod_button.handle_modified_event(event, cx);
+            app.panes.custom_button.handle_modified_event(event, cx);
         }));
 
         subscriptions.push(cx.subscribe(&self.custom_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.mod_button.handle_custom_event(event, cx);
+            app.panes.custom_button.handle_custom_event(event, cx);
         }));
 
         subscriptions.push(cx.subscribe(&self.reactive_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.mod_button.handle_reactive_event(event, cx);
+            app.panes.custom_button.handle_reactive_event(event, cx);
         }));
     }
 
@@ -188,8 +188,8 @@ impl ModButtonPane {
         let chrome = theme.chrome();
 
         gallery_pane_with_description(
-            "Button (Unification Prototype)",
-            Some("Prototype: Unified Button architecture using static factories and presenter closures."),
+            "Command (Customized)",
+            Some("Advanced: Unified Button architecture using custom templates, modifiers, and reactive presenters."),
             div()
                 .w_full()
                 .flex()
@@ -310,7 +310,22 @@ impl ModButtonPane {
                 let label = format!("Customized {}", self.custom_clicks);
 
                 self.custom_button.update(cx, |button, cx| {
-                    button.set_label(label, cx);
+                    button.set_content(Arc::new(move |model, _| {
+                        let color = if model.state.hovered { rgb(0x4f46e5) } else { rgb(0x3730a3) };
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(8.0))
+                            .child(
+                                div()
+                                    .font_family("lucide")
+                                    .text_size(px(16.0))
+                                    .child(char::from(LucideIcon::Check).to_string()),
+                            )
+                            .child(label.clone())
+                            .text_color(color)
+                            .into_any_element()
+                    }), cx);
                 });
             }
         }

@@ -62,6 +62,11 @@ impl<D: Clone + 'static> Button<D> {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: Arc<dyn super::template::ButtonTemplate<D>>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_data(&mut self, data: D, cx: &mut Context<Self>) {
         self.model.data = data;
         cx.notify();
