@@ -1,6 +1,8 @@
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::prototypes::mod_button::{Button as ModButton, ButtonEvent as ModButtonEvent};
+use gpui_luma::controls::content_presenter::HasContent;
+// Checkbox was migrated to Button<bool>
 use gpui_luma::controls::command::icon_button::{IconButton, IconButtonEvent, IconButtonKind};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
@@ -37,10 +39,10 @@ pub(in crate::gallery) struct IntroductionPane {
     email_field: Entity<TextField>,
     card_field: Entity<TextField>,
 
-    same_as_shipping_checkbox: Entity<Checkbox>,
-    terms_checkbox: Entity<Checkbox>,
-    social_checkbox: Entity<Checkbox>,
-    referral_checkbox: Entity<Checkbox>,
+    same_as_shipping_checkbox: Entity<ModButton<bool>>,
+    terms_checkbox: Entity<ModButton<bool>>,
+    social_checkbox: Entity<ModButton<bool>>,
+    referral_checkbox: Entity<ModButton<bool>>,
 
     two_factor_switch: Entity<Switch>,
     budget_slider: Entity<Slider>,
@@ -89,7 +91,8 @@ enum IntroField {
 }
 
 impl IntroductionPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+        let checkbox_template = theme.checkbox_template();
         Self {
             submit_button: Button::new("intro-submit").label("Submit").kind(ButtonKind::Prominent).spawn(cx),
             cancel_button: Button::new("intro-cancel").label("Cancel").spawn(cx),
@@ -128,13 +131,26 @@ impl IntroductionPane {
                 .clean_on_escape(true)
                 .spawn(cx),
 
-            same_as_shipping_checkbox: Checkbox::new("intro-same-as-shipping")
-                .label("Same as shipping address")
-                .checked(true)
+            same_as_shipping_checkbox: ModButton::new("intro-same-as-shipping")
+                .data(true)
+                .content(|_, _| div().child("Same as shipping address").into_any_element())
+                .template(checkbox_template.clone())
                 .spawn(cx),
-            terms_checkbox: Checkbox::new("intro-terms").label("I agree to the terms and conditions").spawn(cx),
-            social_checkbox: Checkbox::new("intro-social-source").label("Social").checked(true).spawn(cx),
-            referral_checkbox: Checkbox::new("intro-referral-source").label("Referral").spawn(cx),
+            terms_checkbox: ModButton::new("intro-terms")
+                .data(false)
+                .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
+                .template(checkbox_template.clone())
+                .spawn(cx),
+            social_checkbox: ModButton::new("intro-social-source")
+                .data(true)
+                .content(|_, _| div().child("Social").into_any_element())
+                .template(checkbox_template.clone())
+                .spawn(cx),
+            referral_checkbox: ModButton::new("intro-referral-source")
+                .data(false)
+                .content(|_, _| div().child("Referral").into_any_element())
+                .template(checkbox_template)
+                .spawn(cx),
 
             two_factor_switch: Switch::new("intro-two-factor").label("Two-factor authentication").spawn(cx),
             budget_slider: Slider::new("intro-budget").range(0..100).step(5).value(40).spawn(cx),
@@ -201,16 +217,16 @@ impl IntroductionPane {
             app.panes.introduction.handle_textfield_event(IntroField::Card, event, cx);
         }));
 
-        subscriptions.push(cx.subscribe(&self.same_as_shipping_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.same_as_shipping_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.introduction.handle_same_as_shipping_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.terms_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.terms_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.introduction.handle_terms_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.social_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.social_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.introduction.handle_social_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.referral_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.referral_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.introduction.handle_referral_event(event, cx);
         }));
 
@@ -536,33 +552,33 @@ impl IntroductionPane {
         cx.notify();
     }
 
-    fn handle_same_as_shipping_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
-        let CheckboxEvent::Change { checked } = event;
-        self.same_as_shipping = *checked;
+    fn handle_same_as_shipping_event(&mut self, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.same_as_shipping = !self.same_as_shipping;
+        self.same_as_shipping_checkbox.update(cx, |b, cx| b.set_data(self.same_as_shipping, cx));
         self.last_event = SharedString::from("Checkbox::SameAsShipping");
         self.recompute_completion(cx);
         cx.notify();
     }
 
-    fn handle_terms_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
-        let CheckboxEvent::Change { checked } = event;
-        self.accepted_terms = *checked;
+    fn handle_terms_event(&mut self, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.accepted_terms = !self.accepted_terms;
+        self.terms_checkbox.update(cx, |b, cx| b.set_data(self.accepted_terms, cx));
         self.last_event = SharedString::from("Checkbox::Terms");
         self.recompute_completion(cx);
         cx.notify();
     }
 
-    fn handle_social_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
-        let CheckboxEvent::Change { checked } = event;
-        self.social_source = *checked;
+    fn handle_social_event(&mut self, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.social_source = !self.social_source;
+        self.social_checkbox.update(cx, |b, cx| b.set_data(self.social_source, cx));
         self.last_event = SharedString::from("Checkbox::Social");
         self.recompute_completion(cx);
         cx.notify();
     }
 
-    fn handle_referral_event(&mut self, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
-        let CheckboxEvent::Change { checked } = event;
-        self.referral_source = *checked;
+    fn handle_referral_event(&mut self, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
+        self.referral_source = !self.referral_source;
+        self.referral_checkbox.update(cx, |b, cx| b.set_data(self.referral_source, cx));
         self.last_event = SharedString::from("Checkbox::Referral");
         self.recompute_completion(cx);
         cx.notify();

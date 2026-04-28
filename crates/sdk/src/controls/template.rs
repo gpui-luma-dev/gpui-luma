@@ -40,7 +40,6 @@ impl<T: ?Sized, M> ControlTemplate<T, M> {
 impl<T: ?Sized, M> TemplateWithModifiers<M> for ControlTemplate<T, M>
 where
     T: Send + Sync,
-    M: Send + Sync,
 {
     fn modifiers(&self) -> &[Modifier<M>] {
         &self.modifiers
@@ -55,7 +54,7 @@ where
 /// ```
 #[macro_export]
 macro_rules! define_control_template {
-    ($name:ident, $theme:ty, $model:ty, $trait:ident, $default_theme:expr) => {
+    ($name:ident, $theme:ty, $model:ty, $trait:path, $default_theme:expr) => {
         pub type $name = $crate::controls::template::ControlTemplate<$theme, $model>;
 
         pub fn default_template() -> std::sync::Arc<dyn $trait> {

@@ -5,7 +5,9 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent};
+use gpui_luma::controls::prototypes::mod_button::{Button as ModButton, ButtonEvent as ModButtonEvent};
+use gpui_luma::controls::content_presenter::HasContent;
+// Checkbox was migrated to Button<bool>
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
@@ -24,9 +26,9 @@ pub(in crate::gallery) struct TextAreaPane {
     state_preview: Entity<TextAreaStatePreview>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
-    enabled_checkbox: Entity<Checkbox>,
-    clean_on_escape_checkbox: Entity<Checkbox>,
-    validation_checkbox: Entity<Checkbox>,
+    enabled_checkbox: Entity<ModButton<bool>>,
+    clean_on_escape_checkbox: Entity<ModButton<bool>>,
+    validation_checkbox: Entity<ModButton<bool>>,
     enabled: bool,
     clean_on_escape: bool,
     strict_validation: bool,
@@ -57,18 +59,19 @@ impl TextAreaPane {
             state_preview: cx.new(|_| TextAreaStatePreview::new(theme, textarea_template.clone())),
             set_sample_button: action_button("textarea-set-sample", "Set Sample", &button_template, cx),
             clear_button: action_button("textarea-clear", "Clear", &button_template, cx),
-            enabled_checkbox: Checkbox::new("textarea-enabled")
-                .label("Enabled")
-                .checked(true)
+            enabled_checkbox: ModButton::new("textarea-enabled")
+                .data(true)
+                .content(|_, _| div().child("Enabled").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            clean_on_escape_checkbox: Checkbox::new("textarea-clean-on-escape")
-                .label("Escape clears")
-                .checked(true)
+            clean_on_escape_checkbox: ModButton::new("textarea-clean-on-escape")
+                .data(true)
+                .content(|_, _| div().child("Escape clears").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            validation_checkbox: Checkbox::new("textarea-validation")
-                .label("Strict validation")
+            validation_checkbox: ModButton::new("textarea-validation")
+                .data(false)
+                .content(|_, _| div().child("Strict validation").into_any_element())
                 .template(checkbox_template)
                 .spawn(cx),
             enabled: true,
@@ -93,13 +96,13 @@ impl TextAreaPane {
         subscriptions.push(cx.subscribe(&self.clear_button, |app, _, _: &ButtonEvent, cx| {
             app.panes.textarea.clear_value(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.enabled_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::Enabled, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.clean_on_escape_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::CleanOnEscape, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &CheckboxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.validation_checkbox, |app, _, event: &ModButtonEvent, cx| {
             app.panes.textarea.handle_option_changed(TextAreaOption::StrictValidation, event, cx);
         }));
     }
@@ -228,13 +231,24 @@ impl TextAreaPane {
         cx.notify();
     }
 
-    fn handle_option_changed(&mut self, option: TextAreaOption, event: &CheckboxEvent, cx: &mut Context<GalleryApp>) {
-        let CheckboxEvent::Change { checked } = event;
+    fn handle_option_changed(&mut self, option: TextAreaOption, _event: &ModButtonEvent, cx: &mut Context<GalleryApp>) {
         match option {
-            TextAreaOption::Enabled => self.enabled = *checked,
-            TextAreaOption::CleanOnEscape => self.clean_on_escape = *checked,
-            TextAreaOption::StrictValidation => self.strict_validation = *checked,
-        }
+                TextAreaOption::Enabled => {
+                    self.enabled = !self.enabled;
+                    self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
+                    self.enabled
+                }
+                TextAreaOption::CleanOnEscape => {
+                    self.clean_on_escape = !self.clean_on_escape;
+                    self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
+                    self.clean_on_escape
+                }
+                TextAreaOption::StrictValidation => {
+                    self.strict_validation = !self.strict_validation;
+                    self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
+                    self.strict_validation
+                }
+        };
         self.sync_text_area_settings(cx);
         cx.notify();
     }

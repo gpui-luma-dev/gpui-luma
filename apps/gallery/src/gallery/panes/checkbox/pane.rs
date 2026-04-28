@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::{Checkbox, CheckboxEvent, CheckboxRenderModel, CheckboxTemplate};
+use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::content_presenter::HasContent;
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
@@ -11,43 +13,27 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
-    default_checkbox: Entity<Checkbox>,
-    border_checkbox: Entity<Checkbox>,
+    default_checkbox: Entity<Button<bool>>,
     state_preview: Entity<CheckboxStatePreview>,
     default_checked: bool,
-    border_checked: bool,
-}
-
-#[derive(Clone, Copy)]
-enum CheckboxPresentation {
-    Default,
-    Border,
 }
 
 impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_checkbox: Checkbox::new("checkbox-default")
-                .label("As-is")
-                .checked(true)
+            default_checkbox: Button::new("checkbox-default")
+                .data(true)
+                .content(|_, _| div().child("As-is").into_any_element())
                 .template(theme.checkbox_template())
-                .spawn(cx),
-            border_checkbox: Checkbox::new("checkbox-border")
-                .label("Border")
-                .template(theme.border_checkbox_template())
                 .spawn(cx),
             state_preview: cx.new(|_| CheckboxStatePreview::new(theme)),
             default_checked: true,
-            border_checked: false,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.default_checkbox, |app, _, event: &CheckboxEvent, cx| {
-            app.panes.checkbox.handle_event(CheckboxPresentation::Default, event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.border_checkbox, |app, _, event: &CheckboxEvent, cx| {
-            app.panes.checkbox.handle_event(CheckboxPresentation::Border, event, cx);
+        subscriptions.push(cx.subscribe(&self.default_checkbox, |app, _, event: &ButtonEvent, cx| {
+            app.panes.checkbox.handle_event(event, cx);
         }));
     }
 
@@ -68,14 +54,13 @@ impl CheckboxPane {
                         .items_center()
                         .gap_3()
                         .child(self.default_checkbox.clone())
-                        .child(self.border_checkbox.clone()),
                 )
                 .child(
                     div()
                         .text_size(px(12.0))
                         .line_height(px(16.0))
                         .text_color(chrome.body_text)
-                        .child(format!("Checked: as-is={}, border={}", self.default_checked, self.border_checked)),
+                        .child(format!("Checked: as-is={}", self.default_checked)),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
@@ -85,26 +70,21 @@ impl CheckboxPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_checkbox, cx);
-        notify_entity(&self.border_checkbox, cx);
         notify_entity(&self.state_preview, cx);
     }
 
     fn handle_event(
         &mut self,
-        presentation: CheckboxPresentation,
-        event: &CheckboxEvent,
+        event: &ButtonEvent,
         cx: &mut Context<GalleryApp>,
     ) {
         match event {
-            CheckboxEvent::Change { checked } => {
-                match presentation {
-                    CheckboxPresentation::Default => {
-                        self.default_checked = *checked;
-                    }
-                    CheckboxPresentation::Border => {
-                        self.border_checked = *checked;
-                    }
-                }
+            ButtonEvent::Click => {
+                self.default_checkbox.update(cx, |button, cx| {
+                    let new_checked = !*button.data();
+                    button.set_data(new_checked, cx);
+                    self.default_checked = new_checked;
+                });
                 cx.notify();
             }
         }
@@ -114,8 +94,7 @@ impl CheckboxPane {
 #[derive(Clone)]
 struct CheckboxStatePreview {
     theme: GalleryThemePack,
-    default_template: Arc<dyn CheckboxTemplate>,
-    border_template: Arc<dyn CheckboxTemplate>,
+    default_template: Arc<dyn ButtonTemplate<bool>>,
 }
 
 struct CheckboxStateSample {
@@ -129,7 +108,6 @@ impl CheckboxStatePreview {
         Self {
             theme: theme.clone(),
             default_template: theme.checkbox_template(),
-            border_template: theme.border_checkbox_template(),
         }
     }
 }
@@ -183,20 +161,11 @@ impl Render for CheckboxStatePreview {
                 window,
                 cx,
             ))
-            .child(render_presentation(
-                &self.border_template,
-                "border",
-                "Border",
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
     }
 }
 
 fn render_presentation(
-    template: &Arc<dyn CheckboxTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     presentation_id: &'static str,
     presentation_label: &'static str,
     samples: &[CheckboxStateSample],
@@ -223,7 +192,7 @@ fn render_presentation(
 }
 
 fn render_state_row(
-    template: &Arc<dyn CheckboxTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     presentation_id: &'static str,
     row_label: &'static str,
     checked: bool,
@@ -247,7 +216,7 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn CheckboxTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     presentation_id: &'static str,
     checked: bool,
     sample: &CheckboxStateSample,
@@ -257,8 +226,16 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", presentation_id, checked, sample.id));
     let label = SharedString::from("Checkbox");
-    let model =
-        CheckboxRenderModel { id, label, checked, enabled: !sample.state.disabled, state: sample.state };
+    let model = ButtonRenderModel {
+        id,
+        data: checked,
+        content: Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
+        kind: ButtonKind::Standard,
+        size: ButtonSize::Md,
+        state: sample.state,
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+    };
 
     div()
         .flex()

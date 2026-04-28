@@ -25,7 +25,5 @@ pub mod template;
 pub(crate) mod text;
 pub mod textarea;
 pub mod textfield;
-pub mod toggle;
-pub mod toggle_button;
 pub mod toggle_group;
 pub mod value;

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::toggle::{Toggle, ToggleEvent, ToggleKind, ToggleRenderModel, ToggleSize, ToggleTemplate};
+use gpui_luma::controls::prototypes::mod_button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
@@ -11,7 +12,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TogglePane {
-    toggle: Entity<Toggle>,
+    toggle: Entity<Button<bool>>,
     state_preview: Entity<ToggleStatePreview>,
     selected: bool,
 }
@@ -19,9 +20,9 @@ pub(in crate::gallery) struct TogglePane {
 impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            toggle: Toggle::new("toggle-example")
-                .label("Toggle")
-                .selected(true)
+            toggle: Button::new("toggle-example")
+                .data(true)
+                .content(|_, _| div().child("Toggle").into_any_element())
                 .template(theme.toggle_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ToggleStatePreview::new(theme)),
@@ -30,7 +31,7 @@ impl TogglePane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.toggle, |app, _, event: &ToggleEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.toggle, |app, _, event: &ButtonEvent, cx| {
             app.panes.toggle.handle_toggle_event(event, cx);
         }));
     }
@@ -65,10 +66,14 @@ impl TogglePane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_toggle_event(&mut self, event: &ToggleEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ToggleEvent::Change { selected } => {
-                self.selected = *selected;
+            ButtonEvent::Click => {
+                self.toggle.update(cx, |button, cx| {
+                    let new_selected = !*button.data();
+                    button.set_data(new_selected, cx);
+                    self.selected = new_selected;
+                });
                 cx.notify();
             }
         }
@@ -78,7 +83,7 @@ impl TogglePane {
 #[derive(Clone)]
 struct ToggleStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn ToggleTemplate>,
+    template: Arc<dyn ButtonTemplate<bool>>,
 }
 
 struct ToggleStateSample {
@@ -139,7 +144,7 @@ impl Render for ToggleStatePreview {
 }
 
 fn render_state_row(
-    template: &Arc<dyn ToggleTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     row_label: &'static str,
     selected: bool,
     samples: &[ToggleStateSample],
@@ -164,7 +169,7 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn ToggleTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     selected: bool,
     sample: &ToggleStateSample,
     label_color: gpui::Hsla,
@@ -173,14 +178,15 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("toggle-preview-{}-{}", selected, sample.id));
     let label = SharedString::from("Toggle");
-    let model = ToggleRenderModel {
+    let model = ButtonRenderModel {
         id,
-        label,
-        kind: ToggleKind::Standard,
-        size: ToggleSize::Md,
-        enabled: !sample.state.disabled,
-        selected,
+        data: selected,
+        content: Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
+        kind: ButtonKind::Standard,
+        size: ButtonSize::Md,
         state: sample.state,
+        round: false,
+        radius_override: std::cell::Cell::new(None),
     };
 
     div()

@@ -3,27 +3,23 @@
 use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
-use super::CheckboxRenderModel;
+use crate::controls::prototypes::mod_button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 
-pub trait CheckboxTemplate: Send + Sync {
-    fn render(&self, model: &CheckboxRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
-}
-
 define_control_template!(
     ThemedCheckboxTemplate,
     dyn CheckboxTheme,
-    CheckboxRenderModel,
-    CheckboxTemplate,
+    ButtonRenderModel<bool>,
+    ButtonTemplate<bool>,
     default_checkbox_theme()
 );
 
-impl CheckboxTemplate for ThemedCheckboxTemplate {
-    fn render(&self, model: &CheckboxRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.checked, model.state);
+impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
+    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let appearance = self.theme.resolve(model.data, model.state);
         let indicator = div()
             .flex()
             .items_center()
@@ -33,7 +29,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             .border_1()
             .border_color(appearance.indicator_border)
             .rounded(px(appearance.indicator_radius))
-            .child(render_checkmark(model.checked, appearance.checkmark_size, appearance.checkmark_color));
+            .child(render_checkmark(model.data, appearance.checkmark_size, appearance.checkmark_color));
         let indicator = render_checkbox_focus_ring(indicator, appearance.focus_ring, appearance.indicator_radius);
 
         let mut root = div()
@@ -52,7 +48,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             .rounded(px(appearance.control_radius))
             .cursor_pointer()
             .child(indicator)
-            .child(model.label.clone());
+            .child((model.content)(model, cx));
 
         if let Some(background) = appearance.control_background {
             root = root.bg(background);
@@ -62,7 +58,7 @@ impl CheckboxTemplate for ThemedCheckboxTemplate {
             root = root.border_1().border_color(border);
         }
 
-        if !model.enabled {
+        if model.state.disabled {
             root = root.opacity(0.56);
         }
 

@@ -5,7 +5,7 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
-use gpui_luma::controls::toggle::{Toggle, ToggleRenderModel, ToggleTemplate};
+use gpui_luma::controls::prototypes::mod_button::{Button, ButtonRenderModel, ButtonTemplate, HasContent};
 use gpui_luma::theme::NavigationSidebarTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -72,13 +72,13 @@ pub(in crate::gallery) struct GalleryNavigation {
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryRouteButton {
     pub(in crate::gallery) page_id: &'static str,
-    pub(in crate::gallery) button: Entity<Toggle>,
+    pub(in crate::gallery) button: Entity<Button<bool>>,
 }
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryBranchButton {
     pub(in crate::gallery) node_id: &'static str,
-    pub(in crate::gallery) button: Entity<Toggle>,
+    pub(in crate::gallery) button: Entity<Button<bool>>,
 }
 
 const INTRODUCTION_PAGE: GalleryPage = GalleryPage {
@@ -245,9 +245,10 @@ impl GalleryPanes {
         ));
 
         nodes.extend(CONTROL_GROUPS.iter().map(|group| {
-            let button = Toggle::new(format!("{}-branch", group.id))
-                .label(group.label)
-                .selected(group.expanded)
+            let label = group.label;
+            let button = Button::new(format!("{}-branch", group.id))
+                .data(group.expanded)
+                .content(move |_, _| div().child(label).into_any_element())
                 .template(sidebar_disclosure_template(group.icon, theme))
                 .spawn(cx);
             let focus_handle = focus_handle_for(&button, cx);
@@ -389,9 +390,10 @@ fn nav_node_for_page(
     theme: &GalleryThemePack,
 ) -> NavNode {
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
-    let button = Toggle::new(page.id)
-        .label(page.label)
-        .selected(page.id == INTRODUCTION_PAGE.id)
+    let label = page.label;
+    let button = Button::new(page.id)
+        .data(page.id == INTRODUCTION_PAGE.id)
+        .content(move |_, _| div().child(label).into_any_element())
         .template(sidebar_leaf_template(page.icon, reserve_icon_space, theme))
         .spawn(cx);
     let focus_handle = focus_handle_for(&button, cx);
@@ -440,10 +442,10 @@ struct SidebarDisclosureTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
 }
 
-impl ToggleTemplate for SidebarDisclosureTemplate {
-    fn render(&self, model: &ToggleRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
+    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve_branch(model.state, model.size);
-        let disclosure_icon = if model.selected {
+        let disclosure_icon = if model.data {
             LucideIcon::ChevronDown
         } else {
             LucideIcon::ChevronRight
@@ -462,14 +464,14 @@ impl ToggleTemplate for SidebarDisclosureTemplate {
             .text_color(appearance.foreground)
             .font_weight(appearance.typography.weight)
             .child(render_lucide_icon(self.icon, appearance.icon_color, appearance.icon_size))
-            .child(div().flex_1().child(model.label.clone()))
+            .child(div().flex_1().child((model.content)(model, cx)))
             .child(render_lucide_icon(disclosure_icon, appearance.icon_color, appearance.icon_size));
 
         if let Some(background) = appearance.background {
             root = root.bg(background);
         }
 
-        if model.enabled {
+        if !model.state.disabled {
             root = root.cursor_pointer();
         } else {
             root = root.opacity(0.56);
@@ -483,7 +485,7 @@ impl ToggleTemplate for SidebarDisclosureTemplate {
     }
 }
 
-fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ToggleTemplate> {
+fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(SidebarDisclosureTemplate { icon, theme: theme.navigation_sidebar_theme() })
 }
 
@@ -493,9 +495,9 @@ struct SidebarLeafTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
 }
 
-impl ToggleTemplate for SidebarLeafTemplate {
-    fn render(&self, model: &ToggleRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve_item(model.selected, model.state, model.size);
+impl ButtonTemplate<bool> for SidebarLeafTemplate {
+    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let appearance = self.theme.resolve_item(model.data, model.state, model.size);
         let padding_left = if self.reserve_icon_space {
             appearance.padding_x + appearance.icon_size + appearance.gap
         } else {
@@ -524,13 +526,13 @@ impl ToggleTemplate for SidebarLeafTemplate {
                 Some(icon) => render_lucide_icon(icon, appearance.icon_color, appearance.icon_size),
                 None => div().size(px(placeholder_size)).into_any_element(),
             })
-            .child(div().flex_1().child(model.label.clone()));
+            .child(div().flex_1().child((model.content)(model, cx)));
 
         if let Some(background) = appearance.background {
             row = row.bg(background);
         }
 
-        if model.enabled {
+        if !model.state.disabled {
             row = row.cursor_pointer();
         } else {
             row = row.opacity(0.56);
@@ -548,7 +550,7 @@ fn sidebar_leaf_template(
     icon: Option<LucideIcon>,
     reserve_icon_space: bool,
     theme: &GalleryThemePack,
-) -> Arc<dyn ToggleTemplate> {
+) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.navigation_sidebar_theme() })
 }
 

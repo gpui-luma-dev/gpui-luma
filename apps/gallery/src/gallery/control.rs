@@ -1,7 +1,7 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
-use gpui_luma::controls::toggle::ToggleEvent;
+use gpui_luma::controls::prototypes::mod_button::ButtonEvent;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
 use super::theme::GalleryThemePack;
@@ -65,17 +65,15 @@ impl GalleryApp {
         ];
         for route_button in route_buttons.iter().cloned() {
             let page_id = route_button.page_id.to_string();
-            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, event: &ToggleEvent, cx| {
-                let ToggleEvent::Change { .. } = event;
+            subscriptions.push(cx.subscribe(&route_button.button, move |this, _, _: &ButtonEvent, cx| {
                 this.set_nav_selection(&page_id, cx);
             }));
         }
         for branch_button in branch_buttons {
             let node_id = branch_button.node_id.to_string();
-            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, event: &ToggleEvent, cx| {
-                let ToggleEvent::Change { selected } = event;
+            subscriptions.push(cx.subscribe(&branch_button.button, move |this, _, _: &ButtonEvent, cx| {
                 this.navigation_sidebar.update(cx, |sidebar, cx| {
-                    sidebar.set_node_expanded(node_id.clone(), *selected, cx);
+                    sidebar.toggle_node_expanded(node_id.clone(), cx);
                 });
             }));
         }
@@ -137,8 +135,8 @@ impl GalleryApp {
         for route_button in &self.nav_route_buttons {
             let selected = route_button.page_id == page_id;
             route_button.button.update(cx, |button, cx| {
-                if button.selected() != selected {
-                    button.set_selected(selected, cx);
+                if *button.data() != selected {
+                    button.set_data(selected, cx);
                 }
             });
         }

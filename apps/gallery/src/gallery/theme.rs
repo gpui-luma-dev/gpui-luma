@@ -3,10 +3,11 @@ use std::sync::{
     atomic::{AtomicU8, Ordering},
 };
 
-use gpui::{Hsla, rgb};
+use gpui::{Hsla, Styled};
 use gpui_luma::controls::{
-    checkbox::{CheckboxTemplate, ThemedCheckboxTemplate},
+    checkbox::ThemedCheckboxTemplate,
     command::button::{ButtonTemplate, ThemedButtonTemplate},
+    prototypes::mod_button::{ButtonTemplate as ModButtonTemplate, DefaultButtonTemplate},
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
@@ -17,7 +18,6 @@ use gpui_luma::controls::{
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
     textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
-    toggle::{ThemedToggleTemplate, ToggleTemplate},
     toggle_group::{ThemedToggleGroupTemplate, ToggleGroupTemplate},
 };
 use gpui_luma::theme::{
@@ -142,23 +142,35 @@ impl GalleryThemePack {
         Arc::new(ThemedButtonTemplate::new(self.button_family_theme.clone()))
     }
 
-    pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ToggleTemplate> {
-        Arc::new(ThemedToggleTemplate::new(self.button_family_theme.clone()))
+    pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ModButtonTemplate<bool>> {
+        let button_family_theme = self.button_family_theme.clone();
+        Arc::new(
+            DefaultButtonTemplate::new(self.button_family_theme.clone()).with_modifier(move |element, model| {
+                let variant = match model.kind {
+                    gpui_luma::controls::button_family::ButtonKind::Standard => ButtonVariant::Standard,
+                    gpui_luma::controls::button_family::ButtonKind::Ghost => ButtonVariant::Ghost,
+                    gpui_luma::controls::button_family::ButtonKind::Prominent => ButtonVariant::Prominent,
+                };
+                let appearance = button_family_theme.resolve(
+                    variant,
+                    ButtonFamilyRole::Toggle { selected: model.data },
+                    model.size,
+                    model.state,
+                );
+                element
+                    .bg(appearance.background)
+                    .text_color(appearance.foreground)
+                    .border_color(appearance.border)
+            }),
+        )
     }
 
     pub(in crate::gallery) fn toggle_group_template(&self) -> Arc<dyn ToggleGroupTemplate> {
         Arc::new(ThemedToggleGroupTemplate::new(self.toggle_group_theme.clone()))
     }
 
-    pub(in crate::gallery) fn checkbox_template(&self) -> Arc<dyn CheckboxTemplate> {
+    pub(in crate::gallery) fn checkbox_template(&self) -> Arc<dyn ModButtonTemplate<bool>> {
         Arc::new(ThemedCheckboxTemplate::new(self.checkbox_theme.clone()))
-    }
-
-    pub(in crate::gallery) fn border_checkbox_template(&self) -> Arc<dyn CheckboxTemplate> {
-        Arc::new(ThemedCheckboxTemplate::new(Arc::new(GalleryCheckboxPresentationTheme {
-            state: self.state.clone(),
-            presentation: CheckboxPresentation::Border,
-        })))
     }
 
     pub(in crate::gallery) fn switch_template(&self) -> Arc<dyn SwitchTemplate> {
@@ -264,38 +276,6 @@ struct GalleryCheckboxTheme {
 impl CheckboxTheme for GalleryCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
         DefaultCheckboxTheme::new(self.state.tokens()).resolve(checked, state)
-    }
-}
-
-enum CheckboxPresentation {
-    Border,
-}
-
-struct GalleryCheckboxPresentationTheme {
-    state: Arc<GalleryThemeState>,
-    presentation: CheckboxPresentation,
-}
-
-impl CheckboxTheme for GalleryCheckboxPresentationTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
-        let mut appearance = DefaultCheckboxTheme::new(self.state.tokens()).resolve(checked, state);
-
-        if !state.disabled {
-            let mode = u8_to_mode(self.state.mode.load(Ordering::Relaxed));
-            match (mode, &self.presentation) {
-                (ThemeMode::Light, CheckboxPresentation::Border) => {
-                    appearance.control_border = Some(rgb(0x2563eb).into());
-                }
-                (ThemeMode::Dark, CheckboxPresentation::Border) => {
-                    appearance.control_border = Some(rgb(0x60a5fa).into());
-                }
-            }
-
-            appearance.control_padding_x = 10.0;
-            appearance.control_padding_y = 6.0;
-        }
-
-        appearance
     }
 }
 
