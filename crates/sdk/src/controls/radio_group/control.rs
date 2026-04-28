@@ -15,7 +15,7 @@ pub enum RadioGroupEvent {
     Change { selected_id: Option<SharedString>, label: Option<SharedString> },
 }
 
-pub struct RadioGroup {
+pub struct RadioGroupControl {
     model: RadioGroupModel,
     focus_handle: gpui::FocusHandle,
     hovered_item: Option<usize>,
@@ -23,9 +23,9 @@ pub struct RadioGroup {
     active_item: Option<usize>,
 }
 
-impl EventEmitter<RadioGroupEvent> for RadioGroup {}
+impl EventEmitter<RadioGroupEvent> for RadioGroupControl {}
 
-impl RadioGroup {
+impl RadioGroupControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> RadioGroupBuilder {
         RadioGroupBuilder::new(id)
@@ -354,13 +354,13 @@ enum RadioGroupDirection {
     Next,
 }
 
-impl Focusable for RadioGroup {
+impl Focusable for RadioGroupControl {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl Render for RadioGroup {
+impl Render for RadioGroupControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

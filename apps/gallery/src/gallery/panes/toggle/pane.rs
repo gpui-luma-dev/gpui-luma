@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::command::button::{
+    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, ControlContent, HasContent,
+};
 use gpui_luma::controls::toggle::Toggle;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
+use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -14,8 +17,10 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct TogglePane {
     toggle: Entity<Button<bool>>,
+    round_icon_toggle: Entity<Button<bool>>,
     state_preview: Entity<ToggleStatePreview>,
     selected: bool,
+    round_icon_selected: bool,
 }
 
 impl TogglePane {
@@ -26,14 +31,31 @@ impl TogglePane {
                 .content(|_, _| div().child("Toggle").into_any_element())
                 .template(theme.toggle_template())
                 .spawn(cx),
+            round_icon_toggle: Toggle::new("toggle-round-icon-example")
+                .data(false)
+                .round(true)
+                .content(|_, _| {
+                    div()
+                        .font_family("lucide")
+                        .text_size(px(16.0))
+                        .line_height(px(16.0))
+                        .child(char::from(LucideIcon::Plus).to_string())
+                        .into_any_element()
+                })
+                .template(theme.toggle_template())
+                .spawn(cx),
             state_preview: cx.new(|_| ToggleStatePreview::new(theme)),
             selected: true,
+            round_icon_selected: false,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.toggle, |app, _, event: &ButtonEvent, cx| {
             app.panes.toggle.handle_toggle_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
+            app.panes.toggle.handle_round_icon_toggle_event(event, cx);
         }));
     }
 
@@ -48,13 +70,23 @@ impl TogglePane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(div().flex().items_center().gap(px(12.0)).child(self.toggle.clone()))
                 .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.body_text)
-                        .child(format!("Selected: {}", self.selected)),
+                    div().flex().items_center().gap(px(12.0)).child(self.toggle.clone()).child(
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .text_color(chrome.body_text)
+                            .child(format!("Selected: {}", self.selected)),
+                    ),
+                )
+                .child(
+                    div().flex().items_center().gap(px(12.0)).child(self.round_icon_toggle.clone()).child(
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .text_color(chrome.body_text)
+                            .child(format!("Round icon selected: {}", self.round_icon_selected)),
+                    ),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
@@ -64,6 +96,7 @@ impl TogglePane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.toggle, cx);
+        notify_entity(&self.round_icon_toggle, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -74,6 +107,20 @@ impl TogglePane {
                     let new_selected = !*button.data();
                     button.set_data(new_selected, cx);
                     self.selected = new_selected;
+                });
+                cx.notify();
+            }
+        }
+    }
+
+    fn handle_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ButtonEvent::Click => {
+                self.round_icon_toggle.update(cx, |button, cx| {
+                    let new_selected = !*button.data();
+                    button.set_data(new_selected, cx);
+                    button.set_content(round_icon_content(new_selected), cx);
+                    self.round_icon_selected = new_selected;
                 });
                 cx.notify();
             }
@@ -142,6 +189,19 @@ impl Render for ToggleStatePreview {
             .child(render_state_row(&self.template, "Unselected", false, &samples, chrome.muted_text, window, cx))
             .child(render_state_row(&self.template, "Selected", true, &samples, chrome.muted_text, window, cx))
     }
+}
+
+fn round_icon_content(selected: bool) -> ControlContent<ButtonRenderModel<bool>> {
+    let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
+
+    Arc::new(move |_, _| {
+        div()
+            .font_family("lucide")
+            .text_size(px(16.0))
+            .line_height(px(16.0))
+            .child(char::from(icon).to_string())
+            .into_any_element()
+    })
 }
 
 fn render_state_row(

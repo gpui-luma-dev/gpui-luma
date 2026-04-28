@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{RadioGroup, RadioGroupTemplate, default_radio_group_template};
+use super::{RadioGroupControl, RadioGroupTemplate, default_radio_group_template};
 use crate::controls::radio_group::{ControlFocusState, RadioGroupItemState};
 
 #[derive(Clone, Debug)]
@@ -116,7 +116,7 @@ impl RadioGroupBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<RadioGroup> {
-        cx.new(|cx| RadioGroup::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<RadioGroupControl> {
+        cx.new(|cx| RadioGroupControl::from_builder(self, cx))
     }
 }

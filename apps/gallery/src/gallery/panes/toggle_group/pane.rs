@@ -5,7 +5,7 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::toggle_group::{
-    ControlFocusState, ToggleGroup, ToggleGroupClickHandler, ToggleGroupEvent, ToggleGroupHoverHandler,
+    self, ControlFocusState, ToggleGroup, ToggleGroupClickHandler, ToggleGroupEvent, ToggleGroupHoverHandler,
     ToggleGroupItem, ToggleGroupItemPosition, ToggleGroupItemState, ToggleGroupKind, ToggleGroupMouseDownHandler,
     ToggleGroupMouseUpHandler, ToggleGroupRenderItem, ToggleGroupRenderModel, ToggleGroupSelectionMode,
     ToggleGroupSize, ToggleGroupTemplate, ToggleGroupTemplateHandlers,
@@ -18,8 +18,8 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleGroupPane {
-    single_group: Entity<ToggleGroup>,
-    multiple_group: Entity<ToggleGroup>,
+    single_group: ToggleGroup,
+    multiple_group: ToggleGroup,
     state_preview: Entity<ToggleGroupStatePreview>,
     placement: String,
     visible_edges: Vec<String>,
@@ -28,12 +28,12 @@ pub(in crate::gallery) struct ToggleGroupPane {
 impl ToggleGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            single_group: ToggleGroup::new("placement-toggle-group")
+            single_group: toggle_group::new("placement-toggle-group")
                 .items(placement_items())
                 .selected("bottom")
                 .template(theme.toggle_group_template())
                 .spawn(cx),
-            multiple_group: ToggleGroup::new("edge-toggle-group")
+            multiple_group: toggle_group::new("edge-toggle-group")
                 .multiple()
                 .items(edge_items())
                 .selected_ids(["top", "left"])

@@ -5,8 +5,8 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::radio_group::{
-    ControlFocusState, RadioGroup, RadioGroupClickHandler, RadioGroupEvent, RadioGroupHoverHandler, RadioGroupItem,
-    RadioGroupItemState, RadioGroupMouseDownHandler, RadioGroupMouseUpHandler, RadioGroupRenderItem,
+    self, ControlFocusState, RadioGroup, RadioGroupClickHandler, RadioGroupEvent, RadioGroupHoverHandler,
+    RadioGroupItem, RadioGroupItemState, RadioGroupMouseDownHandler, RadioGroupMouseUpHandler, RadioGroupRenderItem,
     RadioGroupRenderModel, RadioGroupTemplate, RadioGroupTemplateHandlers,
 };
 
@@ -22,8 +22,8 @@ const RADIO_GROUP_DESCRIPTION: &str = concat!(
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioGroupPane {
-    radio_group: Entity<RadioGroup>,
-    required_radio_group: Entity<RadioGroup>,
+    radio_group: RadioGroup,
+    required_radio_group: RadioGroup,
     state_preview: Entity<RadioGroupStatePreview>,
     choice: String,
     required_choice: String,
@@ -32,12 +32,12 @@ pub(in crate::gallery) struct RadioGroupPane {
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            radio_group: RadioGroup::new("density-radio-group")
+            radio_group: radio_group::new("density-radio-group")
                 .items(density_items())
                 .allow_empty_selection(true)
                 .template(theme.radio_group_template())
                 .spawn(cx),
-            required_radio_group: RadioGroup::new("required-density-radio-group")
+            required_radio_group: radio_group::new("required-density-radio-group")
                 .items(density_items())
                 .selected("comfortable")
                 .template(theme.radio_group_template())
@@ -110,7 +110,7 @@ impl RadioGroupPane {
 
 fn render_live_example(
     label: &'static str,
-    radio_group: Entity<RadioGroup>,
+    radio_group: RadioGroup,
     choice: &str,
     text_color: gpui::Hsla,
 ) -> AnyElement {

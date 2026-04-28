@@ -18,16 +18,16 @@ pub enum ToggleGroupEvent {
     Change { item_id: SharedString, label: SharedString, selected: bool, selected_ids: Vec<SharedString> },
 }
 
-pub struct ToggleGroup {
+pub struct ToggleGroupControl {
     model: ToggleGroupModel,
     focus_handle: gpui::FocusHandle,
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
 }
 
-impl EventEmitter<ToggleGroupEvent> for ToggleGroup {}
+impl EventEmitter<ToggleGroupEvent> for ToggleGroupControl {}
 
-impl ToggleGroup {
+impl ToggleGroupControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> ToggleGroupBuilder {
         ToggleGroupBuilder::new(id)
@@ -336,13 +336,13 @@ pub(crate) enum ToggleGroupDirection {
     Next,
 }
 
-impl Focusable for ToggleGroup {
+impl Focusable for ToggleGroupControl {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl Render for ToggleGroup {
+impl Render for ToggleGroupControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

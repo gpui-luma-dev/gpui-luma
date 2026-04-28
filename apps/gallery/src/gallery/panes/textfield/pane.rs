@@ -9,7 +9,7 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::content_presenter::HasContent;
 // Checkbox was migrated to Button<bool>
 use gpui_luma::controls::textfield::{
-    TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
+    self, TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
     TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, Validator,
 };
@@ -23,8 +23,8 @@ use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TextFieldPane {
-    text_field: Entity<TextField>,
-    plain_text_field: Entity<TextField>,
+    text_field: TextField,
+    plain_text_field: TextField,
     state_preview: Entity<TextFieldStatePreview>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
@@ -49,7 +49,7 @@ impl TextFieldPane {
         let checkbox_template = theme.checkbox_template();
 
         Self {
-            text_field: TextField::new("gallery-textfield")
+            text_field: textfield::new("gallery-textfield")
                 .placeholder("Type and press Enter")
                 .prefix_icon(LucideIcon::Search)
                 .full_width(true)
@@ -57,7 +57,7 @@ impl TextFieldPane {
                 .select_all_on_tab_focus(true)
                 .template(theme.textfield_template())
                 .spawn(cx),
-            plain_text_field: TextField::new("gallery-textfield-plain")
+            plain_text_field: textfield::new("gallery-textfield-plain")
                 .placeholder("Text field without icon")
                 .full_width(true)
                 .clean_on_escape(true)
@@ -255,21 +255,21 @@ impl TextFieldPane {
 
     fn handle_option_changed(&mut self, option: TextFieldOption, _event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match option {
-                TextFieldOption::Enabled => {
-                    self.enabled = !self.enabled;
-                    self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
-                    self.enabled
-                }
-                TextFieldOption::CleanOnEscape => {
-                    self.clean_on_escape = !self.clean_on_escape;
-                    self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
-                    self.clean_on_escape
-                }
-                TextFieldOption::StrictValidation => {
-                    self.strict_validation = !self.strict_validation;
-                    self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
-                    self.strict_validation
-                }
+            TextFieldOption::Enabled => {
+                self.enabled = !self.enabled;
+                self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
+                self.enabled
+            }
+            TextFieldOption::CleanOnEscape => {
+                self.clean_on_escape = !self.clean_on_escape;
+                self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
+                self.clean_on_escape
+            }
+            TextFieldOption::StrictValidation => {
+                self.strict_validation = !self.strict_validation;
+                self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
+                self.strict_validation
+            }
         };
         self.sync_text_field_settings(cx);
         cx.notify();

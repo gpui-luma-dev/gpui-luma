@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::progress::{Progress, ProgressRenderModel, ProgressTemplate};
+use gpui_luma::controls::progress::{self, Progress, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
 
 use crate::gallery::control::GalleryApp;
@@ -11,14 +11,14 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ProgressPane {
-    progress: Entity<Progress>,
+    progress: Progress,
     state_preview: Entity<ProgressStatePreview>,
 }
 
 impl ProgressPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            progress: Progress::new("progress-example")
+            progress: progress::new("progress-example")
                 .range(1..100)
                 .value(41)
                 .template(theme.progress_template())

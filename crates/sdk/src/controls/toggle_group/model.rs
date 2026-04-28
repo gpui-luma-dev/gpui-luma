@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{ToggleGroup, ToggleGroupTemplate, default_toggle_group_template};
+use super::{ToggleGroupControl, ToggleGroupTemplate, default_toggle_group_template};
 use crate::controls::button_family::{ButtonKind as ToggleGroupKind, ButtonSize as ToggleGroupSize};
 use crate::controls::toggle_group::{ControlFocusState, ToggleGroupItemState};
 
@@ -170,7 +170,7 @@ impl ToggleGroupBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ToggleGroup> {
-        cx.new(|cx| ToggleGroup::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ToggleGroupControl> {
+        cx.new(|cx| ToggleGroupControl::from_builder(self, cx))
     }
 }

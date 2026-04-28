@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{Progress, ProgressTemplate, default_progress_template};
+use super::{ProgressControl, ProgressTemplate, default_progress_template};
 use crate::controls::value::{ControlRange, value_from_input};
 
 #[derive(Clone)]
@@ -60,7 +60,7 @@ impl ProgressBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Progress> {
-        cx.new(|cx| Progress::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ProgressControl> {
+        cx.new(|cx| ProgressControl::from_builder(self, cx))
     }
 }

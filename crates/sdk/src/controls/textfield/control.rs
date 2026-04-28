@@ -35,7 +35,7 @@ pub enum TextFieldEvent {
     Blur,
 }
 
-pub struct TextField {
+pub struct TextFieldControl {
     model: TextFieldModel,
     state: TextFieldState,
     focus_handle: FocusHandle,
@@ -54,9 +54,9 @@ pub struct TextField {
     layout_cache: Option<TextFieldLayoutCache>,
 }
 
-impl EventEmitter<TextFieldEvent> for TextField {}
+impl EventEmitter<TextFieldEvent> for TextFieldControl {}
 
-impl TextField {
+impl TextFieldControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> TextFieldBuilder {
         TextFieldBuilder::new(id)
@@ -470,13 +470,13 @@ impl TextField {
     }
 }
 
-impl Focusable for TextField {
+impl Focusable for TextFieldControl {
     fn focus_handle(&self, _cx: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl Render for TextField {
+impl Render for TextFieldControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if !self.model.enabled && self.focus_handle.is_focused(window) {
             window.blur();
@@ -563,7 +563,7 @@ impl Render for TextField {
     }
 }
 
-impl TextField {
+impl TextFieldControl {
     fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
         text.chars().take(char_offset).map(char::len_utf8).sum()
     }
@@ -695,7 +695,7 @@ impl TextField {
     }
 }
 
-impl EntityInputHandler for TextField {
+impl EntityInputHandler for TextFieldControl {
     fn text_for_range(
         &mut self,
         range_utf16: Range<usize>,

@@ -33,15 +33,15 @@ impl Render for SliderDrag {
     }
 }
 
-pub struct Slider {
+pub struct SliderControl {
     model: SliderModel,
     interaction: ControlInteraction,
     track_bounds: Option<Bounds<Pixels>>,
 }
 
-impl EventEmitter<SliderEvent> for Slider {}
+impl EventEmitter<SliderEvent> for SliderControl {}
 
-impl Slider {
+impl SliderControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> SliderBuilder {
         SliderBuilder::new(id)
@@ -218,13 +218,13 @@ impl Slider {
     }
 }
 
-impl Focusable for Slider {
+impl Focusable for SliderControl {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.interaction.focus_handle().clone()
     }
 }
 
-impl Render for Slider {
+impl Render for SliderControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

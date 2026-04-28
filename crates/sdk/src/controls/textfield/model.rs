@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{TextField, TextFieldState, TextFieldTemplate, default_textfield_template};
+use super::{TextFieldControl, TextFieldState, TextFieldTemplate, default_textfield_template};
 use crate::controls::command::button::ControlIcon;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
@@ -101,7 +101,7 @@ impl TextFieldBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextField> {
-        cx.new(|cx| TextField::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextFieldControl> {
+        cx.new(|cx| TextFieldControl::from_builder(self, cx))
     }
 }

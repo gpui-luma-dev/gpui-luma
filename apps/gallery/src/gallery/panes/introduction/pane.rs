@@ -6,13 +6,13 @@ use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::command::icon_button::{self, IconButton};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
-use gpui_luma::controls::progress::Progress;
-use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
-use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::controls::progress::{self, Progress};
+use gpui_luma::controls::radio_group::{self, RadioGroup, RadioGroupEvent, RadioGroupItem};
+use gpui_luma::controls::slider::{self, Slider, SliderEvent};
 use gpui_luma::controls::switch::{self, Switch};
 
-use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::controls::toggle_group::{ToggleGroup, ToggleGroupEvent, ToggleGroupItem};
+use gpui_luma::controls::textfield::{self, TextField, TextFieldEvent};
+use gpui_luma::controls::toggle_group::{self, ToggleGroup, ToggleGroupEvent, ToggleGroupItem};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -33,12 +33,12 @@ pub(in crate::gallery) struct IntroductionPane {
     refresh_icon_button: IconButton,
     favorite_icon_button: IconButton,
     workspace_popup_menu: Entity<PopupMenu>,
-    workspace_layout_toggle_group: Entity<ToggleGroup>,
-    workspace_density_radio_group: Entity<RadioGroup>,
+    workspace_layout_toggle_group: ToggleGroup,
+    workspace_density_radio_group: RadioGroup,
 
-    name_field: Entity<TextField>,
-    email_field: Entity<TextField>,
-    card_field: Entity<TextField>,
+    name_field: TextField,
+    email_field: TextField,
+    card_field: TextField,
 
     same_as_shipping_checkbox: Checkbox,
     terms_checkbox: Checkbox,
@@ -46,8 +46,8 @@ pub(in crate::gallery) struct IntroductionPane {
     referral_checkbox: Checkbox,
 
     two_factor_switch: Switch,
-    budget_slider: Entity<Slider>,
-    completion_progress: Entity<Progress>,
+    budget_slider: Slider,
+    completion_progress: Progress,
 
     name_value: SharedString,
     email_value: SharedString,
@@ -107,26 +107,26 @@ impl IntroductionPane {
                 .items(workspace_menu_items())
                 .placement(PopupMenuPlacement::BelowStart)
                 .spawn(cx),
-            workspace_layout_toggle_group: ToggleGroup::new("intro-workspace-layout")
+            workspace_layout_toggle_group: toggle_group::new("intro-workspace-layout")
                 .items(workspace_layout_items())
                 .selected("grid")
                 .spawn(cx),
-            workspace_density_radio_group: RadioGroup::new("intro-workspace-density")
+            workspace_density_radio_group: radio_group::new("intro-workspace-density")
                 .items(workspace_density_items())
                 .selected("balanced")
                 .spawn(cx),
 
-            name_field: TextField::new("intro-name")
+            name_field: textfield::new("intro-name")
                 .placeholder("Name on card")
                 .full_width(true)
                 .clean_on_escape(true)
                 .spawn(cx),
-            email_field: TextField::new("intro-email")
+            email_field: textfield::new("intro-email")
                 .placeholder("Email address")
                 .full_width(true)
                 .clean_on_escape(true)
                 .spawn(cx),
-            card_field: TextField::new("intro-card")
+            card_field: textfield::new("intro-card")
                 .placeholder("1234 5678 9012 3456")
                 .full_width(true)
                 .clean_on_escape(true)
@@ -156,8 +156,8 @@ impl IntroductionPane {
             two_factor_switch: switch::new("intro-two-factor")
                 .content(|_, _| div().child("Two-factor authentication").into_any_element())
                 .spawn(cx),
-            budget_slider: Slider::new("intro-budget").range(0..100).step(5).value(40).spawn(cx),
-            completion_progress: Progress::new("intro-completion").range(0..100).value(30).spawn(cx),
+            budget_slider: slider::new("intro-budget").range(0..100).step(5).value(40).spawn(cx),
+            completion_progress: progress::new("intro-completion").range(0..100).value(30).spawn(cx),
 
             name_value: SharedString::default(),
             email_value: SharedString::default(),

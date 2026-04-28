@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{Slider, SliderTemplate, default_slider_template};
+use super::{SliderControl, SliderTemplate, default_slider_template};
 use crate::controls::slider::SliderState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 
@@ -71,7 +71,7 @@ impl SliderBuilder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Slider> {
-        cx.new(|cx| Slider::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SliderControl> {
+        cx.new(|cx| SliderControl::from_builder(self, cx))
     }
 }

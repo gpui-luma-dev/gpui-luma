@@ -5,7 +5,7 @@ use gpui::{
     SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::slider::{
-    Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
+    self, Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
@@ -18,7 +18,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
-    slider: Entity<Slider>,
+    slider: Slider,
     state_preview: Entity<SliderStatePreview>,
     value: f32,
 }
@@ -26,7 +26,7 @@ pub(in crate::gallery) struct SliderPane {
 impl SliderPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            slider: Slider::new("slider-example")
+            slider: slider::new("slider-example")
                 .range(1..100)
                 .step(10)
                 .value(41)

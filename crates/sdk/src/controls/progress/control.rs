@@ -4,11 +4,11 @@ use super::{ProgressBuilder, ProgressRenderModel};
 use crate::controls::progress::model::ProgressModel;
 use crate::controls::value::{ControlRange, value_from_input};
 
-pub struct Progress {
+pub struct ProgressControl {
     model: ProgressModel,
 }
 
-impl Progress {
+impl ProgressControl {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> ProgressBuilder {
         ProgressBuilder::new(id)
@@ -61,7 +61,7 @@ impl Progress {
     }
 }
 
-impl Render for Progress {
+impl Render for ProgressControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model();
 
