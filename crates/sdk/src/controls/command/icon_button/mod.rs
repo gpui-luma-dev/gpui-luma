@@ -1,11 +1,9 @@
-use gpui::SharedString;
+use gpui::{Entity, SharedString};
 
 use crate::controls::command::button::{Button, ButtonBuilder, ControlIcon};
 
-pub struct IconButton;
+pub type IconButton = Entity<Button<()>>;
 
-impl IconButton {
-    pub fn new(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
-        Button::icon(id, icon)
-    }
+pub fn new(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
+    Button::icon(id, icon)
 }

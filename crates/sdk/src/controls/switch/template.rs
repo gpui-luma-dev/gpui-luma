@@ -1,29 +1,23 @@
-
-
 use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
 
-use super::SwitchRenderModel;
+use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::{SwitchTheme, default_switch_theme};
 
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 
-pub trait SwitchTemplate: Send + Sync {
-    fn render(&self, model: &SwitchRenderModel, window: &mut Window, cx: &mut App) -> Stateful<Div>;
-}
-
 define_control_template!(
     ThemedSwitchTemplate,
     dyn SwitchTheme,
-    SwitchRenderModel,
-    SwitchTemplate,
+    ButtonRenderModel<bool>,
+    ButtonTemplate<bool>,
     default_switch_theme()
 );
 
-impl SwitchTemplate for ThemedSwitchTemplate {
-    fn render(&self, model: &SwitchRenderModel, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.on, model.state);
-        let thumb_left = if model.on {
+impl ButtonTemplate<bool> for ThemedSwitchTemplate {
+    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
+        let appearance = self.theme.resolve(model.data, model.state);
+        let thumb_left = if model.data {
             appearance.width - appearance.thumb_size - appearance.padding
         } else {
             appearance.padding
@@ -65,16 +59,13 @@ impl SwitchTemplate for ThemedSwitchTemplate {
             .line_height(px(appearance.label_typography.line_height))
             .font_weight(appearance.label_typography.weight)
             .rounded(px(appearance.radius))
-            .child(track);
+            .child(track)
+            .child((model.content)(model, _cx));
 
-        if let Some(label) = &model.label {
-            root = root.child(label.clone());
-        }
-
-        if model.enabled {
-            root = root.cursor_pointer();
-        } else {
+        if model.state.disabled {
             root = root.opacity(0.56);
+        } else {
+            root = root.cursor_pointer();
         }
 
         // Apply modifiers from the pipeline

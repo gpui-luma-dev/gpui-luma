@@ -2,14 +2,15 @@ use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, SharedString, S
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
 
 use gpui_luma::controls::content_presenter::HasContent;
-use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::checkbox::{self, Checkbox};
+use gpui_luma::controls::command::icon_button::{self, IconButton};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupEvent, RadioGroupItem};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
-use gpui_luma::controls::switch::{Switch, SwitchEvent};
+use gpui_luma::controls::switch::{self, Switch};
+
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::controls::toggle_group::{ToggleGroup, ToggleGroupEvent, ToggleGroupItem};
 use lucide_icons::Icon as LucideIcon;
@@ -29,8 +30,8 @@ pub(in crate::gallery) struct IntroductionPane {
     submit_button: Entity<Button>,
     cancel_button: Entity<Button>,
 
-    refresh_icon_button: Entity<Button<()>>,
-    favorite_icon_button: Entity<Button<()>>,
+    refresh_icon_button: IconButton,
+    favorite_icon_button: IconButton,
     workspace_popup_menu: Entity<PopupMenu>,
     workspace_layout_toggle_group: Entity<ToggleGroup>,
     workspace_density_radio_group: Entity<RadioGroup>,
@@ -39,12 +40,12 @@ pub(in crate::gallery) struct IntroductionPane {
     email_field: Entity<TextField>,
     card_field: Entity<TextField>,
 
-    same_as_shipping_checkbox: Entity<Button<bool>>,
-    terms_checkbox: Entity<Button<bool>>,
-    social_checkbox: Entity<Button<bool>>,
-    referral_checkbox: Entity<Button<bool>>,
+    same_as_shipping_checkbox: Checkbox,
+    terms_checkbox: Checkbox,
+    social_checkbox: Checkbox,
+    referral_checkbox: Checkbox,
 
-    two_factor_switch: Entity<Switch>,
+    two_factor_switch: Switch,
     budget_slider: Entity<Slider>,
     completion_progress: Entity<Progress>,
 
@@ -97,10 +98,10 @@ impl IntroductionPane {
             submit_button: Button::new("intro-submit").label("Submit").kind(ButtonKind::Prominent).spawn(cx),
             cancel_button: Button::new("intro-cancel").label("Cancel").spawn(cx),
 
-            refresh_icon_button: IconButton::new("intro-refresh-workspace", LucideIcon::RefreshCw)
+            refresh_icon_button: icon_button::new("intro-refresh-workspace", LucideIcon::RefreshCw)
                 .kind(ButtonKind::Prominent)
                 .spawn(cx),
-            favorite_icon_button: IconButton::new("intro-favorite-workspace", LucideIcon::Star).spawn(cx),
+            favorite_icon_button: icon_button::new("intro-favorite-workspace", LucideIcon::Star).spawn(cx),
             workspace_popup_menu: PopupMenu::new("intro-workspace-popup")
                 .label("Workspace Menu")
                 .items(workspace_menu_items())
@@ -131,28 +132,30 @@ impl IntroductionPane {
                 .clean_on_escape(true)
                 .spawn(cx),
 
-            same_as_shipping_checkbox: Checkbox::new("intro-same-as-shipping")
+            same_as_shipping_checkbox: checkbox::new("intro-same-as-shipping")
                 .data(true)
                 .content(|_, _| div().child("Same as shipping address").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            terms_checkbox: Checkbox::new("intro-terms")
+            terms_checkbox: checkbox::new("intro-terms")
                 .data(false)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            social_checkbox: Checkbox::new("intro-social-source")
+            social_checkbox: checkbox::new("intro-social-source")
                 .data(true)
                 .content(|_, _| div().child("Social").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
-            referral_checkbox: Checkbox::new("intro-referral-source")
+            referral_checkbox: checkbox::new("intro-referral-source")
                 .data(false)
                 .content(|_, _| div().child("Referral").into_any_element())
                 .template(checkbox_template)
                 .spawn(cx),
 
-            two_factor_switch: Switch::new("intro-two-factor").label("Two-factor authentication").spawn(cx),
+            two_factor_switch: switch::new("intro-two-factor")
+                .content(|_, _| div().child("Two-factor authentication").into_any_element())
+                .spawn(cx),
             budget_slider: Slider::new("intro-budget").range(0..100).step(5).value(40).spawn(cx),
             completion_progress: Progress::new("intro-completion").range(0..100).value(30).spawn(cx),
 
@@ -230,7 +233,7 @@ impl IntroductionPane {
             app.panes.introduction.handle_referral_event(event, cx);
         }));
 
-        subscriptions.push(cx.subscribe(&self.two_factor_switch, |app, _, event: &SwitchEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.two_factor_switch, |app, _, event: &ButtonEvent, cx| {
             app.panes.introduction.handle_two_factor_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.budget_slider, |app, _, event: &SliderEvent, cx| {
@@ -584,12 +587,19 @@ impl IntroductionPane {
         cx.notify();
     }
 
-    fn handle_two_factor_event(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {
-        let SwitchEvent::Change { on } = event;
-        self.two_factor_enabled = *on;
-        self.last_event = SharedString::from("Switch::TwoFactor");
-        self.recompute_completion(cx);
-        cx.notify();
+    fn handle_two_factor_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ButtonEvent::Click => {
+                self.two_factor_switch.update(cx, |button, cx| {
+                    let new_on = !*button.data();
+                    button.set_data(new_on, cx);
+                });
+                self.two_factor_enabled = !self.two_factor_enabled;
+                self.last_event = SharedString::from("Switch::TwoFactor");
+                self.recompute_completion(cx);
+                cx.notify();
+            }
+        }
     }
 
     fn handle_budget_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel};
-use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::command::icon_button::{self, IconButton};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
@@ -14,9 +14,9 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
-    default_icon_button: Entity<Button>,
-    ghost_icon_button: Entity<Button>,
-    prominent_icon_button: Entity<Button>,
+    default_icon_button: IconButton,
+    ghost_icon_button: IconButton,
+    prominent_icon_button: IconButton,
     state_preview: Entity<IconButtonStatePreview>,
     default_icon_clicks: usize,
     ghost_icon_clicks: usize,
@@ -26,13 +26,13 @@ pub(in crate::gallery) struct IconButtonPane {
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_icon_button: IconButton::new("icon-button-default-example", LucideIcon::Plus)
+            default_icon_button: icon_button::new("icon-button-default-example", LucideIcon::Plus)
                 .kind(ButtonKind::Standard)
                 .spawn(cx),
-            ghost_icon_button: IconButton::new("icon-button-ghost-example", LucideIcon::Plus)
+            ghost_icon_button: icon_button::new("icon-button-ghost-example", LucideIcon::Plus)
                 .kind(ButtonKind::Ghost)
                 .spawn(cx),
-            prominent_icon_button: IconButton::new("icon-button-prominent-example", LucideIcon::Plus)
+            prominent_icon_button: icon_button::new("icon-button-prominent-example", LucideIcon::Plus)
                 .kind(ButtonKind::Prominent)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
@@ -85,12 +85,7 @@ impl IconButtonPane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn toggle_icon(
-        button: &Entity<Button>,
-        clicks: &mut usize,
-        event: &ButtonEvent,
-        cx: &mut Context<GalleryApp>,
-    ) {
+    fn toggle_icon(button: &IconButton, clicks: &mut usize, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
                 *clicks += 1;
@@ -101,13 +96,14 @@ impl IconButtonPane {
                 };
 
                 button.update(cx, |button, cx| {
-                    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_, _| {
-                        div()
-                            .font_family("lucide")
-                            .text_size(px(16.0))
-                            .child(char::from(icon).to_string())
-                            .into_any_element()
-                    });
+                    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> =
+                        Arc::new(move |_, _| {
+                            div()
+                                .font_family("lucide")
+                                .text_size(px(16.0))
+                                .child(char::from(icon).to_string())
+                                .into_any_element()
+                        });
                     button.set_content(content, cx);
                 });
             }
@@ -254,13 +250,14 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("icon-button-preview-{}-{}", row_id, sample.id));
     let icon = LucideIcon::Plus;
-    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| {
-        div()
-            .font_family("lucide")
-            .text_size(px(16.0))
-            .child(char::from(icon).to_string())
-            .into_any_element()
-    });
+    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> =
+        Arc::new(move |_: &ButtonRenderModel<()>, _| {
+            div()
+                .font_family("lucide")
+                .text_size(px(16.0))
+                .child(char::from(icon).to_string())
+                .into_any_element()
+        });
     let model = ButtonRenderModel {
         id,
         data: (),

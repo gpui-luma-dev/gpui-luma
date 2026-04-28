@@ -13,7 +13,7 @@ use gpui_luma::controls::{
     radio_group::{RadioGroupTemplate, ThemedRadioGroupTemplate},
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
-    switch::{SwitchTemplate, ThemedSwitchTemplate},
+    switch::ThemedSwitchTemplate,
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
     textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
@@ -143,25 +143,20 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn toggle_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         let button_family_theme = self.button_family_theme.clone();
-        Arc::new(
-            DefaultButtonTemplate::new(self.button_family_theme.clone()).with_modifier(move |element, model| {
-                let variant = match model.kind {
-                    gpui_luma::controls::button_family::ButtonKind::Standard => ButtonVariant::Standard,
-                    gpui_luma::controls::button_family::ButtonKind::Ghost => ButtonVariant::Ghost,
-                    gpui_luma::controls::button_family::ButtonKind::Prominent => ButtonVariant::Prominent,
-                };
-                let appearance = button_family_theme.resolve(
-                    variant,
-                    ButtonFamilyRole::Toggle { selected: model.data },
-                    model.size,
-                    model.state,
-                );
-                element
-                    .bg(appearance.background)
-                    .text_color(appearance.foreground)
-                    .border_color(appearance.border)
-            }),
-        )
+        Arc::new(DefaultButtonTemplate::new(self.button_family_theme.clone()).with_modifier(move |element, model| {
+            let variant = match model.kind {
+                gpui_luma::controls::button_family::ButtonKind::Standard => ButtonVariant::Standard,
+                gpui_luma::controls::button_family::ButtonKind::Ghost => ButtonVariant::Ghost,
+                gpui_luma::controls::button_family::ButtonKind::Prominent => ButtonVariant::Prominent,
+            };
+            let appearance = button_family_theme.resolve(
+                variant,
+                ButtonFamilyRole::Toggle { selected: model.data },
+                model.size,
+                model.state,
+            );
+            element.bg(appearance.background).text_color(appearance.foreground).border_color(appearance.border)
+        }))
     }
 
     pub(in crate::gallery) fn toggle_group_template(&self) -> Arc<dyn ToggleGroupTemplate> {
@@ -172,7 +167,7 @@ impl GalleryThemePack {
         Arc::new(ThemedCheckboxTemplate::new(self.checkbox_theme.clone()))
     }
 
-    pub(in crate::gallery) fn switch_template(&self) -> Arc<dyn SwitchTemplate> {
+    pub(in crate::gallery) fn switch_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         Arc::new(ThemedSwitchTemplate::new(self.switch_theme.clone()))
     }
 

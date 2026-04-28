@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::checkbox::Checkbox;
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
@@ -14,7 +14,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
-    default_checkbox: Entity<Button<bool>>,
+    default_checkbox: Checkbox,
     state_preview: Entity<CheckboxStatePreview>,
     default_checked: bool,
 }
@@ -22,7 +22,7 @@ pub(in crate::gallery) struct CheckboxPane {
 impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_checkbox: Checkbox::new("checkbox-default")
+            default_checkbox: checkbox::new("checkbox-default")
                 .data(true)
                 .content(|_, _| div().child("As-is").into_any_element())
                 .template(theme.checkbox_template())
@@ -49,13 +49,7 @@ impl CheckboxPane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap_3()
-                        .child(self.default_checkbox.clone())
-                )
+                .child(div().flex().items_center().gap_3().child(self.default_checkbox.clone()))
                 .child(
                     div()
                         .text_size(px(12.0))
@@ -74,11 +68,7 @@ impl CheckboxPane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(
-        &mut self,
-        event: &ButtonEvent,
-        cx: &mut Context<GalleryApp>,
-    ) {
+    fn handle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
                 self.default_checkbox.update(cx, |button, cx| {
@@ -106,10 +96,7 @@ struct CheckboxStateSample {
 
 impl CheckboxStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self {
-            theme: theme.clone(),
-            default_template: theme.checkbox_template(),
-        }
+        Self { theme: theme.clone(), default_template: theme.checkbox_template() }
     }
 }
 

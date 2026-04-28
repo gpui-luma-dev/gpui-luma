@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::switch::{Switch, SwitchEvent, SwitchRenderModel, SwitchTemplate};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::switch::{self, Switch};
+use gpui_luma::controls::content_presenter::HasContent;
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
@@ -11,7 +14,7 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SwitchPane {
-    switch: Entity<Switch>,
+    switch: Switch,
     state_preview: Entity<SwitchStatePreview>,
     on: bool,
 }
@@ -19,14 +22,18 @@ pub(in crate::gallery) struct SwitchPane {
 impl SwitchPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            switch: Switch::new("switch-example").on(true).template(theme.switch_template()).spawn(cx),
+            switch: switch::new("switch-example")
+                .data(true)
+                .content(|_, _| div().into_any_element())
+                .template(theme.switch_template())
+                .spawn(cx),
             state_preview: cx.new(|_| SwitchStatePreview::new(theme)),
             on: true,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.switch, |app, _, event: &SwitchEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.switch, |app, _, event: &ButtonEvent, cx| {
             app.panes.switch.handle_event(event, cx);
         }));
     }
@@ -61,10 +68,14 @@ impl SwitchPane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(&mut self, event: &SwitchEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            SwitchEvent::Change { on } => {
-                self.on = *on;
+            ButtonEvent::Click => {
+                self.switch.update(cx, |button, cx| {
+                    let new_on = !*button.data();
+                    button.set_data(new_on, cx);
+                    self.on = new_on;
+                });
                 cx.notify();
             }
         }
@@ -74,7 +85,7 @@ impl SwitchPane {
 #[derive(Clone)]
 struct SwitchStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn SwitchTemplate>,
+    template: Arc<dyn ButtonTemplate<bool>>,
 }
 
 struct SwitchStateSample {
@@ -135,7 +146,7 @@ impl Render for SwitchStatePreview {
 }
 
 fn render_state_row(
-    template: &Arc<dyn SwitchTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     row_label: &'static str,
     on: bool,
     samples: &[SwitchStateSample],
@@ -158,7 +169,7 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn SwitchTemplate>,
+    template: &Arc<dyn ButtonTemplate<bool>>,
     on: bool,
     sample: &SwitchStateSample,
     label_color: gpui::Hsla,
@@ -166,7 +177,16 @@ fn render_state_sample(
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!("switch-preview-{}-{}", on, sample.id));
-    let model = SwitchRenderModel { id, label: None, on, enabled: !sample.state.disabled, state: sample.state };
+    let model = ButtonRenderModel {
+        id,
+        data: on,
+        content: Arc::new(move |_, _| div().into_any_element()),
+        kind: ButtonKind::Standard,
+        size: ButtonSize::Md,
+        state: sample.state,
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+    };
 
     div()
         .flex()
