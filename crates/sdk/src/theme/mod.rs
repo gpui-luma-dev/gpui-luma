@@ -7,6 +7,7 @@ pub mod popup_menu;
 pub mod interaction;
 pub mod navigation_sidebar;
 pub mod progress;
+pub mod radio_button;
 pub mod radio_group;
 pub mod scrollbar;
 pub mod slider;
@@ -36,6 +37,7 @@ pub use navigation_sidebar::{
     navigation_sidebar_theme_usage,
 };
 pub use progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme, default_progress_theme};
+pub use radio_button::{DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonTheme, default_radio_button_theme};
 pub use radio_group::{DefaultRadioGroupTheme, RadioGroupItemAppearance, RadioGroupTheme, default_radio_group_theme};
 pub use scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme};
 pub use slider::{DefaultSliderTheme, SliderAppearance, SliderTheme, default_slider_theme};

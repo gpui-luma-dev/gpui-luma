@@ -14,7 +14,7 @@ use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     button, checkbox, context_menu, floating_menu, icon_button, introduction, navigation_sidebar, palette, popup_menu,
-    progress, prototypes, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch,
+    progress, prototypes, radio_button, radio_group, scrollbar, search, settings, shared::gallery_pane, slider, switch,
     tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
@@ -40,6 +40,7 @@ enum GalleryPageKind {
     ToggleGroup,
     Switch,
     Checkbox,
+    RadioButton,
     RadioGroup,
     Slider,
     Scrollbar,
@@ -109,6 +110,8 @@ const SWITCH_PAGE: GalleryPage =
     GalleryPage { id: "switch", label: "Switch", icon: None, kind: GalleryPageKind::Switch };
 const CHECKBOX_PAGE: GalleryPage =
     GalleryPage { id: "checkbox", label: "Checkbox", icon: None, kind: GalleryPageKind::Checkbox };
+const RADIO_BUTTON_PAGE: GalleryPage =
+    GalleryPage { id: "radio-button", label: "Radio Button", icon: None, kind: GalleryPageKind::RadioButton };
 const RADIO_GROUP_PAGE: GalleryPage =
     GalleryPage { id: "radio-group", label: "Radio Group", icon: None, kind: GalleryPageKind::RadioGroup };
 const SLIDER_PAGE: GalleryPage =
@@ -135,8 +138,12 @@ const TABS_NAVIGATION_PAGE: GalleryPage =
     GalleryPage { id: "tabs-navigation", label: "Tabs Navigation", icon: None, kind: GalleryPageKind::TabsNavigation };
 const PROGRESS_PAGE: GalleryPage =
     GalleryPage { id: "progress", label: "Progress", icon: None, kind: GalleryPageKind::Progress };
-const DECORATED_BUTTON_PAGE: GalleryPage =
-    GalleryPage { id: "decorated-button", label: "Decorated Button", icon: None, kind: GalleryPageKind::DecoratedButton };
+const DECORATED_BUTTON_PAGE: GalleryPage = GalleryPage {
+    id: "decorated-button",
+    label: "Decorated Button",
+    icon: None,
+    kind: GalleryPageKind::DecoratedButton,
+};
 const CUSTOM_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
@@ -149,7 +156,8 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
-const CHOICE_PAGES: &[GalleryPage] = &[TOGGLE_PAGE, SWITCH_PAGE, CHECKBOX_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
+const CHOICE_PAGES: &[GalleryPage] =
+    &[TOGGLE_PAGE, SWITCH_PAGE, CHECKBOX_PAGE, RADIO_BUTTON_PAGE, RADIO_GROUP_PAGE, TOGGLE_GROUP_PAGE];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
@@ -213,6 +221,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) toggle_group: toggle_group::ToggleGroupPane,
     pub(super) switch: switch::SwitchPane,
     pub(super) checkbox: checkbox::CheckboxPane,
+    pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
@@ -280,6 +289,7 @@ impl GalleryPanes {
             toggle_group: toggle_group::ToggleGroupPane::new(cx, theme),
             switch: switch::SwitchPane::new(cx, theme),
             checkbox: checkbox::CheckboxPane::new(cx, theme),
+            radio_button: radio_button::RadioButtonPane::new(cx, theme),
             radio_group: radio_group::RadioGroupPane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
@@ -304,6 +314,7 @@ impl GalleryPanes {
         self.toggle_group.subscribe(cx, subscriptions);
         self.switch.subscribe(cx, subscriptions);
         self.checkbox.subscribe(cx, subscriptions);
+        self.radio_button.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
@@ -326,6 +337,7 @@ impl GalleryPanes {
         self.toggle_group.notify_controls(cx);
         self.switch.notify_controls(cx);
         self.checkbox.notify_controls(cx);
+        self.radio_button.notify_controls(cx);
         self.radio_group.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
@@ -358,6 +370,7 @@ impl GalleryPanes {
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),
             GalleryPageKind::Switch => self.switch.render(&self.theme),
             GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
+            GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),

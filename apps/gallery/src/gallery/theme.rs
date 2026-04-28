@@ -10,6 +10,7 @@ use gpui_luma::controls::{
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
+    radio_button::ThemedRadioButtonTemplate,
     radio_group::{RadioGroupTemplate, ThemedRadioGroupTemplate},
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
@@ -22,14 +23,14 @@ use gpui_luma::controls::{
 use gpui_luma::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioGroupTheme,
-    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultTextAreaTheme,
-    DefaultTextFieldTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme, NavigationSidebarTheme,
-    PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme, RadioGroupItemAppearance, RadioGroupTheme,
-    ScrollbarAppearance, ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme,
-    TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme, TextAreaAppearance, TextAreaTheme,
-    TextFieldAppearance, TextFieldTheme, ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance,
-    ToggleGroupTheme,
+    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioButtonTheme,
+    DefaultRadioGroupTheme, DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
+    DefaultTextAreaTheme, DefaultTextFieldTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme,
+    NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme,
+    RadioButtonAppearance, RadioButtonTheme, RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance,
+    ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance,
+    TabsNavigationListAppearance, TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance,
+    TextFieldTheme, ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
 };
 
 #[derive(Clone)]
@@ -41,6 +42,7 @@ pub(in crate::gallery) struct GalleryThemePack {
     navigation_sidebar_theme: Arc<dyn NavigationSidebarTheme>,
     popup_menu_theme: Arc<dyn PopupMenuTheme>,
     progress_theme: Arc<dyn ProgressTheme>,
+    radio_button_theme: Arc<dyn RadioButtonTheme>,
     radio_group_theme: Arc<dyn RadioGroupTheme>,
     scrollbar_theme: Arc<dyn ScrollbarTheme>,
     slider_theme: Arc<dyn SliderTheme>,
@@ -82,6 +84,7 @@ impl GalleryThemePack {
             navigation_sidebar_theme: Arc::new(GalleryNavigationSidebarTheme { state: state.clone() }),
             popup_menu_theme: Arc::new(GalleryPopupMenuTheme { state: state.clone() }),
             progress_theme: Arc::new(GalleryProgressTheme { state: state.clone() }),
+            radio_button_theme: Arc::new(GalleryRadioButtonTheme { state: state.clone() }),
             radio_group_theme: Arc::new(GalleryRadioGroupTheme { state: state.clone() }),
             scrollbar_theme: Arc::new(GalleryScrollbarTheme { state: state.clone() }),
             slider_theme: Arc::new(GallerySliderTheme { state: state.clone() }),
@@ -169,6 +172,10 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn switch_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         Arc::new(ThemedSwitchTemplate::new(self.switch_theme.clone()))
+    }
+
+    pub(in crate::gallery) fn radio_button_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
+        Arc::new(ThemedRadioButtonTemplate::new(self.radio_button_theme.clone()))
     }
 
     pub(in crate::gallery) fn radio_group_template(&self) -> Arc<dyn RadioGroupTemplate> {
@@ -280,6 +287,16 @@ struct GallerySwitchTheme {
 impl SwitchTheme for GallerySwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
         DefaultSwitchTheme::new(self.state.tokens()).resolve(on, state)
+    }
+}
+
+struct GalleryRadioButtonTheme {
+    state: Arc<GalleryThemeState>,
+}
+
+impl RadioButtonTheme for GalleryRadioButtonTheme {
+    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance {
+        DefaultRadioButtonTheme::new(self.state.tokens()).resolve(checked, state)
     }
 }
 
