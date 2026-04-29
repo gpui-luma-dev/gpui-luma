@@ -1,5 +1,6 @@
 mod button;
 mod checkbox;
+mod choice_group;
 mod context_menu;
 mod floating_menu;
 mod icon_button;
