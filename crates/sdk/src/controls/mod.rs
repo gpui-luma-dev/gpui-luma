@@ -2,6 +2,7 @@ pub mod command;
 pub mod button_family;
 pub(crate) mod button_family_template;
 pub mod checkbox;
+pub mod choice_group;
 pub mod content_presenter;
 pub mod context_menu;
 pub mod floating_menu;

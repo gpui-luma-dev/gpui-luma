@@ -1,6 +1,7 @@
 pub mod button;
 pub mod button_family;
 pub mod checkbox;
+pub mod choice_group;
 pub mod context_menu;
 pub mod floating_menu;
 pub mod popup_menu;
@@ -24,6 +25,10 @@ pub use button_family::{
     default_button_family_theme,
 };
 pub use checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
+pub use choice_group::{
+    ChoiceGroupItemAppearance, ChoiceGroupListAppearance, ChoiceGroupTheme, DefaultChoiceGroupTheme,
+    default_choice_group_theme,
+};
 pub use context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme, default_context_menu_theme};
 pub use floating_menu::{
     DefaultFloatingMenuTheme, FLOATING_MENU_THEME_USAGE, FloatingMenuAppearance, FloatingMenuTheme,
