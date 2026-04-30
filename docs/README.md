@@ -13,6 +13,7 @@ mindmap
       focus-handling.md
       keyhandling.md
       theme.md
+      naming.md
     Control Docs
       choice_groups.md
       navigation-sidebar.md
@@ -38,6 +39,7 @@ mindmap
 - [`focus-handling.md`](./focus-handling.md) — focus model and traversal behavior.
 - [`keyhandling.md`](./keyhandling.md) — keyboard action and profile design.
 - [`theme.md`](./theme.md) — theme strategy and token model.
+- [`naming.md`](./naming.md) — SDK control naming conventions.
 
 ### Control docs
 - [`choice_groups.md`](./choice_groups.md) — `ChoiceGroup` plan/status notes.

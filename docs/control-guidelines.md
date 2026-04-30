@@ -17,7 +17,7 @@ The SDK currently ships these controls:
 - `ToggleGroup`: composite collection of toggle buttons with single or multiple selection.
 - `Checkbox`: binary checked control with owned checked state and change events.
 - `Switch`: binary on/off control with optional label and change events.
-- `RadioGroup`: composite choice control with mutually exclusive item selection.
+
 - `Slider`: numeric input with range, step, pointer dragging, and keyboard value changes.
 - `Scrollbar`: horizontal or vertical range control with line/page movement and draggable thumb.
 - `Progress`: non-interactive circular status indicator.
@@ -216,7 +216,7 @@ pub enum ButtonFamilyRole {
 ```
 
 Create a specific theme resolver when the control has distinct policy, as `CheckboxTheme`,
-`SwitchTheme`, `RadioGroupTheme`, `SliderTheme`, `ScrollbarTheme`, `ProgressTheme`,
+`SwitchTheme`, `SliderTheme`, `ScrollbarTheme`, `ProgressTheme`,
 `PopupMenuTheme`, and `ContextMenuTheme` do.
 
 ## Interaction And Focus
@@ -242,9 +242,9 @@ Controls using `ControlInteraction` should call:
 Disabled controls should not emit events, keep hover or pressed state, or remain in the tab order.
 `ControlInteraction::set_enabled(false)` clears hover/pressed state and updates the tab stop.
 
-Composite controls may need explicit item state. `RadioGroup` uses one group focus handle and
-per-item `CompositeItemState`. Menus use `MenuPath` to separate active descendants from hovered
-items and open submenus.
+Composite controls may need explicit item state. `ChoiceGroup`, `TabsNavigation`, and other
+composites use one group focus handle and per-item `CompositeItemState`. Menus use `MenuPath` to
+separate active descendants from hovered items and open submenus.
 
 Navigation controls such as `NavigationSidebar` and future tab controls should also use a composite
 active-descendant model. The navigation control owns focus for its own item surface: pointer clicks
@@ -276,7 +276,7 @@ Use the existing key profiles:
 
 - `ControlKeyProfile::Command`: enter/space activation for button-family command controls.
 - `ControlKeyProfile::Choice`: space activation for checkbox and switch.
-- `ControlKeyProfile::RadioGroup`: arrows, home, and end.
+- `ControlKeyProfile::TabList`: arrows, home/end, and activation for tab-like composites.
 - `ControlKeyProfile::RangeValue`: arrows, page up/down, home, and end.
 - `ControlKeyProfile::ScrollOffset`: scroll offset arrows, page up/down, home, and end.
 - `ControlKeyProfile::Menu`: popup menu navigation and activation.
@@ -439,38 +439,7 @@ Implementation notes:
 - Uses `SwitchTheme`.
 - The template derives thumb position from `on`; the control does not store visual positions.
 
-### RadioGroup
 
-`RadioGroup` owns a list of `RadioGroupItem`s and one selected item.
-
-Builder methods:
-
-- `item`,
-- `items`,
-- `selected`,
-- `enabled`,
-- `template`,
-- `spawn`.
-
-Runtime mutation:
-
-- `selected_id`,
-- `set_selected`,
-- `set_items`,
-- `set_enabled`.
-
-Event:
-
-- `RadioGroupEvent::Change { selected_id, label }`.
-
-Implementation notes:
-
-- Uses its own group `FocusHandle` instead of `ControlInteraction`.
-- Normalizes invalid or missing selection to the first enabled item.
-- Selection changes only to enabled items.
-- Arrow navigation wraps and skips disabled items.
-- Template handlers are generated per item and passed separately from the render model.
-- Item appearance is resolved through `RadioGroupTheme::resolve_item`.
 
 ### Slider
 

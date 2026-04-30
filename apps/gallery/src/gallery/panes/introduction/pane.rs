@@ -140,7 +140,7 @@ impl IntroductionPane {
                     div().font_family("lucide").child(char::from(icon).to_string()).into_any_element()
                 })
                 .spawn(cx),
-            workspace_density_choice_group: choice_group::radio_group("intro-workspace-density")
+            workspace_density_choice_group: choice_group::single_select("intro-workspace-density")
                 .items(workspace_density_items())
                 .selected("balanced")
                 //.vertical()

@@ -94,7 +94,6 @@ const THEME_USAGES: &[&ThemeUsage] = &[
     &super::choice_group::CHOICE_GROUP_THEME_USAGE,
     &super::checkbox::CHECKBOX_THEME_USAGE,
     &super::radio_button::RADIO_BUTTON_THEME_USAGE,
-    &super::radio_group::RADIO_GROUP_THEME_USAGE,
     &super::switch::SWITCH_THEME_USAGE,
     &super::slider::SLIDER_THEME_USAGE,
     &super::scrollbar::SCROLLBAR_THEME_USAGE,

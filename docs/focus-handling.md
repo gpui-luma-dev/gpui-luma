@@ -233,7 +233,7 @@ user-visible item in the tab order.
 - `handle_mouse_down` focuses the control when enabled,
 - `render_state(enabled, window)` projects focus into `InteractionState`.
 
-Composite controls can own focus directly. `RadioGroup` has one group
+Composite controls can own focus directly. `ChoiceGroup` has one group
 `FocusHandle`, tracks focus on the rendered group, and projects active item
 state through `CompositeItemState`. Menus project root focus through
 `ControlFocusState`, whose `focus_visible` flag is true only when GPUI says the

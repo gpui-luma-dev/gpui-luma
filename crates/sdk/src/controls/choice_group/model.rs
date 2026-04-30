@@ -297,8 +297,8 @@ impl ChoiceGroupBuilder {
             .style_preset(ChoiceGroupStylePreset::IconButton)
     }
 
-    /// Convenience preset for radio-group semantics and default horizontal layout.
-    pub fn radio_group(self) -> Self {
+    /// Convenience preset for single-selection semantics and default horizontal layout.
+    pub fn single_select(self) -> Self {
         self.single().horizontal().style_preset(ChoiceGroupStylePreset::Radio)
     }
 

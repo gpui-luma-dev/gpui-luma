@@ -112,10 +112,10 @@ selection or active-item state themselves.
 
 Examples:
 
-- `RadioGroup` has one focus handle and a selected item.
+- `ChoiceGroup` has one focus handle and selected item IDs.
 - `PopupMenu` has one trigger focus handle and an active menu path.
 - `ContextMenu` has one target focus handle and an active menu path.
-- future `Tabs` should likely have one focus handle and an active tab.
+- `TabsNavigation` has one focus handle and an active tab.
 
 Do not create per-item tab stops unless each item is meant to be independently
 reachable through application tab navigation.
@@ -164,11 +164,11 @@ pub mod keyhandling {
     pub enum ControlKeyProfile {
         Command,
         Choice,
-        RadioGroup,
         RangeValue,
         ScrollOffset,
         Menu,
         ContextMenu,
+        TabList,
     }
 
     impl ControlKeyProfile {
@@ -176,11 +176,11 @@ pub mod keyhandling {
             match self {
                 Self::Command => "LumaCommandControl",
                 Self::Choice => "LumaChoiceControl",
-                Self::RadioGroup => "LumaRadioGroup",
                 Self::RangeValue => "LumaRangeValue",
                 Self::ScrollOffset => "LumaScrollOffset",
                 Self::Menu => "LumaMenuControl",
                 Self::ContextMenu => "LumaContextMenuControl",
+                Self::TabList => "LumaTabList",
             }
         }
 
@@ -292,17 +292,17 @@ Do not bind `Enter` by default for checkbox-like controls unless the SDK
 intentionally chooses a broader app convention. Space is the expected default
 toggle key.
 
-### 4.4 Radio Groups
+### 4.4 Tab-like Composite Selection
 
 Controls:
 
-- `RadioGroup`
-- future segmented single-select groups
+- `ChoiceGroup` (single-select modes)
+- `TabsNavigation`
 
 Default profile:
 
 ```rust
-ControlKeyProfile::RadioGroup
+ControlKeyProfile::TabList
 ```
 
 Default bindings:
@@ -314,14 +314,16 @@ Default bindings:
 
 Behavior:
 
-- one tab stop enters the group,
-- arrow keys move to the next enabled item and select it,
+- one tab stop enters the composite,
+- arrow keys move to the next enabled item,
+- home/end jump to first/last enabled item,
+- enter/space activate the active item,
 - disabled items are skipped,
-- actions consume when the group is enabled,
-- disabled groups do nothing.
+- actions consume when the composite is enabled,
+- disabled composites do nothing.
 
-Tab should leave the group through `NextFocus` or `PreviousFocus`. It should
-not move between radio items.
+Tab should leave the composite through `NextFocus` or `PreviousFocus`. It should
+not move between items.
 
 ### 4.5 Sliders And Range Inputs
 
@@ -654,7 +656,7 @@ template places those handlers; it does not decide what they mean.
    `Button`, `IconButton`, `ToggleButton`.
 4. Convert choice controls to `ActivateControl`:
    `Checkbox`, `Switch`.
-5. Convert `RadioGroup` arrow/home/end handling to shared item-selection
+5. Convert tab-like composite arrow/home/end handling to shared item-selection
    actions.
 6. Convert `Slider` arrow/page/home/end handling to shared value actions.
 7. Convert popup and context menu non-Escape navigation to shared menu
@@ -674,7 +676,7 @@ Verify keyboard behavior in the gallery after each migration step:
 - `Tab` still works after `Escape`.
 - `Enter` and `Space` activate command controls.
 - `Space` toggles checkbox-like controls.
-- radio-group arrows select the next or previous enabled item.
+- tab-like composites update active/selected state via shared item-selection actions.
 - slider arrows, page keys, home, and end update value through range snapping.
 - popup keyboard open, navigation, submenu, commit, and Escape behavior work.
 - context-menu keyboard open, navigation, submenu, commit, and Escape behavior

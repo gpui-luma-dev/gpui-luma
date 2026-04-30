@@ -1,7 +1,7 @@
 # ChoiceGroup Implementation Work Plan
 
 ## Scope
-- Introduce a new `ChoiceGroup` control to replace both `radio_group` and `toggle_group`.
+- `ChoiceGroup` replaces the removed `radio_group` and remains the replacement path for `toggle_group`.
 - Follow the SDK architecture in `docs/control-design.md` and implementation guidance in `docs/control-guidelines.md`:
   - lookless logic core
   - model/presenter/template separation
@@ -17,10 +17,10 @@
    - Themed template + presenter content support.
 2. **M2: Full Selection Modes**
    - Add multi-select semantics.
-   - Reach parity for current `toggle_group` and `radio_group` use patterns.
+   - Reach parity for current `toggle_group` use patterns.
 3. **M3: Migration + Removal**
-   - Migrate call sites from legacy controls.
-   - Deprecate and remove `radio_group` and `toggle_group`.
+   - Migrate remaining call sites from legacy controls.
+   - Deprecate and remove `toggle_group`.
 
 ## State Model Contract (Swift-ier + Reactive)
 

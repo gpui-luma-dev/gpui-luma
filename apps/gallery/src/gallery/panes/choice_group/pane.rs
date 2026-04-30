@@ -19,8 +19,8 @@ use crate::gallery::theme::GalleryThemePack;
 use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 
 const CHOICE_GROUP_DESCRIPTION: &str = concat!(
-    "Choice Group can model radio-like single-selection without using RadioGroup. ",
-    "This pane mirrors the Radio Group examples while using ChoiceGroup + RadioButton template rendering."
+    "Choice Group supports radio-like single-selection semantics. ",
+    "This pane demonstrates ChoiceGroup with RadioButton template rendering."
 );
 
 #[derive(Clone)]
@@ -37,14 +37,14 @@ impl ChoiceGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
         let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
-        let optional_group = choice_group::radio_group("choice-density-group")
+        let optional_group = choice_group::single_select("choice-density-group")
             .items(density_items())
             .bool_button_template(radio_button::default_radio_button_template())
             .with_modifier(move |el, _| el.bg(transparent).border_color(transparent))
             .spawn(cx);
 
         let transparent = hsla(0.0, 0.0, 0.0, 0.0);
-        let required_group = choice_group::radio_group("choice-required-density-group")
+        let required_group = choice_group::single_select("choice-required-density-group")
             .managed_selected("comfortable")
             .items(density_items())
             .bool_button_template(radio_button::default_radio_button_template())

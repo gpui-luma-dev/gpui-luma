@@ -16,7 +16,7 @@ The current SDK includes:
 - `ToggleButton`
 - `Checkbox`
 - `Switch`
-- `RadioGroup`
+- `ChoiceGroup`
 - `Slider`
 - `Scrollbar`
 - `Progress`
@@ -25,7 +25,7 @@ The current SDK includes:
 - shared button-family theme resolution
 - checkbox-specific theme resolution
 - switch-specific theme resolution
-- radio-group-specific theme resolution
+- choice-group-specific theme resolution
 - slider-specific theme resolution
 - scrollbar-specific theme resolution
 - progress-specific theme resolution
@@ -148,7 +148,7 @@ crates/sdk/src/controls/
     control.rs
     model.rs
     template.rs
-  radio_group/
+  choice_group/
     control.rs
     model.rs
     template.rs
@@ -421,37 +421,35 @@ switch.update(cx, |switch, cx| {
 });
 ```
 
-Application code observes `SwitchEvent::Change { on }`. The default template renders the switch as a pill track with a thumb position derived from the semantic on/off state; theme policy owns the track, thumb, and focus-ring appearance. `Switch` is the SDK's standalone binary state control, while `RadioGroup` owns mutually exclusive option selection.
+Application code observes `SwitchEvent::Change { on }`. The default template renders the switch as a pill track with a thumb position derived from the semantic on/off state; theme policy owns the track, thumb, and focus-ring appearance.
 
-### 4.7 RadioGroup
+### 4.7 ChoiceGroup
 
-`RadioGroup` owns mutual exclusivity for a set of radio-style options and emits one semantic change event.
+`ChoiceGroup` owns single- or multi-selection for related options and emits semantic change events.
 
 ```rust
-use gpui_luma::controls::radio_group::{
-    RadioGroup, RadioGroupItem,
-};
+use gpui_luma::controls::choice_group::{self, ChoiceGroupItem};
 
-let group = RadioGroup::new("density")
+let group = choice_group::single_select("density")
     .items([
-        RadioGroupItem::new("compact").label("Compact"),
-        RadioGroupItem::new("comfortable").label("Comfortable"),
-        RadioGroupItem::new("expanded").label("Expanded"),
+        ChoiceGroupItem::new("compact", "compact").label("Compact"),
+        ChoiceGroupItem::new("comfortable", "comfortable").label("Comfortable"),
+        ChoiceGroupItem::new("expanded", "expanded").label("Expanded"),
     ])
     .selected("comfortable")
     .spawn(cx);
 ```
 
-The live control exposes selected value, items, and enabled-state mutation:
+The live control exposes selection, items, mode, and enabled-state mutation:
 
 ```rust
 group.update(cx, |group, cx| {
-    group.set_selected("expanded", cx);
+    group.set_selected_ids(["expanded"], cx);
     group.set_enabled(true, cx);
 });
 ```
 
-Application code observes `RadioGroupEvent::Change { selected_id, label }`. The group owns selection coercion and clears the need for app-level sibling radio-button wiring. The default group template renders each radio item while the group control owns selection behavior.
+Application code observes `ChoiceGroupEvent::Change { item_id, label, selected, selected_ids, .. }`.
 
 ### 4.8 Slider
 
@@ -727,7 +725,7 @@ pub struct CompositeItemState {
 ```
 
 `ControlFocusState` describes GPUI focus on the control root. `CompositeItemState` describes an
-item inside a composite control. For example, a `RadioGroup` has one GPUI `FocusHandle`, while its
+item inside a composite control. For example, a `ChoiceGroup` has one GPUI `FocusHandle`, while its
 selected item may be the active descendant that receives the visible keyboard focus affordance.
 
 Menus use `MenuPath` for active descendants so the active item is not confused with the hovered item,

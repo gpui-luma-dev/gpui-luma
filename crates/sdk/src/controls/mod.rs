@@ -14,7 +14,6 @@ pub mod navigation_sidebar;
 pub mod popup_menu;
 pub mod progress;
 pub mod radio_button;
-pub mod radio_group;
 pub mod scrollbar;
 pub mod scroll_container;
 pub mod split_view;

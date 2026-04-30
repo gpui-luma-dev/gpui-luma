@@ -24,7 +24,6 @@ actions!(
 
 const COMMAND_CONTEXT: &str = "LumaCommandControl";
 const CHOICE_CONTEXT: &str = "LumaChoiceControl";
-const RADIO_GROUP_CONTEXT: &str = "LumaRadioGroup";
 const RANGE_VALUE_CONTEXT: &str = "LumaRangeValue";
 const SCROLL_OFFSET_CONTEXT: &str = "LumaScrollOffset";
 const MENU_CONTROL_CONTEXT: &str = "LumaMenuControl";
@@ -36,7 +35,6 @@ const TAB_LIST_CONTEXT: &str = "LumaTabList";
 pub enum ControlKeyProfile {
     Command,
     Choice,
-    RadioGroup,
     RangeValue,
     ScrollOffset,
     Menu,
@@ -50,7 +48,6 @@ impl ControlKeyProfile {
         match self {
             Self::Command => COMMAND_CONTEXT,
             Self::Choice => CHOICE_CONTEXT,
-            Self::RadioGroup => RADIO_GROUP_CONTEXT,
             Self::RangeValue => RANGE_VALUE_CONTEXT,
             Self::ScrollOffset => SCROLL_OFFSET_CONTEXT,
             Self::Menu => MENU_CONTROL_CONTEXT,
@@ -69,16 +66,6 @@ impl ControlKeyProfile {
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
             Self::Choice => vec![KeyBinding::new("space", ActivateControl, Some(context))],
-            Self::RadioGroup => vec![
-                KeyBinding::new("left", SelectPreviousItem, Some(context)),
-                KeyBinding::new("up", SelectPreviousItem, Some(context)),
-                KeyBinding::new("right", SelectNextItem, Some(context)),
-                KeyBinding::new("down", SelectNextItem, Some(context)),
-                KeyBinding::new("home", SelectFirstItem, Some(context)),
-                KeyBinding::new("end", SelectLastItem, Some(context)),
-                KeyBinding::new("enter", ActivateControl, Some(context)),
-                KeyBinding::new("space", ActivateControl, Some(context)),
-            ],
             Self::RangeValue => vec![
                 KeyBinding::new("left", DecreaseValue, Some(context)),
                 KeyBinding::new("down", DecreaseValue, Some(context)),
@@ -153,7 +140,6 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding> {
     [
         ControlKeyProfile::Command,
         ControlKeyProfile::Choice,
-        ControlKeyProfile::RadioGroup,
         ControlKeyProfile::RangeValue,
         ControlKeyProfile::ScrollOffset,
         ControlKeyProfile::Menu,
@@ -178,14 +164,13 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 61);
+        assert_eq!(default_control_key_bindings().len(), 53);
     }
 
     #[test]
     fn profile_binding_counts_are_stable() {
         assert_eq!(ControlKeyProfile::Command.default_bindings().len(), 2);
         assert_eq!(ControlKeyProfile::Choice.default_bindings().len(), 1);
-        assert_eq!(ControlKeyProfile::RadioGroup.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);

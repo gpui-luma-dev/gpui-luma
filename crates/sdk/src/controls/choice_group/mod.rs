@@ -44,6 +44,6 @@ pub fn toolbar_icons_multiple(id: impl Into<SharedString>) -> ChoiceGroupBuilder
     ChoiceGroupBuilder::new(id).toolbar_icons_multiple()
 }
 
-pub fn radio_group(id: impl Into<SharedString>) -> ChoiceGroupBuilder {
-    ChoiceGroupBuilder::new(id).radio_group()
+pub fn single_select(id: impl Into<SharedString>) -> ChoiceGroupBuilder {
+    ChoiceGroupBuilder::new(id).single_select()
 }
