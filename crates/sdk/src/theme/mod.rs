@@ -7,6 +7,7 @@ pub mod floating_menu;
 pub mod popup_menu;
 pub mod interaction;
 pub mod navigation_sidebar;
+pub mod pack;
 pub mod progress;
 pub mod radio_button;
 pub mod radio_group;
@@ -60,6 +61,7 @@ pub use tokens::{
     StateBackgroundPalette, StatePalette, StateTonePalette, SurfacePalette, SurfaceTonePalette,
     SurfaceWithBorderPalette, TextTokens, ThemeMode, ThemeModes, ThemeTokens,
 };
+pub use pack::{LumaChrome, LumaThemePack};
 pub use usage::{
     PaletteColorToken, ThemePartUsage, ThemeUsage, all_theme_usages, palette_color_tokens, resolve_palette_color,
 };
