@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Div, Entity, IntoElement, SharedString, Stateful, div, prelude::*, px};
 
-use super::{ChoiceGroupControl, ChoiceGroupTemplate, default_choice_group_template, template::template_with_modifier};
+use super::{ChoiceGroupTemplate, default_choice_group_template, template::template_with_modifier};
+use super::control::ChoiceGroupControl;
 use crate::controls::button_family::{ButtonKind as ChoiceGroupKind, ButtonSize as ChoiceGroupSize};
 use crate::controls::choice_group::{ChoiceGroupItemState, ControlFocusState};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};

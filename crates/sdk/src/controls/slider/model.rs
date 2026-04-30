@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{SliderControl, SliderTemplate, default_slider_template};
+use super::{SliderTemplate, default_slider_template};
+use super::control::SliderControl;
 use crate::controls::slider::SliderState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 

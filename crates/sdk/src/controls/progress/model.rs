@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{ProgressControl, ProgressTemplate, default_progress_template};
+use super::{ProgressTemplate, default_progress_template};
+use super::control::ProgressControl;
 use crate::controls::value::{ControlRange, value_from_input};
 
 #[derive(Clone)]

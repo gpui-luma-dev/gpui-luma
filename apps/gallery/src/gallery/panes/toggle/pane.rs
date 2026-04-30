@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, 
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, ControlContent, HasContent,
 };
-use gpui_luma::controls::toggle::Toggle;
+use gpui_luma::controls::toggle;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
@@ -26,12 +26,12 @@ pub(in crate::gallery) struct TogglePane {
 impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            toggle: Toggle::new("toggle-example")
+            toggle: toggle::new("toggle-example")
                 .data(true)
                 .content(|_, _| div().child("Toggle").into_any_element())
                 .template(theme.toggle_template())
                 .spawn(cx),
-            round_icon_toggle: Toggle::new("toggle-round-icon-example")
+            round_icon_toggle: toggle::new("toggle-round-icon-example")
                 .data(false)
                 .round(true)
                 .content(|_, _| {

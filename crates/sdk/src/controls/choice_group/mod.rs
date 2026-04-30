@@ -2,7 +2,7 @@ mod control;
 mod model;
 mod template;
 
-pub use control::{ChoiceGroupControl, ChoiceGroupEvent};
+pub use control::ChoiceGroupEvent;
 pub use model::{
     ChoiceGroupBuilder, ChoiceGroupContent, ChoiceGroupItem, ChoiceGroupItemButtonRenderModel,
     ChoiceGroupItemButtonTemplate, ChoiceGroupItemContentButtonRenderModel, ChoiceGroupItemContentButtonTemplate,
@@ -19,6 +19,8 @@ pub use crate::controls::button_family::{ButtonKind as ChoiceGroupKind, ButtonSi
 pub use crate::controls::state::{CompositeItemState as ChoiceGroupItemState, ControlFocusState};
 
 use gpui::{Entity, SharedString};
+
+use self::control::ChoiceGroupControl;
 
 pub type ChoiceGroup = Entity<ChoiceGroupControl>;
 

@@ -2,7 +2,7 @@ mod control;
 mod model;
 mod template;
 
-pub use control::{RadioGroupControl, RadioGroupEvent};
+pub use control::RadioGroupEvent;
 pub use model::{RadioGroupBuilder, RadioGroupItem, RadioGroupModel, RadioGroupRenderItem, RadioGroupRenderModel};
 pub use template::{
     RadioGroupClickHandler, RadioGroupHoverHandler, RadioGroupMouseDownHandler, RadioGroupMouseUpHandler,
@@ -12,6 +12,8 @@ pub use template::{
 pub use crate::controls::state::{CompositeItemState as RadioGroupItemState, ControlFocusState};
 
 use gpui::{Entity, SharedString};
+
+use self::control::RadioGroupControl;
 
 pub type RadioGroup = Entity<RadioGroupControl>;
 

@@ -3,7 +3,7 @@ mod model;
 mod state;
 mod template;
 
-pub use control::{TextFieldControl, TextFieldEvent};
+pub use control::TextFieldEvent;
 pub use model::{TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
 pub use state::TextFieldState;
 pub use template::{
@@ -13,6 +13,8 @@ pub use template::{
 };
 
 use gpui::{Entity, SharedString};
+
+use self::control::TextFieldControl;
 
 pub type TextField = Entity<TextFieldControl>;
 

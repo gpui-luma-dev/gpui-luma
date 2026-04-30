@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{RadioGroupControl, RadioGroupTemplate, default_radio_group_template};
+use super::{RadioGroupTemplate, default_radio_group_template};
+use super::control::RadioGroupControl;
 use crate::controls::radio_group::{ControlFocusState, RadioGroupItemState};
 
 #[derive(Clone, Debug)]
