@@ -91,7 +91,6 @@ const THEME_USAGES: &[&ThemeUsage] = &[
     &super::navigation_sidebar::NAVIGATION_SIDEBAR_THEME_USAGE,
     &super::button_family::ICON_BUTTON_THEME_USAGE,
     &super::button_family::TOGGLE_THEME_USAGE,
-    &super::toggle_group::TOGGLE_GROUP_THEME_USAGE,
     &super::choice_group::CHOICE_GROUP_THEME_USAGE,
     &super::checkbox::CHECKBOX_THEME_USAGE,
     &super::radio_button::RADIO_BUTTON_THEME_USAGE,

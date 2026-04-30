@@ -16,7 +16,6 @@ pub mod switch;
 pub mod tabs_navigation;
 pub mod textarea;
 pub mod textfield;
-pub mod toggle_group;
 pub mod tokens;
 pub mod usage;
 
@@ -53,10 +52,6 @@ pub use tabs_navigation::{
 };
 pub use textarea::{DefaultTextAreaTheme, TextAreaAppearance, TextAreaTheme, default_textarea_theme};
 pub use textfield::{DefaultTextFieldTheme, TextFieldAppearance, TextFieldTheme, default_textfield_theme};
-pub use toggle_group::{
-    DefaultToggleGroupTheme, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
-    default_toggle_group_theme,
-};
 pub use tokens::{
     ActionPalette, ActionRolePalette, AppPalette, BorderPalette, BorderWidthTokens, ColorTokens, ControlMetricScale,
     ControlMetricTokens, ControlSize, DataPalette, FocusMetricTokens, FocusPalette, FontFamilyToken, FontTokens,

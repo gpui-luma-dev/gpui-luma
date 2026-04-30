@@ -11,26 +11,24 @@ use gpui_luma::controls::{
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
     radio_button::ThemedRadioButtonTemplate,
-    radio_group::{RadioGroupTemplate, ThemedRadioGroupTemplate},
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
     switch::ThemedSwitchTemplate,
     tabs_navigation::{TabsNavigationTemplate, ThemedTabsNavigationTemplate},
     textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
-    toggle_group::{ThemedToggleGroupTemplate, ToggleGroupTemplate},
 };
 use gpui_luma::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioButtonTheme,
-    DefaultRadioGroupTheme, DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
-    DefaultTextAreaTheme, DefaultTextFieldTheme, DefaultToggleGroupTheme, InteractionState, LumaTheme,
+    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioButtonTheme, 
+    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
+    DefaultTextAreaTheme, DefaultTextFieldTheme, InteractionState, LumaTheme,
     NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme, ProgressAppearance, ProgressTheme,
-    RadioButtonAppearance, RadioButtonTheme, RadioGroupItemAppearance, RadioGroupTheme, ScrollbarAppearance,
+    RadioButtonAppearance, RadioButtonTheme, ScrollbarAppearance,
     ScrollbarTheme, SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance,
     TabsNavigationListAppearance, TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance,
-    TextFieldTheme, ThemeMode, ThemeTokens, ToggleGroupItemAppearance, ToggleGroupListAppearance, ToggleGroupTheme,
+    TextFieldTheme, ThemeMode, ThemeTokens,
 };
 
 #[derive(Clone)]
@@ -43,14 +41,12 @@ pub(in crate::gallery) struct GalleryThemePack {
     popup_menu_theme: Arc<dyn PopupMenuTheme>,
     progress_theme: Arc<dyn ProgressTheme>,
     radio_button_theme: Arc<dyn RadioButtonTheme>,
-    radio_group_theme: Arc<dyn RadioGroupTheme>,
     scrollbar_theme: Arc<dyn ScrollbarTheme>,
     slider_theme: Arc<dyn SliderTheme>,
     switch_theme: Arc<dyn SwitchTheme>,
     tabs_navigation_theme: Arc<dyn TabsNavigationTheme>,
     textarea_theme: Arc<dyn TextAreaTheme>,
     textfield_theme: Arc<dyn TextFieldTheme>,
-    toggle_group_theme: Arc<dyn ToggleGroupTheme>,
 }
 
 struct GalleryThemeState {
@@ -85,14 +81,12 @@ impl GalleryThemePack {
             popup_menu_theme: Arc::new(GalleryPopupMenuTheme { state: state.clone() }),
             progress_theme: Arc::new(GalleryProgressTheme { state: state.clone() }),
             radio_button_theme: Arc::new(GalleryRadioButtonTheme { state: state.clone() }),
-            radio_group_theme: Arc::new(GalleryRadioGroupTheme { state: state.clone() }),
             scrollbar_theme: Arc::new(GalleryScrollbarTheme { state: state.clone() }),
             slider_theme: Arc::new(GallerySliderTheme { state: state.clone() }),
             switch_theme: Arc::new(GallerySwitchTheme { state: state.clone() }),
             tabs_navigation_theme: Arc::new(GalleryTabsNavigationTheme { state: state.clone() }),
             textarea_theme: Arc::new(GalleryTextAreaTheme { state: state.clone() }),
             textfield_theme: Arc::new(GalleryTextFieldTheme { state: state.clone() }),
-            toggle_group_theme: Arc::new(GalleryToggleGroupTheme { state }),
         }
     }
 
@@ -162,10 +156,6 @@ impl GalleryThemePack {
         }))
     }
 
-    pub(in crate::gallery) fn toggle_group_template(&self) -> Arc<dyn ToggleGroupTemplate> {
-        Arc::new(ThemedToggleGroupTemplate::new(self.toggle_group_theme.clone()))
-    }
-
     pub(in crate::gallery) fn checkbox_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         Arc::new(ThemedCheckboxTemplate::new(self.checkbox_theme.clone()))
     }
@@ -176,10 +166,6 @@ impl GalleryThemePack {
 
     pub(in crate::gallery) fn radio_button_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         Arc::new(ThemedRadioButtonTemplate::new(self.radio_button_theme.clone()))
-    }
-
-    pub(in crate::gallery) fn radio_group_template(&self) -> Arc<dyn RadioGroupTemplate> {
-        Arc::new(ThemedRadioGroupTemplate::new(self.radio_group_theme.clone()))
     }
 
     pub(in crate::gallery) fn slider_template(&self) -> Arc<dyn SliderTemplate> {
@@ -300,16 +286,6 @@ impl RadioButtonTheme for GalleryRadioButtonTheme {
     }
 }
 
-struct GalleryRadioGroupTheme {
-    state: Arc<GalleryThemeState>,
-}
-
-impl RadioGroupTheme for GalleryRadioGroupTheme {
-    fn resolve_item(&self, selected: bool, state: InteractionState) -> RadioGroupItemAppearance {
-        DefaultRadioGroupTheme::new(self.state.tokens()).resolve_item(selected, state)
-    }
-}
-
 struct GallerySliderTheme {
     state: Arc<GalleryThemeState>,
 }
@@ -398,26 +374,6 @@ struct GalleryContextMenuTheme {
 impl ContextMenuTheme for GalleryContextMenuTheme {
     fn resolve(&self, state: InteractionState) -> ContextMenuAppearance {
         DefaultContextMenuTheme::new(self.state.tokens()).resolve(state)
-    }
-}
-
-struct GalleryToggleGroupTheme {
-    state: Arc<GalleryThemeState>,
-}
-
-impl ToggleGroupTheme for GalleryToggleGroupTheme {
-    fn resolve_list(&self, enabled: bool, size: gpui_luma::theme::ControlSize) -> ToggleGroupListAppearance {
-        DefaultToggleGroupTheme::new(self.state.tokens()).resolve_list(enabled, size)
-    }
-
-    fn resolve_item(
-        &self,
-        variant: ButtonVariant,
-        selected: bool,
-        state: InteractionState,
-        size: gpui_luma::theme::ControlSize,
-    ) -> ToggleGroupItemAppearance {
-        DefaultToggleGroupTheme::new(self.state.tokens()).resolve_item(variant, selected, state, size)
     }
 }
 
