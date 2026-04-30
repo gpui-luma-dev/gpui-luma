@@ -4,11 +4,12 @@ use gpui::{
     AnyElement, App, ClickEvent, Context, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
     Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::toggle_group::{
-    self, ControlFocusState, ToggleGroup, ToggleGroupClickHandler, ToggleGroupEvent, ToggleGroupHoverHandler,
-    ToggleGroupItem, ToggleGroupItemPosition, ToggleGroupItemState, ToggleGroupKind, ToggleGroupMouseDownHandler,
-    ToggleGroupMouseUpHandler, ToggleGroupRenderItem, ToggleGroupRenderModel, ToggleGroupSelectionMode,
-    ToggleGroupSize, ToggleGroupTemplate, ToggleGroupTemplateHandlers,
+use gpui_luma::controls::choice_group::{
+    self, ChoiceGroup, ChoiceGroupClickHandler, ChoiceGroupContent, ChoiceGroupEvent, ChoiceGroupHoverHandler,
+    ChoiceGroupItem, ChoiceGroupItemContentModel, ChoiceGroupItemPosition, ChoiceGroupItemState, ChoiceGroupLayout,
+    ChoiceGroupMouseDownHandler, ChoiceGroupMouseUpHandler, ChoiceGroupRenderItem, ChoiceGroupRenderModel,
+    ChoiceGroupSelectionMode, ChoiceGroupStateMode, ChoiceGroupTemplate, ChoiceGroupTemplateHandlers, ChoiceGroupKind,
+    ChoiceGroupSize, ControlFocusState, default_choice_group_template,
 };
 
 use crate::gallery::control::GalleryApp;
@@ -18,9 +19,9 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleGroupPane {
-    single_group: ToggleGroup,
-    multiple_group: ToggleGroup,
-    state_preview: Entity<ToggleGroupStatePreview>,
+    single_group: ChoiceGroup,
+    multiple_group: ChoiceGroup,
+    state_preview: Entity<ChoiceGroupStatePreview>,
     placement: String,
     visible_edges: Vec<String>,
 }
@@ -28,28 +29,25 @@ pub(in crate::gallery) struct ToggleGroupPane {
 impl ToggleGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            single_group: toggle_group::new("placement-toggle-group")
+            single_group: choice_group::new("placement-choice-group")
                 .items(placement_items())
                 .selected("bottom")
-                .template(theme.toggle_group_template())
                 .spawn(cx),
-            multiple_group: toggle_group::new("edge-toggle-group")
-                .multiple()
+            multiple_group: choice_group::multiple("edge-choice-group")
                 .items(edge_items())
                 .selected_ids(["top", "left"])
-                .template(theme.toggle_group_template())
                 .spawn(cx),
-            state_preview: cx.new(|_| ToggleGroupStatePreview::new(theme)),
+            state_preview: cx.new(|_| ChoiceGroupStatePreview::new(theme)),
             placement: "Bottom".to_string(),
             visible_edges: vec!["Top".to_string(), "Left".to_string()],
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.single_group, |app, _, event: &ToggleGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.single_group, |app, _, event: &ChoiceGroupEvent, cx| {
             app.panes.toggle_group.handle_single_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.multiple_group, |app, _, event: &ToggleGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.multiple_group, |app, _, event: &ChoiceGroupEvent, cx| {
             app.panes.toggle_group.handle_multiple_event(event, cx);
         }));
     }
@@ -89,9 +87,9 @@ impl ToggleGroupPane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_single_event(&mut self, event: &ToggleGroupEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_single_event(&mut self, event: &ChoiceGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ToggleGroupEvent::Change { label, selected, .. } => {
+            ChoiceGroupEvent::Change { label, selected, .. } => {
                 self.placement = if *selected {
                     label.to_string()
                 } else {
@@ -102,10 +100,10 @@ impl ToggleGroupPane {
         }
     }
 
-    fn handle_multiple_event(&mut self, event: &ToggleGroupEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_multiple_event(&mut self, event: &ChoiceGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ToggleGroupEvent::Change { selected_ids, .. } => {
-                self.visible_edges = selected_ids.iter().map(ToString::to_string).map(label_for_edge_id).collect();
+            ChoiceGroupEvent::Change { selected_ids, .. } => {
+                self.visible_edges = selected_ids.iter().map(|id| label_for_edge_id(id.as_ref())).collect();
             }
         }
 
@@ -118,54 +116,54 @@ impl ToggleGroupPane {
 }
 
 #[derive(Clone)]
-struct ToggleGroupStatePreview {
+struct ChoiceGroupStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn ToggleGroupTemplate>,
+    template: Arc<dyn ChoiceGroupTemplate>,
 }
 
 #[derive(Clone, Copy)]
-struct ToggleGroupStateSample {
+struct ChoiceGroupStateSample {
     id: &'static str,
     label: &'static str,
-    state: ToggleGroupItemState,
+    state: ChoiceGroupItemState,
 }
 
-impl ToggleGroupStatePreview {
+impl ChoiceGroupStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.toggle_group_template() }
+        Self { theme: theme.clone(), template: default_choice_group_template() }
     }
 }
 
-impl Render for ToggleGroupStatePreview {
+impl Render for ChoiceGroupStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ToggleGroupStateSample { id: "default", label: "Standard", state: ToggleGroupItemState::default() },
-            ToggleGroupStateSample {
+            ChoiceGroupStateSample { id: "default", label: "Standard", state: ChoiceGroupItemState::default() },
+            ChoiceGroupStateSample {
                 id: "hover",
                 label: "Hover",
-                state: ToggleGroupItemState { hovered: true, ..ToggleGroupItemState::default() },
+                state: ChoiceGroupItemState { hovered: true, ..ChoiceGroupItemState::default() },
             },
-            ToggleGroupStateSample {
+            ChoiceGroupStateSample {
                 id: "focus",
                 label: "Focus",
-                state: ToggleGroupItemState { active: true, focus_visible: true, ..ToggleGroupItemState::default() },
+                state: ChoiceGroupItemState { active: true, focus_visible: true, ..ChoiceGroupItemState::default() },
             },
-            ToggleGroupStateSample {
+            ChoiceGroupStateSample {
                 id: "active",
                 label: "Active",
-                state: ToggleGroupItemState {
+                state: ChoiceGroupItemState {
                     hovered: true,
                     pressed: true,
                     active: true,
                     focus_visible: true,
-                    ..ToggleGroupItemState::default()
+                    ..ChoiceGroupItemState::default()
                 },
             },
-            ToggleGroupStateSample {
+            ChoiceGroupStateSample {
                 id: "disabled",
                 label: "Disabled",
-                state: ToggleGroupItemState { disabled: true, ..ToggleGroupItemState::default() },
+                state: ChoiceGroupItemState { disabled: true, ..ChoiceGroupItemState::default() },
             },
         ];
 
@@ -188,10 +186,10 @@ impl Render for ToggleGroupStatePreview {
 }
 
 fn render_state_row(
-    template: &Arc<dyn ToggleGroupTemplate>,
+    template: &Arc<dyn ChoiceGroupTemplate>,
     row_label: &'static str,
     selected: bool,
-    samples: &[ToggleGroupStateSample],
+    samples: &[ChoiceGroupStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
@@ -213,14 +211,14 @@ fn render_state_row(
 }
 
 fn render_state_sample(
-    template: &Arc<dyn ToggleGroupTemplate>,
+    template: &Arc<dyn ChoiceGroupTemplate>,
     selected: bool,
-    sample: &ToggleGroupStateSample,
+    sample: &ChoiceGroupStateSample,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("toggle-group-preview-{}-{}", selected, sample.id));
+    let id = SharedString::from(format!("choice-group-preview-{}-{}", selected, sample.id));
     let item_ids = [SharedString::from("top"), SharedString::from("bottom"), SharedString::from("right")];
     let item_labels = [SharedString::from("Top"), SharedString::from("Bottom"), SharedString::from("Right")];
     let selected_ids = if selected {
@@ -231,6 +229,8 @@ fn render_state_sample(
     let active_id = (sample.state.active || sample.state.focus_visible).then_some(&item_ids[1]);
     let enabled = !sample.state.disabled;
     let focus = ControlFocusState { focused: sample.state.active, focus_visible: sample.state.focus_visible };
+    let content: ChoiceGroupContent = Arc::new(|m, _| div().child(m.item_label.clone()).into_any_element());
+
     let items = item_ids
         .iter()
         .zip(item_labels.iter())
@@ -239,29 +239,51 @@ fn render_state_sample(
             let target = index == 1;
             let item_selected = target && selected;
             let state = if target {
-                ToggleGroupItemState { selected: item_selected, ..sample.state }
+                ChoiceGroupItemState { selected: item_selected, ..sample.state }
             } else {
-                ToggleGroupItemState { disabled: !enabled, ..ToggleGroupItemState::default() }
+                ChoiceGroupItemState { disabled: !enabled, ..ChoiceGroupItemState::default() }
             };
 
-            ToggleGroupRenderItem {
-                id: item_id,
-                label,
+            let position = item_position(index, item_ids.len());
+            let content_model = ChoiceGroupItemContentModel {
+                group_id: id.clone(),
+                item_id: item_id.clone(),
+                item_label: label.clone(),
+                item_value: item_id.clone(),
                 selected: item_selected,
                 enabled,
-                position: item_position(index, item_ids.len()),
+                position,
                 state,
+                selection_mode: ChoiceGroupSelectionMode::Single,
+                layout: ChoiceGroupLayout::Horizontal,
+                group_enabled: enabled,
+            };
+
+            ChoiceGroupRenderItem {
+                id: item_id,
+                label,
+                value: item_id,
+                selected: item_selected,
+                enabled,
+                position,
+                state,
+                content_model,
             }
         })
         .collect();
-    let model = ToggleGroupRenderModel {
+
+    let model = ChoiceGroupRenderModel {
         id: &id,
         items,
+        content: &content,
+        item_button_template: None,
         selected_ids: &selected_ids,
         active_id,
-        selection_mode: ToggleGroupSelectionMode::Single,
-        kind: ToggleGroupKind::Standard,
-        size: ToggleGroupSize::Md,
+        selection_mode: ChoiceGroupSelectionMode::Single,
+        layout: ChoiceGroupLayout::Horizontal,
+        state_mode: ChoiceGroupStateMode::Unmanaged,
+        kind: ChoiceGroupKind::Standard,
+        size: ChoiceGroupSize::Md,
         enabled,
         focus,
     };
@@ -271,18 +293,18 @@ fn render_state_sample(
         .flex_col()
         .items_center()
         .gap(px(6.0))
-        .child(template.render(&model, toggle_group_preview_handlers(3), window, cx))
+        .child(template.render(&model, choice_group_preview_handlers(3), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 
-fn toggle_group_preview_handlers(count: usize) -> ToggleGroupTemplateHandlers {
-    ToggleGroupTemplateHandlers {
-        item_hovers: (0..count).map(|_| Box::new(noop_hover) as ToggleGroupHoverHandler).collect(),
-        item_mouse_downs: (0..count).map(|_| Box::new(noop_mouse_down) as ToggleGroupMouseDownHandler).collect(),
-        item_mouse_ups: (0..count).map(|_| Box::new(noop_mouse_up) as ToggleGroupMouseUpHandler).collect(),
-        item_mouse_up_outs: (0..count).map(|_| Box::new(noop_mouse_up) as ToggleGroupMouseUpHandler).collect(),
-        item_clicks: (0..count).map(|_| Box::new(noop_click) as ToggleGroupClickHandler).collect(),
+fn choice_group_preview_handlers(count: usize) -> ChoiceGroupTemplateHandlers {
+    ChoiceGroupTemplateHandlers {
+        item_hovers: (0..count).map(|_| Box::new(noop_hover) as ChoiceGroupHoverHandler).collect(),
+        item_mouse_downs: (0..count).map(|_| Box::new(noop_mouse_down) as ChoiceGroupMouseDownHandler).collect(),
+        item_mouse_ups: (0..count).map(|_| Box::new(noop_mouse_up) as ChoiceGroupMouseUpHandler).collect(),
+        item_mouse_up_outs: (0..count).map(|_| Box::new(noop_mouse_up) as ChoiceGroupMouseUpHandler).collect(),
+        item_clicks: (0..count).map(|_| Box::new(noop_click) as ChoiceGroupClickHandler).collect(),
     }
 }
 
@@ -294,40 +316,40 @@ fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 
-fn item_position(index: usize, item_count: usize) -> ToggleGroupItemPosition {
+fn item_position(index: usize, item_count: usize) -> ChoiceGroupItemPosition {
     match (index, item_count) {
-        (_, 0 | 1) => ToggleGroupItemPosition::Only,
-        (0, _) => ToggleGroupItemPosition::First,
-        (index, item_count) if index + 1 == item_count => ToggleGroupItemPosition::Last,
-        _ => ToggleGroupItemPosition::Middle,
+        (_, 0 | 1) => ChoiceGroupItemPosition::Only,
+        (0, _) => ChoiceGroupItemPosition::First,
+        (index, item_count) if index + 1 == item_count => ChoiceGroupItemPosition::Last,
+        _ => ChoiceGroupItemPosition::Middle,
     }
 }
 
-fn placement_items() -> [ToggleGroupItem; 4] {
+fn placement_items() -> [ChoiceGroupItem; 4] {
     [
-        ToggleGroupItem::new("top").label("Top"),
-        ToggleGroupItem::new("bottom").label("Bottom"),
-        ToggleGroupItem::new("left").label("Left"),
-        ToggleGroupItem::new("right").label("Right"),
+        ChoiceGroupItem::new("top", "top").label("Top"),
+        ChoiceGroupItem::new("bottom", "bottom").label("Bottom"),
+        ChoiceGroupItem::new("left", "left").label("Left"),
+        ChoiceGroupItem::new("right", "right").label("Right"),
     ]
 }
 
-fn edge_items() -> [ToggleGroupItem; 4] {
+fn edge_items() -> [ChoiceGroupItem; 4] {
     [
-        ToggleGroupItem::new("top").label("Top"),
-        ToggleGroupItem::new("bottom").label("Bottom"),
-        ToggleGroupItem::new("left").label("Left"),
-        ToggleGroupItem::new("right").label("Right"),
+        ChoiceGroupItem::new("top", "top").label("Top"),
+        ChoiceGroupItem::new("bottom", "bottom").label("Bottom"),
+        ChoiceGroupItem::new("left", "left").label("Left"),
+        ChoiceGroupItem::new("right", "right").label("Right"),
     ]
 }
 
-fn label_for_edge_id(id: String) -> String {
-    match id.as_str() {
+fn label_for_edge_id(id: &str) -> String {
+    match id {
         "top" => "Top",
         "bottom" => "Bottom",
         "left" => "Left",
         "right" => "Right",
-        _ => id.as_str(),
+        _ => id,
     }
     .to_string()
 }
