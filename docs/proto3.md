@@ -3,7 +3,7 @@
 ## Status
 
 - **Type:** Summary + decision document
-- **Predecessor:** `docs/proto2.md`
+- **Predecessor:** Proto2 planning phase (document archived)
 - **Scope:** Prototype paths remain isolated (`controls/prototypes/*`, gallery prototype pane)
 
 ---

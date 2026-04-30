@@ -2,7 +2,7 @@
 
 ## Scope
 - Introduce a new `ChoiceGroup` control to replace both `radio_group` and `toggle_group`.
-- Follow the architecture in `docs/control_design2.md`:
+- Follow the SDK architecture in `docs/control-design.md` and implementation guidance in `docs/control-guidelines.md`:
   - lookless logic core
   - model/presenter/template separation
   - content presenter (`ControlContent<M>`)
