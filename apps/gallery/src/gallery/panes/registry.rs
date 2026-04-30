@@ -295,7 +295,7 @@ impl GalleryPanes {
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
             textarea: textarea::TextAreaPane::new(cx, theme),
             textfield: textfield::TextFieldPane::new(cx, theme),
-            floating_menu: floating_menu::FloatingMenuPane::new(),
+            floating_menu: floating_menu::FloatingMenuPane::new(cx),
             popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
             context_menu: context_menu::ContextMenuPane::new(cx, theme),
             navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, theme),
@@ -320,6 +320,7 @@ impl GalleryPanes {
         self.scrollbar.subscribe(cx, subscriptions);
         self.textarea.subscribe(cx, subscriptions);
         self.textfield.subscribe(cx, subscriptions);
+        self.floating_menu.subscribe(cx, subscriptions);
         self.popup_menu.subscribe(cx, subscriptions);
         self.context_menu.subscribe(cx, subscriptions);
         self.navigation_sidebar.subscribe(cx, subscriptions);
@@ -343,7 +344,7 @@ impl GalleryPanes {
         self.scrollbar.notify_controls(cx);
         self.textarea.notify_controls(cx);
         self.textfield.notify_controls(cx);
-        self.floating_menu.notify_controls();
+        self.floating_menu.notify_controls(cx);
         self.popup_menu.notify_controls(cx);
         self.context_menu.notify_controls(cx);
         self.navigation_sidebar.notify_controls(cx);

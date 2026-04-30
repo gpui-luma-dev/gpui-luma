@@ -5,9 +5,9 @@ use gpui::{
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
 use crate::controls::popup_menu::model::PopupMenuModel;
+use crate::controls::floating_menu::{FloatingMenuActivateResult, FloatingMenuState, FloatingMenuStepDirection};
 use crate::controls::interaction::ControlInteraction;
-use crate::controls::menu_item::MenuItem;
-use crate::controls::menu_navigation::{MenuDirection, MenuNavigator};
+use crate::controls::menu_navigation::MenuNavigator;
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
@@ -24,8 +24,7 @@ pub struct PopupMenu {
     model: PopupMenuModel,
     open: bool,
     trigger_bounds: Option<Bounds<Pixels>>,
-    open_submenu: Option<usize>,
-    active_path: Option<MenuPath>,
+    menu_state: FloatingMenuState,
     interaction: ControlInteraction,
 }
 
@@ -44,8 +43,7 @@ impl PopupMenu {
             model: builder.model,
             open: false,
             trigger_bounds: None,
-            open_submenu: None,
-            active_path: None,
+            menu_state: FloatingMenuState::default(),
             interaction: ControlInteraction::new(enabled, cx),
         }
     }
@@ -55,7 +53,11 @@ impl PopupMenu {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = MenuItem>, cx: &mut Context<Self>) {
+    pub fn set_items(
+        &mut self,
+        items: impl IntoIterator<Item = crate::controls::menu_item::MenuItem>,
+        cx: &mut Context<Self>,
+    ) {
         self.model.items = items.into_iter().collect();
         self.close_menu();
         cx.notify();
@@ -83,8 +85,8 @@ impl PopupMenu {
             open: self.open,
             trigger_bounds: self.trigger_bounds.clone(),
             placement: self.model.placement,
-            open_submenu: self.open_submenu,
-            active_path: self.active_path,
+            open_submenu: self.menu_state.open_submenu(),
+            active_path: self.menu_state.active_path(),
             enabled: self.model.enabled,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
@@ -92,7 +94,7 @@ impl PopupMenu {
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> PopupMenuTemplateHandlers {
-        let item_paths = self.item_click_paths();
+        let item_paths = self.menu_state.item_click_paths(&self.model.items);
 
         PopupMenuTemplateHandlers {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
@@ -120,61 +122,29 @@ impl PopupMenu {
         }
     }
 
-    fn item_click_paths(&self) -> Vec<Vec<usize>> {
-        let mut paths = Vec::new();
-
-        for (index, item) in self.model.items.iter().enumerate() {
-            if item.enabled && item.submenu_items.is_empty() {
-                paths.push(vec![index]);
-            } else if self.open_submenu == Some(index) {
-                paths.extend(
-                    item.submenu_items
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, submenu_item)| submenu_item.enabled && submenu_item.submenu_items.is_empty())
-                        .map(|(submenu_index, _)| vec![index, submenu_index]),
-                );
-            }
-        }
-
-        paths
-    }
-
     fn close_menu(&mut self) {
         self.open = false;
-        self.open_submenu = None;
-        self.active_path = None;
+        self.menu_state.clear();
     }
 
     fn open_menu_with(&mut self, active_path: Option<MenuPath>) -> bool {
-        let open_submenu = match active_path {
-            Some(MenuPath::Submenu { parent, .. }) => Some(parent),
-            _ => None,
-        };
-
-        let changed = !self.open || self.open_submenu != open_submenu || self.active_path != active_path;
-
+        let changed = !self.open || self.menu_state.open_with(active_path);
         self.open = true;
-        self.open_submenu = open_submenu;
-        self.active_path = active_path;
-
         changed
     }
 
     fn select_item_at_path(&mut self, path: &[usize], cx: &mut Context<Self>) -> bool {
-        let Some(item) = self.item_at_path(path) else {
-            return false;
-        };
-
-        if !self.model.enabled || !item.enabled || !item.submenu_items.is_empty() {
+        if !self.model.enabled {
             return false;
         }
 
-        let item_id = item.id.clone();
-        let label = item.label.clone();
-        self.close_menu();
-        cx.emit(PopupMenuEvent::Select { item_id, label });
-        true
+        if let Some((item_id, label)) = self.menu_state.select_at_path(&self.model.items, path) {
+            self.close_menu();
+            cx.emit(PopupMenuEvent::Select { item_id, label });
+            return true;
+        }
+
+        false
     }
 
     fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
@@ -206,30 +176,12 @@ impl PopupMenu {
         }
     }
 
-    fn item_at_path(&self, path: &[usize]) -> Option<&MenuItem> {
-        match path {
-            [index] => self.model.items.get(*index),
-            [index, submenu_index] => self.model.items.get(*index)?.submenu_items.get(*submenu_index),
-            _ => None,
-        }
-    }
-
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
         if !hovered || !self.open {
             return;
         }
 
-        let next_submenu = self
-            .model
-            .items
-            .get(index)
-            .is_some_and(|item| item.enabled && !item.submenu_items.is_empty())
-            .then_some(index);
-
-        let next_active_path = Some(MenuPath::Root(index));
-        if self.open_submenu != next_submenu || self.active_path != next_active_path {
-            self.open_submenu = next_submenu;
-            self.active_path = next_active_path;
+        if self.menu_state.hover_root_item(&self.model.items, index) {
             cx.notify();
         }
     }
@@ -277,26 +229,12 @@ impl PopupMenu {
         }
     }
 
-    fn step_active_item(&mut self, direction: MenuDirection, cx: &mut Context<Self>) {
+    fn step_active_item(&mut self, direction: FloatingMenuStepDirection, cx: &mut Context<Self>) {
         if !self.model.enabled || !self.open {
             return;
         }
 
-        let navigator = MenuNavigator::new(&self.model.items);
-        let next_path = match self.active_path {
-            Some(MenuPath::Submenu { parent, child }) => navigator
-                .step_submenu(parent, Some(child), direction)
-                .map(|child| MenuPath::Submenu { parent, child }),
-            _ => navigator.step_root(navigator.active_root(self.active_path), direction).map(MenuPath::Root),
-        };
-
-        if let Some(next_path) = next_path
-            && self.active_path != Some(next_path)
-        {
-            self.active_path = Some(next_path);
-            if matches!(next_path, MenuPath::Root(_)) {
-                self.open_submenu = None;
-            }
+        if self.menu_state.step(&self.model.items, direction) {
             cx.notify();
         }
     }
@@ -306,35 +244,7 @@ impl PopupMenu {
             return;
         }
 
-        let navigator = MenuNavigator::new(&self.model.items);
-        let next_path = match self.active_path {
-            Some(MenuPath::Submenu { parent, .. }) => {
-                let child = if first {
-                    navigator.first_submenu(parent)
-                } else {
-                    navigator.last_submenu(parent)
-                };
-
-                child.map(|child| MenuPath::Submenu { parent, child })
-            }
-            _ => {
-                let root = if first {
-                    navigator.first_root()
-                } else {
-                    navigator.last_root()
-                };
-
-                root.map(MenuPath::Root)
-            }
-        };
-
-        if let Some(next_path) = next_path
-            && self.active_path != Some(next_path)
-        {
-            self.active_path = Some(next_path);
-            if matches!(next_path, MenuPath::Root(_)) {
-                self.open_submenu = None;
-            }
+        if self.menu_state.move_to_boundary(&self.model.items, first) {
             cx.notify();
         }
     }
@@ -344,16 +254,8 @@ impl PopupMenu {
             return;
         }
 
-        let navigator = MenuNavigator::new(&self.model.items);
-        if let Some(parent) = navigator.active_root(self.active_path)
-            && let Some(child) = navigator.first_submenu(parent)
-        {
-            let next_path = Some(MenuPath::Submenu { parent, child });
-            if self.open_submenu != Some(parent) || self.active_path != next_path {
-                self.open_submenu = Some(parent);
-                self.active_path = next_path;
-                cx.notify();
-            }
+        if self.menu_state.open_active_submenu(&self.model.items) {
+            cx.notify();
         }
     }
 
@@ -362,9 +264,7 @@ impl PopupMenu {
             return;
         }
 
-        if let Some(MenuPath::Submenu { parent, .. }) = self.active_path {
-            self.open_submenu = None;
-            self.active_path = Some(MenuPath::Root(parent));
+        if self.menu_state.close_active_submenu() {
             cx.notify();
         }
     }
@@ -379,35 +279,25 @@ impl PopupMenu {
             return;
         }
 
-        let navigator = MenuNavigator::new(&self.model.items);
-        let Some(active_path) = self.active_path else {
+        if !self.open {
+            self.open_menu_at_boundary(true, cx);
             return;
-        };
+        }
 
-        if let Some(item) = navigator.active_item(Some(active_path)) {
-            if !item.submenu_items().is_empty() {
-                if let MenuPath::Root(parent) = active_path
-                    && let Some(child) = navigator.first_submenu(parent)
-                {
-                    self.open_submenu = Some(parent);
-                    self.active_path = Some(MenuPath::Submenu { parent, child });
-                    cx.notify();
-                }
-            } else {
-                let path = match active_path {
-                    MenuPath::Root(index) => vec![index],
-                    MenuPath::Submenu { parent, child } => vec![parent, child],
-                };
-                if self.select_item_at_path(&path, cx) {
-                    cx.notify();
-                }
+        match self.menu_state.activate(&self.model.items) {
+            FloatingMenuActivateResult::None => {}
+            FloatingMenuActivateResult::OpenedSubmenu => cx.notify(),
+            FloatingMenuActivateResult::Select { item_id, label } => {
+                self.close_menu();
+                cx.emit(PopupMenuEvent::Select { item_id, label });
+                cx.notify();
             }
         }
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
-            self.step_active_item(MenuDirection::Previous, cx);
+            self.step_active_item(FloatingMenuStepDirection::Previous, cx);
         } else {
             self.open_menu_at_boundary(false, cx);
         }
@@ -415,7 +305,7 @@ impl PopupMenu {
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
-            self.step_active_item(MenuDirection::Next, cx);
+            self.step_active_item(FloatingMenuStepDirection::Next, cx);
         } else {
             self.open_menu_at_boundary(true, cx);
         }
