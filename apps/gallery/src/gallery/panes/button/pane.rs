@@ -1,14 +1,18 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, ButtonRenderModel, HasContent};
+use gpui_luma::controls::command::button::{
+    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasContent,
+};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{ButtonFamilyRole, InteractionState};
+use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::labeling::render_vertical_section_rail;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
@@ -28,10 +32,7 @@ impl ButtonPane {
                 .label("Standard")
                 .kind(ButtonKind::Standard)
                 .spawn(cx),
-            ghost_button: Button::new("button-ghost-example")
-                .label("Ghost")
-                .kind(ButtonKind::Ghost)
-                .spawn(cx),
+            ghost_button: Button::new("button-ghost-example").label("Ghost").kind(ButtonKind::Ghost).spawn(cx),
             prominent_button: Button::new("button-prominent-example")
                 .label("Prominent")
                 .kind(ButtonKind::Prominent)
@@ -130,17 +131,75 @@ impl ButtonPane {
 struct ButtonStatePreview {
     theme: GalleryThemePack,
     template: Arc<dyn ButtonTemplate<()>>,
+    uniform_template: Arc<dyn ButtonTemplate<()>>,
+    use_uniform_sizing: bool,
 }
 
 struct ButtonStateSample {
     id: &'static str,
-    label: &'static str,
+    header: &'static str,
     state: InteractionState,
+}
+
+#[derive(Clone, Copy)]
+enum ButtonTemplateVariant {
+    TextButton,
+    TextButtonLeadingIcon,
+    TextButtonTrailingIcon,
+    IconButton,
+}
+
+impl ButtonTemplateVariant {
+    fn id(self) -> &'static str {
+        match self {
+            Self::TextButton => "text-button",
+            Self::TextButtonLeadingIcon => "text-button-leading-icon",
+            Self::TextButtonTrailingIcon => "text-button-trailing-icon",
+            Self::IconButton => "icon-button",
+        }
+    }
+
+    fn round(self) -> bool {
+        matches!(self, Self::IconButton)
+    }
+
+    fn content(self) -> gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> {
+        let label = SharedString::from("Button");
+        match self {
+            Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
+            Self::TextButtonLeadingIcon => Arc::new(move |_, _| {
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.0))
+                    .child(render_lucide_icon(LucideIcon::Heart))
+                    .child(label.clone())
+                    .into_any_element()
+            }),
+            Self::TextButtonTrailingIcon => Arc::new(move |_, _| {
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.0))
+                    .child(label.clone())
+                    .child(render_lucide_icon(LucideIcon::ChevronDown))
+                    .into_any_element()
+            }),
+            Self::IconButton => Arc::new(move |_, _| render_lucide_icon(LucideIcon::Heart)),
+        }
+    }
 }
 
 impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: gpui_luma::controls::command::button::default_button_template() }
+        Self {
+            theme: theme.clone(),
+            template: gpui_luma::controls::command::button::default_button_template(),
+            uniform_template: Arc::new(
+                DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(|element, _| element.w_full()),
+            ),
+            use_uniform_sizing: true,
+        }
     }
 }
 
@@ -148,120 +207,222 @@ impl Render for ButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            ButtonStateSample { id: "default", label: "Standard", state: InteractionState::default() },
+            ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
             ButtonStateSample {
                 id: "hover",
-                label: "Hover",
+                header: "hover",
                 state: InteractionState { hovered: true, ..InteractionState::default() },
             },
             ButtonStateSample {
-                id: "focus",
-                label: "Focus",
+                id: "focused",
+                header: "focused",
                 state: InteractionState { focused: true, ..InteractionState::default() },
             },
             ButtonStateSample {
-                id: "active",
-                label: "Active",
-                state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
+                id: "pressed",
+                header: "pressed",
+                state: InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
             },
             ButtonStateSample {
                 id: "disabled",
-                label: "Disabled",
+                header: "disabled",
                 state: InteractionState { disabled: true, ..InteractionState::default() },
             },
+        ];
+        let variants = [
+            ButtonTemplateVariant::TextButton,
+            ButtonTemplateVariant::TextButtonLeadingIcon,
+            ButtonTemplateVariant::TextButtonTrailingIcon,
+            ButtonTemplateVariant::IconButton,
         ];
 
         div()
             .flex()
             .flex_col()
-            .gap(px(10.0))
+            .gap(px(16.0))
             .child(
                 div()
                     .text_size(px(12.0))
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Template state preview"),
+                    .child("Template matrix preview"),
             )
-            .child(render_state_row(
-                &self.template,
-                "Standard variant",
-                ButtonKind::Standard,
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
-            .child(render_state_row(
-                &self.template,
-                "Ghost variant",
-                ButtonKind::Ghost,
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
-            .child(render_state_row(
-                &self.template,
-                "Prominent variant",
-                ButtonKind::Prominent,
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
+            .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
+                render_section(
+                    &self.template,
+                    &self.uniform_template,
+                    "Prominent",
+                    ButtonKind::Prominent,
+                    &variants,
+                    &samples,
+                    self.use_uniform_sizing,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_section(
+                    &self.template,
+                    &self.uniform_template,
+                    "Standard",
+                    ButtonKind::Standard,
+                    &variants,
+                    &samples,
+                    self.use_uniform_sizing,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_section(
+                    &self.template,
+                    &self.uniform_template,
+                    "Ghost",
+                    ButtonKind::Ghost,
+                    &variants,
+                    &samples,
+                    self.use_uniform_sizing,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+            ]))
     }
 }
 
-fn render_state_row(
+fn render_section(
     template: &Arc<dyn ButtonTemplate<()>>,
-    row_label: &'static str,
+    uniform_template: &Arc<dyn ButtonTemplate<()>>,
+    section_label: &'static str,
     kind: ButtonKind,
+    variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
+    use_uniform_sizing: bool,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     div()
         .flex()
-        .flex_col()
+        .items_start()
+        .gap(px(8.0))
+        .child(render_vertical_section_rail(section_label, label_color))
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(8.0))
+                .child(render_header_row(samples, label_color))
+                .children(variants.iter().map(|variant| {
+                    render_variant_row(
+                        template,
+                        uniform_template,
+                        kind,
+                        *variant,
+                        samples,
+                        use_uniform_sizing,
+                        window,
+                        cx,
+                    )
+                })),
+        )
+        .into_any_element()
+}
+
+fn render_header_row(samples: &[ButtonStateSample], label_color: gpui::Hsla) -> AnyElement {
+    div()
+        .flex()
         .items_center()
         .gap(px(8.0))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
-        .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-            samples.iter().map(|sample| render_state_sample(template, kind, sample, label_color, window, cx)),
-        ))
+        .children(samples.iter().map(|sample| {
+            div()
+                .w(px(116.0))
+                .flex()
+                .justify_center()
+                .text_size(px(11.0))
+                .line_height(px(15.0))
+                .text_color(label_color)
+                .child(sample.header)
+        }))
+        .into_any_element()
+}
+
+fn render_variant_row(
+    template: &Arc<dyn ButtonTemplate<()>>,
+    uniform_template: &Arc<dyn ButtonTemplate<()>>,
+    kind: ButtonKind,
+    variant: ButtonTemplateVariant,
+    samples: &[ButtonStateSample],
+    use_uniform_sizing: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .gap(px(8.0))
+        .children(samples.iter().map(|sample| {
+            render_state_sample(template, uniform_template, kind, variant, sample, use_uniform_sizing, window, cx)
+        }))
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<()>>,
+    uniform_template: &Arc<dyn ButtonTemplate<()>>,
     kind: ButtonKind,
+    variant: ButtonTemplateVariant,
     sample: &ButtonStateSample,
-    label_color: gpui::Hsla,
+    use_uniform_sizing: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("button-preview-{:?}-{}", kind, sample.id));
-    let label = SharedString::from("Button");
-    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let id = SharedString::from(format!("button-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: (),
-        content,
+        content: variant.content(),
         kind,
+        role: if matches!(variant, ButtonTemplateVariant::IconButton) {
+            ButtonFamilyRole::Icon
+        } else {
+            ButtonFamilyRole::Text
+        },
         size: ButtonSize::Md,
         state: sample.state,
-        round: false,
+        round: variant.round(),
         radius_override: std::cell::Cell::new(None),
     };
 
+    let active_template = if use_uniform_sizing && !matches!(variant, ButtonTemplateVariant::IconButton) {
+        uniform_template
+    } else {
+        template
+    };
+
+    let rendered = active_template.render(&model, window, cx);
+    let rendered = if use_uniform_sizing && !matches!(variant, ButtonTemplateVariant::IconButton) {
+        rendered.w_full()
+    } else {
+        rendered
+    };
+
+    div().w(px(116.0)).child(rendered).into_any_element()
+}
+
+fn button_kind_id(kind: ButtonKind) -> &'static str {
+    match kind {
+        ButtonKind::Prominent => "prominent",
+        ButtonKind::Standard => "standard",
+        ButtonKind::Ghost => "ghost",
+    }
+}
+
+fn render_lucide_icon(icon: LucideIcon) -> AnyElement {
     div()
-        .flex()
-        .flex_col()
-        .items_center()
-        .gap(px(6.0))
-        .child(template.render(&model, window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .font_family("lucide")
+        .text_size(px(16.0))
+        .line_height(px(16.0))
+        .child(char::from(icon).to_string())
         .into_any_element()
 }

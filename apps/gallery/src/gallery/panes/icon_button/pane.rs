@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, 
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::command::icon_button::{self, IconButton};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{ButtonFamilyRole, InteractionState};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -263,6 +263,7 @@ fn render_state_sample(
         data: (),
         content,
         kind,
+        role: ButtonFamilyRole::Icon,
         size: ButtonSize::Md,
         state: sample.state,
         round: true,

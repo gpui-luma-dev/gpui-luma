@@ -5,7 +5,7 @@ use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::radio_button::{self, RadioButton};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{ButtonFamilyRole, InteractionState};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -185,6 +185,7 @@ fn render_state_sample(
         data: selected,
         content: Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
         kind: ButtonKind::Standard,
+        role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
         round: false,

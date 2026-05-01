@@ -7,6 +7,7 @@ use super::control::Button;
 use super::template::ButtonTemplate;
 pub use crate::controls::content_presenter::{ControlContent, HasContent};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
+use crate::theme::ButtonFamilyRole;
 use lucide_icons::Icon as LucideIcon;
 
 #[derive(Clone)]
@@ -27,6 +28,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) data: D,
     pub(crate) content: ControlContent<ButtonRenderModel<D>>,
     pub(crate) kind: ButtonKind,
+    pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
     pub(crate) enabled: bool,
     pub(crate) round: bool,
@@ -38,6 +40,7 @@ pub struct ButtonRenderModel<D> {
     pub data: D,
     pub content: ControlContent<ButtonRenderModel<D>>,
     pub kind: ButtonKind,
+    pub role: ButtonFamilyRole,
     pub size: ButtonSize,
     pub state: ButtonState,
     pub round: bool,
@@ -58,6 +61,7 @@ impl ButtonBuilder<()> {
                 data: (),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
                 kind: ButtonKind::Standard,
+                role: ButtonFamilyRole::Text,
                 size: ButtonSize::Md,
                 enabled: true,
                 round: false,
@@ -77,6 +81,7 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
                 data: data.clone(),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
                 kind: old.kind,
+                role: old.role,
                 size: old.size,
                 enabled: old.enabled,
                 round: old.round,
@@ -92,6 +97,11 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
 
     pub fn size(mut self, size: ButtonSize) -> Self {
         self.model.size = size;
+        self
+    }
+
+    pub fn role(mut self, role: ButtonFamilyRole) -> Self {
+        self.model.role = role;
         self
     }
 

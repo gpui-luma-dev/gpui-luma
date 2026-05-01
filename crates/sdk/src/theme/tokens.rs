@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use anyhow::{Context as _, anyhow};
 use gpui::{BoxShadow, FontWeight, Hsla, hsla, point, px, rgb};
 use serde::Deserialize;
@@ -378,21 +380,31 @@ impl ThemeModes {
     }
 }
 
+fn cached_native_light_mode() -> &'static LumaThemeMode {
+    static LIGHT: OnceLock<LumaThemeMode> = OnceLock::new();
+    LIGHT.get_or_init(|| LumaTheme::native().mode(ThemeMode::Light).clone())
+}
+
+fn cached_native_dark_mode() -> &'static LumaThemeMode {
+    static DARK: OnceLock<LumaThemeMode> = OnceLock::new();
+    DARK.get_or_init(|| LumaTheme::native().mode(ThemeMode::Dark).clone())
+}
+
 impl Default for ThemeModes {
     fn default() -> Self {
-        Self { light: LumaThemeMode::light(), dark: LumaThemeMode::dark() }
+        Self { light: cached_native_light_mode().clone(), dark: cached_native_dark_mode().clone() }
     }
 }
 
 impl Default for LumaThemeMode {
     fn default() -> Self {
-        Self::light()
+        cached_native_light_mode().clone()
     }
 }
 
 impl Default for LumaPalette {
     fn default() -> Self {
-        Self::light()
+        cached_native_light_mode().palette.clone()
     }
 }
 

@@ -1,18 +1,37 @@
+use anyhow::Result;
 use gpui::{AssetSource, SharedString};
-use anyhow::{Result};
 use std::borrow::Cow;
 
 pub struct Assets;
 
 impl AssetSource for Assets {
-    fn load(&self, _path: &str) -> Result<Option<Cow<'static, [u8]>>> {
-        // Always return None or an Error. 
-        // This satisfies the trait but provides no data.
-        Ok(None)
+    fn load(&self, path: &str) -> Result<Option<Cow<'static, [u8]>>> {
+        let path = path.trim_start_matches('/');
+
+        let bytes = match path {
+            "assets/labels/prominent-label.svg" => Some(include_bytes!("labels/prominent-label.svg").as_slice()),
+            "assets/labels/standard-label.svg" => Some(include_bytes!("labels/standard-label.svg").as_slice()),
+            "assets/labels/ghost-label.svg" => Some(include_bytes!("labels/ghost-label.svg").as_slice()),
+            _ => None,
+        };
+
+        Ok(bytes.map(Cow::Borrowed))
     }
 
-    fn list(&self, _path: &str) -> Result<Vec<SharedString>> {
-        // Return an empty list of assets
-        Ok(Vec::new())
+    fn list(&self, path: &str) -> Result<Vec<SharedString>> {
+        let path = path.trim_start_matches('/');
+
+        let entries: Vec<SharedString> = match path {
+            "" => vec![SharedString::from("assets")],
+            "assets" => vec![SharedString::from("assets/labels")],
+            "assets/labels" => vec![
+                SharedString::from("assets/labels/prominent-label.svg"),
+                SharedString::from("assets/labels/standard-label.svg"),
+                SharedString::from("assets/labels/ghost-label.svg"),
+            ],
+            _ => Vec::new(),
+        };
+
+        Ok(entries)
     }
 }

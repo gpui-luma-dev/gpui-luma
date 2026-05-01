@@ -252,6 +252,7 @@ fn render_choice_group_item_content(
             data: content_model.selected,
             content: Arc::new(move |_, cx| presenter(&content_model_for_presenter, cx)),
             kind: model.kind,
+            role: crate::theme::ButtonFamilyRole::Text,
             size: model.size,
             state: content_model.state.interaction_state(),
             round: false,

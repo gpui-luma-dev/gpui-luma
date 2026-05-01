@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render,
-    SharedString, Window, div, prelude::*, px,
+    AnyElement, App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
+    MouseUpEvent, Render, SharedString, Window, div, prelude::*, px,
 };
 
 pub use crate::controls::content_presenter::{ControlContent, HasContent};
@@ -11,6 +11,7 @@ use super::{ButtonBuilder, ButtonRenderModel};
 pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 use crate::controls::command::button::model::ControlIcon;
+use crate::theme::ButtonFamilyRole;
 
 pub struct Button<D = ()> {
     model: super::model::ButtonModel<D>,
@@ -27,36 +28,24 @@ impl Button<()> {
 
     pub fn icon(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         let icon = icon.into();
-        ButtonBuilder::new(id)
-            .round(true)
-            .content(move |_, _| {
-                match &icon {
-                    ControlIcon::Lucide(lucide) => div()
-                        .font_family("lucide")
-                        .text_size(px(16.0))
-                        .child(char::from(*lucide).to_string())
-                        .into_any_element(),
-                    ControlIcon::SvgPath(path) => gpui::svg()
-                        .size(px(16.0))
-                        .path(path.clone())
-                        .into_any_element(),
-                }
-            })
+        ButtonBuilder::new(id).role(ButtonFamilyRole::Icon).round(true).content(move |_, _| match &icon {
+            ControlIcon::Lucide(lucide) => div()
+                .font_family("lucide")
+                .text_size(px(16.0))
+                .child(char::from(*lucide).to_string())
+                .into_any_element(),
+            ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
+        })
     }
 }
 
 impl<D: Clone + 'static> Button<D> {
-
     pub(crate) fn from_builder(builder: ButtonBuilder<D>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         Self { model: builder.model, command: CommandCore::new(enabled, cx) }
     }
 
-    pub fn set_content(
-        &mut self,
-        content: ControlContent<ButtonRenderModel<D>>,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_content(&mut self, content: ControlContent<ButtonRenderModel<D>>, cx: &mut Context<Self>) {
         self.model.content = content;
         cx.notify();
     }
@@ -96,6 +85,7 @@ impl<D: Clone + 'static> Button<D> {
             data: self.model.data.clone(),
             content: self.model.content.clone(),
             kind: self.model.kind,
+            role: self.model.role,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),
             round: self.model.round,

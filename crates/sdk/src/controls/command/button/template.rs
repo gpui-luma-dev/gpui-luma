@@ -5,12 +5,11 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::{ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
+use crate::theme::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 const DISABLED_OPACITY: f32 = 0.56;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
-
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
     fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
@@ -47,8 +46,7 @@ pub fn default_button_template<D: 'static>() -> Arc<dyn ButtonTemplate<D>> {
 
 impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
     fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance =
-            self.theme.resolve(button_variant(model.kind), ButtonFamilyRole::Text, model.size, model.state);
+        let appearance = self.theme.resolve(button_variant(model.kind), model.role, model.size, model.state);
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -68,10 +66,7 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         if model.round {
             control = control.w(px(appearance.height)).p_0().rounded_full();
         } else {
-            control = control
-                .px(px(appearance.padding_x))
-                .py(px(appearance.padding_y))
-                .rounded(px(appearance.radius));
+            control = control.px(px(appearance.padding_x)).py(px(appearance.padding_y)).rounded(px(appearance.radius));
         }
 
         control = control.child((model.content)(model, cx));

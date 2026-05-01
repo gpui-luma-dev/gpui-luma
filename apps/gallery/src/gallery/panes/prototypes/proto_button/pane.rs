@@ -8,9 +8,7 @@ use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasContent,
 };
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::{
-    ButtonFamilyRole, ButtonVariant, InteractionState, ThemeMode, default_button_family_theme,
-};
+use gpui_luma::theme::{ButtonFamilyRole, ButtonVariant, InteractionState, ThemeMode, default_button_family_theme};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
@@ -109,32 +107,20 @@ impl ButtonPane {
         let demo_background_overrides = ButtonStatefulOverride { base: Some(DEMO_BACKGROUND), ..Default::default() };
         let demo_foreground_overrides = ButtonStatefulOverride { base: Some(DEMO_FOREGROUND), ..Default::default() };
 
-        let demo_template = demo_button_template(&demo_background_overrides, &demo_foreground_overrides, demo_radius, theme);
-        let demo_button = Button::new("button-demo")
-            .label("Demo Action")
-            .template(demo_template.clone())
-            .spawn(cx);
-        
+        let demo_template =
+            demo_button_template(&demo_background_overrides, &demo_foreground_overrides, demo_radius, theme);
+        let demo_button = Button::new("button-demo").label("Demo Action").template(demo_template.clone()).spawn(cx);
+
         let state_preview = cx.new(move |_| ButtonStatePreview::new(theme, demo_template.clone(), Some(demo_radius)));
 
-        let radius_down_button = Button::new("button-radius-down")
-            .label("Radius -")
-            .kind(ButtonKind::Standard)
-            .spawn(cx);
-        let radius_up_button = Button::new("button-radius-up")
-            .label("Radius +")
-            .kind(ButtonKind::Standard)
-            .spawn(cx);
+        let radius_down_button =
+            Button::new("button-radius-down").label("Radius -").kind(ButtonKind::Standard).spawn(cx);
+        let radius_up_button = Button::new("button-radius-up").label("Radius +").kind(ButtonKind::Standard).spawn(cx);
 
-        let flip_bg_fg_button = Button::new("button-flip-bg-fg")
-            .label("Flip bg/fg")
-            .kind(ButtonKind::Standard)
-            .spawn(cx);
+        let flip_bg_fg_button =
+            Button::new("button-flip-bg-fg").label("Flip bg/fg").kind(ButtonKind::Standard).spawn(cx);
 
-        let reset_button = Button::new("button-reset")
-            .label("Reset")
-            .kind(ButtonKind::Standard)
-            .spawn(cx);
+        let reset_button = Button::new("button-reset").label("Reset").kind(ButtonKind::Standard).spawn(cx);
 
         let state_cycle_button = Button::new("button-state-cycle")
             .label(format!("State: {}", visual_state_label(ButtonVisualState::Default)))
@@ -442,8 +428,16 @@ impl ButtonPane {
 
     fn apply_template_params(&mut self, cx: &mut Context<GalleryApp>) {
         let radius = self.demo_radius;
-        let foreground = if self.demo_colors_flipped { Some(DEMO_BACKGROUND) } else { Some(DEMO_FOREGROUND) };
-        let background = if self.demo_colors_flipped { Some(DEMO_FOREGROUND) } else { Some(DEMO_BACKGROUND) };
+        let foreground = if self.demo_colors_flipped {
+            Some(DEMO_BACKGROUND)
+        } else {
+            Some(DEMO_FOREGROUND)
+        };
+        let background = if self.demo_colors_flipped {
+            Some(DEMO_FOREGROUND)
+        } else {
+            Some(DEMO_BACKGROUND)
+        };
 
         write_state_override(&mut self.demo_background_overrides, self.selected_visual_state, background.clone());
         write_state_override(&mut self.demo_foreground_overrides, self.selected_visual_state, foreground.clone());
@@ -451,7 +445,7 @@ impl ButtonPane {
         let theme = self.theme.clone();
         let bg_overrides = self.demo_background_overrides.clone();
         let fg_overrides = self.demo_foreground_overrides.clone();
-        
+
         let new_template = demo_button_template(&bg_overrides, &fg_overrides, radius, &theme);
         self.demo_button.update(cx, |button, cx| {
             button.set_template(new_template.clone(), cx);
@@ -532,13 +526,11 @@ impl Render for ButtonStatePreview {
                     .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
-            .child(
-                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                    samples.into_iter().map(|sample| {
-                        render_button_state_sample(&self.template, radius, sample, chrome.muted_text, window, cx)
-                    }),
-                ),
-            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.into_iter().map(|sample| {
+                    render_button_state_sample(&self.template, radius, sample, chrome.muted_text, window, cx)
+                }),
+            ))
     }
 }
 
@@ -552,12 +544,14 @@ fn render_button_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{}", sample.id));
     let label = SharedString::from("Button");
-    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> = Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
+    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> =
+        Arc::new(move |_: &ButtonRenderModel<()>, _| div().child(label.clone()).into_any_element());
     let model = ButtonRenderModel {
         id,
         data: (),
         content,
         kind: ButtonKind::Standard,
+        role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
         round: false,
@@ -580,15 +574,17 @@ fn danger_button_template(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<()
         let tokens = theme.tokens();
         let palette = tokens.palette;
 
-        let (danger_background, danger_hover_background, danger_pressed_background, danger_foreground): (Hsla, Hsla, Hsla, Hsla) =
-            match theme.mode() {
-                ThemeMode::Light => {
-                    (rgb(0xdc2626).into(), rgb(0xb91c1c).into(), rgb(0x991b1b).into(), rgb(0xffffff).into())
-                }
-                ThemeMode::Dark => {
-                    (rgb(0xf87171).into(), rgb(0xfca5a5).into(), rgb(0xfecaca).into(), rgb(0x450a0a).into())
-                }
-            };
+        let (danger_background, danger_hover_background, danger_pressed_background, danger_foreground): (
+            Hsla,
+            Hsla,
+            Hsla,
+            Hsla,
+        ) = match theme.mode() {
+            ThemeMode::Light => {
+                (rgb(0xdc2626).into(), rgb(0xb91c1c).into(), rgb(0x991b1b).into(), rgb(0xffffff).into())
+            }
+            ThemeMode::Dark => (rgb(0xf87171).into(), rgb(0xfca5a5).into(), rgb(0xfecaca).into(), rgb(0x450a0a).into()),
+        };
 
         let bg = if model.state.disabled {
             palette.state.disabled.background
@@ -650,11 +646,7 @@ fn next_visual_state(state: ButtonVisualState) -> ButtonVisualState {
     }
 }
 
-fn write_state_override<T>(
-    overrides: &mut ButtonStatefulOverride<T>,
-    state: ButtonVisualState,
-    value: Option<T>,
-) {
+fn write_state_override<T>(overrides: &mut ButtonStatefulOverride<T>, state: ButtonVisualState, value: Option<T>) {
     match state {
         ButtonVisualState::Default => overrides.base = value,
         ButtonVisualState::Hovered => overrides.hovered = value,
