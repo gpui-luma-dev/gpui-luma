@@ -1,9 +1,8 @@
-
-
-use gpui::{AnyElement, App, Div, FontWeight, Hsla, Stateful, Window, div, hsla, px, prelude::*};
+use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::theme::adorner::{AdornerSpec, render_adorner};
 use crate::theme::{CheckboxTheme, default_checkbox_theme};
 
 use crate::controls::template::TemplateWithModifiers;
@@ -20,7 +19,7 @@ define_control_template!(
 impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.data, model.state);
-        let indicator = div()
+        let indicator_visual = div()
             .flex()
             .items_center()
             .justify_center()
@@ -30,7 +29,25 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             .border_color(appearance.indicator_border)
             .rounded(px(appearance.indicator_radius))
             .child(render_checkmark(model.data, appearance.checkmark_size, appearance.checkmark_color));
-        let indicator = render_checkbox_focus_ring(indicator, appearance.focus_ring, appearance.indicator_radius);
+
+        let mut indicator = div().relative().child(indicator_visual);
+
+        for spec in &appearance.adorners {
+            if let Some(mut adorner) = render_adorner(*spec, appearance.indicator_radius) {
+                let AdornerSpec::FocusRing(focus_ring) = *spec;
+                let focus_ring_radius = match focus_ring.placement {
+                    crate::theme::AdornerPlacement::Inset => {
+                        (appearance.indicator_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0))
+                            .max(0.0)
+                    }
+                    crate::theme::AdornerPlacement::Oversize => {
+                        appearance.indicator_radius + focus_ring.distance.max(0.0)
+                    }
+                };
+                adorner = adorner.rounded(px(focus_ring_radius));
+                indicator = indicator.child(adorner);
+            }
+        }
 
         let mut root = div()
             .id(model.id.clone())
@@ -65,22 +82,6 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
         // Apply modifiers from the pipeline
         self.apply_modifiers(root, model)
     }
-}
-
-fn render_checkbox_focus_ring(indicator: Div, focus_ring: Option<Hsla>, radius: f32) -> Div {
-    let ring_gap = 1.0;
-    let ring_width = 1.0;
-    let ring_color = focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0));
-
-    div()
-        .flex()
-        .items_center()
-        .justify_center()
-        .p(px(ring_gap))
-        .border_1()
-        .border_color(ring_color)
-        .rounded(px(radius + ring_gap + ring_width))
-        .child(indicator)
 }
 
 fn render_checkmark(checked: bool, size: f32, color: gpui::Hsla) -> AnyElement {

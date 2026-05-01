@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
+use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use super::{
     ButtonVariant, ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens,
     ThemeUsage,
@@ -14,12 +15,12 @@ pub struct ChoiceGroupListAppearance {
     pub radius: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ChoiceGroupItemAppearance {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorners: Vec<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -140,7 +141,7 @@ pub const CHOICE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["ChoiceGroupItemAppearance.focus_ring"],
+            appearance_fields: &["ChoiceGroupItemAppearance.adorners"],
         },
     ],
 };
@@ -207,11 +208,22 @@ impl ChoiceGroupTheme for DefaultChoiceGroupTheme {
             (_, false, false) => palette.app.foreground,
         };
 
+        let adorners = if state.focused {
+            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+                color: palette.focus.ring,
+                placement: AdornerPlacement::Inset,
+                distance: metrics.border_width.default,
+                width: metrics.focus.width,
+            })]
+        } else {
+            Vec::new()
+        };
+
         ChoiceGroupItemAppearance {
             background,
             label_color,
             divider: palette.border.default,
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorners,
             label_typography: typography.text.label,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),

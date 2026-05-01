@@ -8,6 +8,7 @@ use gpui::{
 use super::{ChoiceGroupItemContentModel, ChoiceGroupItemPosition, ChoiceGroupLayout, ChoiceGroupRenderModel};
 use crate::controls::button_family::ButtonKind;
 use crate::controls::choice_group::ChoiceGroupItemButtonRenderModel;
+use crate::theme::adorner::{AdornerSpec, render_adorner};
 use crate::theme::{ButtonVariant, ChoiceGroupItemAppearance, ChoiceGroupTheme, default_choice_group_theme};
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -294,13 +295,25 @@ fn render_choice_group_item_visual(
         root = apply_item_radius(root, model.position, appearance.radius);
     }
 
-    if let Some(focus_ring) = appearance.focus_ring {
-        let (focus_position, focus_radius) = if model.icon_button_like {
-            (ChoiceGroupItemPosition::Only, icon_button_diameter / 2.0)
-        } else {
-            (model.position, appearance.radius)
-        };
-        root = root.child(render_focus_ring(focus_ring, focus_position, focus_radius));
+    let focus_radius = if model.icon_button_like {
+        icon_button_diameter / 2.0
+    } else {
+        appearance.radius
+    };
+
+    for spec in &appearance.adorners {
+        if let Some(mut adorner) = render_adorner(*spec, focus_radius) {
+            let AdornerSpec::FocusRing(focus_ring) = *spec;
+            let focus_ring_radius = match focus_ring.placement {
+                crate::theme::AdornerPlacement::Inset => {
+                    (focus_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
+                }
+                crate::theme::AdornerPlacement::Oversize => focus_radius + focus_ring.distance.max(0.0),
+            };
+            adorner = apply_focus_ring_radius(adorner, model.position, focus_ring_radius);
+
+            root = root.child(adorner);
+        }
     }
 
     if model.state.disabled {
@@ -338,21 +351,6 @@ fn apply_item_radius(root: Stateful<Div>, position: ChoiceGroupItemPosition, rad
         ChoiceGroupItemPosition::Middle => root,
         ChoiceGroupItemPosition::Last => root.rounded_tr(radius).rounded_br(radius),
     }
-}
-
-fn render_focus_ring(color: gpui::Hsla, position: ChoiceGroupItemPosition, radius: f32) -> Div {
-    let inset = 1.0;
-    let radius = (radius - inset).max(0.0);
-    let ring = div()
-        .absolute()
-        .top(px(inset))
-        .right(px(inset))
-        .bottom(px(inset))
-        .left(px(inset))
-        .border_1()
-        .border_color(color);
-
-    apply_focus_ring_radius(ring, position, radius)
 }
 
 fn apply_focus_ring_radius(root: Div, position: ChoiceGroupItemPosition, radius: f32) -> Div {

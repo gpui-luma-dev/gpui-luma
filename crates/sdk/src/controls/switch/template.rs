@@ -1,6 +1,7 @@
-use gpui::{App, Div, Hsla, Stateful, Window, div, hsla, px, prelude::*};
+use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use crate::theme::adorner::{AdornerSpec, render_adorner};
 use crate::theme::{SwitchTheme, default_switch_theme};
 
 use crate::controls::template::TemplateWithModifiers;
@@ -24,7 +25,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         };
         let thumb_top = ((appearance.height - appearance.thumb_size) * 0.5 - 1.0).max(0.0);
 
-        let track = div()
+        let track_visual = div()
             .id(format!("{}-track", model.id))
             .relative()
             .w(px(appearance.width))
@@ -46,7 +47,22 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
                     .rounded(px(appearance.radius))
                     .shadow(appearance.thumb_shadow.clone()),
             );
-        let track = render_switch_focus_ring(track, appearance.focus_ring, appearance.radius);
+
+        let mut track = div().relative().child(track_visual);
+
+        for spec in &appearance.adorners {
+            if let Some(mut adorner) = render_adorner(*spec, appearance.radius) {
+                let AdornerSpec::FocusRing(focus_ring) = *spec;
+                let focus_ring_radius = match focus_ring.placement {
+                    crate::theme::AdornerPlacement::Inset => {
+                        (appearance.radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
+                    }
+                    crate::theme::AdornerPlacement::Oversize => appearance.radius + focus_ring.distance.max(0.0),
+                };
+                adorner = adorner.rounded(px(focus_ring_radius));
+                track = track.child(adorner);
+            }
+        }
 
         let mut root = div()
             .id(model.id.clone())
@@ -71,20 +87,4 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         // Apply modifiers from the pipeline
         self.apply_modifiers(root, model)
     }
-}
-
-fn render_switch_focus_ring(track: Stateful<Div>, focus_ring: Option<Hsla>, radius: f32) -> Div {
-    let ring_gap = 1.0;
-    let ring_width = 1.0;
-    let ring_color = focus_ring.unwrap_or_else(|| hsla(0.0, 0.0, 0.0, 0.0));
-
-    div()
-        .flex()
-        .items_center()
-        .justify_center()
-        .p(px(ring_gap))
-        .border_1()
-        .border_color(ring_color)
-        .rounded(px(radius + ring_gap + ring_width))
-        .child(track)
 }

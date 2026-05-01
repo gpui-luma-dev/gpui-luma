@@ -2,9 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
+use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RadioButtonAppearance {
     pub control_background: Option<Hsla>,
     pub control_border: Option<Hsla>,
@@ -12,7 +13,7 @@ pub struct RadioButtonAppearance {
     pub indicator_border: Hsla,
     pub dot_color: Hsla,
     pub label_color: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorners: Vec<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
@@ -124,7 +125,7 @@ pub const RADIO_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["RadioButtonAppearance.focus_ring"],
+            appearance_fields: &["RadioButtonAppearance.adorners"],
         },
     ],
 };
@@ -160,6 +161,17 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             InteractionLayer::Default => palette.action.prominent.background,
         };
 
+        let adorners = if state.focused {
+            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+                color: palette.focus.ring,
+                placement: AdornerPlacement::Oversize,
+                distance: metrics.border_width.default + metrics.focus.width,
+                width: metrics.focus.width,
+            })]
+        } else {
+            Vec::new()
+        };
+
         RadioButtonAppearance {
             control_background: None,
             control_border: None,
@@ -179,7 +191,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             } else {
                 palette.app.foreground
             },
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorners,
             label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,

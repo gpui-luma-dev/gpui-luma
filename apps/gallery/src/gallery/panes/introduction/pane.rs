@@ -33,6 +33,7 @@ struct PaymentPanel {
     email_field: TextField,
     card_field: TextField,
     same_as_shipping_checkbox: Checkbox,
+    payment_method_radio: radio_button::RadioButton,
 }
 
 #[derive(Clone)]
@@ -123,6 +124,11 @@ impl IntroductionPane {
                 .content(|_, _| div().child("Same as shipping address").into_any_element())
                 .template(checkbox_template.clone())
                 .spawn(cx),
+            payment_method_radio: radio_button::new("intro-payment-method-radio")
+                .data(true)
+                .content(|_, _| div().child("Use this as default payment method").into_any_element())
+                .template(theme.radio_button_template())
+                .spawn(cx),
         };
 
         let workspace = WorkspacePanel {
@@ -147,7 +153,7 @@ impl IntroductionPane {
                 .bool_button_template_factory(|_| {
                     std::sync::Arc::new(
                         radio_button::ThemedRadioButtonTemplate::new(gpui_luma::theme::default_radio_button_theme())
-                            .with_modifier(|element, _| element.min_h(px(22.0)).py(px(0.0))),
+                            .with_modifier(|element, _| element.min_h(px(22.0)).py(px(0.0)).px(px(2.0))),
                     )
                 })
                 .with_modifier(|element, _| {
@@ -313,6 +319,7 @@ impl IntroductionPane {
         notify_entity(&self.payment.email_field, cx);
         notify_entity(&self.payment.card_field, cx);
         notify_entity(&self.payment.same_as_shipping_checkbox, cx);
+        notify_entity(&self.payment.payment_method_radio, cx);
     }
 
     fn notify_workspace_panel(&self, cx: &mut Context<GalleryApp>) {
@@ -432,6 +439,7 @@ impl IntroductionPane {
                     .child(self.payment.submit_button.clone())
                     .child(self.payment.cancel_button.clone()),
             )
+            .child(self.payment.payment_method_radio.clone())
             .into_any_element()
     }
 

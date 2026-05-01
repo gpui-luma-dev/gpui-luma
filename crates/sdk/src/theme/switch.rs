@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
+use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
@@ -12,7 +13,7 @@ pub struct SwitchAppearance {
     pub thumb_border: Hsla,
     pub thumb_shadow: Vec<BoxShadow>,
     pub label_color: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorners: Vec<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub width: f32,
     pub height: f32,
@@ -122,7 +123,7 @@ pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["SwitchAppearance.focus_ring"],
+            appearance_fields: &["SwitchAppearance.adorners"],
         },
     ],
 };
@@ -152,6 +153,17 @@ impl SwitchTheme for DefaultSwitchTheme {
             (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
+        let adorners = if state.focused {
+            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+                color: palette.focus.ring,
+                placement: AdornerPlacement::Oversize,
+                distance: metrics.border_width.default + metrics.focus.width,
+                width: metrics.focus.width,
+            })]
+        } else {
+            Vec::new()
+        };
+
         SwitchAppearance {
             track_background,
             track_border: if on && !state.disabled {
@@ -179,7 +191,7 @@ impl SwitchTheme for DefaultSwitchTheme {
             } else {
                 palette.app.foreground
             },
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorners,
             label_typography: typography.text.label,
             width: 42.0,
             height: 22.0,

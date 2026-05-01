@@ -2,9 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
+use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct CheckboxAppearance {
     pub control_background: Option<Hsla>,
     pub control_border: Option<Hsla>,
@@ -12,7 +13,7 @@ pub struct CheckboxAppearance {
     pub indicator_border: Hsla,
     pub checkmark_color: Hsla,
     pub label_color: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorners: Vec<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
@@ -112,7 +113,7 @@ pub const CHECKBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["CheckboxAppearance.focus_ring"],
+            appearance_fields: &["CheckboxAppearance.adorners"],
         },
     ],
 };
@@ -147,6 +148,17 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             palette.app.foreground
         };
 
+        let adorners = if state.focused {
+            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+                color: palette.focus.ring,
+                placement: AdornerPlacement::Oversize,
+                distance: metrics.border_width.default + metrics.focus.width,
+                width: metrics.focus.width,
+            })]
+        } else {
+            Vec::new()
+        };
+
         CheckboxAppearance {
             control_background: None,
             control_border: None,
@@ -162,7 +174,7 @@ impl CheckboxTheme for DefaultCheckboxTheme {
                 palette.action.prominent.foreground
             },
             label_color,
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorners,
             label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,
