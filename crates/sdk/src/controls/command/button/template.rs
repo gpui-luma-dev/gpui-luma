@@ -4,7 +4,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
-use crate::controls::button_family_template::render_button_family_focus_ring;
+use crate::theme::adorner::render_adorner;
 use crate::theme::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -82,7 +82,13 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             appearance.radius
         };
 
-        let mut root = render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, radius);
+        let mut root = div().id(model.id.clone()).relative().child(control);
+
+        for spec in &appearance.adorners {
+            if let Some(adorner) = render_adorner(*spec, radius) {
+                root = root.child(adorner);
+            }
+        }
 
         if model.state.disabled {
             root = root.opacity(DISABLED_OPACITY);

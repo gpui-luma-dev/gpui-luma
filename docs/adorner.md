@@ -1,263 +1,160 @@
-# Focus Adorner
+# Adorner Architecture
 
-## Problem
+## Status
 
-The SDK currently draws focus rings using a "direct draw" scheme embedded inside
-control templates. Three distinct strategies have emerged across the codebase:
+This document reflects the **current direction and partial implementation** of the adorner system.
 
-| Strategy | Controls | Mechanism |
-|---|---|---|
-| **Wrapper div** | `Button`, `IconButton`, `ToggleButton`, `Switch`, `Checkbox`, `TextField`, `TextArea` | Wraps the control in a new `div` with `padding + border`, pushing the outer edge outward |
-| **Absolute overlay** | `ToggleGroup` items | Adds an `absolute`-positioned child `div` inset by 1 px on all sides |
-| **Direct border mutation** | `PopupMenu`, `ContextMenu`, `NavigationSidebar` rows, `Scrollbar` | Conditionally calls `.border_1().border_color(focus_ring)` on the control div |
+Implemented so far:
 
-### Core problem: geometry consumption (Wrapper div strategy)
+- Button family templates use a **host + visual control** structure.
+- Focus decoration for button family is now resolved as **theme-driven adorner specs**.
+- Adorner rendering primitives live under `theme/adorner.rs`.
+- Button family appearance now carries `adorners` instead of a single `focus_ring` color.
 
-`render_button_family_focus_ring` in `button_family_template.rs` wraps the
-visual control in an outer div:
+Still in progress:
 
-```rust
-div()
-    .p(px(FOCUS_RING_GAP))   // 1 px — ring gap (structural padding)
-    .border_1()              // 1 px — ring itself
-    .border_color(ring_color)
-    .rounded(px(ring_radius))
-    .child(control)
-```
-
-- The outer div receives `.id()`, `.track_focus()`, and all event handlers.
-- The control is **permanently 2 px wider/taller** than its visual size, even
-  when unfocused, because the gap padding is structural.
-- Focused/unfocused transitions change border *color* only — size is constant —
-  but the outer wrapper still imposes a fixed layout cost on surrounding elements.
-- Templates are entangled with focus mechanics and cannot be simplified without
-  rethinking the layout structure.
+- Migration of non-button controls from wrapper/border-mutation patterns.
+- Broader adorner kinds (caret/badge/etc.) beyond focus ring.
 
 ---
 
-## Proposed Solution: Adorner
+## Problem Summary
 
-An **adorner** is a purely decorative, absolute-positioned overlay rendered as
-a child of the control root. It draws on top of the control's own visuals
-without participating in layout — consuming zero geometry.
+Historically, controls rendered focus visuals through mixed strategies:
 
-This generalises beyond focus rings. Any decoration that would otherwise require
-modifying the control's own border, padding, or size is a candidate for an
-adorner. Concrete examples:
+1. Wrapper div that adds structural padding/border
+2. Absolute overlay ad-hoc per control
+3. Direct border mutation on control visuals
 
-- **Focus ring** — border around the entire control, inset from the edge
-- **Caret / accent bar** — thin vertical (or horizontal) bar pinned to one edge,
-  indicating selection or current state (e.g. active nav item, active tab)
-- **Badge / indicator dot** — small overlay in a corner
-
-### Layout model
-
-```
-root (relative, Stateful<Div>)  ←  id · track_focus · event handlers
-  ├─ control visuals (bg, border, padding, content)
-  ├─ adorner₁ (absolute, no event handlers)  e.g. focus ring
-  └─ adorner₂ (absolute, no event handlers)  e.g. leading-edge caret
-```
-
-GPUI renders children in painter's order, so adorners always draw on top.
-Because they carry no event handlers they are fully transparent to hit testing.
-Multiple adorners can coexist on the same root without interfering with each
-other or with the control's geometry.
-
-### Advantages over the current approach
-
-- Control div size is **entirely decoupled from visual decoration state** — no
-  jitter when focus or selection changes.
-- Templates become simpler: the root IS the visual control; no wrapper is needed.
-- The `Stateful<Div>` contract between templates and `control.rs` is preserved
-  — `control.rs` still chains `.track_focus()` onto the returned value.
-- Appearance structs are unchanged.
-- Migration is incremental and per-control.
-- New decoration types (caret, badge, …) require no structural changes to
-  templates — just add another adorner child.
+The wrapper strategy caused the main geometry issue: decoration consumed layout space.
 
 ---
 
-## Implementation Plan
+## Current Architecture
 
-### Phase 1 — Shared adorner primitives
+## 1) Theme decides decoration intent
 
-Create `crates/sdk/src/controls/adorner.rs` with one function per adorner kind:
+Theme resolution returns decoration intent as a list of adorner specs on appearance types.
 
-```rust
-/// Inset focus ring — border drawn inside the control bounds.
-/// The control's own background fills the gap, producing the visual
-/// appearance of a ring surrounding the control.
-/// Returns `None` when `color` is `None` (not focused).
-pub fn render_focus_ring_adorner(color: Option<Hsla>, radius: f32, gap: f32, width: f32) -> Option<Div> {
-    let color = color?;
-    let inset = gap + width;
+For button family this is now:
 
-    Some(
-        div()
-            .absolute()
-            .top(px(inset))
-            .left(px(inset))
-            .right(px(inset))
-            .bottom(px(inset))
-            .border(px(width))
-            .border_color(color)
-            .rounded(px((radius - inset).max(0.0))),
-    )
-}
+- `ButtonFamilyAppearance.adorners: Vec<AdornerSpec>`
 
-/// Leading-edge caret — thin vertical accent bar pinned to the left side.
-/// Returns `None` when `color` is `None` (not selected / not active).
-pub fn render_leading_caret_adorner(color: Option<Hsla>, width: f32, inset: f32, radius: f32) -> Option<Div> {
-    let color = color?;
+This allows theme policy to vary by control state/variant/role without template branching on decoration semantics.
 
-    Some(
-        div()
-            .absolute()
-            .left(px(0.0))
-            .top(px(inset))
-            .bottom(px(inset))
-            .w(px(width))
-            .bg(color)
-            .rounded(px(radius)),
-    )
-}
-```
+## 2) Template owns structure only
 
-Adorners are only added to the element tree when their `color` is `Some`,
-eliminating the always-present transparent elements of the current scheme.
+Template builds:
 
-### Phase 2 — Migrate the button family
+- host root (`relative`, event/focus owner)
+- visual control child
+- rendered adorner children
 
-Replace `render_button_family_focus_ring` (wrapper pattern) with inline adorner
-injection. Before:
+The host layer prevents visual-control clipping from constraining oversize adorners.
 
-```rust
-// template.rs — outer wrapper holds id + focus ring
-let control = div()...;  // visual only
-let root = render_button_family_focus_ring(model.id.clone(), control, ...);
-```
+## 3) Shared renderer paints specs
 
-After:
+`theme/adorner.rs` contains adorner rendering primitives and an adapter that maps `AdornerSpec` to concrete `Div` overlays.
 
-```rust
-// template.rs — visual control IS the root; adorner is a child
-let adorner = render_focus_adorner(FocusAdornerStyle {
-    color: appearance.focus_ring,
-    radius: appearance.radius,
-    gap: FOCUS_RING_GAP,
-    width: FOCUS_RING_WIDTH,
-});
+Current spec support:
 
-let mut root = div()
-    .id(model.id)
-    .relative()
-    // ... all visual styles ...
-    .child(label);
+- `AdornerSpec::FocusRing(FocusRingAdornerSpec)`
 
-if let Some(adorner) = adorner {
-    root = root.child(adorner);
-}
-```
+Current placement support:
 
-Controls affected: `Button`, `IconButton`, `ToggleButton`, `TextField`,
-`TextArea`.
-
-### Phase 3 — Migrate Switch and Checkbox
-
-**Switch**: the focus ring currently wraps the `track` div. Replace with an
-adorner child on the track (which is already `relative`).
-
-**Checkbox**: the focus ring currently wraps only the indicator box. Replace
-with an adorner child on the indicator div.
-
-### Phase 4 — Migrate direct border mutation controls
-
-`PopupMenu`, `ContextMenu`, `NavigationSidebar` rows, and `Scrollbar` currently
-call `.border_color(focus_ring)` conditionally, overwriting the control's visual
-border. Replace with an adorner child on the respective root div (which must be
-marked `.relative()` if not already).
+- `AdornerPlacement::Inset`
+- `AdornerPlacement::Oversize`
 
 ---
 
-## Risk Assessment
+## Button Family Policy (current)
 
-### Inset vs. outset ring
+In `DefaultButtonFamilyTheme::resolve(...)`, focused state produces a focus-ring adorner spec.
 
-The adorner can be placed in two ways:
+Policy is variant-driven:
 
-**Inset** — the adorner sits inside the control bounds, offset inward from the
-edge by the gap amount. The control's own background fills the gap between its
-edge and the ring border, producing the visual appearance of a ring surrounding
-the control. This is the preferred default: no negative offsets needed, no
-clipping risk, and the visual result is identical to an outset ring from the
-user's perspective.
+- `Ghost` → inset focus ring
+- `Standard` / `Prominent` → oversize focus ring
 
-```
-┌─ control edge ──────────────────┐
-│  gap (control bg shows through) │
-│  ┌─ ring border ──────────────┐ │
-│  │  control content          │ │
-```
-
-**Outset** — the adorner extends beyond the control bounds using negative `px()`
-offsets (`top(px(-2.0))` etc.). GPUI supports negative absolute offsets, and the
-element is positioned relative to its nearest `relative` ancestor. However, any
-ancestor with `overflow_hidden` (e.g. `ToggleGroup`'s container, scroll
-containers) will clip the ring.
-
-> **Existing precedent**: `scrollbar/template.rs` already renders an inset
-> adorner — `div().absolute().size_full().border_1().border_color(focus_ring)`
-> — proving the GPUI absolute overlay pattern works in this codebase today.
-
-**Convention**: use **inset** as the default for all controls. Reserve outset
-only for controls guaranteed to render in unclipped contexts, and document that
-choice at the call site.
+Icon-role buttons are still focusable controls and currently receive focus adorners under this policy.
 
 ---
 
-## Files Affected
+## Design Rules
 
-| File | Change |
-|---|---|
-| `controls/adorner.rs` | **[NEW]** Shared adorner primitives (`focus_ring`, `leading_caret`, …) |
-| `controls/button_family_template.rs` | Replace `render_button_family_focus_ring` with adorner |
-| `controls/button/template.rs` | Use focus ring adorner |
-| `controls/icon_button/template.rs` | Use focus ring adorner |
-| `controls/toggle_button/template.rs` | Use focus ring adorner |
-| `controls/textfield/template.rs` | Use focus ring adorner |
-| `controls/textarea/template.rs` | Use focus ring adorner |
-| `controls/switch/template.rs` | Replace `render_switch_focus_ring` with adorner |
-| `controls/checkbox/template.rs` | Replace `render_checkbox_focus_ring` with adorner |
-| `controls/scrollbar/template.rs` | Replace direct border mutation with adorner |
-| `controls/popup_menu/template.rs` | Replace direct border mutation with adorner |
-| `controls/context_menu/template.rs` | Replace direct border mutation with adorner |
-| `controls/navigation_sidebar/template.rs` | Replace direct border mutation + add leading caret adorner for active rows |
-| `controls/toggle_group/template.rs` | Align existing absolute overlay to shared primitive |
-| `controls/mod.rs` | Export `adorner` module |
+1. Decoration must not consume layout geometry.
+2. Template code should not hardcode decoration policy values.
+3. Theme is the source of truth for adorner policy.
+4. Adorners are decorative-only (no handlers, no focus ownership).
+5. Control root/host owns `id`, focus tracking, and handlers.
 
-## Implementation Insights and Findings
+---
 
-### Complexity of Real Adorner System
+## Geometry Notes
 
-The prototype implementation reveals several important complexities in the adorner system that weren't fully apparent from the initial documentation:
+Inset focus ring:
 
-1. **Multiple Adorner Types Required**: The system needs to support various adorner types beyond just focus rings:
-   - Focus ring (border around entire control)
-   - Caret/accent bar (thin vertical/horizontal bar)  
-   - Badge/indicator dot (small overlay)
-   - Underline (horizontal bar for text)
+- inset distance is based on `gap` (or generic distance)
+- border width draws inward from that edge
 
-2. **Theme-Driven Configuration**: Adorners should be driven by theme configurations rather than hardcoded values, requiring a more sophisticated theming system that can provide:
-   - Different adorner styles per control type
-   - Flexible positioning strategies
-   - Style-specific parameters (color, size, inset, etc.)
+Oversize focus ring:
 
-3. **Extensibility Challenges**: The system needs to be easily extensible to support new adorner types without major architectural changes
+- uses negative offsets from host bounds
+- can be clipped by ancestor overflow constraints
 
-4. **Template Integration Complexity**: While templates must be updated to use adorner injection, the complexity increases when trying to support multiple adorner types per control, requiring more sophisticated template composition logic
+Oversize should only be used where host/ancestor layout allows it.
 
-5. **Configuration vs. Implementation**: The distinction between what configuration is needed (theme-driven) versus what implementation details are required (positioning, rendering) adds significant complexity to the system design
+---
 
-This shows that the adorner system is more complex than initially apparent - it requires careful design of both the primitive functions and the overall architecture to support the full range of decoration types that might be needed across different controls.
+## Migration Plan
 
+### Phase 1 (done)
+
+- Theme adorner module introduced.
+- Button family switched to theme-driven `adorners` list.
+- Button template switched to host + rendered adorner children.
+
+### Phase 2
+
+Migrate wrapper-based controls to adorner specs:
+
+- `TextField`
+- `TextArea`
+- `Switch`
+- `Checkbox`
+- `RadioButton`
+
+### Phase 3
+
+Migrate border-mutation controls to adorner specs:
+
+- `PopupMenu`
+- `ContextMenu`
+- `NavigationSidebar`
+- `Scrollbar`
+
+### Phase 4
+
+Normalize existing overlay controls to shared adorner specs:
+
+- `ChoiceGroup` / `ToggleGroup`
+- `Slider` (thumb focus)
+
+---
+
+## Acceptance Criteria
+
+1. Focus on/off does not change layout bounds.
+2. No sibling jitter in flow/flex/grid containers.
+3. Focus behavior remains accessible (keyboard + hit testing unchanged).
+4. Focus visuals are theme-driven (variant/role/state aware).
+5. No mixed token-source drift in runtime theme resolution paths.
+
+---
+
+## Future Considerations (not part of current change)
+
+- Add more adorner kinds (leading caret, badge, underline, selection marks).
+- Layer intent metadata (`underlay` vs `overlay`) for deterministic ordering.
+- Add optional control-level ergonomics such as a `not_focusable` mode where appropriate.
+- Expose richer adorner policy in theme TOML schema once cross-control model stabilizes.

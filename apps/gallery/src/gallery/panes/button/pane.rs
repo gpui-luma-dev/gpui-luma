@@ -194,7 +194,7 @@ impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
-            template: gpui_luma::controls::command::button::default_button_template(),
+            template: Arc::new(DefaultButtonTemplate::new(theme.button_family_theme())),
             uniform_template: Arc::new(
                 DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(|element, _| element.w_full()),
             ),
@@ -407,7 +407,7 @@ fn render_state_sample(
         rendered
     };
 
-    div().w(px(116.0)).child(rendered).into_any_element()
+    div().w(px(116.0)).flex().justify_center().items_center().child(rendered).into_any_element()
 }
 
 fn button_kind_id(kind: ButtonKind) -> &'static str {

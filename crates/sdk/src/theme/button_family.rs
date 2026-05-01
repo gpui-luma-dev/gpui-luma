@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
+use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -22,12 +23,12 @@ pub enum ButtonFamilyRole {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ButtonFamilyAppearance {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
-    pub focus_ring: Option<Hsla>,
+    pub adorners: Vec<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -130,7 +131,7 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["ButtonFamilyAppearance.focus_ring"],
+            appearance_fields: &["ButtonFamilyAppearance.adorners"],
         },
     ],
 };
@@ -223,7 +224,7 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused", "selected focused"],
-            appearance_fields: &["ButtonFamilyAppearance.focus_ring"],
+            appearance_fields: &["ButtonFamilyAppearance.adorners"],
         },
     ],
 };
@@ -281,11 +282,27 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             ButtonVariant::Prominent => palette.action.prominent.background,
         };
 
+        let adorners = if state.focused {
+            let (placement, distance) = match variant {
+                ButtonVariant::Ghost => (AdornerPlacement::Inset, metrics.border_width.default),
+                _ => (AdornerPlacement::Oversize, metrics.border_width.default + metrics.focus.width),
+            };
+
+            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+                color: palette.focus.ring,
+                placement,
+                distance,
+                width: metrics.focus.width,
+            })]
+        } else {
+            Vec::new()
+        };
+
         ButtonFamilyAppearance {
             background,
             foreground,
             border,
-            focus_ring: state.focused.then_some(palette.focus.ring),
+            adorners,
             typography: typography.text.label,
             radius: match role {
                 ButtonFamilyRole::Icon => metrics.radius.pill,
