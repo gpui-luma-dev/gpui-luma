@@ -1,3 +1,4 @@
+mod autocomplete;
 mod button;
 mod checkbox;
 mod choice_controls_template;

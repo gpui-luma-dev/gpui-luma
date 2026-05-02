@@ -1,3 +1,4 @@
+pub mod autocomplete;
 pub mod command;
 pub mod button_family;
 pub(crate) mod button_family_template;

@@ -2,36 +2,31 @@ use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, Pixels, Render, ScrollWheelEvent,
     SharedString, Subscription, Window, px,
 };
-use gpui_luma::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::scrollbar::ScrollbarEvent;
-use gpui_luma::theme::{DefaultFloatingMenuTheme, FloatingMenuTheme};
+use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
+use crate::controls::menu_item::MenuItem;
+use crate::controls::scrollbar::ScrollbarEvent;
+use crate::theme::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, DefaultFloatingMenuTheme, FloatingMenuTheme};
 
-use super::behavior::{SelectionBehavior, SelectionEvent, SelectionItem, SelectionStatus, SubmitResult};
+use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;
 use super::popup_scroll_surface::PopupScrollSurface;
-use super::template::{
-    AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplateHandlers, default_autocomplete_textbox_template,
-    render_popup_rows,
-};
+use super::template::{AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplateHandlers, render_popup_rows};
 use super::text_selection::{self, TextSelectionEvent};
-use crate::gallery::theme::GalleryThemePack;
 
 #[derive(Clone, Debug)]
-pub(super) enum AutocompleteTextBoxEvent {
+pub enum AutocompleteTextBoxEvent {
     Change,
     Select,
     Complete,
     Clear,
 }
 
-pub(super) type AutocompleteTextBox = Entity<AutocompleteTextBoxControl>;
+pub type AutocompleteTextBox = Entity<AutocompleteTextBoxControl>;
 
-pub(super) struct AutocompleteTextBoxControl {
-    theme: GalleryThemePack,
+pub struct AutocompleteTextBoxControl {
     textfield: text_selection::TextSelection,
     popup_surface: PopupScrollSurface,
-    items: Vec<SelectionItem>,
+    model: super::model::AutocompleteTextBoxModel,
     behavior: SelectionBehavior,
     trigger_bounds: Option<Bounds<Pixels>>,
     last_event: SharedString,
@@ -42,27 +37,29 @@ pub(super) struct AutocompleteTextBoxControl {
 impl EventEmitter<AutocompleteTextBoxEvent> for AutocompleteTextBoxControl {}
 
 impl AutocompleteTextBoxControl {
-    pub(super) fn from_builder(
-        builder: AutocompleteTextBoxBuilder,
-        theme: GalleryThemePack,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(
+        id: impl Into<SharedString>,
+        items: impl IntoIterator<Item = super::behavior::SelectionItem>,
+    ) -> AutocompleteTextBoxBuilder {
+        AutocompleteTextBoxBuilder::new(id, items)
+    }
+
+    pub(crate) fn from_builder(builder: AutocompleteTextBoxBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model;
 
         let textfield = text_selection::new(format!("{}-textfield", model.id))
             .placeholder(model.placeholder.clone())
             .full_width(model.full_width)
             .clean_on_escape(model.clean_on_escape)
-            .template(theme.textfield_template())
+            .template(model.textfield_template.clone())
             .spawn(cx);
 
         let popup_surface =
-            PopupScrollSurface::new(format!("{}-popup-surface", model.id), theme.scrollbar_template(), cx);
-
-        let items = model.items;
+            PopupScrollSurface::new(format!("{}-popup-surface", model.id), model.scrollbar_template.clone(), cx);
 
         let subscriptions = vec![
-            cx.subscribe(&textfield, |this, _, event: &gpui_luma::controls::textfield::TextFieldEvent, cx| {
+            cx.subscribe(&textfield, |this, _, event: &crate::controls::textfield::TextFieldEvent, cx| {
                 this.handle_text_selection_event(text_selection::map_event(event), cx);
             }),
             cx.subscribe(&popup_surface.scrollbar(), |this, _, event: &ScrollbarEvent, cx| match event {
@@ -74,10 +71,9 @@ impl AutocompleteTextBoxControl {
         ];
 
         Self {
-            theme,
             textfield,
             popup_surface,
-            items,
+            model,
             behavior: SelectionBehavior::new(),
             trigger_bounds: None,
             last_event: SharedString::from("none"),
@@ -89,18 +85,18 @@ impl AutocompleteTextBoxControl {
     fn handle_text_selection_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
         match event {
             TextSelectionEvent::Change { value } => {
-                self.behavior.set_query(value.clone(), &self.items);
+                self.behavior.set_query(value.clone(), &self.model.items);
                 self.last_event = SharedString::from("change");
                 cx.emit(AutocompleteTextBoxEvent::Change);
                 cx.notify();
             }
             TextSelectionEvent::Submit { value } => {
                 self.last_event = SharedString::from(format!("submit:{value}"));
-                let result = self.behavior.apply(SelectionEvent::Submit, &self.items);
+                let result = self.behavior.apply(SelectionEvent::Submit, &self.model.items);
                 self.handle_submit_result(result, cx);
             }
             TextSelectionEvent::FocusEnter => {
-                self.behavior.apply(SelectionEvent::Focus, &self.items);
+                self.behavior.apply(SelectionEvent::Focus, &self.model.items);
                 cx.notify();
             }
             TextSelectionEvent::FocusLeave => {
@@ -114,7 +110,7 @@ impl AutocompleteTextBoxControl {
                     self.select_item(index, false, cx);
                 }
 
-                self.behavior.apply(SelectionEvent::Blur, &self.items);
+                self.behavior.apply(SelectionEvent::Blur, &self.model.items);
                 cx.notify();
             }
         }
@@ -133,7 +129,7 @@ impl AutocompleteTextBoxControl {
     }
 
     fn clear(&mut self, cx: &mut Context<Self>) {
-        self.behavior.apply(SelectionEvent::Clear, &self.items);
+        self.behavior.apply(SelectionEvent::Clear, &self.model.items);
         self.last_event = SharedString::from("clear");
 
         self.textfield.update(cx, |textfield, cx| textfield.set_value("", cx));
@@ -143,10 +139,10 @@ impl AutocompleteTextBoxControl {
     }
 
     fn select_item(&mut self, index: usize, exact_complete: bool, cx: &mut Context<Self>) {
-        let item = &self.items[index];
+        let item = &self.model.items[index];
         let label = item.label.clone();
 
-        self.behavior.set_query(label.clone(), &self.items);
+        self.behavior.set_query(label.clone(), &self.model.items);
         self.behavior.select_index(index);
         self.last_event = SharedString::from(format!("select:{}", item.label));
 
@@ -187,14 +183,14 @@ impl AutocompleteTextBoxControl {
 
         match event.keystroke.key.as_str() {
             "escape" => {
-                self.behavior.apply(SelectionEvent::Escape, &self.items);
+                self.behavior.apply(SelectionEvent::Escape, &self.model.items);
                 window.prevent_default();
                 cx.stop_propagation();
                 cx.notify();
             }
             "down" | "arrowdown" => {
                 if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MoveNext, &self.items);
+                    self.behavior.apply(SelectionEvent::MoveNext, &self.model.items);
                     self.sync_popup_highlight_visibility(cx);
                     window.prevent_default();
                     cx.stop_propagation();
@@ -203,7 +199,7 @@ impl AutocompleteTextBoxControl {
             }
             "up" | "arrowup" => {
                 if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MovePrevious, &self.items);
+                    self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
                     self.sync_popup_highlight_visibility(cx);
                     window.prevent_default();
                     cx.stop_propagation();
@@ -255,12 +251,14 @@ impl AutocompleteTextBoxControl {
 
 impl Render for AutocompleteTextBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let appearance = DefaultFloatingMenuTheme::new(self.theme.tokens()).resolve();
+        let tokens = crate::theme::ThemeTokens::default();
+        let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
+        let appearance = DefaultFloatingMenuTheme::new(tokens).resolve();
         let selected_label = self
             .behavior
             .state
             .selected_item
-            .map(|index| self.items[index].label.to_string())
+            .map(|index| self.model.items[index].label.to_string())
             .unwrap_or_else(|| "none".to_string());
 
         let menu_items = self
@@ -270,8 +268,8 @@ impl Render for AutocompleteTextBoxControl {
             .iter()
             .enumerate()
             .map(|(visible_index, item_index)| {
-                let item = &self.items[*item_index];
-                MenuItem::new(format!("prototype-item-{}-{visible_index}", item.id)).label(item.label.clone())
+                let item = &self.model.items[*item_index];
+                MenuItem::new(format!("autocomplete-item-{}-{visible_index}", item.id)).label(item.label.clone())
             })
             .collect::<Vec<_>>();
 
@@ -291,15 +289,16 @@ impl Render for AutocompleteTextBoxControl {
             })
             .collect::<Vec<_>>();
 
-        let tokens = self.theme.tokens();
-        let status_color = match self.behavior.state.status {
-            SelectionStatus::ErrorNoMatch => tokens.palette.form.input.invalid_border,
-            SelectionStatus::Complete => tokens.palette.state.selected.background,
-            _ => self.theme.chrome().muted_text,
-        };
+        let status_label = SharedString::from(format!("status: {}", self.behavior.state.status.label()));
+        let status_detail = SharedString::from(format!(
+            "selected: {selected_label} | matches: {} | last: {} | keyboard: {}",
+            self.behavior.state.filtered.len(),
+            self.last_event,
+            self.last_keyboard_event
+        ));
 
         let popup_content = if self.behavior.state.open && !menu_items.is_empty() {
-            let menu_id = SharedString::from("prototype-autocomplete-menu");
+            let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
             let max_visible_rows = 7.0;
@@ -322,24 +321,6 @@ impl Render for AutocompleteTextBoxControl {
             None
         };
 
-        let template = default_autocomplete_textbox_template();
-        let model = AutocompleteTextBoxRenderModel {
-            textfield: self.textfield.clone(),
-            query_is_empty: self.behavior.state.query.is_empty(),
-            status_label: SharedString::from(format!("status: {}", self.behavior.state.status.label())),
-            status_detail: SharedString::from(format!(
-                "selected: {selected_label} | matches: {} | last: {} | keyboard: {}",
-                self.behavior.state.filtered.len(),
-                self.last_event,
-                self.last_keyboard_event
-            )),
-            status_color,
-            muted_text_color: self.theme.chrome().muted_text,
-            popup_bounds: self.trigger_bounds,
-            popup_appearance: appearance,
-            popup_content,
-        };
-
         let handlers = AutocompleteTextBoxTemplateHandlers {
             key_down: Box::new(cx.listener(Self::handle_key_down)),
             scroll_wheel: Box::new(cx.listener(Self::handle_popup_scroll_wheel)),
@@ -347,6 +328,18 @@ impl Render for AutocompleteTextBoxControl {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
         };
 
-        template.render(model, handlers, window, cx)
+        let render_model = AutocompleteTextBoxRenderModel {
+            textfield: self.textfield.clone(),
+            query_is_empty: self.behavior.state.query.is_empty(),
+            status_label,
+            status_detail,
+            status_color: autocomplete_appearance.status_color,
+            muted_text_color: autocomplete_appearance.muted_text_color,
+            popup_bounds: self.trigger_bounds,
+            popup_appearance: appearance,
+            popup_content,
+        };
+
+        self.model.template.render(render_model, handlers, window, cx)
     }
 }

@@ -13,9 +13,10 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    button, checkbox, choice_controls_template, choice_group, context_menu, floating_menu, icon_button, introduction,
-    navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, scrollbar, search, settings,
-    shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    autocomplete, button, checkbox, choice_controls_template, choice_group, context_menu, floating_menu, icon_button,
+    introduction, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, scrollbar, search,
+    settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle,
+    toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -183,7 +184,8 @@ const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, AUTOCOMPLETE_TEXTFIELD_PAGE];
+const SELECTION_PAGES: &[GalleryPage] = &[AUTOCOMPLETE_TEXTFIELD_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -222,6 +224,13 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
         pages: FEEDBACK_PAGES,
     },
     GalleryNavGroup {
+        id: "selection",
+        label: "Selection",
+        icon: LucideIcon::ListFilter,
+        expanded: false,
+        pages: SELECTION_PAGES,
+    },
+    GalleryNavGroup {
         id: "prototypes",
         label: "Prototypes",
         icon: LucideIcon::Command,
@@ -235,7 +244,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
-    pub(super) autocomplete_textfield: prototypes::AutocompleteTextFieldPane,
+    pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
     pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
@@ -305,7 +314,7 @@ impl GalleryPanes {
             theme: theme.clone(),
             introduction: introduction::IntroductionPane::new(cx, theme),
             decorated_button: prototypes::ButtonPane::new(cx, theme),
-            autocomplete_textfield: prototypes::AutocompleteTextFieldPane::new(cx, theme),
+            autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, theme),
             custom_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),

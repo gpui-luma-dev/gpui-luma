@@ -1,5 +1,5 @@
 use gpui::SharedString;
-use gpui_luma::controls::textfield::{self, TextField, TextFieldBuilder, TextFieldEvent};
+use crate::controls::textfield::{self, TextField, TextFieldBuilder, TextFieldEvent};
 
 pub type TextSelection = TextField;
 

@@ -7,11 +7,8 @@ use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::theme::{DefaultFloatingMenuTheme, FloatingMenuTheme};
 
-use super::behavior::SelectionItem;
-use super::control::{AutocompleteTextBox, AutocompleteTextBoxEvent};
-use super::model::autocomplete_textbox;
+use gpui_luma::controls::autocomplete::{self, AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
 use super::popup_scroll_surface::PopupScrollSurface;
-use super::template::render_popup_rows;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_description, notify_entity};
 use crate::gallery::theme::GalleryThemePack;
@@ -26,11 +23,13 @@ impl AutocompleteTextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let theme_clone = theme.clone();
         let demo_items = autocomplete_demo_items();
-        let autocomplete_textbox = autocomplete_textbox("prototype-autocomplete", demo_items)
-            .placeholder("Prompt: start typing…")
+        let autocomplete_textbox = autocomplete::new("prototype-autocomplete", demo_items)
+            .placeholder("Start typing…")
             .full_width(true)
             .clean_on_escape(true)
-            .spawn(theme_clone, cx);
+            .textfield_template(theme_clone.textfield_template())
+            .scrollbar_template(theme_clone.scrollbar_template())
+            .spawn(cx);
 
         let theme_clone = theme.clone();
         let popup_surface_demo = cx.new(|cx| PopupScrollSurfaceDemo::new(theme_clone, cx));
@@ -49,10 +48,8 @@ impl AutocompleteTextFieldPane {
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane_with_usage_description(
-            "Autocomplete TextField (Prototype)",
-            Some(
-                "Prototype-only composite selection control plus standalone popup scroll surface demo for combobox-class reuse.",
-            ),
+            "Autocomplete TextField",
+            Some("Autocomplete text field"),
             "Floating Menu",
             div()
                 .w(px(200.0))
@@ -190,6 +187,50 @@ impl Render for PopupScrollSurfaceDemo {
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+
+fn render_popup_rows(
+    id: &SharedString,
+    items: &[MenuItem],
+    appearance: gpui_luma::theme::FloatingMenuAppearance,
+    highlighted_index: Option<usize>,
+    item_hovers: Vec<FloatingMenuHoverHandler>,
+    item_clicks: Vec<FloatingMenuClickHandler>,
+) -> gpui::Stateful<gpui::Div> {
+    let mut root = div().id(format!("{}-rows", id)).flex().flex_col().p(px(appearance.padding));
+    let mut clicks = item_clicks.into_iter();
+
+    for (index, (item, hover)) in items.iter().zip(item_hovers).enumerate() {
+        let mut row = div()
+            .id(format!("{}-row-{}", id, index))
+            .flex()
+            .items_center()
+            .min_h(px(appearance.item_height))
+            .px(px(appearance.item_padding_x))
+            .rounded(px(appearance.item_radius))
+            .text_color(appearance.foreground)
+            .text_size(px(appearance.item_typography.size))
+            .line_height(px(appearance.item_typography.line_height))
+            .font_weight(appearance.item_typography.weight)
+            .child(item.label_text().clone());
+
+        row = row.cursor_pointer().on_hover(hover).hover({
+            let hover_background = appearance.item_hover_background;
+            move |style| style.bg(hover_background)
+        });
+
+        if highlighted_index.is_some_and(|active| active == index) {
+            row = row.bg(appearance.item_hover_background);
+        }
+
+        if let Some(click) = clicks.next() {
+            row = row.on_click(click);
+        }
+
+        root = root.child(row);
+    }
+
+    root
+}
 
 fn autocomplete_demo_items() -> Vec<SelectionItem> {
     vec![

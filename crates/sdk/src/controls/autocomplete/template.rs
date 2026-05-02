@@ -4,24 +4,24 @@ use gpui::{
     AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, Pixels, ScrollWheelEvent, SharedString, Window, anchored,
     deferred, div, point, prelude::*, px,
 };
-use gpui_luma::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use gpui_luma::controls::menu_item::MenuItem;
+use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
+use crate::controls::menu_item::MenuItem;
 
 use super::text_selection;
 
-pub(super) type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
-pub(super) type AutocompleteTextBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
-pub(super) type AutocompleteTextBoxClearClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub(super) type AutocompleteTextBoxTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
+pub type AutocompleteTextBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+pub type AutocompleteTextBoxClearClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type AutocompleteTextBoxTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 
-pub(super) struct AutocompleteTextBoxTemplateHandlers {
+pub struct AutocompleteTextBoxTemplateHandlers {
     pub key_down: AutocompleteTextBoxKeyDownHandler,
     pub scroll_wheel: AutocompleteTextBoxScrollWheelHandler,
     pub clear_click: AutocompleteTextBoxClearClickHandler,
     pub trigger_bounds: AutocompleteTextBoxTriggerBoundsHandler,
 }
 
-pub(super) struct AutocompleteTextBoxRenderModel {
+pub struct AutocompleteTextBoxRenderModel {
     pub textfield: text_selection::TextSelection,
     pub query_is_empty: bool,
     pub status_label: SharedString,
@@ -29,11 +29,11 @@ pub(super) struct AutocompleteTextBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: gpui_luma::theme::FloatingMenuAppearance,
+    pub popup_appearance: crate::theme::FloatingMenuAppearance,
     pub popup_content: Option<AnyElement>,
 }
 
-pub(super) trait AutocompleteTextBoxTemplate: Send + Sync {
+pub trait AutocompleteTextBoxTemplate: Send + Sync {
     fn render(
         &self,
         model: AutocompleteTextBoxRenderModel,
@@ -43,9 +43,9 @@ pub(super) trait AutocompleteTextBoxTemplate: Send + Sync {
     ) -> AnyElement;
 }
 
-pub(super) struct DefaultAutocompleteTextBoxTemplate;
+pub struct DefaultAutocompleteTextBoxTemplate;
 
-pub(super) fn default_autocomplete_textbox_template() -> Arc<dyn AutocompleteTextBoxTemplate> {
+pub fn default_autocomplete_textbox_template() -> Arc<dyn AutocompleteTextBoxTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn AutocompleteTextBoxTemplate>> = OnceLock::new();
     TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteTextBoxTemplate)).clone()
 }
@@ -156,7 +156,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
 pub(super) fn render_popup_rows(
     id: &SharedString,
     items: &[MenuItem],
-    appearance: gpui_luma::theme::FloatingMenuAppearance,
+    appearance: crate::theme::FloatingMenuAppearance,
     highlighted_index: Option<usize>,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,

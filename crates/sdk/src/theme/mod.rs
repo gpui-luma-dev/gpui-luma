@@ -1,4 +1,5 @@
 pub mod adorner;
+pub mod autocomplete;
 pub mod button;
 pub mod button_family;
 pub mod checkbox;
@@ -21,6 +22,10 @@ pub mod tokens;
 pub mod usage;
 
 pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+pub use autocomplete::{
+    AUTOCOMPLETE_TEXTBOX_THEME_USAGE, AutocompleteTextBoxAppearance, AutocompleteTextBoxTheme,
+    DefaultAutocompleteTextBoxTheme, default_autocomplete_textbox_theme,
+};
 pub use button_family::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
     default_button_family_theme,
