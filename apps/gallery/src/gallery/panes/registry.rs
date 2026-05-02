@@ -13,9 +13,9 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    button, checkbox, choice_group, context_menu, floating_menu, icon_button, introduction, navigation_sidebar,
-    palette, popup_menu, progress, prototypes, radio_button, scrollbar, search, settings, shared::gallery_pane, slider,
-    switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    button, checkbox, choice_controls_template, choice_group, context_menu, floating_menu, icon_button, introduction,
+    navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, scrollbar, search, settings,
+    shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -42,6 +42,7 @@ enum GalleryPageKind {
     Checkbox,
     RadioButton,
     ChoiceGroup,
+    ChoiceTemplates,
     Slider,
     Scrollbar,
     TextArea,
@@ -114,6 +115,12 @@ const RADIO_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "radio-button", label: "Radio Button", icon: None, kind: GalleryPageKind::RadioButton };
 const CHOICE_GROUP_PAGE: GalleryPage =
     GalleryPage { id: "choice-group", label: "Choice Group", icon: None, kind: GalleryPageKind::ChoiceGroup };
+const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
+    id: "choice-templates",
+    label: "Choice Templates",
+    icon: None,
+    kind: GalleryPageKind::ChoiceTemplates,
+};
 const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
@@ -156,8 +163,15 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, SEARCH_PAGE, PALETTE_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, ICON_BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
-const CHOICE_PAGES: &[GalleryPage] =
-    &[TOGGLE_PAGE, SWITCH_PAGE, CHECKBOX_PAGE, RADIO_BUTTON_PAGE, CHOICE_GROUP_PAGE, TOGGLE_GROUP_PAGE];
+const CHOICE_PAGES: &[GalleryPage] = &[
+    TOGGLE_PAGE,
+    SWITCH_PAGE,
+    CHECKBOX_PAGE,
+    RADIO_BUTTON_PAGE,
+    CHOICE_GROUP_PAGE,
+    CHOICE_TEMPLATES_PAGE,
+    TOGGLE_GROUP_PAGE,
+];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
@@ -223,6 +237,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) checkbox: checkbox::CheckboxPane,
     pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) choice_group: choice_group::ChoiceGroupPane,
+    pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) textarea: textarea::TextAreaPane,
@@ -291,6 +306,7 @@ impl GalleryPanes {
             checkbox: checkbox::CheckboxPane::new(cx, theme),
             radio_button: radio_button::RadioButtonPane::new(cx, theme),
             choice_group: choice_group::ChoiceGroupPane::new(cx, theme),
+            choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
             textarea: textarea::TextAreaPane::new(cx, theme),
@@ -340,6 +356,7 @@ impl GalleryPanes {
         self.checkbox.notify_controls(cx);
         self.radio_button.notify_controls(cx);
         self.choice_group.notify_controls(cx);
+        self.choice_templates.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
         self.textarea.notify_controls(cx);
@@ -373,6 +390,7 @@ impl GalleryPanes {
             GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
             GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
             GalleryPageKind::ChoiceGroup => self.choice_group.render(&self.theme),
+            GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
             GalleryPageKind::TextArea => self.textarea.render(&self.theme),

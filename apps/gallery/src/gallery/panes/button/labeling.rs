@@ -37,7 +37,10 @@ pub(in crate::gallery) fn rotated_label_svg_string(text: &str) -> String {
 ///   `label_asset_path_for_section`.
 /// - This helper intentionally stays layout-level (gallery-side) and does not
 ///   require SDK changes.
-pub(super) fn render_vertical_section_rail(section_label: &'static str, label_color: Hsla) -> AnyElement {
+pub(in crate::gallery::panes) fn render_vertical_section_rail(
+    section_label: &'static str,
+    label_color: Hsla,
+) -> AnyElement {
     div()
         .w(px(28.0))
         .min_h(px(188.0))
@@ -64,6 +67,8 @@ fn label_asset_path_for_section(section_label: &'static str) -> &'static str {
         "Prominent" => "assets/labels/prominent-label.svg",
         "Standard" => "assets/labels/standard-label.svg",
         "Ghost" => "assets/labels/ghost-label.svg",
+        "Selected" => "assets/labels/selected-label.svg",
+        "Unselected" => "assets/labels/unselected-label.svg",
         _ => "assets/labels/standard-label.svg",
     }
 }

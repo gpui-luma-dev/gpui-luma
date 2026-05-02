@@ -12,6 +12,8 @@ impl AssetSource for Assets {
             "assets/labels/prominent-label.svg" => Some(include_bytes!("labels/prominent-label.svg").as_slice()),
             "assets/labels/standard-label.svg" => Some(include_bytes!("labels/standard-label.svg").as_slice()),
             "assets/labels/ghost-label.svg" => Some(include_bytes!("labels/ghost-label.svg").as_slice()),
+            "assets/labels/selected-label.svg" => Some(include_bytes!("labels/selected-label.svg").as_slice()),
+            "assets/labels/unselected-label.svg" => Some(include_bytes!("labels/unselected-label.svg").as_slice()),
             _ => None,
         };
 
@@ -28,6 +30,8 @@ impl AssetSource for Assets {
                 SharedString::from("assets/labels/prominent-label.svg"),
                 SharedString::from("assets/labels/standard-label.svg"),
                 SharedString::from("assets/labels/ghost-label.svg"),
+                SharedString::from("assets/labels/selected-label.svg"),
+                SharedString::from("assets/labels/unselected-label.svg"),
             ],
             _ => Vec::new(),
         };
