@@ -34,6 +34,7 @@ enum GalleryPageKind {
     ThemeUsage,
     Button,
     DecoratedButton,
+    AutocompleteTextField,
     CustomButton,
     IconButton,
     Toggle,
@@ -153,6 +154,12 @@ const DECORATED_BUTTON_PAGE: GalleryPage = GalleryPage {
 };
 const CUSTOM_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
+const AUTOCOMPLETE_TEXTFIELD_PAGE: GalleryPage = GalleryPage {
+    id: "autocomplete-textfield",
+    label: "Autocomplete TextField",
+    icon: None,
+    kind: GalleryPageKind::AutocompleteTextField,
+};
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
     id: "settings",
     label: "Settings",
@@ -176,7 +183,7 @@ const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, AUTOCOMPLETE_TEXTFIELD_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -228,6 +235,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) theme: GalleryThemePack,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
+    pub(super) autocomplete_textfield: prototypes::AutocompleteTextFieldPane,
     pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
@@ -297,6 +305,7 @@ impl GalleryPanes {
             theme: theme.clone(),
             introduction: introduction::IntroductionPane::new(cx, theme),
             decorated_button: prototypes::ButtonPane::new(cx, theme),
+            autocomplete_textfield: prototypes::AutocompleteTextFieldPane::new(cx, theme),
             custom_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
@@ -323,6 +332,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
+        self.autocomplete_textfield.subscribe(cx, subscriptions);
         self.custom_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
@@ -347,6 +357,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.introduction.notify_controls(cx);
         self.decorated_button.notify_controls(cx);
+        self.autocomplete_textfield.notify_controls(cx);
         self.custom_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
@@ -378,6 +389,7 @@ impl GalleryPanes {
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.render(&self.theme),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.theme),
+            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
             GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
