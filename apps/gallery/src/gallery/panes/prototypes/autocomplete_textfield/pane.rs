@@ -8,8 +8,10 @@ use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::theme::{DefaultFloatingMenuTheme, FloatingMenuTheme};
 
 use super::behavior::SelectionItem;
-use super::control::{AutocompleteTextBox, AutocompleteTextBoxControl, AutocompleteTextBoxEvent, render_popup_rows};
+use super::control::{AutocompleteTextBox, AutocompleteTextBoxEvent};
+use super::model::autocomplete_textbox;
 use super::popup_scroll_surface::PopupScrollSurface;
+use super::template::render_popup_rows;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_description, notify_entity};
 use crate::gallery::theme::GalleryThemePack;
@@ -24,7 +26,11 @@ impl AutocompleteTextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let theme_clone = theme.clone();
         let demo_items = autocomplete_demo_items();
-        let autocomplete_textbox = cx.new(|cx| AutocompleteTextBoxControl::new(theme_clone, demo_items, cx));
+        let autocomplete_textbox = autocomplete_textbox("prototype-autocomplete", demo_items)
+            .placeholder("Prompt: start typing…")
+            .full_width(true)
+            .clean_on_escape(true)
+            .spawn(theme_clone, cx);
 
         let theme_clone = theme.clone();
         let popup_surface_demo = cx.new(|cx| PopupScrollSurfaceDemo::new(theme_clone, cx));
