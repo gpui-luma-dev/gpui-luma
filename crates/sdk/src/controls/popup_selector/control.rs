@@ -6,7 +6,7 @@ use gpui::{
 use super::{PopupSelectorBuilder, PopupSelectorPlacement, PopupSelectorRenderModel, PopupSelectorTemplateHandlers};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::popup_selector::model::{
-    PopupSelectorItemTemplate, PopupSelectorModel, SelectorItem, normalize_popup_selector_items,
+    PopupSelectorItemTemplate, PopupSelectorModel, SelectorItem, SelectorItemLike, normalize_popup_selector_items,
 };
 use crate::controls::state::{ControlFocusState, MenuPath};
 use crate::focus::EscapeFocus;
@@ -19,8 +19,11 @@ pub enum PopupSelectorEvent {
     Change { item_id: SharedString, label: SharedString },
 }
 
-pub struct PopupSelector {
-    model: PopupSelectorModel,
+pub struct PopupSelector<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
+    model: PopupSelectorModel<T>,
     open: bool,
     trigger_bounds: Option<Bounds<Pixels>>,
     selected_index: Option<usize>,
@@ -28,22 +31,35 @@ pub struct PopupSelector {
     interaction: ControlInteraction,
 }
 
-impl EventEmitter<PopupSelectorEvent> for PopupSelector {}
+impl<T> EventEmitter<PopupSelectorEvent> for PopupSelector<T> where T: SelectorItemLike + 'static {}
 
-impl PopupSelector {
+impl PopupSelector<SelectorItem> {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> PopupSelectorBuilder {
+    pub fn new(id: impl Into<SharedString>) -> PopupSelectorBuilder<SelectorItem> {
+        PopupSelectorBuilder::new(id)
+    }
+}
+
+impl<T> PopupSelector<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new_with_items(id: impl Into<SharedString>) -> PopupSelectorBuilder<T> {
         PopupSelectorBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: PopupSelectorBuilder, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: PopupSelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        let selected_index = builder.model.selected_id.as_ref().and_then(|selected_id| {
+            builder.model.items.iter().position(|item| item.id() == selected_id && item.enabled())
+        });
 
         Self {
             model: builder.model,
             open: false,
             trigger_bounds: None,
-            selected_index: None,
+            selected_index,
             active_index: None,
             interaction: ControlInteraction::new(enabled, cx),
         }
@@ -54,7 +70,7 @@ impl PopupSelector {
         cx.notify();
     }
 
-    pub fn set_items(&mut self, items: impl IntoIterator<Item = SelectorItem>, cx: &mut Context<Self>) {
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
         let previous_selection = self.selected_id().cloned();
         self.model.items = normalize_popup_selector_items(items);
         self.selected_index = previous_selection.as_ref().and_then(|id| self.index_by_id(id));
@@ -76,13 +92,13 @@ impl PopupSelector {
         cx.notify();
     }
 
-    pub fn set_item_template(&mut self, template: Option<PopupSelectorItemTemplate>, cx: &mut Context<Self>) {
+    pub fn set_item_template(&mut self, template: Option<PopupSelectorItemTemplate<T>>, cx: &mut Context<Self>) {
         self.model.item_template = template;
         cx.notify();
     }
 
     pub fn selected_id(&self) -> Option<&SharedString> {
-        self.selected_index.and_then(|index| self.model.items.get(index)).map(|item| item.id())
+        self.selected_index.and_then(|index| self.model.items.get(index)).map(SelectorItemLike::id)
     }
 
     pub fn set_selected_id(&mut self, item_id: impl Into<SharedString>, cx: &mut Context<Self>) -> bool {
@@ -94,14 +110,14 @@ impl PopupSelector {
         changed
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> PopupSelectorRenderModel<'a> {
+    fn render_model<'a>(&'a self, window: &Window) -> PopupSelectorRenderModel<'a, T> {
         PopupSelectorRenderModel {
             id: &self.model.id,
             label: self.trigger_label(),
             selected_icon: self
                 .selected_index
                 .and_then(|index| self.model.items.get(index))
-                .and_then(|item| item.icon_ref()),
+                .and_then(SelectorItemLike::icon),
             selected_index: self.selected_index,
             items: &self.model.items,
             open: self.open,
@@ -147,15 +163,15 @@ impl PopupSelector {
     fn trigger_label(&self) -> &SharedString {
         self.selected_index
             .and_then(|index| self.model.items.get(index))
-            .map_or(&self.model.label, |item| item.label_text())
+            .map_or(&self.model.label, SelectorItemLike::label_text)
     }
 
     fn index_by_id(&self, item_id: &SharedString) -> Option<usize> {
         self.model.items.iter().position(|item| item.id() == item_id && self.is_selectable_item(item))
     }
 
-    fn is_selectable_item(&self, item: &SelectorItem) -> bool {
-        item.is_enabled()
+    fn is_selectable_item(&self, item: &T) -> bool {
+        item.enabled()
     }
 
     fn selectable_indices(&self) -> Vec<usize> {
@@ -407,13 +423,19 @@ impl PopupSelector {
     }
 }
 
-impl Focusable for PopupSelector {
+impl<T> Focusable for PopupSelector<T>
+where
+    T: SelectorItemLike + 'static,
+{
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.interaction.focus_handle().clone()
     }
 }
 
-impl Render for PopupSelector {
+impl<T> Render for PopupSelector<T>
+where
+    T: SelectorItemLike + 'static,
+{
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);

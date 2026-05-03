@@ -54,6 +54,22 @@ impl From<SharedString> for SelectorItemIcon {
     }
 }
 
+pub trait SelectorItemLike {
+    fn id(&self) -> &SharedString;
+
+    fn enabled(&self) -> bool {
+        true
+    }
+
+    fn label_text(&self) -> &SharedString {
+        self.id()
+    }
+
+    fn icon(&self) -> Option<&SelectorItemIcon> {
+        None
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct SelectorItem {
     pub(crate) id: SharedString,
@@ -101,8 +117,26 @@ impl SelectorItem {
     }
 }
 
-pub(crate) fn normalize_popup_selector_items(items: impl IntoIterator<Item = SelectorItem>) -> Vec<SelectorItem> {
-    items.into_iter().filter(SelectorItem::is_enabled).collect()
+impl SelectorItemLike for SelectorItem {
+    fn id(&self) -> &SharedString {
+        &self.id
+    }
+
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn label_text(&self) -> &SharedString {
+        &self.label
+    }
+
+    fn icon(&self) -> Option<&SelectorItemIcon> {
+        self.icon.as_ref()
+    }
+}
+
+pub(crate) fn normalize_popup_selector_items<T: SelectorItemLike>(items: impl IntoIterator<Item = T>) -> Vec<T> {
+    items.into_iter().filter(SelectorItemLike::enabled).collect()
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -114,13 +148,12 @@ pub enum PopupSelectorPlacement {
     OverlayOnTrigger,
 }
 
-pub type PopupSelectorItemTemplate =
-    Arc<dyn for<'a> Fn(&PopupSelectorItemRenderModel<'a>, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type PopupSelectorItemTemplate<T> =
+    Arc<dyn for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
 
-#[derive(Clone, Debug)]
-pub struct PopupSelectorItemRenderModel<'a> {
+pub struct PopupSelectorItemRenderModel<'a, T> {
     pub selector_id: &'a SharedString,
-    pub item: &'a SelectorItem,
+    pub item: &'a T,
     pub index: usize,
     pub selected: bool,
     pub active: bool,
@@ -128,38 +161,50 @@ pub struct PopupSelectorItemRenderModel<'a> {
     pub enabled: bool,
 }
 
-#[derive(Clone)]
-pub struct PopupSelectorModel {
+pub struct PopupSelectorModel<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
-    pub(crate) items: Vec<SelectorItem>,
+    pub(crate) items: Vec<T>,
+    pub(crate) selected_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) placement: PopupSelectorPlacement,
-    pub(crate) item_template: Option<PopupSelectorItemTemplate>,
-    pub(crate) template: Arc<dyn PopupSelectorTemplate>,
+    pub(crate) item_template: Option<PopupSelectorItemTemplate<T>>,
+    pub(crate) template: Arc<dyn PopupSelectorTemplate<T>>,
 }
 
-pub struct PopupSelectorRenderModel<'a> {
+pub struct PopupSelectorRenderModel<'a, T>
+where
+    T: SelectorItemLike + 'static,
+{
     pub id: &'a SharedString,
     pub label: &'a SharedString,
     pub selected_icon: Option<&'a SelectorItemIcon>,
     pub selected_index: Option<usize>,
-    pub items: &'a [SelectorItem],
+    pub items: &'a [T],
     pub open: bool,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: PopupSelectorPlacement,
     pub active_path: Option<MenuPath>,
     pub enabled: bool,
-    pub item_template: Option<&'a PopupSelectorItemTemplate>,
+    pub item_template: Option<&'a PopupSelectorItemTemplate<T>>,
     pub focus: ControlFocusState,
     pub state: PopupSelectorState,
 }
 
-pub struct PopupSelectorBuilder {
-    pub(crate) model: PopupSelectorModel,
+pub struct PopupSelectorBuilder<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
+    pub(crate) model: PopupSelectorModel<T>,
 }
 
-impl PopupSelectorBuilder {
+impl<T> PopupSelectorBuilder<T>
+where
+    T: SelectorItemLike + 'static,
+{
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
@@ -168,10 +213,11 @@ impl PopupSelectorBuilder {
                 label: id.clone(),
                 id,
                 items: Vec::new(),
+                selected_id: None,
                 enabled: true,
                 placement: PopupSelectorPlacement::Smart,
                 item_template: None,
-                template: default_popup_selector_template(),
+                template: default_popup_selector_template::<T>(),
             },
         }
     }
@@ -181,15 +227,20 @@ impl PopupSelectorBuilder {
         self
     }
 
-    pub fn item(mut self, item: SelectorItem) -> Self {
-        if item.is_enabled() {
+    pub fn item(mut self, item: T) -> Self {
+        if item.enabled() {
             self.model.items.push(item);
         }
         self
     }
 
-    pub fn items(mut self, items: impl IntoIterator<Item = SelectorItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = T>) -> Self {
         self.model.items = normalize_popup_selector_items(items);
+        self
+    }
+
+    pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
+        self.model.selected_id = Some(selected_id.into());
         self
     }
 
@@ -205,19 +256,19 @@ impl PopupSelectorBuilder {
 
     pub fn with_item_template<F, E>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&PopupSelectorItemRenderModel<'a>, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.item_template = Some(Arc::new(move |model, cx| template(model, cx).into_any_element()));
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn PopupSelectorTemplate>) -> Self {
+    pub fn template(mut self, template: Arc<dyn PopupSelectorTemplate<T>>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<PopupSelector> {
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<PopupSelector<T>> {
         cx.new(|cx| PopupSelector::from_builder(self, cx))
     }
 }

@@ -57,6 +57,7 @@ impl PopupSelectorPane {
             selector_swatch: PopupSelector::new("popup-selector-swatch-example")
                 .label("Choose color")
                 .items(swatch_items())
+                .selected_id("emerald-500")
                 .with_item_template(|item, _cx| {
                     let swatch = swatch_color(item.item.id().as_ref());
                     let selected_weight = if item.selected {

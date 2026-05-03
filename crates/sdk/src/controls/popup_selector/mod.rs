@@ -5,7 +5,7 @@ mod template;
 pub use control::{PopupSelector, PopupSelectorEvent};
 pub use model::{
     PopupSelectorBuilder, PopupSelectorItemRenderModel, PopupSelectorItemTemplate, PopupSelectorModel,
-    PopupSelectorPlacement, PopupSelectorRenderModel, SelectorItem, SelectorItemIcon,
+    PopupSelectorPlacement, PopupSelectorRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
 };
 pub use template::{
     PopupSelectorTemplate, PopupSelectorTemplateHandlers, ThemedPopupSelectorTemplate, default_popup_selector_template,

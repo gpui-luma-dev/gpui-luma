@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Bounds, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
@@ -8,7 +8,9 @@ use gpui::Hsla;
 use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupSelectorPlacement, PopupSelectorRenderModel};
-use crate::controls::popup_selector::model::{PopupSelectorItemRenderModel, SelectorItem, SelectorItemIcon};
+use crate::controls::popup_selector::model::{
+    PopupSelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
+};
 use crate::controls::state::MenuPath;
 use crate::theme::{FloatingMenuAppearance, PopupSelectorAppearance, PopupSelectorTheme, default_popup_selector_theme};
 
@@ -30,10 +32,13 @@ pub struct PopupSelectorTemplateHandlers {
     pub item_clicks: Vec<PopupSelectorClickHandler>,
 }
 
-pub trait PopupSelectorTemplate: Send + Sync {
+pub trait PopupSelectorTemplate<T = SelectorItem>: Send + Sync
+where
+    T: SelectorItemLike + 'static,
+{
     fn render(
         &self,
-        model: &PopupSelectorRenderModel<'_>,
+        model: &PopupSelectorRenderModel<'_, T>,
         handlers: PopupSelectorTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
@@ -50,18 +55,20 @@ impl ThemedPopupSelectorTemplate {
     }
 }
 
-pub fn default_popup_selector_template() -> Arc<dyn PopupSelectorTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn PopupSelectorTemplate>> = OnceLock::new();
-
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedPopupSelectorTemplate::new(default_popup_selector_theme())))
-        .clone()
+pub fn default_popup_selector_template<T>() -> Arc<dyn PopupSelectorTemplate<T>>
+where
+    T: SelectorItemLike + 'static,
+{
+    Arc::new(ThemedPopupSelectorTemplate::new(default_popup_selector_theme()))
 }
 
-impl PopupSelectorTemplate for ThemedPopupSelectorTemplate {
+impl<T> PopupSelectorTemplate<T> for ThemedPopupSelectorTemplate
+where
+    T: SelectorItemLike + 'static,
+{
     fn render(
         &self,
-        model: &PopupSelectorRenderModel<'_>,
+        model: &PopupSelectorRenderModel<'_, T>,
         handlers: PopupSelectorTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
@@ -78,6 +85,7 @@ impl PopupSelectorTemplate for ThemedPopupSelectorTemplate {
             item_clicks,
         } = handlers;
         let appearance = self.theme.resolve(model.state);
+        let trigger_content = render_trigger_content(model, &appearance, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
@@ -102,18 +110,7 @@ impl PopupSelectorTemplate for ThemedPopupSelectorTemplate {
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
             .on_click(trigger_click)
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(appearance.trigger_gap))
-                    .child(render_selected_item_icon(
-                        model.selected_icon,
-                        appearance.trigger_foreground,
-                        appearance.trigger_icon_size,
-                    ))
-                    .child(model.label.clone()),
-            )
+            .child(div().flex().items_center().gap(px(appearance.trigger_gap)).child(trigger_content))
             .child(render_lucide_icon(
                 if model.open {
                     LucideIcon::ChevronUp
@@ -239,13 +236,53 @@ fn estimated_menu_size(appearance: &PopupSelectorAppearance, item_count: usize, 
     }
 }
 
-fn render_popup_selector_menu(
-    model: &PopupSelectorRenderModel<'_>,
+fn render_trigger_content<T>(
+    model: &PopupSelectorRenderModel<'_, T>,
+    appearance: &PopupSelectorAppearance,
+    cx: &mut App,
+) -> AnyElement
+where
+    T: SelectorItemLike + 'static,
+{
+    if let (Some(selected_index), Some(item_template)) = (model.selected_index, model.item_template)
+        && let Some(item) = model.items.get(selected_index)
+    {
+        let active = model.active_path.is_some_and(|path| path.is_root(selected_index));
+        let item_model = PopupSelectorItemRenderModel {
+            selector_id: model.id,
+            item,
+            index: selected_index,
+            selected: true,
+            active,
+            open: model.open,
+            enabled: model.enabled,
+        };
+        return item_template(&item_model, cx);
+    }
+
+    div()
+        .flex()
+        .items_center()
+        .gap(px(appearance.trigger_gap))
+        .child(render_selected_item_icon(
+            model.selected_icon,
+            appearance.trigger_foreground,
+            appearance.trigger_icon_size,
+        ))
+        .child(model.label.clone())
+        .into_any_element()
+}
+
+fn render_popup_selector_menu<T>(
+    model: &PopupSelectorRenderModel<'_, T>,
     appearance: FloatingMenuAppearance,
     item_hovers: Vec<PopupSelectorHoverHandler>,
     item_clicks: Vec<PopupSelectorClickHandler>,
     cx: &mut App,
-) -> Stateful<Div> {
+) -> Stateful<Div>
+where
+    T: SelectorItemLike + 'static,
+{
     let mut menu = div()
         .id(format!("{}-menu", model.id))
         .relative()
@@ -281,21 +318,24 @@ fn render_popup_selector_menu(
     menu
 }
 
-fn render_popup_selector_row(
+fn render_popup_selector_row<T>(
     menu_id: &str,
     selector_id: &SharedString,
-    item: &SelectorItem,
+    item: &T,
     index: usize,
     selected_index: Option<usize>,
     active_path: Option<MenuPath>,
     open: bool,
     enabled: bool,
-    item_template: Option<&crate::controls::popup_selector::model::PopupSelectorItemTemplate>,
+    item_template: Option<&crate::controls::popup_selector::model::PopupSelectorItemTemplate<T>>,
     appearance: &FloatingMenuAppearance,
     hover: PopupSelectorHoverHandler,
     click: Option<PopupSelectorClickHandler>,
     cx: &mut App,
-) -> Stateful<Div> {
+) -> Stateful<Div>
+where
+    T: SelectorItemLike + 'static,
+{
     let color = appearance.foreground;
     let selected = selected_index == Some(index);
     let active = active_path.is_some_and(|path| path.is_root(index));
@@ -307,7 +347,7 @@ fn render_popup_selector_row(
             .flex()
             .items_center()
             .gap(px(appearance.item_gap))
-            .child(render_selected_item_icon(item.icon_ref(), color, appearance.item_icon_size))
+            .child(render_selected_item_icon(item.icon(), color, appearance.item_icon_size))
             .child(div().flex_1().child(item.label_text().clone()))
             .into_any_element()
     };
