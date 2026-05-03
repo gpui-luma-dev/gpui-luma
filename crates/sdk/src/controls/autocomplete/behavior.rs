@@ -108,7 +108,7 @@ impl SelectionBehavior {
                 SubmitResult::None
             }
             SelectionEvent::Escape => {
-                self.state = SelectionState::default();
+                self.reset_query_state_preserving_focus();
                 SubmitResult::None
             }
             SelectionEvent::Submit => self.submit(items),
@@ -121,7 +121,7 @@ impl SelectionBehavior {
                 SubmitResult::None
             }
             SelectionEvent::Clear => {
-                self.state = SelectionState::default();
+                self.reset_query_state_preserving_focus();
                 SubmitResult::None
             }
         }
@@ -186,6 +186,15 @@ impl SelectionBehavior {
 
         self.state.highlighted_filtered = Some(index);
         self.state.open = true;
+    }
+
+    fn reset_query_state_preserving_focus(&mut self) {
+        self.state.query = SharedString::default();
+        self.state.filtered.clear();
+        self.state.highlighted_filtered = None;
+        self.state.selected_item = None;
+        self.state.open = false;
+        self.state.status = SelectionStatus::Idle;
     }
 
     fn recompute(&mut self, items: &[SelectionItem]) {
@@ -262,7 +271,7 @@ mod tests {
         behavior.apply(SelectionEvent::Focus, &items);
         behavior.set_query("da", &items);
         assert_eq!(behavior.state.status, SelectionStatus::Searching);
-        assert_eq!(behavior.state.filtered.len(), 2);
+        assert_eq!(behavior.state.filtered.len(), 1);
 
         behavior.apply(SelectionEvent::Escape, &items);
         assert_eq!(behavior.state.open, false);
@@ -295,16 +304,55 @@ mod tests {
         let mut behavior = SelectionBehavior::new();
 
         behavior.apply(SelectionEvent::Focus, &items);
-        behavior.set_query("h", &items);
+        behavior.set_query("i", &items);
         behavior.apply(SelectionEvent::MoveNext, &items);
 
         let result = behavior.apply(SelectionEvent::Submit, &items);
         match result {
             SubmitResult::Select { index, exact_complete } => {
-                assert_eq!(items[index].label.as_ref(), "Hawaii");
+                assert_eq!(items[index].label.as_ref(), "Indiana");
                 assert!(!exact_complete);
             }
             SubmitResult::None => panic!("expected selection result"),
         }
+    }
+
+    #[test]
+    fn clear_preserves_focus_and_resets_query_state() {
+        let items = sample_items();
+        let mut behavior = SelectionBehavior::new();
+
+        behavior.apply(SelectionEvent::Focus, &items);
+        behavior.set_query("ha", &items);
+        assert!(behavior.state.focused);
+        assert!(!behavior.state.filtered.is_empty());
+
+        behavior.apply(SelectionEvent::Clear, &items);
+
+        assert!(behavior.state.focused);
+        assert_eq!(behavior.state.query.as_ref(), "");
+        assert!(behavior.state.filtered.is_empty());
+        assert_eq!(behavior.state.selected_item, None);
+        assert_eq!(behavior.state.status, SelectionStatus::Idle);
+        assert!(!behavior.state.open);
+    }
+
+    #[test]
+    fn escape_preserves_focus_and_resets_query_state() {
+        let items = sample_items();
+        let mut behavior = SelectionBehavior::new();
+
+        behavior.apply(SelectionEvent::Focus, &items);
+        behavior.set_query("ha", &items);
+        assert!(behavior.state.focused);
+
+        behavior.apply(SelectionEvent::Escape, &items);
+
+        assert!(behavior.state.focused);
+        assert_eq!(behavior.state.query.as_ref(), "");
+        assert!(behavior.state.filtered.is_empty());
+        assert_eq!(behavior.state.selected_item, None);
+        assert_eq!(behavior.state.status, SelectionStatus::Idle);
+        assert!(!behavior.state.open);
     }
 }

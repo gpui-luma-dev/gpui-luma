@@ -24,6 +24,7 @@ pub struct AutocompleteTextBoxTemplateHandlers {
 pub struct AutocompleteTextBoxRenderModel {
     pub textfield: text_selection::TextSelection,
     pub query_is_empty: bool,
+    pub popup_width: Pixels,
     pub status_label: SharedString,
     pub status_detail: SharedString,
     pub status_color: Hsla,
@@ -136,7 +137,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                 .child(
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
-                                        .w(bounds.size.width)
+                                        .w(model.popup_width)
                                         .bg(model.popup_appearance.background)
                                         .border_1()
                                         .border_color(model.popup_appearance.border)
@@ -176,7 +177,7 @@ pub(super) fn render_popup_rows(
             .text_size(px(appearance.item_typography.size))
             .line_height(px(appearance.item_typography.line_height))
             .font_weight(appearance.item_typography.weight)
-            .child(item.label_text().clone());
+            .child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
 
         row = row.cursor_pointer().on_hover(hover).hover({
             let hover_background = appearance.item_hover_background;

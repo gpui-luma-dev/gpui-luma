@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Context, Entity, Pixels, ScrollWheelEvent, SharedString, div, prelude::*, px};
+
 use crate::controls::scroll_container::ScrollContainer;
 use crate::controls::scrollbar::{Scrollbar, ScrollbarTemplate};
 
@@ -11,6 +12,7 @@ pub struct PopupScrollSurface {
     row_height: Pixels,
     content_top_padding: Pixels,
     item_count: usize,
+    scrolling_enabled: bool,
 }
 
 impl PopupScrollSurface {
@@ -25,7 +27,12 @@ impl PopupScrollSurface {
             row_height: px(28.0),
             content_top_padding: px(0.0),
             item_count: 0,
+            scrolling_enabled: true,
         }
+    }
+
+    pub fn set_scrolling_enabled(&mut self, enabled: bool) {
+        self.scrolling_enabled = enabled;
     }
 
     pub fn scrollbar(&self) -> Entity<Scrollbar> {
@@ -33,6 +40,9 @@ impl PopupScrollSurface {
     }
 
     pub fn set_vertical_offset<T: 'static>(&self, value: f32, cx: &mut Context<T>) {
+        if !self.scrolling_enabled {
+            return;
+        }
         self.container.set_vertical_offset(value, cx);
     }
 
@@ -50,7 +60,7 @@ impl PopupScrollSurface {
     }
 
     pub fn ensure_item_visible<T: 'static>(&self, item_index: usize, cx: &mut Context<T>) {
-        if self.item_count == 0 {
+        if !self.scrolling_enabled || self.item_count == 0 {
             return;
         }
 
@@ -61,10 +71,22 @@ impl PopupScrollSurface {
     }
 
     pub fn sync<T: 'static>(&self, cx: &mut Context<T>) {
+        if !self.scrolling_enabled {
+            return;
+        }
         self.container.sync_scrollbar(cx);
     }
 
+    pub fn visible_row_count(&self) -> usize {
+        let content_height = (self.viewport_height - (self.content_top_padding * 2.0)).max(px(1.0));
+        ((content_height.as_f32() / self.row_height.as_f32()).floor() as usize).max(1)
+    }
+
     pub fn scroll_wheel<T: 'static>(&mut self, event: &ScrollWheelEvent, cx: &mut Context<T>) -> bool {
+        if !self.scrolling_enabled {
+            return false;
+        }
+
         let delta = event.delta.pixel_delta(self.row_height).y.as_f32();
         if !delta.is_finite() || delta.abs() <= f32::EPSILON {
             return false;
@@ -82,6 +104,10 @@ impl PopupScrollSurface {
     }
 
     pub fn render(&self, content: AnyElement) -> AnyElement {
+        if !self.scrolling_enabled {
+            return div().h(self.viewport_height).w_full().overflow_hidden().child(content).into_any_element();
+        }
+
         div().h(self.viewport_height).w_full().child(self.container.render(content)).into_any_element()
     }
 }

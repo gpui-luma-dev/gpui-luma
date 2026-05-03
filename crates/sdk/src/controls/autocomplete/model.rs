@@ -15,6 +15,7 @@ pub struct AutocompleteTextBoxModel {
     pub(crate) placeholder: SharedString,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
+    pub(crate) scrolling: bool,
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn AutocompleteTextBoxTemplate>,
@@ -33,6 +34,7 @@ impl AutocompleteTextBoxBuilder {
                 placeholder: SharedString::from("Type to filter…"),
                 full_width: true,
                 clean_on_escape: true,
+                scrolling: true,
                 textfield_template: default_textfield_template(),
                 scrollbar_template: default_scrollbar_template(),
                 template: default_autocomplete_textbox_template(),
@@ -57,6 +59,11 @@ impl AutocompleteTextBoxBuilder {
 
     pub fn clean_on_escape(mut self, clean_on_escape: bool) -> Self {
         self.model.clean_on_escape = clean_on_escape;
+        self
+    }
+
+    pub fn scrolling(mut self, scrolling: bool) -> Self {
+        self.model.scrolling = scrolling;
         self
     }
 

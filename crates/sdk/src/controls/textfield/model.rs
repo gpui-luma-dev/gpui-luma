@@ -18,6 +18,7 @@ pub struct TextFieldModel {
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
+    pub(crate) propagate_home_end_to_parent: bool,
     pub(crate) validator: Option<Validator>,
     pub(crate) template: Arc<dyn TextFieldTemplate>,
 }
@@ -51,6 +52,7 @@ impl TextFieldBuilder {
                 full_width: false,
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
+                propagate_home_end_to_parent: false,
                 validator: None,
                 template: default_textfield_template(),
             },
@@ -89,6 +91,11 @@ impl TextFieldBuilder {
 
     pub fn select_all_on_tab_focus(mut self, select_all: bool) -> Self {
         self.model.select_all_on_tab_focus = select_all;
+        self
+    }
+
+    pub fn propagate_home_end_to_parent(mut self, propagate: bool) -> Self {
+        self.model.propagate_home_end_to_parent = propagate;
         self
     }
 

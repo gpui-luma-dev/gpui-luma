@@ -453,7 +453,11 @@ impl TextFieldControl {
 
         if result.handled {
             window.prevent_default();
-            cx.stop_propagation();
+            if !(self.model.propagate_home_end_to_parent
+                && matches!(event.keystroke.key.as_str(), "home" | "end" | "homekey" | "endkey"))
+            {
+                cx.stop_propagation();
+            }
         }
 
         if result.changed {

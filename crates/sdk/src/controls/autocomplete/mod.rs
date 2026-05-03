@@ -1,7 +1,6 @@
 mod behavior;
 mod control;
 mod model;
-mod popup_scroll_surface;
 mod template;
 mod text_selection;
 

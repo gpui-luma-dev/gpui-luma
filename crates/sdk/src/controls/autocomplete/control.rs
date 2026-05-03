@@ -1,6 +1,6 @@
 use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, Pixels, Render, ScrollWheelEvent,
-    SharedString, Subscription, Window, px,
+    SharedString, Subscription, TextRun, Window, font, px,
 };
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
 use crate::controls::menu_item::MenuItem;
@@ -9,7 +9,7 @@ use crate::theme::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, De
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;
-use super::popup_scroll_surface::PopupScrollSurface;
+use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use super::template::{AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplateHandlers, render_popup_rows};
 use super::text_selection::{self, TextSelectionEvent};
 
@@ -52,11 +52,13 @@ impl AutocompleteTextBoxControl {
             .placeholder(model.placeholder.clone())
             .full_width(model.full_width)
             .clean_on_escape(model.clean_on_escape)
+            .propagate_home_end_to_parent(true)
             .template(model.textfield_template.clone())
             .spawn(cx);
 
-        let popup_surface =
+        let mut popup_surface =
             PopupScrollSurface::new(format!("{}-popup-surface", model.id), model.scrollbar_template.clone(), cx);
+        popup_surface.set_scrolling_enabled(model.scrolling);
 
         let subscriptions = vec![
             cx.subscribe(&textfield, |this, _, event: &crate::controls::textfield::TextFieldEvent, cx| {
@@ -174,6 +176,28 @@ impl AutocompleteTextBoxControl {
         }
     }
 
+    fn popup_page_size(&self) -> usize {
+        self.popup_surface.visible_row_count().min(14).max(1)
+    }
+
+    fn move_highlight_page(&mut self, forward: bool, page_size: usize) {
+        if self.behavior.state.filtered.is_empty() {
+            return;
+        }
+
+        let len = self.behavior.state.filtered.len();
+        let step = page_size.max(1);
+        let current = self.behavior.state.highlighted_filtered.unwrap_or(if forward { 0 } else { len - 1 });
+        let next = if forward {
+            (current + step).min(len - 1)
+        } else {
+            current.saturating_sub(step)
+        };
+
+        self.behavior.state.highlighted_filtered = Some(next);
+        self.behavior.state.open = true;
+    }
+
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.last_keyboard_event = SharedString::from(format!("key:{}", event.keystroke.key));
 
@@ -200,6 +224,46 @@ impl AutocompleteTextBoxControl {
             "up" | "arrowup" => {
                 if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
                     self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
+                    self.sync_popup_highlight_visibility(cx);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+            }
+            "pagedown" | "page_down" | "pgdown" => {
+                if !self.behavior.state.filtered.is_empty() {
+                    self.behavior.state.open = true;
+                    self.move_highlight_page(true, self.popup_page_size());
+                    self.sync_popup_highlight_visibility(cx);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+            }
+            "pageup" | "page_up" | "pgup" => {
+                if !self.behavior.state.filtered.is_empty() {
+                    self.behavior.state.open = true;
+                    self.move_highlight_page(false, self.popup_page_size());
+                    self.sync_popup_highlight_visibility(cx);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+            }
+            "home" => {
+                if !self.behavior.state.filtered.is_empty() {
+                    self.behavior.state.open = true;
+                    self.behavior.state.highlighted_filtered = Some(0);
+                    self.sync_popup_highlight_visibility(cx);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+            }
+            "end" => {
+                if !self.behavior.state.filtered.is_empty() {
+                    self.behavior.state.open = true;
+                    self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
                     self.sync_popup_highlight_visibility(cx);
                     window.prevent_default();
                     cx.stop_propagation();
@@ -297,12 +361,42 @@ impl Render for AutocompleteTextBoxControl {
             self.last_keyboard_event
         ));
 
+        let trigger_width = self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(240.0));
+        let popup_width = {
+            let mut text_font = font(".SystemUIFont");
+            text_font.weight = appearance.item_typography.weight;
+            let max_label_width = menu_items
+                .iter()
+                .map(|item| {
+                    let label = item.label_text();
+                    let run = TextRun {
+                        len: label.len(),
+                        font: text_font.clone(),
+                        color: appearance.foreground,
+                        background_color: None,
+                        underline: None,
+                        strikethrough: None,
+                    };
+                    window
+                        .text_system()
+                        .shape_line(label.clone(), px(appearance.item_typography.size), &[run], None)
+                        .width()
+                })
+                .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
+                .unwrap_or(px(0.0));
+
+            let horizontal_chrome = px((appearance.padding * 2.0) + (appearance.item_padding_x * 2.0) + 24.0);
+            trigger_width.max(max_label_width + horizontal_chrome)
+        };
+
         let popup_content = if self.behavior.state.open && !menu_items.is_empty() {
             let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
-            let max_visible_rows = 7.0;
-            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * max_visible_rows));
+            let min_visible_rows = 7.0;
+            let max_visible_rows = 14.0;
+            let visible_rows = (menu_items.len() as f32).clamp(min_visible_rows, max_visible_rows);
+            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * visible_rows));
 
             self.popup_surface.configure(menu_items.len(), row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
@@ -331,6 +425,7 @@ impl Render for AutocompleteTextBoxControl {
         let render_model = AutocompleteTextBoxRenderModel {
             textfield: self.textfield.clone(),
             query_is_empty: self.behavior.state.query.is_empty(),
+            popup_width,
             status_label,
             status_detail,
             status_color: autocomplete_appearance.status_color,

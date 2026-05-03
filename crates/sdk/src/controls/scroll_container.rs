@@ -66,15 +66,21 @@ impl ScrollContainer {
     }
 
     pub fn ensure_vertical_bounds_visible<T: 'static>(&self, top: Pixels, bottom: Pixels, cx: &mut Context<T>) -> bool {
-        let viewport = self.scroll_handle.bounds();
+        let viewport_height = self.scroll_handle.bounds().size.height.as_f32().max(0.0);
         let max_scroll = self.scroll_handle.max_offset().y.as_f32().max(0.0);
         let current = self.vertical_offset().as_f32();
         let mut target = current;
 
-        if top < viewport.top() {
-            target -= (viewport.top() - top).as_f32();
-        } else if bottom > viewport.bottom() {
-            target += (bottom - viewport.bottom()).as_f32();
+        let visible_top = current;
+        let visible_bottom = current + viewport_height;
+
+        let top = top.as_f32();
+        let bottom = bottom.as_f32();
+
+        if top < visible_top {
+            target -= visible_top - top;
+        } else if bottom > visible_bottom {
+            target += bottom - visible_bottom;
         }
 
         target = target.clamp(0.0, max_scroll);
