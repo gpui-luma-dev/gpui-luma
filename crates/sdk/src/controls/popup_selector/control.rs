@@ -44,15 +44,16 @@ impl<T> PopupSelector<T>
 where
     T: SelectorItemLike + 'static,
 {
+    /// Typed constructor for custom selector item models.
     #[allow(clippy::new_ret_no_self)]
-    pub fn new_with_items(id: impl Into<SharedString>) -> PopupSelectorBuilder<T> {
+    pub fn new_typed(id: impl Into<SharedString>) -> PopupSelectorBuilder<T> {
         PopupSelectorBuilder::new(id)
     }
 
     pub(crate) fn from_builder(builder: PopupSelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
-        let selected_index = builder.model.selected_id.as_ref().and_then(|selected_id| {
-            builder.model.items.iter().position(|item| item.id() == selected_id && item.enabled())
+        let selected_index = builder.initial_selected_id.as_ref().and_then(|selected_id| {
+            builder.model.items.iter().position(|item| item.id() == selected_id && item.is_enabled())
         });
 
         Self {
@@ -171,7 +172,7 @@ where
     }
 
     fn is_selectable_item(&self, item: &T) -> bool {
-        item.enabled()
+        item.is_enabled()
     }
 
     fn selectable_indices(&self) -> Vec<usize> {
@@ -455,5 +456,47 @@ where
                     .on_action(cx.listener(Self::handle_activate_control)),
             )
             .into_any_element()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn items() -> Vec<SelectorItem> {
+        vec![
+            SelectorItem::new("first").label("First"),
+            SelectorItem::new("second").label("Second"),
+            SelectorItem::new("third").label("Third"),
+        ]
+    }
+
+    #[test]
+    fn normalize_filters_disabled_items() {
+        let filtered = normalize_popup_selector_items(vec![
+            SelectorItem::new("first").label("First"),
+            SelectorItem::new("disabled").label("Disabled").enabled(false),
+            SelectorItem::new("last").label("Last"),
+        ]);
+
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].id().as_ref(), "first");
+        assert_eq!(filtered[1].id().as_ref(), "last");
+    }
+
+    #[test]
+    fn builder_stores_initial_selected_id() {
+        let builder = PopupSelector::new("selector").items(items()).selected_id("second");
+
+        assert_eq!(builder.initial_selected_id.as_ref().map(|id| id.as_ref()), Some("second"));
+    }
+
+    #[test]
+    fn item_template_is_installed() {
+        let builder = PopupSelector::new("selector")
+            .items(items())
+            .with_item_template(|item, _cx| gpui::div().child(item.item.label_text().clone()));
+
+        assert!(builder.model.item_template.is_some());
     }
 }

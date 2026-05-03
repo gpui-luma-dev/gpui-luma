@@ -57,7 +57,7 @@ impl From<SharedString> for SelectorItemIcon {
 pub trait SelectorItemLike {
     fn id(&self) -> &SharedString;
 
-    fn enabled(&self) -> bool {
+    fn is_enabled(&self) -> bool {
         true
     }
 
@@ -122,7 +122,7 @@ impl SelectorItemLike for SelectorItem {
         &self.id
     }
 
-    fn enabled(&self) -> bool {
+    fn is_enabled(&self) -> bool {
         self.enabled
     }
 
@@ -136,7 +136,16 @@ impl SelectorItemLike for SelectorItem {
 }
 
 pub(crate) fn normalize_popup_selector_items<T: SelectorItemLike>(items: impl IntoIterator<Item = T>) -> Vec<T> {
-    items.into_iter().filter(SelectorItemLike::enabled).collect()
+    items.into_iter().filter(SelectorItemLike::is_enabled).collect()
+}
+
+pub fn make_item_template<T, F, E>(template: F) -> PopupSelectorItemTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+    F: for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+    E: IntoElement + 'static,
+{
+    Arc::new(move |model, cx| template(model, cx).into_any_element())
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -168,7 +177,6 @@ where
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
-    pub(crate) selected_id: Option<SharedString>,
     pub(crate) enabled: bool,
     pub(crate) placement: PopupSelectorPlacement,
     pub(crate) item_template: Option<PopupSelectorItemTemplate<T>>,
@@ -199,6 +207,7 @@ where
     T: SelectorItemLike + 'static,
 {
     pub(crate) model: PopupSelectorModel<T>,
+    pub(crate) initial_selected_id: Option<SharedString>,
 }
 
 impl<T> PopupSelectorBuilder<T>
@@ -213,12 +222,12 @@ where
                 label: id.clone(),
                 id,
                 items: Vec::new(),
-                selected_id: None,
                 enabled: true,
                 placement: PopupSelectorPlacement::Smart,
                 item_template: None,
                 template: default_popup_selector_template::<T>(),
             },
+            initial_selected_id: None,
         }
     }
 
@@ -228,7 +237,7 @@ where
     }
 
     pub fn item(mut self, item: T) -> Self {
-        if item.enabled() {
+        if item.is_enabled() {
             self.model.items.push(item);
         }
         self
@@ -240,7 +249,7 @@ where
     }
 
     pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
-        self.model.selected_id = Some(selected_id.into());
+        self.initial_selected_id = Some(selected_id.into());
         self
     }
 
@@ -259,7 +268,7 @@ where
         F: for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
-        self.model.item_template = Some(Arc::new(move |model, cx| template(model, cx).into_any_element()));
+        self.model.item_template = Some(make_item_template(template));
         self
     }
 
