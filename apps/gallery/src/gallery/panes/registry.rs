@@ -14,9 +14,9 @@ use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     autocomplete, button, checkbox, choice_controls_template, choice_group, context_menu, floating_menu, icon_button,
-    introduction, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, scrollbar, search,
-    settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle,
-    toggle_group,
+    introduction, navigation_sidebar, palette, popup_menu, popup_selector, progress, prototypes, radio_button,
+    scrollbar, search, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield,
+    theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -36,6 +36,7 @@ enum GalleryPageKind {
     Button,
     DecoratedButton,
     AutocompleteTextField,
+    PopupSelector,
     CustomButton,
     IconButton,
     Toggle,
@@ -161,6 +162,8 @@ const AUTOCOMPLETE_TEXTFIELD_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::AutocompleteTextField,
 };
+const POPUP_SELECTOR_PAGE: GalleryPage =
+    GalleryPage { id: "popup-selector", label: "Popup Selector", icon: None, kind: GalleryPageKind::PopupSelector };
 const SETTINGS_PAGE: GalleryPage = GalleryPage {
     id: "settings",
     label: "Settings",
@@ -184,7 +187,7 @@ const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
-const SELECTION_PAGES: &[GalleryPage] = &[AUTOCOMPLETE_TEXTFIELD_PAGE];
+const SELECTION_PAGES: &[GalleryPage] = &[AUTOCOMPLETE_TEXTFIELD_PAGE, POPUP_SELECTOR_PAGE];
 const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
@@ -245,6 +248,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
+    pub(super) popup_selector: popup_selector::PopupSelectorPane,
     pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
     pub(super) icon_button: icon_button::IconButtonPane,
@@ -315,6 +319,7 @@ impl GalleryPanes {
             introduction: introduction::IntroductionPane::new(cx, theme),
             decorated_button: prototypes::ButtonPane::new(cx, theme),
             autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, theme),
+            popup_selector: popup_selector::PopupSelectorPane::new(cx, theme),
             custom_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
             icon_button: icon_button::IconButtonPane::new(cx, theme),
@@ -342,6 +347,7 @@ impl GalleryPanes {
         self.introduction.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.autocomplete_textfield.subscribe(cx, subscriptions);
+        self.popup_selector.subscribe(cx, subscriptions);
         self.custom_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
@@ -367,6 +373,7 @@ impl GalleryPanes {
         self.introduction.notify_controls(cx);
         self.decorated_button.notify_controls(cx);
         self.autocomplete_textfield.notify_controls(cx);
+        self.popup_selector.notify_controls(cx);
         self.custom_button.notify_controls(cx);
         self.button.notify_controls(cx);
         self.icon_button.notify_controls(cx);
@@ -399,6 +406,7 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.render(&self.theme),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.theme),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.theme),
+            GalleryPageKind::PopupSelector => self.popup_selector.render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
             GalleryPageKind::Palette => palette::render(&self.theme),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),

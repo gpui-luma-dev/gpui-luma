@@ -102,6 +102,7 @@ const THEME_USAGES: &[&ThemeUsage] = &[
     &super::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
     &super::floating_menu::FLOATING_MENU_THEME_USAGE,
     &super::popup_menu::POPUP_MENU_THEME_USAGE,
+    &super::popup_selector::POPUP_SELECTOR_THEME_USAGE,
     &super::context_menu::CONTEXT_MENU_THEME_USAGE,
     &super::tabs_navigation::TABS_NAVIGATION_THEME_USAGE,
     &super::progress::PROGRESS_THEME_USAGE,

@@ -10,6 +10,7 @@ use crate::controls::{
     command::button::{ButtonTemplate, DefaultButtonTemplate},
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
+    popup_selector::{PopupSelectorTemplate, ThemedPopupSelectorTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
     radio_button::ThemedRadioButtonTemplate,
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
@@ -22,13 +23,14 @@ use crate::controls::{
 use crate::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultProgressTheme, DefaultRadioButtonTheme,
-    DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme, DefaultTextAreaTheme,
-    DefaultTextFieldTheme, InteractionState, LumaTheme, NavigationSidebarTheme, PopupMenuAppearance, PopupMenuTheme,
-    ProgressAppearance, ProgressTheme, RadioButtonAppearance, RadioButtonTheme, ScrollbarAppearance, ScrollbarTheme,
-    SliderAppearance, SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance,
-    TabsNavigationListAppearance, TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance,
-    TextFieldTheme, ThemeMode, ThemeTokens,
+    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultPopupSelectorTheme, DefaultProgressTheme,
+    DefaultRadioButtonTheme, DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
+    DefaultTextAreaTheme, DefaultTextFieldTheme, InteractionState, LumaTheme, NavigationSidebarTheme,
+    PopupMenuAppearance, PopupMenuTheme, PopupSelectorAppearance, PopupSelectorTheme, ProgressAppearance,
+    ProgressTheme, RadioButtonAppearance, RadioButtonTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance,
+    SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance,
+    TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance, TextFieldTheme, ThemeMode,
+    ThemeTokens,
 };
 
 #[derive(Clone)]
@@ -173,6 +175,10 @@ impl LumaThemePack {
         Arc::new(ThemedPopupMenuTemplate::new(self.live_theme.clone()))
     }
 
+    pub fn popup_selector_template(&self) -> Arc<dyn PopupSelectorTemplate> {
+        Arc::new(ThemedPopupSelectorTemplate::new(self.live_theme.clone()))
+    }
+
     pub fn context_menu_theme(&self) -> Arc<dyn ContextMenuTheme> {
         self.live_theme.clone()
     }
@@ -274,6 +280,12 @@ impl TextAreaTheme for LumaLiveTheme {
 impl PopupMenuTheme for LumaLiveTheme {
     fn resolve(&self, state: InteractionState) -> PopupMenuAppearance {
         DefaultPopupMenuTheme::new(self.state.tokens()).resolve(state)
+    }
+}
+
+impl PopupSelectorTheme for LumaLiveTheme {
+    fn resolve(&self, state: InteractionState) -> PopupSelectorAppearance {
+        DefaultPopupSelectorTheme::new(self.state.tokens()).resolve(state)
     }
 }
 

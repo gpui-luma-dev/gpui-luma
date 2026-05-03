@@ -13,6 +13,7 @@ pub mod menu_item;
 pub(crate) mod menu_navigation;
 pub mod navigation_sidebar;
 pub mod popup_menu;
+pub mod popup_selector;
 pub mod progress;
 pub mod radio_button;
 pub mod scrollbar;
