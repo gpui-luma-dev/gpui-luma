@@ -31,50 +31,53 @@ pub fn default_autocomplete_textbox_theme() -> Arc<dyn AutocompleteTextBoxTheme>
     THEME.get_or_init(|| Arc::new(DefaultAutocompleteTextBoxTheme::default())).clone()
 }
 
-pub const AUTOCOMPLETE_TEXTBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Autocomplete TextBox",
-    parts: &[
-        ThemePartUsage {
-            part: "status accent",
-            token: "state.selected.background",
-            states: &["complete", "selected"],
-            appearance_fields: &["AutocompleteTextBoxAppearance.status_color"],
-        },
-        ThemePartUsage {
-            part: "muted status text",
-            token: "surface.floating.foreground",
-            states: &["default"],
-            appearance_fields: &[
-                "AutocompleteTextBoxAppearance.muted_text_color",
-                "AutocompleteTextBoxAppearance.clear_icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "clear hover icon",
-            token: "form.input.foreground",
-            states: &["hovered"],
-            appearance_fields: &["AutocompleteTextBoxAppearance.clear_icon_hover_color"],
-        },
-        ThemePartUsage {
-            part: "popup menu background",
-            token: "surface.floating.background",
-            states: &["open"],
-            appearance_fields: &["AutocompleteTextBoxAppearance.menu.background"],
-        },
-        ThemePartUsage {
-            part: "popup menu border",
-            token: "surface.floating.border",
-            states: &["open"],
-            appearance_fields: &["AutocompleteTextBoxAppearance.menu.border"],
-        },
-        ThemePartUsage {
-            part: "popup item hover",
-            token: "state.hover.background",
-            states: &["item hovered", "item highlighted"],
-            appearance_fields: &["AutocompleteTextBoxAppearance.menu.item_hover_background"],
-        },
-    ],
-};
+const AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS: &[ThemePartUsage] = &[
+    ThemePartUsage {
+        part: "status accent",
+        token: "state.selected.background",
+        states: &["complete", "selected"],
+        appearance_fields: &["AutocompleteTextBoxAppearance.status_color"],
+    },
+    ThemePartUsage {
+        part: "muted status text",
+        token: "surface.floating.foreground",
+        states: &["default"],
+        appearance_fields: &[
+            "AutocompleteTextBoxAppearance.muted_text_color",
+            "AutocompleteTextBoxAppearance.clear_icon_color",
+        ],
+    },
+    ThemePartUsage {
+        part: "clear hover icon",
+        token: "form.input.foreground",
+        states: &["hovered"],
+        appearance_fields: &["AutocompleteTextBoxAppearance.clear_icon_hover_color"],
+    },
+    ThemePartUsage {
+        part: "popup menu background",
+        token: "surface.floating.background",
+        states: &["open"],
+        appearance_fields: &["AutocompleteTextBoxAppearance.menu.background"],
+    },
+    ThemePartUsage {
+        part: "popup menu border",
+        token: "surface.floating.border",
+        states: &["open"],
+        appearance_fields: &["AutocompleteTextBoxAppearance.menu.border"],
+    },
+    ThemePartUsage {
+        part: "popup item hover",
+        token: "state.hover.background",
+        states: &["item hovered", "item highlighted"],
+        appearance_fields: &["AutocompleteTextBoxAppearance.menu.item_hover_background"],
+    },
+];
+
+pub const AUTOCOMPLETE_TEXTBOX_THEME_USAGE: ThemeUsage =
+    ThemeUsage { component: "Autocomplete TextBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
+
+pub const COMBOBOX_THEME_USAGE: ThemeUsage =
+    ThemeUsage { component: "ComboBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
 
 impl DefaultAutocompleteTextBoxTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

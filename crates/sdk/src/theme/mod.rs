@@ -24,7 +24,7 @@ pub mod usage;
 
 pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 pub use autocomplete::{
-    AUTOCOMPLETE_TEXTBOX_THEME_USAGE, AutocompleteTextBoxAppearance, AutocompleteTextBoxTheme,
+    AUTOCOMPLETE_TEXTBOX_THEME_USAGE, COMBOBOX_THEME_USAGE, AutocompleteTextBoxAppearance, AutocompleteTextBoxTheme,
     DefaultAutocompleteTextBoxTheme, default_autocomplete_textbox_theme,
 };
 pub use button_family::{

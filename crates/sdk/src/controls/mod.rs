@@ -1,4 +1,5 @@
 pub mod autocomplete;
+pub mod combobox;
 pub mod command;
 pub mod button_family;
 pub(crate) mod button_family_template;
@@ -13,6 +14,7 @@ pub mod menu_item;
 pub(crate) mod menu_navigation;
 pub mod navigation_sidebar;
 pub mod popup_menu;
+pub mod popup_scroll_surface;
 pub mod popup_selector;
 pub mod progress;
 pub mod radio_button;

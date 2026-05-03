@@ -48,6 +48,16 @@ pub(super) fn gallery_pane_with_usage_description(
     content: AnyElement,
     theme: &GalleryThemePack,
 ) -> AnyElement {
+    gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, theme)
+}
+
+pub(super) fn gallery_pane_with_usage_descriptions(
+    title: &'static str,
+    description: Option<&'static str>,
+    usage_components: &[&'static str],
+    content: AnyElement,
+    theme: &GalleryThemePack,
+) -> AnyElement {
     let chrome = theme.chrome();
 
     div()
@@ -80,7 +90,7 @@ pub(super) fn gallery_pane_with_usage_description(
                         .occlude()
                         .child(content),
                 )
-                .child(div().flex().items_center().child(render_usage_panel(usage_component, theme))),
+                .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, theme))),
         )
         .into_any_element()
 }
@@ -121,16 +131,14 @@ pub(super) fn notify_entity<T: 'static>(entity: &Entity<T>, cx: &mut Context<Gal
     entity.update(cx, |_, cx| cx.notify());
 }
 
-fn render_usage_panel(component: &'static str, theme: &GalleryThemePack) -> AnyElement {
+fn render_usage_panels(components: &[&'static str], theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
-    let tokens = theme.tokens();
-    let usage = all_theme_usages().iter().copied().find(|usage| usage.component == component);
-    let parts = usage.map(|usage| usage.parts).unwrap_or(&[]);
 
-    div()
-        .id(format!("{component}-theme-usage"))
+    let panel = div()
+        .id("theme-usage")
         .w(px(390.0))
-        .max_h(px(560.0))
+        .h_full()
+        .min_h(px(0.0))
         .flex()
         .flex_col()
         .gap(px(10.0))
@@ -147,10 +155,35 @@ fn render_usage_panel(component: &'static str, theme: &GalleryThemePack) -> AnyE
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(chrome.title_text)
                 .child("Theme Parts"),
+        );
+
+    panel
+        .children(components.iter().copied().map(|component| render_usage_component_section(component, theme)))
+        .into_any_element()
+}
+
+fn render_usage_component_section(component: &'static str, theme: &GalleryThemePack) -> AnyElement {
+    let chrome = theme.chrome();
+    let tokens = theme.tokens();
+    let usage = all_theme_usages().iter().copied().find(|usage| usage.component == component);
+    let parts = usage.map(|usage| usage.parts).unwrap_or(&[]);
+
+    div()
+        .id(format!("{component}-theme-usage"))
+        .flex()
+        .flex_col()
+        .gap(px(8.0))
+        .child(
+            div()
+                .text_size(px(12.0))
+                .line_height(px(17.0))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(chrome.title_text)
+                .child(component),
         )
         .children(parts.iter().map(|part| render_usage_part(part, &tokens, theme)))
-        .when(usage.is_none(), |panel| {
-            panel.child(
+        .when(usage.is_none(), |section| {
+            section.child(
                 div()
                     .text_size(px(12.0))
                     .line_height(px(17.0))

@@ -100,6 +100,7 @@ const THEME_USAGES: &[&ThemeUsage] = &[
     &super::textarea::TEXTAREA_THEME_USAGE,
     &super::textfield::TEXTFIELD_THEME_USAGE,
     &super::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
+    &super::autocomplete::COMBOBOX_THEME_USAGE,
     &super::floating_menu::FLOATING_MENU_THEME_USAGE,
     &super::popup_menu::POPUP_MENU_THEME_USAGE,
     &super::popup_selector::POPUP_SELECTOR_THEME_USAGE,

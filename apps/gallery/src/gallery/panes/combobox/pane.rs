@@ -1,63 +1,68 @@
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::autocomplete::{self, AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
+use gpui_luma::controls::combobox::{self, ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
 use crate::gallery::theme::GalleryThemePack;
 
 #[derive(Clone)]
-pub(in crate::gallery) struct AutocompleteTextFieldPane {
-    autocomplete_textbox: AutocompleteTextBox,
+pub(in crate::gallery) struct ComboBoxPane {
+    strict_combobox: ComboBox,
 }
 
-impl AutocompleteTextFieldPane {
+impl ComboBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let theme_clone = theme.clone();
-        let demo_items = autocomplete_demo_items();
-        let autocomplete_textbox = autocomplete::new("prototype-autocomplete", demo_items)
-            .placeholder("Start typing…")
+        let strict_combobox = combobox::new("gallery-combobox-strict", combobox_demo_items())
+            .placeholder("Strict mode (exact match only)…")
             .full_width(true)
             .clean_on_escape(true)
+            .typing_policy(TypingPolicy::Strict)
+            .show_down_arrow(true)
             .textfield_template(theme_clone.textfield_template())
             .scrollbar_template(theme_clone.scrollbar_template())
             .spawn(cx);
 
-        Self { autocomplete_textbox }
+        Self { strict_combobox }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(
-            &self.autocomplete_textbox,
-            |app, _, _event: &AutocompleteTextBoxEvent, cx| {
-                app.panes.autocomplete_textfield.notify_controls(cx);
-            },
-        ));
+        subscriptions.push(cx.subscribe(&self.strict_combobox, |app, _, _event: &ComboBoxEvent, cx| {
+            app.panes.combobox.notify_controls(cx);
+        }));
     }
 
-    pub(in crate::gallery) fn render(&self, _theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         gallery_pane_with_usage_descriptions(
-            "Autocomplete TextBox",
-            Some("Autocomplete text box"),
-            &["Autocomplete TextBox", "Floating Menu"],
+            "ComboBox",
+            Some("Select-oriented input with dropdown trigger, open/close toggle, and strict typing policy."),
+            &["ComboBox", "Floating Menu"],
             div()
                 .w(px(240.0))
                 .max_w_full()
                 .flex()
                 .flex_col()
                 .gap(px(18.0))
-                .child(self.autocomplete_textbox.clone())
+                .child(
+                    div()
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .text_color(theme.chrome().muted_text)
+                        .child("Strict typing policy + down arrow"),
+                )
+                .child(self.strict_combobox.clone())
                 .into_any_element(),
-            _theme,
+            theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.autocomplete_textbox, cx);
+        notify_entity(&self.strict_combobox, cx);
     }
 }
 
-fn autocomplete_demo_items() -> Vec<SelectionItem> {
-    let mut items = vec![
+fn combobox_demo_items() -> Vec<SelectionItem> {
+    vec![
         SelectionItem::new("alabama", "Alabama"),
         SelectionItem::new("alaska", "Alaska"),
         SelectionItem::new("arizona", "Arizona"),
@@ -75,11 +80,5 @@ fn autocomplete_demo_items() -> Vec<SelectionItem> {
         SelectionItem::new("iowa", "Iowa"),
         SelectionItem::new("kansas", "Kansas"),
         SelectionItem::new("kentucky", "Kentucky"),
-    ];
-
-    items.extend((1..=110).map(|index| {
-        SelectionItem::new(format!("autocomplete-demo-{index:03}"), format!("Autocomplete Demo Item {index:03}"))
-    }));
-
-    items
+    ]
 }

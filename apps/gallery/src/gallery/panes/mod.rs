@@ -1,5 +1,6 @@
 mod autocomplete;
 mod button;
+mod combobox;
 mod checkbox;
 mod choice_controls_template;
 mod choice_group;
