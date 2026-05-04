@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{App, ClickEvent, Corner, Div, Stateful, Window, anchored, deferred, div, px, prelude::*};
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::floating_menu::render_floating_menu;
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme};
+use gpui_luma::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme};
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 

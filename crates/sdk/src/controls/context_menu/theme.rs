@@ -2,9 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{
-    ControlSize, FloatingMenuAppearance, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage,
-    ThemeTokens, ThemeUsage, floating_menu::default_floating_menu_appearance,
+use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
 };
 
 #[derive(Clone, Debug)]
@@ -37,7 +37,7 @@ pub fn default_context_menu_theme() -> Arc<dyn ContextMenuTheme> {
 }
 
 pub const CONTEXT_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Context Menu",
+    label: "Context Menu",
     parts: &[
         ThemePartUsage {
             part: "target background",

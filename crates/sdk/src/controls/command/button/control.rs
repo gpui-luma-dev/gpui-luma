@@ -11,7 +11,7 @@ use super::{ButtonBuilder, ButtonRenderModel};
 pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 use crate::controls::command::button::model::ControlIcon;
-use crate::theme::ButtonFamilyRole;
+use crate::controls::button_family::ButtonFamilyRole;
 
 pub struct Button<D = ()> {
     model: super::model::ButtonModel<D>,

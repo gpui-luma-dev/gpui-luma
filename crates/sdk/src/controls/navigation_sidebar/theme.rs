@@ -2,7 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct NavigationSidebarContainerAppearance {
@@ -64,7 +66,7 @@ pub fn navigation_sidebar_theme_usage() -> &'static ThemeUsage {
 }
 
 pub const NAVIGATION_SIDEBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Navigation Sidebar",
+    label: "Navigation Sidebar",
     parts: &[
         ThemePartUsage {
             part: "container background",
@@ -291,7 +293,7 @@ mod tests {
     fn usage_metadata_describes_navigation_sidebar_tokens() {
         let usage = navigation_sidebar_theme_usage();
 
-        assert_eq!(usage.component, "Navigation Sidebar");
+        assert_eq!(usage.label, "Navigation Sidebar");
         assert!(usage.parts.iter().any(|part| part.token == "navigation.selected_background"));
 
         for part in usage.parts {

@@ -1,16 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb,
-};
+use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
 use gpui_luma::controls::command::button::ButtonKind;
-use gpui_luma::controls::command::button::{
-    Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasContent,
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasContent};
+use gpui_luma::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
 };
-use gpui_luma::theme::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, ControlSize,
-    DefaultButtonFamilyTheme, InteractionState,
-};
+use gpui_luma::theme::{ControlSize, InteractionState};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -54,7 +50,11 @@ impl ModButtonPane {
 
         let custom_button = Button::new("custom-btn")
             .content(|model, _| {
-                let color = if model.state.hovered { rgb(0x4f46e5) } else { rgb(0x3730a3) };
+                let color = if model.state.hovered {
+                    rgb(0x4f46e5)
+                } else {
+                    rgb(0x3730a3)
+                };
                 div()
                     .flex()
                     .items_center()
@@ -93,58 +93,35 @@ impl ModButtonPane {
             .template(modified_button_template::<CounterState>(theme))
             .spawn(cx);
 
-        let standard_icon_only = Button::icon("std-icon-only", LucideIcon::Smile)
-            .kind(ButtonKind::Standard)
-            .spawn(cx);
+        let standard_icon_only = Button::icon("std-icon-only", LucideIcon::Smile).kind(ButtonKind::Standard).spawn(cx);
 
         let standard_text_icon = Button::new("Label")
             .content(|_, _| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child("Label")
-                    .child(render_lucide_icon(LucideIcon::Smile))
+                div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
             .kind(ButtonKind::Standard)
             .spawn(cx);
 
         let standard_icon_text = Button::new("Label")
             .content(|_, _| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(render_lucide_icon(LucideIcon::Smile))
-                    .child("Label")
+                div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
             })
             .kind(ButtonKind::Standard)
             .spawn(cx);
 
-        let prominent_icon_only = Button::icon("prom-icon-only", LucideIcon::Smile)
-            .kind(ButtonKind::Prominent)
-            .spawn(cx);
+        let prominent_icon_only =
+            Button::icon("prom-icon-only", LucideIcon::Smile).kind(ButtonKind::Prominent).spawn(cx);
 
         let prominent_text_icon = Button::new("Label")
             .content(|_, _| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child("Label")
-                    .child(render_lucide_icon(LucideIcon::Smile))
+                div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
             .kind(ButtonKind::Prominent)
             .spawn(cx);
 
         let prominent_icon_text = Button::new("Label")
             .content(|_, _| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(render_lucide_icon(LucideIcon::Smile))
-                    .child("Label")
+                div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
             })
             .kind(ButtonKind::Prominent)
             .spawn(cx);
@@ -234,30 +211,40 @@ impl ModButtonPane {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_color(chrome.title_text).font_weight(gpui::FontWeight::SEMIBOLD).child("Standard Factory Layouts"))
+                        .child(
+                            div()
+                                .text_color(chrome.title_text)
+                                .font_weight(gpui::FontWeight::SEMIBOLD)
+                                .child("Standard Factory Layouts"),
+                        )
                         .child(
                             div()
                                 .flex()
                                 .gap(px(12.0))
                                 .child(self.standard_icon_only.clone())
                                 .child(self.standard_text_icon.clone())
-                                .child(self.standard_icon_text.clone())
-                        )
+                                .child(self.standard_icon_text.clone()),
+                        ),
                 )
                 .child(
                     div()
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_color(chrome.title_text).font_weight(gpui::FontWeight::SEMIBOLD).child("Prominent Factory Layouts"))
+                        .child(
+                            div()
+                                .text_color(chrome.title_text)
+                                .font_weight(gpui::FontWeight::SEMIBOLD)
+                                .child("Prominent Factory Layouts"),
+                        )
                         .child(
                             div()
                                 .flex()
                                 .gap(px(12.0))
                                 .child(self.prominent_icon_only.clone())
                                 .child(self.prominent_text_icon.clone())
-                                .child(self.prominent_icon_text.clone())
-                        )
+                                .child(self.prominent_icon_text.clone()),
+                        ),
                 )
                 .into_any_element(),
             theme,
@@ -310,22 +297,29 @@ impl ModButtonPane {
                 let label = format!("Customized {}", self.custom_clicks);
 
                 self.custom_button.update(cx, |button, cx| {
-                    button.set_content(Arc::new(move |model, _| {
-                        let color = if model.state.hovered { rgb(0x4f46e5) } else { rgb(0x3730a3) };
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap(px(8.0))
-                            .child(
-                                div()
-                                    .font_family("lucide")
-                                    .text_size(px(16.0))
-                                    .child(char::from(LucideIcon::Check).to_string()),
-                            )
-                            .child(label.clone())
-                            .text_color(color)
-                            .into_any_element()
-                    }), cx);
+                    button.set_content(
+                        Arc::new(move |model, _| {
+                            let color = if model.state.hovered {
+                                rgb(0x4f46e5)
+                            } else {
+                                rgb(0x3730a3)
+                            };
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap(px(8.0))
+                                .child(
+                                    div()
+                                        .font_family("lucide")
+                                        .text_size(px(16.0))
+                                        .child(char::from(LucideIcon::Check).to_string()),
+                                )
+                                .child(label.clone())
+                                .text_color(color)
+                                .into_any_element()
+                        }),
+                        cx,
+                    );
                 });
             }
         }
@@ -395,32 +389,33 @@ fn render_example_card(
 
 fn modified_button_template<D: 'static>(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<D>> {
     let mut template = DefaultButtonTemplate::new(Arc::new(GalleryModButtonFamilyTheme { theme: theme.clone() }));
-    
-    template = template.with_modifier(|el, model| {
-                let (background, border, foreground) = if model.state.disabled {
-                    (rgb(0xf3f4f6), rgb(0xe5e7eb), rgb(0x9ca3af))
-                } else if model.state.pressed {
-                    (rgb(0x4338ca), rgb(0x312e81), rgb(0xffffff))
-                } else if model.state.hovered {
-                    (rgb(0x6366f1), rgb(0x4f46e5), rgb(0xffffff))
-                } else if model.state.focused {
-                    (rgb(0xeef2ff), rgb(0x4f46e5), rgb(0x3730a3))
-                } else {
-                    (rgb(0xf5f3ff), rgb(0xc4b5fd), rgb(0x5b21b6))
-                };
-                
-                model.radius_override.set(Some(999.0));
 
-                el.bg(background).border_color(border).text_color(foreground).rounded(px(999.0)).px(px(18.0))
-            })
-            .with_modifier(|el, model| {
-                if model.state.pressed {
-                    el.py(px(7.0))
-                } else {
-                    el.py(px(8.0))
-                }
-            });
-            
+    template = template
+        .with_modifier(|el, model| {
+            let (background, border, foreground) = if model.state.disabled {
+                (rgb(0xf3f4f6), rgb(0xe5e7eb), rgb(0x9ca3af))
+            } else if model.state.pressed {
+                (rgb(0x4338ca), rgb(0x312e81), rgb(0xffffff))
+            } else if model.state.hovered {
+                (rgb(0x6366f1), rgb(0x4f46e5), rgb(0xffffff))
+            } else if model.state.focused {
+                (rgb(0xeef2ff), rgb(0x4f46e5), rgb(0x3730a3))
+            } else {
+                (rgb(0xf5f3ff), rgb(0xc4b5fd), rgb(0x5b21b6))
+            };
+
+            model.radius_override.set(Some(999.0));
+
+            el.bg(background).border_color(border).text_color(foreground).rounded(px(999.0)).px(px(18.0))
+        })
+        .with_modifier(|el, model| {
+            if model.state.pressed {
+                el.py(px(7.0))
+            } else {
+                el.py(px(8.0))
+            }
+        });
+
     Arc::new(template)
 }
 

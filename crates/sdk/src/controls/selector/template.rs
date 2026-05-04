@@ -8,11 +8,11 @@ use gpui::Hsla;
 use lucide_icons::Icon as LucideIcon;
 
 use super::{SelectorPlacement, SelectorRenderModel};
-use crate::controls::selector::model::{
-    SelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
-};
+use crate::controls::selector::model::{SelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike};
 use crate::controls::state::MenuPath;
-use crate::theme::{FloatingMenuAppearance, SelectorAppearance, SelectorTheme, default_selector_theme};
+use crate::controls::floating_menu::FloatingMenuAppearance;
+
+use super::theme::{SelectorAppearance, SelectorTheme, default_selector_theme};
 
 pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;

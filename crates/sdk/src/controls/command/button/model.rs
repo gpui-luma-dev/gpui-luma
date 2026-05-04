@@ -7,7 +7,7 @@ use super::control::Button;
 use super::template::ButtonTemplate;
 pub use crate::controls::content_presenter::{ControlContent, HasContent};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
-use crate::theme::ButtonFamilyRole;
+use crate::controls::button_family::ButtonFamilyRole;
 use lucide_icons::Icon as LucideIcon;
 
 #[derive(Clone)]

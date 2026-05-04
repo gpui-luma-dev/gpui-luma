@@ -5,7 +5,8 @@ use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, Butto
 use gpui_luma::controls::switch::{self, Switch};
 use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::{ButtonFamilyRole, InteractionState};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;

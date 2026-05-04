@@ -7,7 +7,7 @@ use gpui::{
 
 use super::ContextMenuRenderModel;
 use crate::controls::floating_menu::render_floating_menu;
-use crate::theme::{ContextMenuTheme, default_context_menu_theme};
+use crate::controls::context_menu::{ContextMenuTheme, default_context_menu_theme};
 
 pub type ContextMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;

@@ -1,11 +1,17 @@
 mod control;
 mod model;
 mod template;
+mod theme;
 
 pub use control::{ContextMenu, ContextMenuEvent};
 pub use model::{ContextMenuBuilder, ContextMenuModel, ContextMenuRenderModel};
 pub use template::{
     ContextMenuTemplate, ContextMenuTemplateHandlers, ThemedContextMenuTemplate, default_context_menu_template,
+};
+
+pub use theme::{
+    DefaultContextMenuTheme, CONTEXT_MENU_THEME_USAGE, ContextMenuAppearance, ContextMenuTheme,
+    default_context_menu_theme,
 };
 
 pub use crate::controls::menu_item::{MenuItem, MenuItemIcon};

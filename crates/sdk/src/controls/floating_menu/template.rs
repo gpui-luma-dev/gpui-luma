@@ -5,7 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::state::MenuPath;
-use crate::theme::FloatingMenuAppearance;
+use crate::controls::floating_menu::FloatingMenuAppearance;
 
 pub type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

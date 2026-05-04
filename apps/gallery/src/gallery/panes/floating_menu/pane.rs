@@ -8,7 +8,7 @@ use gpui_luma::controls::floating_menu::{
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::state::MenuPath;
-use gpui_luma::theme::{DefaultFloatingMenuTheme, FloatingMenuAppearance, FloatingMenuTheme};
+use gpui_luma::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuAppearance, FloatingMenuTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

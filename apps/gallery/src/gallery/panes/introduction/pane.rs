@@ -157,7 +157,7 @@ impl IntroductionPane {
                 //.vertical()
                 .bool_button_template_factory(|_| {
                     std::sync::Arc::new(
-                        radio_button::ThemedRadioButtonTemplate::new(gpui_luma::theme::default_radio_button_theme())
+                        radio_button::ThemedRadioButtonTemplate::new(gpui_luma::controls::radio_button::default_radio_button_theme())
                             .with_modifier(|element, _| element.min_h(px(22.0)).py(px(0.0)).px(px(2.0))), // Add extra space for controls
                     )
                 })

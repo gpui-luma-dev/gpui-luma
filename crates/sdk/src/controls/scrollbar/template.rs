@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::{ScrollbarDrag, ScrollbarOrientation, ScrollbarRenderModel};
-use crate::theme::{ScrollbarTheme, default_scrollbar_theme};
+use crate::controls::scrollbar::{ScrollbarTheme, default_scrollbar_theme};
 
 pub type ScrollbarBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type ScrollbarHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

@@ -2,9 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{
-    ControlSize, FloatingMenuAppearance, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage,
-    ThemeTokens, ThemeUsage, floating_menu::default_floating_menu_appearance,
+use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
 };
 
 #[derive(Clone, Debug)]
@@ -40,7 +40,7 @@ pub fn default_popup_menu_theme() -> Arc<dyn PopupMenuTheme> {
 }
 
 pub const POPUP_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Popup Menu",
+    label: "Popup Menu",
     parts: &[
         ThemePartUsage {
             part: "trigger background",

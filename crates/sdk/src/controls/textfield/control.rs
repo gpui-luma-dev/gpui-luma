@@ -8,7 +8,7 @@ use gpui::{
 
 use super::{TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers, model::TextFieldModel};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
-use crate::theme::default_textfield_theme;
+use crate::controls::textfield::default_textfield_theme;
 
 #[derive(Clone)]
 struct TextFieldLayoutCache {

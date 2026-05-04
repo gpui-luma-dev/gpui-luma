@@ -4,7 +4,7 @@ use gpui::SharedString;
 use gpui::prelude::*;
 
 use crate::controls::command::button::{ButtonBuilder, ButtonTemplate, DefaultButtonTemplate};
-use crate::theme::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
+use crate::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
 
 pub struct Toggle;
 

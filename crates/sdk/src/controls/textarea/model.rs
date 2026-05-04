@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AppContext, Entity, SharedString};
 
 use super::{TextArea, TextAreaState, TextAreaTemplate, default_textarea_template};
-use crate::theme::{TextAreaTheme, default_textarea_theme};
+use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 

@@ -2,8 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
+};
 
 #[derive(Clone, Debug)]
 pub struct SwitchAppearance {
@@ -39,7 +41,7 @@ pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
 }
 
 pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Switch",
+    label: "Switch",
     parts: &[
         ThemePartUsage {
             part: "off track background",

@@ -2,7 +2,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::adorner::{AdornerSpec, render_adorner};
-use crate::theme::{SwitchTheme, default_switch_theme};
+use crate::controls::switch::{SwitchTheme, default_switch_theme};
 
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;

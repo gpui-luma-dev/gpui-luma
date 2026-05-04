@@ -1,6 +1,7 @@
 mod control;
 mod model;
 mod template;
+mod theme;
 
 pub use control::ChoiceGroupEvent;
 pub use model::{
@@ -13,6 +14,10 @@ pub use template::{
     ChoiceGroupClickHandler, ChoiceGroupHoverHandler, ChoiceGroupModifier, ChoiceGroupMouseDownHandler,
     ChoiceGroupMouseUpHandler, ChoiceGroupTemplate, ChoiceGroupTemplateHandlers, ModifiedChoiceGroupTemplate,
     ThemedChoiceGroupTemplate, default_choice_group_template, template_with_modifier,
+};
+pub use theme::{
+    DefaultChoiceGroupTheme, CHOICE_GROUP_THEME_USAGE, ChoiceGroupItemAppearance, ChoiceGroupListAppearance,
+    ChoiceGroupTheme, default_choice_group_theme,
 };
 
 pub use crate::controls::button_family::{ButtonKind as ChoiceGroupKind, ButtonSize as ChoiceGroupSize};

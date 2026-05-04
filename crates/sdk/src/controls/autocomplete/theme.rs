@@ -2,10 +2,8 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{
-    ControlSize, FloatingMenuAppearance, ThemePartUsage, ThemeTokens, ThemeUsage,
-    floating_menu::default_floating_menu_appearance,
-};
+use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::theme::{ControlSize, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct AutocompleteTextBoxAppearance {
@@ -74,10 +72,10 @@ const AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS: &[ThemePartUsage] = &[
 ];
 
 pub const AUTOCOMPLETE_TEXTBOX_THEME_USAGE: ThemeUsage =
-    ThemeUsage { component: "Autocomplete TextBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
+    ThemeUsage { label: "Autocomplete TextBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
 
 pub const COMBOBOX_THEME_USAGE: ThemeUsage =
-    ThemeUsage { component: "ComboBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
+    ThemeUsage { label: "ComboBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
 
 impl DefaultAutocompleteTextBoxTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct SliderAppearance {
@@ -35,7 +35,7 @@ pub fn default_slider_theme() -> Arc<dyn SliderTheme> {
 }
 
 pub const SLIDER_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Slider",
+    label: "Slider",
     parts: &[
         ThemePartUsage {
             part: "track background",

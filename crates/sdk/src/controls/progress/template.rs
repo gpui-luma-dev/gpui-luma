@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{App, Div, PathBuilder, Stateful, Window, canvas, div, point, px, prelude::*};
 
 use super::ProgressRenderModel;
-use crate::theme::{ProgressTheme, default_progress_theme};
+use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
 pub trait ProgressTemplate: Send + Sync {
     fn render(&self, model: &ProgressRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;

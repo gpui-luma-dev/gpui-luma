@@ -2,130 +2,144 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
+};
 
 #[derive(Clone, Debug)]
-pub struct CheckboxAppearance {
+pub struct RadioButtonAppearance {
     pub control_background: Option<Hsla>,
     pub control_border: Option<Hsla>,
     pub indicator_background: Hsla,
     pub indicator_border: Hsla,
-    pub checkmark_color: Hsla,
+    pub dot_color: Hsla,
     pub label_color: Hsla,
     pub adorners: Vec<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
     pub control_padding_y: f32,
-    pub indicator_radius: f32,
     pub indicator_size: f32,
-    pub checkmark_size: f32,
+    pub dot_size: f32,
     pub gap: f32,
     pub height: f32,
 }
 
-pub trait CheckboxTheme: Send + Sync {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance;
+pub trait RadioButtonTheme: Send + Sync {
+    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultCheckboxTheme {
+pub struct DefaultRadioButtonTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_checkbox_theme() -> Arc<dyn CheckboxTheme> {
-    static THEME: OnceLock<Arc<dyn CheckboxTheme>> = OnceLock::new();
+pub fn default_radio_button_theme() -> Arc<dyn RadioButtonTheme> {
+    static THEME: OnceLock<Arc<dyn RadioButtonTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultCheckboxTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultRadioButtonTheme::default())).clone()
 }
 
-pub const CHECKBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Checkbox",
+pub const RADIO_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
+    label: "Radio Button",
     parts: &[
         ThemePartUsage {
             part: "unchecked indicator background",
             token: "form.input.background",
             states: &["unchecked"],
-            appearance_fields: &["CheckboxAppearance.indicator_background"],
+            appearance_fields: &["RadioButtonAppearance.indicator_background"],
         },
         ThemePartUsage {
             part: "unchecked indicator hover background",
             token: "state.hover.background",
             states: &["unchecked hovered"],
-            appearance_fields: &["CheckboxAppearance.indicator_background"],
+            appearance_fields: &["RadioButtonAppearance.indicator_background"],
         },
         ThemePartUsage {
             part: "unchecked indicator pressed background",
             token: "state.pressed.background",
             states: &["unchecked pressed"],
-            appearance_fields: &["CheckboxAppearance.indicator_background"],
+            appearance_fields: &["RadioButtonAppearance.indicator_background"],
         },
         ThemePartUsage {
             part: "unchecked indicator border",
             token: "form.input.border",
-            states: &["unchecked", "unchecked hovered", "unchecked pressed", "disabled"],
-            appearance_fields: &["CheckboxAppearance.indicator_border"],
+            states: &["unchecked", "unchecked hovered", "unchecked pressed"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border"],
         },
         ThemePartUsage {
             part: "checked indicator background",
             token: "action.prominent.background",
             states: &["checked"],
-            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+            appearance_fields: &[
+                "RadioButtonAppearance.indicator_background",
+                "RadioButtonAppearance.indicator_border",
+            ],
         },
         ThemePartUsage {
             part: "checked indicator hover background",
             token: "action.prominent.hover_background",
             states: &["checked hovered"],
-            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+            appearance_fields: &[
+                "RadioButtonAppearance.indicator_background",
+                "RadioButtonAppearance.indicator_border",
+            ],
         },
         ThemePartUsage {
             part: "checked indicator pressed background",
             token: "action.prominent.pressed_background",
             states: &["checked pressed"],
-            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+            appearance_fields: &[
+                "RadioButtonAppearance.indicator_background",
+                "RadioButtonAppearance.indicator_border",
+            ],
         },
         ThemePartUsage {
-            part: "checked checkmark",
+            part: "checked dot",
             token: "action.prominent.foreground",
             states: &["checked"],
-            appearance_fields: &["CheckboxAppearance.checkmark_color"],
+            appearance_fields: &["RadioButtonAppearance.dot_color"],
         },
         ThemePartUsage {
             part: "label",
             token: "app.foreground",
             states: &["default", "checked"],
-            appearance_fields: &["CheckboxAppearance.label_color"],
+            appearance_fields: &["RadioButtonAppearance.label_color"],
         },
         ThemePartUsage {
             part: "disabled fill",
             token: "state.disabled.background",
             states: &["disabled"],
-            appearance_fields: &["CheckboxAppearance.indicator_background"],
+            appearance_fields: &["RadioButtonAppearance.indicator_background"],
         },
         ThemePartUsage {
             part: "disabled foreground",
             token: "state.disabled.foreground",
             states: &["disabled"],
-            appearance_fields: &["CheckboxAppearance.label_color", "CheckboxAppearance.checkmark_color"],
+            appearance_fields: &[
+                "RadioButtonAppearance.indicator_border",
+                "RadioButtonAppearance.dot_color",
+                "RadioButtonAppearance.label_color",
+            ],
         },
         ThemePartUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["CheckboxAppearance.adorners"],
+            appearance_fields: &["RadioButtonAppearance.adorners"],
         },
     ],
 };
 
-impl DefaultCheckboxTheme {
+impl DefaultRadioButtonTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl CheckboxTheme for DefaultCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
+impl RadioButtonTheme for DefaultRadioButtonTheme {
+    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -142,10 +156,11 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
-        let label_color = if state.disabled {
-            palette.state.disabled.foreground
-        } else {
-            palette.app.foreground
+        let selected_color = match layer {
+            InteractionLayer::Disabled => palette.state.disabled.foreground,
+            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
+            InteractionLayer::Hovered => palette.action.prominent.hover_background,
+            InteractionLayer::Default => palette.action.prominent.background,
         };
 
         let adorners = if state.focused {
@@ -159,29 +174,32 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             Vec::new()
         };
 
-        CheckboxAppearance {
+        RadioButtonAppearance {
             control_background: None,
             control_border: None,
             indicator_background,
-            indicator_border: if checked && !state.disabled {
-                indicator_background
+            indicator_border: if checked {
+                selected_color
             } else {
                 palette.form.input.border
             },
-            checkmark_color: if state.disabled {
+            dot_color: if state.disabled {
                 palette.state.disabled.foreground
             } else {
                 palette.action.prominent.foreground
             },
-            label_color,
+            label_color: if state.disabled {
+                palette.state.disabled.foreground
+            } else {
+                palette.app.foreground
+            },
             adorners,
             label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,
             control_padding_y: 0.0,
-            indicator_radius: metrics.radius.sm,
             indicator_size: metrics.control_height(size) * 0.5,
-            checkmark_size: metrics.control_height(size) * 0.42,
+            dot_size: metrics.control_height(size) * 0.24,
             gap: metrics.gap(size),
             height: metrics.control_height(size),
         }

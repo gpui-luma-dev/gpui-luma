@@ -1,6 +1,7 @@
 mod control;
 mod model;
 mod template;
+mod theme;
 
 pub use control::{SliderDrag, SliderEvent};
 pub use model::{SliderBuilder, SliderModel, SliderRenderModel};
@@ -8,6 +9,8 @@ pub use template::{
     SliderBoundsHandler, SliderDragMoveHandler, SliderHoverHandler, SliderMouseDownHandler, SliderMouseUpHandler,
     SliderTemplate, SliderTemplateHandlers, ThemedSliderTemplate, default_slider_template,
 };
+
+pub use theme::{DefaultSliderTheme, SLIDER_THEME_USAGE, SliderAppearance, SliderTheme, default_slider_theme};
 
 pub use crate::theme::InteractionState as SliderState;
 

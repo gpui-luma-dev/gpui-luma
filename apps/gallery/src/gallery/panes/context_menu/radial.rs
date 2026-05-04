@@ -6,7 +6,8 @@ use gpui::{
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
-use gpui_luma::theme::{ContextMenuAppearance, ContextMenuTheme, FloatingMenuAppearance};
+use gpui_luma::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme};
+use gpui_luma::controls::floating_menu::FloatingMenuAppearance;
 use lucide_icons::Icon as LucideIcon;
 
 const RADIAL_ITEM_COUNT: usize = 5;

@@ -13,7 +13,7 @@ use gpui_luma::controls::textarea::{
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
     TextAreaTemplate, TextAreaTemplateHandlers, Validator,
 };
-use gpui_luma::theme::TextAreaTheme;
+use gpui_luma::controls::textarea::TextAreaTheme;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -233,21 +233,21 @@ impl TextAreaPane {
 
     fn handle_option_changed(&mut self, option: TextAreaOption, _event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match option {
-                TextAreaOption::Enabled => {
-                    self.enabled = !self.enabled;
-                    self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
-                    self.enabled
-                }
-                TextAreaOption::CleanOnEscape => {
-                    self.clean_on_escape = !self.clean_on_escape;
-                    self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
-                    self.clean_on_escape
-                }
-                TextAreaOption::StrictValidation => {
-                    self.strict_validation = !self.strict_validation;
-                    self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
-                    self.strict_validation
-                }
+            TextAreaOption::Enabled => {
+                self.enabled = !self.enabled;
+                self.enabled_checkbox.update(cx, |b, cx| b.set_data(self.enabled, cx));
+                self.enabled
+            }
+            TextAreaOption::CleanOnEscape => {
+                self.clean_on_escape = !self.clean_on_escape;
+                self.clean_on_escape_checkbox.update(cx, |b, cx| b.set_data(self.clean_on_escape, cx));
+                self.clean_on_escape
+            }
+            TextAreaOption::StrictValidation => {
+                self.strict_validation = !self.strict_validation;
+                self.validation_checkbox.update(cx, |b, cx| b.set_data(self.strict_validation, cx));
+                self.strict_validation
+            }
         };
         self.sync_text_area_settings(cx);
         cx.notify();
@@ -445,7 +445,7 @@ fn shape_metric(
     end: usize,
     text: String,
     line_ix: usize,
-    appearance: &gpui_luma::theme::TextAreaAppearance,
+    appearance: &gpui_luma::controls::textarea::TextAreaAppearance,
     window: &mut Window,
 ) -> TextAreaLineMetric {
     let run = TextRun {

@@ -5,7 +5,8 @@ use gpui::{
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::theme::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, DefaultFloatingMenuTheme, FloatingMenuTheme};
+use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
+use crate::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuTheme};
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;

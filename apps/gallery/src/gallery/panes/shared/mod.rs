@@ -165,7 +165,7 @@ fn render_usage_panels(components: &[&'static str], theme: &GalleryThemePack) ->
 fn render_usage_component_section(component: &'static str, theme: &GalleryThemePack) -> AnyElement {
     let chrome = theme.chrome();
     let tokens = theme.tokens();
-    let usage = all_theme_usages().iter().copied().find(|usage| usage.component == component);
+    let usage = all_theme_usages().iter().copied().find(|usage| usage.label == component);
     let parts = usage.map(|usage| usage.parts).unwrap_or(&[]);
 
     div()

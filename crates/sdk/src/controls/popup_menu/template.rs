@@ -8,7 +8,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::floating_menu::render_floating_menu;
-use crate::theme::{PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
+use crate::controls::popup_menu::{PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;

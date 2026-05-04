@@ -2,10 +2,11 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{
-    ControlSize, FloatingMenuAppearance, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage,
-    ThemeTokens, ThemeUsage, floating_menu::default_floating_menu_appearance,
+use crate::controls::floating_menu::default_floating_menu_appearance;
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
 };
+use crate::controls::floating_menu::FloatingMenuAppearance;
 
 #[derive(Clone, Debug)]
 pub struct SelectorAppearance {
@@ -40,7 +41,7 @@ pub fn default_selector_theme() -> Arc<dyn SelectorTheme> {
 }
 
 pub const SELECTOR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Selector",
+    label: "Selector",
     parts: &[
         ThemePartUsage {
             part: "trigger background",

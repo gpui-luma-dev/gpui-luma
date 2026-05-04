@@ -8,7 +8,7 @@ use gpui::{
 const DISABLED_OPACITY: f32 = 0.56;
 
 use super::{SliderDrag, SliderRenderModel};
-use crate::theme::{SliderTheme, default_slider_theme};
+use crate::controls::slider::{SliderTheme, default_slider_theme};
 
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

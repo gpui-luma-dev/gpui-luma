@@ -5,7 +5,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
 use crate::theme::adorner::render_adorner;
-use crate::theme::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
+use crate::controls::button_family::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 
 const DISABLED_OPACITY: f32 = 0.56;
 

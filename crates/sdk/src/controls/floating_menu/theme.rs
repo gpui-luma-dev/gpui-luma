@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use super::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuAppearance {
@@ -40,7 +40,7 @@ pub fn default_floating_menu_theme() -> Arc<dyn FloatingMenuTheme> {
 }
 
 pub const FLOATING_MENU_THEME_USAGE: ThemeUsage =
-    ThemeUsage { component: "Floating Menu", parts: FLOATING_MENU_THEME_PARTS };
+    ThemeUsage { label: "Floating Menu", parts: FLOATING_MENU_THEME_PARTS };
 
 pub const FLOATING_MENU_THEME_PARTS: &[ThemePartUsage] = &[
     ThemePartUsage {

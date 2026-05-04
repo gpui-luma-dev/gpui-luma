@@ -2,7 +2,7 @@ use gpui::Hsla;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ThemeUsage {
-    pub component: &'static str,
+    pub label: &'static str,
     pub parts: &'static [ThemePartUsage],
 }
 
@@ -87,26 +87,26 @@ pub fn resolve_palette_color(tokens: &super::ThemeTokens, token_name: &str) -> O
 }
 
 const THEME_USAGES: &[&ThemeUsage] = &[
-    &super::button_family::BUTTON_THEME_USAGE,
-    &super::navigation_sidebar::NAVIGATION_SIDEBAR_THEME_USAGE,
-    &super::button_family::ICON_BUTTON_THEME_USAGE,
-    &super::button_family::TOGGLE_THEME_USAGE,
-    &super::choice_group::CHOICE_GROUP_THEME_USAGE,
-    &super::checkbox::CHECKBOX_THEME_USAGE,
-    &super::radio_button::RADIO_BUTTON_THEME_USAGE,
-    &super::switch::SWITCH_THEME_USAGE,
-    &super::slider::SLIDER_THEME_USAGE,
-    &super::scrollbar::SCROLLBAR_THEME_USAGE,
-    &super::textarea::TEXTAREA_THEME_USAGE,
-    &super::textfield::TEXTFIELD_THEME_USAGE,
-    &super::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
-    &super::autocomplete::COMBOBOX_THEME_USAGE,
-    &super::floating_menu::FLOATING_MENU_THEME_USAGE,
-    &super::popup_menu::POPUP_MENU_THEME_USAGE,
-    &super::selector::SELECTOR_THEME_USAGE,
-    &super::context_menu::CONTEXT_MENU_THEME_USAGE,
-    &super::tabs_navigation::TABS_NAVIGATION_THEME_USAGE,
-    &super::progress::PROGRESS_THEME_USAGE,
+    &crate::controls::button_family::BUTTON_THEME_USAGE,
+    &crate::controls::navigation_sidebar::NAVIGATION_SIDEBAR_THEME_USAGE,
+    &crate::controls::button_family::ICON_BUTTON_THEME_USAGE,
+    &crate::controls::button_family::TOGGLE_THEME_USAGE,
+    &crate::controls::choice_group::CHOICE_GROUP_THEME_USAGE,
+    &crate::controls::checkbox::CHECKBOX_THEME_USAGE,
+    &crate::controls::radio_button::RADIO_BUTTON_THEME_USAGE,
+    &crate::controls::switch::SWITCH_THEME_USAGE,
+    &crate::controls::slider::SLIDER_THEME_USAGE,
+    &crate::controls::scrollbar::SCROLLBAR_THEME_USAGE,
+    &crate::controls::textarea::TEXTAREA_THEME_USAGE,
+    &crate::controls::textfield::TEXTFIELD_THEME_USAGE,
+    &crate::controls::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
+    &crate::controls::autocomplete::COMBOBOX_THEME_USAGE,
+    &crate::controls::floating_menu::FLOATING_MENU_THEME_USAGE,
+    &crate::controls::popup_menu::POPUP_MENU_THEME_USAGE,
+    &crate::controls::selector::SELECTOR_THEME_USAGE,
+    &crate::controls::context_menu::CONTEXT_MENU_THEME_USAGE,
+    &crate::controls::tabs_navigation::TABS_NAVIGATION_THEME_USAGE,
+    &crate::controls::progress::PROGRESS_THEME_USAGE,
 ];
 
 fn token(token: &'static str, color: Hsla) -> PaletteColorToken {
@@ -135,7 +135,7 @@ mod tests {
                 assert!(
                     resolve_palette_color(&tokens, part.token).is_some(),
                     "{} uses unknown palette token {}",
-                    usage.component,
+                    usage.label,
                     part.token
                 );
             }

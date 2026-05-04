@@ -4,7 +4,7 @@ use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{AdornerSpec, render_adorner};
-use crate::theme::{RadioButtonTheme, default_radio_button_theme};
+use crate::controls::radio_button::{RadioButtonTheme, default_radio_button_theme};
 
 define_control_template!(
     ThemedRadioButtonTemplate,

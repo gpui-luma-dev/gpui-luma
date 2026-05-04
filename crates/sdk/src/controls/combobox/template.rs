@@ -5,7 +5,9 @@ use gpui::{
     SharedString, Window, anchored, deferred, div, point, prelude::*, px,
 };
 
-use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
+use crate::controls::floating_menu::{
+    FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler,
+};
 use crate::controls::menu_item::MenuItem;
 
 use super::text_selection;
@@ -38,7 +40,7 @@ pub struct ComboBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: crate::theme::FloatingMenuAppearance,
+    pub popup_appearance: FloatingMenuAppearance,
     pub popup_content: Option<AnyElement>,
 }
 
@@ -177,7 +179,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
 pub(super) fn render_popup_rows(
     id: &SharedString,
     items: &[MenuItem],
-    appearance: crate::theme::FloatingMenuAppearance,
+    appearance: FloatingMenuAppearance,
     highlighted_index: Option<usize>,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,

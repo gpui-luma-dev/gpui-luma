@@ -10,10 +10,9 @@ use lucide_icons::Icon as LucideIcon;
 use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
-use crate::theme::{
-    ControlSize, FloatingMenuAppearance, FloatingMenuTheme, InteractionState, NavigationSidebarTheme,
-    default_floating_menu_theme, default_navigation_sidebar_theme,
-};
+use crate::theme::{ControlSize, InteractionState};
+use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuTheme, default_floating_menu_theme};
+use crate::controls::navigation_sidebar::{NavigationSidebarTheme, default_navigation_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;
 const CONTAINER_PADDING: f32 = 8.0;

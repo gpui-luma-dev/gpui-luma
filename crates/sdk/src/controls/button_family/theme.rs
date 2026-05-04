@@ -2,8 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
+};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonVariant {
@@ -59,7 +61,7 @@ pub fn default_button_family_theme() -> Arc<dyn ButtonFamilyTheme> {
 }
 
 pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Button",
+    label: "Button",
     parts: &[
         ThemePartUsage {
             part: "standard background",
@@ -136,11 +138,10 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
     ],
 };
 
-pub const ICON_BUTTON_THEME_USAGE: ThemeUsage =
-    ThemeUsage { component: "Icon Button", parts: BUTTON_THEME_USAGE.parts };
+pub const ICON_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage { label: "Icon Button", parts: BUTTON_THEME_USAGE.parts };
 
 pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Toggle",
+    label: "Toggle",
     parts: &[
         ThemePartUsage {
             part: "unselected standard background",

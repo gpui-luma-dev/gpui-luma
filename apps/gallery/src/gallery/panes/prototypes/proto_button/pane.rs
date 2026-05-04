@@ -8,7 +8,8 @@ use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasContent,
 };
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::{ButtonFamilyRole, ButtonVariant, InteractionState, ThemeMode, default_button_family_theme};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};

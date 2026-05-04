@@ -7,7 +7,7 @@ use gpui::{
 
 use super::{TextAreaDrag, TextAreaRenderModel};
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::{TextAreaTheme, default_textarea_theme};
+use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 
 const TEXTAREA_SELECTION_OPACITY: f32 = 0.28;
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;

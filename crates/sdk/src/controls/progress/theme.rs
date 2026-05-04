@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ProgressAppearance {
@@ -28,7 +28,7 @@ pub fn default_progress_theme() -> Arc<dyn ProgressTheme> {
 }
 
 pub const PROGRESS_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Progress",
+    label: "Progress",
     parts: &[
         ThemePartUsage {
             part: "track color",

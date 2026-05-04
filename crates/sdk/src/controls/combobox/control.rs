@@ -6,7 +6,8 @@ use gpui::{
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::scrollbar::ScrollbarEvent;
-use crate::theme::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, DefaultFloatingMenuTheme, FloatingMenuTheme};
+use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
+use crate::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuTheme};
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::ComboBoxBuilder;
@@ -429,7 +430,7 @@ impl Render for ComboBoxControl {
             .unwrap_or_else(|| "none".to_string());
 
         let minimum_trigger_width = {
-            let textfield_appearance = crate::theme::default_textfield_theme()
+            let textfield_appearance = crate::controls::textfield::default_textfield_theme()
                 .resolve(crate::controls::textfield::TextFieldState::default(), true);
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_appearance.typography.weight;

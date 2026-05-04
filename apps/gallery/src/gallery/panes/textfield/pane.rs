@@ -13,7 +13,7 @@ use gpui_luma::controls::textfield::{
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
     TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, Validator,
 };
-use gpui_luma::theme::TextFieldTheme;
+use gpui_luma::controls::textfield::TextFieldTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

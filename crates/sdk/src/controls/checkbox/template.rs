@@ -3,7 +3,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::theme::adorner::{AdornerSpec, render_adorner};
-use crate::theme::{CheckboxTheme, default_checkbox_theme};
+use crate::controls::checkbox::{CheckboxTheme, default_checkbox_theme};
 
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;

@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::TabsNavigationRenderModel;
-use crate::theme::{TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme};
+use crate::controls::tabs_navigation::{TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme};
 
 pub type TabsNavigationClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type TabsNavigationHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;

@@ -4,7 +4,7 @@ use gpui::{Hsla, hsla};
 
 use crate::controls::scrollbar::ScrollbarOrientation;
 
-use super::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarAppearance {
@@ -35,7 +35,7 @@ pub fn default_scrollbar_theme() -> Arc<dyn ScrollbarTheme> {
 }
 
 pub const SCROLLBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Scrollbar",
+    label: "Scrollbar",
     parts: &[
         ThemePartUsage {
             part: "thumb background",

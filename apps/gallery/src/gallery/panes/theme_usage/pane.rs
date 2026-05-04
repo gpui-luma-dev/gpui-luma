@@ -76,7 +76,7 @@ fn usage_by_token(usages: &'static [&'static ThemeUsage]) -> BTreeMap<&'static s
 
     for usage in usages {
         for part in usage.parts {
-            by_token.entry(part.token).or_default().push((usage.component, part));
+            by_token.entry(part.token).or_default().push((usage.label, part));
         }
     }
 
@@ -158,7 +158,7 @@ fn render_by_component(usages: &'static [&'static ThemeUsage], theme: &GalleryTh
                         .line_height(px(18.0))
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(chrome.title_text)
-                        .child(usage.component),
+                        .child(usage.label),
                 )
                 .children(usage.parts.iter().map(|part| render_component_part(part, theme)))
         }))

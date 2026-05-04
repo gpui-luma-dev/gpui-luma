@@ -2,7 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationListAppearance {
@@ -41,7 +43,7 @@ pub fn default_tabs_navigation_theme() -> Arc<dyn TabsNavigationTheme> {
 }
 
 pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Tabs Navigation",
+    label: "Tabs Navigation",
     parts: &[
         ThemePartUsage {
             part: "inactive label",

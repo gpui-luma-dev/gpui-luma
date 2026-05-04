@@ -6,7 +6,8 @@ use gpui_luma::controls::command::button::{
 };
 use gpui_luma::controls::toggle;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::theme::{ButtonFamilyRole, InteractionState};
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

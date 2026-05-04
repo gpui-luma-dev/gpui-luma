@@ -20,18 +20,30 @@ use crate::controls::{
     textarea::{TextAreaTemplate, ThemedTextAreaTemplate},
     textfield::{TextFieldTemplate, ThemedTextFieldTemplate},
 };
-use crate::theme::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
-    ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultSelectorTheme, DefaultProgressTheme,
-    DefaultRadioButtonTheme, DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
-    DefaultTextAreaTheme, DefaultTextFieldTheme, InteractionState, LumaTheme, NavigationSidebarTheme,
-    PopupMenuAppearance, PopupMenuTheme, SelectorAppearance, SelectorTheme, ProgressAppearance,
-    ProgressTheme, RadioButtonAppearance, RadioButtonTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance,
-    SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance,
-    TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance, TextFieldTheme, ThemeMode,
-    ThemeTokens,
+
+use crate::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
 };
+use crate::controls::checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme};
+use crate::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme};
+use crate::controls::floating_menu::DefaultFloatingMenuTheme;
+use crate::controls::navigation_sidebar::{
+    DefaultNavigationSidebarTheme, NavigationSidebarItemAppearance, NavigationSidebarSectionAppearance,
+    NavigationSidebarTheme,
+};
+use crate::controls::popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme};
+use crate::controls::progress::{DefaultProgressTheme, ProgressAppearance, ProgressTheme};
+use crate::controls::radio_button::{DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonTheme};
+use crate::controls::scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme};
+use crate::controls::selector::{DefaultSelectorTheme, SelectorAppearance, SelectorTheme};
+use crate::controls::slider::{DefaultSliderTheme, SliderAppearance, SliderTheme};
+use crate::controls::switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme};
+use crate::controls::tabs_navigation::{
+    DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
+};
+use crate::controls::textarea::{DefaultTextAreaTheme, TextAreaAppearance, TextAreaTheme};
+use crate::controls::textfield::{DefaultTextFieldTheme, TextFieldAppearance, TextFieldTheme};
+use crate::theme::{InteractionState, LumaTheme, ThemeMode, ThemeTokens};
 
 #[derive(Clone)]
 pub struct LumaThemePack {
@@ -290,20 +302,20 @@ impl SelectorTheme for LumaLiveTheme {
 }
 
 impl NavigationSidebarTheme for LumaLiveTheme {
-    fn resolve_container(&self) -> crate::theme::NavigationSidebarContainerAppearance {
-        crate::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_container()
+    fn resolve_container(&self) -> crate::controls::navigation_sidebar::NavigationSidebarContainerAppearance {
+        DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_container()
     }
 
-    fn resolve_section(&self) -> crate::theme::NavigationSidebarSectionAppearance {
-        crate::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_section()
+    fn resolve_section(&self) -> NavigationSidebarSectionAppearance {
+        DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_section()
     }
 
     fn resolve_branch(
         &self,
         state: InteractionState,
         size: crate::theme::ControlSize,
-    ) -> crate::theme::NavigationSidebarItemAppearance {
-        crate::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_branch(state, size)
+    ) -> NavigationSidebarItemAppearance {
+        DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_branch(state, size)
     }
 
     fn resolve_item(
@@ -311,8 +323,8 @@ impl NavigationSidebarTheme for LumaLiveTheme {
         selected: bool,
         state: InteractionState,
         size: crate::theme::ControlSize,
-    ) -> crate::theme::NavigationSidebarItemAppearance {
-        crate::theme::DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_item(selected, state, size)
+    ) -> NavigationSidebarItemAppearance {
+        DefaultNavigationSidebarTheme::new(self.state.tokens()).resolve_item(selected, state, size)
     }
 }
 

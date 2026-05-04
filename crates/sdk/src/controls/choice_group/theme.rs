@@ -2,10 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use super::{
-    ButtonVariant, ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens,
-    ThemeUsage,
+use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+use crate::controls::button_family::ButtonVariant;
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -51,7 +51,7 @@ pub fn default_choice_group_theme() -> Arc<dyn ChoiceGroupTheme> {
 }
 
 pub const CHOICE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Choice Group",
+    label: "Choice Group",
     parts: &[
         ThemePartUsage {
             part: "list background",
@@ -235,7 +235,10 @@ impl ChoiceGroupTheme for DefaultChoiceGroupTheme {
 
 #[cfg(test)]
 mod tests {
-    use super::{ButtonVariant, ChoiceGroupTheme, ControlSize, DefaultChoiceGroupTheme, InteractionState};
+    use crate::controls::button_family::ButtonVariant;
+    use crate::theme::{ControlSize, InteractionState};
+
+    use super::{ChoiceGroupTheme, DefaultChoiceGroupTheme};
 
     #[test]
     fn disabled_selected_items_keep_a_distinct_background() {

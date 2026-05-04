@@ -10,10 +10,10 @@ use gpui_luma::controls::tabs_navigation::{
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     ThemedTabsNavigationTemplate,
 };
-use gpui_luma::theme::{
-    DefaultTabsNavigationTheme, InteractionState, TabsNavigationItemAppearance, TabsNavigationListAppearance,
-    TabsNavigationTheme,
+use gpui_luma::controls::tabs_navigation::{
+    DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
 };
+use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;

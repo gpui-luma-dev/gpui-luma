@@ -2,126 +2,129 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use super::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
-use crate::controls::textarea::TextAreaState;
+use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::controls::textfield::TextFieldState;
 
-#[derive(Clone, Debug)]
-pub struct TextAreaAppearance {
+#[derive(Clone, Copy, Debug)]
+pub struct TextFieldAppearance {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
     pub placeholder: Hsla,
+    pub icon: Hsla,
     pub selection_background: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
     pub typography: LumaTextStyle,
-    pub font_family: String,
     pub min_height: f32,
     pub padding_x: f32,
     pub padding_y: f32,
+    pub gap: f32,
     pub radius: f32,
     pub border_width: f32,
+    pub icon_size: f32,
 }
 
-pub trait TextAreaTheme: Send + Sync {
-    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaAppearance;
+pub trait TextFieldTheme: Send + Sync {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultTextAreaTheme {
+pub struct DefaultTextFieldTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_textarea_theme() -> Arc<dyn TextAreaTheme> {
-    static THEME: OnceLock<Arc<dyn TextAreaTheme>> = OnceLock::new();
+pub fn default_textfield_theme() -> Arc<dyn TextFieldTheme> {
+    static THEME: OnceLock<Arc<dyn TextFieldTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultTextAreaTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultTextFieldTheme::default())).clone()
 }
 
-pub const TEXTAREA_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "TextArea",
+pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
+    label: "TextField",
     parts: &[
         ThemePartUsage {
             part: "background",
             token: "form.input.background",
             states: &["default"],
-            appearance_fields: &["TextAreaAppearance.background"],
+            appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
             part: "hover background",
             token: "state.hover.background",
             states: &["hovered"],
-            appearance_fields: &["TextAreaAppearance.background"],
+            appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
             part: "foreground",
             token: "form.input.foreground",
             states: &["default", "focused"],
-            appearance_fields: &["TextAreaAppearance.foreground", "TextAreaAppearance.caret"],
+            appearance_fields: &["TextFieldAppearance.foreground", "TextFieldAppearance.caret"],
         },
         ThemePartUsage {
             part: "border",
             token: "form.input.border",
             states: &["default", "hovered", "disabled"],
-            appearance_fields: &["TextAreaAppearance.border"],
+            appearance_fields: &["TextFieldAppearance.border"],
         },
         ThemePartUsage {
-            part: "placeholder",
+            part: "placeholder and icon",
             token: "form.input.placeholder",
             states: &["empty"],
-            appearance_fields: &["TextAreaAppearance.placeholder"],
+            appearance_fields: &["TextFieldAppearance.placeholder", "TextFieldAppearance.icon"],
         },
         ThemePartUsage {
             part: "selection",
             token: "state.selected.background",
             states: &["selection"],
-            appearance_fields: &["TextAreaAppearance.selection_background"],
+            appearance_fields: &["TextFieldAppearance.selection_background"],
         },
         ThemePartUsage {
             part: "invalid border",
             token: "form.input.invalid_border",
             states: &["invalid"],
-            appearance_fields: &["TextAreaAppearance.border"],
+            appearance_fields: &["TextFieldAppearance.border"],
         },
         ThemePartUsage {
             part: "disabled fill",
             token: "state.disabled.background",
             states: &["disabled"],
-            appearance_fields: &["TextAreaAppearance.background"],
+            appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
             part: "disabled foreground",
             token: "state.disabled.foreground",
             states: &["disabled"],
             appearance_fields: &[
-                "TextAreaAppearance.foreground",
-                "TextAreaAppearance.placeholder",
-                "TextAreaAppearance.caret",
+                "TextFieldAppearance.foreground",
+                "TextFieldAppearance.placeholder",
+                "TextFieldAppearance.icon",
+                "TextFieldAppearance.caret",
             ],
         },
         ThemePartUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focus visible"],
-            appearance_fields: &["TextAreaAppearance.focus_ring"],
+            appearance_fields: &["TextFieldAppearance.focus_ring"],
         },
     ],
 };
 
-impl DefaultTextAreaTheme {
+impl DefaultTextFieldTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl TextAreaTheme for DefaultTextAreaTheme {
-    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaAppearance {
+impl TextFieldTheme for DefaultTextFieldTheme {
+    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
 
-        let (background, foreground, border, placeholder, selection_background, caret) = if enabled {
+        let (background, foreground, border, placeholder, icon, selection_background, caret) = if enabled {
             let background = if state.focused {
                 palette.form.input.background
             } else if state.hovered {
@@ -140,6 +143,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
                 palette.form.input.foreground,
                 border,
                 palette.form.input.placeholder,
+                palette.form.input.placeholder,
                 palette.state.selected.background,
                 palette.form.input.foreground,
             )
@@ -149,26 +153,29 @@ impl TextAreaTheme for DefaultTextAreaTheme {
                 palette.state.disabled.foreground,
                 palette.form.input.border,
                 palette.state.disabled.foreground,
+                palette.state.disabled.foreground,
                 palette.state.selected.background,
                 palette.state.disabled.foreground,
             )
         };
 
-        TextAreaAppearance {
+        TextFieldAppearance {
             background,
             foreground,
             border,
             placeholder,
+            icon,
             selection_background,
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
-            font_family: typography.font.sans.family.clone(),
             min_height: metrics.control_height(size),
             padding_x: metrics.padding_x(size),
             padding_y: metrics.padding_y(size),
+            gap: metrics.gap(size),
             radius: metrics.radius(size),
             border_width: metrics.border_width.default,
+            icon_size: typography.text.body.size + 2.0,
         }
     }
 }
