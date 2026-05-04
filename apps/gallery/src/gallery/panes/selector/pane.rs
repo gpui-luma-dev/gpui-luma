@@ -1,56 +1,56 @@
 use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, hsla, prelude::*, px};
-use gpui_luma::controls::popup_selector::{PopupSelector, PopupSelectorEvent, PopupSelectorPlacement, SelectorItem};
+use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorPlacement, SelectorItem};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::preview::PopupSelectorStatePreview;
+use super::preview::SelectorStatePreview;
 use super::super::shared::{format_compact_hsla, gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
-pub(in crate::gallery) struct PopupSelectorPane {
-    selector_smart: Entity<PopupSelector>,
-    selector_below: Entity<PopupSelector>,
-    selector_above: Entity<PopupSelector>,
-    selector_overlay: Entity<PopupSelector>,
-    selector_swatch: Entity<PopupSelector>,
-    state_preview: Entity<PopupSelectorStatePreview>,
+pub(in crate::gallery) struct SelectorPane {
+    selector_smart: Entity<Selector>,
+    selector_below: Entity<Selector>,
+    selector_above: Entity<Selector>,
+    selector_overlay: Entity<Selector>,
+    selector_swatch: Entity<Selector>,
+    state_preview: Entity<SelectorStatePreview>,
     selection: String,
     selected_swatch_id: String,
 }
 
-impl PopupSelectorPane {
+impl SelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let initial_swatch_id = selected_swatch_id();
         let initial_swatch_label = selected_swatch_label();
 
         Self {
-            selector_smart: PopupSelector::new("popup-selector-smart-example")
+            selector_smart: Selector::new("popup-selector-smart-example")
                 .label("Select status")
                 .items(selector_items())
-                .placement(PopupSelectorPlacement::Smart)
-                .template(theme.popup_selector_template())
+                .placement(SelectorPlacement::Smart)
+                .template(theme.selector_template())
                 .spawn(cx),
-            selector_below: PopupSelector::new("popup-selector-below-example")
+            selector_below: Selector::new("popup-selector-below-example")
                 .label("Below selector")
                 .items(selector_items())
-                .placement(PopupSelectorPlacement::BelowStart)
-                .template(theme.popup_selector_template())
+                .placement(SelectorPlacement::BelowStart)
+                .template(theme.selector_template())
                 .spawn(cx),
-            selector_above: PopupSelector::new("popup-selector-above-example")
+            selector_above: Selector::new("popup-selector-above-example")
                 .label("Above selector")
                 .items(selector_items())
-                .placement(PopupSelectorPlacement::AboveStart)
-                .template(theme.popup_selector_template())
+                .placement(SelectorPlacement::AboveStart)
+                .template(theme.selector_template())
                 .spawn(cx),
-            selector_overlay: PopupSelector::new("popup-selector-overlay-example")
+            selector_overlay: Selector::new("popup-selector-overlay-example")
                 .label("Overlay selector")
                 .items(selector_items())
-                .placement(PopupSelectorPlacement::OverlayOnTrigger)
-                .template(theme.popup_selector_template())
+                .placement(SelectorPlacement::OverlayOnTrigger)
+                .template(theme.selector_template())
                 .spawn(cx),
-            selector_swatch: PopupSelector::new("popup-selector-swatch-example")
+            selector_swatch: Selector::new("popup-selector-swatch-example")
                 .label("Choose color")
                 .items(swatch_items())
                 .selected_id(initial_swatch_id)
@@ -90,17 +90,17 @@ impl PopupSelectorPane {
                                 ),
                         )
                 })
-                .template(theme.popup_selector_template())
+                .template(theme.selector_template())
                 .spawn(cx),
-            state_preview: cx.new(|_| PopupSelectorStatePreview::new(theme)),
+            state_preview: cx.new(|_| SelectorStatePreview::new(theme)),
             selection: initial_swatch_label.to_string(),
             selected_swatch_id: initial_swatch_id.to_string(),
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.selector_swatch, |app, _, event: &PopupSelectorEvent, cx| {
-            app.panes.popup_selector.handle_swatch_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.selector_swatch, |app, _, event: &SelectorEvent, cx| {
+            app.panes.selector.handle_swatch_event(event, cx);
         }));
     }
 
@@ -108,8 +108,8 @@ impl PopupSelectorPane {
         let chrome = theme.chrome();
 
         gallery_pane_with_usage(
-            "Popup Selector",
-            "Popup Selector",
+            "Selector",
+            "Selector",
             div()
                 .w_full()
                 .min_h(px(0.0))
@@ -153,9 +153,9 @@ impl PopupSelectorPane {
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_swatch_event(&mut self, event: &PopupSelectorEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_swatch_event(&mut self, event: &SelectorEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            PopupSelectorEvent::Change { item_id, label } => {
+            SelectorEvent::Change { item_id, label } => {
                 self.selected_swatch_id = item_id.to_string();
                 self.selection = label.to_string();
                 cx.notify();

@@ -4,9 +4,9 @@ use gpui::{
     AnyElement, App, Bounds, ClickEvent, Context, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
     SharedString, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::popup_selector::{
-    ControlFocusState, PopupSelectorPlacement, PopupSelectorRenderModel, PopupSelectorTemplate,
-    PopupSelectorTemplateHandlers,
+use gpui_luma::controls::selector::{
+    ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate,
+    SelectorTemplateHandlers,
 };
 use gpui_luma::theme::InteractionState;
 
@@ -15,53 +15,53 @@ use crate::gallery::theme::GalleryThemePack;
 use super::pane::selector_items;
 
 #[derive(Clone)]
-pub(super) struct PopupSelectorStatePreview {
+pub(super) struct SelectorStatePreview {
     theme: GalleryThemePack,
-    template: Arc<dyn PopupSelectorTemplate>,
+    template: Arc<dyn SelectorTemplate>,
 }
 
-struct PopupSelectorStateSample {
+struct SelectorStateSample {
     id: &'static str,
     label: &'static str,
     state: InteractionState,
     focus: ControlFocusState,
 }
 
-impl PopupSelectorStatePreview {
+impl SelectorStatePreview {
     pub(super) fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.popup_selector_template() }
+        Self { theme: theme.clone(), template: theme.selector_template() }
     }
 }
 
-impl Render for PopupSelectorStatePreview {
+impl Render for SelectorStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            PopupSelectorStateSample {
+            SelectorStateSample {
                 id: "default",
                 label: "Standard",
                 state: InteractionState::default(),
                 focus: ControlFocusState::default(),
             },
-            PopupSelectorStateSample {
+            SelectorStateSample {
                 id: "hover",
                 label: "Hover",
                 state: InteractionState { hovered: true, ..InteractionState::default() },
                 focus: ControlFocusState::default(),
             },
-            PopupSelectorStateSample {
+            SelectorStateSample {
                 id: "focus",
                 label: "Focus",
                 state: InteractionState { focused: true, ..InteractionState::default() },
                 focus: ControlFocusState { focused: true, focus_visible: true },
             },
-            PopupSelectorStateSample {
+            SelectorStateSample {
                 id: "active",
                 label: "Active",
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
                 focus: ControlFocusState { focused: true, focus_visible: true },
             },
-            PopupSelectorStateSample {
+            SelectorStateSample {
                 id: "disabled",
                 label: "Disabled",
                 state: InteractionState { disabled: true, ..InteractionState::default() },
@@ -93,8 +93,8 @@ impl Render for PopupSelectorStatePreview {
 }
 
 fn render_trigger_sample(
-    template: &Arc<dyn PopupSelectorTemplate>,
-    sample: PopupSelectorStateSample,
+    template: &Arc<dyn SelectorTemplate>,
+    sample: SelectorStateSample,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
@@ -102,7 +102,7 @@ fn render_trigger_sample(
     let id = SharedString::from(format!("popup-selector-preview-trigger-{}", sample.id));
     let label = SharedString::from("Selector");
     let items = selector_items().into_iter().collect::<Vec<_>>();
-    let model = PopupSelectorRenderModel {
+    let model = SelectorRenderModel {
         id: &id,
         label: &label,
         selected_icon: None,
@@ -110,7 +110,7 @@ fn render_trigger_sample(
         items: &items,
         open: false,
         trigger_bounds: None,
-        placement: PopupSelectorPlacement::BelowStart,
+        placement: SelectorPlacement::BelowStart,
         active_path: None,
         enabled: !sample.state.disabled,
         item_template: None,
@@ -123,13 +123,13 @@ fn render_trigger_sample(
         .flex_col()
         .items_center()
         .gap(px(6.0))
-        .child(template.render(&model, popup_selector_preview_handlers(items.len()), window, cx))
+        .child(template.render(&model, selector_preview_handlers(items.len()), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 
-fn popup_selector_preview_handlers(root_count: usize) -> PopupSelectorTemplateHandlers {
-    PopupSelectorTemplateHandlers {
+fn selector_preview_handlers(root_count: usize) -> SelectorTemplateHandlers {
+    SelectorTemplateHandlers {
         trigger_bounds: Box::new(noop_bounds),
         trigger_click: Box::new(noop_click),
         trigger_hover: Box::new(noop_hover),

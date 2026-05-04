@@ -10,7 +10,7 @@ use crate::controls::{
     command::button::{ButtonTemplate, DefaultButtonTemplate},
     navigation_sidebar::{NavigationSidebarTemplate, ThemedNavigationSidebarTemplate},
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
-    popup_selector::{PopupSelectorTemplate, ThemedPopupSelectorTemplate},
+    selector::{SelectorTemplate, ThemedSelectorTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
     radio_button::ThemedRadioButtonTemplate,
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
@@ -23,10 +23,10 @@ use crate::controls::{
 use crate::theme::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, CheckboxAppearance, CheckboxTheme,
     ContextMenuAppearance, ContextMenuTheme, DefaultButtonFamilyTheme, DefaultCheckboxTheme, DefaultContextMenuTheme,
-    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultPopupSelectorTheme, DefaultProgressTheme,
+    DefaultFloatingMenuTheme, DefaultPopupMenuTheme, DefaultSelectorTheme, DefaultProgressTheme,
     DefaultRadioButtonTheme, DefaultScrollbarTheme, DefaultSliderTheme, DefaultSwitchTheme, DefaultTabsNavigationTheme,
     DefaultTextAreaTheme, DefaultTextFieldTheme, InteractionState, LumaTheme, NavigationSidebarTheme,
-    PopupMenuAppearance, PopupMenuTheme, PopupSelectorAppearance, PopupSelectorTheme, ProgressAppearance,
+    PopupMenuAppearance, PopupMenuTheme, SelectorAppearance, SelectorTheme, ProgressAppearance,
     ProgressTheme, RadioButtonAppearance, RadioButtonTheme, ScrollbarAppearance, ScrollbarTheme, SliderAppearance,
     SliderTheme, SwitchAppearance, SwitchTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance,
     TabsNavigationTheme, TextAreaAppearance, TextAreaTheme, TextFieldAppearance, TextFieldTheme, ThemeMode,
@@ -175,8 +175,8 @@ impl LumaThemePack {
         Arc::new(ThemedPopupMenuTemplate::new(self.live_theme.clone()))
     }
 
-    pub fn popup_selector_template(&self) -> Arc<dyn PopupSelectorTemplate> {
-        Arc::new(ThemedPopupSelectorTemplate::new(self.live_theme.clone()))
+    pub fn selector_template(&self) -> Arc<dyn SelectorTemplate> {
+        Arc::new(ThemedSelectorTemplate::new(self.live_theme.clone()))
     }
 
     pub fn context_menu_theme(&self) -> Arc<dyn ContextMenuTheme> {
@@ -283,9 +283,9 @@ impl PopupMenuTheme for LumaLiveTheme {
     }
 }
 
-impl PopupSelectorTheme for LumaLiveTheme {
-    fn resolve(&self, state: InteractionState) -> PopupSelectorAppearance {
-        DefaultPopupSelectorTheme::new(self.state.tokens()).resolve(state)
+impl SelectorTheme for LumaLiveTheme {
+    fn resolve(&self, state: InteractionState) -> SelectorAppearance {
+        DefaultSelectorTheme::new(self.state.tokens()).resolve(state)
     }
 }
 

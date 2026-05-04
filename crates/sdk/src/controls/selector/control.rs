@@ -3,10 +3,10 @@ use gpui::{
     Render, SharedString, Window, div, prelude::*,
 };
 
-use super::{PopupSelectorBuilder, PopupSelectorPlacement, PopupSelectorRenderModel, PopupSelectorTemplateHandlers};
+use super::{SelectorBuilder, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers};
 use crate::controls::interaction::ControlInteraction;
-use crate::controls::popup_selector::model::{
-    PopupSelectorItemTemplate, PopupSelectorModel, SelectorItem, SelectorItemLike, normalize_popup_selector_items,
+use crate::controls::selector::model::{
+    SelectorItemTemplate, SelectorModel, SelectorItem, SelectorItemLike, normalize_selector_items,
 };
 use crate::controls::state::{ControlFocusState, MenuPath};
 use crate::focus::EscapeFocus;
@@ -15,15 +15,15 @@ use crate::keyhandling::{
 };
 
 #[derive(Clone, Debug)]
-pub enum PopupSelectorEvent {
+pub enum SelectorEvent {
     Change { item_id: SharedString, label: SharedString },
 }
 
-pub struct PopupSelector<T = SelectorItem>
+pub struct Selector<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
-    model: PopupSelectorModel<T>,
+    model: SelectorModel<T>,
     open: bool,
     trigger_bounds: Option<Bounds<Pixels>>,
     selected_index: Option<usize>,
@@ -31,26 +31,26 @@ where
     interaction: ControlInteraction,
 }
 
-impl<T> EventEmitter<PopupSelectorEvent> for PopupSelector<T> where T: SelectorItemLike + 'static {}
+impl<T> EventEmitter<SelectorEvent> for Selector<T> where T: SelectorItemLike + 'static {}
 
-impl PopupSelector<SelectorItem> {
+impl Selector<SelectorItem> {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> PopupSelectorBuilder<SelectorItem> {
-        PopupSelectorBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem> {
+        SelectorBuilder::new(id)
     }
 }
 
-impl<T> PopupSelector<T>
+impl<T> Selector<T>
 where
     T: SelectorItemLike + 'static,
 {
     /// Typed constructor for custom selector item models.
     #[allow(clippy::new_ret_no_self)]
-    pub fn new_typed(id: impl Into<SharedString>) -> PopupSelectorBuilder<T> {
-        PopupSelectorBuilder::new(id)
+    pub fn new_typed(id: impl Into<SharedString>) -> SelectorBuilder<T> {
+        SelectorBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: PopupSelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: SelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         let selected_index = builder.initial_selected_id.as_ref().and_then(|selected_id| {
             builder.model.items.iter().position(|item| item.id() == selected_id && item.is_enabled())
@@ -73,7 +73,7 @@ where
 
     pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
         let previous_selection = self.selected_id().cloned();
-        self.model.items = normalize_popup_selector_items(items);
+        self.model.items = normalize_selector_items(items);
         self.selected_index = previous_selection.as_ref().and_then(|id| self.index_by_id(id));
         self.close_menu();
         cx.notify();
@@ -88,12 +88,12 @@ where
         cx.notify();
     }
 
-    pub fn set_placement(&mut self, placement: PopupSelectorPlacement, cx: &mut Context<Self>) {
+    pub fn set_placement(&mut self, placement: SelectorPlacement, cx: &mut Context<Self>) {
         self.model.placement = placement;
         cx.notify();
     }
 
-    pub fn set_item_template(&mut self, template: Option<PopupSelectorItemTemplate<T>>, cx: &mut Context<Self>) {
+    pub fn set_item_template(&mut self, template: Option<SelectorItemTemplate<T>>, cx: &mut Context<Self>) {
         self.model.item_template = template;
         cx.notify();
     }
@@ -111,8 +111,8 @@ where
         changed
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> PopupSelectorRenderModel<'a, T> {
-        PopupSelectorRenderModel {
+    fn render_model<'a>(&'a self, window: &Window) -> SelectorRenderModel<'a, T> {
+        SelectorRenderModel {
             id: &self.model.id,
             label: self.trigger_label(),
             selected_icon: self
@@ -132,10 +132,10 @@ where
         }
     }
 
-    fn template_handlers(&self, cx: &mut Context<Self>) -> PopupSelectorTemplateHandlers {
+    fn template_handlers(&self, cx: &mut Context<Self>) -> SelectorTemplateHandlers {
         let selectable_indices = self.selectable_indices();
 
-        PopupSelectorTemplateHandlers {
+        SelectorTemplateHandlers {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
             trigger_click: Box::new(cx.listener(Self::handle_trigger_click)),
             trigger_hover: Box::new(cx.listener(Self::handle_hover)),
@@ -256,7 +256,7 @@ where
         self.close_menu();
 
         if emit {
-            cx.emit(PopupSelectorEvent::Change { item_id, label });
+            cx.emit(SelectorEvent::Change { item_id, label });
         }
 
         changed
@@ -424,7 +424,7 @@ where
     }
 }
 
-impl<T> Focusable for PopupSelector<T>
+impl<T> Focusable for Selector<T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -433,7 +433,7 @@ where
     }
 }
 
-impl<T> Render for PopupSelector<T>
+impl<T> Render for Selector<T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn normalize_filters_disabled_items() {
-        let filtered = normalize_popup_selector_items(vec![
+        let filtered = normalize_selector_items(vec![
             SelectorItem::new("first").label("First"),
             SelectorItem::new("disabled").label("Disabled").enabled(false),
             SelectorItem::new("last").label("Last"),
@@ -486,14 +486,14 @@ mod tests {
 
     #[test]
     fn builder_stores_initial_selected_id() {
-        let builder = PopupSelector::new("selector").items(items()).selected_id("second");
+        let builder = Selector::new("selector").items(items()).selected_id("second");
 
         assert_eq!(builder.initial_selected_id.as_ref().map(|id| id.as_ref()), Some("second"));
     }
 
     #[test]
     fn item_template_is_installed() {
-        let builder = PopupSelector::new("selector")
+        let builder = Selector::new("selector")
             .items(items())
             .with_item_template(|item, _cx| gpui::div().child(item.item.label_text().clone()));
 

@@ -7,73 +7,73 @@ use gpui::{
 use gpui::Hsla;
 use lucide_icons::Icon as LucideIcon;
 
-use super::{PopupSelectorPlacement, PopupSelectorRenderModel};
-use crate::controls::popup_selector::model::{
-    PopupSelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
+use super::{SelectorPlacement, SelectorRenderModel};
+use crate::controls::selector::model::{
+    SelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
 };
 use crate::controls::state::MenuPath;
-use crate::theme::{FloatingMenuAppearance, PopupSelectorAppearance, PopupSelectorTheme, default_popup_selector_theme};
+use crate::theme::{FloatingMenuAppearance, SelectorAppearance, SelectorTheme, default_selector_theme};
 
-pub type PopupSelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
-pub type PopupSelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type PopupSelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type PopupSelectorMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type PopupSelectorMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type SelectorMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
-pub struct PopupSelectorTemplateHandlers {
-    pub trigger_bounds: PopupSelectorBoundsHandler,
-    pub trigger_click: PopupSelectorClickHandler,
-    pub trigger_hover: PopupSelectorHoverHandler,
-    pub trigger_mouse_down: PopupSelectorMouseDownHandler,
-    pub trigger_mouse_up: PopupSelectorMouseUpHandler,
-    pub trigger_mouse_up_out: PopupSelectorMouseUpHandler,
-    pub root_mouse_down_out: PopupSelectorMouseDownHandler,
-    pub item_hovers: Vec<PopupSelectorHoverHandler>,
-    pub item_clicks: Vec<PopupSelectorClickHandler>,
+pub struct SelectorTemplateHandlers {
+    pub trigger_bounds: SelectorBoundsHandler,
+    pub trigger_click: SelectorClickHandler,
+    pub trigger_hover: SelectorHoverHandler,
+    pub trigger_mouse_down: SelectorMouseDownHandler,
+    pub trigger_mouse_up: SelectorMouseUpHandler,
+    pub trigger_mouse_up_out: SelectorMouseUpHandler,
+    pub root_mouse_down_out: SelectorMouseDownHandler,
+    pub item_hovers: Vec<SelectorHoverHandler>,
+    pub item_clicks: Vec<SelectorClickHandler>,
 }
 
-pub trait PopupSelectorTemplate<T = SelectorItem>: Send + Sync
+pub trait SelectorTemplate<T = SelectorItem>: Send + Sync
 where
     T: SelectorItemLike + 'static,
 {
     fn render(
         &self,
-        model: &PopupSelectorRenderModel<'_, T>,
-        handlers: PopupSelectorTemplateHandlers,
+        model: &SelectorRenderModel<'_, T>,
+        handlers: SelectorTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedPopupSelectorTemplate {
-    theme: Arc<dyn PopupSelectorTheme>,
+pub struct ThemedSelectorTemplate {
+    theme: Arc<dyn SelectorTheme>,
 }
 
-impl ThemedPopupSelectorTemplate {
-    pub fn new(theme: Arc<dyn PopupSelectorTheme>) -> Self {
+impl ThemedSelectorTemplate {
+    pub fn new(theme: Arc<dyn SelectorTheme>) -> Self {
         Self { theme }
     }
 }
 
-pub fn default_popup_selector_template<T>() -> Arc<dyn PopupSelectorTemplate<T>>
+pub fn default_selector_template<T>() -> Arc<dyn SelectorTemplate<T>>
 where
     T: SelectorItemLike + 'static,
 {
-    Arc::new(ThemedPopupSelectorTemplate::new(default_popup_selector_theme()))
+    Arc::new(ThemedSelectorTemplate::new(default_selector_theme()))
 }
 
-impl<T> PopupSelectorTemplate<T> for ThemedPopupSelectorTemplate
+impl<T> SelectorTemplate<T> for ThemedSelectorTemplate
 where
     T: SelectorItemLike + 'static,
 {
     fn render(
         &self,
-        model: &PopupSelectorRenderModel<'_, T>,
-        handlers: PopupSelectorTemplateHandlers,
+        model: &SelectorRenderModel<'_, T>,
+        handlers: SelectorTemplateHandlers,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let PopupSelectorTemplateHandlers {
+        let SelectorTemplateHandlers {
             trigger_bounds,
             trigger_click,
             trigger_hover,
@@ -144,14 +144,14 @@ where
             .child(trigger);
 
         if model.open {
-            let placement = resolve_popup_selector_placement(
+            let placement = resolve_selector_placement(
                 model.trigger_bounds,
                 model.placement,
                 &appearance,
                 model.items.len(),
                 window.viewport_size(),
             );
-            let menu = render_popup_selector_menu(model, appearance.floating_menu, item_hovers, item_clicks, cx);
+            let menu = render_selector_menu(model, appearance.floating_menu, item_hovers, item_clicks, cx);
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(placement.anchor)
@@ -167,19 +167,19 @@ where
 }
 
 #[derive(Clone, Copy, Debug)]
-struct ResolvedPopupSelectorPlacement {
+struct ResolvedSelectorPlacement {
     anchor: Corner,
     position: Point<Pixels>,
     offset: Point<Pixels>,
 }
 
-fn resolve_popup_selector_placement(
+fn resolve_selector_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
-    placement: PopupSelectorPlacement,
-    appearance: &PopupSelectorAppearance,
+    placement: SelectorPlacement,
+    appearance: &SelectorAppearance,
     item_count: usize,
     viewport_size: Size<Pixels>,
-) -> ResolvedPopupSelectorPlacement {
+) -> ResolvedSelectorPlacement {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
         Bounds::new(
             point(px(0.0), px(0.0)),
@@ -189,34 +189,34 @@ fn resolve_popup_selector_placement(
     let menu_size = estimated_menu_size(appearance, item_count, trigger_bounds.size.width);
     let offset_y = px(appearance.menu_offset_y);
     let resolved = match placement {
-        PopupSelectorPlacement::Smart => {
+        SelectorPlacement::Smart => {
             let viewport_bottom = viewport_size.height - px(8.0);
             if trigger_bounds.bottom() + offset_y + menu_size.height <= viewport_bottom {
-                PopupSelectorPlacement::BelowStart
+                SelectorPlacement::BelowStart
             } else {
-                PopupSelectorPlacement::AboveStart
+                SelectorPlacement::AboveStart
             }
         }
         placement => placement,
     };
 
     match resolved {
-        PopupSelectorPlacement::Smart | PopupSelectorPlacement::BelowStart => ResolvedPopupSelectorPlacement {
+        SelectorPlacement::Smart | SelectorPlacement::BelowStart => ResolvedSelectorPlacement {
             anchor: Corner::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
             offset: point(px(0.0), offset_y),
         },
-        PopupSelectorPlacement::AboveStart => ResolvedPopupSelectorPlacement {
+        SelectorPlacement::AboveStart => ResolvedSelectorPlacement {
             anchor: Corner::BottomLeft,
             position: point(trigger_bounds.left(), trigger_bounds.top()),
             offset: point(px(0.0), -offset_y),
         },
-        PopupSelectorPlacement::CenteredOnTrigger => ResolvedPopupSelectorPlacement {
+        SelectorPlacement::CenteredOnTrigger => ResolvedSelectorPlacement {
             anchor: Corner::TopLeft,
             position: trigger_bounds.center(),
             offset: point(-(menu_size.width * 0.5), -(menu_size.height * 0.5)),
         },
-        PopupSelectorPlacement::OverlayOnTrigger => ResolvedPopupSelectorPlacement {
+        SelectorPlacement::OverlayOnTrigger => ResolvedSelectorPlacement {
             anchor: Corner::TopLeft,
             position: trigger_bounds.origin,
             offset: point(px(0.0), px(0.0)),
@@ -224,7 +224,7 @@ fn resolve_popup_selector_placement(
     }
 }
 
-fn estimated_menu_size(appearance: &PopupSelectorAppearance, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+fn estimated_menu_size(appearance: &SelectorAppearance, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
     let menu_min_width = px(appearance.floating_menu.min_width);
     Size {
         width: if trigger_width > menu_min_width {
@@ -237,8 +237,8 @@ fn estimated_menu_size(appearance: &PopupSelectorAppearance, item_count: usize, 
 }
 
 fn render_trigger_content<T>(
-    model: &PopupSelectorRenderModel<'_, T>,
-    appearance: &PopupSelectorAppearance,
+    model: &SelectorRenderModel<'_, T>,
+    appearance: &SelectorAppearance,
     cx: &mut App,
 ) -> AnyElement
 where
@@ -248,7 +248,7 @@ where
         && let Some(item) = model.items.get(selected_index)
     {
         let active = model.active_path.is_some_and(|path| path.is_root(selected_index));
-        let item_model = PopupSelectorItemRenderModel {
+        let item_model = SelectorItemRenderModel {
             selector_id: model.id,
             item,
             index: selected_index,
@@ -273,11 +273,11 @@ where
         .into_any_element()
 }
 
-fn render_popup_selector_menu<T>(
-    model: &PopupSelectorRenderModel<'_, T>,
+fn render_selector_menu<T>(
+    model: &SelectorRenderModel<'_, T>,
     appearance: FloatingMenuAppearance,
-    item_hovers: Vec<PopupSelectorHoverHandler>,
-    item_clicks: Vec<PopupSelectorClickHandler>,
+    item_hovers: Vec<SelectorHoverHandler>,
+    item_clicks: Vec<SelectorClickHandler>,
     cx: &mut App,
 ) -> Stateful<Div>
 where
@@ -298,7 +298,7 @@ where
     let mut clicks = item_clicks.into_iter();
 
     for ((index, item), hover) in model.items.iter().enumerate().zip(item_hovers) {
-        menu = menu.child(render_popup_selector_row(
+        menu = menu.child(render_selector_row(
             model.id,
             model.id,
             item,
@@ -318,7 +318,7 @@ where
     menu
 }
 
-fn render_popup_selector_row<T>(
+fn render_selector_row<T>(
     menu_id: &str,
     selector_id: &SharedString,
     item: &T,
@@ -327,10 +327,10 @@ fn render_popup_selector_row<T>(
     active_path: Option<MenuPath>,
     open: bool,
     enabled: bool,
-    item_template: Option<&crate::controls::popup_selector::model::PopupSelectorItemTemplate<T>>,
+    item_template: Option<&crate::controls::selector::model::SelectorItemTemplate<T>>,
     appearance: &FloatingMenuAppearance,
-    hover: PopupSelectorHoverHandler,
-    click: Option<PopupSelectorClickHandler>,
+    hover: SelectorHoverHandler,
+    click: Option<SelectorClickHandler>,
     cx: &mut App,
 ) -> Stateful<Div>
 where
@@ -340,7 +340,7 @@ where
     let selected = selected_index == Some(index);
     let active = active_path.is_some_and(|path| path.is_root(index));
     let content = if let Some(item_template) = item_template {
-        let item_model = PopupSelectorItemRenderModel { selector_id, item, index, selected, active, open, enabled };
+        let item_model = SelectorItemRenderModel { selector_id, item, index, selected, active, open, enabled };
         item_template(&item_model, cx)
     } else {
         div()
@@ -423,17 +423,17 @@ mod tests {
     use super::*;
     use crate::theme::InteractionState;
 
-    fn appearance() -> PopupSelectorAppearance {
-        default_popup_selector_theme().resolve(InteractionState::default())
+    fn appearance() -> SelectorAppearance {
+        default_selector_theme().resolve(InteractionState::default())
     }
 
     #[test]
     fn smart_placement_uses_below_when_it_fits() {
         let appearance = appearance();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
-        let placement = resolve_popup_selector_placement(
+        let placement = resolve_selector_placement(
             Some(trigger),
-            PopupSelectorPlacement::Smart,
+            SelectorPlacement::Smart,
             &appearance,
             3,
             size(px(320.0), px(360.0)),
@@ -447,9 +447,9 @@ mod tests {
     fn overlay_placement_anchors_to_trigger_origin() {
         let appearance = appearance();
         let trigger = Bounds::new(point(px(30.0), px(70.0)), size(px(150.0), px(30.0)));
-        let placement = resolve_popup_selector_placement(
+        let placement = resolve_selector_placement(
             Some(trigger),
-            PopupSelectorPlacement::OverlayOnTrigger,
+            SelectorPlacement::OverlayOnTrigger,
             &appearance,
             6,
             size(px(320.0), px(360.0)),

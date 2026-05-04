@@ -11,7 +11,7 @@ mod introduction;
 mod navigation_sidebar;
 mod palette;
 mod popup_menu;
-mod popup_selector;
+mod selector;
 mod progress;
 mod prototypes;
 mod radio_button;

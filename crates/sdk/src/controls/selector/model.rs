@@ -4,8 +4,8 @@ use gpui::{AnyElement, App, AppContext, Bounds, Entity, IntoElement, Pixels, Sha
 use lucide_icons::Icon as LucideIcon;
 
 use super::{
-    ControlFocusState, MenuPath, PopupSelector, PopupSelectorState, PopupSelectorTemplate,
-    default_popup_selector_template,
+    ControlFocusState, MenuPath, Selector, SelectorState, SelectorTemplate,
+    default_selector_template,
 };
 
 #[derive(Clone, Debug)]
@@ -135,21 +135,21 @@ impl SelectorItemLike for SelectorItem {
     }
 }
 
-pub(crate) fn normalize_popup_selector_items<T: SelectorItemLike>(items: impl IntoIterator<Item = T>) -> Vec<T> {
+pub(crate) fn normalize_selector_items<T: SelectorItemLike>(items: impl IntoIterator<Item = T>) -> Vec<T> {
     items.into_iter().filter(SelectorItemLike::is_enabled).collect()
 }
 
-pub fn make_item_template<T, F, E>(template: F) -> PopupSelectorItemTemplate<T>
+pub fn make_item_template<T, F, E>(template: F) -> SelectorItemTemplate<T>
 where
     T: SelectorItemLike + 'static,
-    F: for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+    F: for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
     E: IntoElement + 'static,
 {
     Arc::new(move |model, cx| template(model, cx).into_any_element())
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PopupSelectorPlacement {
+pub enum SelectorPlacement {
     Smart,
     BelowStart,
     AboveStart,
@@ -157,10 +157,10 @@ pub enum PopupSelectorPlacement {
     OverlayOnTrigger,
 }
 
-pub type PopupSelectorItemTemplate<T> =
-    Arc<dyn for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type SelectorItemTemplate<T> =
+    Arc<dyn for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
 
-pub struct PopupSelectorItemRenderModel<'a, T> {
+pub struct SelectorItemRenderModel<'a, T> {
     pub selector_id: &'a SharedString,
     pub item: &'a T,
     pub index: usize,
@@ -170,7 +170,7 @@ pub struct PopupSelectorItemRenderModel<'a, T> {
     pub enabled: bool,
 }
 
-pub struct PopupSelectorModel<T = SelectorItem>
+pub struct SelectorModel<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
@@ -178,12 +178,12 @@ where
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) enabled: bool,
-    pub(crate) placement: PopupSelectorPlacement,
-    pub(crate) item_template: Option<PopupSelectorItemTemplate<T>>,
-    pub(crate) template: Arc<dyn PopupSelectorTemplate<T>>,
+    pub(crate) placement: SelectorPlacement,
+    pub(crate) item_template: Option<SelectorItemTemplate<T>>,
+    pub(crate) template: Arc<dyn SelectorTemplate<T>>,
 }
 
-pub struct PopupSelectorRenderModel<'a, T>
+pub struct SelectorRenderModel<'a, T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -194,23 +194,23 @@ where
     pub items: &'a [T],
     pub open: bool,
     pub trigger_bounds: Option<Bounds<Pixels>>,
-    pub placement: PopupSelectorPlacement,
+    pub placement: SelectorPlacement,
     pub active_path: Option<MenuPath>,
     pub enabled: bool,
-    pub item_template: Option<&'a PopupSelectorItemTemplate<T>>,
+    pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub focus: ControlFocusState,
-    pub state: PopupSelectorState,
+    pub state: SelectorState,
 }
 
-pub struct PopupSelectorBuilder<T = SelectorItem>
+pub struct SelectorBuilder<T = SelectorItem>
 where
     T: SelectorItemLike + 'static,
 {
-    pub(crate) model: PopupSelectorModel<T>,
+    pub(crate) model: SelectorModel<T>,
     pub(crate) initial_selected_id: Option<SharedString>,
 }
 
-impl<T> PopupSelectorBuilder<T>
+impl<T> SelectorBuilder<T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -218,14 +218,14 @@ where
         let id = id.into();
 
         Self {
-            model: PopupSelectorModel {
+            model: SelectorModel {
                 label: id.clone(),
                 id,
                 items: Vec::new(),
                 enabled: true,
-                placement: PopupSelectorPlacement::Smart,
+                placement: SelectorPlacement::Smart,
                 item_template: None,
-                template: default_popup_selector_template::<T>(),
+                template: default_selector_template::<T>(),
             },
             initial_selected_id: None,
         }
@@ -244,7 +244,7 @@ where
     }
 
     pub fn items(mut self, items: impl IntoIterator<Item = T>) -> Self {
-        self.model.items = normalize_popup_selector_items(items);
+        self.model.items = normalize_selector_items(items);
         self
     }
 
@@ -258,26 +258,26 @@ where
         self
     }
 
-    pub fn placement(mut self, placement: PopupSelectorPlacement) -> Self {
+    pub fn placement(mut self, placement: SelectorPlacement) -> Self {
         self.model.placement = placement;
         self
     }
 
     pub fn with_item_template<F, E>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&PopupSelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.model.item_template = Some(make_item_template(template));
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn PopupSelectorTemplate<T>>) -> Self {
+    pub fn template(mut self, template: Arc<dyn SelectorTemplate<T>>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<PopupSelector<T>> {
-        cx.new(|cx| PopupSelector::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Selector<T>> {
+        cx.new(|cx| Selector::from_builder(self, cx))
     }
 }

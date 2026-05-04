@@ -8,7 +8,7 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-pub struct PopupSelectorAppearance {
+pub struct SelectorAppearance {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_border: Hsla,
@@ -24,110 +24,110 @@ pub struct PopupSelectorAppearance {
     pub floating_menu: FloatingMenuAppearance,
 }
 
-pub trait PopupSelectorTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> PopupSelectorAppearance;
+pub trait SelectorTheme: Send + Sync {
+    fn resolve(&self, state: InteractionState) -> SelectorAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct DefaultPopupSelectorTheme {
+pub struct DefaultSelectorTheme {
     tokens: ThemeTokens,
 }
 
-pub fn default_popup_selector_theme() -> Arc<dyn PopupSelectorTheme> {
-    static THEME: OnceLock<Arc<dyn PopupSelectorTheme>> = OnceLock::new();
+pub fn default_selector_theme() -> Arc<dyn SelectorTheme> {
+    static THEME: OnceLock<Arc<dyn SelectorTheme>> = OnceLock::new();
 
-    THEME.get_or_init(|| Arc::new(DefaultPopupSelectorTheme::default())).clone()
+    THEME.get_or_init(|| Arc::new(DefaultSelectorTheme::default())).clone()
 }
 
-pub const POPUP_SELECTOR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    component: "Popup Selector",
+pub const SELECTOR_THEME_USAGE: ThemeUsage = ThemeUsage {
+    component: "Selector",
     parts: &[
         ThemePartUsage {
             part: "trigger background",
             token: "action.ghost.background",
             states: &["default"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_background"],
+            appearance_fields: &["SelectorAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger hover background",
             token: "action.ghost.hover_background",
             states: &["hovered"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_background"],
+            appearance_fields: &["SelectorAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger pressed background",
             token: "action.ghost.pressed_background",
             states: &["pressed"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_background"],
+            appearance_fields: &["SelectorAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "trigger foreground",
             token: "action.ghost.foreground",
             states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_foreground"],
+            appearance_fields: &["SelectorAppearance.trigger_foreground"],
         },
         ThemePartUsage {
             part: "trigger border",
             token: "border.default",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_border"],
+            appearance_fields: &["SelectorAppearance.trigger_border"],
         },
         ThemePartUsage {
             part: "menu background",
             token: "surface.floating.background",
             states: &["open"],
-            appearance_fields: &["PopupSelectorAppearance.floating_menu.background"],
+            appearance_fields: &["SelectorAppearance.floating_menu.background"],
         },
         ThemePartUsage {
             part: "menu border",
             token: "surface.floating.border",
             states: &["open"],
-            appearance_fields: &["PopupSelectorAppearance.floating_menu.border"],
+            appearance_fields: &["SelectorAppearance.floating_menu.border"],
         },
         ThemePartUsage {
             part: "item foreground",
             token: "surface.floating.foreground",
             states: &["open"],
-            appearance_fields: &["PopupSelectorAppearance.floating_menu.foreground"],
+            appearance_fields: &["SelectorAppearance.floating_menu.foreground"],
         },
         ThemePartUsage {
             part: "item hover background",
             token: "state.hover.background",
             states: &["item hovered"],
-            appearance_fields: &["PopupSelectorAppearance.floating_menu.item_hover_background"],
+            appearance_fields: &["SelectorAppearance.floating_menu.item_hover_background"],
         },
         ThemePartUsage {
             part: "disabled foreground",
             token: "state.disabled.foreground",
             states: &["disabled", "item disabled"],
             appearance_fields: &[
-                "PopupSelectorAppearance.trigger_foreground",
-                "PopupSelectorAppearance.floating_menu.item_disabled_foreground",
+                "SelectorAppearance.trigger_foreground",
+                "SelectorAppearance.floating_menu.item_disabled_foreground",
             ],
         },
         ThemePartUsage {
             part: "disabled trigger background",
             token: "state.disabled.background",
             states: &["disabled"],
-            appearance_fields: &["PopupSelectorAppearance.trigger_background"],
+            appearance_fields: &["SelectorAppearance.trigger_background"],
         },
         ThemePartUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["PopupSelectorAppearance.focus_ring"],
+            appearance_fields: &["SelectorAppearance.focus_ring"],
         },
     ],
 };
 
-impl DefaultPopupSelectorTheme {
+impl DefaultSelectorTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }
     }
 }
 
-impl PopupSelectorTheme for DefaultPopupSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> PopupSelectorAppearance {
+impl SelectorTheme for DefaultSelectorTheme {
+    fn resolve(&self, state: InteractionState) -> SelectorAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -145,7 +145,7 @@ impl PopupSelectorTheme for DefaultPopupSelectorTheme {
             palette.action.ghost.foreground
         };
 
-        PopupSelectorAppearance {
+        SelectorAppearance {
             trigger_background,
             trigger_foreground,
             trigger_border: palette.border.default,

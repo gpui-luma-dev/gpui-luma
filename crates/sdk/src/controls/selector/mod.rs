@@ -4,9 +4,9 @@
 //!
 //! Default built-in items:
 //! ```ignore
-//! use gpui_luma::controls::popup_selector::{PopupSelector, SelectorItem};
+//! use gpui_luma::controls::selector::{Selector, SelectorItem};
 //!
-//! let selector = PopupSelector::new("status")
+//! let selector = Selector::new("status")
 //!     .items([
 //!         SelectorItem::new("todo").label("To Do"),
 //!         SelectorItem::new("doing").label("In Progress"),
@@ -18,7 +18,7 @@
 //! Typed custom items:
 //! ```ignore
 //! use gpui::SharedString;
-//! use gpui_luma::controls::popup_selector::{PopupSelector, SelectorItemLike};
+//! use gpui_luma::controls::selector::{Selector, SelectorItemLike};
 //!
 //! #[derive(Clone)]
 //! struct SwatchItem {
@@ -33,20 +33,20 @@
 //!     fn label_text(&self) -> &SharedString { &self.label }
 //! }
 //!
-//! let selector = PopupSelector::<SwatchItem>::new_typed("palette");
+//! let selector = Selector::<SwatchItem>::new_typed("palette");
 //! ```
 mod control;
 mod model;
 mod template;
 
-pub use control::{PopupSelector, PopupSelectorEvent};
+pub use control::{Selector, SelectorEvent};
 pub use model::{
-    PopupSelectorBuilder, PopupSelectorItemRenderModel, PopupSelectorItemTemplate, PopupSelectorModel,
-    PopupSelectorPlacement, PopupSelectorRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
+    SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel,
+    SelectorPlacement, SelectorRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
 };
 pub use template::{
-    PopupSelectorTemplate, PopupSelectorTemplateHandlers, ThemedPopupSelectorTemplate, default_popup_selector_template,
+    SelectorTemplate, SelectorTemplateHandlers, ThemedSelectorTemplate, default_selector_template,
 };
 
 pub use crate::controls::state::{ControlFocusState, MenuPath};
-pub use crate::theme::InteractionState as PopupSelectorState;
+pub use crate::theme::InteractionState as SelectorState;

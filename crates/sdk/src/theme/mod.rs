@@ -7,7 +7,7 @@ pub mod choice_group;
 pub mod context_menu;
 pub mod floating_menu;
 pub mod popup_menu;
-pub mod popup_selector;
+pub mod selector;
 pub mod interaction;
 pub mod navigation_sidebar;
 pub mod pack;
@@ -42,9 +42,9 @@ pub use floating_menu::{
     default_floating_menu_theme,
 };
 pub use popup_menu::{DefaultPopupMenuTheme, PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
-pub use popup_selector::{
-    DefaultPopupSelectorTheme, POPUP_SELECTOR_THEME_USAGE, PopupSelectorAppearance, PopupSelectorTheme,
-    default_popup_selector_theme,
+pub use selector::{
+    DefaultSelectorTheme, SELECTOR_THEME_USAGE, SelectorAppearance, SelectorTheme,
+    default_selector_theme,
 };
 pub use interaction::{InteractionLayer, InteractionState};
 pub use navigation_sidebar::{
