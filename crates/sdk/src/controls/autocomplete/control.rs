@@ -176,28 +176,6 @@ impl AutocompleteTextBoxControl {
         }
     }
 
-    fn popup_page_size(&self) -> usize {
-        self.popup_surface.visible_row_count().min(14).max(1)
-    }
-
-    fn move_highlight_page(&mut self, forward: bool, page_size: usize) {
-        if self.behavior.state.filtered.is_empty() {
-            return;
-        }
-
-        let len = self.behavior.state.filtered.len();
-        let step = page_size.max(1);
-        let current = self.behavior.state.highlighted_filtered.unwrap_or(if forward { 0 } else { len - 1 });
-        let next = if forward {
-            (current + step).min(len - 1)
-        } else {
-            current.saturating_sub(step)
-        };
-
-        self.behavior.state.highlighted_filtered = Some(next);
-        self.behavior.state.open = true;
-    }
-
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.last_keyboard_event = SharedString::from(format!("key:{}", event.keystroke.key));
 
@@ -224,46 +202,6 @@ impl AutocompleteTextBoxControl {
             "up" | "arrowup" => {
                 if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
                     self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
-            }
-            "pagedown" | "page_down" | "pgdown" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(true, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
-            }
-            "pageup" | "page_up" | "pgup" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(false, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
-            }
-            "home" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(0);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
-            }
-            "end" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
                     self.sync_popup_highlight_visibility(cx);
                     window.prevent_default();
                     cx.stop_propagation();

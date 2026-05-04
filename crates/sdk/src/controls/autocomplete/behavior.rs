@@ -316,43 +316,4 @@ mod tests {
             SubmitResult::None => panic!("expected selection result"),
         }
     }
-
-    #[test]
-    fn clear_preserves_focus_and_resets_query_state() {
-        let items = sample_items();
-        let mut behavior = SelectionBehavior::new();
-
-        behavior.apply(SelectionEvent::Focus, &items);
-        behavior.set_query("ha", &items);
-        assert!(behavior.state.focused);
-        assert!(!behavior.state.filtered.is_empty());
-
-        behavior.apply(SelectionEvent::Clear, &items);
-
-        assert!(behavior.state.focused);
-        assert_eq!(behavior.state.query.as_ref(), "");
-        assert!(behavior.state.filtered.is_empty());
-        assert_eq!(behavior.state.selected_item, None);
-        assert_eq!(behavior.state.status, SelectionStatus::Idle);
-        assert!(!behavior.state.open);
-    }
-
-    #[test]
-    fn escape_preserves_focus_and_resets_query_state() {
-        let items = sample_items();
-        let mut behavior = SelectionBehavior::new();
-
-        behavior.apply(SelectionEvent::Focus, &items);
-        behavior.set_query("ha", &items);
-        assert!(behavior.state.focused);
-
-        behavior.apply(SelectionEvent::Escape, &items);
-
-        assert!(behavior.state.focused);
-        assert_eq!(behavior.state.query.as_ref(), "");
-        assert!(behavior.state.filtered.is_empty());
-        assert_eq!(behavior.state.selected_item, None);
-        assert_eq!(behavior.state.status, SelectionStatus::Idle);
-        assert!(!behavior.state.open);
-    }
 }

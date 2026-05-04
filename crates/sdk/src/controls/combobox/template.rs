@@ -30,6 +30,7 @@ pub struct ComboBoxRenderModel {
     pub textfield: text_selection::TextSelection,
     pub query_is_empty: bool,
     pub show_down_arrow: bool,
+    pub show_clear_button: bool,
     pub full_width: bool,
     pub minimum_trigger_width: Pixels,
     pub status_label: SharedString,
@@ -75,32 +76,10 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
             trigger_bounds,
         } = handlers;
 
-        let status_row = div()
-            .flex()
-            .items_center()
-            .justify_between()
-            .gap(px(10.0))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .text_color(model.status_color)
-                    .child(model.status_label),
-            )
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .text_color(model.muted_text_color)
-                    .child(model.status_detail),
-            );
-
         div()
             .when(model.full_width, |root| root.w_full())
             .flex()
             .flex_col()
-            .gap(px(10.0))
-            .child(status_row)
             .on_key_down(key_down)
             .on_scroll_wheel(scroll_wheel)
             .child(
@@ -140,7 +119,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 ),
                         )
                     })
-                    .when(!model.query_is_empty, |row| {
+                    .when(model.show_clear_button && !model.query_is_empty, |row| {
                         row.child(
                             div()
                                 .id("combobox-clear")

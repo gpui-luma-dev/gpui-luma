@@ -24,7 +24,10 @@ pub struct ComboBoxModel {
     pub(crate) clean_on_escape: bool,
     pub(crate) typing_policy: TypingPolicy,
     pub(crate) show_down_arrow: bool,
+    pub(crate) show_clear_button: bool,
     pub(crate) scrolling: bool,
+    pub(crate) min_visible_rows: usize,
+    pub(crate) max_visible_rows: usize,
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn ComboBoxTemplate>,
@@ -45,7 +48,10 @@ impl ComboBoxBuilder {
                 clean_on_escape: true,
                 typing_policy: TypingPolicy::Flexible,
                 show_down_arrow: true,
+                show_clear_button: true,
                 scrolling: true,
+                min_visible_rows: 1,
+                max_visible_rows: 7,
                 textfield_template: default_textfield_template(),
                 scrollbar_template: default_scrollbar_template(),
                 template: default_combobox_template(),
@@ -83,8 +89,29 @@ impl ComboBoxBuilder {
         self
     }
 
+    pub fn show_clear_button(mut self, show_clear_button: bool) -> Self {
+        self.model.show_clear_button = show_clear_button;
+        self
+    }
+
     pub fn scrolling(mut self, scrolling: bool) -> Self {
         self.model.scrolling = scrolling;
+        self
+    }
+
+    pub fn min_visible_rows(mut self, min_visible_rows: usize) -> Self {
+        self.model.min_visible_rows = min_visible_rows.max(1);
+        if self.model.max_visible_rows < self.model.min_visible_rows {
+            self.model.max_visible_rows = self.model.min_visible_rows;
+        }
+        self
+    }
+
+    pub fn max_visible_rows(mut self, max_visible_rows: usize) -> Self {
+        self.model.max_visible_rows = max_visible_rows.max(1);
+        if self.model.min_visible_rows > self.model.max_visible_rows {
+            self.model.min_visible_rows = self.model.max_visible_rows;
+        }
         self
     }
 

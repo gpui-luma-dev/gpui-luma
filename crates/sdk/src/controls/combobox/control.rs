@@ -251,7 +251,14 @@ impl ComboBoxControl {
                 cx.notify();
             }
             "down" | "arrowdown" => {
-                if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
+                if !self.behavior.state.open {
+                    self.open_popup_with_all_items(cx);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    return;
+                }
+
+                if !self.behavior.state.filtered.is_empty() {
                     self.behavior.apply(SelectionEvent::MoveNext, &self.model.items);
                     self.sync_popup_highlight_visibility(cx);
                     window.prevent_default();
@@ -444,7 +451,7 @@ impl Render for ComboBoxControl {
 
             let textfield_side_padding = (textfield_appearance.padding_x * 2.0) + textfield_appearance.border_width;
             let prefix_width = self.model.show_down_arrow.then_some(18.0 + 10.0).unwrap_or(0.0);
-            let clear_width = 18.0 + 10.0;
+            let clear_width = self.model.show_clear_button.then_some(18.0 + 10.0).unwrap_or(0.0);
             let spacing = 8.0;
 
             px(textfield_side_padding + placeholder_width + prefix_width + clear_width + spacing)
@@ -490,10 +497,15 @@ impl Render for ComboBoxControl {
             let menu_id = SharedString::from("combobox-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
-            let max_visible_rows = 7.0;
-            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * max_visible_rows));
+            let item_count = menu_items.len();
+            let min_visible_rows = self.model.min_visible_rows.max(1);
+            let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
+            let visible_rows = item_count.clamp(min_visible_rows, max_visible_rows) as f32;
+            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * visible_rows));
+            let allow_scrolling = self.model.scrolling && item_count > max_visible_rows;
 
-            self.popup_surface.configure(menu_items.len(), row_height, content_top_padding, viewport_height);
+            self.popup_surface.set_scrolling_enabled(allow_scrolling);
+            self.popup_surface.configure(item_count, row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
 
             let menu_content = render_popup_rows(
@@ -523,6 +535,7 @@ impl Render for ComboBoxControl {
             textfield: self.textfield.clone(),
             query_is_empty: self.behavior.state.query.is_empty(),
             show_down_arrow: self.model.show_down_arrow,
+            show_clear_button: self.model.show_clear_button,
             full_width: self.model.full_width,
             minimum_trigger_width,
             status_label,

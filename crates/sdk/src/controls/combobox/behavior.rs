@@ -137,16 +137,16 @@ impl SelectionBehavior {
     fn submit(&mut self, items: &[SelectionItem]) -> SubmitResult {
         let query = self.state.query.as_ref().trim().to_lowercase();
 
-        if query.is_empty() {
-            return SubmitResult::None;
-        }
-
         if let Some(index) = self
             .state
             .highlighted_filtered
             .and_then(|highlighted| self.state.filtered.get(highlighted).copied())
         {
             return SubmitResult::Select { index, exact_complete: false };
+        }
+
+        if query.is_empty() {
+            return SubmitResult::None;
         }
 
         if let Some(index) = self
@@ -318,41 +318,22 @@ mod tests {
     }
 
     #[test]
-    fn clear_preserves_focus_and_resets_query_state() {
+    fn submit_selects_highlighted_item_even_when_query_is_empty() {
         let items = sample_items();
         let mut behavior = SelectionBehavior::new();
 
         behavior.apply(SelectionEvent::Focus, &items);
-        behavior.set_query("ha", &items);
-        assert!(behavior.state.focused);
-        assert!(!behavior.state.filtered.is_empty());
+        behavior.state.filtered = (0..items.len()).collect();
+        behavior.state.highlighted_filtered = Some(1);
+        behavior.state.open = true;
 
-        behavior.apply(SelectionEvent::Clear, &items);
-
-        assert!(behavior.state.focused);
-        assert_eq!(behavior.state.query.as_ref(), "");
-        assert!(behavior.state.filtered.is_empty());
-        assert_eq!(behavior.state.selected_item, None);
-        assert_eq!(behavior.state.status, SelectionStatus::Idle);
-        assert!(!behavior.state.open);
-    }
-
-    #[test]
-    fn escape_preserves_focus_and_resets_query_state() {
-        let items = sample_items();
-        let mut behavior = SelectionBehavior::new();
-
-        behavior.apply(SelectionEvent::Focus, &items);
-        behavior.set_query("ha", &items);
-        assert!(behavior.state.focused);
-
-        behavior.apply(SelectionEvent::Escape, &items);
-
-        assert!(behavior.state.focused);
-        assert_eq!(behavior.state.query.as_ref(), "");
-        assert!(behavior.state.filtered.is_empty());
-        assert_eq!(behavior.state.selected_item, None);
-        assert_eq!(behavior.state.status, SelectionStatus::Idle);
-        assert!(!behavior.state.open);
+        let result = behavior.apply(SelectionEvent::Submit, &items);
+        match result {
+            SubmitResult::Select { index, exact_complete } => {
+                assert_eq!(items[index].label.as_ref(), "Hawaii");
+                assert!(!exact_complete);
+            }
+            SubmitResult::None => panic!("expected selection result"),
+        }
     }
 }

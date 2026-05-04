@@ -3,6 +3,7 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
 
 use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::choice_group::{self, ChoiceGroup, ChoiceGroupEvent, ChoiceGroupItem};
+use gpui_luma::controls::combobox::{self, ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 
 use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::menu_item::MenuItem;
@@ -31,7 +32,7 @@ struct PaymentPanel {
     cancel_button: Entity<Button>,
     name_field: TextField,
     email_field: TextField,
-    card_field: TextField,
+    payment_combobox: ComboBox,
     same_as_shipping_checkbox: Checkbox,
     payment_method_radio: radio_button::RadioButton,
 }
@@ -62,7 +63,7 @@ pub(in crate::gallery) struct IntroductionPane {
 
     name_value: SharedString,
     email_value: SharedString,
-    card_value: SharedString,
+    payment_selection_set: bool,
 
     same_as_shipping: bool,
     accepted_terms: bool,
@@ -92,7 +93,6 @@ enum IntroButton {
 enum IntroField {
     Name,
     Email,
-    Card,
 }
 
 impl IntroductionPane {
@@ -114,10 +114,15 @@ impl IntroductionPane {
                 .full_width(true)
                 .clean_on_escape(true)
                 .spawn(cx),
-            card_field: textfield::new("intro-card")
-                .placeholder("1234 5678 9012 3456")
+            payment_combobox: combobox::new("intro-payment-combobox", payment_method_items())
+                .placeholder("Select payment method…")
                 .full_width(true)
                 .clean_on_escape(true)
+                .typing_policy(TypingPolicy::Strict)
+                .show_down_arrow(true)
+                .show_clear_button(false)
+                .textfield_template(theme.textfield_template())
+                .scrollbar_template(theme.scrollbar_template())
                 .spawn(cx),
             same_as_shipping_checkbox: checkbox::new("intro-same-as-shipping")
                 .data(true)
@@ -212,7 +217,7 @@ impl IntroductionPane {
 
             name_value: SharedString::default(),
             email_value: SharedString::default(),
-            card_value: SharedString::default(),
+            payment_selection_set: false,
 
             same_as_shipping: true,
             accepted_terms: false,
@@ -255,8 +260,8 @@ impl IntroductionPane {
         subscriptions.push(cx.subscribe(&self.payment.email_field, |app, _, event: &TextFieldEvent, cx| {
             app.panes.introduction.handle_textfield_event(IntroField::Email, event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.payment.card_field, |app, _, event: &TextFieldEvent, cx| {
-            app.panes.introduction.handle_textfield_event(IntroField::Card, event, cx);
+        subscriptions.push(cx.subscribe(&self.payment.payment_combobox, |app, _, event: &ComboBoxEvent, cx| {
+            app.panes.introduction.handle_payment_combobox_event(event, cx);
         }));
 
         subscriptions.push(cx.subscribe(&self.payment.same_as_shipping_checkbox, |app, _, event: &ButtonEvent, cx| {
@@ -317,7 +322,7 @@ impl IntroductionPane {
         notify_entity(&self.payment.cancel_button, cx);
         notify_entity(&self.payment.name_field, cx);
         notify_entity(&self.payment.email_field, cx);
-        notify_entity(&self.payment.card_field, cx);
+        notify_entity(&self.payment.payment_combobox, cx);
         notify_entity(&self.payment.same_as_shipping_checkbox, cx);
         notify_entity(&self.payment.payment_method_radio, cx);
     }
@@ -429,7 +434,7 @@ impl IntroductionPane {
             ))
             .child(self.payment.name_field.clone())
             .child(self.payment.email_field.clone())
-            .child(self.payment.card_field.clone())
+            .child(self.payment.payment_combobox.clone())
             .child(self.payment.same_as_shipping_checkbox.clone())
             .child(
                 div()
@@ -640,7 +645,6 @@ impl IntroductionPane {
                 match field {
                     IntroField::Name => self.name_value = value,
                     IntroField::Email => self.email_value = value,
-                    IntroField::Card => self.card_value = value,
                 }
                 self.last_event = SharedString::from("TextField::Change");
                 self.recompute_completion(cx);
@@ -649,6 +653,25 @@ impl IntroductionPane {
             TextFieldEvent::Blur => {}
         }
 
+        cx.notify();
+    }
+
+    fn handle_payment_combobox_event(&mut self, event: &ComboBoxEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ComboBoxEvent::Select | ComboBoxEvent::Complete => {
+                self.payment_selection_set = true;
+                self.last_event = SharedString::from("ComboBox::Select");
+            }
+            ComboBoxEvent::Clear => {
+                self.payment_selection_set = false;
+                self.last_event = SharedString::from("ComboBox::Clear");
+            }
+            ComboBoxEvent::Change => {
+                self.last_event = SharedString::from("ComboBox::Change");
+            }
+        }
+
+        self.recompute_completion(cx);
         cx.notify();
     }
 
@@ -724,7 +747,7 @@ impl IntroductionPane {
         }
 
         max_score += 1.0;
-        if !self.card_value.is_empty() {
+        if self.payment_selection_set {
             score += 1.0;
         }
 
@@ -798,6 +821,16 @@ fn card_title(
         )
         .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(subtitle_color).child(subtitle))
         .into_any_element()
+}
+
+fn payment_method_items() -> Vec<SelectionItem> {
+    vec![
+        SelectionItem::new("visa", "Visa •••• 4242"),
+        SelectionItem::new("mastercard", "Mastercard •••• 4444"),
+        SelectionItem::new("amex", "Amex •••• 0005"),
+        SelectionItem::new("apple-pay", "Apple Pay"),
+        SelectionItem::new("google-pay", "Google Pay"),
+    ]
 }
 
 fn workspace_layout_items() -> [ChoiceGroupItem; 4] {

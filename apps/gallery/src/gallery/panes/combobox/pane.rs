@@ -19,6 +19,7 @@ impl ComboBoxPane {
             .clean_on_escape(true)
             .typing_policy(TypingPolicy::Strict)
             .show_down_arrow(true)
+            .show_clear_button(true)
             .textfield_template(theme_clone.textfield_template())
             .scrollbar_template(theme_clone.scrollbar_template())
             .spawn(cx);
