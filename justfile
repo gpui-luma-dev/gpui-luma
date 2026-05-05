@@ -5,3 +5,6 @@ gallery:
 
 gallery-rel:
     cargo run -p gpui-luma-gallery --release
+
+loc:
+    tokei --types Rust
