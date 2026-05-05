@@ -4,6 +4,7 @@ use anyhow::{Context as _, anyhow};
 use gpui::{BoxShadow, FontWeight, Hsla, hsla, point, px, rgb};
 use serde::Deserialize;
 
+//pub const DEFAULT_THEME_TOML: &str = include_str!("no-color-theme.tom");
 pub const DEFAULT_THEME_TOML: &str = include_str!("default-theme.toml");
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

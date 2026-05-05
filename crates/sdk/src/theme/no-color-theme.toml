@@ -1,0 +1,564 @@
+name = "Luma No Color"
+version = 1
+
+[light.palette.app]
+background = "hsl(0 0% 98%)"
+foreground = "hsl(0 0% 11%)"
+muted_foreground = "hsl(0 0% 47%)"
+
+[light.palette.surface.panel]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 11%)"
+border = "hsl(0 0% 84%)"
+
+[light.palette.surface.floating]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 11%)"
+border = "hsl(0 0% 84%)"
+
+[light.palette.surface.subtle]
+background = "hsl(0 0% 96%)"
+foreground = "hsl(0 0% 27%)"
+
+[light.palette.action.prominent]
+background = "hsl(0 0% 12%)"
+foreground = "hsl(0 0% 100%)"
+hover_background = "hsl(0 0% 18%)"
+pressed_background = "hsl(0 0% 24%)"
+
+[light.palette.action.standard]
+background = "hsl(0 0% 98%)"
+foreground = "hsl(0 0% 11%)"
+hover_background = "hsl(0 0% 91%)"
+pressed_background = "hsl(0 0% 84%)"
+
+[light.palette.action.ghost]
+background = "hsl(0 0% 98%)"
+foreground = "hsl(0 0% 11%)"
+hover_background = "hsl(0 0% 91%)"
+pressed_background = "hsl(0 0% 84%)"
+
+[light.palette.action.danger]
+background = "hsl(0 0% 51%)"
+foreground = "hsl(0 0% 100%)"
+hover_background = "hsl(0 0% 42%)"
+pressed_background = "hsl(0 0% 35%)"
+
+[light.palette.state.hover]
+background = "hsl(0 0% 91%)"
+foreground = "hsl(0 0% 11%)"
+
+[light.palette.state.pressed]
+background = "hsl(0 0% 84%)"
+
+[light.palette.state.selected]
+background = "hsl(0 0% 12%)"
+foreground = "hsl(0 0% 100%)"
+
+[light.palette.state.disabled]
+background = "hsl(0 0% 96%)"
+foreground = "hsl(0 0% 65%)"
+
+[light.palette.form.input]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 11%)"
+border = "hsl(0 0% 65%)"
+invalid_border = "hsl(0 0% 60%)"
+placeholder = "hsl(0 0% 65%)"
+
+[light.palette.focus]
+ring = "hsl(0 0% 60%)"
+
+[light.palette.border]
+default = "hsl(0 0% 84%)"
+strong = "hsl(0 0% 47%)"
+
+[light.palette.navigation]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 11%)"
+muted_foreground = "hsl(0 0% 47%)"
+hover_background = "hsl(0 0% 96%)"
+selected_background = "hsl(0 0% 12%)"
+selected_foreground = "hsl(0 0% 100%)"
+border = "hsl(0 0% 84%)"
+
+[light.palette.data]
+accent_1 = "hsl(0 0% 12%)"
+accent_2 = "hsl(0 0% 26%)"
+accent_3 = "hsl(0 0% 40%)"
+accent_4 = "hsl(0 0% 58%)"
+accent_5 = "hsl(0 0% 41%)"
+
+[light.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[light.metrics.radius]
+none = 0
+sm = 3
+md = 6
+lg = 8
+xl = 12
+pill = 999
+
+[light.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[light.metrics.focus]
+width = 1
+offset = 0
+
+[light.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[light.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[light.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[light.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[light.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.typography.font.sans]
+family = "System UI"
+
+[light.typography.font.mono]
+family = "Monaco"
+
+[light.typography.font.serif]
+family = "New York"
+
+[light.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[light.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[light.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[light.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[light.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[light.elevation.none]
+layers = []
+
+[[light.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.05)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.14)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = -1
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.12)"
+offset_x = 0
+offset_y = 4
+blur = 8
+spread = -2
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 2
+blur = 4
+spread = -1
+
+[[light.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.16)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.08)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[light.colors]
+surface = "hsl(0 0% 98%)"
+surface_hover = "hsl(0 0% 91%)"
+surface_pressed = "hsl(0 0% 84%)"
+surface_disabled = "hsl(0 0% 96%)"
+prominent = "hsl(0 0% 12%)"
+prominent_hover = "hsl(0 0% 18%)"
+prominent_pressed = "hsl(0 0% 24%)"
+destructive = "hsl(0 0% 51%)"
+destructive_hover = "hsl(0 0% 42%)"
+destructive_pressed = "hsl(0 0% 35%)"
+selected = "hsl(0 0% 12%)"
+selected_hover = "hsl(0 0% 18%)"
+selected_pressed = "hsl(0 0% 24%)"
+text = "hsl(0 0% 11%)"
+text_inverse = "hsl(0 0% 100%)"
+text_disabled = "hsl(0 0% 65%)"
+border = "hsl(0 0% 84%)"
+
+[dark.palette.app]
+background = "hsl(0 0% 8%)"
+foreground = "hsl(0 0% 98%)"
+muted_foreground = "hsl(0 0% 65%)"
+
+[dark.palette.surface.panel]
+background = "hsl(0 0% 11%)"
+foreground = "hsl(0 0% 98%)"
+border = "hsl(0 0% 27%)"
+
+[dark.palette.surface.floating]
+background = "hsl(0 0% 11%)"
+foreground = "hsl(0 0% 98%)"
+border = "hsl(0 0% 27%)"
+
+[dark.palette.surface.subtle]
+background = "hsl(0 0% 17%)"
+foreground = "hsl(0 0% 84%)"
+
+[dark.palette.action.prominent]
+background = "hsl(0 0% 18%)"
+foreground = "hsl(0 0% 98%)"
+hover_background = "hsl(0 0% 24%)"
+pressed_background = "hsl(0 0% 30%)"
+
+[dark.palette.action.standard]
+background = "hsl(0 0% 17%)"
+foreground = "hsl(0 0% 98%)"
+hover_background = "hsl(0 0% 27%)"
+pressed_background = "hsl(0 0% 35%)"
+
+[dark.palette.action.ghost]
+background = "hsl(0 0% 17%)"
+foreground = "hsl(0 0% 98%)"
+hover_background = "hsl(0 0% 27%)"
+pressed_background = "hsl(0 0% 35%)"
+
+[dark.palette.action.danger]
+background = "hsl(0 0% 71%)"
+foreground = "hsl(0 0% 15%)"
+hover_background = "hsl(0 0% 82%)"
+pressed_background = "hsl(0 0% 89%)"
+
+[dark.palette.state.hover]
+background = "hsl(0 0% 27%)"
+foreground = "hsl(0 0% 98%)"
+
+[dark.palette.state.pressed]
+background = "hsl(0 0% 35%)"
+
+[dark.palette.state.selected]
+background = "hsl(0 0% 18%)"
+foreground = "hsl(0 0% 98%)"
+
+[dark.palette.state.disabled]
+background = "hsl(0 0% 17%)"
+foreground = "hsl(0 0% 47%)"
+
+[dark.palette.form.input]
+background = "hsl(0 0% 11%)"
+foreground = "hsl(0 0% 98%)"
+border = "hsl(0 0% 35%)"
+invalid_border = "hsl(0 0% 70%)"
+placeholder = "hsl(0 0% 47%)"
+
+[dark.palette.focus]
+ring = "hsl(0 0% 60%)"
+
+[dark.palette.border]
+default = "hsl(0 0% 27%)"
+strong = "hsl(0 0% 65%)"
+
+[dark.palette.navigation]
+background = "hsl(0 0% 11%)"
+foreground = "hsl(0 0% 98%)"
+muted_foreground = "hsl(0 0% 65%)"
+hover_background = "hsl(0 0% 17%)"
+selected_background = "hsl(0 0% 18%)"
+selected_foreground = "hsl(0 0% 98%)"
+border = "hsl(0 0% 27%)"
+
+[dark.palette.data]
+accent_1 = "hsl(0 0% 18%)"
+accent_2 = "hsl(0 0% 50%)"
+accent_3 = "hsl(0 0% 61%)"
+accent_4 = "hsl(0 0% 76%)"
+accent_5 = "hsl(0 0% 71%)"
+
+[dark.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[dark.metrics.radius]
+none = 0
+sm = 3
+md = 6
+lg = 8
+xl = 12
+pill = 999
+
+[dark.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[dark.metrics.focus]
+width = 1
+offset = 0
+
+[dark.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[dark.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[dark.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 5
+
+[dark.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 6
+
+[dark.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.typography.font.sans]
+family = "System UI"
+
+[dark.typography.font.mono]
+family = "Monaco"
+
+[dark.typography.font.serif]
+family = "New York"
+
+[dark.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[dark.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[dark.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[dark.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[dark.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[dark.elevation.none]
+layers = []
+
+[[dark.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 6
+blur = 16
+spread = -6
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.34)"
+offset_x = 0
+offset_y = 10
+blur = 24
+spread = -8
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.2)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.42)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.24)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[dark.colors]
+surface = "hsl(0 0% 17%)"
+surface_hover = "hsl(0 0% 27%)"
+surface_pressed = "hsl(0 0% 35%)"
+surface_disabled = "hsl(0 0% 17%)"
+prominent = "hsl(0 0% 18%)"
+prominent_hover = "hsl(0 0% 24%)"
+prominent_pressed = "hsl(0 0% 30%)"
+destructive = "hsl(0 0% 71%)"
+destructive_hover = "hsl(0 0% 82%)"
+destructive_pressed = "hsl(0 0% 89%)"
+selected = "hsl(0 0% 18%)"
+selected_hover = "hsl(0 0% 24%)"
+selected_pressed = "hsl(0 0% 30%)"
+text = "hsl(0 0% 98%)"
+text_inverse = "hsl(0 0% 16%)"
+text_disabled = "hsl(0 0% 47%)"
+border = "hsl(0 0% 27%)"
