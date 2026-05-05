@@ -5,8 +5,7 @@ use gpui::{
     SharedString, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::selector::{
-    ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate,
-    SelectorTemplateHandlers,
+    ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
 };
 use gpui_luma::theme::InteractionState;
 

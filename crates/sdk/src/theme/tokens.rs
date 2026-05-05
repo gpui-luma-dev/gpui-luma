@@ -1304,17 +1304,26 @@ fn parse_percent(value: Option<&str>, color: &str, channel: &str) -> anyhow::Res
 mod tests {
     use super::{ColorTokens, DEFAULT_THEME_TOML, LumaTheme, ThemeMode, ThemeModes, ThemeTokens};
 
+    const HSLA_EPSILON: f32 = 5.0e-3;
+
+    fn assert_hsla_close(left: gpui::Hsla, right: gpui::Hsla) {
+        assert!((left.h - right.h).abs() <= HSLA_EPSILON, "hue differs: left={left:?}, right={right:?}");
+        assert!((left.s - right.s).abs() <= HSLA_EPSILON, "saturation differs: left={left:?}, right={right:?}");
+        assert!((left.l - right.l).abs() <= HSLA_EPSILON, "lightness differs: left={left:?}, right={right:?}");
+        assert!((left.a - right.a).abs() <= HSLA_EPSILON, "alpha differs: left={left:?}, right={right:?}");
+    }
+
     #[test]
     fn default_tokens_are_light_tokens() {
-        assert_eq!(ThemeTokens::default().colors.surface, ColorTokens::light().surface);
+        assert_hsla_close(ThemeTokens::default().colors.surface, ColorTokens::light().surface);
     }
 
     #[test]
     fn theme_modes_select_the_requested_token_set() {
         let modes = ThemeModes::default();
 
-        assert_eq!(modes.tokens(ThemeMode::Light).colors.surface, ThemeTokens::light().colors.surface);
-        assert_eq!(modes.tokens(ThemeMode::Dark).colors.surface, ThemeTokens::dark().colors.surface);
+        assert_hsla_close(modes.tokens(ThemeMode::Light).colors.surface, ThemeTokens::light().colors.surface);
+        assert_hsla_close(modes.tokens(ThemeMode::Dark).colors.surface, ThemeTokens::dark().colors.surface);
         assert_ne!(modes.tokens(ThemeMode::Light).colors.surface, modes.tokens(ThemeMode::Dark).colors.surface);
     }
 

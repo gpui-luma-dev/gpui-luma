@@ -12,7 +12,7 @@ pub mod floating_menu;
 pub(crate) mod interaction;
 pub mod menu_item;
 pub(crate) mod menu_navigation;
-pub mod motion;
+
 pub mod navigation_sidebar;
 pub mod popup_menu;
 pub mod popup_scroll_surface;

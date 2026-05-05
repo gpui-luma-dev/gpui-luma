@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::controls::motion::MotionSpec;
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
@@ -24,7 +23,6 @@ pub struct SwitchAppearance {
     pub padding: f32,
     pub gap: f32,
     pub radius: f32,
-    pub thumb_motion: Option<MotionSpec>,
 }
 
 pub trait SwitchTheme: Send + Sync {
@@ -203,10 +201,6 @@ impl SwitchTheme for DefaultSwitchTheme {
             padding: 2.0,
             gap: metrics.gap(size),
             radius: metrics.radius.pill,
-            thumb_motion: Some(MotionSpec {
-                duration_ms: 120,
-                easing: crate::controls::motion::MotionEasing::EaseInOut,
-            }),
         }
     }
 }

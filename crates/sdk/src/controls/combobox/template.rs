@@ -5,9 +5,7 @@ use gpui::{
     SharedString, Window, anchored, deferred, div, point, prelude::*, px,
 };
 
-use crate::controls::floating_menu::{
-    FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler,
-};
+use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler};
 use crate::controls::menu_item::MenuItem;
 
 use super::text_selection;

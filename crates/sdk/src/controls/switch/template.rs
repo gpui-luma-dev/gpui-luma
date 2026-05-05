@@ -1,7 +1,7 @@
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::motion::animate_f32;
+
 use crate::theme::adorner::{AdornerSpec, render_adorner};
 use crate::controls::switch::{SwitchTheme, default_switch_theme};
 
@@ -25,9 +25,6 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             appearance.padding
         };
         let thumb_top = ((appearance.height - appearance.thumb_size) * 0.5 - 1.0).max(0.0);
-        let off_left = appearance.padding;
-        let on_left = appearance.width - appearance.thumb_size - appearance.padding;
-
         let thumb = div()
             .id(format!("{}-thumb", model.id))
             .absolute()
@@ -39,21 +36,6 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .border_color(appearance.thumb_border)
             .rounded(px(appearance.radius))
             .shadow(appearance.thumb_shadow.clone());
-
-        let (start_left, end_left) = if model.data {
-            (off_left, on_left)
-        } else {
-            (on_left, off_left)
-        };
-
-        let thumb = animate_f32(
-            thumb,
-            format!("{}-thumb-motion-{}", model.id, model.data),
-            appearance.thumb_motion,
-            start_left,
-            end_left,
-            |this, left| this.left(px(left)),
-        );
 
         let track_visual = div()
             .id(format!("{}-track", model.id))

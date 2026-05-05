@@ -3,10 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 use lucide_icons::Icon as LucideIcon;
 
-use super::{
-    ControlFocusState, MenuPath, Selector, SelectorState, SelectorTemplate,
-    default_selector_template,
-};
+use super::{ControlFocusState, MenuPath, Selector, SelectorState, SelectorTemplate, default_selector_template};
 
 #[derive(Clone, Debug)]
 pub enum SelectorItemIcon {
