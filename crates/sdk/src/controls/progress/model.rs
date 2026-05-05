@@ -20,6 +20,7 @@ pub struct ProgressRenderModel<'a> {
     pub range: ControlRange,
     pub value: f32,
     pub percentage: f32,
+    pub previous_percentage: f32,
     pub enabled: bool,
 }
 

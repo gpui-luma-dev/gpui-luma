@@ -111,11 +111,13 @@ fn render_progress_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("progress-preview-{}", sample.id));
     let range = ControlRange::from(0..100);
+    let percentage = range.percentage(sample.value);
     let model = ProgressRenderModel {
         id: &id,
         range,
         value: sample.value,
-        percentage: range.percentage(sample.value),
+        percentage,
+        previous_percentage: percentage,
         enabled: sample.enabled,
     };
 

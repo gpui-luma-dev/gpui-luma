@@ -12,6 +12,7 @@ pub mod floating_menu;
 pub(crate) mod interaction;
 pub mod menu_item;
 pub(crate) mod menu_navigation;
+pub mod motion;
 pub mod navigation_sidebar;
 pub mod popup_menu;
 pub mod popup_scroll_surface;
@@ -29,5 +30,8 @@ pub mod template;
 pub(crate) mod text;
 pub mod textarea;
 pub mod textfield;
+pub mod theme_registry;
 pub mod toggle;
 pub mod value;
+
+pub use theme_registry::all_theme_usages;

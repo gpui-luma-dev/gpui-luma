@@ -6,6 +6,7 @@ use crate::controls::value::{ControlRange, value_from_input};
 
 pub struct ProgressControl {
     model: ProgressModel,
+    previous_percentage: f32,
 }
 
 impl ProgressControl {
@@ -15,7 +16,8 @@ impl ProgressControl {
     }
 
     pub(crate) fn from_builder(builder: ProgressBuilder, _cx: &mut Context<Self>) -> Self {
-        Self { model: builder.model }
+        let initial_percentage = builder.model.range.percentage(builder.model.value);
+        Self { model: builder.model, previous_percentage: initial_percentage }
     }
 
     pub fn value(&self) -> f32 {
@@ -31,11 +33,13 @@ impl ProgressControl {
     }
 
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
+        self.previous_percentage = self.model.range.percentage(self.model.value);
         self.model.value = self.model.range.clamp(value_from_input(value));
         cx.notify();
     }
 
     pub fn set_range(&mut self, range: impl Into<ControlRange>, cx: &mut Context<Self>) {
+        self.previous_percentage = self.model.range.percentage(self.model.value);
         self.model.range = range.into();
         self.model.value = self.model.range.clamp(self.model.value);
         cx.notify();
@@ -56,6 +60,7 @@ impl ProgressControl {
             range: self.model.range,
             value: self.model.value,
             percentage: self.model.range.percentage(self.model.value),
+            previous_percentage: self.previous_percentage,
             enabled: self.model.enabled,
         }
     }

@@ -4,6 +4,8 @@ mod theme;
 pub use template::{ThemedSwitchTemplate, default_template as default_switch_template};
 pub use theme::{DefaultSwitchTheme, SWITCH_THEME_USAGE, SwitchAppearance, SwitchTheme, default_switch_theme};
 
+pub use crate::controls::motion::{MotionEasing as SwitchMotionEasing, MotionSpec as SwitchThumbMotion};
+
 pub use crate::theme::InteractionState as SwitchState;
 
 use gpui::{Entity, SharedString};

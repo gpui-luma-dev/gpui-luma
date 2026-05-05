@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
+use crate::controls::motion::{MotionEasing, MotionSpec};
 use crate::theme::{ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug)]
@@ -10,6 +11,7 @@ pub struct ProgressAppearance {
     pub progress_color: Hsla,
     pub size: f32,
     pub stroke_width: f32,
+    pub progress_motion: Option<MotionSpec>,
 }
 
 pub trait ProgressTheme: Send + Sync {
@@ -80,6 +82,7 @@ impl ProgressTheme for DefaultProgressTheme {
             },
             size: 64.0,
             stroke_width: 6.0,
+            progress_motion: Some(MotionSpec { duration_ms: 180, easing: MotionEasing::EaseInOut }),
         }
     }
 }

@@ -22,10 +22,6 @@ pub struct PaletteColorToken {
     pub gallery_chrome: bool,
 }
 
-pub fn all_theme_usages() -> &'static [&'static ThemeUsage] {
-    THEME_USAGES
-}
-
 pub fn palette_color_tokens(tokens: &super::ThemeTokens) -> Vec<PaletteColorToken> {
     let palette = &tokens.palette;
 
@@ -45,6 +41,10 @@ pub fn palette_color_tokens(tokens: &super::ThemeTokens) -> Vec<PaletteColorToke
         token("action.prominent.foreground", palette.action.prominent.foreground),
         token("action.prominent.hover_background", palette.action.prominent.hover_background),
         token("action.prominent.pressed_background", palette.action.prominent.pressed_background),
+        token("action.standard.background", palette.action.standard.background),
+        token("action.standard.foreground", palette.action.standard.foreground),
+        token("action.standard.hover_background", palette.action.standard.hover_background),
+        token("action.standard.pressed_background", palette.action.standard.pressed_background),
         token("action.ghost.background", palette.action.ghost.background),
         token("action.ghost.foreground", palette.action.ghost.foreground),
         token("action.ghost.hover_background", palette.action.ghost.hover_background),
@@ -86,29 +86,6 @@ pub fn resolve_palette_color(tokens: &super::ThemeTokens, token_name: &str) -> O
         .map(|token| token.color)
 }
 
-const THEME_USAGES: &[&ThemeUsage] = &[
-    &crate::controls::button_family::BUTTON_THEME_USAGE,
-    &crate::controls::navigation_sidebar::NAVIGATION_SIDEBAR_THEME_USAGE,
-    &crate::controls::button_family::ICON_BUTTON_THEME_USAGE,
-    &crate::controls::button_family::TOGGLE_THEME_USAGE,
-    &crate::controls::choice_group::CHOICE_GROUP_THEME_USAGE,
-    &crate::controls::checkbox::CHECKBOX_THEME_USAGE,
-    &crate::controls::radio_button::RADIO_BUTTON_THEME_USAGE,
-    &crate::controls::switch::SWITCH_THEME_USAGE,
-    &crate::controls::slider::SLIDER_THEME_USAGE,
-    &crate::controls::scrollbar::SCROLLBAR_THEME_USAGE,
-    &crate::controls::textarea::TEXTAREA_THEME_USAGE,
-    &crate::controls::textfield::TEXTFIELD_THEME_USAGE,
-    &crate::controls::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
-    &crate::controls::autocomplete::COMBOBOX_THEME_USAGE,
-    &crate::controls::floating_menu::FLOATING_MENU_THEME_USAGE,
-    &crate::controls::popup_menu::POPUP_MENU_THEME_USAGE,
-    &crate::controls::selector::SELECTOR_THEME_USAGE,
-    &crate::controls::context_menu::CONTEXT_MENU_THEME_USAGE,
-    &crate::controls::tabs_navigation::TABS_NAVIGATION_THEME_USAGE,
-    &crate::controls::progress::PROGRESS_THEME_USAGE,
-];
-
 fn token(token: &'static str, color: Hsla) -> PaletteColorToken {
     PaletteColorToken { token, color, reserved: false, gallery_chrome: false }
 }
@@ -123,22 +100,38 @@ fn reserved_token(token: &'static str, color: Hsla) -> PaletteColorToken {
 
 #[cfg(test)]
 mod tests {
-    use super::{all_theme_usages, resolve_palette_color};
+    use std::collections::HashSet;
+
+    use super::palette_color_tokens;
     use crate::theme::ThemeTokens;
 
     #[test]
-    fn usage_metadata_tokens_are_known_palette_tokens() {
+    fn palette_token_names_are_unique() {
         let tokens = ThemeTokens::default();
+        let palette_tokens = palette_color_tokens(&tokens);
+        let mut names = HashSet::new();
 
-        for usage in all_theme_usages() {
-            for part in usage.parts {
-                assert!(
-                    resolve_palette_color(&tokens, part.token).is_some(),
-                    "{} uses unknown palette token {}",
-                    usage.label,
-                    part.token
-                );
-            }
+        for token in &palette_tokens {
+            assert!(names.insert(token.token), "duplicate palette token in registry: {}", token.token);
+        }
+    }
+
+    #[test]
+    fn registry_includes_action_standard_tokens() {
+        let tokens = ThemeTokens::default();
+        let palette_tokens = palette_color_tokens(&tokens);
+
+        for token_name in [
+            "action.standard.background",
+            "action.standard.foreground",
+            "action.standard.hover_background",
+            "action.standard.pressed_background",
+        ] {
+            assert!(
+                palette_tokens.iter().any(|token| token.token == token_name),
+                "missing palette token in registry: {}",
+                token_name
+            );
         }
     }
 }

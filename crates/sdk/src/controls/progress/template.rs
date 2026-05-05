@@ -3,6 +3,8 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, PathBuilder, Stateful, Window, canvas, div, point, px, prelude::*};
 
+use crate::controls::motion::animate_value;
+
 use super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
@@ -30,25 +32,43 @@ impl ProgressTemplate for ThemedProgressTemplate {
     fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.enabled);
         let percentage = model.percentage.clamp(0.0, 1.0);
+        let previous_percentage = model.previous_percentage.clamp(0.0, 1.0);
         let size = px(appearance.size);
         let stroke_width = px(appearance.stroke_width);
         let track_color = appearance.track_color;
         let progress_color = appearance.progress_color;
 
-        div().id(model.id.clone()).relative().size(size).child(
-            canvas(
-                |_, _, _| {},
-                move |bounds, _, window, _cx| {
-                    let center_x = bounds.origin.x + bounds.size.width / 2.0;
-                    let center_y = bounds.origin.y + bounds.size.height / 2.0;
-                    let radius = (size / 2.0) - stroke_width;
+        let progress_canvas = animate_value(
+            format!("{}-progress-motion-{}", model.id, percentage),
+            appearance.progress_motion,
+            previous_percentage,
+            percentage,
+            move |animated_percentage| {
+                canvas(
+                    |_, _, _| {},
+                    move |bounds, _, window, _cx| {
+                        let center_x = bounds.origin.x + bounds.size.width / 2.0;
+                        let center_y = bounds.origin.y + bounds.size.height / 2.0;
+                        let radius = (size / 2.0) - stroke_width;
 
-                    paint_circle(center_x, center_y, radius, stroke_width, track_color, window);
-                    paint_progress_arc(center_x, center_y, radius, stroke_width, percentage, progress_color, window);
-                },
-            )
-            .size_full(),
-        )
+                        paint_circle(center_x, center_y, radius, stroke_width, track_color, window);
+                        paint_progress_arc(
+                            center_x,
+                            center_y,
+                            radius,
+                            stroke_width,
+                            animated_percentage,
+                            progress_color,
+                            window,
+                        );
+                    },
+                )
+                .size_full()
+                .into_any_element()
+            },
+        );
+
+        div().id(model.id.clone()).relative().size(size).child(progress_canvas)
     }
 }
 
