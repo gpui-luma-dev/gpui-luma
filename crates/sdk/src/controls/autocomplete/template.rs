@@ -142,6 +142,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                         .border_1()
                                         .border_color(model.popup_appearance.border)
                                         .rounded(px(model.popup_appearance.radius))
+                                        .shadow(model.popup_appearance.shadow.clone())
                                         .overflow_hidden()
                                         .child(popup_content),
                                 ),
