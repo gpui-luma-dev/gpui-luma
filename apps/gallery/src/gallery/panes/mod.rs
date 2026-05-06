@@ -18,6 +18,8 @@ mod radio_button;
 pub(super) mod registry;
 mod scrollbar;
 mod search;
+mod search_selector;
+mod selector_controls_template;
 mod settings;
 mod shared;
 mod slider;

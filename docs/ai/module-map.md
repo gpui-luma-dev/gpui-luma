@@ -148,6 +148,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `combobox/*`
   - selectable input with typing policy and popup list
   - exports builder/model/template + `ComboBoxEvent`, `TypingPolicy`
+- `search_selector/*`
+  - read-only trigger selector with popup-hosted search field and filtered list
+  - exports builder/model/template + `SearchSelectorEvent`
 - `selector/*`
   - popup selector (typed or built-in item model)
   - exports builder/model/template/theme + `SelectorEvent`
@@ -214,7 +217,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - command: `button`, `icon_button`, `prototypes/*`
   - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `choice_group`, `choice_controls_template`
   - input: `textfield`, `textarea`, `slider`, `scrollbar`
-  - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `selector`
+  - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`
   - navigation/feedback: `navigation_sidebar`, `tabs_navigation`, `progress`
 
 ## Public API Landmarks (Fast Lookup)

@@ -14,6 +14,11 @@ impl AssetSource for Assets {
             "assets/labels/ghost-label.svg" => Some(include_bytes!("labels/ghost-label.svg").as_slice()),
             "assets/labels/selected-label.svg" => Some(include_bytes!("labels/selected-label.svg").as_slice()),
             "assets/labels/unselected-label.svg" => Some(include_bytes!("labels/unselected-label.svg").as_slice()),
+            "assets/labels/default-label.svg" => Some(include_bytes!("labels/default-label.svg").as_slice()),
+            "assets/labels/hover-label.svg" => Some(include_bytes!("labels/hover-label.svg").as_slice()),
+            "assets/labels/focused-label.svg" => Some(include_bytes!("labels/focused-label.svg").as_slice()),
+            "assets/labels/pressed-label.svg" => Some(include_bytes!("labels/pressed-label.svg").as_slice()),
+            "assets/labels/disabled-label.svg" => Some(include_bytes!("labels/disabled-label.svg").as_slice()),
             _ => None,
         };
 
@@ -32,6 +37,11 @@ impl AssetSource for Assets {
                 SharedString::from("assets/labels/ghost-label.svg"),
                 SharedString::from("assets/labels/selected-label.svg"),
                 SharedString::from("assets/labels/unselected-label.svg"),
+                SharedString::from("assets/labels/default-label.svg"),
+                SharedString::from("assets/labels/hover-label.svg"),
+                SharedString::from("assets/labels/focused-label.svg"),
+                SharedString::from("assets/labels/pressed-label.svg"),
+                SharedString::from("assets/labels/disabled-label.svg"),
             ],
             _ => Vec::new(),
         };

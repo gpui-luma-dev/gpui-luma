@@ -19,6 +19,7 @@ const REGISTERED_THEME_USAGES: &[&ThemeUsage] = &[
     &crate::controls::textfield::TEXTFIELD_THEME_USAGE,
     &crate::controls::autocomplete::AUTOCOMPLETE_TEXTBOX_THEME_USAGE,
     &crate::controls::autocomplete::COMBOBOX_THEME_USAGE,
+    &crate::controls::search_selector::SEARCH_SELECTOR_THEME_USAGE,
     &crate::controls::floating_menu::FLOATING_MENU_THEME_USAGE,
     &crate::controls::popup_menu::POPUP_MENU_THEME_USAGE,
     &crate::controls::selector::SELECTOR_THEME_USAGE,
