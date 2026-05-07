@@ -1,6 +1,8 @@
-use std::sync::Arc;
+use gpui::SharedString;
 
-use gpui::{AnyElement, App, IntoElement, SharedString};
+pub use crate::controls::selector_item_template::{
+    SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
+};
 
 use crate::controls::icon::IconSource;
 
@@ -100,26 +102,4 @@ impl SelectorPath {
     pub fn is_item(self, index: usize) -> bool {
         matches!(self, Self::Item(active) if active == index)
     }
-}
-
-pub struct SelectorItemRenderModel<'a, T> {
-    pub selector_id: &'a SharedString,
-    pub item: &'a T,
-    pub index: usize,
-    pub selected: bool,
-    pub active: bool,
-    pub open: bool,
-    pub enabled: bool,
-}
-
-pub type SelectorItemTemplate<T> =
-    Arc<dyn for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
-
-pub fn make_selector_item_template<T, F, E>(template: F) -> SelectorItemTemplate<T>
-where
-    T: SelectorItemLike + 'static,
-    F: for<'a> Fn(&SelectorItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
-    E: IntoElement + 'static,
-{
-    Arc::new(move |model, cx| template(model, cx).into_any_element())
 }

@@ -34,6 +34,7 @@
 //! let selector = Selector::<SwatchItem>::new_typed("palette");
 //! ```
 mod control;
+mod item_template;
 mod model;
 mod template;
 mod theme;

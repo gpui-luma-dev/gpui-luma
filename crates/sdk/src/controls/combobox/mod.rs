@@ -1,5 +1,6 @@
 mod behavior;
 mod control;
+mod items_template;
 mod model;
 mod template;
 mod text_selection;

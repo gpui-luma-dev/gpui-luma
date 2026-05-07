@@ -7,6 +7,7 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{SelectorPlacement, SelectorRenderModel};
+use super::item_template::render_trigger_content;
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
@@ -258,38 +259,6 @@ fn estimated_menu_size(appearance: &SelectorAppearance, item_count: usize, trigg
         },
         height: px(appearance.items_panel.padding * 2.0) + px(appearance.items_panel.item_height) * item_count,
     }
-}
-
-fn render_trigger_content<T>(
-    model: &SelectorRenderModel<'_, T>,
-    appearance: &SelectorAppearance,
-    cx: &mut App,
-) -> AnyElement
-where
-    T: SelectorItemLike + 'static,
-{
-    if let (Some(selected_index), Some(item_template)) = (model.selected_index, model.item_template)
-        && let Some(item) = model.items.get(selected_index)
-    {
-        let active = model.active_path.is_some_and(|path| path.is_item(selected_index));
-        let item_model = crate::controls::selector_panel::SelectorItemRenderModel {
-            selector_id: model.id,
-            item,
-            index: selected_index,
-            selected: true,
-            active,
-            open: model.open,
-            enabled: model.enabled,
-        };
-        return item_template(&item_model, cx);
-    }
-
-    div()
-        .flex()
-        .items_center()
-        .gap(px(appearance.trigger_gap))
-        .child(model.label.clone())
-        .into_any_element()
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {

@@ -18,6 +18,7 @@ pub mod navigation_sidebar;
 pub mod popup_menu;
 pub mod popup_scroll_surface;
 pub mod selector;
+pub mod selector_item_template;
 pub mod selector_panel;
 pub mod search_selector;
 pub mod progress;

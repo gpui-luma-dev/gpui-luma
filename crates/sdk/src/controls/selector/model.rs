@@ -3,10 +3,10 @@ use std::sync::Arc;
 use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 
 use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, default_selector_template};
-pub use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
-    make_selector_item_template, normalize_selector_items,
+pub use crate::controls::selector_item_template::{
+    SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
 };
+pub use crate::controls::selector_panel::{SelectorItem, SelectorItemLike, SelectorPath, normalize_selector_items};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {

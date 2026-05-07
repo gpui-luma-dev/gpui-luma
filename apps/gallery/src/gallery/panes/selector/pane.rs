@@ -5,6 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
+use super::panel_preview::SelectorPanelPreview;
 use super::preview::SelectorStatePreview;
 use super::super::shared::{format_compact_hsla, gallery_pane_with_usage, notify_entity};
 
@@ -16,6 +17,7 @@ pub(in crate::gallery) struct SelectorPane {
     selector_overlay: Entity<Selector>,
     selector_swatch: Entity<Selector>,
     state_preview: Entity<SelectorStatePreview>,
+    panel_preview: Entity<SelectorPanelPreview>,
     selection: String,
     selected_swatch_id: String,
 }
@@ -93,6 +95,7 @@ impl SelectorPane {
                 .template(theme.selector_template())
                 .spawn(cx),
             state_preview: cx.new(|_| SelectorStatePreview::new(theme)),
+            panel_preview: cx.new(|_| SelectorPanelPreview::new(theme)),
             selection: initial_swatch_label.to_string(),
             selected_swatch_id: initial_swatch_id.to_string(),
         }
@@ -136,7 +139,8 @@ impl SelectorPane {
                         .child(div().flex().items_center().gap_3().child(self.selector_overlay.clone()))
                         .child(self.selector_swatch.clone())
                         .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection)))
-                        .child(self.state_preview.clone()),
+                        .child(self.state_preview.clone())
+                        .child(self.panel_preview.clone()),
                 )
                 .child(self.selector_smart.clone())
                 .into_any_element(),
@@ -151,6 +155,7 @@ impl SelectorPane {
         notify_entity(&self.selector_overlay, cx);
         notify_entity(&self.selector_swatch, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.panel_preview, cx);
     }
 
     fn handle_swatch_event(&mut self, event: &SelectorEvent, cx: &mut Context<GalleryApp>) {
