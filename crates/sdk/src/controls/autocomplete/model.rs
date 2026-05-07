@@ -4,7 +4,10 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::behavior::SelectionItem;
 use super::control::AutocompleteTextBoxControl;
-use super::template::{AutocompleteTextBoxTemplate, default_autocomplete_textbox_template};
+use super::template::{
+    AutocompleteItemsTemplate, AutocompleteTextBoxTemplate, default_autocomplete_items_template,
+    default_autocomplete_textbox_template,
+};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 
@@ -19,6 +22,7 @@ pub struct AutocompleteTextBoxModel {
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn AutocompleteTextBoxTemplate>,
+    pub(crate) items_template: Arc<dyn AutocompleteItemsTemplate>,
 }
 
 pub struct AutocompleteTextBoxBuilder {
@@ -38,6 +42,7 @@ impl AutocompleteTextBoxBuilder {
                 textfield_template: default_textfield_template(),
                 scrollbar_template: default_scrollbar_template(),
                 template: default_autocomplete_textbox_template(),
+                items_template: default_autocomplete_items_template(),
             },
         }
     }
@@ -79,6 +84,11 @@ impl AutocompleteTextBoxBuilder {
 
     pub fn template(mut self, template: Arc<dyn AutocompleteTextBoxTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn items_template(mut self, template: Arc<dyn AutocompleteItemsTemplate>) -> Self {
+        self.model.items_template = template;
         self
     }
 

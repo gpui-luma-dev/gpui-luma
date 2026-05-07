@@ -2,13 +2,13 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Pixels, ScrollWheelEvent,
-    SharedString, Window, anchored, deferred, div, point, prelude::*, px,
+    SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*, px,
 };
 
-use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use crate::controls::menu_item::MenuItem;
-
-use super::text_selection;
+use crate::controls::icon::lucide_icon;
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+};
 
 pub type ComboBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type ComboBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -27,7 +27,7 @@ pub struct ComboBoxTemplateHandlers {
 }
 
 pub struct ComboBoxRenderModel {
-    pub textfield: text_selection::TextSelection,
+    pub textfield: AnyElement,
     pub query_is_empty: bool,
     pub show_down_arrow: bool,
     pub show_clear_button: bool,
@@ -38,7 +38,7 @@ pub struct ComboBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: FloatingMenuAppearance,
+    pub popup_appearance: SelectorItemsPanelAppearance,
     pub popup_content: Option<AnyElement>,
 }
 
@@ -110,13 +110,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(trigger_click)
-                                .child(
-                                    div()
-                                        .font_family("lucide")
-                                        .text_size(px(12.0))
-                                        .line_height(px(12.0))
-                                        .child(char::from(lucide_icons::Icon::ChevronDown).to_string()),
-                                ),
+                                .child(lucide_icon(lucide_icons::Icon::ChevronDown, model.muted_text_color, 12.0)),
                         )
                     })
                     .when(model.show_clear_button && !model.query_is_empty, |row| {
@@ -135,13 +129,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(
-                                    div()
-                                        .font_family("lucide")
-                                        .text_size(px(12.0))
-                                        .line_height(px(12.0))
-                                        .child(char::from(lucide_icons::Icon::X).to_string()),
-                                ),
+                                .child(lucide_icon(lucide_icons::Icon::X, model.muted_text_color, 12.0)),
                         )
                     }),
             )
@@ -154,18 +142,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                                 .anchor(gpui::Corner::TopLeft)
                                 .position(point(bounds.left(), bounds.bottom()))
                                 .offset(point(px(0.0), px(4.0)))
-                                .child(
-                                    div()
-                                        .id("combobox-popup-shell")
-                                        .w(bounds.size.width)
-                                        .bg(model.popup_appearance.background)
-                                        .border_1()
-                                        .border_color(model.popup_appearance.border)
-                                        .rounded(px(model.popup_appearance.radius))
-                                        .shadow(model.popup_appearance.shadow.clone())
-                                        .overflow_hidden()
-                                        .child(popup_content),
-                                ),
+                                .child(div().id("combobox-popup-shell").w(bounds.size.width).child(popup_content)),
                         )
                         .with_priority(1),
                     )
@@ -175,46 +152,87 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
     }
 }
 
-pub(super) fn render_popup_rows(
-    id: &SharedString,
-    items: &[MenuItem],
-    appearance: FloatingMenuAppearance,
-    highlighted_index: Option<usize>,
-    item_hovers: Vec<FloatingMenuHoverHandler>,
-    item_clicks: Vec<FloatingMenuClickHandler>,
-) -> gpui::Stateful<gpui::Div> {
-    let mut root = div().id(format!("{}-rows", id)).flex().flex_col().p(px(appearance.padding));
-    let mut clicks = item_clicks.into_iter();
+pub struct ComboBoxItemsRenderModel<'a> {
+    pub id: &'a SharedString,
+    pub items: &'a [SelectorItem],
+    pub appearance: SelectorItemsPanelAppearance,
+    pub highlighted_index: Option<usize>,
+}
 
-    for (index, (item, hover)) in items.iter().zip(item_hovers).enumerate() {
-        let mut row = div()
-            .id(format!("{}-row-{}", id, index))
+pub struct ComboBoxItemsTemplateHandlers {
+    pub item_hovers: Vec<SelectorPanelHoverHandler>,
+    pub item_clicks: Vec<SelectorPanelClickHandler>,
+}
+
+pub trait ComboBoxItemsTemplate: Send + Sync {
+    fn render(
+        &self,
+        model: &ComboBoxItemsRenderModel<'_>,
+        handlers: ComboBoxItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div>;
+}
+
+pub struct DefaultComboBoxItemsTemplate;
+
+pub fn default_combobox_items_template() -> Arc<dyn ComboBoxItemsTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn ComboBoxItemsTemplate>> = OnceLock::new();
+    TEMPLATE.get_or_init(|| Arc::new(DefaultComboBoxItemsTemplate)).clone()
+}
+
+impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
+    fn render(
+        &self,
+        model: &ComboBoxItemsRenderModel<'_>,
+        handlers: ComboBoxItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div> {
+        let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
+        let appearance = model.appearance.clone();
+
+        let mut root = div()
+            .id(format!("{}-rows", model.id))
+            .relative()
             .flex()
-            .items_center()
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
-            .text_color(appearance.foreground)
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(item.label_text().clone());
+            .flex_col()
+            .min_w(px(appearance.min_width))
+            .p(px(appearance.padding))
+            .bg(appearance.background)
+            .border_1()
+            .border_color(appearance.border)
+            .rounded(px(appearance.radius))
+            .shadow(appearance.shadow.clone())
+            .occlude();
+        let mut clicks = item_clicks.into_iter();
 
-        row = row.cursor_pointer().on_hover(hover).hover({
-            let hover_background = appearance.item_hover_background;
-            move |style| style.bg(hover_background)
-        });
+        for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
+            let mut row = div()
+                .id(format!("{}-row-{}", model.id, index))
+                .flex()
+                .items_center()
+                .min_h(px(appearance.item_height))
+                .px(px(appearance.item_padding_x))
+                .rounded(px(appearance.item_radius))
+                .text_color(appearance.foreground)
+                .text_size(px(appearance.item_typography.size))
+                .line_height(px(appearance.item_typography.line_height))
+                .font_weight(appearance.item_typography.weight)
+                .child(item.label_text().clone());
 
-        if highlighted_index.is_some_and(|active| active == index) {
-            row = row.bg(appearance.item_hover_background);
+            row = row.cursor_pointer().on_hover(hover).hover({
+                let hover_background = appearance.item_hover_background;
+                move |style| style.bg(hover_background)
+            });
+
+            if model.highlighted_index.is_some_and(|active| active == index) {
+                row = row.bg(appearance.item_hover_background);
+            }
+
+            if let Some(click) = clicks.next() {
+                row = row.on_click(click);
+            }
+
+            root = root.child(row);
         }
 
-        if let Some(click) = clicks.next() {
-            row = row.on_click(click);
-        }
-
-        root = root.child(row);
+        root
     }
-
-    root
 }

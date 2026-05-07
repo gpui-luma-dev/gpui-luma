@@ -88,6 +88,10 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `menu_item.rs`
   - `MenuItem`, `MenuItemIcon`
   - common menu tree item model
+- `selector_panel/*`
+  - selector-focused shared popup list primitives
+  - exports selector-native item contracts (`SelectorItemLike`, `SelectorItemTemplate`, `SelectorPath`)
+  - provides dedicated items-panel template contract (`SelectorItemsTemplate`) and default implementation
 
 - `menu_navigation.rs` (crate-private)
   - keyboard navigation utilities over menu structures
@@ -153,7 +157,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - exports builder/model/template + `SearchSelectorEvent`
 - `selector/*`
   - popup selector (typed or built-in item model)
+  - two-template composition: control template (`SelectorTemplate`) + items template (`SelectorItemsTemplate` via `selector_panel`)
   - exports builder/model/template/theme + `SelectorEvent`
+- `selector_panel/*`
+  - selector-native item model and popup row renderer shared by selector-family controls
+  - exports `SelectorItem`, `SelectorItemLike`, `SelectorItemIcon`, `render_selector_items_popup`
 
 ## Menu controls
 

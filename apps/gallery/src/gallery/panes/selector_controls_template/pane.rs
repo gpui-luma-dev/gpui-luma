@@ -1,22 +1,37 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, FontWeight, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
-    Render, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
+    AnyElement, App, Bounds, ClickEvent, Context, FontWeight, IntoElement, KeyDownEvent, MouseDownEvent, MouseUpEvent,
+    Pixels, Render, ScrollWheelEvent, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
 };
-use gpui_luma::controls::floating_menu::{
-    DefaultFloatingMenuTheme, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuTheme,
-    render_floating_menu,
+use gpui_luma::controls::autocomplete::{
+    AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
+    AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate, AutocompleteTextBoxTemplateHandlers,
+    AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, default_autocomplete_items_template,
+    default_autocomplete_textbox_template,
 };
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::search_selector;
+use gpui_luma::controls::combobox::{
+    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxRenderModel,
+    ComboBoxTemplate, ComboBoxTemplateHandlers, default_combobox_items_template, default_combobox_template,
+};
+use gpui_luma::controls::search_selector::{
+    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
+    SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers,
+    default_search_selector_items_template, default_search_selector_template,
+};
 use gpui_luma::controls::selector::{
-    ControlFocusState, SelectorItem, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
+    ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplate,
+    SelectorTemplateHandlers,
+};
+use gpui_luma::controls::selector_panel::{
+    SelectorItem as SelectorPanelItem, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
+    default_selector_items_template,
 };
 use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
 };
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{ControlSize, InteractionState};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -64,7 +79,14 @@ struct SelectorControlsTemplatePreview {
     theme: GalleryThemePack,
     textfield_template: Arc<dyn TextFieldTemplate>,
     textfield_theme: Arc<dyn TextFieldTheme>,
+    autocomplete_template: Arc<dyn AutocompleteTextBoxTemplate>,
+    autocomplete_items_template: Arc<dyn AutocompleteItemsTemplate>,
+    combobox_template: Arc<dyn ComboBoxTemplate>,
+    combobox_items_template: Arc<dyn ComboBoxItemsTemplate>,
     selector_template: Arc<dyn SelectorTemplate>,
+    selector_items_template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
+    search_selector_template: Arc<dyn SearchSelectorTemplate>,
+    search_selector_items_template: Arc<dyn SearchSelectorItemsTemplate>,
 }
 
 #[derive(Clone, Copy)]
@@ -103,7 +125,14 @@ impl SelectorControlsTemplatePreview {
             theme: theme.clone(),
             textfield_template: theme.textfield_template(),
             textfield_theme: theme.textfield_theme(),
+            autocomplete_template: default_autocomplete_textbox_template(),
+            autocomplete_items_template: default_autocomplete_items_template(),
+            combobox_template: default_combobox_template(),
+            combobox_items_template: default_combobox_items_template(),
             selector_template: theme.selector_template(),
+            selector_items_template: default_selector_items_template(),
+            search_selector_template: default_search_selector_template(),
+            search_selector_items_template: default_search_selector_items_template(),
         }
     }
 }
@@ -249,19 +278,13 @@ fn render_control_cell(
 
     let trigger = match control {
         SelectorTemplateControl::AutocompleteTextBox => {
-            render_textfield_like_trigger(preview, &id, "Type to filter…", None, state, window, cx)
+            render_autocomplete_trigger(preview, &id, "Type to filter…", state, window, cx)
         }
-        SelectorTemplateControl::ComboBox => render_textfield_like_trigger(
-            preview,
-            &id,
-            "Strict mode (exact match only)…",
-            Some(LucideIcon::ChevronDown),
-            state,
-            window,
-            cx,
-        ),
+        SelectorTemplateControl::ComboBox => {
+            render_combobox_trigger(preview, &id, "Strict mode (exact match only)…", state, window, cx)
+        }
         SelectorTemplateControl::SearchSelector => {
-            render_textfield_like_trigger(preview, &id, "Choose a state…", Some(LucideIcon::Search), state, window, cx)
+            render_search_selector_trigger(preview, &id, "Choose a state…", state, window, cx)
         }
         SelectorTemplateControl::Selector => render_selector_trigger(preview, &id, state, window, cx),
     };
@@ -284,17 +307,19 @@ fn render_control_cell(
         .into_any_element()
 }
 
-fn render_textfield_like_trigger(
+fn render_autocomplete_trigger(
     preview: &SelectorControlsTemplatePreview,
     id: &SharedString,
     placeholder: &'static str,
-    right_icon: Option<LucideIcon>,
     state: &SelectorTemplateStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
+    let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
+    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
+
     let character_offsets = textfield_character_offsets(
         value.as_ref(),
         preview.textfield_theme.clone(),
@@ -303,7 +328,7 @@ fn render_textfield_like_trigger(
         window,
     );
 
-    let model = TextFieldRenderModel {
+    let text_model = TextFieldRenderModel {
         id,
         placeholder: &placeholder,
         value: &value,
@@ -316,36 +341,154 @@ fn render_textfield_like_trigger(
         character_offsets,
     };
 
-    let field = preview
-        .textfield_template
-        .render(&model, textfield_preview_handlers(), window, cx)
-        .into_any_element();
+    let model = AutocompleteTextBoxRenderModel {
+        textfield: preview
+            .textfield_template
+            .render(&text_model, textfield_preview_handlers(), window, cx)
+            .into_any_element(),
+        query_is_empty: false,
+        popup_width: px(168.0),
+        status_label: SharedString::from(""),
+        status_detail: SharedString::from(""),
+        status_color: status_theme.status_color,
+        muted_text_color: status_theme.muted_text_color,
+        popup_bounds: None,
+        popup_appearance,
+        popup_content: None,
+    };
 
     div()
         .w(px(168.0))
-        .relative()
-        .child(field)
-        .when_some(right_icon, |root, icon| {
-            root.child(
-                div()
-                    .absolute()
-                    .top(px(0.0))
-                    .right(px(10.0))
-                    .h_full()
-                    .w(px(18.0))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .text_color(preview.theme.chrome().muted_text)
-                    .child(
-                        div()
-                            .font_family("lucide")
-                            .text_size(px(12.0))
-                            .line_height(px(12.0))
-                            .child(char::from(icon).to_string()),
-                    ),
-            )
-        })
+        .child(preview.autocomplete_template.render(
+            model,
+            AutocompleteTextBoxTemplateHandlers {
+                key_down: Box::new(noop_textfield_key_down),
+                scroll_wheel: Box::new(noop_scroll_wheel),
+                clear_click: Box::new(noop_click),
+                trigger_bounds: Box::new(noop_bounds),
+            },
+            window,
+            cx,
+        ))
+        .into_any_element()
+}
+
+fn render_combobox_trigger(
+    preview: &SelectorControlsTemplatePreview,
+    id: &SharedString,
+    placeholder: &'static str,
+    state: &SelectorTemplateStateSample,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let value = SharedString::from("California");
+    let placeholder = SharedString::from(placeholder);
+    let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
+    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
+
+    let character_offsets = textfield_character_offsets(
+        value.as_ref(),
+        preview.textfield_theme.clone(),
+        state.textfield_state,
+        state.textfield_enabled,
+        window,
+    );
+
+    let text_model = TextFieldRenderModel {
+        id,
+        placeholder: &placeholder,
+        value: &value,
+        prefix_icon: None,
+        enabled: state.textfield_enabled,
+        full_width: true,
+        state: state.textfield_state,
+        caret_visible: false,
+        horizontal_scroll: 0.0,
+        character_offsets,
+    };
+
+    let model = ComboBoxRenderModel {
+        textfield: preview
+            .textfield_template
+            .render(&text_model, textfield_preview_handlers(), window, cx)
+            .into_any_element(),
+        query_is_empty: false,
+        show_down_arrow: true,
+        show_clear_button: true,
+        full_width: true,
+        minimum_trigger_width: px(168.0),
+        status_label: SharedString::from(""),
+        status_detail: SharedString::from(""),
+        status_color: status_theme.status_color,
+        muted_text_color: status_theme.muted_text_color,
+        popup_bounds: None,
+        popup_appearance,
+        popup_content: None,
+    };
+
+    div()
+        .w(px(168.0))
+        .child(preview.combobox_template.render(
+            model,
+            ComboBoxTemplateHandlers {
+                key_down: Box::new(noop_textfield_key_down),
+                scroll_wheel: Box::new(noop_scroll_wheel),
+                clear_click: Box::new(noop_click),
+                trigger_click: Box::new(noop_click),
+                trigger_mouse_down: Box::new(noop_mouse_down),
+                trigger_bounds: Box::new(noop_bounds),
+            },
+            window,
+            cx,
+        ))
+        .into_any_element()
+}
+
+fn render_search_selector_trigger(
+    preview: &SelectorControlsTemplatePreview,
+    id: &SharedString,
+    placeholder: &'static str,
+    state: &SelectorTemplateStateSample,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
+
+    let model = SearchSelectorRenderModel {
+        id: id.clone(),
+        trigger_label: SharedString::from(placeholder),
+        trigger_label_is_placeholder: true,
+        trigger_state: state.textfield_state,
+        full_width: true,
+        minimum_trigger_width: px(168.0),
+        status_label: SharedString::from(""),
+        status_detail: SharedString::from(""),
+        status_color: preview.theme.chrome().muted_text,
+        muted_text_color: preview.theme.chrome().muted_text,
+        popup_bounds: None,
+        popup_appearance,
+        popup_content: None,
+        popup_search_field: None,
+        popup_list_panel: None,
+    };
+
+    div()
+        .w(px(168.0))
+        .child(preview.search_selector_template.render(
+            model,
+            SearchSelectorTemplateHandlers {
+                key_down: Box::new(noop_textfield_key_down),
+                scroll_wheel: Box::new(noop_scroll_wheel),
+                trigger_click: Box::new(noop_click),
+                trigger_hover: Box::new(noop_hover),
+                trigger_mouse_down: Box::new(noop_mouse_down),
+                trigger_mouse_up: Box::new(noop_mouse_up),
+                trigger_mouse_up_out: Box::new(noop_mouse_up),
+                trigger_bounds: Box::new(noop_bounds),
+            },
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 
@@ -388,21 +531,58 @@ fn render_popup_preview(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let appearance = DefaultFloatingMenuTheme::new(preview.theme.tokens()).resolve();
+    let tokens = preview.theme.tokens();
+    let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = popup_items_for_control(control);
-    let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as FloatingMenuHoverHandler).collect::<Vec<_>>();
-    let item_clicks = (0..items.len()).map(|_| Box::new(noop_click) as FloatingMenuClickHandler).collect::<Vec<_>>();
+    let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect::<Vec<_>>();
+    let item_clicks = (0..items.len()).map(|_| Box::new(noop_click) as SelectorPanelClickHandler).collect::<Vec<_>>();
 
-    let menu = render_floating_menu(
-        &popup_id,
-        &items,
-        None,
-        Some(gpui_luma::controls::state::MenuPath::Root(0)),
-        appearance.clone(),
-        item_hovers,
-        item_clicks,
-    );
+    let rows = match control {
+        SelectorTemplateControl::AutocompleteTextBox => preview.autocomplete_items_template.render(
+            &AutocompleteItemsRenderModel {
+                id: &popup_id,
+                items: &items,
+                appearance: appearance.clone(),
+                highlighted_index: Some(0),
+            },
+            AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
+        ),
+        SelectorTemplateControl::ComboBox => preview.combobox_items_template.render(
+            &ComboBoxItemsRenderModel {
+                id: &popup_id,
+                items: &items,
+                appearance: appearance.clone(),
+                highlighted_index: Some(0),
+            },
+            ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
+        ),
+        SelectorTemplateControl::Selector => preview.selector_items_template.render(
+            &SelectorItemsRenderModel {
+                menu_id: &popup_id,
+                selector_id: id,
+                items: &items,
+                selected_index: None,
+                active_path: Some(SelectorPath::Item(0)),
+                open: true,
+                enabled: true,
+                focus: ControlFocusState { focused: true, focus_visible: true },
+                item_template: None,
+                appearance: appearance.clone(),
+            },
+            SelectorItemsTemplateHandlers { item_hovers, item_clicks },
+            cx,
+        ),
+        SelectorTemplateControl::SearchSelector => preview.search_selector_items_template.render(
+            &SearchSelectorItemsRenderModel {
+                id: &popup_id,
+                items: &items,
+                appearance: appearance.clone(),
+                highlighted_index: Some(0),
+            },
+            SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+        ),
+    };
 
     if matches!(control, SelectorTemplateControl::SearchSelector) {
         let search_id = SharedString::from(format!("{id}-popup-search-preview"));
@@ -437,6 +617,7 @@ fn render_popup_preview(
                     .border_color(appearance.border)
                     .rounded(px(appearance.radius))
                     .bg(appearance.background)
+                    .shadow(appearance.shadow.clone())
                     .overflow_hidden()
                     .child(div().p(px(8.0)).child(preview.textfield_template.render(
                         &search_model,
@@ -445,42 +626,35 @@ fn render_popup_preview(
                         cx,
                     )))
                     .child(div().h(px(1.0)).bg(appearance.border))
-                    .child(search_selector::render_popup_rows(
-                        &popup_id,
-                        &items,
-                        appearance.clone(),
-                        Some(0),
-                        (0..items.len()).map(|_| Box::new(noop_hover) as FloatingMenuHoverHandler).collect::<Vec<_>>(),
-                        (0..items.len()).map(|_| Box::new(noop_click) as FloatingMenuClickHandler).collect::<Vec<_>>(),
-                    )),
+                    .child(rows),
             )
             .into_any_element();
     }
 
-    div().w(px(168.0)).child(menu).into_any_element()
+    div().w(px(168.0)).child(rows).into_any_element()
 }
 
-fn popup_items_for_control(control: SelectorTemplateControl) -> Vec<MenuItem> {
+fn popup_items_for_control(control: SelectorTemplateControl) -> Vec<SelectorPanelItem> {
     match control {
         SelectorTemplateControl::AutocompleteTextBox => vec![
-            MenuItem::new("autocomplete-preview-item-1").label("Alabama"),
-            MenuItem::new("autocomplete-preview-item-2").label("Alaska"),
-            MenuItem::new("autocomplete-preview-item-3").label("Arizona"),
+            SelectorPanelItem::new("autocomplete-preview-item-1").label("Alabama"),
+            SelectorPanelItem::new("autocomplete-preview-item-2").label("Alaska"),
+            SelectorPanelItem::new("autocomplete-preview-item-3").label("Arizona"),
         ],
         SelectorTemplateControl::ComboBox => vec![
-            MenuItem::new("combobox-preview-item-1").label("California"),
-            MenuItem::new("combobox-preview-item-2").label("Colorado"),
-            MenuItem::new("combobox-preview-item-3").label("Connecticut"),
+            SelectorPanelItem::new("combobox-preview-item-1").label("California"),
+            SelectorPanelItem::new("combobox-preview-item-2").label("Colorado"),
+            SelectorPanelItem::new("combobox-preview-item-3").label("Connecticut"),
         ],
         SelectorTemplateControl::Selector => vec![
-            MenuItem::new("selector-preview-item-1").label("Alabama"),
-            MenuItem::new("selector-preview-item-2").label("Alaska"),
-            MenuItem::new("selector-preview-item-3").label("Arizona"),
+            SelectorPanelItem::new("selector-preview-item-1").label("Alabama"),
+            SelectorPanelItem::new("selector-preview-item-2").label("Alaska"),
+            SelectorPanelItem::new("selector-preview-item-3").label("Arizona"),
         ],
         SelectorTemplateControl::SearchSelector => vec![
-            MenuItem::new("search-selector-preview-item-1").label("Alabama"),
-            MenuItem::new("search-selector-preview-item-2").label("Alaska"),
-            MenuItem::new("search-selector-preview-item-3").label("Arizona"),
+            SelectorPanelItem::new("search-selector-preview-item-1").label("Alabama"),
+            SelectorPanelItem::new("search-selector-preview-item-2").label("Alaska"),
+            SelectorPanelItem::new("search-selector-preview-item-3").label("Arizona"),
         ],
     }
 }
@@ -597,7 +771,8 @@ fn noop_textfield_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
 fn noop_textfield_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}
 fn noop_textfield_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 fn noop_textfield_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
-fn noop_textfield_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_textfield_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}

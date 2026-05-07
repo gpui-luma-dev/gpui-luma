@@ -1,13 +1,14 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, Pixels, ScrollWheelEvent, SharedString, Window, anchored,
-    deferred, div, point, prelude::*, px,
+    AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, Pixels, ScrollWheelEvent, SharedString, Stateful, Window,
+    anchored, deferred, div, point, prelude::*, px,
 };
-use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use crate::controls::menu_item::MenuItem;
 
-use super::text_selection;
+use crate::controls::icon::lucide_icon;
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+};
 
 pub type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTextBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -22,7 +23,7 @@ pub struct AutocompleteTextBoxTemplateHandlers {
 }
 
 pub struct AutocompleteTextBoxRenderModel {
-    pub textfield: text_selection::TextSelection,
+    pub textfield: AnyElement,
     pub query_is_empty: bool,
     pub popup_width: Pixels,
     pub status_label: SharedString,
@@ -30,7 +31,7 @@ pub struct AutocompleteTextBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: FloatingMenuAppearance,
+    pub popup_appearance: SelectorItemsPanelAppearance,
     pub popup_content: Option<AnyElement>,
 }
 
@@ -61,6 +62,8 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
     ) -> AnyElement {
         let AutocompleteTextBoxTemplateHandlers { key_down, scroll_wheel, clear_click, trigger_bounds } = handlers;
 
+        let has_status_text = !model.status_label.is_empty() || !model.status_detail.is_empty();
+
         let status_row = div()
             .flex()
             .items_center()
@@ -86,7 +89,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
             .flex()
             .flex_col()
             .gap(px(10.0))
-            .child(status_row)
+            .when(has_status_text, |root| root.child(status_row))
             .on_key_down(key_down)
             .on_scroll_wheel(scroll_wheel)
             .child(
@@ -115,13 +118,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                 .text_color(model.muted_text_color)
                                 .hover(|style| style.text_color(model.status_color))
                                 .on_click(clear_click)
-                                .child(
-                                    div()
-                                        .font_family("lucide")
-                                        .text_size(px(12.0))
-                                        .line_height(px(12.0))
-                                        .child(char::from(lucide_icons::Icon::X).to_string()),
-                                ),
+                                .child(lucide_icon(lucide_icons::Icon::X, model.muted_text_color, 12.0)),
                         )
                     }),
             )
@@ -138,12 +135,6 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
                                         .w(model.popup_width)
-                                        .bg(model.popup_appearance.background)
-                                        .border_1()
-                                        .border_color(model.popup_appearance.border)
-                                        .rounded(px(model.popup_appearance.radius))
-                                        .shadow(model.popup_appearance.shadow.clone())
-                                        .overflow_hidden()
                                         .child(popup_content),
                                 ),
                         )
@@ -155,46 +146,87 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
     }
 }
 
-pub(super) fn render_popup_rows(
-    id: &SharedString,
-    items: &[MenuItem],
-    appearance: FloatingMenuAppearance,
-    highlighted_index: Option<usize>,
-    item_hovers: Vec<FloatingMenuHoverHandler>,
-    item_clicks: Vec<FloatingMenuClickHandler>,
-) -> gpui::Stateful<gpui::Div> {
-    let mut root = div().id(format!("{}-rows", id)).flex().flex_col().p(px(appearance.padding));
-    let mut clicks = item_clicks.into_iter();
+pub struct AutocompleteItemsRenderModel<'a> {
+    pub id: &'a SharedString,
+    pub items: &'a [SelectorItem],
+    pub appearance: SelectorItemsPanelAppearance,
+    pub highlighted_index: Option<usize>,
+}
 
-    for (index, (item, hover)) in items.iter().zip(item_hovers).enumerate() {
-        let mut row = div()
-            .id(format!("{}-row-{}", id, index))
+pub struct AutocompleteItemsTemplateHandlers {
+    pub item_hovers: Vec<SelectorPanelHoverHandler>,
+    pub item_clicks: Vec<SelectorPanelClickHandler>,
+}
+
+pub trait AutocompleteItemsTemplate: Send + Sync {
+    fn render(
+        &self,
+        model: &AutocompleteItemsRenderModel<'_>,
+        handlers: AutocompleteItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div>;
+}
+
+pub struct DefaultAutocompleteItemsTemplate;
+
+pub fn default_autocomplete_items_template() -> Arc<dyn AutocompleteItemsTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn AutocompleteItemsTemplate>> = OnceLock::new();
+    TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteItemsTemplate)).clone()
+}
+
+impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
+    fn render(
+        &self,
+        model: &AutocompleteItemsRenderModel<'_>,
+        handlers: AutocompleteItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div> {
+        let AutocompleteItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
+        let appearance = model.appearance.clone();
+
+        let mut root = div()
+            .id(format!("{}-rows", model.id))
+            .relative()
             .flex()
-            .items_center()
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
-            .text_color(appearance.foreground)
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
+            .flex_col()
+            .min_w(px(appearance.min_width))
+            .p(px(appearance.padding))
+            .bg(appearance.background)
+            .border_1()
+            .border_color(appearance.border)
+            .rounded(px(appearance.radius))
+            .shadow(appearance.shadow.clone())
+            .occlude();
+        let mut clicks = item_clicks.into_iter();
 
-        row = row.cursor_pointer().on_hover(hover).hover({
-            let hover_background = appearance.item_hover_background;
-            move |style| style.bg(hover_background)
-        });
+        for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
+            let mut row = div()
+                .id(format!("{}-row-{}", model.id, index))
+                .flex()
+                .items_center()
+                .min_h(px(appearance.item_height))
+                .px(px(appearance.item_padding_x))
+                .rounded(px(appearance.item_radius))
+                .text_color(appearance.foreground)
+                .text_size(px(appearance.item_typography.size))
+                .line_height(px(appearance.item_typography.line_height))
+                .font_weight(appearance.item_typography.weight)
+                .child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
 
-        if highlighted_index.is_some_and(|active| active == index) {
-            row = row.bg(appearance.item_hover_background);
+            row = row.cursor_pointer().on_hover(hover).hover({
+                let hover_background = appearance.item_hover_background;
+                move |style| style.bg(hover_background)
+            });
+
+            if model.highlighted_index.is_some_and(|active| active == index) {
+                row = row.bg(appearance.item_hover_background);
+            }
+
+            if let Some(click) = clicks.next() {
+                row = row.on_click(click);
+            }
+
+            root = root.child(row);
         }
 
-        if let Some(click) = clicks.next() {
-            row = row.on_click(click);
-        }
-
-        root = root.child(row);
+        root
     }
-
-    root
 }

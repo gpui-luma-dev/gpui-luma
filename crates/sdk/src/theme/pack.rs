@@ -36,6 +36,7 @@ use crate::controls::progress::{DefaultProgressTheme, ProgressAppearance, Progre
 use crate::controls::radio_button::{DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonTheme};
 use crate::controls::scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme};
 use crate::controls::selector::{DefaultSelectorTheme, SelectorAppearance, SelectorTheme};
+use crate::controls::selector_panel::default_selector_items_template;
 use crate::controls::slider::{DefaultSliderTheme, SliderAppearance, SliderTheme};
 use crate::controls::switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme};
 use crate::controls::tabs_navigation::{
@@ -188,7 +189,7 @@ impl LumaThemePack {
     }
 
     pub fn selector_template(&self) -> Arc<dyn SelectorTemplate> {
-        Arc::new(ThemedSelectorTemplate::new(self.live_theme.clone()))
+        Arc::new(ThemedSelectorTemplate::new(self.live_theme.clone(), default_selector_items_template()))
     }
 
     pub fn context_menu_theme(&self) -> Arc<dyn ContextMenuTheme> {

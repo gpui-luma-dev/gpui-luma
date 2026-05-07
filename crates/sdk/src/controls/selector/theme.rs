@@ -2,11 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::floating_menu::default_floating_menu_appearance;
+use crate::controls::selector_panel::{SelectorItemsPanelAppearance, default_selector_items_panel_appearance};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
 };
-use crate::controls::floating_menu::FloatingMenuAppearance;
 
 #[derive(Clone, Debug)]
 pub struct SelectorAppearance {
@@ -22,7 +21,7 @@ pub struct SelectorAppearance {
     pub trigger_height: f32,
     pub trigger_icon_size: f32,
     pub menu_offset_y: f32,
-    pub floating_menu: FloatingMenuAppearance,
+    pub items_panel: SelectorItemsPanelAppearance,
 }
 
 pub trait SelectorTheme: Send + Sync {
@@ -77,25 +76,25 @@ pub const SELECTOR_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "menu background",
             token: "surface.floating.background",
             states: &["open"],
-            appearance_fields: &["SelectorAppearance.floating_menu.background"],
+            appearance_fields: &["SelectorAppearance.items_panel.background"],
         },
         ThemePartUsage {
             part: "menu border",
             token: "surface.floating.border",
             states: &["open"],
-            appearance_fields: &["SelectorAppearance.floating_menu.border"],
+            appearance_fields: &["SelectorAppearance.items_panel.border"],
         },
         ThemePartUsage {
             part: "item foreground",
             token: "surface.floating.foreground",
             states: &["open"],
-            appearance_fields: &["SelectorAppearance.floating_menu.foreground"],
+            appearance_fields: &["SelectorAppearance.items_panel.foreground"],
         },
         ThemePartUsage {
             part: "item hover background",
             token: "state.hover.background",
             states: &["item hovered"],
-            appearance_fields: &["SelectorAppearance.floating_menu.item_hover_background"],
+            appearance_fields: &["SelectorAppearance.items_panel.item_hover_background"],
         },
         ThemePartUsage {
             part: "disabled foreground",
@@ -103,7 +102,7 @@ pub const SELECTOR_THEME_USAGE: ThemeUsage = ThemeUsage {
             states: &["disabled", "item disabled"],
             appearance_fields: &[
                 "SelectorAppearance.trigger_foreground",
-                "SelectorAppearance.floating_menu.item_disabled_foreground",
+                "SelectorAppearance.items_panel.item_disabled_foreground",
             ],
         },
         ThemePartUsage {
@@ -157,9 +156,9 @@ impl SelectorTheme for DefaultSelectorTheme {
             trigger_padding_y: metrics.padding_y(size),
             trigger_gap: metrics.gap(size),
             trigger_height: metrics.control_height(size),
-            trigger_icon_size: metrics.control_height(size) * 0.44,
+            trigger_icon_size: 12.0,
             menu_offset_y: metrics.gap(size) * 0.5,
-            floating_menu: default_floating_menu_appearance(&self.tokens, size),
+            items_panel: default_selector_items_panel_appearance(&self.tokens, size),
         }
     }
 }

@@ -9,8 +9,9 @@ pub use behavior::SelectionItem;
 pub use control::{AutocompleteTextBox, AutocompleteTextBoxControl, AutocompleteTextBoxEvent};
 pub use model::{AutocompleteTextBoxBuilder, AutocompleteTextBoxModel, new};
 pub use template::{
+    AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
     AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate, AutocompleteTextBoxTemplateHandlers,
-    default_autocomplete_textbox_template,
+    default_autocomplete_items_template, default_autocomplete_textbox_template,
 };
 pub use theme::{
     DefaultAutocompleteTextBoxTheme, AUTOCOMPLETE_TEXTBOX_THEME_USAGE, COMBOBOX_THEME_USAGE,

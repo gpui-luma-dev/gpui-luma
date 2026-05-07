@@ -42,11 +42,11 @@ mod theme;
 
 pub use control::{Selector, SelectorEvent};
 pub use model::{
-    SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPlacement,
+    SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath, SelectorPlacement,
     SelectorRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
 };
 pub use template::{SelectorTemplate, SelectorTemplateHandlers, ThemedSelectorTemplate, default_selector_template};
 pub use theme::{DefaultSelectorTheme, SELECTOR_THEME_USAGE, SelectorAppearance, SelectorTheme, default_selector_theme};
 
-pub use crate::controls::state::{ControlFocusState, MenuPath};
+pub use crate::controls::state::ControlFocusState;
 pub use crate::theme::InteractionState as SelectorState;

@@ -5,18 +5,22 @@ use gpui::{
 };
 
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::controls::floating_menu::{
-    DefaultFloatingMenuTheme, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuTheme,
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
 };
+use crate::theme::ControlSize;
 use crate::controls::interaction::ControlInteraction;
-use crate::controls::menu_item::MenuItem;
+
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::TextFieldState;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::SearchSelectorBuilder;
-use super::template::{SearchSelectorRenderModel, SearchSelectorTemplateHandlers, render_popup_rows};
+use super::template::{
+    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
+    SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers,
+};
 use super::text_selection::{self, TextSelectionEvent};
 
 #[derive(Clone, Debug)]
@@ -384,6 +388,20 @@ impl SearchSelectorControl {
         }
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn SearchSelectorTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_items_template(
+        &mut self,
+        template: std::sync::Arc<dyn SearchSelectorItemsTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.items_template = template;
+        cx.notify();
+    }
+
     fn sync_popup_highlight_visibility(&self, cx: &mut Context<Self>) {
         if !self.behavior.state.open {
             return;
@@ -433,7 +451,7 @@ impl Render for SearchSelectorControl {
 
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = DefaultFloatingMenuTheme::new(tokens).resolve();
+        let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
         let selected_label = self
             .committed_selection
             .and_then(|index| self.model.items.get(index))
@@ -475,7 +493,7 @@ impl Render for SearchSelectorControl {
             .enumerate()
             .map(|(visible_index, item_index)| {
                 let item = &self.model.items[*item_index];
-                MenuItem::new(format!("search-selector-item-{}-{visible_index}", item.id)).label(item.label.clone())
+                SelectorItem::new(format!("search-selector-item-{}-{visible_index}", item.id)).label(item.label.clone())
             })
             .collect::<Vec<_>>();
 
@@ -483,7 +501,7 @@ impl Render for SearchSelectorControl {
             .map(|index| {
                 Box::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_item_hover(index, *hovered, cx);
-                })) as FloatingMenuHoverHandler
+                })) as SelectorPanelHoverHandler
             })
             .collect::<Vec<_>>();
 
@@ -491,7 +509,7 @@ impl Render for SearchSelectorControl {
             .map(|index| {
                 Box::new(cx.listener(move |this, event, window, cx| {
                     this.handle_item_click(index, event, window, cx);
-                })) as FloatingMenuClickHandler
+                })) as SelectorPanelClickHandler
             })
             .collect::<Vec<_>>();
 
@@ -532,15 +550,18 @@ impl Render for SearchSelectorControl {
                     .child("No matches")
                     .into_any_element()
             } else {
-                render_popup_rows(
-                    &list_id,
-                    &menu_items,
-                    appearance.clone(),
-                    self.behavior.state.highlighted_filtered,
-                    item_hovers,
-                    item_clicks,
-                )
-                .into_any_element()
+                self.model
+                    .items_template
+                    .render(
+                        &SearchSelectorItemsRenderModel {
+                            id: &list_id,
+                            items: &menu_items,
+                            appearance: appearance.clone(),
+                            highlighted_index: self.behavior.state.highlighted_filtered,
+                        },
+                        SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+                    )
+                    .into_any_element()
             };
 
             (

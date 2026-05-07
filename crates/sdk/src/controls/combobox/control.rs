@@ -3,16 +3,20 @@ use gpui::{
     ScrollWheelEvent, SharedString, Subscription, TextRun, Window, font, px,
 };
 
-use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use crate::controls::menu_item::MenuItem;
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
+};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuTheme};
+use crate::theme::ControlSize;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::ComboBoxBuilder;
+use super::template::{ComboBoxItemsTemplate, ComboBoxTemplate};
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
-use super::template::{ComboBoxRenderModel, ComboBoxTemplateHandlers, render_popup_rows};
+use super::template::{
+    ComboBoxItemsRenderModel, ComboBoxItemsTemplateHandlers, ComboBoxRenderModel, ComboBoxTemplateHandlers,
+};
 use super::text_selection::{self, TextSelectionEvent};
 
 #[derive(Clone, Debug)]
@@ -406,6 +410,16 @@ impl ComboBoxControl {
         }
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn ComboBoxTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_items_template(&mut self, template: std::sync::Arc<dyn ComboBoxItemsTemplate>, cx: &mut Context<Self>) {
+        self.model.items_template = template;
+        cx.notify();
+    }
+
     fn sync_popup_highlight_visibility(&self, cx: &mut Context<Self>) {
         if !self.behavior.state.open {
             return;
@@ -421,7 +435,7 @@ impl Render for ComboBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = DefaultFloatingMenuTheme::new(tokens).resolve();
+        let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
         let selected_label = self
             .behavior
             .state
@@ -466,7 +480,7 @@ impl Render for ComboBoxControl {
             .enumerate()
             .map(|(visible_index, item_index)| {
                 let item = &self.model.items[*item_index];
-                MenuItem::new(format!("combobox-item-{}-{visible_index}", item.id)).label(item.label.clone())
+                SelectorItem::new(format!("combobox-item-{}-{visible_index}", item.id)).label(item.label.clone())
             })
             .collect::<Vec<_>>();
 
@@ -474,7 +488,7 @@ impl Render for ComboBoxControl {
             .map(|index| {
                 Box::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_item_hover(index, *hovered, cx);
-                })) as FloatingMenuHoverHandler
+                })) as SelectorPanelHoverHandler
             })
             .collect::<Vec<_>>();
 
@@ -482,7 +496,7 @@ impl Render for ComboBoxControl {
             .map(|index| {
                 Box::new(cx.listener(move |this, event, window, cx| {
                     this.handle_item_click(index, event, window, cx);
-                })) as FloatingMenuClickHandler
+                })) as SelectorPanelClickHandler
             })
             .collect::<Vec<_>>();
 
@@ -509,13 +523,14 @@ impl Render for ComboBoxControl {
             self.popup_surface.configure(item_count, row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
 
-            let menu_content = render_popup_rows(
-                &menu_id,
-                &menu_items,
-                appearance.clone(),
-                self.behavior.state.highlighted_filtered,
-                item_hovers,
-                item_clicks,
+            let menu_content = self.model.items_template.render(
+                &ComboBoxItemsRenderModel {
+                    id: &menu_id,
+                    items: &menu_items,
+                    appearance: appearance.clone(),
+                    highlighted_index: self.behavior.state.highlighted_filtered,
+                },
+                ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
             );
 
             Some(self.popup_surface.render(menu_content.into_any_element()))
@@ -533,7 +548,7 @@ impl Render for ComboBoxControl {
         };
 
         let render_model = ComboBoxRenderModel {
-            textfield: self.textfield.clone(),
+            textfield: self.textfield.clone().into_any_element(),
             query_is_empty: self.behavior.state.query.is_empty(),
             show_down_arrow: self.model.show_down_arrow,
             show_clear_button: self.model.show_clear_button,

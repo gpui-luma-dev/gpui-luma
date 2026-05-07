@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Corner, Div, FontWeight, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
-    Point, SharedString, Size, Stateful, Window, anchored, deferred, div, point, px, prelude::*, svg,
+    AnyElement, App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size,
+    Stateful, Window, anchored, deferred, div, point, px, prelude::*, svg,
 };
-use gpui::Hsla;
 use lucide_icons::Icon as LucideIcon;
 
 use super::{SelectorPlacement, SelectorRenderModel};
-use crate::controls::selector::model::{SelectorItemRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike};
-use crate::controls::state::MenuPath;
-use crate::controls::floating_menu::FloatingMenuAppearance;
+
+use crate::controls::icon::lucide_icon;
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorItemIcon, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate,
+    SelectorItemsTemplateHandlers, default_selector_items_template,
+};
 
 use super::theme::{SelectorAppearance, SelectorTheme, default_selector_theme};
 
@@ -45,13 +47,20 @@ where
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedSelectorTemplate {
+pub struct ThemedSelectorTemplate<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
     theme: Arc<dyn SelectorTheme>,
+    items_template: Arc<dyn SelectorItemsTemplate<T>>,
 }
 
-impl ThemedSelectorTemplate {
-    pub fn new(theme: Arc<dyn SelectorTheme>) -> Self {
-        Self { theme }
+impl<T> ThemedSelectorTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    pub fn new(theme: Arc<dyn SelectorTheme>, items_template: Arc<dyn SelectorItemsTemplate<T>>) -> Self {
+        Self { theme, items_template }
     }
 }
 
@@ -59,10 +68,10 @@ pub fn default_selector_template<T>() -> Arc<dyn SelectorTemplate<T>>
 where
     T: SelectorItemLike + 'static,
 {
-    Arc::new(ThemedSelectorTemplate::new(default_selector_theme()))
+    Arc::new(ThemedSelectorTemplate::new(default_selector_theme(), default_selector_items_template()))
 }
 
-impl<T> SelectorTemplate<T> for ThemedSelectorTemplate
+impl<T> SelectorTemplate<T> for ThemedSelectorTemplate<T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -95,7 +104,7 @@ where
             .px(px(appearance.trigger_padding_x))
             .py(px(appearance.trigger_padding_y))
             .h(px(appearance.trigger_height))
-            .min_w(px(appearance.floating_menu.min_width))
+            .min_w(px(appearance.items_panel.min_width))
             .bg(appearance.trigger_background)
             .text_color(appearance.trigger_foreground)
             .border_1()
@@ -151,7 +160,22 @@ where
                 model.items.len(),
                 window.viewport_size(),
             );
-            let menu = render_selector_menu(model, appearance.floating_menu, item_hovers, item_clicks, cx);
+            let menu = self.items_template.render(
+                &SelectorItemsRenderModel {
+                    menu_id: model.id,
+                    selector_id: model.id,
+                    items: model.items,
+                    selected_index: model.selected_index,
+                    active_path: model.active_path,
+                    open: model.open,
+                    enabled: model.enabled,
+                    focus: model.focus,
+                    item_template: model.item_template,
+                    appearance: appearance.items_panel,
+                },
+                SelectorItemsTemplateHandlers { item_hovers, item_clicks },
+                cx,
+            );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(placement.anchor)
@@ -183,7 +207,7 @@ fn resolve_selector_placement(
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
         Bounds::new(
             point(px(0.0), px(0.0)),
-            Size { width: px(appearance.floating_menu.min_width), height: px(appearance.trigger_height) },
+            Size { width: px(appearance.items_panel.min_width), height: px(appearance.trigger_height) },
         )
     });
     let menu_size = estimated_menu_size(appearance, item_count, trigger_bounds.size.width);
@@ -225,14 +249,14 @@ fn resolve_selector_placement(
 }
 
 fn estimated_menu_size(appearance: &SelectorAppearance, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
-    let menu_min_width = px(appearance.floating_menu.min_width);
+    let menu_min_width = px(appearance.items_panel.min_width);
     Size {
         width: if trigger_width > menu_min_width {
             trigger_width
         } else {
             menu_min_width
         },
-        height: px(appearance.floating_menu.padding * 2.0) + px(appearance.floating_menu.item_height) * item_count,
+        height: px(appearance.items_panel.padding * 2.0) + px(appearance.items_panel.item_height) * item_count,
     }
 }
 
@@ -247,8 +271,8 @@ where
     if let (Some(selected_index), Some(item_template)) = (model.selected_index, model.item_template)
         && let Some(item) = model.items.get(selected_index)
     {
-        let active = model.active_path.is_some_and(|path| path.is_root(selected_index));
-        let item_model = SelectorItemRenderModel {
+        let active = model.active_path.is_some_and(|path| path.is_item(selected_index));
+        let item_model = crate::controls::selector_panel::SelectorItemRenderModel {
             selector_id: model.id,
             item,
             index: selected_index,
@@ -273,124 +297,6 @@ where
         .into_any_element()
 }
 
-fn render_selector_menu<T>(
-    model: &SelectorRenderModel<'_, T>,
-    appearance: FloatingMenuAppearance,
-    item_hovers: Vec<SelectorHoverHandler>,
-    item_clicks: Vec<SelectorClickHandler>,
-    cx: &mut App,
-) -> Stateful<Div>
-where
-    T: SelectorItemLike + 'static,
-{
-    let mut menu = div()
-        .id(format!("{}-menu", model.id))
-        .relative()
-        .min_w(px(appearance.min_width))
-        .p(px(appearance.padding))
-        .bg(appearance.background)
-        .border_1()
-        .border_color(appearance.border)
-        .rounded(px(appearance.radius))
-        .shadow(appearance.shadow.clone())
-        .occlude();
-
-    let mut clicks = item_clicks.into_iter();
-
-    for ((index, item), hover) in model.items.iter().enumerate().zip(item_hovers) {
-        menu = menu.child(render_selector_row(
-            model.id,
-            model.id,
-            item,
-            index,
-            model.selected_index,
-            model.active_path,
-            model.open,
-            model.enabled,
-            model.item_template,
-            &appearance,
-            hover,
-            clicks.next(),
-            cx,
-        ));
-    }
-
-    menu
-}
-
-fn render_selector_row<T>(
-    menu_id: &str,
-    selector_id: &SharedString,
-    item: &T,
-    index: usize,
-    selected_index: Option<usize>,
-    active_path: Option<MenuPath>,
-    open: bool,
-    enabled: bool,
-    item_template: Option<&crate::controls::selector::model::SelectorItemTemplate<T>>,
-    appearance: &FloatingMenuAppearance,
-    hover: SelectorHoverHandler,
-    click: Option<SelectorClickHandler>,
-    cx: &mut App,
-) -> Stateful<Div>
-where
-    T: SelectorItemLike + 'static,
-{
-    let color = appearance.foreground;
-    let selected = selected_index == Some(index);
-    let active = active_path.is_some_and(|path| path.is_root(index));
-    let content = if let Some(item_template) = item_template {
-        let item_model = SelectorItemRenderModel { selector_id, item, index, selected, active, open, enabled };
-        item_template(&item_model, cx)
-    } else {
-        div()
-            .flex()
-            .items_center()
-            .gap(px(appearance.item_gap))
-            .child(render_selected_item_icon(item.icon(), color, appearance.item_icon_size))
-            .child(div().flex_1().child(item.label_text().clone()))
-            .into_any_element()
-    };
-
-    let mut row = div()
-        .id(format!("{}-item-{}", menu_id, item.id()))
-        .flex()
-        .items_center()
-        .gap(px(appearance.item_gap))
-        .min_h(px(appearance.item_height))
-        .px(px(appearance.item_padding_x))
-        .rounded(px(appearance.item_radius))
-        .text_color(color)
-        .text_size(px(appearance.item_typography.size))
-        .line_height(px(appearance.item_typography.line_height))
-        .font_weight(appearance.item_typography.weight)
-        .child(div().flex_1().child(content))
-        .child(render_selection_checkmark(selected, color, appearance.item_icon_size));
-
-    row = row.cursor_pointer().on_hover(hover).hover({
-        let hover_background = appearance.item_hover_background;
-        move |style| style.bg(hover_background)
-    });
-
-    if active {
-        row = row.bg(appearance.item_hover_background);
-    }
-
-    if let Some(click) = click {
-        row = row.on_click(click);
-    }
-
-    row
-}
-
-fn render_selection_checkmark(selected: bool, color: Hsla, size: f32) -> AnyElement {
-    if selected {
-        render_lucide_icon(LucideIcon::Check, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
 fn render_selected_item_icon(icon: Option<&SelectorItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
     if let Some(icon) = icon.and_then(SelectorItemIcon::lucide) {
         render_lucide_icon(icon, color, size)
@@ -402,18 +308,7 @@ fn render_selected_item_icon(icon: Option<&SelectorItemIcon>, color: gpui::Hsla,
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    div()
-        .size(px(size))
-        .flex()
-        .items_center()
-        .justify_center()
-        .font_family("lucide")
-        .font_weight(FontWeight::NORMAL)
-        .text_size(px(size))
-        .line_height(px(size))
-        .text_color(color)
-        .child(char::from(icon).to_string())
-        .into_any_element()
+    lucide_icon(icon, color, size)
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::selector::model::{
     SelectorItemTemplate, SelectorModel, SelectorItem, SelectorItemLike, normalize_selector_items,
 };
-use crate::controls::state::{ControlFocusState, MenuPath};
+use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
@@ -124,7 +124,7 @@ where
             open: self.open,
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
-            active_path: self.active_index.map(MenuPath::Root),
+            active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
             enabled: self.model.enabled,
             item_template: self.model.item_template.as_ref(),
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
@@ -447,7 +447,7 @@ where
                     .template
                     .render(&model, handlers, window, cx)
                     .track_focus(self.interaction.focus_handle())
-                    .key_context(ControlKeyProfile::Menu.context())
+                    .key_context(ControlKeyProfile::Selector.context())
                     .on_action(cx.listener(Self::handle_escape_focus))
                     .on_action(cx.listener(Self::handle_select_previous_item))
                     .on_action(cx.listener(Self::handle_select_next_item))

@@ -4,7 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::behavior::SelectionItem;
 use super::control::ComboBoxControl;
-use super::template::{ComboBoxTemplate, default_combobox_template};
+use super::template::{ComboBoxItemsTemplate, ComboBoxTemplate, default_combobox_items_template, default_combobox_template};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 
@@ -31,6 +31,7 @@ pub struct ComboBoxModel {
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn ComboBoxTemplate>,
+    pub(crate) items_template: Arc<dyn ComboBoxItemsTemplate>,
 }
 
 pub struct ComboBoxBuilder {
@@ -55,6 +56,7 @@ impl ComboBoxBuilder {
                 textfield_template: default_textfield_template(),
                 scrollbar_template: default_scrollbar_template(),
                 template: default_combobox_template(),
+                items_template: default_combobox_items_template(),
             },
         }
     }
@@ -127,6 +129,11 @@ impl ComboBoxBuilder {
 
     pub fn template(mut self, template: Arc<dyn ComboBoxTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn items_template(mut self, template: Arc<dyn ComboBoxItemsTemplate>) -> Self {
+        self.model.items_template = template;
         self
     }
 

@@ -9,6 +9,7 @@ pub use control::{SearchSelector, SearchSelectorControl, SearchSelectorEvent};
 pub use crate::controls::autocomplete::COMBOBOX_THEME_USAGE as SEARCH_SELECTOR_THEME_USAGE;
 pub use model::{SearchSelectorBuilder, SearchSelectorModel, new};
 pub use template::{
+    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers,
-    default_search_selector_template, render_popup_rows,
+    default_search_selector_items_template, default_search_selector_template, render_popup_rows,
 };

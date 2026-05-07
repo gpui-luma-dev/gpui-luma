@@ -6,8 +6,10 @@ use gpui::{
 };
 
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler};
-use crate::controls::menu_item::MenuItem;
+use crate::controls::icon::lucide_icon;
+use crate::controls::selector_panel::{
+    SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+};
 use crate::controls::textfield::{TextFieldState, default_textfield_theme};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
@@ -41,7 +43,7 @@ pub struct SearchSelectorRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: FloatingMenuAppearance,
+    pub popup_appearance: SelectorItemsPanelAppearance,
     pub popup_content: Option<AnyElement>,
     pub popup_search_field: Option<AnyElement>,
     pub popup_list_panel: Option<AnyElement>,
@@ -153,13 +155,11 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                                                 .items_center()
                                                 .justify_center()
                                                 .text_color(trigger_appearance.icon)
-                                                .child(
-                                                    div()
-                                                        .font_family("lucide")
-                                                        .text_size(px(12.0))
-                                                        .line_height(px(12.0))
-                                                        .child(char::from(lucide_icons::Icon::Search).to_string()),
-                                                ),
+                                                .child(lucide_icon(
+                                                    lucide_icons::Icon::Search,
+                                                    trigger_appearance.icon,
+                                                    12.0,
+                                                )),
                                         ),
                                 ),
                             trigger_appearance.focus_ring,
@@ -203,46 +203,88 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
     }
 }
 
+pub struct SearchSelectorItemsRenderModel<'a> {
+    pub id: &'a SharedString,
+    pub items: &'a [SelectorItem],
+    pub appearance: SelectorItemsPanelAppearance,
+    pub highlighted_index: Option<usize>,
+}
+
+pub struct SearchSelectorItemsTemplateHandlers {
+    pub item_hovers: Vec<SelectorPanelHoverHandler>,
+    pub item_clicks: Vec<SelectorPanelClickHandler>,
+}
+
+pub trait SearchSelectorItemsTemplate: Send + Sync {
+    fn render(
+        &self,
+        model: &SearchSelectorItemsRenderModel<'_>,
+        handlers: SearchSelectorItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div>;
+}
+
+pub struct DefaultSearchSelectorItemsTemplate;
+
+pub fn default_search_selector_items_template() -> Arc<dyn SearchSelectorItemsTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn SearchSelectorItemsTemplate>> = OnceLock::new();
+    TEMPLATE.get_or_init(|| Arc::new(DefaultSearchSelectorItemsTemplate)).clone()
+}
+
+impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
+    fn render(
+        &self,
+        model: &SearchSelectorItemsRenderModel<'_>,
+        handlers: SearchSelectorItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div> {
+        let SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
+        let appearance = model.appearance.clone();
+        let mut root = div().id(format!("{}-rows", model.id)).flex().flex_col().p(px(appearance.padding));
+        let mut clicks = item_clicks.into_iter();
+
+        for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
+            let mut row = div()
+                .id(format!("{}-row-{}", model.id, index))
+                .flex()
+                .items_center()
+                .min_h(px(appearance.item_height))
+                .px(px(appearance.item_padding_x))
+                .rounded(px(appearance.item_radius))
+                .text_color(appearance.foreground)
+                .text_size(px(appearance.item_typography.size))
+                .line_height(px(appearance.item_typography.line_height))
+                .font_weight(appearance.item_typography.weight)
+                .child(item.label_text().clone());
+
+            row = row.cursor_pointer().on_hover(hover).hover({
+                let hover_background = appearance.item_hover_background;
+                move |style| style.bg(hover_background)
+            });
+
+            if model.highlighted_index.is_some_and(|active| active == index) {
+                row = row.bg(appearance.item_hover_background);
+            }
+
+            if let Some(click) = clicks.next() {
+                row = row.on_click(click);
+            }
+
+            root = root.child(row);
+        }
+
+        root
+    }
+}
+
 pub fn render_popup_rows(
     id: &SharedString,
-    items: &[MenuItem],
-    appearance: FloatingMenuAppearance,
+    items: &[SelectorItem],
+    appearance: SelectorItemsPanelAppearance,
     highlighted_index: Option<usize>,
-    item_hovers: Vec<FloatingMenuHoverHandler>,
-    item_clicks: Vec<FloatingMenuClickHandler>,
-) -> gpui::Stateful<gpui::Div> {
-    let mut root = div().id(format!("{}-rows", id)).flex().flex_col().p(px(appearance.padding));
-    let mut clicks = item_clicks.into_iter();
-
-    for (index, (item, hover)) in items.iter().zip(item_hovers).enumerate() {
-        let mut row = div()
-            .id(format!("{}-row-{}", id, index))
-            .flex()
-            .items_center()
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
-            .text_color(appearance.foreground)
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(item.label_text().clone());
-
-        row = row.cursor_pointer().on_hover(hover).hover({
-            let hover_background = appearance.item_hover_background;
-            move |style| style.bg(hover_background)
-        });
-
-        if highlighted_index.is_some_and(|active| active == index) {
-            row = row.bg(appearance.item_hover_background);
-        }
-
-        if let Some(click) = clicks.next() {
-            row = row.on_click(click);
-        }
-
-        root = root.child(row);
-    }
-
-    root
+    item_hovers: Vec<SelectorPanelHoverHandler>,
+    item_clicks: Vec<SelectorPanelClickHandler>,
+) -> Stateful<gpui::Div> {
+    DefaultSearchSelectorItemsTemplate.render(
+        &SearchSelectorItemsRenderModel { id, items, appearance, highlighted_index },
+        SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+    )
 }
