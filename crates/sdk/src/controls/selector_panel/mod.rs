@@ -1,11 +1,11 @@
+mod items_template;
 mod model;
-mod template;
 
 pub use model::{
     SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
     make_selector_item_template, normalize_selector_items,
 };
-pub use template::{
+pub use items_template::{
     DefaultSelectorItemsTemplate, SelectorItemsPanelAppearance, SelectorItemsRenderModel, SelectorItemsTemplate,
     SelectorItemsTemplateHandlers, SelectorPanelClickHandler, SelectorPanelHoverHandler,
     default_selector_items_panel_appearance, default_selector_items_template,

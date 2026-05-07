@@ -112,6 +112,7 @@ fn render_trigger_sample(
         active_path: None,
         enabled: !sample.state.disabled,
         item_template: None,
+        panel_template: None,
         focus: sample.focus,
         state: sample.state,
     };

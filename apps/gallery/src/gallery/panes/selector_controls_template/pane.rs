@@ -512,6 +512,7 @@ fn render_selector_trigger(
         active_path: None,
         enabled: state.selector_enabled,
         item_template: None,
+        panel_template: None,
         focus: state.selector_focus,
         state: state.selector_state,
     };

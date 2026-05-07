@@ -3,7 +3,7 @@ use gpui::{AnyElement, App, div, prelude::*, px};
 use super::{SelectorRenderModel, theme::SelectorAppearance};
 use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel};
 
-pub(super) fn render_trigger_content<T>(
+pub(super) fn render_item_content<T>(
     model: &SelectorRenderModel<'_, T>,
     appearance: &SelectorAppearance,
     cx: &mut App,

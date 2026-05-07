@@ -7,7 +7,7 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{SelectorPlacement, SelectorRenderModel};
-use super::item_template::render_trigger_content;
+use super::item_template::render_item_content;
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
@@ -95,7 +95,7 @@ where
             item_clicks,
         } = handlers;
         let appearance = self.theme.resolve(model.state);
-        let trigger_content = render_trigger_content(model, &appearance, cx);
+        let trigger_content = render_item_content(model, &appearance, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
@@ -161,7 +161,8 @@ where
                 model.items.len(),
                 window.viewport_size(),
             );
-            let menu = self.items_template.render(
+            let panel_template = model.panel_template.unwrap_or(self.items_template.as_ref());
+            let menu = panel_template.render(
                 &SelectorItemsRenderModel {
                     menu_id: model.id,
                     selector_id: model.id,

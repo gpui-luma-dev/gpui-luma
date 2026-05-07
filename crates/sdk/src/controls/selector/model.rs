@@ -6,7 +6,10 @@ use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, defaul
 pub use crate::controls::selector_item_template::{
     SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
 };
-pub use crate::controls::selector_panel::{SelectorItem, SelectorItemLike, SelectorPath, normalize_selector_items};
+pub use crate::controls::selector_panel::{
+    SelectorItem, SelectorItemLike, SelectorItemsTemplate, SelectorPath, default_selector_items_template,
+    normalize_selector_items,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {
@@ -27,6 +30,7 @@ where
     pub(crate) enabled: bool,
     pub(crate) placement: SelectorPlacement,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
+    pub(crate) panel_template: Arc<dyn SelectorItemsTemplate<T>>,
     pub(crate) template: Arc<dyn SelectorTemplate<T>>,
 }
 
@@ -44,6 +48,7 @@ where
     pub active_path: Option<SelectorPath>,
     pub enabled: bool,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
+    pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
     pub focus: ControlFocusState,
     pub state: SelectorState,
 }
@@ -71,6 +76,7 @@ where
                 enabled: true,
                 placement: SelectorPlacement::Smart,
                 item_template: None,
+                panel_template: default_selector_items_template(),
                 template: default_selector_template::<T>(),
             },
             initial_selected_id: None,
@@ -120,6 +126,11 @@ where
 
     pub fn template(mut self, template: Arc<dyn SelectorTemplate<T>>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn panel_template(mut self, template: Arc<dyn SelectorItemsTemplate<T>>) -> Self {
+        self.model.panel_template = template;
         self
     }
 

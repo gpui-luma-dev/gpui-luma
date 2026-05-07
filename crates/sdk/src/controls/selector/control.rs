@@ -6,7 +6,8 @@ use gpui::{
 use super::{SelectorBuilder, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::selector::model::{
-    SelectorItemTemplate, SelectorModel, SelectorItem, SelectorItemLike, normalize_selector_items,
+    SelectorItemTemplate, SelectorModel, SelectorItem, SelectorItemLike, SelectorItemsTemplate,
+    normalize_selector_items,
 };
 use crate::controls::state::ControlFocusState;
 use crate::focus::EscapeFocus;
@@ -102,6 +103,15 @@ where
         cx.notify();
     }
 
+    pub fn set_panel_template(
+        &mut self,
+        template: std::sync::Arc<dyn SelectorItemsTemplate<T>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.panel_template = template;
+        cx.notify();
+    }
+
     pub fn selected_id(&self) -> Option<&SharedString> {
         self.selected_index.and_then(|index| self.model.items.get(index)).map(SelectorItemLike::id)
     }
@@ -127,6 +137,7 @@ where
             active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
             enabled: self.model.enabled,
             item_template: self.model.item_template.as_ref(),
+            panel_template: Some(self.model.panel_template.as_ref()),
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),
             state: self.interaction.render_state(self.model.enabled, window),
         }
