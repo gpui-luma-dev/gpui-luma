@@ -4,14 +4,16 @@ use gpui::{
 };
 
 use crate::controls::selector_panel::{
-    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
 };
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
 use crate::theme::ControlSize;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
+use super::item_template::ComboBoxItemTemplate;
 use super::model::ComboBoxBuilder;
+use super::panel_template::{ComboBoxPanelRenderModel, ComboBoxPanelTemplate};
 use super::template::{ComboBoxItemsTemplate, ComboBoxTemplate};
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use super::template::{
@@ -420,6 +422,20 @@ impl ComboBoxControl {
         cx.notify();
     }
 
+    pub fn set_panel_template(&mut self, template: std::sync::Arc<dyn ComboBoxPanelTemplate>, cx: &mut Context<Self>) {
+        self.model.panel_template = template;
+        cx.notify();
+    }
+
+    pub fn set_item_template(
+        &mut self,
+        template: Option<ComboBoxItemTemplate<super::behavior::SelectionItem>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.item_template = template;
+        cx.notify();
+    }
+
     fn sync_popup_highlight_visibility(&self, cx: &mut Context<Self>) {
         if !self.behavior.state.open {
             return;
@@ -472,19 +488,9 @@ impl Render for ComboBoxControl {
             px(textfield_side_padding + placeholder_width + prefix_width + clear_width + spacing)
         };
 
-        let menu_items = self
-            .behavior
-            .state
-            .filtered
-            .iter()
-            .enumerate()
-            .map(|(visible_index, item_index)| {
-                let item = &self.model.items[*item_index];
-                SelectorItem::new(format!("combobox-item-{}-{visible_index}", item.id)).label(item.label.clone())
-            })
-            .collect::<Vec<_>>();
+        let visible_indices = self.behavior.state.filtered.clone();
 
-        let item_hovers = (0..menu_items.len())
+        let item_hovers = (0..visible_indices.len())
             .map(|index| {
                 Box::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_item_hover(index, *hovered, cx);
@@ -492,7 +498,7 @@ impl Render for ComboBoxControl {
             })
             .collect::<Vec<_>>();
 
-        let item_clicks = (0..menu_items.len())
+        let item_clicks = (0..visible_indices.len())
             .map(|index| {
                 Box::new(cx.listener(move |this, event, window, cx| {
                     this.handle_item_click(index, event, window, cx);
@@ -508,11 +514,11 @@ impl Render for ComboBoxControl {
             self.last_keyboard_event
         ));
 
-        let popup_content = if self.behavior.state.open && !menu_items.is_empty() {
+        let popup_content = if self.behavior.state.open && !visible_indices.is_empty() {
             let menu_id = SharedString::from("combobox-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
-            let item_count = menu_items.len();
+            let item_count = visible_indices.len();
             let min_visible_rows = self.model.min_visible_rows.max(1);
             let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
             let visible_rows = item_count.clamp(min_visible_rows, max_visible_rows) as f32;
@@ -523,17 +529,41 @@ impl Render for ComboBoxControl {
             self.popup_surface.configure(item_count, row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
 
-            let menu_content = self.model.items_template.render(
+            let list_content = self.model.items_template.render(
                 &ComboBoxItemsRenderModel {
-                    id: &menu_id,
-                    items: &menu_items,
+                    menu_id: &menu_id,
+                    combobox_id: &self.model.id,
+                    items: &self.model.items,
+                    visible_indices: &visible_indices,
+                    selected_source_index: self.behavior.state.selected_item,
+                    active_visible_index: self.behavior.state.highlighted_filtered,
+                    open: self.behavior.state.open,
+                    enabled: true,
+                    item_template: self.model.item_template.as_ref(),
                     appearance: appearance.clone(),
-                    highlighted_index: self.behavior.state.highlighted_filtered,
                 },
                 ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
+                cx,
             );
 
-            Some(self.popup_surface.render(menu_content.into_any_element()))
+            let panel_content = self.model.panel_template.render(
+                ComboBoxPanelRenderModel {
+                    id: &self.model.id,
+                    items: &self.model.items,
+                    visible_indices: &visible_indices,
+                    selected_source_index: self.behavior.state.selected_item,
+                    active_visible_index: self.behavior.state.highlighted_filtered,
+                    open: self.behavior.state.open,
+                    enabled: true,
+                    item_template: self.model.item_template.as_ref(),
+                    popup_bounds: self.trigger_bounds,
+                    popup_appearance: appearance.clone(),
+                    list_content: self.popup_surface.render(list_content.into_any_element()),
+                },
+                cx,
+            );
+
+            Some(panel_content)
         } else {
             None
         };

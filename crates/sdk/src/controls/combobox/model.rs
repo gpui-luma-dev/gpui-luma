@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{App, AppContext, Entity, IntoElement, SharedString};
 
 use super::behavior::SelectionItem;
 use super::control::ComboBoxControl;
+use super::item_template::{ComboBoxItemRenderModel, ComboBoxItemTemplate, make_combobox_item_template};
+use super::panel_template::{ComboBoxPanelTemplate, default_combobox_panel_template};
 use super::template::{ComboBoxItemsTemplate, ComboBoxTemplate, default_combobox_items_template, default_combobox_template};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
@@ -32,6 +34,8 @@ pub struct ComboBoxModel {
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn ComboBoxTemplate>,
     pub(crate) items_template: Arc<dyn ComboBoxItemsTemplate>,
+    pub(crate) panel_template: Arc<dyn ComboBoxPanelTemplate>,
+    pub(crate) item_template: Option<ComboBoxItemTemplate<SelectionItem>>,
 }
 
 pub struct ComboBoxBuilder {
@@ -57,6 +61,8 @@ impl ComboBoxBuilder {
                 scrollbar_template: default_scrollbar_template(),
                 template: default_combobox_template(),
                 items_template: default_combobox_items_template(),
+                panel_template: default_combobox_panel_template(),
+                item_template: None,
             },
         }
     }
@@ -132,8 +138,25 @@ impl ComboBoxBuilder {
         self
     }
 
+    /// Transitional row-list template hook.
+    ///
+    /// Prefer `panel_template(...)` and `with_item_template(...)` for new code.
     pub fn items_template(mut self, template: Arc<dyn ComboBoxItemsTemplate>) -> Self {
         self.model.items_template = template;
+        self
+    }
+
+    pub fn panel_template(mut self, template: Arc<dyn ComboBoxPanelTemplate>) -> Self {
+        self.model.panel_template = template;
+        self
+    }
+
+    pub fn with_item_template<F, E>(mut self, template: F) -> Self
+    where
+        F: for<'a> Fn(&ComboBoxItemRenderModel<'a, SelectionItem>, &mut App) -> E + Send + Sync + 'static,
+        E: IntoElement + 'static,
+    {
+        self.model.item_template = Some(make_combobox_item_template(template));
         self
     }
 

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Pixels, ScrollWheelEvent,
-    SharedString, Window, anchored, deferred, div, point, prelude::*, px,
+    SharedString, Window, div, prelude::*, px,
 };
 
 use crate::controls::icon::lucide_icon;
@@ -131,21 +131,7 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
                         )
                     }),
             )
-            .when_some(model.popup_content, |root, popup_content| {
-                root.when_some(model.popup_bounds, |root, bounds| {
-                    root.child(
-                        deferred(
-                            anchored()
-                                .snap_to_window_with_margin(px(8.0))
-                                .anchor(gpui::Corner::TopLeft)
-                                .position(point(bounds.left(), bounds.bottom()))
-                                .offset(point(px(0.0), px(4.0)))
-                                .child(div().id("combobox-popup-shell").w(bounds.size.width).child(popup_content)),
-                        )
-                        .with_priority(1),
-                    )
-                })
-            })
+            .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
             .into_any_element()
     }
 }

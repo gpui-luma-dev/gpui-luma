@@ -11,8 +11,10 @@ use gpui_luma::controls::autocomplete::{
     default_autocomplete_textbox_template,
 };
 use gpui_luma::controls::combobox::{
-    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxRenderModel,
-    ComboBoxTemplate, ComboBoxTemplateHandlers, default_combobox_items_template, default_combobox_template,
+    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
+    ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplate, ComboBoxTemplateHandlers,
+    SelectionItem as ComboBoxSelectionItem, default_combobox_items_template, default_combobox_panel_template,
+    default_combobox_template,
 };
 use gpui_luma::controls::search_selector::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
@@ -83,6 +85,7 @@ struct SelectorControlsTemplatePreview {
     autocomplete_items_template: Arc<dyn AutocompleteItemsTemplate>,
     combobox_template: Arc<dyn ComboBoxTemplate>,
     combobox_items_template: Arc<dyn ComboBoxItemsTemplate>,
+    combobox_panel_template: Arc<dyn ComboBoxPanelTemplate>,
     selector_template: Arc<dyn SelectorTemplate>,
     selector_items_template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
     search_selector_template: Arc<dyn SearchSelectorTemplate>,
@@ -129,6 +132,7 @@ impl SelectorControlsTemplatePreview {
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),
             combobox_items_template: default_combobox_items_template(),
+            combobox_panel_template: default_combobox_panel_template(),
             selector_template: theme.selector_template(),
             selector_items_template: default_selector_items_template(),
             search_selector_template: default_search_selector_template(),
@@ -407,6 +411,9 @@ fn render_combobox_trigger(
         character_offsets,
     };
 
+    let popup_bounds = (state.id == "pressed")
+        .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
+
     let model = ComboBoxRenderModel {
         textfield: preview
             .textfield_template
@@ -421,7 +428,7 @@ fn render_combobox_trigger(
         status_detail: SharedString::from(""),
         status_color: status_theme.status_color,
         muted_text_color: status_theme.muted_text_color,
-        popup_bounds: None,
+        popup_bounds,
         popup_appearance,
         popup_content: None,
     };
@@ -538,50 +545,94 @@ fn render_popup_preview(
     let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect::<Vec<_>>();
     let item_clicks = (0..items.len()).map(|_| Box::new(noop_click) as SelectorPanelClickHandler).collect::<Vec<_>>();
 
-    let rows = match control {
-        SelectorTemplateControl::AutocompleteTextBox => preview.autocomplete_items_template.render(
-            &AutocompleteItemsRenderModel {
-                id: &popup_id,
-                items: &items,
-                appearance: appearance.clone(),
-                highlighted_index: Some(0),
-            },
-            AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
-        ),
-        SelectorTemplateControl::ComboBox => preview.combobox_items_template.render(
-            &ComboBoxItemsRenderModel {
-                id: &popup_id,
-                items: &items,
-                appearance: appearance.clone(),
-                highlighted_index: Some(0),
-            },
-            ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
-        ),
-        SelectorTemplateControl::Selector => preview.selector_items_template.render(
-            &SelectorItemsRenderModel {
-                menu_id: &popup_id,
-                selector_id: id,
-                items: &items,
-                selected_index: None,
-                active_path: Some(SelectorPath::Item(0)),
-                open: true,
-                enabled: true,
-                focus: ControlFocusState { focused: true, focus_visible: true },
-                item_template: None,
-                appearance: appearance.clone(),
-            },
-            SelectorItemsTemplateHandlers { item_hovers, item_clicks },
-            cx,
-        ),
-        SelectorTemplateControl::SearchSelector => preview.search_selector_items_template.render(
-            &SearchSelectorItemsRenderModel {
-                id: &popup_id,
-                items: &items,
-                appearance: appearance.clone(),
-                highlighted_index: Some(0),
-            },
-            SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
-        ),
+    let rows: AnyElement = match control {
+        SelectorTemplateControl::AutocompleteTextBox => preview
+            .autocomplete_items_template
+            .render(
+                &AutocompleteItemsRenderModel {
+                    id: &popup_id,
+                    items: &items,
+                    appearance: appearance.clone(),
+                    highlighted_index: Some(0),
+                },
+                AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
+            )
+            .into_any_element(),
+        SelectorTemplateControl::ComboBox => {
+            let combobox_items = items
+                .iter()
+                .enumerate()
+                .map(|(index, item)| {
+                    ComboBoxSelectionItem::new(format!("combobox-preview-item-{index}"), item.label_text().clone())
+                })
+                .collect::<Vec<_>>();
+            let visible_indices = (0..combobox_items.len()).collect::<Vec<_>>();
+
+            let list = preview.combobox_items_template.render(
+                &ComboBoxItemsRenderModel {
+                    menu_id: &popup_id,
+                    combobox_id: &popup_id,
+                    items: &combobox_items,
+                    visible_indices: &visible_indices,
+                    selected_source_index: None,
+                    active_visible_index: Some(0),
+                    open: true,
+                    enabled: true,
+                    item_template: None,
+                    appearance: appearance.clone(),
+                },
+                ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
+                cx,
+            );
+
+            preview.combobox_panel_template.render(
+                ComboBoxPanelRenderModel {
+                    id: &popup_id,
+                    items: &combobox_items,
+                    visible_indices: &visible_indices,
+                    selected_source_index: None,
+                    active_visible_index: Some(0),
+                    open: true,
+                    enabled: true,
+                    item_template: None,
+                    popup_bounds: None,
+                    popup_appearance: appearance.clone(),
+                    list_content: list.into_any_element(),
+                },
+                cx,
+            )
+        }
+        SelectorTemplateControl::Selector => preview
+            .selector_items_template
+            .render(
+                &SelectorItemsRenderModel {
+                    menu_id: &popup_id,
+                    selector_id: id,
+                    items: &items,
+                    selected_index: None,
+                    active_path: Some(SelectorPath::Item(0)),
+                    open: true,
+                    enabled: true,
+                    focus: ControlFocusState { focused: true, focus_visible: true },
+                    item_template: None,
+                    appearance: appearance.clone(),
+                },
+                SelectorItemsTemplateHandlers { item_hovers, item_clicks },
+                cx,
+            )
+            .into_any_element(),
+        SelectorTemplateControl::SearchSelector => preview
+            .search_selector_items_template
+            .render(
+                &SearchSelectorItemsRenderModel {
+                    id: &popup_id,
+                    items: &items,
+                    appearance: appearance.clone(),
+                    highlighted_index: Some(0),
+                },
+                SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+            )
+            .into_any_element(),
     };
 
     if matches!(control, SelectorTemplateControl::SearchSelector) {
