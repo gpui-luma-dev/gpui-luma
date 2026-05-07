@@ -23,14 +23,12 @@
 //! #[derive(Clone)]
 //! struct SwatchItem {
 //!     id: SharedString,
-//!     label: SharedString,
 //!     enabled: bool,
 //! }
 //!
 //! impl SelectorItemLike for SwatchItem {
 //!     fn id(&self) -> &SharedString { &self.id }
 //!     fn is_enabled(&self) -> bool { self.enabled }
-//!     fn label_text(&self) -> &SharedString { &self.label }
 //! }
 //!
 //! let selector = Selector::<SwatchItem>::new_typed("palette");
@@ -41,9 +39,10 @@ mod template;
 mod theme;
 
 pub use control::{Selector, SelectorEvent};
+
 pub use model::{
     SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath, SelectorPlacement,
-    SelectorRenderModel, SelectorItem, SelectorItemIcon, SelectorItemLike,
+    SelectorRenderModel, SelectorItem, SelectorItemLike,
 };
 pub use template::{SelectorTemplate, SelectorTemplateHandlers, ThemedSelectorTemplate, default_selector_template};
 pub use theme::{DefaultSelectorTheme, SELECTOR_THEME_USAGE, SelectorAppearance, SelectorTheme, default_selector_theme};

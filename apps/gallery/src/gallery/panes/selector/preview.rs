@@ -104,7 +104,6 @@ fn render_trigger_sample(
     let model = SelectorRenderModel {
         id: &id,
         label: &label,
-        selected_icon: None,
         selected_index: None,
         items: &items,
         open: false,

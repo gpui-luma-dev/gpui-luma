@@ -504,7 +504,6 @@ fn render_selector_trigger(
     let model = SelectorRenderModel {
         id,
         label: &label,
-        selected_icon: None,
         selected_index: None,
         items: &items,
         open: false,

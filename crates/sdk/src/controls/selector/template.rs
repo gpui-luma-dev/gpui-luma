@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size,
-    Stateful, Window, anchored, deferred, div, point, px, prelude::*, svg,
+    Stateful, Window, anchored, deferred, div, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -10,8 +10,8 @@ use super::{SelectorPlacement, SelectorRenderModel};
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemIcon, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate,
-    SelectorItemsTemplateHandlers, default_selector_items_template,
+    SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
+    default_selector_items_template,
 };
 
 use super::theme::{SelectorAppearance, SelectorTheme, default_selector_theme};
@@ -288,23 +288,8 @@ where
         .flex()
         .items_center()
         .gap(px(appearance.trigger_gap))
-        .child(render_selected_item_icon(
-            model.selected_icon,
-            appearance.trigger_foreground,
-            appearance.trigger_icon_size,
-        ))
         .child(model.label.clone())
         .into_any_element()
-}
-
-fn render_selected_item_icon(icon: Option<&SelectorItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(SelectorItemIcon::lucide) {
-        render_lucide_icon(icon, color, size)
-    } else if let Some(path) = icon.and_then(SelectorItemIcon::svg_path) {
-        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
-    } else {
-        div().size(px(size)).into_any_element()
-    }
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {

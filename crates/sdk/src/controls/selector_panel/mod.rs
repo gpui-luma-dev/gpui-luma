@@ -2,7 +2,7 @@ mod model;
 mod template;
 
 pub use model::{
-    SelectorItem, SelectorItemIcon, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
+    SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
     make_selector_item_template, normalize_selector_items,
 };
 pub use template::{

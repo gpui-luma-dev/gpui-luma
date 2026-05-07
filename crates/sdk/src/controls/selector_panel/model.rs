@@ -1,53 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, IntoElement, SharedString};
-use lucide_icons::Icon as LucideIcon;
 
-#[derive(Clone, Debug)]
-pub enum SelectorItemIcon {
-    Lucide(LucideIcon),
-    SvgPath(SharedString),
-}
-
-impl SelectorItemIcon {
-    pub fn lucide(&self) -> Option<LucideIcon> {
-        match self {
-            Self::Lucide(icon) => Some(*icon),
-            Self::SvgPath(_) => None,
-        }
-    }
-
-    pub fn svg_path(&self) -> Option<&SharedString> {
-        match self {
-            Self::Lucide(_) => None,
-            Self::SvgPath(path) => Some(path),
-        }
-    }
-}
-
-impl From<LucideIcon> for SelectorItemIcon {
-    fn from(icon: LucideIcon) -> Self {
-        Self::Lucide(icon)
-    }
-}
-
-impl From<&str> for SelectorItemIcon {
-    fn from(icon: &str) -> Self {
-        Self::SvgPath(icon.to_string().into())
-    }
-}
-
-impl From<String> for SelectorItemIcon {
-    fn from(icon: String) -> Self {
-        Self::from(icon.as_str())
-    }
-}
-
-impl From<SharedString> for SelectorItemIcon {
-    fn from(icon: SharedString) -> Self {
-        Self::SvgPath(icon)
-    }
-}
+use crate::controls::icon::IconSource;
 
 pub trait SelectorItemLike {
     fn id(&self) -> &SharedString;
@@ -56,12 +11,8 @@ pub trait SelectorItemLike {
         true
     }
 
-    fn label_text(&self) -> &SharedString {
-        self.id()
-    }
-
-    fn icon(&self) -> Option<&SelectorItemIcon> {
-        None
+    fn is_selected(&self) -> bool {
+        false
     }
 }
 
@@ -69,15 +20,16 @@ pub trait SelectorItemLike {
 pub struct SelectorItem {
     pub(crate) id: SharedString,
     pub(crate) label: SharedString,
-    pub(crate) icon: Option<SelectorItemIcon>,
+    pub(crate) icon: Option<IconSource>,
     pub(crate) enabled: bool,
+    pub(crate) selected: bool,
 }
 
 impl SelectorItem {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let id = id.into();
 
-        Self { label: id.clone(), id, icon: None, enabled: true }
+        Self { label: id.clone(), id, icon: None, enabled: true, selected: false }
     }
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
@@ -85,13 +37,18 @@ impl SelectorItem {
         self
     }
 
-    pub fn icon(mut self, icon: impl Into<SelectorItemIcon>) -> Self {
+    pub fn icon(mut self, icon: impl Into<IconSource>) -> Self {
         self.icon = Some(icon.into());
         self
     }
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
         self
     }
 
@@ -103,12 +60,16 @@ impl SelectorItem {
         &self.label
     }
 
-    pub fn icon_ref(&self) -> Option<&SelectorItemIcon> {
+    pub fn icon_ref(&self) -> Option<&IconSource> {
         self.icon.as_ref()
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.selected
     }
 }
 
@@ -121,12 +82,8 @@ impl SelectorItemLike for SelectorItem {
         self.enabled
     }
 
-    fn label_text(&self) -> &SharedString {
-        &self.label
-    }
-
-    fn icon(&self) -> Option<&SelectorItemIcon> {
-        self.icon.as_ref()
+    fn is_selected(&self) -> bool {
+        self.selected
     }
 }
 

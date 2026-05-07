@@ -4,7 +4,7 @@ use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 
 use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, default_selector_template};
 pub use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemIcon, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
+    SelectorItem, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
     make_selector_item_template, normalize_selector_items,
 };
 
@@ -36,7 +36,6 @@ where
 {
     pub id: &'a SharedString,
     pub label: &'a SharedString,
-    pub selected_icon: Option<&'a SelectorItemIcon>,
     pub selected_index: Option<usize>,
     pub items: &'a [T],
     pub open: bool,

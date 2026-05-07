@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, prelude::*, px, svg};
+use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, prelude::*, px};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::{
-    SelectorItemIcon, SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath,
-};
+use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel, SelectorItemTemplate, SelectorPath};
 use crate::controls::state::ControlFocusState;
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
@@ -146,8 +144,7 @@ where
                     .flex()
                     .items_center()
                     .gap(px(appearance.item_gap))
-                    .child(render_selected_item_icon(item.icon(), color, appearance.item_icon_size))
-                    .child(div().flex_1().child(item.label_text().clone()))
+                    .child(div().flex_1().child(item.id().clone()))
                     .into_any_element()
             };
 
@@ -200,16 +197,6 @@ where
 fn render_selection_checkmark(selected: bool, color: gpui::Hsla, size: f32) -> AnyElement {
     if selected {
         render_lucide_icon(LucideIcon::Check, color, size)
-    } else {
-        div().size(px(size)).into_any_element()
-    }
-}
-
-fn render_selected_item_icon(icon: Option<&SelectorItemIcon>, color: gpui::Hsla, size: f32) -> AnyElement {
-    if let Some(icon) = icon.and_then(SelectorItemIcon::lucide) {
-        render_lucide_icon(icon, color, size)
-    } else if let Some(path) = icon.and_then(SelectorItemIcon::svg_path) {
-        svg().external_path(path.clone()).size(px(size)).text_color(color).into_any_element()
     } else {
         div().size(px(size)).into_any_element()
     }

@@ -52,9 +52,13 @@ where
 
     pub(crate) fn from_builder(builder: SelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
-        let selected_index = builder.initial_selected_id.as_ref().and_then(|selected_id| {
-            builder.model.items.iter().position(|item| item.id() == selected_id && item.is_enabled())
-        });
+        let selected_index = builder
+            .initial_selected_id
+            .as_ref()
+            .and_then(|selected_id| {
+                builder.model.items.iter().position(|item| item.id() == selected_id && item.is_enabled())
+            })
+            .or_else(|| builder.model.items.iter().position(|item| item.is_selected() && item.is_enabled()));
 
         Self {
             model: builder.model,
@@ -115,10 +119,6 @@ where
         SelectorRenderModel {
             id: &self.model.id,
             label: self.trigger_label(),
-            selected_icon: self
-                .selected_index
-                .and_then(|index| self.model.items.get(index))
-                .and_then(SelectorItemLike::icon),
             selected_index: self.selected_index,
             items: &self.model.items,
             open: self.open,
@@ -164,7 +164,7 @@ where
     fn trigger_label(&self) -> &SharedString {
         self.selected_index
             .and_then(|index| self.model.items.get(index))
-            .map_or(&self.model.label, SelectorItemLike::label_text)
+            .map_or(&self.model.label, SelectorItemLike::id)
     }
 
     fn index_by_id(&self, item_id: &SharedString) -> Option<usize> {
@@ -250,7 +250,7 @@ where
         }
 
         let item_id = item.id().clone();
-        let label = item.label_text().clone();
+        let label = item.id().clone();
         let changed = self.selected_index != Some(index);
         self.selected_index = Some(index);
         self.close_menu();
@@ -495,7 +495,7 @@ mod tests {
     fn item_template_is_installed() {
         let builder = Selector::new("selector")
             .items(items())
-            .with_item_template(|item, _cx| gpui::div().child(item.item.label_text().clone()));
+            .with_item_template(|item, _cx| gpui::div().child(item.item.id().clone()));
 
         assert!(builder.model.item_template.is_some());
     }
