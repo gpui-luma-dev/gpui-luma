@@ -1,3 +1,9 @@
+mod template_pipeline;
+
+pub(in crate::gallery) use template_pipeline::{
+    render_combobox_popup_preview_from_templates, render_search_selector_popup_preview_from_templates,
+};
+
 use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{ThemePartUsage, all_theme_usages, resolve_palette_color};
 

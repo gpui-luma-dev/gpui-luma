@@ -9,6 +9,10 @@ use crate::controls::icon::IconSource;
 pub trait SelectorItemLike {
     fn id(&self) -> &SharedString;
 
+    fn label(&self) -> &SharedString {
+        self.id()
+    }
+
     fn is_enabled(&self) -> bool {
         true
     }
@@ -78,6 +82,10 @@ impl SelectorItem {
 impl SelectorItemLike for SelectorItem {
     fn id(&self) -> &SharedString {
         &self.id
+    }
+
+    fn label(&self) -> &SharedString {
+        &self.label
     }
 
     fn is_enabled(&self) -> bool {

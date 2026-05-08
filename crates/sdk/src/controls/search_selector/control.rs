@@ -5,10 +5,7 @@ use gpui::{
 };
 
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::controls::selector_panel::{
-    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
-};
-use crate::theme::ControlSize;
+use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::interaction::ControlInteraction;
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
@@ -16,7 +13,9 @@ use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::TextFieldState;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
-use super::model::SearchSelectorBuilder;
+use super::item_template::SearchSelectorItemTemplate;
+use super::model::{SearchSelectorBuilder, SearchSelectorPopupAppearanceProvider};
+use super::panel_template::{SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate};
 use super::template::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers,
@@ -393,12 +392,40 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
+    #[deprecated(note = "Prefer set_panel_template(...) + set_item_template(...)")]
     pub fn set_items_template(
         &mut self,
         template: std::sync::Arc<dyn SearchSelectorItemsTemplate>,
         cx: &mut Context<Self>,
     ) {
         self.model.items_template = template;
+        cx.notify();
+    }
+
+    pub fn set_panel_template(
+        &mut self,
+        template: std::sync::Arc<dyn SearchSelectorPanelTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.panel_template = template;
+        cx.notify();
+    }
+
+    pub fn set_popup_appearance_provider(
+        &mut self,
+        provider: SearchSelectorPopupAppearanceProvider,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.popup_appearance_provider = provider;
+        cx.notify();
+    }
+
+    pub fn set_item_template(
+        &mut self,
+        template: Option<SearchSelectorItemTemplate<super::behavior::SelectionItem>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.item_template = template;
         cx.notify();
     }
 
@@ -451,7 +478,7 @@ impl Render for SearchSelectorControl {
 
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
+        let appearance = (self.model.popup_appearance_provider)();
         let selected_label = self
             .committed_selection
             .and_then(|index| self.model.items.get(index))
@@ -485,19 +512,9 @@ impl Render for SearchSelectorControl {
             px(textfield_side_padding + placeholder_width + search_icon_width + spacing)
         };
 
-        let menu_items = self
-            .behavior
-            .state
-            .filtered
-            .iter()
-            .enumerate()
-            .map(|(visible_index, item_index)| {
-                let item = &self.model.items[*item_index];
-                SelectorItem::new(format!("search-selector-item-{}-{visible_index}", item.id)).label(item.label.clone())
-            })
-            .collect::<Vec<_>>();
+        let visible_indices = self.behavior.state.filtered.clone();
 
-        let item_hovers = (0..menu_items.len())
+        let item_hovers = (0..visible_indices.len())
             .map(|index| {
                 Box::new(cx.listener(move |this, hovered, _window, cx| {
                     this.handle_item_hover(index, *hovered, cx);
@@ -505,7 +522,7 @@ impl Render for SearchSelectorControl {
             })
             .collect::<Vec<_>>();
 
-        let item_clicks = (0..menu_items.len())
+        let item_clicks = (0..visible_indices.len())
             .map(|index| {
                 Box::new(cx.listener(move |this, event, window, cx| {
                     this.handle_item_click(index, event, window, cx);
@@ -522,11 +539,11 @@ impl Render for SearchSelectorControl {
             self.last_keyboard_event
         ));
 
-        let (popup_content, popup_search_field, popup_list_panel) = if self.behavior.state.open {
+        let popup_content = if self.behavior.state.open {
             let list_id = SharedString::from("search-selector-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
-            let item_count = menu_items.len();
+            let item_count = visible_indices.len();
             let min_visible_rows = self.model.min_visible_rows.max(1);
             let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
             let visible_rows = item_count.max(1).clamp(min_visible_rows, max_visible_rows) as f32;
@@ -537,7 +554,7 @@ impl Render for SearchSelectorControl {
             self.popup_surface.configure(item_count.max(1), row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
 
-            let list_content = if menu_items.is_empty() {
+            let list_content = if visible_indices.is_empty() {
                 div()
                     .flex()
                     .items_center()
@@ -554,23 +571,44 @@ impl Render for SearchSelectorControl {
                     .items_template
                     .render(
                         &SearchSelectorItemsRenderModel {
-                            id: &list_id,
-                            items: &menu_items,
+                            menu_id: &list_id,
+                            search_selector_id: &self.model.id,
+                            items: &self.model.items,
+                            visible_indices: &visible_indices,
+                            selected_source_index: self.behavior.state.selected_item,
+                            active_visible_index: self.behavior.state.highlighted_filtered,
+                            open: self.behavior.state.open,
+                            enabled: true,
+                            item_template: self.model.item_template.as_ref(),
                             appearance: appearance.clone(),
-                            highlighted_index: self.behavior.state.highlighted_filtered,
                         },
                         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+                        cx,
                     )
                     .into_any_element()
             };
 
-            (
-                Some(div().w_full().into_any_element()),
-                Some(self.popup_search_textfield.clone().into_any_element()),
-                Some(self.popup_surface.render(list_content)),
-            )
+            let panel_content = self.model.panel_template.render(
+                SearchSelectorPanelRenderModel {
+                    id: &self.model.id,
+                    items: &self.model.items,
+                    visible_indices: &visible_indices,
+                    selected_source_index: self.behavior.state.selected_item,
+                    active_visible_index: self.behavior.state.highlighted_filtered,
+                    open: self.behavior.state.open,
+                    enabled: true,
+                    item_template: self.model.item_template.as_ref(),
+                    popup_bounds: self.trigger_bounds,
+                    popup_appearance: appearance.clone(),
+                    search_content: Some(self.popup_search_textfield.clone().into_any_element()),
+                    list_content: self.popup_surface.render(list_content),
+                },
+                cx,
+            );
+
+            Some(panel_content)
         } else {
-            (None, None, None)
+            None
         };
 
         let handlers = SearchSelectorTemplateHandlers {
@@ -595,17 +633,14 @@ impl Render for SearchSelectorControl {
                 focus_visible: self.behavior.state.open || self.trigger_focused,
                 ..TextFieldState::default()
             },
+            trigger_theme: self.model.textfield_theme.clone(),
             full_width: self.model.full_width,
             minimum_trigger_width,
             status_label,
             status_detail,
             status_color: autocomplete_appearance.status_color,
             muted_text_color: autocomplete_appearance.muted_text_color,
-            popup_bounds: self.trigger_bounds,
-            popup_appearance: appearance,
             popup_content,
-            popup_search_field,
-            popup_list_panel,
         };
 
         div()

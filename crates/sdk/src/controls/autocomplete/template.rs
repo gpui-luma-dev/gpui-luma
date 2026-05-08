@@ -135,6 +135,13 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
                                         .w(model.popup_width)
+                                        .bg(model.popup_appearance.background)
+                                        .border_1()
+                                        .border_color(model.popup_appearance.border)
+                                        .rounded(px(model.popup_appearance.radius))
+                                        .shadow(model.popup_appearance.shadow.clone())
+                                        .overflow_hidden()
+                                        .occlude()
                                         .child(popup_content),
                                 ),
                         )
@@ -188,13 +195,7 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
             .flex()
             .flex_col()
             .min_w(px(appearance.min_width))
-            .p(px(appearance.padding))
-            .bg(appearance.background)
-            .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow.clone())
-            .occlude();
+            .p(px(appearance.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {

@@ -11,15 +11,13 @@ use gpui_luma::controls::autocomplete::{
     default_autocomplete_textbox_template,
 };
 use gpui_luma::controls::combobox::{
-    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
-    ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplate, ComboBoxTemplateHandlers,
-    SelectionItem as ComboBoxSelectionItem, default_combobox_items_template, default_combobox_panel_template,
-    default_combobox_template,
+    ComboBoxItemsTemplate, ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplate, ComboBoxTemplateHandlers,
+    default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
 };
 use gpui_luma::controls::search_selector::{
-    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
-    SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers,
-    default_search_selector_items_template, default_search_selector_template,
+    SearchSelectorItemsTemplate, SearchSelectorPanelTemplate, SearchSelectorRenderModel, SearchSelectorTemplate,
+    SearchSelectorTemplateHandlers, default_search_selector_items_template, default_search_selector_panel_template,
+    default_search_selector_template,
 };
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplate,
@@ -39,7 +37,10 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane_with_description, notify_entity};
+use super::super::shared::{
+    gallery_pane_with_description, notify_entity, render_combobox_popup_preview_from_templates,
+    render_search_selector_popup_preview_from_templates,
+};
 
 const SELECTOR_TEMPLATES_DESCRIPTION: &str = concat!(
     "Template matrix for selection controls. ",
@@ -90,6 +91,7 @@ struct SelectorControlsTemplatePreview {
     selector_items_template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
     search_selector_template: Arc<dyn SearchSelectorTemplate>,
     search_selector_items_template: Arc<dyn SearchSelectorItemsTemplate>,
+    search_selector_panel_template: Arc<dyn SearchSelectorPanelTemplate>,
 }
 
 #[derive(Clone, Copy)]
@@ -137,6 +139,7 @@ impl SelectorControlsTemplatePreview {
             selector_items_template: default_selector_items_template(),
             search_selector_template: default_search_selector_template(),
             search_selector_items_template: default_search_selector_items_template(),
+            search_selector_panel_template: default_search_selector_panel_template(),
         }
     }
 }
@@ -459,24 +462,19 @@ fn render_search_selector_trigger(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
-
     let model = SearchSelectorRenderModel {
         id: id.clone(),
         trigger_label: SharedString::from(placeholder),
         trigger_label_is_placeholder: true,
         trigger_state: state.textfield_state,
+        trigger_theme: preview.textfield_theme.clone(),
         full_width: true,
         minimum_trigger_width: px(168.0),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
         status_color: preview.theme.chrome().muted_text,
         muted_text_color: preview.theme.chrome().muted_text,
-        popup_bounds: None,
-        popup_appearance,
         popup_content: None,
-        popup_search_field: None,
-        popup_list_panel: None,
     };
 
     div()
@@ -558,50 +556,16 @@ fn render_popup_preview(
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
             )
             .into_any_element(),
-        SelectorTemplateControl::ComboBox => {
-            let combobox_items = items
-                .iter()
-                .enumerate()
-                .map(|(index, item)| {
-                    ComboBoxSelectionItem::new(format!("combobox-preview-item-{index}"), item.label_text().clone())
-                })
-                .collect::<Vec<_>>();
-            let visible_indices = (0..combobox_items.len()).collect::<Vec<_>>();
-
-            let list = preview.combobox_items_template.render(
-                &ComboBoxItemsRenderModel {
-                    menu_id: &popup_id,
-                    combobox_id: &popup_id,
-                    items: &combobox_items,
-                    visible_indices: &visible_indices,
-                    selected_source_index: None,
-                    active_visible_index: Some(0),
-                    open: true,
-                    enabled: true,
-                    item_template: None,
-                    appearance: appearance.clone(),
-                },
-                ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
-                cx,
-            );
-
-            preview.combobox_panel_template.render(
-                ComboBoxPanelRenderModel {
-                    id: &popup_id,
-                    items: &combobox_items,
-                    visible_indices: &visible_indices,
-                    selected_source_index: None,
-                    active_visible_index: Some(0),
-                    open: true,
-                    enabled: true,
-                    item_template: None,
-                    popup_bounds: None,
-                    popup_appearance: appearance.clone(),
-                    list_content: list.into_any_element(),
-                },
-                cx,
-            )
-        }
+        SelectorTemplateControl::ComboBox => render_combobox_popup_preview_from_templates(
+            &popup_id,
+            &items,
+            appearance.clone(),
+            &preview.combobox_items_template,
+            &preview.combobox_panel_template,
+            item_hovers,
+            item_clicks,
+            cx,
+        ),
         SelectorTemplateControl::Selector => preview
             .selector_items_template
             .render(
@@ -621,66 +585,49 @@ fn render_popup_preview(
                 cx,
             )
             .into_any_element(),
-        SelectorTemplateControl::SearchSelector => preview
-            .search_selector_items_template
-            .render(
-                &SearchSelectorItemsRenderModel {
-                    id: &popup_id,
-                    items: &items,
-                    appearance: appearance.clone(),
-                    highlighted_index: Some(0),
-                },
-                SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+        SelectorTemplateControl::SearchSelector => {
+            let search_id = SharedString::from(format!("{id}-popup-search-preview"));
+            let search_placeholder = SharedString::from("Selection search");
+            let search_value = SharedString::from("");
+            let search_offsets = textfield_character_offsets(
+                search_value.as_ref(),
+                preview.textfield_theme.clone(),
+                TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
+                true,
+                window,
+            );
+
+            let search_model = TextFieldRenderModel {
+                id: &search_id,
+                placeholder: &search_placeholder,
+                value: &search_value,
+                prefix_icon: None,
+                enabled: true,
+                full_width: true,
+                state: TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
+                caret_visible: false,
+                horizontal_scroll: 0.0,
+                character_offsets: search_offsets,
+            };
+
+            let search_content = preview
+                .textfield_template
+                .render(&search_model, textfield_preview_handlers(), window, cx)
+                .into_any_element();
+
+            render_search_selector_popup_preview_from_templates(
+                &popup_id,
+                &items,
+                appearance.clone(),
+                &preview.search_selector_items_template,
+                &preview.search_selector_panel_template,
+                search_content,
+                item_hovers,
+                item_clicks,
+                cx,
             )
-            .into_any_element(),
+        }
     };
-
-    if matches!(control, SelectorTemplateControl::SearchSelector) {
-        let search_id = SharedString::from(format!("{id}-popup-search-preview"));
-        let search_placeholder = SharedString::from("Selection search");
-        let search_value = SharedString::from("");
-        let search_offsets = textfield_character_offsets(
-            search_value.as_ref(),
-            preview.textfield_theme.clone(),
-            TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
-            true,
-            window,
-        );
-
-        let search_model = TextFieldRenderModel {
-            id: &search_id,
-            placeholder: &search_placeholder,
-            value: &search_value,
-            prefix_icon: None,
-            enabled: true,
-            full_width: true,
-            state: TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
-            caret_visible: false,
-            horizontal_scroll: 0.0,
-            character_offsets: search_offsets,
-        };
-
-        return div()
-            .w(px(168.0))
-            .child(
-                div()
-                    .border_1()
-                    .border_color(appearance.border)
-                    .rounded(px(appearance.radius))
-                    .bg(appearance.background)
-                    .shadow(appearance.shadow.clone())
-                    .overflow_hidden()
-                    .child(div().p(px(8.0)).child(preview.textfield_template.render(
-                        &search_model,
-                        textfield_preview_handlers(),
-                        window,
-                        cx,
-                    )))
-                    .child(div().h(px(1.0)).bg(appearance.border))
-                    .child(rows),
-            )
-            .into_any_element();
-    }
 
     div().w(px(168.0)).child(rows).into_any_element()
 }

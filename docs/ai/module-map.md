@@ -154,6 +154,12 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - exports builder/model/template + `ComboBoxEvent`, `TypingPolicy`
 - `search_selector/*`
   - read-only trigger selector with popup-hosted search field and filtered list
+  - layered template composition:
+    - control template (`SearchSelectorTemplate`)
+    - panel template (`SearchSelectorPanelTemplate`)
+    - item template (`SearchSelectorItemTemplate`)
+  - builder/runtime supports `panel_template(...)` and `with_item_template(...)`
+  - transitional `items_template(...)` hook remains for compatibility
   - exports builder/model/template + `SearchSelectorEvent`
 - `selector/*`
   - popup selector (typed or built-in item model)

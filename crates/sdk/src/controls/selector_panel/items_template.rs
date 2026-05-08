@@ -144,7 +144,7 @@ where
                     .flex()
                     .items_center()
                     .gap(px(appearance.item_gap))
-                    .child(div().flex_1().child(item.id().clone()))
+                    .child(div().flex_1().child(item.label().clone()))
                     .into_any_element()
             };
 

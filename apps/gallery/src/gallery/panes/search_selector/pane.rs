@@ -1,5 +1,7 @@
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::search_selector::{self, SearchSelector, SearchSelectorEvent, SelectionItem};
+use gpui_luma::controls::selector_panel::default_selector_items_panel_appearance;
+use gpui_luma::theme::ControlSize;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
@@ -13,13 +15,18 @@ pub(in crate::gallery) struct SearchSelectorPane {
 impl SearchSelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let theme_clone = theme.clone();
+        let popup_theme = theme_clone.clone();
         let selector = search_selector::new("gallery-search-selector", search_selector_demo_items())
             .placeholder("Choose a state…")
             .search_placeholder("Selection search")
             .full_width(true)
             .clean_on_escape(true)
             .textfield_template(theme_clone.textfield_template())
+            .textfield_theme(theme_clone.textfield_theme())
             .scrollbar_template(theme_clone.scrollbar_template())
+            .popup_appearance_provider(std::sync::Arc::new(move || {
+                default_selector_items_panel_appearance(&popup_theme.tokens(), ControlSize::Md)
+            }))
             .spawn(cx);
 
         Self { selector }

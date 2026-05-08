@@ -2,15 +2,16 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     AnyElement, App, Bounds, ClickEvent, Hsla, KeyDownEvent, MouseButton, MouseDownEvent, Pixels, ScrollWheelEvent,
-    SharedString, Stateful, Window, anchored, deferred, div, point, prelude::*, px,
+    SharedString, Stateful, Window, div, prelude::*, px,
 };
 
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
-};
-use crate::controls::textfield::{TextFieldState, default_textfield_theme};
+use crate::controls::selector_panel::{SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+
+use super::behavior::SelectionItem;
+use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
+use crate::controls::textfield::{TextFieldState, TextFieldTheme};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -36,17 +37,14 @@ pub struct SearchSelectorRenderModel {
     pub trigger_label: SharedString,
     pub trigger_label_is_placeholder: bool,
     pub trigger_state: TextFieldState,
+    pub trigger_theme: Arc<dyn TextFieldTheme>,
     pub full_width: bool,
     pub minimum_trigger_width: Pixels,
     pub status_label: SharedString,
     pub status_detail: SharedString,
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
-    pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: SelectorItemsPanelAppearance,
     pub popup_content: Option<AnyElement>,
-    pub popup_search_field: Option<AnyElement>,
-    pub popup_list_panel: Option<AnyElement>,
 }
 
 pub trait SearchSelectorTemplate: Send + Sync {
@@ -85,8 +83,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_appearance = default_textfield_theme().resolve(model.trigger_state, true);
-        let structured_popup = model.popup_search_field.is_some() || model.popup_list_panel.is_some();
+        let trigger_appearance = model.trigger_theme.resolve(model.trigger_state, true);
 
         div()
             .id(format!("{}-root", model.id))
@@ -168,46 +165,21 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                         .w_full(),
                     ),
             )
-            .when_some(model.popup_content, |root, popup_content| {
-                root.when_some(model.popup_bounds, |root, bounds| {
-                    root.child(
-                        deferred(
-                            anchored()
-                                .snap_to_window_with_margin(px(8.0))
-                                .anchor(gpui::Corner::TopLeft)
-                                .position(point(bounds.left(), bounds.bottom()))
-                                .offset(point(px(0.0), px(4.0)))
-                                .child(
-                                    div()
-                                        .id(format!("{}-popup-shell", model.id))
-                                        .w(bounds.size.width)
-                                        .bg(model.popup_appearance.background)
-                                        .border_1()
-                                        .border_color(model.popup_appearance.border)
-                                        .rounded(px(model.popup_appearance.radius))
-                                        .shadow(model.popup_appearance.shadow.clone())
-                                        .overflow_hidden()
-                                        .when_some(model.popup_search_field, |shell, search| {
-                                            shell
-                                                .child(div().p(px(8.0)).child(search))
-                                                .child(div().h(px(1.0)).bg(model.popup_appearance.border))
-                                        })
-                                        .when_some(model.popup_list_panel, |shell, list| shell.child(list))
-                                        .when(!structured_popup, |shell| shell.child(popup_content)),
-                                ),
-                        )
-                        .with_priority(1),
-                    )
-                })
-            })
+            .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
     }
 }
 
 pub struct SearchSelectorItemsRenderModel<'a> {
-    pub id: &'a SharedString,
-    pub items: &'a [SelectorItem],
+    pub menu_id: &'a SharedString,
+    pub search_selector_id: &'a SharedString,
+    pub items: &'a [SelectionItem],
+    pub visible_indices: &'a [usize],
+    pub selected_source_index: Option<usize>,
+    pub active_visible_index: Option<usize>,
+    pub open: bool,
+    pub enabled: bool,
+    pub item_template: Option<&'a SearchSelectorItemTemplate<SelectionItem>>,
     pub appearance: SelectorItemsPanelAppearance,
-    pub highlighted_index: Option<usize>,
 }
 
 pub struct SearchSelectorItemsTemplateHandlers {
@@ -220,6 +192,7 @@ pub trait SearchSelectorItemsTemplate: Send + Sync {
         &self,
         model: &SearchSelectorItemsRenderModel<'_>,
         handlers: SearchSelectorItemsTemplateHandlers,
+        cx: &mut App,
     ) -> Stateful<gpui::Div>;
 }
 
@@ -235,15 +208,48 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
         &self,
         model: &SearchSelectorItemsRenderModel<'_>,
         handlers: SearchSelectorItemsTemplateHandlers,
+        cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
         let appearance = model.appearance.clone();
-        let mut root = div().id(format!("{}-rows", model.id)).flex().flex_col().p(px(appearance.padding));
+
+        let mut root = div()
+            .id(format!("{}-rows", model.menu_id))
+            .relative()
+            .flex()
+            .flex_col()
+            .min_w(px(appearance.min_width))
+            .p(px(appearance.padding));
         let mut clicks = item_clicks.into_iter();
 
-        for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
+        for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
+        {
+            let Some(item) = model.items.get(source_index) else {
+                continue;
+            };
+
+            let selected = model.selected_source_index == Some(source_index);
+            let active = model.active_visible_index == Some(visible_index);
+            let content = if let Some(item_template) = model.item_template {
+                item_template(
+                    &SearchSelectorItemRenderModel {
+                        search_selector_id: model.search_selector_id,
+                        item,
+                        source_index,
+                        visible_index,
+                        selected,
+                        active,
+                        open: model.open,
+                        enabled: model.enabled,
+                    },
+                    cx,
+                )
+            } else {
+                div().flex_1().child(item.label.clone()).into_any_element()
+            };
+
             let mut row = div()
-                .id(format!("{}-row-{}", model.id, index))
+                .id(format!("{}-row-{}", model.menu_id, visible_index))
                 .flex()
                 .items_center()
                 .min_h(px(appearance.item_height))
@@ -253,14 +259,14 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                 .text_size(px(appearance.item_typography.size))
                 .line_height(px(appearance.item_typography.line_height))
                 .font_weight(appearance.item_typography.weight)
-                .child(item.label_text().clone());
+                .child(content);
 
             row = row.cursor_pointer().on_hover(hover).hover({
                 let hover_background = appearance.item_hover_background;
                 move |style| style.bg(hover_background)
             });
 
-            if model.highlighted_index.is_some_and(|active| active == index) {
+            if active {
                 row = row.bg(appearance.item_hover_background);
             }
 
@@ -275,16 +281,36 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
     }
 }
 
+#[deprecated(note = "Use SearchSelectorItemsTemplate::render with SearchSelectorItemsRenderModel")]
 pub fn render_popup_rows(
-    id: &SharedString,
-    items: &[SelectorItem],
+    menu_id: &SharedString,
+    search_selector_id: &SharedString,
+    items: &[SelectionItem],
+    visible_indices: &[usize],
+    selected_source_index: Option<usize>,
+    active_visible_index: Option<usize>,
+    open: bool,
+    enabled: bool,
+    item_template: Option<&SearchSelectorItemTemplate<SelectionItem>>,
     appearance: SelectorItemsPanelAppearance,
-    highlighted_index: Option<usize>,
     item_hovers: Vec<SelectorPanelHoverHandler>,
     item_clicks: Vec<SelectorPanelClickHandler>,
+    cx: &mut App,
 ) -> Stateful<gpui::Div> {
     DefaultSearchSelectorItemsTemplate.render(
-        &SearchSelectorItemsRenderModel { id, items, appearance, highlighted_index },
+        &SearchSelectorItemsRenderModel {
+            menu_id,
+            search_selector_id,
+            items,
+            visible_indices,
+            selected_source_index,
+            active_visible_index,
+            open,
+            enabled,
+            item_template,
+            appearance,
+        },
         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
+        cx,
     )
 }
