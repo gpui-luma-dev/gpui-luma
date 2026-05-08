@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gpui::{
     App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
     Render, SharedString, Window, div, prelude::*,
@@ -144,7 +146,9 @@ where
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> SelectorTemplateHandlers {
-        let selectable_indices = self.selectable_indices();
+        let entity = cx.entity();
+        let hover_entity = entity.clone();
+        let click_entity = entity.clone();
 
         SelectorTemplateHandlers {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
@@ -154,21 +158,16 @@ where
             trigger_mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
             trigger_mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
             root_mouse_down_out: Box::new(cx.listener(Self::handle_mouse_down_out)),
-            item_hovers: (0..self.model.items.len())
-                .map(|index| {
-                    Box::new(cx.listener(move |this, hovered, _window, cx| {
-                        this.handle_item_hover(index, *hovered, cx);
-                    })) as _
-                })
-                .collect(),
-            item_clicks: selectable_indices
-                .into_iter()
-                .map(|index| {
-                    Box::new(cx.listener(move |this, event, _window, cx| {
-                        this.handle_item_click(index, event, cx);
-                    })) as _
-                })
-                .collect(),
+            on_item_hover: Arc::new(move |model_index, hovered, _window, app| {
+                let _ = hover_entity.update(app, |this, cx| {
+                    this.handle_item_hover(model_index, *hovered, cx);
+                });
+            }),
+            on_item_click: Arc::new(move |model_index, event, _window, app| {
+                let _ = click_entity.update(app, |this, cx| {
+                    this.handle_item_click(model_index, event, cx);
+                });
+            }),
         }
     }
 

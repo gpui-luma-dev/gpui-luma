@@ -32,6 +32,29 @@ pub struct SearchSelectorTemplateHandlers {
     pub trigger_bounds: SearchSelectorTriggerBoundsHandler,
 }
 
+fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_mouse_up(_: &gpui::MouseUpEvent, _: &mut Window, _: &mut App) {}
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+
+impl Default for SearchSelectorTemplateHandlers {
+    fn default() -> Self {
+        Self {
+            key_down: Box::new(noop_key_down),
+            scroll_wheel: Box::new(noop_scroll_wheel),
+            trigger_click: Box::new(noop_click),
+            trigger_hover: Box::new(noop_hover),
+            trigger_mouse_down: Box::new(noop_mouse_down),
+            trigger_mouse_up: Box::new(noop_mouse_up),
+            trigger_mouse_up_out: Box::new(noop_mouse_up),
+            trigger_bounds: Box::new(noop_bounds),
+        }
+    }
+}
+
 pub struct SearchSelectorRenderModel {
     pub id: SharedString,
     pub trigger_label: SharedString,

@@ -24,6 +24,25 @@ pub struct ComboBoxTemplateHandlers {
     pub trigger_bounds: ComboBoxTriggerBoundsHandler,
 }
 
+fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+
+impl Default for ComboBoxTemplateHandlers {
+    fn default() -> Self {
+        Self {
+            key_down: Box::new(noop_key_down),
+            scroll_wheel: Box::new(noop_scroll_wheel),
+            clear_click: Box::new(noop_click),
+            trigger_click: Box::new(noop_click),
+            trigger_mouse_down: Box::new(noop_mouse_down),
+            trigger_bounds: Box::new(noop_bounds),
+        }
+    }
+}
+
 pub struct ComboBoxRenderModel {
     pub textfield: AnyElement,
     pub query_is_empty: bool,

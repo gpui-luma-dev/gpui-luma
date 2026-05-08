@@ -22,6 +22,8 @@ pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) +
 pub type SelectorHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type SelectorMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorItemHoverHandler = Arc<dyn Fn(usize, &bool, &mut Window, &mut App) + 'static>;
+pub type SelectorItemClickHandler = Arc<dyn Fn(usize, &ClickEvent, &mut Window, &mut App) + 'static>;
 
 pub struct SelectorTemplateHandlers {
     pub trigger_bounds: SelectorBoundsHandler,
@@ -31,8 +33,30 @@ pub struct SelectorTemplateHandlers {
     pub trigger_mouse_up: SelectorMouseUpHandler,
     pub trigger_mouse_up_out: SelectorMouseUpHandler,
     pub root_mouse_down_out: SelectorMouseDownHandler,
-    pub item_hovers: Vec<SelectorHoverHandler>,
-    pub item_clicks: Vec<SelectorClickHandler>,
+    pub on_item_hover: SelectorItemHoverHandler,
+    pub on_item_click: SelectorItemClickHandler,
+}
+
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
+
+impl Default for SelectorTemplateHandlers {
+    fn default() -> Self {
+        Self {
+            trigger_bounds: Box::new(noop_bounds),
+            trigger_click: Box::new(noop_click),
+            trigger_hover: Box::new(noop_hover),
+            trigger_mouse_down: Box::new(noop_mouse_down),
+            trigger_mouse_up: Box::new(noop_mouse_up),
+            trigger_mouse_up_out: Box::new(noop_mouse_up),
+            root_mouse_down_out: Box::new(noop_mouse_down),
+            on_item_hover: Arc::new(|_, _, _, _| {}),
+            on_item_click: Arc::new(|_, _, _, _| {}),
+        }
+    }
 }
 
 pub trait SelectorTemplate<T = SelectorItem>: Send + Sync
@@ -91,8 +115,8 @@ where
             trigger_mouse_up,
             trigger_mouse_up_out,
             root_mouse_down_out,
-            item_hovers,
-            item_clicks,
+            on_item_hover,
+            on_item_click,
         } = handlers;
         let appearance = self.theme.resolve(model.state);
         let trigger_content = render_item_content(model, &appearance, cx);
@@ -162,6 +186,22 @@ where
                 window.viewport_size(),
             );
             let panel_template = model.panel_template.unwrap_or(self.items_template.as_ref());
+            let item_hovers = (0..model.items.len())
+                .map(|model_index| {
+                    let on_item_hover = on_item_hover.clone();
+                    Box::new(move |hovered: &bool, window: &mut Window, cx: &mut App| {
+                        on_item_hover(model_index, hovered, window, cx);
+                    }) as SelectorHoverHandler
+                })
+                .collect::<Vec<_>>();
+            let item_clicks = (0..model.items.len())
+                .map(|model_index| {
+                    let on_item_click = on_item_click.clone();
+                    Box::new(move |event: &ClickEvent, window: &mut Window, cx: &mut App| {
+                        on_item_click(model_index, event, window, cx);
+                    }) as SelectorClickHandler
+                })
+                .collect::<Vec<_>>();
             let menu = panel_template.render(
                 &SelectorItemsRenderModel {
                     menu_id: model.id,

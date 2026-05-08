@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
-    SharedString, Window, div, prelude::*, px,
-};
+use gpui::{AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
 };
@@ -122,31 +119,7 @@ fn render_trigger_sample(
         .flex_col()
         .items_center()
         .gap(px(6.0))
-        .child(template.render(&model, selector_preview_handlers(items.len()), window, cx))
+        .child(template.render(&model, SelectorTemplateHandlers::default(), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
-
-fn selector_preview_handlers(root_count: usize) -> SelectorTemplateHandlers {
-    SelectorTemplateHandlers {
-        trigger_bounds: Box::new(noop_bounds),
-        trigger_click: Box::new(noop_click),
-        trigger_hover: Box::new(noop_hover),
-        trigger_mouse_down: Box::new(noop_mouse_down),
-        trigger_mouse_up: Box::new(noop_mouse_up),
-        trigger_mouse_up_out: Box::new(noop_mouse_up),
-        root_mouse_down_out: Box::new(noop_mouse_down),
-        item_hovers: (0..root_count).map(|_| Box::new(noop_hover) as _).collect(),
-        item_clicks: (0..root_count).map(|_| Box::new(noop_click) as _).collect(),
-    }
-}
-
-fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
-
-fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
-
-fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
-
-fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
-
-fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, FontWeight, IntoElement, KeyDownEvent, MouseDownEvent, MouseUpEvent,
-    Pixels, Render, ScrollWheelEvent, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
+    AnyElement, App, ClickEvent, Context, FontWeight, IntoElement, KeyDownEvent, MouseDownEvent, MouseUpEvent, Render,
+    SharedString, TextRun, Window, div, font, prelude::*, px, svg,
 };
 use gpui_luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
@@ -327,32 +327,8 @@ fn render_autocomplete_trigger(
     let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
     let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
 
-    let character_offsets = textfield_character_offsets(
-        value.as_ref(),
-        preview.textfield_theme.clone(),
-        state.textfield_state,
-        state.textfield_enabled,
-        window,
-    );
-
-    let text_model = TextFieldRenderModel {
-        id,
-        placeholder: &placeholder,
-        value: &value,
-        prefix_icon: None,
-        enabled: state.textfield_enabled,
-        full_width: true,
-        state: state.textfield_state,
-        caret_visible: false,
-        horizontal_scroll: 0.0,
-        character_offsets,
-    };
-
     let model = AutocompleteTextBoxRenderModel {
-        textfield: preview
-            .textfield_template
-            .render(&text_model, textfield_preview_handlers(), window, cx)
-            .into_any_element(),
+        textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
         query_is_empty: false,
         popup_width: px(168.0),
         status_label: SharedString::from(""),
@@ -366,17 +342,11 @@ fn render_autocomplete_trigger(
 
     div()
         .w(px(168.0))
-        .child(preview.autocomplete_template.render(
-            model,
-            AutocompleteTextBoxTemplateHandlers {
-                key_down: Box::new(noop_textfield_key_down),
-                scroll_wheel: Box::new(noop_scroll_wheel),
-                clear_click: Box::new(noop_click),
-                trigger_bounds: Box::new(noop_bounds),
-            },
-            window,
-            cx,
-        ))
+        .child(
+            preview
+                .autocomplete_template
+                .render(model, AutocompleteTextBoxTemplateHandlers::default(), window, cx),
+        )
         .into_any_element()
 }
 
@@ -393,35 +363,11 @@ fn render_combobox_trigger(
     let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
     let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
 
-    let character_offsets = textfield_character_offsets(
-        value.as_ref(),
-        preview.textfield_theme.clone(),
-        state.textfield_state,
-        state.textfield_enabled,
-        window,
-    );
-
-    let text_model = TextFieldRenderModel {
-        id,
-        placeholder: &placeholder,
-        value: &value,
-        prefix_icon: None,
-        enabled: state.textfield_enabled,
-        full_width: true,
-        state: state.textfield_state,
-        caret_visible: false,
-        horizontal_scroll: 0.0,
-        character_offsets,
-    };
-
     let popup_bounds = (state.id == "pressed")
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
 
     let model = ComboBoxRenderModel {
-        textfield: preview
-            .textfield_template
-            .render(&text_model, textfield_preview_handlers(), window, cx)
-            .into_any_element(),
+        textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
         query_is_empty: false,
         show_down_arrow: true,
         show_clear_button: true,
@@ -438,19 +384,43 @@ fn render_combobox_trigger(
 
     div()
         .w(px(168.0))
-        .child(preview.combobox_template.render(
-            model,
-            ComboBoxTemplateHandlers {
-                key_down: Box::new(noop_textfield_key_down),
-                scroll_wheel: Box::new(noop_scroll_wheel),
-                clear_click: Box::new(noop_click),
-                trigger_click: Box::new(noop_click),
-                trigger_mouse_down: Box::new(noop_mouse_down),
-                trigger_bounds: Box::new(noop_bounds),
-            },
-            window,
-            cx,
-        ))
+        .child(preview.combobox_template.render(model, ComboBoxTemplateHandlers::default(), window, cx))
+        .into_any_element()
+}
+
+fn render_preview_textfield(
+    preview: &SelectorControlsTemplatePreview,
+    id: &SharedString,
+    placeholder: &SharedString,
+    value: &SharedString,
+    state: &SelectorTemplateStateSample,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let character_offsets = textfield_character_offsets(
+        value.as_ref(),
+        preview.textfield_theme.clone(),
+        state.textfield_state,
+        state.textfield_enabled,
+        window,
+    );
+
+    let text_model = TextFieldRenderModel {
+        id,
+        placeholder,
+        value,
+        prefix_icon: None,
+        enabled: state.textfield_enabled,
+        full_width: true,
+        state: state.textfield_state,
+        caret_visible: false,
+        horizontal_scroll: 0.0,
+        character_offsets,
+    };
+
+    preview
+        .textfield_template
+        .render(&text_model, textfield_preview_handlers(), window, cx)
         .into_any_element()
 }
 
@@ -479,21 +449,11 @@ fn render_search_selector_trigger(
 
     div()
         .w(px(168.0))
-        .child(preview.search_selector_template.render(
-            model,
-            SearchSelectorTemplateHandlers {
-                key_down: Box::new(noop_textfield_key_down),
-                scroll_wheel: Box::new(noop_scroll_wheel),
-                trigger_click: Box::new(noop_click),
-                trigger_hover: Box::new(noop_hover),
-                trigger_mouse_down: Box::new(noop_mouse_down),
-                trigger_mouse_up: Box::new(noop_mouse_up),
-                trigger_mouse_up_out: Box::new(noop_mouse_up),
-                trigger_bounds: Box::new(noop_bounds),
-            },
-            window,
-            cx,
-        ))
+        .child(
+            preview
+                .search_selector_template
+                .render(model, SearchSelectorTemplateHandlers::default(), window, cx),
+        )
         .into_any_element()
 }
 
@@ -524,7 +484,7 @@ fn render_selector_trigger(
 
     preview
         .selector_template
-        .render(&model, selector_preview_handlers(items.len()), window, cx)
+        .render(&model, SelectorTemplateHandlers::default(), window, cx)
         .w(px(168.0))
         .into_any_element()
 }
@@ -740,39 +700,19 @@ fn char_to_byte_offset(text: &str, char_offset: usize) -> usize {
 
 fn textfield_preview_handlers() -> TextFieldTemplateHandlers {
     TextFieldTemplateHandlers {
-        hover: Box::new(noop_textfield_hover),
-        mouse_down: Box::new(noop_textfield_mouse_down),
-        mouse_move: Box::new(noop_textfield_mouse_move),
-        mouse_up: Box::new(noop_textfield_mouse_up),
-        mouse_up_out: Box::new(noop_textfield_mouse_up),
-        click: Box::new(noop_textfield_click),
-        key_down: Box::new(noop_textfield_key_down),
+        hover: Box::new(noop_hover),
+        mouse_down: Box::new(noop_mouse_down),
+        mouse_move: Box::new(noop_mouse_move),
+        mouse_up: Box::new(noop_mouse_up),
+        mouse_up_out: Box::new(noop_mouse_up),
+        click: Box::new(noop_click),
+        key_down: Box::new(noop_key_down),
     }
 }
 
-fn selector_preview_handlers(root_count: usize) -> SelectorTemplateHandlers {
-    SelectorTemplateHandlers {
-        trigger_bounds: Box::new(noop_bounds),
-        trigger_click: Box::new(noop_click),
-        trigger_hover: Box::new(noop_hover),
-        trigger_mouse_down: Box::new(noop_mouse_down),
-        trigger_mouse_up: Box::new(noop_mouse_up),
-        trigger_mouse_up_out: Box::new(noop_mouse_up),
-        root_mouse_down_out: Box::new(noop_mouse_down),
-        item_hovers: (0..root_count).map(|_| Box::new(noop_hover) as _).collect(),
-        item_clicks: (0..root_count).map(|_| Box::new(noop_click) as _).collect(),
-    }
-}
+fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}
+fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
 
-fn noop_textfield_hover(_: &bool, _: &mut Window, _: &mut App) {}
-fn noop_textfield_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
-fn noop_textfield_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}
-fn noop_textfield_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
-fn noop_textfield_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
-fn noop_textfield_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
-fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
-
-fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
 fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
 fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}

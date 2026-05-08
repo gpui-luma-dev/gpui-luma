@@ -22,6 +22,22 @@ pub struct AutocompleteTextBoxTemplateHandlers {
     pub trigger_bounds: AutocompleteTextBoxTriggerBoundsHandler,
 }
 
+fn noop_key_down(_: &KeyDownEvent, _: &mut Window, _: &mut App) {}
+fn noop_scroll_wheel(_: &ScrollWheelEvent, _: &mut Window, _: &mut App) {}
+fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
+fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
+
+impl Default for AutocompleteTextBoxTemplateHandlers {
+    fn default() -> Self {
+        Self {
+            key_down: Box::new(noop_key_down),
+            scroll_wheel: Box::new(noop_scroll_wheel),
+            clear_click: Box::new(noop_click),
+            trigger_bounds: Box::new(noop_bounds),
+        }
+    }
+}
+
 pub struct AutocompleteTextBoxRenderModel {
     pub textfield: AnyElement,
     pub query_is_empty: bool,
