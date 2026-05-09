@@ -5,7 +5,7 @@
 - Follow the SDK architecture in `docs/control-design.md` and implementation guidance in `docs/control-guidelines.md`:
   - lookless logic core
   - model/presenter/template separation
-  - content presenter (`ControlContent<M>`)
+  - content presenter (`ControlPresenter<M>`)
   - template modifier pipeline
 - First milestone: support icon-button toolbar usage end-to-end.
 - Do not refactor other controls in this phase unless required for `ChoiceGroup` integration.

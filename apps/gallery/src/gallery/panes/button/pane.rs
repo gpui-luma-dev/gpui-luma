@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{
-    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasContent,
+    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
 };
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -164,7 +164,7 @@ impl ButtonTemplateVariant {
         matches!(self, Self::IconButton)
     }
 
-    fn content(self) -> gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> {
+    fn content(self) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> {
         let label = SharedString::from("Button");
         match self {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),

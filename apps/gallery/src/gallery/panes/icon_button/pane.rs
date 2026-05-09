@@ -97,7 +97,7 @@ impl IconButtonPane {
                 };
 
                 button.update(cx, |button, cx| {
-                    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> =
+                    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> =
                         Arc::new(move |_, _| {
                             div()
                                 .font_family("lucide")
@@ -105,7 +105,7 @@ impl IconButtonPane {
                                 .child(char::from(icon).to_string())
                                 .into_any_element()
                         });
-                    button.set_content(content, cx);
+                    button.set_presenter(content, cx);
                 });
             }
         }
@@ -251,7 +251,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let id = SharedString::from(format!("icon-button-preview-{}-{}", row_id, sample.id));
     let icon = LucideIcon::Plus;
-    let content: gpui_luma::controls::command::button::ControlContent<ButtonRenderModel<()>> =
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> =
         Arc::new(move |_: &ButtonRenderModel<()>, _| {
             div()
                 .font_family("lucide")

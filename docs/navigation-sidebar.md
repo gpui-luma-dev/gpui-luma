@@ -3,9 +3,9 @@
 ## Overview
 
 `NavigationSidebar` is a structural routing and focus-coordination control. Its core model is a
-universal `NavNode` container that renders caller-provided content through a `ContentPresenter`.
+universal `NavNode` container that renders caller-provided content through a `Presenter`.
 
-In this design, `ContentPresenter` is not raw `AnyElement` introspection. It is an explicit hosted
+In this design, `Presenter` is not raw `AnyElement` introspection. It is an explicit hosted
 content contract. A presenter projects custom UI into a sidebar row and returns the GPUI focus target
 that the sidebar may use for spatial keyboard traversal.
 
@@ -31,7 +31,7 @@ Hosted content owns:
 `NavigationSidebarTemplate`, dictates how header, footer, and the scrollable middle node list stack
 and flex. Individual `NavNode`s provide hosted content for each row.
 
-## ContentPresenter Contract
+## Presenter Contract
 
 The presenter returns a `NavHostedContent` envelope, not a raw element:
 
@@ -41,7 +41,7 @@ pub struct NavHostedContent {
     pub focus_handle: Option<gpui::FocusHandle>,
 }
 
-pub type NavContentPresenter =
+pub type NavPresenter =
     Arc<dyn Fn(&NavNodeState, &mut Window, &mut App) -> NavHostedContent + Send + Sync>;
 ```
 
@@ -65,7 +65,7 @@ Preferred shape:
 let dashboard_button = Button::new("dashboard").label("Dashboard").spawn(cx);
 let dashboard_focus = focus_handle_for(&dashboard_button, cx);
 
-NavNode::new("dashboard").content_presenter({
+NavNode::new("dashboard").presenter({
     let dashboard_button = dashboard_button.clone();
     move |_state, _window, _cx| {
         NavHostedContent {
@@ -101,11 +101,11 @@ let user_menu_focus = focus_handle_for(&user_menu, cx);
 NavigationSidebar::new("sidebar")
     .header_node(
         NavNode::new("profile")
-            .content_presenter(hosted_entity_presenter(profile_header.clone(), profile_focus.clone())),
+            .presenter(entity_presenter(profile_header.clone(), profile_focus.clone())),
     )
     .items([
         NavNode::new("dashboard")
-            .content_presenter({
+            .presenter({
                 let dashboard_button = dashboard_button.clone();
                 let dashboard_focus = dashboard_focus.clone();
                 move |state, _window, _cx| {
@@ -125,7 +125,7 @@ NavigationSidebar::new("sidebar")
             }),
 
         NavNode::new("settings-group")
-            .content_presenter({
+            .presenter({
                 let settings_disclosure = settings_disclosure.clone();
                 let settings_focus = settings_focus.clone();
                 move |state, _window, _cx| {
@@ -137,12 +137,12 @@ NavigationSidebar::new("sidebar")
             })
             .children([
                 NavNode::new("volume")
-                    .content_presenter(hosted_entity_presenter(volume_slider.clone(), volume_focus.clone())),
+                    .presenter(entity_presenter(volume_slider.clone(), volume_focus.clone())),
             ]),
     ])
     .footer_node(
         NavNode::new("user-menu")
-            .content_presenter(hosted_entity_presenter(user_menu.clone(), user_menu_focus.clone())),
+            .presenter(entity_presenter(user_menu.clone(), user_menu_focus.clone())),
     );
 ```
 
@@ -158,10 +158,10 @@ preserve these contracts:
 The helper shape is intentionally simple:
 
 ```rust
-fn hosted_entity_presenter<T>(
+fn entity_presenter<T>(
     entity: Entity<T>,
     focus_handle: FocusHandle,
-) -> NavContentPresenter
+) -> NavPresenter
 where
     Entity<T>: IntoElement + Clone + 'static,
 {
@@ -188,7 +188,7 @@ branch state into a stable disclosure control without mutating that control duri
 It stores:
 
 - a stable string id,
-- a `NavContentPresenter`,
+- a `NavPresenter`,
 - optional children,
 - expansion state for branch nodes,
 - enabled/visible structural state if needed by the sidebar,
@@ -265,7 +265,7 @@ sidebar to update expansion state.
 
 Those states belong to hosted controls or application routing.
 
-During rendering, `NavRowPresenter` evaluates the node's `content_presenter`, places
+During rendering, `NavRowPresenter` evaluates the node's `presenter`, places
 `NavHostedContent.element` inside the row layout bounds, and records `NavHostedContent.focus_handle`
 for traversal.
 

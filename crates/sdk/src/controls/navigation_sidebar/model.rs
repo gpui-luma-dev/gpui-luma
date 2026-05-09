@@ -4,13 +4,13 @@ use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pix
 use lucide_icons::Icon as LucideIcon;
 
 use super::{NavigationSidebar, NavigationSidebarTemplate, default_navigation_sidebar_template};
-use crate::controls::content_presenter::{ContentPresenter, HostedContent, IntoContentPresenter};
+use crate::controls::presenter::{Presenter, HostedContent, IntoPresenter};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 pub type NavHostedContent = HostedContent;
-pub type NavContentPresenter = ContentPresenter<NavNodeState>;
+pub type NavPresenter = Presenter<NavNodeState>;
 
 #[derive(Clone, Debug)]
 pub struct NavNodeState {
@@ -39,7 +39,7 @@ pub struct NavNode {
     pub(crate) kind: NavNodeKind,
     pub(crate) label: Option<SharedString>,
     pub(crate) icon: Option<LucideIcon>,
-    pub(crate) content_presenter: Option<NavContentPresenter>,
+    pub(crate) presenter: Option<NavPresenter>,
     pub(crate) children: Vec<NavNode>,
     pub(crate) expanded: bool,
     pub(crate) enabled: bool,
@@ -53,7 +53,7 @@ impl NavNode {
             kind: NavNodeKind::Item,
             label: None,
             icon: None,
-            content_presenter: None,
+            presenter: None,
             children: Vec::new(),
             expanded: false,
             enabled: true,
@@ -80,8 +80,8 @@ impl NavNode {
         self
     }
 
-    pub fn content_presenter(mut self, presenter: impl IntoContentPresenter<NavNodeState>) -> Self {
-        self.content_presenter = Some(presenter.into_content_presenter());
+    pub fn presenter(mut self, presenter: impl IntoPresenter<NavNodeState>) -> Self {
+        self.presenter = Some(presenter.into_presenter());
         self
     }
 
@@ -273,11 +273,11 @@ impl NavigationSidebarBuilder {
     }
 }
 
-pub fn hosted_entity_presenter<T>(entity: Entity<T>, focus_handle: FocusHandle) -> NavContentPresenter
+pub fn entity_presenter<T>(entity: Entity<T>, focus_handle: FocusHandle) -> NavPresenter
 where
     Entity<T>: IntoElement + Clone + 'static,
 {
-    ContentPresenter::new(move |_, _, _| NavHostedContent {
+    Presenter::new(move |_, _, _| NavHostedContent {
         element: div().w_full().child(entity.clone()).into_any_element(),
         focus_handle: Some(focus_handle.clone()),
     })

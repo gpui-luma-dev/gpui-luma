@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlContent};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
@@ -94,7 +94,7 @@ impl ChoiceTemplateControl {
         }
     }
 
-    fn content(self, selected: bool) -> ControlContent<ButtonRenderModel<bool>> {
+    fn content(self, selected: bool) -> ControlPresenter<ButtonRenderModel<bool>> {
         match self {
             Self::Radio => Arc::new(move |_, _| div().child("Radio").into_any_element()),
             Self::Checkbox => Arc::new(move |_, _| div().child("Checkbox").into_any_element()),

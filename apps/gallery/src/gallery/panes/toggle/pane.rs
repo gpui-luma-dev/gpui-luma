@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{
-    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, ControlContent, HasContent,
+    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, ControlPresenter, HasPresenter,
 };
 use gpui_luma::controls::toggle;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
@@ -120,7 +120,7 @@ impl TogglePane {
                 self.round_icon_toggle.update(cx, |button, cx| {
                     let new_selected = !*button.data();
                     button.set_data(new_selected, cx);
-                    button.set_content(round_icon_content(new_selected), cx);
+                    button.set_presenter(round_icon_content(new_selected), cx);
                     self.round_icon_selected = new_selected;
                 });
                 cx.notify();
@@ -192,7 +192,7 @@ impl Render for ToggleStatePreview {
     }
 }
 
-fn round_icon_content(selected: bool) -> ControlContent<ButtonRenderModel<bool>> {
+fn round_icon_content(selected: bool) -> ControlPresenter<ButtonRenderModel<bool>> {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
 
     Arc::new(move |_, _| {

@@ -3,7 +3,7 @@ use gpui_luma::controls::checkbox;
 use gpui_luma::controls::choice_group::{self, ChoiceGroupItem};
 use gpui_luma::controls::combobox::{self, SelectionItem, TypingPolicy};
 use gpui_luma::controls::command::button::{Button, ButtonKind};
-use gpui_luma::controls::content_presenter::HasContent;
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuPlacement};
 use gpui_luma::controls::progress;

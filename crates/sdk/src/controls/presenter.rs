@@ -7,17 +7,17 @@ pub struct HostedContent {
     pub focus_handle: Option<FocusHandle>,
 }
 
-pub struct ContentPresenter<State> {
+pub struct Presenter<State> {
     presenter: Arc<dyn for<'a, 'b, 'c> Fn(&'a State, &'b mut Window, &'c mut App) -> HostedContent + 'static>,
 }
 
-impl<State> Clone for ContentPresenter<State> {
+impl<State> Clone for Presenter<State> {
     fn clone(&self) -> Self {
         Self { presenter: self.presenter.clone() }
     }
 }
 
-impl<State> ContentPresenter<State> {
+impl<State> Presenter<State> {
     pub fn new(
         presenter: impl for<'a, 'b, 'c> Fn(&'a State, &'b mut Window, &'c mut App) -> HostedContent + 'static,
     ) -> Self {
@@ -29,31 +29,31 @@ impl<State> ContentPresenter<State> {
     }
 }
 
-pub trait IntoContentPresenter<State> {
-    fn into_content_presenter(self) -> ContentPresenter<State>;
+pub trait IntoPresenter<State> {
+    fn into_presenter(self) -> Presenter<State>;
 }
 
-impl<State> IntoContentPresenter<State> for ContentPresenter<State> {
-    fn into_content_presenter(self) -> ContentPresenter<State> {
+impl<State> IntoPresenter<State> for Presenter<State> {
+    fn into_presenter(self) -> Presenter<State> {
         self
     }
 }
 
-impl<State, F> IntoContentPresenter<State> for F
+impl<State, F> IntoPresenter<State> for F
 where
     F: for<'a, 'b, 'c> Fn(&'a State, &'b mut Window, &'c mut App) -> HostedContent + 'static,
 {
-    fn into_content_presenter(self) -> ContentPresenter<State> {
-        ContentPresenter::new(self)
+    fn into_presenter(self) -> Presenter<State> {
+        Presenter::new(self)
     }
 }
 
 /// The lightweight presenter for control faces (labels, icons, etc.)
-pub type ControlContent<M> = Arc<dyn Fn(&M, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type ControlPresenter<M> = Arc<dyn Fn(&M, &mut App) -> AnyElement + Send + Sync + 'static>;
 
 /// A trait for builders that can host control content.
-pub trait HasContent<M> {
-    fn set_content(&mut self, content: ControlContent<M>);
+pub trait HasPresenter<M> {
+    fn set_presenter(&mut self, content: ControlPresenter<M>);
 
     /// The fluent API for setting custom content.
     fn content<F, E>(mut self, builder: F) -> Self
@@ -62,7 +62,7 @@ pub trait HasContent<M> {
         E: IntoElement + 'static,
         Self: Sized,
     {
-        self.set_content(Arc::new(move |m, cx| builder(m, cx).into_any_element()));
+        self.set_presenter(Arc::new(move |m, cx| builder(m, cx).into_any_element()));
         self
     }
 

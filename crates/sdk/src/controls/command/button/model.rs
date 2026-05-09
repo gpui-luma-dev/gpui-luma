@@ -5,7 +5,7 @@ use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 
 use super::control::Button;
 use super::template::ButtonTemplate;
-pub use crate::controls::content_presenter::{ControlContent, HasContent};
+pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
 use crate::controls::button_family::ButtonFamilyRole;
 use lucide_icons::Icon as LucideIcon;
@@ -26,7 +26,7 @@ impl From<LucideIcon> for ControlIcon {
 pub struct ButtonModel<D = ()> {
     pub(crate) id: SharedString,
     pub(crate) data: D,
-    pub(crate) content: ControlContent<ButtonRenderModel<D>>,
+    pub(crate) content: ControlPresenter<ButtonRenderModel<D>>,
     pub(crate) kind: ButtonKind,
     pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
@@ -38,7 +38,7 @@ pub struct ButtonModel<D = ()> {
 pub struct ButtonRenderModel<D> {
     pub id: SharedString,
     pub data: D,
-    pub content: ControlContent<ButtonRenderModel<D>>,
+    pub content: ControlPresenter<ButtonRenderModel<D>>,
     pub kind: ButtonKind,
     pub role: ButtonFamilyRole,
     pub size: ButtonSize,
@@ -125,8 +125,8 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
     }
 }
 
-impl<D: 'static> HasContent<ButtonRenderModel<D>> for ButtonBuilder<D> {
-    fn set_content(&mut self, content: ControlContent<ButtonRenderModel<D>>) {
+impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for ButtonBuilder<D> {
+    fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>) {
         self.model.content = content;
     }
 }

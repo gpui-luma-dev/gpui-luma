@@ -4,8 +4,8 @@ use gpui::{
     AnyElement, App, Context, Div, Entity, FocusHandle, Focusable, FontFeatures, FontWeight, IntoElement, Stateful,
     Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, hosted_entity_presenter};
-use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasContent};
+use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, entity_presenter};
+use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -305,7 +305,7 @@ impl GalleryPanes {
             PRIMARY_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
 
         let label_theme = theme.navigation_sidebar_theme();
-        nodes.push(NavNode::new("controls-label").content_presenter(
+        nodes.push(NavNode::new("controls-label").presenter(
             move |state: &NavNodeState, window: &mut Window, cx: &mut App| {
                 controls_label_presenter(state, window, cx, label_theme.clone())
             },
@@ -324,7 +324,7 @@ impl GalleryPanes {
             NavNode::new(group.id)
                 .label(group.label)
                 .icon(group.icon)
-                .content_presenter(hosted_entity_presenter(button, focus_handle))
+                .presenter(entity_presenter(button, focus_handle))
                 .expanded(group.expanded)
                 .children(group.pages.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)))
         }));
@@ -494,9 +494,7 @@ fn nav_node_for_page(
 
     route_buttons.push(GalleryRouteButton { page_id: page.id, button: button.clone() });
 
-    let mut node = NavNode::new(page.id)
-        .label(page.label)
-        .content_presenter(hosted_entity_presenter(button, focus_handle));
+    let mut node = NavNode::new(page.id).label(page.label).presenter(entity_presenter(button, focus_handle));
     if let Some(icon) = page.icon {
         node = node.icon(icon);
     }

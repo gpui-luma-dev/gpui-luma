@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 
-use gpui_luma::controls::content_presenter::HasContent;
+use gpui_luma::controls::presenter::HasPresenter;
 // Checkbox was migrated to Button<bool>
 use gpui_luma::controls::textfield::{
     self, TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,

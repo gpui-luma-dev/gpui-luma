@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
 use gpui_luma::controls::command::button::ButtonKind;
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasContent};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use gpui_luma::controls::button_family::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
 };
@@ -297,7 +297,7 @@ impl ModButtonPane {
                 let label = format!("Customized {}", self.custom_clicks);
 
                 self.custom_button.update(cx, |button, cx| {
-                    button.set_content(
+                    button.set_presenter(
                         Arc::new(move |model, _| {
                             let color = if model.state.hovered {
                                 rgb(0x4f46e5)

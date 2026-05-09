@@ -30,7 +30,7 @@ The project is structured around two complementary concerns:
   - `theme/adorner.rs`: adorner/focus-ring descriptors
 
 - **Controls subsystem** (`controls/`)
-  - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `content_presenter`)
+  - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `presenter`)
   - concrete controls (buttons, text inputs, menu controls, nav controls, sliders/scrollbars, etc.)
   - each control module exports builder/event/template/theme types
 

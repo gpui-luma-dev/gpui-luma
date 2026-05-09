@@ -5,9 +5,9 @@ mod theme;
 
 pub use control::{NavigationSidebar, NavigationSidebarEvent};
 pub use model::{
-    NavContentPresenter, NavHostedContent, NavNode, NavNodeKind, NavNodeState, NavigationSidebarBuilder,
+    NavPresenter, NavHostedContent, NavNode, NavNodeKind, NavNodeState, NavigationSidebarBuilder,
     NavigationSidebarModel, NavigationSidebarRenderModel, RenderedCollapseTrigger, RenderedNavNode,
-    RenderedRailSubmenu, hosted_entity_presenter,
+    RenderedRailSubmenu, entity_presenter,
 };
 pub use template::{
     NavigationSidebarTemplate, NavigationSidebarTemplateHandlers, ThemedNavigationSidebarTemplate,

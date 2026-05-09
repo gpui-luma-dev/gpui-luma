@@ -81,8 +81,8 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - `MotionEasing`, `MotionSpec`
   - animation helpers for value transitions
 
-- `content_presenter.rs`
-  - `HostedContent`, `ContentPresenter`, `IntoContentPresenter`
+- `presenter.rs`
+  - `HostedContent`, `Presenter`, `IntoPresenter`
   - generic content/slot abstraction for controls
 
 - `menu_item.rs`

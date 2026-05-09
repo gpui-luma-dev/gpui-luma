@@ -7,7 +7,7 @@ use super::control::ChoiceGroupControl;
 use crate::controls::button_family::{ButtonKind as ChoiceGroupKind, ButtonSize as ChoiceGroupSize};
 use crate::controls::choice_group::{ChoiceGroupItemState, ControlFocusState};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::content_presenter::{ControlContent, HasContent};
+use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ChoiceGroupSelectionMode {
@@ -201,7 +201,7 @@ pub struct ChoiceGroupItemContentModel {
     pub group_enabled: bool,
 }
 
-pub type ChoiceGroupContent = ControlContent<ChoiceGroupItemContentModel>;
+pub type ChoiceGroupContent = ControlPresenter<ChoiceGroupItemContentModel>;
 
 /// Primary item-template bridge for ChoiceGroup: reuses existing `Button<bool>` templates
 /// (for example RadioButton templates) without duplicating visual code.
@@ -439,8 +439,8 @@ impl ChoiceGroupBuilder {
     }
 }
 
-impl HasContent<ChoiceGroupItemContentModel> for ChoiceGroupBuilder {
-    fn set_content(&mut self, content: ChoiceGroupContent) {
+impl HasPresenter<ChoiceGroupItemContentModel> for ChoiceGroupBuilder {
+    fn set_presenter(&mut self, content: ChoiceGroupContent) {
         self.model.content = content;
     }
 }

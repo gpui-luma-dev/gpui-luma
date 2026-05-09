@@ -367,7 +367,7 @@ impl NavigationSidebar {
 
     fn can_interact_with_default_node(&self, node_id: &SharedString) -> bool {
         self.find_node(node_id)
-            .is_some_and(|node| node.enabled && node.kind == NavNodeKind::Item && node.content_presenter.is_none())
+            .is_some_and(|node| node.enabled && node.kind == NavNodeKind::Item && node.presenter.is_none())
     }
 
     fn find_node(&self, node_id: &SharedString) -> Option<&NavNode> {
@@ -791,8 +791,7 @@ fn render_nodes(
             continue;
         }
 
-        let has_default_interaction =
-            node.kind == NavNodeKind::Item && node.enabled && node.content_presenter.is_none();
+        let has_default_interaction = node.kind == NavNodeKind::Item && node.enabled && node.presenter.is_none();
         let focus_handle = has_default_interaction.then(|| {
             let focus_handle = row_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
@@ -816,7 +815,7 @@ fn render_nodes(
         };
         visible_index += 1;
 
-        let custom_content = node.content_presenter.as_ref().map(|presenter| presenter.present(&state, window, cx));
+        let custom_content = node.presenter.as_ref().map(|presenter| presenter.present(&state, window, cx));
         if node.enabled
             && let Some(focus_handle) = custom_content.as_ref().and_then(|content| content.focus_handle.as_ref())
         {

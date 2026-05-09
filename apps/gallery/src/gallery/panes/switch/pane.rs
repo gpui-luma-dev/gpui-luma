@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::switch::{self, Switch};
-use gpui_luma::controls::content_presenter::HasContent;
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::InteractionState;

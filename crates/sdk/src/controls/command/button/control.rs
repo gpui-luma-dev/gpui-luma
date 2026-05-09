@@ -5,7 +5,7 @@ use gpui::{
     MouseUpEvent, Render, SharedString, Window, div, prelude::*, px,
 };
 
-pub use crate::controls::content_presenter::{ControlContent, HasContent};
+pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
 use super::{ButtonBuilder, ButtonRenderModel};
 pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
@@ -45,7 +45,7 @@ impl<D: Clone + 'static> Button<D> {
         Self { model: builder.model, command: CommandCore::new(enabled, cx) }
     }
 
-    pub fn set_content(&mut self, content: ControlContent<ButtonRenderModel<D>>, cx: &mut Context<Self>) {
+    pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>, cx: &mut Context<Self>) {
         self.model.content = content;
         cx.notify();
     }
