@@ -137,6 +137,8 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 
 - `textfield/*`
   - single-line text input
+  - supports `TextFieldVariant` (`Standard`, `Ghost`) via builder `.variant(...)`
+  - theme resolution is variant-aware (`TextFieldTheme::resolve(variant, state, enabled)`)
   - exports builder/model/state/template/theme + `TextFieldEvent`
 - `textarea/*`
   - multiline text editor with scroll + drag behavior
@@ -200,6 +202,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 
 - `tokens.rs`
   - core theme schema (palette, metrics, typography, elevation)
+  - action role palettes include explicit `border` tokens (e.g. `action.ghost.border`)
   - mode support (`ThemeMode`, `ThemeModes`)
   - TOML parsing and conversion into typed theme model
 

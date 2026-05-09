@@ -99,6 +99,7 @@ pub struct ActionRolePalette {
     pub foreground: Hsla,
     pub hover_background: Hsla,
     pub pressed_background: Hsla,
+    pub border: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -436,18 +437,21 @@ impl LumaPalette {
                     foreground: rgb(0xffffff).into(),
                     hover_background: rgb(0x1d4ed8).into(),
                     pressed_background: rgb(0x1e40af).into(),
+                    border: rgb(0x2563eb).into(),
                 },
                 standard: ActionRolePalette {
                     background: rgb(0xf8fafc).into(),
                     foreground: rgb(0x0f172a).into(),
                     hover_background: rgb(0xe2e8f0).into(),
                     pressed_background: rgb(0xcbd5e1).into(),
+                    border: rgb(0xcbd5e1).into(),
                 },
                 ghost: ActionRolePalette {
                     background: rgb(0xf8fafc).into(),
                     foreground: rgb(0x0f172a).into(),
                     hover_background: rgb(0xe2e8f0).into(),
                     pressed_background: rgb(0xcbd5e1).into(),
+                    border: hsla(0.0, 0.0, 0.0, 0.0),
                 },
             },
             state: StatePalette {
@@ -512,18 +516,21 @@ impl LumaPalette {
                     foreground: rgb(0x082f49).into(),
                     hover_background: rgb(0x93c5fd).into(),
                     pressed_background: rgb(0xbfdbfe).into(),
+                    border: rgb(0x60a5fa).into(),
                 },
                 standard: ActionRolePalette {
                     background: rgb(0x1e293b).into(),
                     foreground: rgb(0xf8fafc).into(),
                     hover_background: rgb(0x334155).into(),
                     pressed_background: rgb(0x475569).into(),
+                    border: rgb(0x334155).into(),
                 },
                 ghost: ActionRolePalette {
                     background: rgb(0x1e293b).into(),
                     foreground: rgb(0xf8fafc).into(),
                     hover_background: rgb(0x334155).into(),
                     pressed_background: rgb(0x475569).into(),
+                    border: hsla(0.0, 0.0, 0.0, 0.0),
                 },
             },
             state: StatePalette {
@@ -822,6 +829,8 @@ struct RawActionRolePalette {
     foreground: String,
     hover_background: String,
     pressed_background: String,
+    #[serde(default)]
+    border: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -1074,11 +1083,13 @@ impl RawActionPalette {
 
 impl RawActionRolePalette {
     fn try_into_action_role(self) -> anyhow::Result<ActionRolePalette> {
+        let background = parse_hsla(&self.background)?;
         Ok(ActionRolePalette {
-            background: parse_hsla(&self.background)?,
+            background,
             foreground: parse_hsla(&self.foreground)?,
             hover_background: parse_hsla(&self.hover_background)?,
             pressed_background: parse_hsla(&self.pressed_background)?,
+            border: self.border.as_deref().map(parse_hsla).transpose()?.unwrap_or(background),
         })
     }
 }

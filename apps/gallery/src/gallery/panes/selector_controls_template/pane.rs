@@ -30,6 +30,7 @@ use gpui_luma::controls::selector_panel::{
 };
 use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
+    TextFieldVariant,
 };
 use gpui_luma::theme::{ControlSize, InteractionState};
 use lucide_icons::Icon as LucideIcon;
@@ -400,6 +401,7 @@ fn render_preview_textfield(
     let character_offsets = textfield_character_offsets(
         value.as_ref(),
         preview.textfield_theme.clone(),
+        TextFieldVariant::Standard,
         state.textfield_state,
         state.textfield_enabled,
         window,
@@ -410,6 +412,7 @@ fn render_preview_textfield(
         placeholder,
         value,
         prefix_icon: None,
+        variant: TextFieldVariant::Standard,
         enabled: state.textfield_enabled,
         full_width: true,
         state: state.textfield_state,
@@ -552,6 +555,7 @@ fn render_popup_preview(
             let search_offsets = textfield_character_offsets(
                 search_value.as_ref(),
                 preview.textfield_theme.clone(),
+                TextFieldVariant::Standard,
                 TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
                 true,
                 window,
@@ -562,6 +566,7 @@ fn render_popup_preview(
                 placeholder: &search_placeholder,
                 value: &search_value,
                 prefix_icon: None,
+                variant: TextFieldVariant::Standard,
                 enabled: true,
                 full_width: true,
                 state: TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
@@ -660,11 +665,12 @@ fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: 
 fn textfield_character_offsets(
     value: &str,
     theme: Arc<dyn TextFieldTheme>,
+    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = theme.resolve(state, enabled);
+    let appearance = theme.resolve(variant, state, enabled);
     let value_shared = SharedString::from(value.to_string());
     let run = TextRun {
         len: value_shared.len(),

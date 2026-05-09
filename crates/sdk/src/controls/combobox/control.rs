@@ -460,8 +460,11 @@ impl Render for ComboBoxControl {
             .unwrap_or_else(|| "none".to_string());
 
         let minimum_trigger_width = {
-            let textfield_appearance = crate::controls::textfield::default_textfield_theme()
-                .resolve(crate::controls::textfield::TextFieldState::default(), true);
+            let textfield_appearance = crate::controls::textfield::default_textfield_theme().resolve(
+                crate::controls::textfield::TextFieldVariant::Standard,
+                crate::controls::textfield::TextFieldState::default(),
+                true,
+            );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_appearance.typography.weight;
             let placeholder_run = TextRun {

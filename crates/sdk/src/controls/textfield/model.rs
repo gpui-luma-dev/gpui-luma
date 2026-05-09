@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{TextFieldState, TextFieldTemplate, default_textfield_template};
+use super::{TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
 use super::control::TextFieldControl;
 use crate::controls::command::button::ControlIcon;
 
@@ -14,6 +14,7 @@ pub struct TextFieldModel {
     pub(crate) placeholder: SharedString,
     pub(crate) value: SharedString,
     pub(crate) prefix_icon: Option<ControlIcon>,
+    pub(crate) variant: TextFieldVariant,
     pub(crate) enabled: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
@@ -28,6 +29,7 @@ pub struct TextFieldRenderModel<'a> {
     pub placeholder: &'a SharedString,
     pub value: &'a SharedString,
     pub prefix_icon: Option<&'a ControlIcon>,
+    pub variant: TextFieldVariant,
     pub enabled: bool,
     pub full_width: bool,
     pub state: TextFieldState,
@@ -48,6 +50,7 @@ impl TextFieldBuilder {
                 placeholder: SharedString::default(),
                 value: SharedString::default(),
                 prefix_icon: None,
+                variant: TextFieldVariant::Standard,
                 enabled: true,
                 full_width: false,
                 clean_on_escape: false,
@@ -71,6 +74,11 @@ impl TextFieldBuilder {
 
     pub fn prefix_icon(mut self, icon: impl Into<ControlIcon>) -> Self {
         self.model.prefix_icon = Some(icon.into());
+        self
+    }
+
+    pub fn variant(mut self, variant: TextFieldVariant) -> Self {
+        self.model.variant = variant;
         self
     }
 

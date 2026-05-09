@@ -279,8 +279,13 @@ impl ScrollbarTheme for LumaLiveTheme {
 }
 
 impl TextFieldTheme for LumaLiveTheme {
-    fn resolve(&self, state: crate::controls::textfield::TextFieldState, enabled: bool) -> TextFieldAppearance {
-        DefaultTextFieldTheme::new(self.state.tokens()).resolve(state, enabled)
+    fn resolve(
+        &self,
+        variant: crate::controls::textfield::TextFieldVariant,
+        state: crate::controls::textfield::TextFieldState,
+        enabled: bool,
+    ) -> TextFieldAppearance {
+        DefaultTextFieldTheme::new(self.state.tokens()).resolve(variant, state, enabled)
     }
 }
 

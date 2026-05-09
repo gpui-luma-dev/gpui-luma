@@ -11,7 +11,7 @@ use gpui_luma::controls::content_presenter::HasContent;
 use gpui_luma::controls::textfield::{
     self, TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
-    TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, Validator,
+    TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldVariant, Validator,
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
 use lucide_icons::Icon as LucideIcon;
@@ -52,6 +52,7 @@ impl TextFieldPane {
             text_field: textfield::new("gallery-textfield")
                 .placeholder("Type and press Enter")
                 .prefix_icon(LucideIcon::Search)
+                .variant(TextFieldVariant::Standard)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
@@ -59,6 +60,7 @@ impl TextFieldPane {
                 .spawn(cx),
             plain_text_field: textfield::new("gallery-textfield-plain")
                 .placeholder("Text field without icon")
+                .variant(TextFieldVariant::Ghost)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
@@ -389,7 +391,7 @@ impl Render for TextFieldStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Template state preview"),
+                    .child("Standard variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.into_iter().map(|sample| {
@@ -397,6 +399,28 @@ impl Render for TextFieldStatePreview {
                         &self.template,
                         self.theme.textfield_theme(),
                         sample,
+                        TextFieldVariant::Standard,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Ghost variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.into_iter().map(|sample| {
+                    render_state_sample(
+                        &self.template,
+                        self.theme.textfield_theme(),
+                        sample,
+                        TextFieldVariant::Ghost,
                         chrome.muted_text,
                         window,
                         cx,
@@ -410,6 +434,7 @@ fn render_state_sample(
     template: &Arc<dyn TextFieldTemplate>,
     theme: Arc<dyn TextFieldTheme>,
     sample: TextFieldStateSample,
+    variant: TextFieldVariant,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
@@ -417,12 +442,14 @@ fn render_state_sample(
     let id = SharedString::from(format!("textfield-preview-{}", sample.id));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview");
-    let character_offsets = textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, window);
+    let character_offsets =
+        textfield_character_offsets(value.as_ref(), theme, variant, sample.state, sample.enabled, window);
     let model = TextFieldRenderModel {
         id: &id,
         placeholder: &placeholder,
         value: &value,
         prefix_icon: None,
+        variant,
         enabled: sample.enabled,
         full_width: false,
         state: sample.state,
@@ -445,11 +472,12 @@ fn render_state_sample(
 fn textfield_character_offsets(
     value: &str,
     theme: Arc<dyn TextFieldTheme>,
+    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = theme.resolve(state, enabled);
+    let appearance = theme.resolve(variant, state, enabled);
     let run = TextRun {
         len: value.len(),
         font: {

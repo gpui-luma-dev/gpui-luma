@@ -5,6 +5,13 @@ use gpui::Hsla;
 use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 use crate::controls::textfield::TextFieldState;
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TextFieldVariant {
+    #[default]
+    Standard,
+    Ghost,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct TextFieldAppearance {
     pub background: Hsla,
@@ -26,7 +33,7 @@ pub struct TextFieldAppearance {
 }
 
 pub trait TextFieldTheme: Send + Sync {
-    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldAppearance;
+    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -44,34 +51,76 @@ pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
     label: "TextField",
     parts: &[
         ThemePartUsage {
-            part: "background",
+            part: "standard.background",
             token: "form.input.background",
-            states: &["default"],
+            states: &["standard default", "standard focused"],
             appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
-            part: "hover background",
+            part: "standard.hover_background",
             token: "state.hover.background",
-            states: &["hovered"],
+            states: &["standard hovered"],
             appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
-            part: "foreground",
+            part: "standard.foreground",
             token: "form.input.foreground",
-            states: &["default", "focused"],
+            states: &["standard default", "standard focused"],
             appearance_fields: &["TextFieldAppearance.foreground", "TextFieldAppearance.caret"],
         },
         ThemePartUsage {
-            part: "border",
+            part: "standard.border",
             token: "form.input.border",
-            states: &["default", "hovered", "disabled"],
+            states: &["standard default", "standard hovered", "standard disabled"],
             appearance_fields: &["TextFieldAppearance.border"],
         },
         ThemePartUsage {
-            part: "placeholder and icon",
+            part: "standard.placeholder_and_icon",
             token: "form.input.placeholder",
-            states: &["empty"],
+            states: &["standard empty"],
             appearance_fields: &["TextFieldAppearance.placeholder", "TextFieldAppearance.icon"],
+        },
+        ThemePartUsage {
+            part: "standard.invalid_border",
+            token: "form.input.invalid_border",
+            states: &["standard invalid"],
+            appearance_fields: &["TextFieldAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "ghost.background",
+            token: "action.ghost.background",
+            states: &["ghost focused"],
+            appearance_fields: &["TextFieldAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "ghost.hover_background",
+            token: "action.ghost.hover_background",
+            states: &["ghost hovered"],
+            appearance_fields: &["TextFieldAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "ghost.foreground",
+            token: "action.ghost.foreground",
+            states: &["ghost default", "ghost focused"],
+            appearance_fields: &["TextFieldAppearance.foreground", "TextFieldAppearance.caret"],
+        },
+        ThemePartUsage {
+            part: "ghost.border",
+            token: "action.ghost.border",
+            states: &["ghost default", "ghost hovered", "ghost focused", "ghost invalid", "ghost disabled"],
+            appearance_fields: &["TextFieldAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "ghost.placeholder_and_icon",
+            token: "action.ghost.foreground",
+            states: &["ghost empty"],
+            appearance_fields: &["TextFieldAppearance.placeholder", "TextFieldAppearance.icon"],
+        },
+        ThemePartUsage {
+            part: "ghost.invalid_border",
+            token: "form.input.invalid_border",
+            states: &[],
+            appearance_fields: &[],
         },
         ThemePartUsage {
             part: "selection",
@@ -80,19 +129,13 @@ pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["TextFieldAppearance.selection_background"],
         },
         ThemePartUsage {
-            part: "invalid border",
-            token: "form.input.invalid_border",
-            states: &["invalid"],
-            appearance_fields: &["TextFieldAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "disabled fill",
+            part: "disabled.background",
             token: "state.disabled.background",
             states: &["disabled"],
             appearance_fields: &["TextFieldAppearance.background"],
         },
         ThemePartUsage {
-            part: "disabled foreground",
+            part: "disabled.foreground",
             token: "state.disabled.foreground",
             states: &["disabled"],
             appearance_fields: &[
@@ -103,7 +146,7 @@ pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
             ],
         },
         ThemePartUsage {
-            part: "focus ring",
+            part: "focus.ring",
             token: "focus.ring",
             states: &["focus visible"],
             appearance_fields: &["TextFieldAppearance.focus_ring"],
@@ -118,37 +161,61 @@ impl DefaultTextFieldTheme {
 }
 
 impl TextFieldTheme for DefaultTextFieldTheme {
-    fn resolve(&self, state: TextFieldState, enabled: bool) -> TextFieldAppearance {
+    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
 
-        let (background, foreground, border, placeholder, icon, selection_background, caret) = if enabled {
-            let background = if state.focused {
-                palette.form.input.background
-            } else if state.hovered {
-                palette.state.hover.background
-            } else {
-                palette.form.input.background
-            };
-            let border = if state.invalid {
-                palette.form.input.invalid_border
-            } else {
-                palette.form.input.border
-            };
+        let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
 
-            (
-                background,
-                palette.form.input.foreground,
-                border,
-                palette.form.input.placeholder,
-                palette.form.input.placeholder,
-                palette.state.selected.background,
-                palette.form.input.foreground,
-            )
-        } else {
-            (
+        let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled)
+        {
+            (TextFieldVariant::Standard, true) => {
+                let background = if state.focused {
+                    palette.form.input.background
+                } else if state.hovered {
+                    palette.state.hover.background
+                } else {
+                    palette.form.input.background
+                };
+                let border = if state.invalid {
+                    palette.form.input.invalid_border
+                } else {
+                    palette.form.input.border
+                };
+
+                (
+                    background,
+                    palette.form.input.foreground,
+                    border,
+                    palette.form.input.placeholder,
+                    palette.form.input.placeholder,
+                    palette.state.selected.background,
+                    palette.form.input.foreground,
+                )
+            }
+            (TextFieldVariant::Ghost, true) => {
+                let background = if state.focused {
+                    palette.action.ghost.background
+                } else if state.hovered {
+                    palette.action.ghost.hover_background
+                } else {
+                    transparent
+                };
+                let placeholder_color = palette.action.ghost.foreground.opacity(0.65);
+
+                (
+                    background,
+                    palette.action.ghost.foreground,
+                    palette.action.ghost.border,
+                    placeholder_color,
+                    placeholder_color,
+                    palette.state.selected.background,
+                    palette.action.ghost.foreground,
+                )
+            }
+            (TextFieldVariant::Standard, false) => (
                 palette.state.disabled.background,
                 palette.state.disabled.foreground,
                 palette.form.input.border,
@@ -156,7 +223,16 @@ impl TextFieldTheme for DefaultTextFieldTheme {
                 palette.state.disabled.foreground,
                 palette.state.selected.background,
                 palette.state.disabled.foreground,
-            )
+            ),
+            (TextFieldVariant::Ghost, false) => (
+                transparent,
+                palette.state.disabled.foreground,
+                palette.action.ghost.border,
+                palette.state.disabled.foreground,
+                palette.state.disabled.foreground,
+                palette.state.selected.background,
+                palette.state.disabled.foreground,
+            ),
         };
 
         TextFieldAppearance {

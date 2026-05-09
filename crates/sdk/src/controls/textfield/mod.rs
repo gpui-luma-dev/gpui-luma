@@ -13,7 +13,8 @@ pub use template::{
     ThemedTextFieldTemplate, default_textfield_template,
 };
 pub use theme::{
-    DefaultTextFieldTheme, TEXTFIELD_THEME_USAGE, TextFieldAppearance, TextFieldTheme, default_textfield_theme,
+    DefaultTextFieldTheme, TEXTFIELD_THEME_USAGE, TextFieldAppearance, TextFieldTheme, TextFieldVariant,
+    default_textfield_theme,
 };
 
 use gpui::{Entity, SharedString};

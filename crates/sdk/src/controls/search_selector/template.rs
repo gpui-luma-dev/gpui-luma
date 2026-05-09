@@ -11,7 +11,7 @@ use crate::controls::selector_panel::{SelectorItemsPanelAppearance, SelectorPane
 
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
-use crate::controls::textfield::{TextFieldState, TextFieldTheme};
+use crate::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -106,7 +106,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_appearance = model.trigger_theme.resolve(model.trigger_state, true);
+        let trigger_appearance = model.trigger_theme.resolve(TextFieldVariant::Standard, model.trigger_state, true);
 
         div()
             .id(format!("{}-root", model.id))

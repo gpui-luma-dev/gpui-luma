@@ -67,7 +67,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.state, model.enabled);
+        let appearance = self.theme.resolve(model.variant, model.state, model.enabled);
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
@@ -88,7 +88,6 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
 
             for caret_ix in 0..=chars.len() {
                 if let Some(ch) = chars.get(caret_ix) {
-                    let selected = selection.map(|(start, end)| caret_ix >= start && caret_ix < end).unwrap_or(false);
                     let width = model
                         .character_offsets
                         .get(caret_ix + 1)
@@ -104,9 +103,6 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                             .flex()
                             .items_center()
                             .h(px(caret_height))
-                            .when(selected, |cell| {
-                                cell.bg(appearance.selection_background.opacity(TEXTFIELD_SELECTION_OPACITY))
-                            })
                             .child(ch.to_string())
                             .when(
                                 model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
@@ -143,11 +139,30 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 }
             }
 
-            div()
-                .min_w(px(0.0))
-                .flex_1()
-                .overflow_hidden()
-                .child(div().relative().left(px(-model.horizontal_scroll)).flex().items_center().child(row))
+            let selection_overlay = selection.and_then(|(start, end)| {
+                let start_x = model.character_offsets.get(start).copied().unwrap_or(0.0);
+                let end_x = model.character_offsets.get(end).copied().unwrap_or(start_x);
+                let width = (end_x - start_x).max(0.0);
+                (width > 0.0).then(|| {
+                    div()
+                        .absolute()
+                        .left(px(start_x))
+                        .top(px(0.0))
+                        .w(px(width))
+                        .h(px(caret_height))
+                        .bg(appearance.selection_background.opacity(TEXTFIELD_SELECTION_OPACITY))
+                })
+            });
+
+            div().min_w(px(0.0)).flex_1().overflow_hidden().child(
+                div()
+                    .relative()
+                    .left(px(-model.horizontal_scroll))
+                    .flex()
+                    .items_center()
+                    .when_some(selection_overlay, |text, overlay| text.child(overlay))
+                    .child(row),
+            )
         };
 
         if let Some(icon) = model.prefix_icon {

@@ -89,7 +89,7 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "standard border",
-            token: "border.default",
+            token: "action.standard.border",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             appearance_fields: &["ButtonFamilyAppearance.border"],
         },
@@ -205,7 +205,7 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
         ThemePartUsage {
             part: "standard border",
-            token: "border.default",
+            token: "action.standard.border",
             states: &["default", "hovered", "pressed", "focused", "disabled"],
             appearance_fields: &["ButtonFamilyAppearance.border"],
         },
@@ -278,9 +278,9 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
 
         let height = metrics.control_height(size);
         let border = match variant {
-            ButtonVariant::Standard => palette.border.default,
-            ButtonVariant::Ghost => transparent,
-            ButtonVariant::Prominent => palette.action.prominent.background,
+            ButtonVariant::Standard => palette.action.standard.border,
+            ButtonVariant::Ghost => palette.action.ghost.border,
+            ButtonVariant::Prominent => palette.action.prominent.border,
         };
 
         let adorners = if state.focused {

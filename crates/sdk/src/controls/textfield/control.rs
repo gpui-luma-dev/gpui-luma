@@ -159,6 +159,7 @@ impl TextFieldControl {
             placeholder: &self.model.placeholder,
             value: &self.model.value,
             prefix_icon: self.model.prefix_icon.as_ref(),
+            variant: self.model.variant,
             enabled: self.model.enabled,
             full_width: self.model.full_width,
             state: self.state,
@@ -169,7 +170,7 @@ impl TextFieldControl {
     }
 
     fn layout_preview(&self, window: &mut Window) -> TextFieldLayoutPreview {
-        let appearance = default_textfield_theme().resolve(self.state, self.model.enabled);
+        let appearance = default_textfield_theme().resolve(self.model.variant, self.state, self.model.enabled);
         let run = TextRun {
             len: self.model.value.len(),
             font: {
@@ -492,6 +493,7 @@ impl Render for TextFieldControl {
         let input_focus_handle = self.focus_handle.clone();
         let value = self.model.value.clone();
         let state = self.state;
+        let variant = self.model.variant;
         let enabled = self.model.enabled;
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
@@ -513,7 +515,7 @@ impl Render for TextFieldControl {
             .child(
                 canvas(
                     move |bounds, window, _| {
-                        let appearance = default_textfield_theme().resolve(state, enabled);
+                        let appearance = default_textfield_theme().resolve(variant, state, enabled);
                         let run = TextRun {
                             len: value.len(),
                             font: {
