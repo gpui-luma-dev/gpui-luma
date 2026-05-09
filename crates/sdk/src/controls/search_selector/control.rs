@@ -65,6 +65,16 @@ impl SearchSelectorControl {
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
+            // THINK ABOUT: create a 'bare textfield' using this setup
+            .variant(crate::controls::textfield::TextFieldVariant::Ghost)
+            .appearance_override(|mut appearance| {
+                appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
+                appearance.focus_ring = None;
+                appearance.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+                appearance.typography.line_height = appearance.typography.size;
+                appearance.min_height = (appearance.typography.line_height + (appearance.padding_y * 2.0)).max(18.0);
+                appearance
+            })
             .template(model.textfield_template.clone())
             .spawn(cx);
 
