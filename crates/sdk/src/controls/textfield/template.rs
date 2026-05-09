@@ -5,7 +5,7 @@ use gpui::{
     prelude::*,
 };
 
-use super::TextFieldRenderModel;
+use super::{TextFieldAppearance, TextFieldRenderModel, TextFieldState, TextFieldVariant};
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
@@ -34,6 +34,15 @@ pub struct TextFieldTemplateHandlers {
 }
 
 pub trait TextFieldTemplate: Send + Sync {
+    fn resolve_appearance(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+    ) -> TextFieldAppearance {
+        default_textfield_theme().resolve(variant, state, enabled)
+    }
+
     fn render(
         &self,
         model: &TextFieldRenderModel<'_>,
@@ -60,6 +69,15 @@ pub fn default_textfield_template() -> Arc<dyn TextFieldTemplate> {
 }
 
 impl TextFieldTemplate for ThemedTextFieldTemplate {
+    fn resolve_appearance(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+    ) -> TextFieldAppearance {
+        self.theme.resolve(variant, state, enabled)
+    }
+
     fn render(
         &self,
         model: &TextFieldRenderModel<'_>,
@@ -67,7 +85,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.variant, model.state, model.enabled);
+        let appearance = model.appearance;
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
@@ -82,7 +100,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .items_center()
                 .overflow_hidden()
                 .text_color(appearance.placeholder)
-                .child(model.placeholder.clone())
+                .child(div().h(px(caret_height)).flex().items_center().child(model.placeholder.clone()))
         } else {
             let mut row = div().min_w(px(0.0)).flex().items_center().text_color(appearance.foreground);
 

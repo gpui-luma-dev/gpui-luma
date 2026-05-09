@@ -5,7 +5,7 @@ mod template;
 mod theme;
 
 pub use control::TextFieldEvent;
-pub use model::{TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
+pub use model::{TextFieldAppearanceOverride, TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
 pub use state::TextFieldState;
 pub use template::{
     TextFieldClickHandler, TextFieldHoverHandler, TextFieldKeyDownHandler, TextFieldMouseDownHandler,

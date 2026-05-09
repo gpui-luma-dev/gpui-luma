@@ -6,9 +6,11 @@ use gpui::{
     ShapedLine, Task, TextRun, UTF16Selection, Window, canvas, div, font, point, px, prelude::*,
 };
 
-use super::{TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers, model::TextFieldModel};
+use super::{
+    TextFieldAppearance, TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers,
+    model::TextFieldModel,
+};
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
-use crate::controls::textfield::default_textfield_theme;
 
 #[derive(Clone)]
 struct TextFieldLayoutCache {
@@ -25,6 +27,7 @@ const TEXTFIELD_SCROLL_REVEAL_PADDING: f32 = 24.0;
 #[derive(Clone)]
 struct TextFieldLayoutPreview {
     character_offsets: Vec<f32>,
+    appearance: TextFieldAppearance,
 }
 
 #[derive(Clone, Debug)]
@@ -153,7 +156,16 @@ impl TextFieldControl {
         cx.notify();
     }
 
-    fn render_model_with_offsets<'a>(&'a self, character_offsets: Vec<f32>) -> TextFieldRenderModel<'a> {
+    fn resolved_appearance(&self) -> TextFieldAppearance {
+        let appearance = self.model.template.resolve_appearance(self.model.variant, self.state, self.model.enabled);
+        self.model.appearance_override.as_ref().map_or(appearance, |override_fn| override_fn(appearance))
+    }
+
+    fn render_model_with_offsets<'a>(
+        &'a self,
+        character_offsets: Vec<f32>,
+        appearance: TextFieldAppearance,
+    ) -> TextFieldRenderModel<'a> {
         TextFieldRenderModel {
             id: &self.model.id,
             placeholder: &self.model.placeholder,
@@ -166,11 +178,12 @@ impl TextFieldControl {
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
             horizontal_scroll: self.horizontal_scroll.as_f32(),
             character_offsets,
+            appearance,
         }
     }
 
     fn layout_preview(&self, window: &mut Window) -> TextFieldLayoutPreview {
-        let appearance = default_textfield_theme().resolve(self.model.variant, self.state, self.model.enabled);
+        let appearance = self.resolved_appearance();
         let run = TextRun {
             len: self.model.value.len(),
             font: {
@@ -194,7 +207,7 @@ impl TextFieldControl {
             character_offsets.push(line.x_for_index(byte_offset).as_f32());
         }
 
-        TextFieldLayoutPreview { character_offsets }
+        TextFieldLayoutPreview { character_offsets, appearance }
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> TextFieldTemplateHandlers {
@@ -492,9 +505,7 @@ impl Render for TextFieldControl {
         let entity = cx.entity();
         let input_focus_handle = self.focus_handle.clone();
         let value = self.model.value.clone();
-        let state = self.state;
-        let variant = self.model.variant;
-        let enabled = self.model.enabled;
+        let appearance = layout_preview.appearance;
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
 
@@ -504,7 +515,7 @@ impl Render for TextFieldControl {
                 self.model
                     .template
                     .render(
-                        &self.render_model_with_offsets(layout_preview.character_offsets.clone()),
+                        &self.render_model_with_offsets(layout_preview.character_offsets.clone(), appearance),
                         self.template_handlers(cx),
                         window,
                         cx,
@@ -515,7 +526,6 @@ impl Render for TextFieldControl {
             .child(
                 canvas(
                     move |bounds, window, _| {
-                        let appearance = default_textfield_theme().resolve(variant, state, enabled);
                         let run = TextRun {
                             len: value.len(),
                             font: {

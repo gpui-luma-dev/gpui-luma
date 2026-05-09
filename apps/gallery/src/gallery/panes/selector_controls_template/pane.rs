@@ -407,6 +407,10 @@ fn render_preview_textfield(
         window,
     );
 
+    let appearance =
+        preview
+            .textfield_theme
+            .resolve(TextFieldVariant::Standard, state.textfield_state, state.textfield_enabled);
     let text_model = TextFieldRenderModel {
         id,
         placeholder,
@@ -419,6 +423,7 @@ fn render_preview_textfield(
         caret_visible: false,
         horizontal_scroll: 0.0,
         character_offsets,
+        appearance,
     };
 
     preview
@@ -561,6 +566,8 @@ fn render_popup_preview(
                 window,
             );
 
+            let search_state = TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() };
+            let search_appearance = preview.textfield_theme.resolve(TextFieldVariant::Standard, search_state, true);
             let search_model = TextFieldRenderModel {
                 id: &search_id,
                 placeholder: &search_placeholder,
@@ -569,10 +576,11 @@ fn render_popup_preview(
                 variant: TextFieldVariant::Standard,
                 enabled: true,
                 full_width: true,
-                state: TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
+                state: search_state,
                 caret_visible: false,
                 horizontal_scroll: 0.0,
                 character_offsets: search_offsets,
+                appearance: search_appearance,
             };
 
             let search_content = preview

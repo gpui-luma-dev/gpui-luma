@@ -63,6 +63,7 @@ This pattern improves consistency and makes style/theming separable from behavio
 - Templates are trait-object based (`Arc<dyn ...Template>`).
 - Many templates accept handler bundles (`...TemplateHandlers`) to bridge control logic to rendering hooks.
 - `ControlTemplate<T, M>` plus modifier pipelines provide composability.
+- TextField supports per-instance appearance specialization (`.appearance_override(...)`) without adding global variants/tokens; overrides are applied after appearance resolution and used consistently by both template rendering and text layout/shaping.
 - `LumaThemePack` serves as runtime adapter:
   - stores theme + active mode
   - provides pre-wired template/theme implementations for controls
