@@ -8,6 +8,7 @@ mod context_menu;
 mod floating_menu;
 mod icon_button;
 mod introduction;
+mod listbox;
 mod navigation_sidebar;
 mod palette;
 mod popup_menu;

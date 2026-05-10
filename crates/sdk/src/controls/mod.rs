@@ -29,6 +29,7 @@ pub mod split_view;
 pub mod slider;
 pub mod state;
 pub mod switch;
+pub mod listbox;
 pub mod tabs_navigation;
 pub mod template;
 pub(crate) mod text;

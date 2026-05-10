@@ -12,6 +12,7 @@ use crate::controls::{
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     selector::{SelectorTemplate, ThemedSelectorTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
+    listbox::{ListBoxTemplate, ThemedListBoxTemplate},
     radio_button::ThemedRadioButtonTemplate,
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
@@ -36,6 +37,7 @@ use crate::controls::progress::{DefaultProgressTheme, ProgressAppearance, Progre
 use crate::controls::radio_button::{DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonTheme};
 use crate::controls::scrollbar::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme};
 use crate::controls::selector::{DefaultSelectorTheme, SelectorAppearance, SelectorTheme};
+use crate::controls::listbox::{DefaultListBoxTheme, ListBoxListAppearance, ListBoxRowAppearance, ListBoxTheme};
 use crate::controls::selector_panel::default_selector_items_template;
 use crate::controls::slider::{DefaultSliderTheme, SliderAppearance, SliderTheme};
 use crate::controls::switch::{DefaultSwitchTheme, SwitchAppearance, SwitchTheme};
@@ -214,6 +216,10 @@ impl LumaThemePack {
     pub fn progress_template(&self) -> Arc<dyn ProgressTemplate> {
         Arc::new(ThemedProgressTemplate::new(self.live_theme.clone()))
     }
+
+    pub fn listbox_template(&self) -> Arc<dyn ListBoxTemplate> {
+        Arc::new(ThemedListBoxTemplate::new(self.live_theme.clone()))
+    }
 }
 
 impl Default for LumaThemePack {
@@ -353,6 +359,21 @@ impl TabsNavigationTheme for LumaLiveTheme {
 
     fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance {
         DefaultTabsNavigationTheme::new(self.state.tokens()).resolve_item(active, state)
+    }
+}
+
+impl ListBoxTheme for LumaLiveTheme {
+    fn resolve_list(&self, enabled: bool, focused: bool, size: crate::theme::ControlSize) -> ListBoxListAppearance {
+        DefaultListBoxTheme::new(self.state.tokens()).resolve_list(enabled, focused, size)
+    }
+
+    fn resolve_row(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: crate::theme::ControlSize,
+    ) -> ListBoxRowAppearance {
+        DefaultListBoxTheme::new(self.state.tokens()).resolve_row(selected, state, size)
     }
 }
 

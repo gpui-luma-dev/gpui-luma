@@ -192,6 +192,10 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - exports nav node model and `NavigationSidebarEvent`
 - `tabs_navigation/*`
   - tab-list navigation and activation events
+- `listbox/*`
+  - selector-style static list panel with single/multiple selection
+  - supports managed/unmanaged selection state and presenter-driven row content
+  - exports builder/model/template/theme + `ListBoxEvent`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `slider/*`
@@ -235,7 +239,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - Pane categories:
   - intro/meta: `introduction`, `search`, `settings`, `palette`, `theme_usage`
   - command: `button`, `icon_button`, `prototypes/*`
-  - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `choice_group`, `choice_controls_template`
+  - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `choice_group`, `listbox`, `choice_controls_template`
   - input: `textfield`, `textarea`, `slider`, `scrollbar`
   - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`
   - navigation/feedback: `navigation_sidebar`, `tabs_navigation`, `progress`

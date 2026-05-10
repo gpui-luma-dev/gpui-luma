@@ -14,9 +14,9 @@ use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     autocomplete, button, checkbox, choice_controls_template, choice_group, combobox, context_menu, floating_menu,
-    icon_button, introduction, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, scrollbar,
-    search, search_selector, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
-    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    icon_button, introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
+    scrollbar, search, search_selector, selector, selector_controls_template, settings, shared::gallery_pane, slider,
+    switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -49,6 +49,7 @@ enum GalleryPageKind {
     RadioButton,
     ChoiceGroup,
     ChoiceTemplates,
+    ListBox,
     Slider,
     Scrollbar,
     TextArea,
@@ -127,6 +128,8 @@ const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::ChoiceTemplates,
 };
+const LISTBOX_PAGE: GalleryPage =
+    GalleryPage { id: "listbox", label: "ListBox", icon: None, kind: GalleryPageKind::ListBox };
 const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
@@ -194,6 +197,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     RADIO_BUTTON_PAGE,
     CHOICE_GROUP_PAGE,
     CHOICE_TEMPLATES_PAGE,
+    LISTBOX_PAGE,
     TOGGLE_GROUP_PAGE,
 ];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
@@ -281,6 +285,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) choice_group: choice_group::ChoiceGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
+    pub(super) listbox: listbox::ListBoxPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) textarea: textarea::TextAreaPane,
@@ -355,6 +360,7 @@ impl GalleryPanes {
             radio_button: radio_button::RadioButtonPane::new(cx, theme),
             choice_group: choice_group::ChoiceGroupPane::new(cx, theme),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, theme),
+            listbox: listbox::ListBoxPane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
             scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
             textarea: textarea::TextAreaPane::new(cx, theme),
@@ -384,6 +390,7 @@ impl GalleryPanes {
         self.checkbox.subscribe(cx, subscriptions);
         self.radio_button.subscribe(cx, subscriptions);
         self.choice_group.subscribe(cx, subscriptions);
+        self.listbox.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
         self.textarea.subscribe(cx, subscriptions);
@@ -414,6 +421,7 @@ impl GalleryPanes {
         self.radio_button.notify_controls(cx);
         self.choice_group.notify_controls(cx);
         self.choice_templates.notify_controls(cx);
+        self.listbox.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
         self.textarea.notify_controls(cx);
@@ -453,6 +461,7 @@ impl GalleryPanes {
             GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
             GalleryPageKind::ChoiceGroup => self.choice_group.render(&self.theme),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.theme),
+            GalleryPageKind::ListBox => self.listbox.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
             GalleryPageKind::TextArea => self.textarea.render(&self.theme),

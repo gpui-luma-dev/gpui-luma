@@ -25,6 +25,7 @@ const REGISTERED_THEME_USAGES: &[&ThemeUsage] = &[
     &crate::controls::selector::SELECTOR_THEME_USAGE,
     &crate::controls::context_menu::CONTEXT_MENU_THEME_USAGE,
     &crate::controls::tabs_navigation::TABS_NAVIGATION_THEME_USAGE,
+    &crate::controls::listbox::LISTBOX_THEME_USAGE,
     &crate::controls::progress::PROGRESS_THEME_USAGE,
 ];
 
