@@ -3,7 +3,7 @@ use std::sync::{
     atomic::{AtomicU8, Ordering},
 };
 
-use gpui::{Hsla, SharedString, Styled};
+use gpui::{AppContext, Entity, Hsla, SharedString, Styled};
 
 use crate::controls::{
     checkbox::ThemedCheckboxTemplate,
@@ -15,7 +15,7 @@ use crate::controls::{
     listbox::{ListBoxTemplate, ThemedListBoxTemplate},
     radio_button::ThemedRadioButtonTemplate,
     selection_panel::{
-        SelectionPanelAppearanceProvider, SelectionPanelBuilder, SelectionPanelItem, default_selection_panel_appearance,
+        SelectionPanelAppearanceProvider, SelectionPanelControl, SelectionPanelItem, default_selection_panel_appearance,
     },
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
@@ -229,10 +229,21 @@ impl LumaThemePack {
         Arc::new(move |size| default_selection_panel_appearance(&live_theme.state.tokens(), size))
     }
 
-    pub fn selection_panel_builder(&self, id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
-        crate::controls::selection_panel::new(id)
-            .scrollbar_template(self.scrollbar_template())
-            .appearance_provider(self.selection_panel_appearance_provider())
+    pub fn selection_panel(
+        &self,
+        id: impl Into<SharedString>,
+        cx: &mut impl AppContext,
+    ) -> Entity<SelectionPanelControl<SelectionPanelItem>> {
+        let selection_panel = SelectionPanelControl::new(id, cx);
+        let scrollbar_template = self.scrollbar_template();
+        let appearance_provider = self.selection_panel_appearance_provider();
+
+        selection_panel.update(cx, |panel, cx| {
+            panel.with_scrollbar_template(scrollbar_template, cx);
+            panel.set_appearance_provider(appearance_provider, cx);
+        });
+
+        selection_panel
     }
 }
 

@@ -5,10 +5,9 @@ mod theme;
 
 pub use control::{SelectionPanelControl, SelectionPanelEvent, SelectionPanelState, SelectionPanelStepDirection};
 pub use model::{
-    SelectionPanelAppearanceProvider, SelectionPanelBuilder, SelectionPanelItem, SelectionPanelItemLike,
-    SelectionPanelItemRenderModel, SelectionPanelItemTemplate, SelectionPanelModel, SelectionPanelPath,
-    SelectionPanelPresenter, SelectionPanelPresenterModel, make_selection_panel_item_template,
-    make_selection_panel_presenter, new,
+    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelItemRenderModel,
+    SelectionPanelItemTemplate, SelectionPanelModel, SelectionPanelPath, SelectionPanelPresenter,
+    SelectionPanelPresenterModel, make_selection_panel_item_template, make_selection_panel_presenter,
 };
 pub use template::{
     DefaultSelectionPanelTemplate, SelectionPanelClickHandler, SelectionPanelHoverHandler,

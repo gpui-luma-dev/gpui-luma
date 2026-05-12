@@ -1,13 +1,15 @@
 use gpui::{
-    App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Render, ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px,
+    App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Render, ScrollWheelEvent, SharedString, Subscription, Window, div, prelude::*, px,
 };
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
-use crate::controls::scrollbar::ScrollbarEvent;
+use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
 use crate::controls::selection_panel::model::{
-    SelectionPanelBuilder, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelPresenter, default_selection_panel_model, presenter_from_item_template,
 };
+use crate::controls::selection_panel::template::SelectionPanelTemplate;
 use crate::controls::selection_panel::template::{
     SelectionPanelClickHandler, SelectionPanelHoverHandler, SelectionPanelMouseDownHandler,
     SelectionPanelMouseUpHandler, SelectionPanelRenderModel, render_selection_panel,
@@ -17,6 +19,7 @@ use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
     SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::ControlSize;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SelectionPanelEvent {
@@ -52,9 +55,8 @@ where
 impl<T> EventEmitter<SelectionPanelEvent> for SelectionPanelControl<T> where T: SelectionPanelItemLike + 'static {}
 
 impl SelectionPanelControl<SelectionPanelItem> {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
-        SelectionPanelBuilder::new(id)
+    pub fn new(id: impl Into<SharedString>, cx: &mut impl AppContext) -> Entity<Self> {
+        Self::new_typed(id, cx)
     }
 }
 
@@ -62,13 +64,16 @@ impl<T> SelectionPanelControl<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new_typed(id: impl Into<SharedString>) -> SelectionPanelBuilder<T> {
-        SelectionPanelBuilder::new(id)
+    pub fn new_typed(id: impl Into<SharedString>, cx: &mut impl AppContext) -> Entity<Self> {
+        let model = default_selection_panel_model::<T>(id);
+        cx.new(|cx| Self::from_model(model, None, cx))
     }
 
-    pub(crate) fn from_builder(builder: SelectionPanelBuilder<T>, cx: &mut Context<Self>) -> Self {
-        let mut model = builder.model;
+    pub(crate) fn from_model(
+        mut model: SelectionPanelModel<T>,
+        initial_active_visible_index: Option<usize>,
+        cx: &mut Context<Self>,
+    ) -> Self {
         if model.visible_indices.is_empty() {
             model.visible_indices = (0..model.items.len()).collect();
         }
@@ -90,13 +95,147 @@ where
             focus_handle: cx.focus_handle().tab_stop(model.enabled),
             model,
             state: SelectionPanelState {
-                active_visible_index: builder.initial_active_visible_index,
+                active_visible_index: initial_active_visible_index,
                 hovered_visible_index: None,
             },
             pressed_visible_index: None,
             popup_surface,
             _subscriptions: subscriptions,
         }
+    }
+
+    pub fn set_panel_id(&mut self, panel_id: impl Into<SharedString>, cx: &mut Context<Self>) {
+        self.model.panel_id = panel_id.into();
+        cx.notify();
+    }
+
+    pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
+        self.model.items = items.into_iter().collect();
+        self.model.visible_indices = (0..self.model.items.len()).collect();
+        self.clamp_state();
+        cx.notify();
+    }
+
+    pub fn set_visible_indices(&mut self, visible_indices: impl IntoIterator<Item = usize>, cx: &mut Context<Self>) {
+        self.model.visible_indices = visible_indices.into_iter().collect();
+        self.clamp_state();
+        cx.notify();
+    }
+
+    pub fn set_selected_source_index(&mut self, selected_source_index: Option<usize>, cx: &mut Context<Self>) {
+        if self.model.selected_source_index == selected_source_index {
+            return;
+        }
+
+        self.model.selected_source_index = selected_source_index;
+        cx.notify();
+    }
+
+    pub fn set_active_visible_index(&mut self, visible_index: Option<usize>, cx: &mut Context<Self>) {
+        if self.state.set_active_visible_index(self.normalize_visible_index(visible_index)) {
+            if let Some(active_visible_index) = self.state.active_visible_index() {
+                self.popup_surface.ensure_item_visible(active_visible_index, cx);
+            }
+            cx.emit(SelectionPanelEvent::ActiveIndexChanged { visible_index: self.state.active_visible_index() });
+            cx.notify();
+        }
+    }
+
+    pub fn set_open(&mut self, open: bool, cx: &mut Context<Self>) {
+        if self.model.open == open {
+            return;
+        }
+        self.model.open = open;
+        cx.notify();
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        if !enabled {
+            self.state.set_hovered_visible_index(None);
+            self.pressed_visible_index = None;
+        }
+        cx.notify();
+    }
+
+    pub fn set_show_selection_marker(&mut self, show_selection_marker: bool, cx: &mut Context<Self>) {
+        if self.model.show_selection_marker == show_selection_marker {
+            return;
+        }
+        self.model.show_selection_marker = show_selection_marker;
+        cx.notify();
+    }
+
+    pub fn set_scrolling(&mut self, scrolling: bool, cx: &mut Context<Self>) {
+        if self.model.scrolling == scrolling {
+            return;
+        }
+        self.model.scrolling = scrolling;
+        self.popup_surface.set_scrolling_enabled(scrolling);
+        cx.notify();
+    }
+
+    pub fn set_visible_row_limits(&mut self, min_visible_rows: usize, max_visible_rows: usize, cx: &mut Context<Self>) {
+        let min_visible_rows = min_visible_rows.max(1);
+        let max_visible_rows = max_visible_rows.max(min_visible_rows);
+
+        if self.model.min_visible_rows == min_visible_rows && self.model.max_visible_rows == max_visible_rows {
+            return;
+        }
+
+        self.model.min_visible_rows = min_visible_rows;
+        self.model.max_visible_rows = max_visible_rows;
+        cx.notify();
+    }
+
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        if self.model.size == size {
+            return;
+        }
+        self.model.size = size;
+        cx.notify();
+    }
+
+    pub fn with_template(&mut self, template: std::sync::Arc<dyn SelectionPanelTemplate<T>>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_presenter(&mut self, presenter: Option<SelectionPanelPresenter<T>>, cx: &mut Context<Self>) {
+        self.model.presenter = presenter;
+        cx.notify();
+    }
+
+    pub fn with_item_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
+    where
+        F: for<'a> Fn(&crate::controls::selection_panel::SelectionPanelItemRenderModel<'a, T>, &mut App) -> E
+            + Send
+            + Sync
+            + 'static,
+        E: IntoElement + 'static,
+    {
+        self.model.presenter = Some(presenter_from_item_template(template));
+        cx.notify();
+    }
+
+    pub fn clear_item_template(&mut self, cx: &mut Context<Self>) {
+        self.model.presenter = None;
+        cx.notify();
+    }
+
+    pub fn with_scrollbar_template(&mut self, template: std::sync::Arc<dyn ScrollbarTemplate>, cx: &mut Context<Self>) {
+        self.model.scrollbar_template = template;
+        cx.notify();
+    }
+
+    pub fn set_appearance_provider(&mut self, provider: SelectionPanelAppearanceProvider, cx: &mut Context<Self>) {
+        self.model.appearance_provider = provider;
+        cx.notify();
     }
 
     pub fn ensure_visible(&self, visible_index: usize, cx: &mut Context<Self>) {

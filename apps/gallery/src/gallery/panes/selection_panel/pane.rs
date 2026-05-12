@@ -35,60 +35,66 @@ impl SelectionPanelPane {
             })
             .collect::<Vec<_>>();
 
-        let interactive_panel = theme
-            .selection_panel_builder("gallery-selection-panel")
-            .panel_id("gallery-selection-panel-popup")
-            .items(interactive_items)
-            .with_item_template(|item, _cx| {
-                let swatch = swatch_color(item.item.id().as_ref());
-                let selected_weight = if item.selected {
-                    gpui::FontWeight::SEMIBOLD
-                } else {
-                    gpui::FontWeight::NORMAL
-                };
+        let interactive_panel = theme.selection_panel("gallery-selection-panel", cx);
 
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(8.0))
-                    .child(
-                        div()
-                            .size(px(18.0))
-                            .rounded(px(2.0))
-                            .bg(swatch)
-                            .border_1()
-                            .border_color(hsla(0.0, 0.0, 1.0, 0.18)),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(1.0))
-                            .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
-                            .child(
-                                div()
-                                    .font_family("Monaco")
-                                    .text_size(px(10.0))
-                                    .line_height(px(14.0))
-                                    .opacity(0.72)
-                                    .child(format_compact_hsla(swatch)),
-                            ),
-                    )
-            })
-            .scrolling(true)
-            .appearance_provider(std::sync::Arc::new({
-                let interactive_theme = theme.clone();
-                move |size| {
-                    let mut appearance = default_selection_panel_appearance(&interactive_theme.tokens(), size);
-                    appearance.min_width = 320.0;
-                    appearance
-                }
-            }))
-            .min_visible_rows(5)
-            .max_visible_rows(5)
-            .selected_source_index(Some(1))
-            .active_visible_index(Some(1))
-            .spawn(cx);
+        interactive_panel.update(cx, |panel, cx| {
+            panel.set_panel_id("gallery-selection-panel-popup", cx);
+            panel.set_items(interactive_items, cx);
+            panel.with_item_template(
+                |item, _cx| {
+                    let swatch = swatch_color(item.item.id().as_ref());
+                    let selected_weight = if item.selected {
+                        gpui::FontWeight::SEMIBOLD
+                    } else {
+                        gpui::FontWeight::NORMAL
+                    };
+
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(8.0))
+                        .child(
+                            div()
+                                .size(px(18.0))
+                                .rounded(px(2.0))
+                                .bg(swatch)
+                                .border_1()
+                                .border_color(hsla(0.0, 0.0, 1.0, 0.18)),
+                        )
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap(px(1.0))
+                                .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
+                                .child(
+                                    div()
+                                        .font_family("Monaco")
+                                        .text_size(px(10.0))
+                                        .line_height(px(14.0))
+                                        .opacity(0.72)
+                                        .child(format_compact_hsla(swatch)),
+                                ),
+                        )
+                },
+                cx,
+            );
+            panel.set_scrolling(true, cx);
+            panel.set_appearance_provider(
+                std::sync::Arc::new({
+                    let interactive_theme = theme.clone();
+                    move |size| {
+                        let mut appearance = default_selection_panel_appearance(&interactive_theme.tokens(), size);
+                        appearance.min_width = 320.0;
+                        appearance
+                    }
+                }),
+                cx,
+            );
+            panel.set_visible_row_limits(5, 5, cx);
+            panel.set_selected_source_index(Some(1), cx);
+            panel.set_active_visible_index(Some(1), cx);
+        });
 
         Self {
             template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(theme.clone())),
