@@ -15,8 +15,8 @@ use crate::gallery::theme::GalleryThemePack;
 use super::{
     autocomplete, button, checkbox, choice_controls_template, choice_group, combobox, context_menu, floating_menu,
     icon_button, introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
-    scrollbar, search, search_selector, selector, selector_controls_template, settings, shared::gallery_pane, slider,
-    switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
+    shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -39,6 +39,7 @@ enum GalleryPageKind {
     ComboBox,
     SearchSelector,
     Selector,
+    SelectionPanel,
     SelectorTemplates,
     CustomButton,
     IconButton,
@@ -174,6 +175,8 @@ const SEARCH_SELECTOR_PAGE: GalleryPage =
     GalleryPage { id: "search-selector", label: "SearchSelector", icon: None, kind: GalleryPageKind::SearchSelector };
 const SELECTOR_PAGE: GalleryPage =
     GalleryPage { id: "popup-selector", label: "Selector", icon: None, kind: GalleryPageKind::Selector };
+const SELECTION_PANEL_PAGE: GalleryPage =
+    GalleryPage { id: "selection-panel", label: "Selection Panel", icon: None, kind: GalleryPageKind::SelectionPanel };
 const SELECTOR_TEMPLATES_PAGE: GalleryPage = GalleryPage {
     id: "selector-templates",
     label: "Selector Templates",
@@ -209,6 +212,7 @@ const SELECTION_PAGES: &[GalleryPage] = &[
     COMBOBOX_PAGE,
     SEARCH_SELECTOR_PAGE,
     SELECTOR_PAGE,
+    SELECTION_PANEL_PAGE,
     SELECTOR_TEMPLATES_PAGE,
 ];
 const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
@@ -274,6 +278,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) combobox: combobox::ComboBoxPane,
     pub(super) search_selector: search_selector::SearchSelectorPane,
     pub(super) selector: selector::SelectorPane,
+    pub(super) selection_panel: selection_panel::SelectionPanelPane,
     pub(super) selector_templates: selector_controls_template::SelectorControlsTemplatePane,
     pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
@@ -349,6 +354,7 @@ impl GalleryPanes {
             combobox: combobox::ComboBoxPane::new(cx, theme),
             search_selector: search_selector::SearchSelectorPane::new(cx, theme),
             selector: selector::SelectorPane::new(cx, theme),
+            selection_panel: selection_panel::SelectionPanelPane::new(cx, theme),
             selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, theme),
             custom_button: prototypes::ModButtonPane::new(cx, theme),
             button: button::ButtonPane::new(cx, theme),
@@ -381,6 +387,7 @@ impl GalleryPanes {
         self.combobox.subscribe(cx, subscriptions);
         self.search_selector.subscribe(cx, subscriptions);
         self.selector.subscribe(cx, subscriptions);
+        self.selection_panel.subscribe(cx, subscriptions);
         self.custom_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.icon_button.subscribe(cx, subscriptions);
@@ -410,6 +417,7 @@ impl GalleryPanes {
         self.combobox.notify_controls(cx);
         self.search_selector.notify_controls(cx);
         self.selector.notify_controls(cx);
+        self.selection_panel.notify_controls(cx);
         self.selector_templates.notify_controls(cx);
         self.custom_button.notify_controls(cx);
         self.button.notify_controls(cx);
@@ -447,6 +455,7 @@ impl GalleryPanes {
             GalleryPageKind::ComboBox => self.combobox.render(&self.theme),
             GalleryPageKind::SearchSelector => self.search_selector.render(&self.theme),
             GalleryPageKind::Selector => self.selector.render(&self.theme),
+            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.theme),
             GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.theme),
             GalleryPageKind::Search => search::render(&self.theme),
             GalleryPageKind::Palette => palette::render(&self.theme),
