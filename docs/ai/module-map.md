@@ -92,6 +92,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - selector-focused shared popup list primitives
   - exports selector-native item contracts (`SelectorItemLike`, `SelectorItemTemplate`, `SelectorPath`)
   - provides dedicated items-panel template contract (`SelectorItemsTemplate`) and default implementation
+- `selection_panel/*`
+  - first-class spawnable panel control for selector-family popup rows
+  - owns row interaction state/eventing, active/hover/pressed lifecycle, keyboard navigation, and ensure-visible API
+  - integrates `PopupScrollSurface` for viewport/scrollbar behavior
+  - exports builder/model/template/theme and `SelectionPanelEvent`
 
 - `menu_navigation.rs` (crate-private)
   - keyboard navigation utilities over menu structures
@@ -241,7 +246,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - command: `button`, `icon_button`, `prototypes/*`
   - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `choice_group`, `listbox`, `choice_controls_template`
   - input: `textfield`, `textarea`, `slider`, `scrollbar`
-  - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`
+  - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`
   - navigation/feedback: `navigation_sidebar`, `tabs_navigation`, `progress`
 
 ## Public API Landmarks (Fast Lookup)

@@ -94,6 +94,10 @@ impl ControlKeyProfile {
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-up", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-down", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
                 KeyBinding::new("right", OpenSubmenu, Some(context)),
                 KeyBinding::new("left", CloseSubmenu, Some(context)),
                 KeyBinding::new("enter", ActivateControl, Some(context)),
@@ -102,8 +106,14 @@ impl ControlKeyProfile {
             Self::Selector => vec![
                 KeyBinding::new("down", SelectNextItem, Some(context)),
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
+                KeyBinding::new("pagedown", IncreaseValueLarge, Some(context)),
+                KeyBinding::new("pageup", DecreaseValueLarge, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-up", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-down", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
                 KeyBinding::new("enter", ActivateControl, Some(context)),
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
@@ -114,6 +124,10 @@ impl ControlKeyProfile {
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-up", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-down", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
                 KeyBinding::new("right", OpenSubmenu, Some(context)),
                 KeyBinding::new("left", CloseSubmenu, Some(context)),
                 KeyBinding::new("enter", ActivateControl, Some(context)),
@@ -124,6 +138,10 @@ impl ControlKeyProfile {
                 KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-up", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-down", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
                 KeyBinding::new("right", OpenSubmenu, Some(context)),
                 KeyBinding::new("left", CloseSubmenu, Some(context)),
                 KeyBinding::new("enter", ActivateControl, Some(context)),
@@ -136,6 +154,10 @@ impl ControlKeyProfile {
                 KeyBinding::new("down", SelectNextItem, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
+                KeyBinding::new("cmd-left", SelectFirstItem, Some(context)),
+                KeyBinding::new("cmd-right", SelectLastItem, Some(context)),
+                KeyBinding::new("ctrl-a", SelectFirstItem, Some(context)),
+                KeyBinding::new("ctrl-e", SelectLastItem, Some(context)),
                 KeyBinding::new("enter", ActivateControl, Some(context)),
                 KeyBinding::new("space", ActivateControl, Some(context)),
             ],
@@ -176,7 +198,7 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 59);
+        assert_eq!(default_control_key_bindings().len(), 81);
     }
 
     #[test]
@@ -185,11 +207,11 @@ mod tests {
         assert_eq!(ControlKeyProfile::Choice.default_bindings().len(), 1);
         assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
-        assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 8);
-        assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 6);
-        assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 10);
-        assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 8);
-        assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::ContextMenu.default_bindings().len(), 14);
+        assert_eq!(ControlKeyProfile::Navigation.default_bindings().len(), 12);
+        assert_eq!(ControlKeyProfile::TabList.default_bindings().len(), 12);
     }
 
     #[test]
@@ -211,6 +233,10 @@ mod tests {
         assert!(has_binding::<SelectNextItem>(&bindings, "down"));
         assert!(has_binding::<SelectFirstItem>(&bindings, "home"));
         assert!(has_binding::<SelectLastItem>(&bindings, "end"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "cmd-up"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "cmd-down"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "ctrl-a"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "ctrl-e"));
         assert!(has_binding::<OpenSubmenu>(&bindings, "right"));
         assert!(has_binding::<CloseSubmenu>(&bindings, "left"));
         assert!(has_binding::<ActivateControl>(&bindings, "enter"));
@@ -227,6 +253,10 @@ mod tests {
         assert!(has_binding::<SelectNextItem>(&bindings, "down"));
         assert!(has_binding::<SelectFirstItem>(&bindings, "home"));
         assert!(has_binding::<SelectLastItem>(&bindings, "end"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "cmd-left"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "cmd-right"));
+        assert!(has_binding::<SelectFirstItem>(&bindings, "ctrl-a"));
+        assert!(has_binding::<SelectLastItem>(&bindings, "ctrl-e"));
         assert!(has_binding::<ActivateControl>(&bindings, "enter"));
         assert!(has_binding::<ActivateControl>(&bindings, "space"));
     }

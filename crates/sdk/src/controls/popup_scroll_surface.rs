@@ -13,6 +13,7 @@ pub struct PopupScrollSurface {
     content_top_padding: Pixels,
     item_count: usize,
     scrolling_enabled: bool,
+    snap_to_rows: bool,
 }
 
 impl PopupScrollSurface {
@@ -28,11 +29,16 @@ impl PopupScrollSurface {
             content_top_padding: px(0.0),
             item_count: 0,
             scrolling_enabled: true,
+            snap_to_rows: false,
         }
     }
 
     pub fn set_scrolling_enabled(&mut self, enabled: bool) {
         self.scrolling_enabled = enabled;
+    }
+
+    pub fn set_snap_to_rows(&mut self, enabled: bool) {
+        self.snap_to_rows = enabled;
     }
 
     pub fn scrollbar(&self) -> Entity<Scrollbar> {
@@ -43,7 +49,7 @@ impl PopupScrollSurface {
         if !self.scrolling_enabled {
             return;
         }
-        self.container.set_vertical_offset(value, cx);
+        self.container.set_vertical_offset(self.quantize_offset(value), cx);
     }
 
     pub fn configure(
@@ -94,7 +100,7 @@ impl PopupScrollSurface {
 
         let current = self.container.vertical_offset().as_f32();
         let max = self.container.max_vertical_offset().as_f32();
-        let target = (current + delta).clamp(0.0, max);
+        let target = self.quantize_offset((current - delta).clamp(0.0, max));
         if (target - current).abs() <= f32::EPSILON {
             return false;
         }
@@ -109,5 +115,14 @@ impl PopupScrollSurface {
         }
 
         div().h(self.viewport_height).w_full().child(self.container.render(content)).into_any_element()
+    }
+
+    fn quantize_offset(&self, value: f32) -> f32 {
+        if !self.snap_to_rows || self.row_height.as_f32() <= f32::EPSILON {
+            return value;
+        }
+
+        let row_height = self.row_height.as_f32();
+        (value / row_height).round() * row_height
     }
 }

@@ -72,7 +72,7 @@ impl PopupScrollSurface {
 
         let current = self.container.vertical_offset().as_f32();
         let max = self.container.max_vertical_offset().as_f32();
-        let target = (current + delta).clamp(0.0, max);
+        let target = (current - delta).clamp(0.0, max);
         if (target - current).abs() <= f32::EPSILON {
             return false;
         }

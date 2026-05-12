@@ -3,7 +3,7 @@ use std::sync::{
     atomic::{AtomicU8, Ordering},
 };
 
-use gpui::{Hsla, Styled};
+use gpui::{Hsla, SharedString, Styled};
 
 use crate::controls::{
     checkbox::ThemedCheckboxTemplate,
@@ -14,6 +14,9 @@ use crate::controls::{
     progress::{ProgressTemplate, ThemedProgressTemplate},
     listbox::{ListBoxTemplate, ThemedListBoxTemplate},
     radio_button::ThemedRadioButtonTemplate,
+    selection_panel::{
+        SelectionPanelAppearanceProvider, SelectionPanelBuilder, SelectionPanelItem, default_selection_panel_appearance,
+    },
     scrollbar::{ScrollbarOrientation, ScrollbarTemplate, ThemedScrollbarTemplate},
     slider::{SliderTemplate, ThemedSliderTemplate},
     switch::ThemedSwitchTemplate,
@@ -219,6 +222,17 @@ impl LumaThemePack {
 
     pub fn listbox_template(&self) -> Arc<dyn ListBoxTemplate> {
         Arc::new(ThemedListBoxTemplate::new(self.live_theme.clone()))
+    }
+
+    pub fn selection_panel_appearance_provider(&self) -> SelectionPanelAppearanceProvider {
+        let live_theme = self.live_theme.clone();
+        Arc::new(move |size| default_selection_panel_appearance(&live_theme.state.tokens(), size))
+    }
+
+    pub fn selection_panel_builder(&self, id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
+        crate::controls::selection_panel::new(id)
+            .scrollbar_template(self.scrollbar_template())
+            .appearance_provider(self.selection_panel_appearance_provider())
     }
 }
 

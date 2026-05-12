@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, Window, div,
+    prelude::*, px,
+};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
@@ -10,14 +13,19 @@ use crate::controls::state::ControlFocusState;
 
 pub type SelectionPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectionPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type SelectionPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
+pub type SelectionPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub struct SelectionPanelTemplateHandlers {
     pub item_hovers: Vec<SelectionPanelHoverHandler>,
+    pub item_mouse_downs: Vec<SelectionPanelMouseDownHandler>,
+    pub item_mouse_ups: Vec<SelectionPanelMouseUpHandler>,
+    pub item_mouse_up_outs: Vec<SelectionPanelMouseUpHandler>,
     pub item_clicks: Vec<SelectionPanelClickHandler>,
 }
 
 pub type SelectionPanelPresenterRef<'a, T> =
-    &'a dyn for<'b> Fn(&SelectionPanelPresenterModel<'b, T>, &mut App) -> AnyElement;
+    &'a (dyn for<'b> Fn(&SelectionPanelPresenterModel<'b, T>, &mut App) -> AnyElement + Send + Sync);
 
 pub struct SelectionPanelRenderModel<'a, T>
 where
@@ -37,6 +45,7 @@ where
     pub presenter: Option<SelectionPanelPresenterRef<'a, T>>,
     pub appearance: SelectionPanelAppearance,
     pub show_selection_marker: bool,
+    pub show_panel_chrome: bool,
 }
 
 pub trait SelectionPanelTemplate<T>: Send + Sync
@@ -63,23 +72,32 @@ where
         handlers: SelectionPanelTemplateHandlers,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let SelectionPanelTemplateHandlers { item_hovers, item_clicks } = handlers;
+        let SelectionPanelTemplateHandlers {
+            item_hovers,
+            item_mouse_downs,
+            item_mouse_ups,
+            item_mouse_up_outs,
+            item_clicks,
+        } = handlers;
         let appearance = model.appearance.clone();
 
-        let mut root = div()
-            .id(format!("{}-rows", model.panel_id))
-            .relative()
-            .flex()
-            .flex_col()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding))
-            .bg(appearance.background)
-            .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow.clone())
-            .occlude();
+        let mut root = div().id(format!("{}-rows", model.panel_id)).relative().flex().flex_col().w_full();
 
+        if model.show_panel_chrome {
+            root = root
+                .min_w(px(appearance.min_width))
+                .p(px(appearance.padding))
+                .bg(appearance.background)
+                .border_1()
+                .border_color(appearance.border)
+                .rounded(px(appearance.radius))
+                .shadow(appearance.shadow.clone())
+                .occlude();
+        }
+
+        let mut mouse_downs = item_mouse_downs.into_iter();
+        let mut mouse_ups = item_mouse_ups.into_iter();
+        let mut mouse_up_outs = item_mouse_up_outs.into_iter();
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -150,8 +168,12 @@ where
                 })
                 .child(div().flex_1().child(content));
 
-            if model.show_selection_marker && selected {
-                row = row.child(lucide_icon(LucideIcon::Check, color, appearance.item_icon_size));
+            if model.show_selection_marker {
+                if selected {
+                    row = row.child(lucide_icon(LucideIcon::Check, color, appearance.item_icon_size));
+                } else {
+                    row = row.child(div().size(px(appearance.item_icon_size)));
+                }
             }
 
             if row_enabled {
@@ -160,10 +182,19 @@ where
                     move |style| style.bg(hover_background)
                 });
 
-                if active {
+                if active || pressed {
                     row = row.bg(appearance.item_hover_background);
                 }
 
+                if let Some(mouse_down) = mouse_downs.next() {
+                    row = row.on_mouse_down(MouseButton::Left, mouse_down);
+                }
+                if let Some(mouse_up) = mouse_ups.next() {
+                    row = row.on_mouse_up(MouseButton::Left, mouse_up);
+                }
+                if let Some(mouse_up_out) = mouse_up_outs.next() {
+                    row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
+                }
                 if let Some(click) = clicks.next() {
                     row = row.on_click(click);
                 }
@@ -189,11 +220,24 @@ pub fn render_selection_panel<T>(
     template: Arc<dyn SelectionPanelTemplate<T>>,
     model: &SelectionPanelRenderModel<'_, T>,
     item_hovers: Vec<SelectionPanelHoverHandler>,
+    item_mouse_downs: Vec<SelectionPanelMouseDownHandler>,
+    item_mouse_ups: Vec<SelectionPanelMouseUpHandler>,
+    item_mouse_up_outs: Vec<SelectionPanelMouseUpHandler>,
     item_clicks: Vec<SelectionPanelClickHandler>,
     cx: &mut App,
 ) -> Stateful<Div>
 where
     T: SelectionPanelItemLike + 'static,
 {
-    template.render(model, SelectionPanelTemplateHandlers { item_hovers, item_clicks }, cx)
+    template.render(
+        model,
+        SelectionPanelTemplateHandlers {
+            item_hovers,
+            item_mouse_downs,
+            item_mouse_ups,
+            item_mouse_up_outs,
+            item_clicks,
+        },
+        cx,
+    )
 }
