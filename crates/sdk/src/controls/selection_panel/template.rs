@@ -1,22 +1,18 @@
 use std::sync::Arc;
 
-use gpui::{
-    App, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, Window, div, prelude::*,
-    px,
-};
-use lucide_icons::Icon as LucideIcon;
+use gpui::{App, Div, SharedString, Stateful, div, prelude::*, px};
 
-use crate::controls::icon::lucide_icon;
-use crate::controls::selection_panel::model::{
-    SelectionPanelItemLike, SelectionPanelItemRenderModel, SelectionPanelItemTemplate,
+pub use crate::controls::selection_panel::item_template::{
+    SelectionPanelClickHandler, SelectionPanelHoverHandler, SelectionPanelMouseDownHandler,
+    SelectionPanelMouseUpHandler,
 };
+use crate::controls::selection_panel::item_template::{
+    SelectionPanelItemRowHandlers, SelectionPanelItemRowModel, SelectionPanelItemTemplate,
+    render_selection_panel_item_row,
+};
+use crate::controls::selection_panel::model::SelectionPanelItemLike;
 use crate::controls::selection_panel::theme::SelectionPanelAppearance;
 use crate::controls::state::ControlFocusState;
-
-pub type SelectionPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type SelectionPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type SelectionPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type SelectionPanelMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
 
 pub struct SelectionPanelTemplateHandlers {
     pub item_hovers: Vec<SelectionPanelHoverHandler>,
@@ -25,6 +21,9 @@ pub struct SelectionPanelTemplateHandlers {
     pub item_mouse_up_outs: Vec<SelectionPanelMouseUpHandler>,
     pub item_clicks: Vec<SelectionPanelClickHandler>,
 }
+
+pub type SelectionPanelModifier<T> =
+    Box<dyn for<'a> Fn(Stateful<Div>, &SelectionPanelRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static>;
 
 pub struct SelectionPanelRenderModel<'a, T>
 where
@@ -57,6 +56,64 @@ where
         handlers: SelectionPanelTemplateHandlers,
         cx: &mut App,
     ) -> Stateful<Div>;
+}
+
+pub struct ModifiedSelectionPanelTemplate<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    base: Arc<dyn SelectionPanelTemplate<T>>,
+    modifiers: Vec<SelectionPanelModifier<T>>,
+}
+
+impl<T> ModifiedSelectionPanelTemplate<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    pub fn new(base: Arc<dyn SelectionPanelTemplate<T>>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<Div>, &SelectionPanelRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SelectionPanelRenderModel<'_, T>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl<T> SelectionPanelTemplate<T> for ModifiedSelectionPanelTemplate<T>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    fn render(
+        &self,
+        model: &SelectionPanelRenderModel<'_, T>,
+        handlers: SelectionPanelTemplateHandlers,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, cx);
+        self.apply_modifiers(root, model)
+    }
+}
+
+pub fn template_with_modifier<T, F>(
+    template: Arc<dyn SelectionPanelTemplate<T>>,
+    modifier: F,
+) -> Arc<dyn SelectionPanelTemplate<T>>
+where
+    T: SelectionPanelItemLike + 'static,
+    F: for<'a> Fn(Stateful<Div>, &SelectionPanelRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSelectionPanelTemplate::new(template).with_modifier(modifier))
 }
 
 pub struct DefaultSelectionPanelTemplate;
@@ -110,96 +167,35 @@ where
             let active = model.active_visible_index == Some(visible_index);
             let hovered = model.hovered_visible_index == Some(visible_index);
             let pressed = model.pressed_visible_index == Some(visible_index);
-            let color = if row_enabled {
-                appearance.foreground
-            } else {
-                appearance.item_disabled_foreground
-            };
 
-            let content = if let Some(item_template) = model.item_template {
-                item_template(
-                    &SelectionPanelItemRenderModel {
-                        panel_id: model.panel_id,
-                        control_id: model.control_id,
-                        item,
-                        source_index,
-                        visible_index,
-                        selected,
-                        active,
-                        hovered,
-                        pressed,
-                        focused: model.focus.focused,
-                        focus_visible: model.focus.focus_visible,
-                        enabled: row_enabled,
-                        sibling_count: model.visible_indices.len(),
-                    },
-                    cx,
-                )
-            } else {
-                div().flex_1().min_w(px(0.0)).truncate().child(item.label().clone()).into_any_element()
-            };
-
-            let mut row = div()
-                .id(format!("{}-row-{}", model.panel_id, visible_index))
-                .flex()
-                .items_center()
-                .gap(px(appearance.item_gap))
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
-                .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
-                .when_some(item.icon(), |row, icon| {
-                    if let Some(icon) = icon.lucide() {
-                        row.child(lucide_icon(icon, color, appearance.item_icon_size))
-                    } else if let Some(path) = icon.svg_path() {
-                        row.child(
-                            gpui::svg()
-                                .external_path(path.clone())
-                                .size(px(appearance.item_icon_size))
-                                .text_color(color),
-                        )
-                    } else {
-                        row
-                    }
-                })
-                .child(div().flex_1().child(content));
-
-            if model.show_selection_marker {
-                if selected {
-                    row = row.child(lucide_icon(LucideIcon::Check, color, appearance.item_icon_size));
-                } else {
-                    row = row.child(div().size(px(appearance.item_icon_size)));
-                }
-            }
-
-            if row_enabled {
-                row = row.cursor_pointer().on_hover(hover).hover({
-                    let hover_background = appearance.item_hover_background;
-                    move |style| style.bg(hover_background)
-                });
-
-                if active || pressed {
-                    row = row.bg(appearance.item_hover_background);
-                }
-
-                if let Some(mouse_down) = mouse_downs.next() {
-                    row = row.on_mouse_down(MouseButton::Left, mouse_down);
-                }
-                if let Some(mouse_up) = mouse_ups.next() {
-                    row = row.on_mouse_up(MouseButton::Left, mouse_up);
-                }
-                if let Some(mouse_up_out) = mouse_up_outs.next() {
-                    row = row.on_mouse_up_out(MouseButton::Left, mouse_up_out);
-                }
-                if let Some(click) = clicks.next() {
-                    row = row.on_click(click);
-                }
-            } else {
-                row = row.opacity(0.56);
-            }
+            let row = render_selection_panel_item_row(
+                SelectionPanelItemRowModel {
+                    panel_id: model.panel_id,
+                    control_id: model.control_id,
+                    item,
+                    source_index,
+                    visible_index,
+                    selected,
+                    active,
+                    hovered,
+                    pressed,
+                    focused: model.focus.focused,
+                    focus_visible: model.focus.focus_visible,
+                    enabled: row_enabled,
+                    sibling_count: model.visible_indices.len(),
+                    item_template: model.item_template,
+                    appearance: &appearance,
+                    show_selection_marker: model.show_selection_marker,
+                },
+                SelectionPanelItemRowHandlers {
+                    hover,
+                    mouse_down: mouse_downs.next(),
+                    mouse_up: mouse_ups.next(),
+                    mouse_up_out: mouse_up_outs.next(),
+                    click: clicks.next(),
+                },
+                cx,
+            );
 
             root = root.child(row);
         }

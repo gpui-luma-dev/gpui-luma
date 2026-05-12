@@ -5,9 +5,10 @@ use gpui::{
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
+use crate::controls::selection_panel::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
 use crate::controls::selection_panel::model::{
     SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
-    make_selection_panel_item_template, default_selection_panel_model,
+    default_selection_panel_model,
 };
 use crate::controls::selection_panel::template::SelectionPanelTemplate;
 use crate::controls::selection_panel::template::{
@@ -214,13 +215,16 @@ where
             + 'static,
         E: IntoElement + 'static,
     {
-        self.model.item_template = Some(make_selection_panel_item_template(template));
+        self.set_item_template(Some(make_selection_panel_item_template(template)), cx);
+    }
+
+    pub fn set_item_template(&mut self, item_template: Option<SelectionPanelItemTemplate<T>>, cx: &mut Context<Self>) {
+        self.model.item_template = item_template;
         cx.notify();
     }
 
     pub fn clear_item_template(&mut self, cx: &mut Context<Self>) {
-        self.model.item_template = None;
-        cx.notify();
+        self.set_item_template(None, cx);
     }
 
     pub fn with_scrollbar_template(&mut self, template: std::sync::Arc<dyn ScrollbarTemplate>, cx: &mut Context<Self>) {

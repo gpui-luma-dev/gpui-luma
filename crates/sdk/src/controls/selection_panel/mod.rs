@@ -1,17 +1,23 @@
 mod control;
+mod item_template;
 mod model;
 mod template;
 mod theme;
 
 pub use control::{SelectionPanelControl, SelectionPanelEvent, SelectionPanelState, SelectionPanelStepDirection};
+pub use item_template::{
+    ModifiedSelectionPanelItemTemplate, SelectionPanelItemRenderModel, SelectionPanelItemTemplate,
+    SelectionPanelItemTemplateModifier, item_template_with_modifier, make_selection_panel_item_template,
+};
 pub use model::{
-    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelItemRenderModel,
-    SelectionPanelItemTemplate, SelectionPanelModel, SelectionPanelPath, make_selection_panel_item_template,
+    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelPath,
 };
 pub use template::{
-    DefaultSelectionPanelTemplate, SelectionPanelClickHandler, SelectionPanelHoverHandler,
-    SelectionPanelMouseDownHandler, SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate,
-    SelectionPanelTemplateHandlers, default_selection_panel_template, render_selection_panel,
+    DefaultSelectionPanelTemplate, ModifiedSelectionPanelTemplate, SelectionPanelClickHandler,
+    SelectionPanelHoverHandler, SelectionPanelModifier, SelectionPanelMouseDownHandler, SelectionPanelMouseUpHandler,
+    SelectionPanelRenderModel, SelectionPanelTemplate, SelectionPanelTemplateHandlers,
+    default_selection_panel_template, render_selection_panel, template_with_modifier,
 };
 pub use theme::{
     SELECTION_PANEL_THEME_USAGE, SelectionPanelAppearance, default_selection_panel_appearance,

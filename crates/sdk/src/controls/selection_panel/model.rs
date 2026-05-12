@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, IntoElement, SharedString};
+use gpui::SharedString;
 
 use crate::controls::icon::IconSource;
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
+use crate::controls::selection_panel::item_template::SelectionPanelItemTemplate;
 use crate::controls::selection_panel::template::{SelectionPanelTemplate, default_selection_panel_template};
 use crate::controls::selection_panel::theme::{SelectionPanelAppearance, default_selection_panel_appearance};
 use crate::theme::{ControlSize, ThemeTokens};
@@ -100,38 +101,6 @@ impl SelectionPanelPath {
     pub fn is_item(self, index: usize) -> bool {
         matches!(self, Self::Item(active) if active == index)
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct SelectionPanelItemRenderModel<'a, T>
-where
-    T: SelectionPanelItemLike + 'static,
-{
-    pub panel_id: &'a SharedString,
-    pub control_id: &'a SharedString,
-    pub item: &'a T,
-    pub source_index: usize,
-    pub visible_index: usize,
-    pub selected: bool,
-    pub active: bool,
-    pub hovered: bool,
-    pub pressed: bool,
-    pub focused: bool,
-    pub focus_visible: bool,
-    pub enabled: bool,
-    pub sibling_count: usize,
-}
-
-pub type SelectionPanelItemTemplate<T> =
-    Arc<dyn for<'a> Fn(&SelectionPanelItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
-
-pub fn make_selection_panel_item_template<T, F, E>(template: F) -> SelectionPanelItemTemplate<T>
-where
-    T: SelectionPanelItemLike + 'static,
-    F: for<'a> Fn(&SelectionPanelItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
-    E: IntoElement + 'static,
-{
-    Arc::new(move |model, cx| template(model, cx).into_any_element())
 }
 
 pub type SelectionPanelAppearanceProvider =

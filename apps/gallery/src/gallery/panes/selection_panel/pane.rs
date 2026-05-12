@@ -7,8 +7,9 @@ use gpui::{
 use gpui_luma::controls::selection_panel::{
     SelectionPanelAppearance, SelectionPanelClickHandler, SelectionPanelControl, SelectionPanelEvent,
     SelectionPanelHoverHandler, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelMouseDownHandler,
-    SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate,
-    default_selection_panel_appearance, default_selection_panel_template, render_selection_panel,
+    SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate, item_template_with_modifier,
+    make_selection_panel_item_template, template_with_modifier, default_selection_panel_appearance,
+    default_selection_panel_template, render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
 use gpui_luma::theme::ControlSize;
@@ -22,6 +23,7 @@ use crate::gallery::theme::GalleryThemePack;
 pub(in crate::gallery) struct SelectionPanelPane {
     template_preview: Entity<SelectionPanelTemplatePreview>,
     interactive_panel: Entity<SelectionPanelControl<SelectionPanelItem>>,
+    parameterized_panel: Entity<SelectionPanelControl<SelectionPanelItem>>,
     event_demo: Entity<SelectionPanelEventDemo>,
 }
 
@@ -39,7 +41,7 @@ impl SelectionPanelPane {
 
         interactive_panel.update(cx, |panel, cx| {
             panel.set_panel_id("gallery-selection-panel-popup", cx);
-            panel.set_items(interactive_items, cx);
+            panel.set_items(interactive_items.clone(), cx);
             panel.with_item_template(
                 |item, _cx| {
                     let swatch = swatch_color(item.item.id().as_ref());
@@ -96,9 +98,46 @@ impl SelectionPanelPane {
             panel.set_active_visible_index(Some(1), cx);
         });
 
+        let parameterized_panel = theme.selection_panel("gallery-selection-panel-parameterized", cx);
+        parameterized_panel.update(cx, |panel, cx| {
+            panel.set_panel_id("gallery-selection-panel-parameterized-popup", cx);
+            panel.set_items(interactive_items, cx);
+            panel.with_template(
+                make_parameterized_panel_template::<SelectionPanelItem>(ParameterizedPanelStyle {
+                    open_opacity: 1.0,
+                    closed_opacity: 0.88,
+                }),
+                cx,
+            );
+            panel.set_item_template(
+                Some(make_parameterized_item_template(ParameterizedItemStyle {
+                    active_badge_text: "ACTIVE",
+                    active_badge_color: hsla(0.60, 0.70, 0.42, 1.0),
+                    show_active_badge: true,
+                })),
+                cx,
+            );
+            panel.set_scrolling(true, cx);
+            panel.set_appearance_provider(
+                std::sync::Arc::new({
+                    let interactive_theme = theme.clone();
+                    move |size| {
+                        let mut appearance = default_selection_panel_appearance(&interactive_theme.tokens(), size);
+                        appearance.min_width = 320.0;
+                        appearance
+                    }
+                }),
+                cx,
+            );
+            panel.set_visible_row_limits(5, 5, cx);
+            panel.set_selected_source_index(Some(1), cx);
+            panel.set_active_visible_index(Some(1), cx);
+        });
+
         Self {
             template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(theme.clone())),
             interactive_panel,
+            parameterized_panel,
             event_demo: cx.new(|_| SelectionPanelEventDemo::default()),
         }
     }
@@ -111,6 +150,17 @@ impl SelectionPanelPane {
                 cx.notify();
             });
         }));
+
+        let event_demo = self.event_demo.clone();
+        subscriptions.push(cx.subscribe(
+            &self.parameterized_panel,
+            move |_this, _, event: &SelectionPanelEvent, cx| {
+                let _ = event_demo.update(cx, |demo, cx| {
+                    demo.record_event(event);
+                    cx.notify();
+                });
+            },
+        ));
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
@@ -131,16 +181,78 @@ impl SelectionPanelPane {
                 .justify_start()
                 .gap(px(14.0))
                 .overflow_y_scroll()
+                .child(
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(chrome.muted_text)
+                        .child("Template preview"),
+                )
                 .child(self.template_preview.clone())
                 .child(
-                    div().flex().flex_col().items_center().gap(px(8.0)).child(self.interactive_panel.clone()).child(
-                        div()
-                            .text_size(px(11.0))
-                            .line_height(px(15.0))
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(chrome.muted_text)
-                            .child("Hover, click, Arrow keys, Home/End, Enter to emit events"),
-                    ),
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(chrome.muted_text)
+                        .child("Interactive panels"),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_start()
+                        .justify_center()
+                        .gap(px(16.0))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .items_center()
+                                .gap(px(8.0))
+                                .child(self.interactive_panel.clone())
+                                .child(
+                                    div()
+                                        .text_size(px(11.0))
+                                        .line_height(px(15.0))
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(chrome.muted_text)
+                                        .child("Baseline item template"),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .items_center()
+                                .gap(px(8.0))
+                                .child(self.parameterized_panel.clone())
+                                .child(
+                                    div()
+                                        .text_size(px(11.0))
+                                        .line_height(px(15.0))
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(chrome.muted_text)
+                                        .child("Parameterized control + item templates"),
+                                ),
+                        ),
+                )
+                .child(
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(chrome.muted_text)
+                        .child("Event stream"),
+                )
+                .child(
+                    div()
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.muted_text)
+                        .child("Hover, click, Arrow keys, Home/End, Enter to emit events"),
                 )
                 .child(self.event_demo.clone())
                 .into_any_element(),
@@ -151,6 +263,7 @@ impl SelectionPanelPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.template_preview, cx);
         notify_entity(&self.interactive_panel, cx);
+        notify_entity(&self.parameterized_panel, cx);
         notify_entity(&self.event_demo, cx);
     }
 }
@@ -383,6 +496,90 @@ fn noop_clicks(count: usize) -> Vec<SelectionPanelClickHandler> {
     (0..count)
         .map(|_| Box::new(|_: &ClickEvent, _: &mut Window, _: &mut App| {}) as SelectionPanelClickHandler)
         .collect()
+}
+
+#[derive(Clone, Copy)]
+struct ParameterizedPanelStyle {
+    open_opacity: f32,
+    closed_opacity: f32,
+}
+
+#[derive(Clone, Copy)]
+struct ParameterizedItemStyle {
+    active_badge_text: &'static str,
+    active_badge_color: gpui::Hsla,
+    show_active_badge: bool,
+}
+
+fn make_parameterized_panel_template<T>(style: ParameterizedPanelStyle) -> Arc<dyn SelectionPanelTemplate<T>>
+where
+    T: SelectionPanelItemLike + 'static,
+{
+    template_with_modifier(default_selection_panel_template(), move |root, model| {
+        root.opacity(if model.open {
+            style.open_opacity
+        } else {
+            style.closed_opacity
+        })
+    })
+}
+
+fn make_parameterized_item_template(
+    style: ParameterizedItemStyle,
+) -> gpui_luma::controls::selection_panel::SelectionPanelItemTemplate<SelectionPanelItem> {
+    let base = make_selection_panel_item_template(
+        |item: &gpui_luma::controls::selection_panel::SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
+            let swatch = swatch_color(item.item.id().as_ref());
+            let selected_weight = if item.selected {
+                FontWeight::SEMIBOLD
+            } else {
+                FontWeight::NORMAL
+            };
+
+            div()
+                .flex()
+                .items_center()
+                .gap(px(8.0))
+                .child(
+                    div().size(px(18.0)).rounded(px(2.0)).bg(swatch).border_1().border_color(hsla(0.0, 0.0, 1.0, 0.18)),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(1.0))
+                        .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
+                        .child(
+                            div()
+                                .font_family("Monaco")
+                                .text_size(px(10.0))
+                                .line_height(px(14.0))
+                                .opacity(0.72)
+                                .child(format_compact_hsla(swatch)),
+                        ),
+                )
+        },
+    );
+
+    item_template_with_modifier(base, move |content, item, _cx| {
+        div()
+            .flex()
+            .items_center()
+            .gap(px(6.0))
+            .when(style.show_active_badge && item.active, |row| {
+                row.child(
+                    div()
+                        .font_family("Monaco")
+                        .text_size(px(9.0))
+                        .line_height(px(12.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(style.active_badge_color)
+                        .child(style.active_badge_text),
+                )
+            })
+            .child(content)
+            .into_any_element()
+    })
 }
 
 fn swatch_color(item_id: &str) -> gpui::Hsla {
