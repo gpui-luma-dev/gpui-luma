@@ -338,7 +338,7 @@ fn render_template_sample(
                 open: true,
                 enabled: true,
                 focus: ControlFocusState::default(),
-                presenter: None,
+                item_template: None,
                 appearance: appearance.clone(),
                 show_selection_marker: true,
                 show_panel_chrome: true,

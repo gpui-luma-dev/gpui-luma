@@ -103,26 +103,6 @@ impl SelectionPanelPath {
 }
 
 #[derive(Clone, Debug)]
-pub struct SelectionPanelPresenterModel<'a, T>
-where
-    T: SelectionPanelItemLike + 'static,
-{
-    pub panel_id: &'a SharedString,
-    pub control_id: &'a SharedString,
-    pub item: &'a T,
-    pub source_index: usize,
-    pub visible_index: usize,
-    pub selected: bool,
-    pub active: bool,
-    pub hovered: bool,
-    pub pressed: bool,
-    pub focused: bool,
-    pub focus_visible: bool,
-    pub enabled: bool,
-    pub sibling_count: usize,
-}
-
-#[derive(Clone, Debug)]
 pub struct SelectionPanelItemRenderModel<'a, T>
 where
     T: SelectionPanelItemLike + 'static,
@@ -142,20 +122,8 @@ where
     pub sibling_count: usize,
 }
 
-pub type SelectionPanelPresenter<T> =
-    Arc<dyn for<'a> Fn(&SelectionPanelPresenterModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
-
 pub type SelectionPanelItemTemplate<T> =
     Arc<dyn for<'a> Fn(&SelectionPanelItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
-
-pub fn make_selection_panel_presenter<T, F, E>(presenter: F) -> SelectionPanelPresenter<T>
-where
-    T: SelectionPanelItemLike + 'static,
-    F: for<'a> Fn(&SelectionPanelPresenterModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
-    E: IntoElement + 'static,
-{
-    Arc::new(move |model, cx| presenter(model, cx).into_any_element())
-}
 
 pub fn make_selection_panel_item_template<T, F, E>(template: F) -> SelectionPanelItemTemplate<T>
 where
@@ -186,7 +154,7 @@ where
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
     pub(crate) size: ControlSize,
-    pub(crate) presenter: Option<SelectionPanelPresenter<T>>,
+    pub(crate) item_template: Option<SelectionPanelItemTemplate<T>>,
     pub(crate) template: Arc<dyn SelectionPanelTemplate<T>>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) appearance_provider: SelectionPanelAppearanceProvider,
@@ -211,38 +179,9 @@ where
         min_visible_rows: 1,
         max_visible_rows: 7,
         size: ControlSize::Md,
-        presenter: None,
+        item_template: None,
         template: default_selection_panel_template(),
         scrollbar_template: default_scrollbar_template(),
         appearance_provider: Arc::new(|size| default_selection_panel_appearance(&ThemeTokens::default(), size)),
     }
-}
-
-pub(crate) fn presenter_from_item_template<T, F, E>(template: F) -> SelectionPanelPresenter<T>
-where
-    T: SelectionPanelItemLike + 'static,
-    F: for<'a> Fn(&SelectionPanelItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
-    E: IntoElement + 'static,
-{
-    let item_template = make_selection_panel_item_template(template);
-    Arc::new(move |model, cx| {
-        item_template(
-            &SelectionPanelItemRenderModel {
-                panel_id: model.panel_id,
-                control_id: model.control_id,
-                item: model.item,
-                source_index: model.source_index,
-                visible_index: model.visible_index,
-                selected: model.selected,
-                active: model.active,
-                hovered: model.hovered,
-                pressed: model.pressed,
-                focused: model.focused,
-                focus_visible: model.focus_visible,
-                enabled: model.enabled,
-                sibling_count: model.sibling_count,
-            },
-            cx,
-        )
-    })
 }

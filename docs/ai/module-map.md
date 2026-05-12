@@ -96,6 +96,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - first-class spawnable panel control for selector-family popup rows
   - owns row interaction state/eventing, active/hover/pressed lifecycle, keyboard navigation, and ensure-visible API
   - integrates `PopupScrollSurface` for viewport/scrollbar behavior
+  - supports per-row customization via `SelectionPanelItemTemplate` / `with_item_template(...)`
   - exports builder/model/template/theme and `SelectionPanelEvent`
 
 - `menu_navigation.rs` (crate-private)

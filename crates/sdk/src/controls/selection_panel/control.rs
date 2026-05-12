@@ -7,7 +7,7 @@ use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
 use crate::controls::selection_panel::model::{
     SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
-    SelectionPanelPresenter, default_selection_panel_model, presenter_from_item_template,
+    make_selection_panel_item_template, default_selection_panel_model,
 };
 use crate::controls::selection_panel::template::SelectionPanelTemplate;
 use crate::controls::selection_panel::template::{
@@ -206,11 +206,6 @@ where
         cx.notify();
     }
 
-    pub fn set_presenter(&mut self, presenter: Option<SelectionPanelPresenter<T>>, cx: &mut Context<Self>) {
-        self.model.presenter = presenter;
-        cx.notify();
-    }
-
     pub fn with_item_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
         F: for<'a> Fn(&crate::controls::selection_panel::SelectionPanelItemRenderModel<'a, T>, &mut App) -> E
@@ -219,12 +214,12 @@ where
             + 'static,
         E: IntoElement + 'static,
     {
-        self.model.presenter = Some(presenter_from_item_template(template));
+        self.model.item_template = Some(make_selection_panel_item_template(template));
         cx.notify();
     }
 
     pub fn clear_item_template(&mut self, cx: &mut Context<Self>) {
-        self.model.presenter = None;
+        self.model.item_template = None;
         cx.notify();
     }
 
@@ -591,7 +586,7 @@ where
                 open: self.model.open,
                 enabled: self.model.enabled,
                 focus,
-                presenter: self.model.presenter.as_deref(),
+                item_template: self.model.item_template.as_ref(),
                 appearance: appearance.clone(),
                 show_selection_marker: self.model.show_selection_marker,
                 show_panel_chrome: false,

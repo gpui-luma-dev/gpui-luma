@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, Window, div,
-    prelude::*, px,
+    App, ClickEvent, Div, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, Window, div, prelude::*,
+    px,
 };
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
-use crate::controls::selection_panel::model::{SelectionPanelItemLike, SelectionPanelPresenterModel};
+use crate::controls::selection_panel::model::{
+    SelectionPanelItemLike, SelectionPanelItemRenderModel, SelectionPanelItemTemplate,
+};
 use crate::controls::selection_panel::theme::SelectionPanelAppearance;
 use crate::controls::state::ControlFocusState;
 
@@ -24,9 +26,6 @@ pub struct SelectionPanelTemplateHandlers {
     pub item_clicks: Vec<SelectionPanelClickHandler>,
 }
 
-pub type SelectionPanelPresenterRef<'a, T> =
-    &'a (dyn for<'b> Fn(&SelectionPanelPresenterModel<'b, T>, &mut App) -> AnyElement + Send + Sync);
-
 pub struct SelectionPanelRenderModel<'a, T>
 where
     T: SelectionPanelItemLike + 'static,
@@ -42,7 +41,7 @@ where
     pub open: bool,
     pub enabled: bool,
     pub focus: ControlFocusState,
-    pub presenter: Option<SelectionPanelPresenterRef<'a, T>>,
+    pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
     pub appearance: SelectionPanelAppearance,
     pub show_selection_marker: bool,
     pub show_panel_chrome: bool,
@@ -117,9 +116,9 @@ where
                 appearance.item_disabled_foreground
             };
 
-            let content = if let Some(presenter) = model.presenter {
-                presenter(
-                    &SelectionPanelPresenterModel {
+            let content = if let Some(item_template) = model.item_template {
+                item_template(
+                    &SelectionPanelItemRenderModel {
                         panel_id: model.panel_id,
                         control_id: model.control_id,
                         item,
