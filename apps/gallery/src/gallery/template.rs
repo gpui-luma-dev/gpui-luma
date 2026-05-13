@@ -39,6 +39,7 @@ impl Render for GalleryApp {
                 .items_center()
                 .justify_between()
                 .px_2()
+                .text_color(chrome.title_text)
                 .child(div().child("GPUI-Luma Gallery"))
                 .child(
                     div()

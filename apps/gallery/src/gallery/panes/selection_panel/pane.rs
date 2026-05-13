@@ -12,12 +12,13 @@ use gpui_luma::controls::selection_panel::{
     default_selection_panel_template, render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
-use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::{ControlSize, ThemeMode};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_usage_descriptions, notify_entity};
 use crate::gallery::theme::GalleryThemePack;
+use super::layout::{PAGE_SPEC, render_live_panel_sample, render_page_header, render_section};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SelectionPanelPane {
@@ -138,14 +139,14 @@ impl SelectionPanelPane {
             template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(theme.clone())),
             interactive_panel,
             parameterized_panel,
-            event_demo: cx.new(|_| SelectionPanelEventDemo::default()),
+            event_demo: cx.new(|_| SelectionPanelEventDemo::new(theme.clone())),
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         let event_demo = self.event_demo.clone();
         subscriptions.push(cx.subscribe(&self.interactive_panel, move |_this, _, event: &SelectionPanelEvent, cx| {
-            let _ = event_demo.update(cx, |demo, cx| {
+            event_demo.update(cx, |demo, cx| {
                 demo.record_event(event);
                 cx.notify();
             });
@@ -155,7 +156,7 @@ impl SelectionPanelPane {
         subscriptions.push(cx.subscribe(
             &self.parameterized_panel,
             move |_this, _, event: &SelectionPanelEvent, cx| {
-                let _ = event_demo.update(cx, |demo, cx| {
+                event_demo.update(cx, |demo, cx| {
                     demo.record_event(event);
                     cx.notify();
                 });
@@ -165,11 +166,12 @@ impl SelectionPanelPane {
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
+        let sections = PAGE_SPEC.sections;
 
         gallery_pane_with_usage_descriptions(
-            "Selection Panel",
-            Some("Template preview + spawnable SDK control with live SelectionPanelEvent stream."),
-            &["Selection Panel"],
+            PAGE_SPEC.title,
+            Some(PAGE_SPEC.description),
+            PAGE_SPEC.theme_components,
             div()
                 .id("selection-panel-content")
                 .h_full()
@@ -177,84 +179,41 @@ impl SelectionPanelPane {
                 .min_h(px(0.0))
                 .flex()
                 .flex_col()
-                .items_center()
+                .items_stretch()
                 .justify_start()
-                .gap(px(14.0))
+                .gap(px(16.0))
                 .overflow_y_scroll()
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.muted_text)
-                        .child("Template preview"),
-                )
-                .child(self.template_preview.clone())
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.muted_text)
-                        .child("Interactive panels"),
-                )
-                .child(
+                .p(px(2.0))
+                .child(render_page_header(PAGE_SPEC.header, theme))
+                .child(render_section(sections[0], self.template_preview.clone().into_any_element(), theme))
+                .child(render_section(
+                    sections[1],
                     div()
                         .flex()
                         .flex_wrap()
                         .items_start()
                         .justify_center()
-                        .gap(px(16.0))
-                        .child(
-                            div()
-                                .flex()
-                                .flex_col()
-                                .items_center()
-                                .gap(px(8.0))
-                                .child(self.interactive_panel.clone())
-                                .child(
-                                    div()
-                                        .text_size(px(11.0))
-                                        .line_height(px(15.0))
-                                        .font_weight(FontWeight::MEDIUM)
-                                        .text_color(chrome.muted_text)
-                                        .child("Baseline item template"),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .flex()
-                                .flex_col()
-                                .items_center()
-                                .gap(px(8.0))
-                                .child(self.parameterized_panel.clone())
-                                .child(
-                                    div()
-                                        .text_size(px(11.0))
-                                        .line_height(px(15.0))
-                                        .font_weight(FontWeight::MEDIUM)
-                                        .text_color(chrome.muted_text)
-                                        .child("Parameterized control + item templates"),
-                                ),
-                        ),
-                )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.muted_text)
-                        .child("Event stream"),
-                )
-                .child(
-                    div()
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(chrome.muted_text)
-                        .child("Hover, click, Arrow keys, Home/End, Enter to emit events"),
-                )
-                .child(self.event_demo.clone())
+                        .gap(px(14.0))
+                        .child(render_live_panel_sample(
+                            "Baseline item template",
+                            self.interactive_panel.clone().into_any_element(),
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
+                        .child(render_live_panel_sample(
+                            "Parameterized control + item templates",
+                            self.parameterized_panel.clone().into_any_element(),
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
+                        .into_any_element(),
+                    theme,
+                ))
+                .child(render_section(
+                    sections[2],
+                    div().flex().justify_center().child(self.event_demo.clone()).into_any_element(),
+                    theme,
+                ))
                 .into_any_element(),
             theme,
         )
@@ -283,7 +242,9 @@ impl SelectionPanelTemplatePreview {
 impl Render for SelectionPanelTemplatePreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
-        let appearance = default_selection_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        let mut appearance = default_selection_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        appearance.min_width = 220.0;
+        appearance.padding = 7.0;
 
         let standard_items = vec![
             SelectionPanelItem::new("draft-note").label("Draft note").icon(LucideIcon::FilePenLine),
@@ -308,7 +269,7 @@ impl Render for SelectionPanelTemplatePreview {
             .flex_wrap()
             .items_start()
             .justify_center()
-            .gap(px(16.0))
+            .gap(px(14.0))
             .child(render_template_sample(
                 "Standard",
                 &self.template,
@@ -345,8 +306,8 @@ impl Render for SelectionPanelTemplatePreview {
     }
 }
 
-#[derive(Default)]
 struct SelectionPanelEventDemo {
+    theme: GalleryThemePack,
     hover_changes: usize,
     activate_rows: usize,
     active_index_changes: usize,
@@ -354,6 +315,16 @@ struct SelectionPanelEventDemo {
 }
 
 impl SelectionPanelEventDemo {
+    fn new(theme: GalleryThemePack) -> Self {
+        Self {
+            theme,
+            hover_changes: 0,
+            activate_rows: 0,
+            active_index_changes: 0,
+            last_event: SharedString::default(),
+        }
+    }
+
     fn record_event(&mut self, event: &SelectionPanelEvent) {
         match event {
             SelectionPanelEvent::HoverChanged { visible_index } => {
@@ -377,37 +348,68 @@ impl SelectionPanelEventDemo {
 
 impl Render for SelectionPanelEventDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let style = event_demo_style(self.theme.mode());
+
         div()
-            .w(px(420.0))
+            .w(px(500.0))
             .max_w_full()
             .flex()
             .flex_col()
-            .gap(px(6.0))
-            .p(px(10.0))
-            .rounded(px(8.0))
+            .gap(px(10.0))
+            .p(px(14.0))
+            .rounded(px(10.0))
             .border_1()
-            .border_color(gpui::hsla(0.0, 0.0, 0.65, 0.6))
-            .bg(gpui::hsla(0.0, 0.0, 1.0, 0.04))
+            .border_color(style.border)
+            .bg(style.card_background)
             .child(
                 div()
-                    .text_size(px(11.0))
-                    .line_height(px(15.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(gpui::hsla(0.0, 0.0, 0.2, 1.0))
-                    .child("SelectionPanelEvent demo"),
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .gap(px(10.0))
+                    .child(
+                        div()
+                            .text_size(px(12.0))
+                            .line_height(px(16.0))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(style.title)
+                            .child("SelectionPanelEvent demo"),
+                    )
+                    .child(
+                        div()
+                            .px(px(7.0))
+                            .py(px(3.0))
+                            .rounded(px(999.0))
+                            .border_1()
+                            .border_color(style.live_border)
+                            .bg(style.live_background)
+                            .text_size(px(10.0))
+                            .line_height(px(13.0))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(style.live_text)
+                            .child("live"),
+                    ),
             )
-            .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(gpui::hsla(0.0, 0.0, 0.3, 1.0)).child(
-                format!(
-                    "HoverChanged: {} | ActiveIndexChanged: {} | ActivateRow: {}",
-                    self.hover_changes, self.active_index_changes, self.activate_rows
-                ),
-            ))
             .child(
                 div()
+                    .flex()
+                    .flex_wrap()
+                    .gap(px(6.0))
+                    .child(render_event_count("HoverChanged", self.hover_changes, style))
+                    .child(render_event_count("ActiveIndexChanged", self.active_index_changes, style))
+                    .child(render_event_count("ActivateRow", self.activate_rows, style)),
+            )
+            .child(
+                div()
+                    .rounded(px(6.0))
+                    .border_1()
+                    .border_color(style.code_border)
+                    .bg(style.code_background)
+                    .p(px(8.0))
                     .text_size(px(11.0))
-                    .line_height(px(15.0))
+                    .line_height(px(16.0))
                     .font_family("Monaco")
-                    .text_color(gpui::hsla(0.0, 0.0, 0.35, 1.0))
+                    .text_color(style.body)
                     .child(if self.last_event.is_empty() {
                         SharedString::from("Last event: none")
                     } else {
@@ -415,6 +417,76 @@ impl Render for SelectionPanelEventDemo {
                     }),
             )
     }
+}
+
+#[derive(Clone, Copy)]
+struct EventDemoStyle {
+    card_background: gpui::Hsla,
+    border: gpui::Hsla,
+    title: gpui::Hsla,
+    body: gpui::Hsla,
+    chip_background: gpui::Hsla,
+    chip_border: gpui::Hsla,
+    live_background: gpui::Hsla,
+    live_border: gpui::Hsla,
+    live_text: gpui::Hsla,
+    code_background: gpui::Hsla,
+    code_border: gpui::Hsla,
+}
+
+fn event_demo_style(mode: ThemeMode) -> EventDemoStyle {
+    match mode {
+        ThemeMode::Light => EventDemoStyle {
+            card_background: hsla(0.61, 0.40, 0.15, 0.98),
+            border: hsla(0.60, 0.32, 0.34, 0.55),
+            title: hsla(0.33, 0.56, 0.70, 1.0),
+            body: hsla(0.0, 0.0, 0.95, 0.96),
+            chip_background: hsla(0.62, 0.28, 0.18, 0.74),
+            chip_border: hsla(0.59, 0.26, 0.42, 0.66),
+            live_background: hsla(0.62, 0.22, 0.20, 0.72),
+            live_border: hsla(0.58, 0.30, 0.52, 0.62),
+            live_text: hsla(0.0, 0.0, 0.93, 0.88),
+            code_background: hsla(0.62, 0.24, 0.17, 0.82),
+            code_border: hsla(0.58, 0.22, 0.44, 0.56),
+        },
+        ThemeMode::Dark => EventDemoStyle {
+            card_background: hsla(0.62, 0.34, 0.14, 0.98),
+            border: hsla(0.59, 0.26, 0.42, 0.62),
+            title: hsla(0.34, 0.54, 0.68, 0.96),
+            body: hsla(0.0, 0.0, 0.90, 0.94),
+            chip_background: hsla(0.63, 0.24, 0.20, 0.78),
+            chip_border: hsla(0.59, 0.24, 0.45, 0.68),
+            live_background: hsla(0.63, 0.20, 0.22, 0.78),
+            live_border: hsla(0.58, 0.26, 0.54, 0.66),
+            live_text: hsla(0.0, 0.0, 0.90, 0.86),
+            code_background: hsla(0.63, 0.20, 0.18, 0.86),
+            code_border: hsla(0.58, 0.20, 0.48, 0.60),
+        },
+    }
+}
+
+fn render_event_count(label: &'static str, count: usize, style: EventDemoStyle) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .gap(px(6.0))
+        .rounded(px(5.0))
+        .border_1()
+        .border_color(style.chip_border)
+        .bg(style.chip_background)
+        .px(px(7.0))
+        .py(px(5.0))
+        .child(
+            div()
+                .font_family("Monaco")
+                .text_size(px(11.0))
+                .line_height(px(14.0))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(style.body)
+                .child(count.to_string()),
+        )
+        .child(div().text_size(px(10.0)).line_height(px(14.0)).text_color(style.body).opacity(0.76).child(label))
+        .into_any_element()
 }
 
 fn render_template_sample(
