@@ -11,7 +11,6 @@ use gpui_luma::controls::choice_group::{
     ChoiceGroupSelectionMode, ChoiceGroupStateMode, ChoiceGroupTemplate, ChoiceGroupTemplateHandlers, ChoiceGroupKind,
     ChoiceGroupSize, ControlFocusState, default_choice_group_template,
 };
-use gpui_luma::controls::radio_button;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -34,12 +33,12 @@ pub(in crate::gallery) struct ChoiceGroupPane {
 }
 
 impl ChoiceGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
         let optional_group = choice_group::single_select("choice-density-group")
             .items(density_items())
-            .bool_button_template(radio_button::default_radio_button_template())
+            .bool_button_template(theme.radio_button_template())
             .with_modifier(move |el, _| el.bg(transparent).border_color(transparent))
             .spawn(cx);
 
@@ -47,14 +46,14 @@ impl ChoiceGroupPane {
         let required_group = choice_group::single_select("choice-required-density-group")
             .managed_selected("comfortable")
             .items(density_items())
-            .bool_button_template(radio_button::default_radio_button_template())
+            .bool_button_template(theme.radio_button_template())
             .with_modifier(move |el, _| el.bg(transparent).border_color(transparent))
             .spawn(cx);
 
         Self {
             optional_group,
             required_group,
-            state_preview: cx.new(|_| ChoiceGroupStatePreview::new()),
+            state_preview: cx.new(|_| ChoiceGroupStatePreview::new(theme)),
             choice: "None".to_string(),
             required_choice: "Comfortable".to_string(),
             required_selected_id: SharedString::from("comfortable"),
@@ -164,6 +163,7 @@ fn render_live_example(label: &'static str, group: ChoiceGroup, choice: &str, te
 
 #[derive(Clone)]
 struct ChoiceGroupStatePreview {
+    theme: GalleryThemePack,
     template: Arc<dyn ChoiceGroupTemplate>,
     item_template: gpui_luma::controls::choice_group::ChoiceGroupItemButtonTemplate,
 }
@@ -176,16 +176,18 @@ struct ChoiceGroupStateSample {
 }
 
 impl ChoiceGroupStatePreview {
-    fn new() -> Self {
+    fn new(theme: &GalleryThemePack) -> Self {
         Self {
+            theme: theme.clone(),
             template: default_choice_group_template(),
-            item_template: radio_button::default_radio_button_template(),
+            item_template: theme.radio_button_template(),
         }
     }
 }
 
 impl Render for ChoiceGroupStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let chrome = self.theme.chrome();
         let samples = [
             ChoiceGroupStateSample { id: "default", label: "Standard", state: ChoiceGroupItemState::default() },
             ChoiceGroupStateSample {
@@ -226,10 +228,29 @@ impl Render for ChoiceGroupStatePreview {
                     .text_size(px(12.0))
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
-            .child(render_state_row(&self.template, &self.item_template, "Unselected", false, &samples, window, cx))
-            .child(render_state_row(&self.template, &self.item_template, "Selected", true, &samples, window, cx))
+            .child(render_state_row(
+                &self.template,
+                &self.item_template,
+                "Unselected",
+                false,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                &self.item_template,
+                "Selected",
+                true,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
     }
 }
 
@@ -239,6 +260,7 @@ fn render_state_row(
     row_label: &'static str,
     selected: bool,
     samples: &[ChoiceGroupStateSample],
+    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -247,12 +269,12 @@ fn render_state_row(
         .flex_col()
         .items_center()
         .gap(px(8.0))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).child(row_label))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
         .child(
             div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples
-                    .iter()
-                    .map(|sample| render_state_sample(template, item_template, selected, sample, window, cx)),
+                samples.iter().map(|sample| {
+                    render_state_sample(template, item_template, selected, sample, label_color, window, cx)
+                }),
             ),
         )
         .into_any_element()
@@ -263,6 +285,7 @@ fn render_state_sample(
     item_template: &gpui_luma::controls::choice_group::ChoiceGroupItemButtonTemplate,
     selected: bool,
     sample: &ChoiceGroupStateSample,
+    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -348,7 +371,7 @@ fn render_state_sample(
         .items_center()
         .gap(px(6.0))
         .child(preview_template.render(&model, choice_group_preview_handlers(3), window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).child(sample.label))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 

@@ -11,6 +11,7 @@ use gpui_luma::controls::choice_group::{
     ChoiceGroupSelectionMode, ChoiceGroupStateMode, ChoiceGroupTemplate, ChoiceGroupTemplateHandlers, ChoiceGroupKind,
     ChoiceGroupSize, ControlFocusState, default_choice_group_template,
 };
+use gpui_luma::controls::command::button::ButtonTemplate;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -32,10 +33,12 @@ impl ToggleGroupPane {
             single_group: choice_group::new("placement-choice-group")
                 .items(placement_items())
                 .selected("bottom")
+                .bool_button_template(theme.toggle_template())
                 .spawn(cx),
             multiple_group: choice_group::multiple("edge-choice-group")
                 .items(edge_items())
                 .selected_ids(["top", "left"])
+                .bool_button_template(theme.toggle_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ChoiceGroupStatePreview::new(theme)),
             placement: "Bottom".to_string(),
@@ -120,6 +123,7 @@ impl ToggleGroupPane {
 struct ChoiceGroupStatePreview {
     theme: GalleryThemePack,
     template: Arc<dyn ChoiceGroupTemplate>,
+    item_template: Arc<dyn ButtonTemplate<bool>>,
 }
 
 #[derive(Clone, Copy)]
@@ -131,7 +135,11 @@ struct ChoiceGroupStateSample {
 
 impl ChoiceGroupStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_choice_group_template() }
+        Self {
+            theme: theme.clone(),
+            template: default_choice_group_template(),
+            item_template: theme.toggle_template(),
+        }
     }
 }
 
@@ -181,13 +189,32 @@ impl Render for ChoiceGroupStatePreview {
                     .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
-            .child(render_state_row(&self.template, "Unselected", false, &samples, chrome.muted_text, window, cx))
-            .child(render_state_row(&self.template, "Selected", true, &samples, chrome.muted_text, window, cx))
+            .child(render_state_row(
+                &self.template,
+                &self.item_template,
+                "Unselected",
+                false,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                &self.item_template,
+                "Selected",
+                true,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
     }
 }
 
 fn render_state_row(
     template: &Arc<dyn ChoiceGroupTemplate>,
+    item_template: &Arc<dyn ButtonTemplate<bool>>,
     row_label: &'static str,
     selected: bool,
     samples: &[ChoiceGroupStateSample],
@@ -203,9 +230,9 @@ fn render_state_row(
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
         .child(
             div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples
-                    .iter()
-                    .map(|sample| render_state_sample(template, selected, sample, label_color, window, cx)),
+                samples.iter().map(|sample| {
+                    render_state_sample(template, item_template, selected, sample, label_color, window, cx)
+                }),
             ),
         )
         .into_any_element()
@@ -213,6 +240,7 @@ fn render_state_row(
 
 fn render_state_sample(
     template: &Arc<dyn ChoiceGroupTemplate>,
+    item_template: &Arc<dyn ButtonTemplate<bool>>,
     selected: bool,
     sample: &ChoiceGroupStateSample,
     label_color: gpui::Hsla,
@@ -277,7 +305,7 @@ fn render_state_sample(
         id: &id,
         items,
         content: &content,
-        item_button_template: None,
+        item_button_template: Some(item_template),
         selected_ids: &selected_ids,
         active_id,
         selection_mode: ChoiceGroupSelectionMode::Single,
