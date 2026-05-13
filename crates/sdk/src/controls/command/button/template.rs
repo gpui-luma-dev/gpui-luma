@@ -4,8 +4,9 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
-use crate::theme::adorner::render_adorner;
+use crate::theme::adorner::{max_oversize_extent, render_adorner};
 use crate::controls::button_family::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
+use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
 
@@ -47,6 +48,16 @@ pub fn default_button_template<D: 'static>() -> Arc<dyn ButtonTemplate<D>> {
 impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
     fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(button_variant(model.kind), model.role, model.size, model.state);
+        let focused_probe_appearance = if model.state.disabled {
+            None
+        } else {
+            Some(self.theme.resolve(
+                button_variant(model.kind),
+                model.role,
+                model.size,
+                InteractionState { focused: true, ..model.state },
+            ))
+        };
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -82,13 +93,23 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             appearance.radius
         };
 
-        let mut root = div().id(model.id.clone()).relative().child(control);
+        let oversize_extent = max_oversize_extent(&appearance.adorners)
+            .max(focused_probe_appearance.as_ref().map(|probe| max_oversize_extent(&probe.adorners)).unwrap_or(0.0));
+
+        let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
         for spec in &appearance.adorners {
             if let Some(adorner) = render_adorner(*spec, radius) {
-                root = root.child(adorner);
+                adorned = adorned.child(adorner);
             }
         }
+
+        let mut root = div().id(model.id.clone()).relative();
+        root = if oversize_extent > 0.0 {
+            root.p(px(oversize_extent)).child(adorned)
+        } else {
+            root.child(adorned)
+        };
 
         if model.state.disabled {
             root = root.opacity(DISABLED_OPACITY);

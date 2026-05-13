@@ -25,6 +25,18 @@ pub(crate) fn render_adorner(spec: AdornerSpec, radius: f32) -> Option<Div> {
     }
 }
 
+pub(crate) fn max_oversize_extent(specs: &[AdornerSpec]) -> f32 {
+    specs
+        .iter()
+        .map(|spec| match *spec {
+            AdornerSpec::FocusRing(focus_ring) if matches!(focus_ring.placement, AdornerPlacement::Oversize) => {
+                focus_ring.distance.max(0.0)
+            }
+            _ => 0.0,
+        })
+        .fold(0.0, f32::max)
+}
+
 fn render_focus_ring_adorner(focus_ring: FocusRingAdornerSpec, radius: f32) -> Option<Div> {
     match focus_ring.placement {
         AdornerPlacement::Inset => {

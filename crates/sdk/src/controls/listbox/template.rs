@@ -6,7 +6,7 @@ use gpui::{
 
 use super::ListBoxRenderModel;
 use crate::controls::listbox::{ListBoxRowAppearance, ListBoxTheme, default_listbox_theme};
-use crate::theme::adorner::{render_adorner, AdornerSpec};
+use crate::theme::adorner::{AdornerSpec, max_oversize_extent, render_adorner};
 
 pub type ListBoxClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ListBoxHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -59,6 +59,17 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             handlers;
 
         let list_appearance = self.theme.resolve_list(model.enabled, model.focus.focused, model.size);
+        let focused_probe_list_appearance = if model.enabled {
+            Some(self.theme.resolve_list(model.enabled, true, model.size))
+        } else {
+            None
+        };
+        let list_oversize_extent = max_oversize_extent(&list_appearance.adorners).max(
+            focused_probe_list_appearance
+                .as_ref()
+                .map(|probe| max_oversize_extent(&probe.adorners))
+                .unwrap_or(0.0),
+        );
 
         let mut root = div()
             .id(model.id.clone())
@@ -87,6 +98,8 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
         let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
         let mut item_clicks = item_clicks.into_iter();
 
+        let any_item_enabled = model.items.iter().any(|item| item.enabled);
+
         for item in &model.items {
             let Some(item_hover) = item_hovers.next() else {
                 break;
@@ -105,7 +118,20 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             };
 
             let row_appearance = self.theme.resolve_row(item.selected, item.state.interaction_state(), model.size);
-            let mut row = if model.item_button_template.is_some() {
+            let focused_probe_row_appearance = if any_item_enabled && !item.state.disabled {
+                let mut focused_state = item.state.interaction_state();
+                focused_state.focused = true;
+                Some(self.theme.resolve_row(item.selected, focused_state, model.size))
+            } else {
+                None
+            };
+            let row_oversize_extent = max_oversize_extent(&row_appearance.adorners).max(
+                focused_probe_row_appearance
+                    .as_ref()
+                    .map(|probe| max_oversize_extent(&probe.adorners))
+                    .unwrap_or(0.0),
+            );
+            let row = if model.item_button_template.is_some() {
                 let content =
                     super::item_template::render_listbox_row_content(model, item.content_model.clone(), _window, _cx);
                 div()
@@ -135,16 +161,26 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
             .on_click(item_click);
 
-            if !item.state.disabled {
-                row = row.cursor_pointer();
+            let row = if !item.state.disabled {
+                row.cursor_pointer()
             } else {
-                row = row.opacity(0.56);
-            }
+                row.opacity(0.56)
+            };
+
+            let row = if row_oversize_extent > 0.0 {
+                div().relative().p(px(row_oversize_extent)).child(row).into_any_element()
+            } else {
+                row.into_any_element()
+            };
 
             root = root.child(row);
         }
 
-        root
+        if list_oversize_extent > 0.0 {
+            div().id(format!("{}-list-slot", model.id)).relative().p(px(list_oversize_extent)).child(root)
+        } else {
+            root
+        }
     }
 }
 

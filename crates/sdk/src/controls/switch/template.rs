@@ -2,7 +2,8 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-use crate::theme::adorner::{AdornerSpec, render_adorner};
+use crate::theme::adorner::{AdornerSpec, max_oversize_extent, render_adorner};
+use crate::theme::InteractionState;
 use crate::controls::switch::{SwitchTheme, default_switch_theme};
 
 use crate::controls::template::TemplateWithModifiers;
@@ -19,6 +20,12 @@ define_control_template!(
 impl ButtonTemplate<bool> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.data, model.state);
+        let focused_probe_appearance = if model.state.disabled {
+            None
+        } else {
+            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
+        };
+
         let thumb_left = if model.data {
             appearance.width - appearance.thumb_size - appearance.padding
         } else {
@@ -48,6 +55,8 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .rounded(px(appearance.radius))
             .child(thumb);
 
+        let oversize_extent = max_oversize_extent(&appearance.adorners)
+            .max(focused_probe_appearance.as_ref().map(|probe| max_oversize_extent(&probe.adorners)).unwrap_or(0.0));
         let mut track = div().relative().child(track_visual);
 
         for spec in &appearance.adorners {
@@ -63,6 +72,20 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
                 track = track.child(adorner);
             }
         }
+
+        let track = if oversize_extent > 0.0 {
+            div()
+                .id(format!("{}-track-slot", model.id))
+                .flex()
+                .items_center()
+                .justify_center()
+                .w(px(appearance.width + (oversize_extent * 2.0)))
+                .h(px(appearance.height + (oversize_extent * 2.0)))
+                .child(track)
+                .into_any_element()
+        } else {
+            track.into_any_element()
+        };
 
         let mut root = div()
             .id(model.id.clone())

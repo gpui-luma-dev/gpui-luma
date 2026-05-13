@@ -2,8 +2,9 @@ use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude:
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use crate::theme::adorner::{AdornerSpec, render_adorner};
+use crate::theme::adorner::{AdornerSpec, max_oversize_extent, render_adorner};
 use crate::controls::checkbox::{CheckboxTheme, default_checkbox_theme};
+use crate::theme::InteractionState;
 
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
@@ -19,6 +20,12 @@ define_control_template!(
 impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.data, model.state);
+        let focused_probe_appearance = if model.state.disabled {
+            None
+        } else {
+            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
+        };
+
         let indicator_visual = div()
             .flex()
             .items_center()
@@ -30,6 +37,8 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             .rounded(px(appearance.indicator_radius))
             .child(render_checkmark(model.data, appearance.checkmark_size, appearance.checkmark_color));
 
+        let oversize_extent = max_oversize_extent(&appearance.adorners)
+            .max(focused_probe_appearance.as_ref().map(|probe| max_oversize_extent(&probe.adorners)).unwrap_or(0.0));
         let mut indicator = div().relative().child(indicator_visual);
 
         for spec in &appearance.adorners {
@@ -48,6 +57,19 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
                 indicator = indicator.child(adorner);
             }
         }
+
+        let indicator = if oversize_extent > 0.0 {
+            div()
+                .id(format!("{}-indicator-slot", model.id))
+                .flex()
+                .items_center()
+                .justify_center()
+                .size(px(appearance.indicator_size + (oversize_extent * 2.0)))
+                .child(indicator)
+                .into_any_element()
+        } else {
+            indicator.into_any_element()
+        };
 
         let mut root = div()
             .id(model.id.clone())
