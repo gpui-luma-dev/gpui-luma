@@ -188,35 +188,6 @@ fn render_radial_item(
     button
 }
 
-fn render_radial_backdrop(appearance: &FloatingMenuAppearance) -> Stateful<Div> {
-    let outer_offset = (RADIAL_DIAMETER - RADIAL_BACKDROP_DIAMETER) * 0.5;
-    let inner_offset = (RADIAL_DIAMETER - RADIAL_BACKDROP_INNER_DIAMETER) * 0.5;
-
-    div()
-        .id("context-menu-radial-backdrop")
-        .absolute()
-        .left(px(outer_offset))
-        .top(px(outer_offset))
-        .size(px(RADIAL_BACKDROP_DIAMETER))
-        .rounded(px(RADIAL_BACKDROP_DIAMETER))
-        .bg(with_alpha(appearance.background, 0.58))
-        .border_1()
-        .border_color(with_alpha(appearance.border, 0.44))
-        .child(
-            div()
-                .absolute()
-                .left(px(inner_offset - outer_offset))
-                .top(px(inner_offset - outer_offset))
-                .size(px(RADIAL_BACKDROP_INNER_DIAMETER))
-                .rounded(px(RADIAL_BACKDROP_INNER_DIAMETER))
-                .bg(with_alpha(appearance.background, 0.32)),
-        )
-}
-
-fn with_alpha(color: gpui::Hsla, alpha: f32) -> gpui::Hsla {
-    gpui::Hsla { a: alpha, ..color }
-}
-
 fn radial_item_position(index: usize) -> (f32, f32) {
     let angle = match index {
         0 => -90.0_f32,
