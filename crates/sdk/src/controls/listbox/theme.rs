@@ -11,7 +11,7 @@ use crate::theme::{
 pub struct ListBoxListAppearance {
     pub background: Hsla,
     pub border: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub divider: Hsla,
     pub radius: f32,
     pub padding_x: f32,
@@ -23,7 +23,7 @@ pub struct ListBoxListAppearance {
 pub struct ListBoxRowAppearance {
     pub background: Hsla,
     pub label_color: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -108,7 +108,7 @@ pub const LISTBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focused list ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["ListBoxListAppearance.adorners"],
+            appearance_fields: &["ListBoxListAppearance.adorner"],
         },
     ],
 };
@@ -124,15 +124,15 @@ impl ListBoxTheme for DefaultListBoxTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        let adorners = if focused {
-            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+        let adorner = if focused {
+            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
                 color: palette.focus.ring,
                 placement: AdornerPlacement::Inset,
                 distance: metrics.border_width.default,
                 width: metrics.focus.width,
-            })]
+            }))
         } else {
-            Vec::new()
+            None
         };
 
         ListBoxListAppearance {
@@ -142,7 +142,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
                 palette.state.disabled.background
             },
             border: palette.form.input.border,
-            adorners,
+            adorner,
             divider: palette.form.input.border,
             radius: metrics.radius(size),
             padding_x: 6.0,
@@ -172,12 +172,12 @@ impl ListBoxTheme for DefaultListBoxTheme {
             palette.app.foreground
         };
 
-        let adorners = Vec::new();
+        let adorner = None;
 
         ListBoxRowAppearance {
             background,
             label_color,
-            adorners,
+            adorner,
             label_typography: typography.text.label,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),

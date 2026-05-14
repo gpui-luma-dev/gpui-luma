@@ -15,7 +15,7 @@ pub struct RadioButtonAppearance {
     pub indicator_border: Hsla,
     pub dot_color: Hsla,
     pub label_color: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub control_radius: f32,
     pub control_padding_x: f32,
@@ -127,7 +127,7 @@ pub const RADIO_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["RadioButtonAppearance.adorners"],
+            appearance_fields: &["RadioButtonAppearance.adorner"],
         },
     ],
 };
@@ -163,15 +163,15 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             InteractionLayer::Default => palette.action.prominent.background,
         };
 
-        let adorners = if state.focused {
-            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+        let adorner = if state.focused {
+            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
                 color: palette.focus.ring,
                 placement: AdornerPlacement::Oversize,
                 distance: metrics.border_width.default + metrics.focus.width,
                 width: metrics.focus.width,
-            })]
+            }))
         } else {
-            Vec::new()
+            None
         };
 
         RadioButtonAppearance {
@@ -193,7 +193,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             } else {
                 palette.app.foreground
             },
-            adorners,
+            adorner,
             label_typography: typography.text.label,
             control_radius: metrics.radius(size),
             control_padding_x: 0.0,

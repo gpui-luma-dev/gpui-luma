@@ -4,7 +4,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::ButtonKind;
-use crate::theme::adorner::{max_oversize_extent, render_adorner};
+use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::controls::button_family::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
 use crate::theme::InteractionState;
 
@@ -93,15 +93,13 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             appearance.radius
         };
 
-        let oversize_extent = max_oversize_extent(&appearance.adorners)
-            .max(focused_probe_appearance.as_ref().map(|probe| max_oversize_extent(&probe.adorners)).unwrap_or(0.0));
+        let oversize_extent = adorner_oversize_extent(appearance.adorner)
+            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
         let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
-        for spec in &appearance.adorners {
-            if let Some(adorner) = render_adorner(*spec, radius) {
-                adorned = adorned.child(adorner);
-            }
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, radius) {
+            adorned = adorned.child(adorner);
         }
 
         let mut root = div().id(model.id.clone()).relative();

@@ -3,7 +3,7 @@ use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::{AdornerSpec, max_oversize_extent, render_adorner};
+use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::controls::radio_button::{RadioButtonTheme, default_radio_button_theme};
 use crate::theme::InteractionState;
 
@@ -38,22 +38,12 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             .rounded(px(appearance.indicator_size))
             .child(render_dot(model.data, appearance.dot_size, appearance.dot_color));
 
-        let oversize_extent = max_oversize_extent(&appearance.adorners)
-            .max(focused_probe_appearance.as_ref().map(|probe| max_oversize_extent(&probe.adorners)).unwrap_or(0.0));
+        let oversize_extent = adorner_oversize_extent(appearance.adorner)
+            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
         let mut indicator = div().relative().child(indicator_visual);
 
-        for spec in &appearance.adorners {
-            if let Some(mut adorner) = render_adorner(*spec, indicator_radius) {
-                let AdornerSpec::FocusRing(focus_ring) = *spec;
-                let focus_ring_radius = match focus_ring.placement {
-                    crate::theme::AdornerPlacement::Inset => {
-                        (indicator_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
-                    }
-                    crate::theme::AdornerPlacement::Oversize => indicator_radius + focus_ring.distance.max(0.0),
-                };
-                adorner = adorner.rounded(px(focus_ring_radius));
-                indicator = indicator.child(adorner);
-            }
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, indicator_radius) {
+            indicator = indicator.child(adorner);
         }
 
         let indicator = if oversize_extent > 0.0 {

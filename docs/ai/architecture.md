@@ -27,7 +27,7 @@ The project is structured around two complementary concerns:
   - `theme/pack.rs`: runtime theme pack (`LumaThemePack`) with light/dark toggling and live trait-object providers
   - `theme/registry.rs`: palette token metadata/introspection API
   - `theme/interaction.rs`: generic interaction-state layer precedence
-  - `theme/adorner.rs`: adorner/focus-ring descriptors
+  - `theme/adorner.rs`: adorner/focus-ring descriptors (current policy: one optional adorner per appearance)
 
 - **Controls subsystem** (`controls/`)
   - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `presenter`)

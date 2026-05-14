@@ -20,7 +20,7 @@ pub struct ChoiceGroupItemAppearance {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -141,7 +141,7 @@ pub const CHOICE_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["ChoiceGroupItemAppearance.adorners"],
+            appearance_fields: &["ChoiceGroupItemAppearance.adorner"],
         },
     ],
 };
@@ -208,22 +208,22 @@ impl ChoiceGroupTheme for DefaultChoiceGroupTheme {
             (_, false, false) => palette.app.foreground,
         };
 
-        let adorners = if state.focused {
-            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+        let adorner = if state.focused {
+            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
                 color: palette.focus.ring,
                 placement: AdornerPlacement::Inset,
                 distance: metrics.border_width.default,
                 width: metrics.focus.width,
-            })]
+            }))
         } else {
-            Vec::new()
+            None
         };
 
         ChoiceGroupItemAppearance {
             background,
             label_color,
             divider: palette.border.default,
-            adorners,
+            adorner,
             label_typography: typography.text.label,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),

@@ -15,7 +15,7 @@ pub struct SwitchAppearance {
     pub thumb_border: Hsla,
     pub thumb_shadow: Vec<BoxShadow>,
     pub label_color: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub width: f32,
     pub height: f32,
@@ -125,7 +125,7 @@ pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["SwitchAppearance.adorners"],
+            appearance_fields: &["SwitchAppearance.adorner"],
         },
     ],
 };
@@ -155,15 +155,15 @@ impl SwitchTheme for DefaultSwitchTheme {
             (false, InteractionLayer::Default) => palette.form.input.background,
         };
 
-        let adorners = if state.focused {
-            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+        let adorner = if state.focused {
+            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
                 color: palette.focus.ring,
                 placement: AdornerPlacement::Oversize,
                 distance: metrics.border_width.default + metrics.focus.width,
                 width: metrics.focus.width,
-            })]
+            }))
         } else {
-            Vec::new()
+            None
         };
 
         SwitchAppearance {
@@ -193,7 +193,7 @@ impl SwitchTheme for DefaultSwitchTheme {
             } else {
                 palette.app.foreground
             },
-            adorners,
+            adorner,
             label_typography: typography.text.label,
             width: 42.0,
             height: 22.0,

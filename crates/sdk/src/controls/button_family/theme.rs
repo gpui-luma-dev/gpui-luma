@@ -30,7 +30,7 @@ pub struct ButtonFamilyAppearance {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
-    pub adorners: Vec<AdornerSpec>,
+    pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
     pub radius: f32,
     pub padding_x: f32,
@@ -133,7 +133,7 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused"],
-            appearance_fields: &["ButtonFamilyAppearance.adorners"],
+            appearance_fields: &["ButtonFamilyAppearance.adorner"],
         },
     ],
 };
@@ -225,7 +225,7 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
             part: "focus ring",
             token: "focus.ring",
             states: &["focused", "selected focused"],
-            appearance_fields: &["ButtonFamilyAppearance.adorners"],
+            appearance_fields: &["ButtonFamilyAppearance.adorner"],
         },
     ],
 };
@@ -283,27 +283,27 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             ButtonVariant::Prominent => palette.action.prominent.border,
         };
 
-        let adorners = if state.focused {
+        let adorner = if state.focused {
             let (placement, distance) = match variant {
                 ButtonVariant::Ghost => (AdornerPlacement::Inset, metrics.border_width.default),
                 _ => (AdornerPlacement::Oversize, metrics.border_width.default + metrics.focus.width),
             };
 
-            vec![AdornerSpec::FocusRing(FocusRingAdornerSpec {
+            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
                 color: palette.focus.ring,
                 placement,
                 distance,
                 width: metrics.focus.width,
-            })]
+            }))
         } else {
-            Vec::new()
+            None
         };
 
         ButtonFamilyAppearance {
             background,
             foreground,
             border,
-            adorners,
+            adorner,
             typography: typography.text.label,
             radius: match role {
                 ButtonFamilyRole::Icon => metrics.radius.pill,

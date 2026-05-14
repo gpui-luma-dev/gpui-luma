@@ -8,7 +8,7 @@ use gpui::{
 use super::{ChoiceGroupItemContentModel, ChoiceGroupItemPosition, ChoiceGroupLayout, ChoiceGroupRenderModel};
 use crate::controls::button_family::ButtonKind;
 use crate::controls::choice_group::ChoiceGroupItemButtonRenderModel;
-use crate::theme::adorner::{AdornerSpec, render_adorner};
+use crate::theme::adorner::{focus_ring_radius, render_adorner_with_focus_radius};
 use crate::controls::choice_group::{ChoiceGroupItemAppearance, ChoiceGroupTheme, default_choice_group_theme};
 use crate::controls::button_family::ButtonVariant;
 
@@ -302,18 +302,12 @@ fn render_choice_group_item_visual(
         appearance.radius
     };
 
-    for spec in &appearance.adorners {
-        if let Some(mut adorner) = render_adorner(*spec, focus_radius) {
-            let AdornerSpec::FocusRing(focus_ring) = *spec;
-            let focus_ring_radius = match focus_ring.placement {
-                crate::theme::AdornerPlacement::Inset => {
-                    (focus_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
-                }
-                crate::theme::AdornerPlacement::Oversize => focus_radius + focus_ring.distance.max(0.0),
-            };
-            adorner = apply_focus_ring_radius(adorner, model.position, focus_ring_radius);
-
-            root = root.child(adorner);
+    if let Some(spec) = appearance.adorner {
+        if let Some(focus_ring_radius) = focus_ring_radius(spec, focus_radius) {
+            if let Some(adorner) = render_adorner_with_focus_radius(spec, focus_radius) {
+                let adorner = apply_focus_ring_radius(adorner, model.position, focus_ring_radius);
+                root = root.child(adorner);
+            }
         }
     }
 

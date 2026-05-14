@@ -1,5 +1,15 @@
 use gpui::{Div, Hsla, div, px, prelude::*};
 
+/// Adorner policy (current): controls support at most one adorner per appearance.
+///
+/// We intentionally use `Option<AdornerSpec>` in control appearance structs today
+/// to match the current capability (`FocusRing`) and avoid speculative multi-adorner
+/// composition paths.
+///
+/// If additional adorner kinds are introduced in the future (for example validation
+/// or status adorners), revisit this module and control appearance contracts together
+/// so composition/ordering is designed explicitly rather than incrementally.
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AdornerPlacement {
     Inset,
@@ -25,16 +35,41 @@ pub(crate) fn render_adorner(spec: AdornerSpec, radius: f32) -> Option<Div> {
     }
 }
 
-pub(crate) fn max_oversize_extent(specs: &[AdornerSpec]) -> f32 {
-    specs
-        .iter()
-        .map(|spec| match *spec {
-            AdornerSpec::FocusRing(focus_ring) if matches!(focus_ring.placement, AdornerPlacement::Oversize) => {
-                focus_ring.distance.max(0.0)
+/// Returns the outside layout extent required by the current optional adorner.
+pub(crate) fn adorner_oversize_extent(spec: Option<AdornerSpec>) -> f32 {
+    match spec {
+        Some(AdornerSpec::FocusRing(focus_ring)) if matches!(focus_ring.placement, AdornerPlacement::Oversize) => {
+            focus_ring.distance.max(0.0)
+        }
+        _ => 0.0,
+    }
+}
+
+pub(crate) fn focus_ring_radius(spec: AdornerSpec, base_radius: f32) -> Option<f32> {
+    match spec {
+        AdornerSpec::FocusRing(focus_ring) => Some(match focus_ring.placement {
+            AdornerPlacement::Inset => {
+                (base_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
             }
-            _ => 0.0,
-        })
-        .fold(0.0, f32::max)
+            AdornerPlacement::Oversize => base_radius + focus_ring.distance.max(0.0),
+        }),
+    }
+}
+
+pub(crate) fn render_adorner_with_focus_radius(spec: AdornerSpec, base_radius: f32) -> Option<Div> {
+    let adorner = render_adorner(spec, base_radius)?;
+    let radius = focus_ring_radius(spec, base_radius)?;
+    Some(adorner.rounded(px(radius)))
+}
+
+/// Default single-adorner render path for controls using the current one-adorner policy.
+pub(crate) fn render_optional_adorner(spec: Option<AdornerSpec>, base_radius: f32) -> Option<Div> {
+    spec.and_then(|spec| render_adorner(spec, base_radius))
+}
+
+/// Variant of `render_optional_adorner` that also applies focus-radius shaping.
+pub(crate) fn render_optional_adorner_with_focus_radius(spec: Option<AdornerSpec>, base_radius: f32) -> Option<Div> {
+    spec.and_then(|spec| render_adorner_with_focus_radius(spec, base_radius))
 }
 
 fn render_focus_ring_adorner(focus_ring: FocusRingAdornerSpec, radius: f32) -> Option<Div> {

@@ -6,7 +6,7 @@ use gpui::{
 
 use super::ListBoxRenderModel;
 use crate::controls::listbox::{ListBoxRowAppearance, ListBoxTheme, default_listbox_theme};
-use crate::theme::adorner::{AdornerSpec, max_oversize_extent, render_adorner};
+use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
 
 pub type ListBoxClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ListBoxHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -64,10 +64,10 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
         } else {
             None
         };
-        let list_oversize_extent = max_oversize_extent(&list_appearance.adorners).max(
+        let list_oversize_extent = adorner_oversize_extent(list_appearance.adorner).max(
             focused_probe_list_appearance
                 .as_ref()
-                .map(|probe| max_oversize_extent(&probe.adorners))
+                .map(|probe| adorner_oversize_extent(probe.adorner))
                 .unwrap_or(0.0),
         );
 
@@ -86,10 +86,8 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             .border_1()
             .border_color(list_appearance.border);
 
-        for spec in &list_appearance.adorners {
-            if let Some(adorner) = render_adorner(*spec, list_appearance.radius) {
-                root = root.child(adorner);
-            }
+        if let Some(adorner) = render_optional_adorner(list_appearance.adorner, list_appearance.radius) {
+            root = root.child(adorner);
         }
 
         let mut item_hovers = item_hovers.into_iter();
@@ -125,10 +123,10 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             } else {
                 None
             };
-            let row_oversize_extent = max_oversize_extent(&row_appearance.adorners).max(
+            let row_oversize_extent = adorner_oversize_extent(row_appearance.adorner).max(
                 focused_probe_row_appearance
                     .as_ref()
-                    .map(|probe| max_oversize_extent(&probe.adorners))
+                    .map(|probe| adorner_oversize_extent(probe.adorner))
                     .unwrap_or(0.0),
             );
             let row = if model.item_button_template.is_some() {
@@ -206,18 +204,8 @@ fn render_listbox_row_visual(
         .font_weight(appearance.label_typography.weight)
         .child(content);
 
-    for spec in &appearance.adorners {
-        if let Some(mut adorner) = render_adorner(*spec, appearance.radius) {
-            let AdornerSpec::FocusRing(focus_ring) = *spec;
-            let focus_ring_radius = match focus_ring.placement {
-                crate::theme::AdornerPlacement::Inset => {
-                    (appearance.radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
-                }
-                crate::theme::AdornerPlacement::Oversize => appearance.radius + focus_ring.distance.max(0.0),
-            };
-            adorner = adorner.rounded(px(focus_ring_radius));
-            root = root.child(adorner);
-        }
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {
+        root = root.child(adorner);
     }
 
     if state.disabled {
