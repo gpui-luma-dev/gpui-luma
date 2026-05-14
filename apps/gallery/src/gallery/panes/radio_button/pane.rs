@@ -117,8 +117,8 @@ impl Render for RadioButtonStatePreview {
                 state: InteractionState { focused: true, ..InteractionState::default() },
             },
             RadioButtonStateSample {
-                id: "active",
-                label: "Active",
+                id: "pressed",
+                label: "Pressed",
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
             },
             RadioButtonStateSample {

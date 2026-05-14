@@ -163,8 +163,8 @@ impl Render for ToggleStatePreview {
                 state: InteractionState { focused: true, ..InteractionState::default() },
             },
             ToggleStateSample {
-                id: "active",
-                label: "Active",
+                id: "pressed",
+                label: "Pressed",
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
             },
             ToggleStateSample {

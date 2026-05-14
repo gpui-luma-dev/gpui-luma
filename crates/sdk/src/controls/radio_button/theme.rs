@@ -146,14 +146,11 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
         let size = ControlSize::Md;
         let layer = state.layer();
 
-        let indicator_background = match (checked, layer) {
-            (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
-            (true, InteractionLayer::Default) => palette.action.prominent.background,
-            (false, InteractionLayer::Pressed) => palette.state.pressed.background,
-            (false, InteractionLayer::Hovered) => palette.state.hover.background,
-            (false, InteractionLayer::Default) => palette.form.input.background,
+        let indicator_background = match layer {
+            InteractionLayer::Disabled => palette.state.disabled.background,
+            InteractionLayer::Pressed => palette.state.pressed.background,
+            InteractionLayer::Hovered => palette.state.hover.background,
+            InteractionLayer::Default => palette.form.input.background,
         };
 
         let selected_color = match layer {
@@ -186,7 +183,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             dot_color: if state.disabled {
                 palette.state.disabled.foreground
             } else {
-                palette.action.prominent.foreground
+                selected_color
             },
             label_color: if state.disabled {
                 palette.state.disabled.foreground
