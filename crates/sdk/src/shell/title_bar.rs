@@ -304,6 +304,14 @@ impl RenderOnce for TitleBar {
                         window.start_window_move();
                     }
                 }))
+                .on_mouse_down(MouseButton::Left, move |ev, window, cx| {
+                    if ev.click_count >= 2 {
+                        cx.stop_propagation();
+                        if !window.is_fullscreen() {
+                            window.zoom_window();
+                        }
+                    }
+                })
                 .child(
                     div()
                         .id("bar")

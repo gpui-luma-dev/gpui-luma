@@ -109,6 +109,10 @@ impl LumaThemePack {
         self.state.current_mode()
     }
 
+    pub fn set_mode(&self, mode: ThemeMode) {
+        self.state.set_mode(mode);
+    }
+
     pub fn toggle_mode(&self) -> ThemeMode {
         let next = match self.mode() {
             ThemeMode::Light => ThemeMode::Dark,
