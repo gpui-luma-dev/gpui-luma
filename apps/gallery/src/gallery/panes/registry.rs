@@ -15,7 +15,7 @@ use crate::gallery::theme::GalleryThemePack;
 use super::{
     autocomplete, button, checkbox, choice_controls_template, choice_group, combobox, context_menu, floating_menu,
     icon_button, introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
-    scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
+    radio_group, scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
     shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
@@ -48,6 +48,7 @@ enum GalleryPageKind {
     Switch,
     Checkbox,
     RadioButton,
+    RadioGroup,
     ChoiceGroup,
     ChoiceTemplates,
     ListBox,
@@ -123,6 +124,8 @@ const RADIO_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "radio-button", label: "Radio Button", icon: None, kind: GalleryPageKind::RadioButton };
 const CHOICE_GROUP_PAGE: GalleryPage =
     GalleryPage { id: "choice-group", label: "Choice Group", icon: None, kind: GalleryPageKind::ChoiceGroup };
+const RADIO_GROUP_PAGE: GalleryPage =
+    GalleryPage { id: "radio-group", label: "Radio Group", icon: None, kind: GalleryPageKind::RadioGroup };
 const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
     id: "choice-templates",
     label: "Choice Templates",
@@ -199,6 +202,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     CHECKBOX_PAGE,
     RADIO_BUTTON_PAGE,
     CHOICE_GROUP_PAGE,
+    RADIO_GROUP_PAGE,
     CHOICE_TEMPLATES_PAGE,
     LISTBOX_PAGE,
     TOGGLE_GROUP_PAGE,
@@ -288,6 +292,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) switch: switch::SwitchPane,
     pub(super) checkbox: checkbox::CheckboxPane,
     pub(super) radio_button: radio_button::RadioButtonPane,
+    pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) choice_group: choice_group::ChoiceGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
     pub(super) listbox: listbox::ListBoxPane,
@@ -364,6 +369,7 @@ impl GalleryPanes {
             switch: switch::SwitchPane::new(cx, theme),
             checkbox: checkbox::CheckboxPane::new(cx, theme),
             radio_button: radio_button::RadioButtonPane::new(cx, theme),
+            radio_group: radio_group::RadioGroupPane::new(cx, theme),
             choice_group: choice_group::ChoiceGroupPane::new(cx, theme),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, theme),
             listbox: listbox::ListBoxPane::new(cx, theme),
@@ -396,6 +402,7 @@ impl GalleryPanes {
         self.switch.subscribe(cx, subscriptions);
         self.checkbox.subscribe(cx, subscriptions);
         self.radio_button.subscribe(cx, subscriptions);
+        self.radio_group.subscribe(cx, subscriptions);
         self.choice_group.subscribe(cx, subscriptions);
         self.listbox.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
@@ -427,6 +434,7 @@ impl GalleryPanes {
         self.switch.notify_controls(cx);
         self.checkbox.notify_controls(cx);
         self.radio_button.notify_controls(cx);
+        self.radio_group.notify_controls(cx);
         self.choice_group.notify_controls(cx);
         self.choice_templates.notify_controls(cx);
         self.listbox.notify_controls(cx);
@@ -468,6 +476,7 @@ impl GalleryPanes {
             GalleryPageKind::Switch => self.switch.render(&self.theme),
             GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
             GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
+            GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
             GalleryPageKind::ChoiceGroup => self.choice_group.render(&self.theme),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.theme),
             GalleryPageKind::ListBox => self.listbox.render(&self.theme),
