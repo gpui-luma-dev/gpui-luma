@@ -223,7 +223,7 @@ fn default_item_template<T: 'static>() -> RadioGroupItemTemplate<T> {
             .id(model.item_id.clone())
             .flex()
             .flex_col()
-            //.items_center()
+            .items_center()
             .gap_2()
             .child(model.button.clone())
             .into_any_element()
