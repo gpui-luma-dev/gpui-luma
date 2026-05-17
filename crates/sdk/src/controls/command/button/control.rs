@@ -42,7 +42,8 @@ impl Button<()> {
 impl<D: Clone + 'static> Button<D> {
     pub(crate) fn from_builder(builder: ButtonBuilder<D>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
-        Self { model: builder.model, command: CommandCore::new(enabled, cx) }
+        let tab_stop = builder.model.tab_stop;
+        Self { model: builder.model, command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx) }
     }
 
     pub fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>, cx: &mut Context<Self>) {

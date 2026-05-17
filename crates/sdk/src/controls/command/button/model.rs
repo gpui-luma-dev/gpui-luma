@@ -31,6 +31,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
     pub(crate) enabled: bool,
+    pub(crate) tab_stop: bool,
     pub(crate) round: bool,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
@@ -64,6 +65,7 @@ impl ButtonBuilder<()> {
                 role: ButtonFamilyRole::Text,
                 size: ButtonSize::Md,
                 enabled: true,
+                tab_stop: true,
                 round: false,
                 template: super::template::default_button_template(),
             },
@@ -84,6 +86,7 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
                 role: old.role,
                 size: old.size,
                 enabled: old.enabled,
+                tab_stop: old.tab_stop,
                 round: old.round,
                 template: super::template::default_button_template(),
             },
@@ -112,6 +115,16 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    /// Sets whether this button participates in Tab-key focus traversal.
+    ///
+    /// Setting this to `false` removes the button from the tab order, but does not
+    /// prevent mouse interaction or programmatic focus. This is useful when composing
+    /// buttons inside a container control that owns keyboard focus/navigation.
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.model.tab_stop = tab_stop;
         self
     }
 

@@ -27,6 +27,11 @@ impl CommandCore {
         Self { interaction: ControlInteraction::new(enabled, cx) }
     }
 
+    /// Create a new command behavior core with explicit tab-stop participation.
+    pub fn new_with_tab_stop<T>(enabled: bool, tab_stop: bool, cx: &mut Context<T>) -> Self {
+        Self { interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx) }
+    }
+
     /// Propagate enabled changes into interaction state.
     pub fn set_enabled(&mut self, enabled: bool) {
         self.interaction.set_enabled(enabled);

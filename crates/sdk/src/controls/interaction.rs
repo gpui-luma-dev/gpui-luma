@@ -5,13 +5,19 @@ use crate::theme::InteractionState;
 pub(crate) struct ControlInteraction {
     state: InteractionState,
     focus_handle: FocusHandle,
+    tab_stop: bool,
 }
 
 impl ControlInteraction {
     pub fn new<T>(enabled: bool, cx: &mut Context<T>) -> Self {
+        Self::new_with_tab_stop(enabled, true, cx)
+    }
+
+    pub fn new_with_tab_stop<T>(enabled: bool, tab_stop: bool, cx: &mut Context<T>) -> Self {
         Self {
             state: InteractionState { disabled: !enabled, ..InteractionState::default() },
-            focus_handle: cx.focus_handle().tab_stop(enabled),
+            focus_handle: cx.focus_handle().tab_stop(enabled && tab_stop),
+            tab_stop,
         }
     }
 
@@ -21,7 +27,7 @@ impl ControlInteraction {
 
     pub fn set_enabled(&mut self, enabled: bool) {
         self.state.disabled = !enabled;
-        self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.tab_stop);
 
         if !enabled {
             self.state.hovered = false;
