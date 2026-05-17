@@ -145,6 +145,10 @@ fn render_example(
         .flex()
         .flex_col()
         .gap_2()
+        .rounded_md()
+        .border_1()
+        .border_color(text_color.opacity(0.24))
+        .p_3()
         .child(
             div()
                 .text_size(px(12.0))
