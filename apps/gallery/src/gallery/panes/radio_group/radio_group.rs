@@ -17,10 +17,25 @@ impl Default for SelectionMode {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::gallery) enum RadioGroupLayout {
+    Vertical,
+    Horizontal,
+}
+
+impl Default for RadioGroupLayout {
+    fn default() -> Self {
+        Self::Vertical
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(in crate::gallery) enum RadioGroupEvent {
     Change { selected_id: Option<SharedString> },
 }
+
+pub type RadioGroupTemplate<T> =
+    Arc<dyn Fn(&RadioGroup<T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement + Send + Sync>;
 
 #[allow(dead_code)]
 pub(in crate::gallery) struct RadioGroupBuilder<T> {
@@ -28,11 +43,11 @@ pub(in crate::gallery) struct RadioGroupBuilder<T> {
     items: Vec<T>,
     selected: Option<T>,
     mode: SelectionMode,
+    layout: RadioGroupLayout,
     item_id: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
     item_label: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
     item_button_template: Arc<dyn ButtonTemplate<bool>>,
-    #[allow(dead_code)]
-    item_template: Option<RadioGroupItemTemplate<T>>,
+    template: Option<RadioGroupTemplate<T>>,
 }
 
 pub(in crate::gallery) struct RadioGroup<T> {
@@ -40,8 +55,7 @@ pub(in crate::gallery) struct RadioGroup<T> {
     items: Vec<RadioGroupItem<T>>,
     selected_index: Option<usize>,
     mode: SelectionMode,
-    #[allow(dead_code)]
-    item_template: RadioGroupItemTemplate<T>,
+    template: RadioGroupTemplate<T>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -52,22 +66,6 @@ struct RadioGroupItem<T> {
     id: SharedString,
     label: SharedString,
 }
-
-#[allow(dead_code)]
-pub struct RadioGroupItemRenderModel<'a, T> {
-    pub item: &'a T,
-    pub item_id: &'a SharedString,
-    pub item_label: &'a SharedString,
-    pub selected: bool,
-    pub active: bool,
-    pub button: RadioButton,
-}
-
-pub type RadioGroupItemTemplate<T> = Arc<
-    dyn for<'a> Fn(&RadioGroupItemRenderModel<'a, T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement
-        + Send
-        + Sync,
->;
 
 pub(in crate::gallery) fn new<T>(
     id: impl Into<SharedString>,
@@ -80,11 +78,33 @@ pub(in crate::gallery) fn new<T>(
         items: Vec::new(),
         selected: None,
         mode: SelectionMode::default(),
+        layout: RadioGroupLayout::default(),
         item_id: Arc::new(item_id),
         item_label: Arc::new(item_label),
         item_button_template,
-        item_template: None,
+        template: None,
     }
+}
+
+pub(in crate::gallery) fn vertical_group<T>(
+    id: impl Into<SharedString>,
+    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
+    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
+    item_button_template: Arc<dyn ButtonTemplate<bool>>,
+) -> RadioGroupBuilder<T> {
+    new(id, item_id, item_label, item_button_template)
+}
+
+pub(in crate::gallery) fn horizontal_group<T>(
+    id: impl Into<SharedString>,
+    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
+    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
+    item_button_template: Arc<dyn ButtonTemplate<bool>>,
+) -> RadioGroupBuilder<T>
+where
+    T: Clone + Eq + 'static,
+{
+    new(id, item_id, item_label, item_button_template).layout(RadioGroupLayout::Horizontal)
 }
 
 impl<T> RadioGroupBuilder<T>
@@ -106,20 +126,20 @@ where
         self
     }
 
-    #[allow(dead_code)]
-    pub(in crate::gallery) fn item_template<F>(mut self, template: F) -> Self
+    pub(in crate::gallery) fn layout(mut self, layout: RadioGroupLayout) -> Self {
+        self.layout = layout;
+        self
+    }
+
+    pub(in crate::gallery) fn with_template<F>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&RadioGroupItemRenderModel<'a, T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(&RadioGroup<T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement + Send + Sync + 'static,
     {
-        self.item_template = Some(Arc::new(template));
+        self.template = Some(Arc::new(template));
         self
     }
 
     pub(in crate::gallery) fn build(self, cx: &mut Context<RadioGroup<T>>) -> RadioGroup<T> {
-        let _ = &self.item_template;
         let items: Vec<RadioGroupItem<T>> = self
             .items
             .into_iter()
@@ -154,14 +174,12 @@ where
             buttons.push(button);
         }
 
-        RadioGroup {
-            buttons,
-            items,
-            selected_index,
-            mode: self.mode,
-            item_template: self.item_template.unwrap_or_else(default_item_template::<T>),
-            _subscriptions: subscriptions,
-        }
+        let template = self.template.unwrap_or_else(|| match self.layout {
+            RadioGroupLayout::Vertical => vertical_group_template(),
+            RadioGroupLayout::Horizontal => horizontal_group_template(),
+        });
+
+        RadioGroup { buttons, items, selected_index, mode: self.mode, template, _subscriptions: subscriptions }
     }
 }
 
@@ -211,33 +229,19 @@ impl<T> Render for RadioGroup<T>
 where
     T: Clone + Eq + 'static,
 {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div().children(self.buttons.clone().into_iter())
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        (self.template)(self, window, cx)
     }
 }
 
-fn default_item_template<T: 'static>() -> RadioGroupItemTemplate<T> {
-    Arc::new(|model, _window, _cx| {
-        let _ = model.item;
-        div()
-            .id(model.item_id.clone())
-            .flex()
-            .flex_col()
-            .items_center()
-            .gap_2()
-            .child(model.button.clone())
-            .into_any_element()
+pub(in crate::gallery) fn vertical_group_template<T: 'static>() -> RadioGroupTemplate<T> {
+    Arc::new(|group, _window, _cx| {
+        div().flex().flex_col().gap_2().children(group.buttons.iter().cloned()).into_any_element()
     })
 }
 
-fn horizontal_item_template<T: 'static>() -> RadioGroupItemTemplate<T> {
-    Arc::new(|model, _window, _cx| {
-        div()
-            .id(model.item_id.clone())
-            .flex()
-            .items_center()
-            .gap_3()
-            .child(model.button.clone())
-            .into_any_element()
+pub(in crate::gallery) fn horizontal_group_template<T: 'static>() -> RadioGroupTemplate<T> {
+    Arc::new(|group, _window, _cx| {
+        div().flex().items_center().gap_3().children(group.buttons.iter().cloned()).into_any_element()
     })
 }
