@@ -10,8 +10,10 @@ use super::super::shared::{gallery_pane, notify_entity};
 pub(in crate::gallery) struct RadioGroupPane {
     vertical_group: Entity<RadioGroup<Density>>,
     horizontal_group: Entity<RadioGroup<Density>>,
+    indented_group: Entity<RadioGroup<Density>>,
     vertical_choice: String,
     horizontal_choice: String,
+    indented_choice: String,
 }
 
 impl RadioGroupPane {
@@ -42,11 +44,42 @@ impl RadioGroupPane {
             .build(cx)
         });
 
+        let indented_group = cx.new(|cx| {
+            radio_group::horizontal_group(
+                "radio-group-density-indented",
+                |density: &Density| density.id().into(),
+                |density: &Density| density.label().into(),
+                theme.radio_button_template(),
+            )
+            .items(Density::all())
+            .selected(Density::Comfortable)
+            .mode(SelectionMode::SingleRequired)
+            .with_template(|group, _window, _cx| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .gap_2()
+                    .children(
+                        group
+                            .buttons()
+                            .iter()
+                            .cloned()
+                            .enumerate()
+                            .map(|(index, button)| div().pl(px(index as f32 * 24.0)).child(button)),
+                    )
+                    .into_any_element()
+            })
+            .build(cx)
+        });
+
         Self {
             vertical_group,
             horizontal_group,
+            indented_group,
             vertical_choice: Density::Comfortable.id().to_string(),
             horizontal_choice: Density::Comfortable.id().to_string(),
+            indented_choice: Density::Comfortable.id().to_string(),
         }
     }
 
@@ -56,6 +89,9 @@ impl RadioGroupPane {
         }));
         subscriptions.push(cx.subscribe(&self.horizontal_group, |app, _, event: &RadioGroupEvent, cx| {
             app.panes.radio_group.handle_horizontal_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.indented_group, |app, _, event: &RadioGroupEvent, cx| {
+            app.panes.radio_group.handle_indented_event(event, cx);
         }));
     }
 
@@ -81,6 +117,12 @@ impl RadioGroupPane {
                     &self.horizontal_choice,
                     chrome.body_text,
                 ))
+                .child(render_example(
+                    "Horizontal custom indent",
+                    self.indented_group.clone(),
+                    &self.indented_choice,
+                    chrome.body_text,
+                ))
                 .into_any_element(),
             theme,
         )
@@ -89,6 +131,7 @@ impl RadioGroupPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.vertical_group, cx);
         notify_entity(&self.horizontal_group, cx);
+        notify_entity(&self.indented_group, cx);
     }
 
     fn handle_vertical_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
@@ -101,6 +144,13 @@ impl RadioGroupPane {
     fn handle_horizontal_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
         let RadioGroupEvent::Change { selected_id } = event;
         self.horizontal_choice =
+            selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
+        cx.notify();
+    }
+
+    fn handle_indented_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_id } = event;
+        self.indented_choice =
             selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
         cx.notify();
     }

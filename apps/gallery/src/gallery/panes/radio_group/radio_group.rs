@@ -99,8 +99,11 @@ pub(in crate::gallery) fn vertical_group<T>(
     item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
     item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
     item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T> {
-    new(id, item_id, item_label, item_button_template)
+) -> RadioGroupBuilder<T>
+where
+    T: Clone + Eq + 'static,
+{
+    new(id, item_id, item_label, item_button_template).template(vertical_group_template())
 }
 
 pub(in crate::gallery) fn horizontal_group<T>(
@@ -112,7 +115,9 @@ pub(in crate::gallery) fn horizontal_group<T>(
 where
     T: Clone + Eq + 'static,
 {
-    new(id, item_id, item_label, item_button_template).layout(RadioGroupLayout::Horizontal)
+    new(id, item_id, item_label, item_button_template)
+        .layout(RadioGroupLayout::Horizontal)
+        .template(horizontal_group_template())
 }
 
 impl<T> RadioGroupBuilder<T>
@@ -139,12 +144,16 @@ where
         self
     }
 
-    pub(in crate::gallery) fn with_template<F>(mut self, template: F) -> Self
+    pub(in crate::gallery) fn template(mut self, template: RadioGroupTemplate<T>) -> Self {
+        self.template = Some(template);
+        self
+    }
+
+    pub(in crate::gallery) fn with_template<F>(self, template: F) -> Self
     where
         F: Fn(&RadioGroup<T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement + Send + Sync + 'static,
     {
-        self.template = Some(Arc::new(template));
-        self
+        self.template(Arc::new(template))
     }
 
     pub(in crate::gallery) fn build(self, cx: &mut Context<RadioGroup<T>>) -> RadioGroup<T> {
@@ -210,6 +219,10 @@ where
 {
     pub(in crate::gallery) fn selected_id(&self) -> Option<SharedString> {
         self.selected_index.and_then(|index| self.items.get(index).map(|item| item.id.clone()))
+    }
+
+    pub(in crate::gallery) fn buttons(&self) -> &[RadioButton] {
+        &self.buttons
     }
 
     fn handle_button_click(&mut self, index: usize, cx: &mut Context<Self>) {
