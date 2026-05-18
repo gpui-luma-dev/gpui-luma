@@ -34,7 +34,6 @@ pub(in crate::gallery) struct RadioGroupBuilder<T> {
     items: Vec<T>,
     selected: Option<T>,
     mode: SelectionMode,
-    layout: RadioGroupLayout,
     item_id: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
     item_label: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
     item_button_template: Arc<dyn ButtonTemplate<bool>>,
@@ -71,7 +70,6 @@ pub(in crate::gallery) fn new<T>(
         items: Vec::new(),
         selected: None,
         mode: SelectionMode::default(),
-        layout: RadioGroupLayout::default(),
         item_id: Arc::new(item_id),
         item_label: Arc::new(item_label),
         item_button_template,
@@ -95,11 +93,6 @@ where
 
     pub(in crate::gallery) fn mode(mut self, mode: SelectionMode) -> Self {
         self.mode = mode;
-        self
-    }
-
-    pub(in crate::gallery) fn layout(mut self, layout: RadioGroupLayout) -> Self {
-        self.layout = layout;
         self
     }
 
@@ -151,10 +144,7 @@ where
             buttons.push(button);
         }
 
-        let template = self.template.unwrap_or_else(|| match self.layout {
-            RadioGroupLayout::Vertical => vertical_group_template(),
-            RadioGroupLayout::Horizontal => horizontal_group_template(),
-        });
+        let template = self.template.expect("radio group requires a template");
 
         let active_index = selected_index.or_else(|| first_item_index(&items));
 
@@ -349,54 +339,4 @@ where
             .child((self.template)(self, window, cx))
             .into_any_element()
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::gallery) enum RadioGroupLayout {
-    Vertical,
-    Horizontal,
-}
-
-impl Default for RadioGroupLayout {
-    fn default() -> Self {
-        Self::Vertical
-    }
-}
-
-pub(in crate::gallery) fn vertical_group<T>(
-    id: impl Into<SharedString>,
-    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T>
-where
-    T: Clone + Eq + 'static,
-{
-    new(id, item_id, item_label, item_button_template).template(vertical_group_template())
-}
-
-pub(in crate::gallery) fn horizontal_group<T>(
-    id: impl Into<SharedString>,
-    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T>
-where
-    T: Clone + Eq + 'static,
-{
-    new(id, item_id, item_label, item_button_template)
-        .layout(RadioGroupLayout::Horizontal)
-        .template(horizontal_group_template())
-}
-
-pub(in crate::gallery) fn vertical_group_template<T: 'static>() -> RadioGroupTemplate<T> {
-    Arc::new(|group, _window, _cx| {
-        div().flex().flex_col().gap_2().children(group.buttons.iter().cloned()).into_any_element()
-    })
-}
-
-pub(in crate::gallery) fn horizontal_group_template<T: 'static>() -> RadioGroupTemplate<T> {
-    Arc::new(|group, _window, _cx| {
-        div().flex().items_center().gap_3().children(group.buttons.iter().cloned()).into_any_element()
-    })
 }

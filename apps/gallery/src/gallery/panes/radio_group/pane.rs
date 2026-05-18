@@ -288,10 +288,10 @@ impl DeliveryWindow {
 
     fn date(&self) -> &'static str {
         match self {
-            Self::Today => "Jul 15",
-            Self::Wednesday => "Jul 16",
-            Self::Thursday => "Jul 17",
-            Self::Friday => "Jul 18",
+            Self::Today => "May 15",
+            Self::Wednesday => "May 16",
+            Self::Thursday => "May 17",
+            Self::Friday => "May 18",
         }
     }
 
