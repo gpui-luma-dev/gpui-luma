@@ -115,8 +115,7 @@ impl RadioGroupPane {
                 delivery_window_template(theme),
             )
             .items(DeliveryWindow::all())
-            .selected(DeliveryWindow::Today)
-            .mode(SelectionMode::SingleRequired)
+            .mode(SelectionMode::SingleAllowNone)
             .with_template(|group, _window, _cx| {
                 div()
                     .flex()
