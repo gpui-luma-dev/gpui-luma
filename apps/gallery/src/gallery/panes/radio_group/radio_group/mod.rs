@@ -4,6 +4,7 @@ use gpui::{SharedString, div, prelude::*};
 use gpui_luma::controls::command::button::ButtonTemplate;
 
 mod control;
+mod focus;
 
 pub(in crate::gallery) use control::{
     RadioGroup, RadioGroupBuilder, RadioGroupEvent, RadioGroupTemplate, SelectionMode, new,

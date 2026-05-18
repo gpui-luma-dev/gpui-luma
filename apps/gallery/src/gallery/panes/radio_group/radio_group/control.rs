@@ -9,6 +9,8 @@ use gpui_luma::controls::radio_button::{self, RadioButton};
 use gpui_luma::focus::{NextFocus, PreviousFocus};
 use gpui_luma::keyhandling::{ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem};
 
+use super::focus::{CompositeFocus, CompositeFocusDirection};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::gallery) enum SelectionMode {
     SingleRequired,
@@ -45,9 +47,8 @@ pub(in crate::gallery) struct RadioGroup<T> {
     buttons: Vec<RadioButton>,
     items: Vec<RadioGroupItem<T>>,
     selected_index: Option<usize>,
-    active_index: Option<usize>,
+    focus: CompositeFocus,
     mode: SelectionMode,
-    focus_handle: gpui::FocusHandle,
     template: RadioGroupTemplate<T>,
     _subscriptions: Vec<Subscription>,
 }
@@ -153,9 +154,8 @@ where
             buttons,
             items,
             selected_index,
-            active_index,
+            focus: CompositeFocus::new(cx.focus_handle().tab_stop(true), active_index),
             mode: self.mode,
-            focus_handle: cx.focus_handle().tab_stop(true),
             template,
             _subscriptions: subscriptions,
         }
@@ -175,7 +175,7 @@ where
     }
 
     fn handle_button_click(&mut self, index: usize, cx: &mut Context<Self>) {
-        self.active_index = Some(index);
+        self.focus.set_active_index(Some(index));
 
         let was_selected = self.selected_index == Some(index);
         let next_selected_index = match self.mode {
@@ -207,61 +207,38 @@ where
         }
     }
 
-    fn focus_button(&self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(button) = self.buttons.get(index) {
-            button.update(cx, |button, cx| {
-                button.focus_handle(cx).focus(window, cx);
-            });
-        }
-    }
-
     fn focus_active_or_first_button(&self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(index) = self.active_index.or_else(|| first_item_index(&self.items)) {
-            self.focus_button(index, window, cx);
-        }
+        self.focus.focus_active_or_first(self.items.len(), |index| {
+            focus_button_at(&self.buttons, index, window, cx);
+        });
     }
 
     fn move_active_to_boundary(&mut self, first: bool, window: &mut Window, cx: &mut Context<Self>) {
-        let next = if first {
-            first_item_index(&self.items)
-        } else {
-            last_item_index(&self.items)
-        };
-        if let Some(index) = next {
-            self.active_index = Some(index);
-            self.focus_button(index, window, cx);
+        let buttons = self.buttons.clone();
+        if self
+            .focus
+            .move_to_boundary(self.items.len(), first, |index| focus_button_at(&buttons, index, window, cx))
+        {
             cx.notify();
         }
     }
 
-    fn move_active(&mut self, direction: RadioGroupDirection, window: &mut Window, cx: &mut Context<Self>) {
-        let len = self.items.len();
-        if len == 0 {
-            return;
+    fn move_active(&mut self, direction: CompositeFocusDirection, window: &mut Window, cx: &mut Context<Self>) {
+        let buttons = self.buttons.clone();
+        if self
+            .focus
+            .move_active(self.items.len(), direction, |index| focus_button_at(&buttons, index, window, cx))
+        {
+            cx.notify();
         }
-
-        let step = match direction {
-            RadioGroupDirection::Previous => len - 1,
-            RadioGroupDirection::Next => 1,
-        };
-
-        let next = match self.active_index {
-            Some(index) => (index + step) % len,
-            None if direction == RadioGroupDirection::Previous => len - 1,
-            None => 0,
-        };
-
-        self.active_index = Some(next);
-        self.focus_button(next, window, cx);
-        cx.notify();
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(RadioGroupDirection::Previous, window, cx);
+        self.move_active(CompositeFocusDirection::Previous, window, cx);
     }
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(RadioGroupDirection::Next, window, cx);
+        self.move_active(CompositeFocusDirection::Next, window, cx);
     }
 
     fn handle_select_first_item(&mut self, _: &SelectFirstItem, window: &mut Window, cx: &mut Context<Self>) {
@@ -276,31 +253,27 @@ where
         // Child radio buttons are programmatically focusable for visible focus styling,
         // but they are not tab stops. Restore focus to the group before Tab traversal
         // so next/previous focus is computed from the container's position.
-        self.focus_handle.focus(window, cx);
-        window.focus_next(cx);
+        self.focus.focus_next(window, cx);
     }
 
     fn handle_previous_focus(&mut self, _: &PreviousFocus, window: &mut Window, cx: &mut Context<Self>) {
         // Child radio buttons are programmatically focusable for visible focus styling,
         // but they are not tab stops. Restore focus to the group before Tab traversal
         // so next/previous focus is computed from the container's position.
-        self.focus_handle.focus(window, cx);
-        window.focus_prev(cx);
+        self.focus.focus_previous(window, cx);
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum RadioGroupDirection {
-    Previous,
-    Next,
 }
 
 fn first_item_index<T>(items: &[RadioGroupItem<T>]) -> Option<usize> {
     items.first().map(|_| 0)
 }
 
-fn last_item_index<T>(items: &[RadioGroupItem<T>]) -> Option<usize> {
-    items.len().checked_sub(1)
+fn focus_button_at<T>(buttons: &[RadioButton], index: usize, window: &mut Window, cx: &mut Context<T>) {
+    if let Some(button) = buttons.get(index) {
+        button.update(cx, |button, cx| {
+            button.focus_handle(cx).focus(window, cx);
+        });
+    }
 }
 
 impl<T> Focusable for RadioGroup<T>
@@ -308,7 +281,7 @@ where
     T: Clone + Eq + 'static,
 {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
-        self.focus_handle.clone()
+        self.focus.focus_handle().clone()
     }
 }
 
@@ -319,7 +292,7 @@ where
     T: Clone + Eq + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if self.focus_handle.is_focused(window) {
+        if self.focus.focus_handle().is_focused(window) {
             // The group owns Tab navigation, but the child radio button owns the visible
             // focus indicator. When the group is focused, hand visual focus to the
             // active item, or the first item if no active item has been established.
@@ -328,7 +301,7 @@ where
 
         div()
             .id(self.id.clone())
-            .track_focus(&self.focus_handle)
+            .track_focus(self.focus.focus_handle())
             .key_context(ControlKeyProfile::TabList.context())
             .on_action(cx.listener(Self::handle_select_previous_item))
             .on_action(cx.listener(Self::handle_select_next_item))
