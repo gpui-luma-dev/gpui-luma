@@ -6,7 +6,7 @@ use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::radio_group::{self, RadioGroup, RadioGroupEvent, SelectionMode};
+use super::radio_group::{self, RadioGroup, RadioGroupEvent, RadioItemState, SelectionMode};
 use super::super::shared::{gallery_pane, notify_entity};
 
 const DENSITY_OPTION_COUNT: usize = 3;
@@ -54,77 +54,71 @@ pub(in crate::gallery) struct RadioGroupPane {
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let vertical_group = cx.new(|cx| {
-            radio_group::vertical_group(
-                "radio-group-density-vertical",
-                |density: &Density| density.id().into(),
-                |density: &Density| density.label().into(),
-                theme.radio_button_template(),
-            )
-            .items(Density::all())
-            .selected(Density::Comfortable)
-            .mode(SelectionMode::SingleRequired)
-            .build(cx)
+            radio_group::new("radio-group-density-vertical")
+                .items(Density::all())
+                .item_id(|density: &Density| density.id().into())
+                .item_label(|density: &Density| density.label().into())
+                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
+                .template(radio_group::vertical_group_template())
+                .selected(Density::Comfortable)
+                .mode(SelectionMode::SingleRequired)
+                .build(cx)
         });
 
         let horizontal_group = cx.new(|cx| {
-            radio_group::horizontal_group(
-                "radio-group-density-horizontal",
-                |density: &Density| density.id().into(),
-                |density: &Density| density.label().into(),
-                theme.radio_button_template(),
-            )
-            .items(Density::all())
-            .selected(Density::Comfortable)
-            .mode(SelectionMode::SingleRequired)
-            .build(cx)
+            radio_group::new("radio-group-density-horizontal")
+                .items(Density::all())
+                .item_id(|density: &Density| density.id().into())
+                .item_label(|density: &Density| density.label().into())
+                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
+                .template(radio_group::horizontal_group_template())
+                .selected(Density::Comfortable)
+                .mode(SelectionMode::SingleRequired)
+                .build(cx)
         });
 
         let indented_group = cx.new(|cx| {
-            radio_group::horizontal_group(
-                "radio-group-density-indented",
-                |density: &Density| density.id().into(),
-                |density: &Density| density.label().into(),
-                theme.radio_button_template(),
-            )
-            .items(Density::all())
-            .selected(Density::Comfortable)
-            .mode(SelectionMode::SingleRequired)
-            .with_template(|group, _window, _cx| {
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_start()
-                    .children(group.buttons().iter().cloned().enumerate().map(|(index, button)| {
-                        div()
-                            .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
-                            .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| {
-                                row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP))
-                            })
-                            .child(button)
-                    }))
-                    .into_any_element()
-            })
-            .build(cx)
+            radio_group::new("radio-group-density-indented")
+                .items(Density::all())
+                .item_id(|density: &Density| density.id().into())
+                .item_label(|density: &Density| density.label().into())
+                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
+                .selected(Density::Comfortable)
+                .mode(SelectionMode::SingleRequired)
+                .with_template(|group, _window, _cx| {
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_start()
+                        .children(group.buttons().iter().cloned().enumerate().map(|(index, button)| {
+                            div()
+                                .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
+                                .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| {
+                                    row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP))
+                                })
+                                .child(button)
+                        }))
+                        .into_any_element()
+                })
+                .build(cx)
         });
 
         let delivery_group = cx.new(|cx| {
-            radio_group::horizontal_group(
-                "radio-group-delivery-window",
-                |delivery: &DeliveryWindow| delivery.id().into(),
-                |delivery: &DeliveryWindow| delivery.day().into(),
-                delivery_window_template(theme),
-            )
-            .items(DeliveryWindow::all())
-            .mode(SelectionMode::SingleAllowNone)
-            .with_template(|group, _window, _cx| {
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(DELIVERY_GROUP_GAP))
-                    .children(group.buttons().iter().cloned())
-                    .into_any_element()
-            })
-            .build(cx)
+            radio_group::new("radio-group-delivery-window")
+                .items(DeliveryWindow::all())
+                .item_id(|delivery: &DeliveryWindow| delivery.id().into())
+                .item_label(|delivery: &DeliveryWindow| delivery.day().into())
+                .item_template(delivery_window_template(theme))
+                .mode(SelectionMode::SingleAllowNone)
+                .with_template(|group, _window, _cx| {
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(DELIVERY_GROUP_GAP))
+                        .children(group.buttons().iter().cloned())
+                        .into_any_element()
+                })
+                .build(cx)
         });
 
         Self {
@@ -140,18 +134,21 @@ impl RadioGroupPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.vertical_group, |app, _, event: &RadioGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.vertical_group, |app, _, event: &RadioGroupEvent<Density>, cx| {
             app.panes.radio_group.handle_vertical_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.horizontal_group, |app, _, event: &RadioGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.horizontal_group, |app, _, event: &RadioGroupEvent<Density>, cx| {
             app.panes.radio_group.handle_horizontal_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.indented_group, |app, _, event: &RadioGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.indented_group, |app, _, event: &RadioGroupEvent<Density>, cx| {
             app.panes.radio_group.handle_indented_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.delivery_group, |app, _, event: &RadioGroupEvent, cx| {
-            app.panes.radio_group.handle_delivery_event(event, cx);
-        }));
+        subscriptions.push(cx.subscribe(
+            &self.delivery_group,
+            |app, _, event: &RadioGroupEvent<DeliveryWindow>, cx| {
+                app.panes.radio_group.handle_delivery_event(event, cx);
+            },
+        ));
     }
 
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
@@ -201,31 +198,31 @@ impl RadioGroupPane {
         notify_entity(&self.delivery_group, cx);
     }
 
-    fn handle_vertical_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_id } = event;
+    fn handle_vertical_event(&mut self, event: &RadioGroupEvent<Density>, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_value, .. } = event;
         self.vertical_choice =
-            selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
+            selected_value.as_ref().map_or_else(|| "None".to_string(), |value| value.id().to_string());
         cx.notify();
     }
 
-    fn handle_horizontal_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_id } = event;
+    fn handle_horizontal_event(&mut self, event: &RadioGroupEvent<Density>, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_value, .. } = event;
         self.horizontal_choice =
-            selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
+            selected_value.as_ref().map_or_else(|| "None".to_string(), |value| value.id().to_string());
         cx.notify();
     }
 
-    fn handle_indented_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_id } = event;
+    fn handle_indented_event(&mut self, event: &RadioGroupEvent<Density>, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_value, .. } = event;
         self.indented_choice =
-            selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
+            selected_value.as_ref().map_or_else(|| "None".to_string(), |value| value.id().to_string());
         cx.notify();
     }
 
-    fn handle_delivery_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
-        let RadioGroupEvent::Change { selected_id } = event;
+    fn handle_delivery_event(&mut self, event: &RadioGroupEvent<DeliveryWindow>, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_value, .. } = event;
         self.delivery_choice =
-            selected_id.as_ref().map(|selected_id| selected_id.as_ref()).unwrap_or("None").to_string();
+            selected_value.as_ref().map_or_else(|| "None".to_string(), |value| value.id().to_string());
         cx.notify();
     }
 }
@@ -300,20 +297,6 @@ impl DeliveryWindow {
     }
 }
 
-fn delivery_window_parts(control_id: &str) -> (&'static str, &'static str) {
-    let delivery = if control_id.contains(DeliveryWindow::Today.id()) {
-        DeliveryWindow::Today
-    } else if control_id.contains(DeliveryWindow::Wednesday.id()) {
-        DeliveryWindow::Wednesday
-    } else if control_id.contains(DeliveryWindow::Thursday.id()) {
-        DeliveryWindow::Thursday
-    } else {
-        DeliveryWindow::Friday
-    };
-
-    (delivery.day(), delivery.date())
-}
-
 struct DeliveryWindowTemplate {
     selected_background: gpui::Hsla,
     selected_foreground: gpui::Hsla,
@@ -323,10 +306,17 @@ struct DeliveryWindowTemplate {
     focus_ring: gpui::Hsla,
 }
 
-impl ButtonTemplate<bool> for DeliveryWindowTemplate {
-    fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let (day, date) = delivery_window_parts(model.id.as_ref());
-        let selected = model.data;
+impl ButtonTemplate<RadioItemState<DeliveryWindow>> for DeliveryWindowTemplate {
+    fn render(
+        &self,
+        model: &ButtonRenderModel<RadioItemState<DeliveryWindow>>,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> Stateful<Div> {
+        let delivery = &model.data.value;
+        let selected = model.data.is_selected;
+        let day = delivery.day();
+        let date = delivery.date();
         let foreground = if selected {
             self.selected_foreground
         } else {
@@ -383,7 +373,7 @@ impl ButtonTemplate<bool> for DeliveryWindowTemplate {
     }
 }
 
-fn delivery_window_template(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<bool>> {
+fn delivery_window_template(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<RadioItemState<DeliveryWindow>>> {
     let tokens = theme.tokens();
     Arc::new(DeliveryWindowTemplate {
         selected_background: tokens.palette.data.accent_4,

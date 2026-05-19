@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Context, EventEmitter, Focusable, IntoElement, Render, SharedString, Subscription, Window, div,
-    prelude::*,
+    AnyElement, App, Context, Entity, EventEmitter, Focusable, IntoElement, Render, SharedString, Subscription, Window,
+    div, prelude::*,
 };
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::radio_button::{self, RadioButton};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, HasPresenter};
+use gpui_luma::controls::radio_button;
 use gpui_luma::focus::{NextFocus, PreviousFocus};
 use gpui_luma::keyhandling::{ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem};
 
@@ -24,27 +24,37 @@ impl Default for SelectionMode {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::gallery) enum RadioGroupEvent {
-    Change { selected_id: Option<SharedString> },
+pub(in crate::gallery) enum RadioGroupEvent<T> {
+    Change {
+        selected_value: Option<T>,
+        #[allow(dead_code)]
+        selected_id: Option<SharedString>,
+    },
 }
 
 pub type RadioGroupTemplate<T> =
     Arc<dyn Fn(&RadioGroup<T>, &mut Window, &mut Context<RadioGroup<T>>) -> AnyElement + Send + Sync>;
+
+#[derive(Clone)]
+pub(in crate::gallery) struct RadioItemState<T> {
+    pub is_selected: bool,
+    pub value: T,
+}
 
 pub(in crate::gallery) struct RadioGroupBuilder<T> {
     id: SharedString,
     items: Vec<T>,
     selected: Option<T>,
     mode: SelectionMode,
-    item_id: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
-    item_label: Arc<dyn Fn(&T) -> SharedString + Send + Sync>,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
+    item_id: Option<Arc<dyn Fn(&T) -> SharedString + Send + Sync>>,
+    item_label: Option<Arc<dyn Fn(&T) -> SharedString + Send + Sync>>,
+    item_button_template: Option<Arc<dyn ButtonTemplate<RadioItemState<T>>>>,
     template: Option<RadioGroupTemplate<T>>,
 }
 
 pub(in crate::gallery) struct RadioGroup<T> {
     id: SharedString,
-    buttons: Vec<RadioButton>,
+    buttons: Vec<Entity<Button<RadioItemState<T>>>>,
     items: Vec<RadioGroupItem<T>>,
     selected_index: Option<usize>,
     focus: CompositeFocus,
@@ -60,20 +70,15 @@ struct RadioGroupItem<T> {
     label: SharedString,
 }
 
-pub(in crate::gallery) fn new<T>(
-    id: impl Into<SharedString>,
-    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T> {
+pub(in crate::gallery) fn new<T>(id: impl Into<SharedString>) -> RadioGroupBuilder<T> {
     RadioGroupBuilder {
         id: id.into(),
         items: Vec::new(),
         selected: None,
         mode: SelectionMode::default(),
-        item_id: Arc::new(item_id),
-        item_label: Arc::new(item_label),
-        item_button_template,
+        item_id: None,
+        item_label: None,
+        item_button_template: None,
         template: None,
     }
 }
@@ -89,6 +94,27 @@ where
 
     pub(in crate::gallery) fn selected(mut self, selected: T) -> Self {
         self.selected = Some(selected);
+        self
+    }
+
+    pub(in crate::gallery) fn item_id(mut self, item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static) -> Self {
+        self.item_id = Some(Arc::new(item_id));
+        self
+    }
+
+    pub(in crate::gallery) fn item_label(
+        mut self,
+        item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
+    ) -> Self {
+        self.item_label = Some(Arc::new(item_label));
+        self
+    }
+
+    pub(in crate::gallery) fn item_template(
+        mut self,
+        item_button_template: Arc<dyn ButtonTemplate<RadioItemState<T>>>,
+    ) -> Self {
+        self.item_button_template = Some(item_button_template);
         self
     }
 
@@ -110,17 +136,20 @@ where
     }
 
     pub(in crate::gallery) fn build(self, cx: &mut Context<RadioGroup<T>>) -> RadioGroup<T> {
+        let item_id = self.item_id.expect("radio group requires item_id");
+        let item_label = self.item_label.expect("radio group requires item_label");
+        let item_button_template = self.item_button_template.expect("radio group requires item template");
         let items: Vec<RadioGroupItem<T>> = self
             .items
             .into_iter()
-            .map(|value| RadioGroupItem { id: (self.item_id)(&value), label: (self.item_label)(&value), value })
+            .map(|value| RadioGroupItem { id: item_id(&value), label: item_label(&value), value })
             .collect();
 
         let mut selected_index =
             self.selected.as_ref().and_then(|selected| items.iter().position(|item| &item.value == selected));
 
         if selected_index.is_none() && self.mode == SelectionMode::SingleRequired {
-            selected_index = items.iter().position(|_| true);
+            selected_index = (!items.is_empty()).then_some(0);
         }
 
         let mut buttons = Vec::with_capacity(items.len());
@@ -130,10 +159,10 @@ where
             let button_id = format!("{}-{}", self.id, item.id);
             let is_selected = Some(index) == selected_index;
             let button = radio_button::new(button_id)
-                .data(is_selected)
+                .data(RadioItemState { is_selected, value: item.value.clone() })
                 .label(item.label.clone())
                 .tab_stop(false)
-                .template(self.item_button_template.clone())
+                .template(item_button_template.clone())
                 .spawn(cx);
 
             subscriptions.push(cx.subscribe(&button, move |this, _, event: &ButtonEvent, cx| {
@@ -166,12 +195,16 @@ impl<T> RadioGroup<T>
 where
     T: Clone + Eq + 'static,
 {
+    pub(in crate::gallery) fn buttons(&self) -> &[Entity<Button<RadioItemState<T>>>] {
+        &self.buttons
+    }
+
     pub(in crate::gallery) fn selected_id(&self) -> Option<SharedString> {
         self.selected_index.and_then(|index| self.items.get(index).map(|item| item.id.clone()))
     }
 
-    pub(in crate::gallery) fn buttons(&self) -> &[RadioButton] {
-        &self.buttons
+    pub(in crate::gallery) fn selected_value(&self) -> Option<T> {
+        self.selected_index.and_then(|index| self.items.get(index).map(|item| item.value.clone()))
     }
 
     fn handle_button_click(&mut self, index: usize, cx: &mut Context<Self>) {
@@ -195,15 +228,18 @@ where
 
         self.selected_index = next_selected_index;
         self.sync_button_states(cx);
-        cx.emit(RadioGroupEvent::Change { selected_id: self.selected_id() });
+        cx.emit(RadioGroupEvent::Change { selected_value: self.selected_value(), selected_id: self.selected_id() });
         cx.notify();
     }
 
     fn sync_button_states(&mut self, cx: &mut Context<Self>) {
         let selected_index = self.selected_index;
-        for (index, button) in self.buttons.iter().enumerate() {
+        for (index, (button, item)) in self.buttons.iter().zip(self.items.iter()).enumerate() {
             let selected = Some(index) == selected_index;
-            button.update(cx, |button, cx| button.set_data(selected, cx));
+            let value = item.value.clone();
+            button.update(cx, move |button, cx| {
+                button.set_data(RadioItemState { is_selected: selected, value }, cx);
+            });
         }
     }
 
@@ -268,7 +304,10 @@ fn first_item_index<T>(items: &[RadioGroupItem<T>]) -> Option<usize> {
     items.first().map(|_| 0)
 }
 
-fn focus_button_at<T>(buttons: &[RadioButton], index: usize, window: &mut Window, cx: &mut Context<T>) {
+fn focus_button_at<D, T>(buttons: &[Entity<Button<D>>], index: usize, window: &mut Window, cx: &mut Context<T>)
+where
+    D: Clone + 'static,
+{
     if let Some(button) = buttons.get(index) {
         button.update(cx, |button, cx| {
             button.focus_handle(cx).focus(window, cx);
@@ -285,7 +324,7 @@ where
     }
 }
 
-impl<T> EventEmitter<RadioGroupEvent> for RadioGroup<T> where T: Clone + Eq + 'static {}
+impl<T> EventEmitter<RadioGroupEvent<T>> for RadioGroup<T> where T: Clone + Eq + 'static {}
 
 impl<T> Render for RadioGroup<T>
 where

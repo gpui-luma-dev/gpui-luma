@@ -1,37 +1,63 @@
+use std::cell::Cell;
+use std::marker::PhantomData;
 use std::sync::Arc;
 
-use gpui::{SharedString, div, prelude::*};
-use gpui_luma::controls::command::button::ButtonTemplate;
+use gpui::{App, Div, Stateful, Window, div, prelude::*};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 mod control;
 mod focus;
 
-pub(in crate::gallery) use control::{
-    RadioGroup, RadioGroupBuilder, RadioGroupEvent, RadioGroupTemplate, SelectionMode, new,
-};
+pub(in crate::gallery) use control::{RadioGroup, RadioGroupEvent, RadioGroupTemplate, RadioItemState, SelectionMode, new};
 
-pub(in crate::gallery) fn vertical_group<T>(
-    id: impl Into<SharedString>,
-    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T>
-where
-    T: Clone + Eq + 'static,
-{
-    new(id, item_id, item_label, item_button_template).template(vertical_group_template())
+struct SelectionStateTemplate<T> {
+    base: Arc<dyn ButtonTemplate<bool>>,
+    _marker: PhantomData<T>,
 }
 
-pub(in crate::gallery) fn horizontal_group<T>(
-    id: impl Into<SharedString>,
-    item_id: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_label: impl Fn(&T) -> SharedString + Send + Sync + 'static,
-    item_button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupBuilder<T>
+impl<T> ButtonTemplate<RadioItemState<T>> for SelectionStateTemplate<T>
 where
-    T: Clone + Eq + 'static,
+    T: Clone + Send + Sync + 'static,
 {
-    new(id, item_id, item_label, item_button_template).template(horizontal_group_template())
+    fn render(&self, model: &ButtonRenderModel<RadioItemState<T>>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let value = model.data.value.clone();
+        let content = model.content.clone();
+        let bool_model = ButtonRenderModel {
+            id: model.id.clone(),
+            data: model.data.is_selected,
+            content: Arc::new(move |bool_model, cx| {
+                let rich_model = ButtonRenderModel {
+                    id: bool_model.id.clone(),
+                    data: RadioItemState { is_selected: bool_model.data, value: value.clone() },
+                    content: content.clone(),
+                    kind: bool_model.kind,
+                    role: bool_model.role,
+                    size: bool_model.size,
+                    state: bool_model.state,
+                    round: bool_model.round,
+                    radius_override: Cell::new(bool_model.radius_override.get()),
+                };
+                content(&rich_model, cx)
+            }),
+            kind: model.kind,
+            role: model.role,
+            size: model.size,
+            state: model.state,
+            round: model.round,
+            radius_override: Cell::new(model.radius_override.get()),
+        };
+
+        self.base.render(&bool_model, window, cx)
+    }
+}
+
+pub(in crate::gallery) fn selection_state_template<T>(
+    base: Arc<dyn ButtonTemplate<bool>>,
+) -> Arc<dyn ButtonTemplate<RadioItemState<T>>>
+where
+    T: Clone + Send + Sync + 'static,
+{
+    Arc::new(SelectionStateTemplate { base, _marker: PhantomData })
 }
 
 pub(in crate::gallery) fn vertical_group_template<T>() -> RadioGroupTemplate<T>
