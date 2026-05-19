@@ -31,6 +31,7 @@ The project is structured around two complementary concerns:
 
 - **Controls subsystem** (`controls/`)
   - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `presenter`)
+  - generic selection engine: `control_group` (lookless composite selection/focus primitive)
   - concrete controls (buttons, text inputs, menu controls, nav controls, sliders/scrollbars, etc.)
   - each control module exports builder/event/template/theme types
 
@@ -68,6 +69,10 @@ This pattern improves consistency and makes style/theming separable from behavio
   - stores theme + active mode
   - provides pre-wired template/theme implementations for controls
   - supports live mode toggling (light/dark)
+- `control_group` is intentionally theme-agnostic:
+  - no `theme.rs`
+  - exposes container + item template hooks for semantic wrappers to style explicitly
+  - owns selection semantics (`SingleRequired`, `SingleAllowNone`, `Multiple`) and managed/unmanaged selection state
 
 ## Error-Handling Architecture
 

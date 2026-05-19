@@ -1,14 +1,21 @@
-use gpui::{Context, IntoElement, div, prelude::*};
+use std::cell::Cell;
+use std::sync::Arc;
+
+use gpui::{Context, IntoElement, MouseButton, Window, div, prelude::*};
 use gpui_luma::controls::checkbox;
 use gpui_luma::controls::choice_group::{self, ChoiceGroupItem};
 use gpui_luma::controls::combobox::{self, SelectionItem, TypingPolicy};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonKind};
+use gpui_luma::controls::control_group::{
+    self, ControlGroupItem, ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers,
+};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuPlacement};
 use gpui_luma::controls::progress;
 use gpui_luma::controls::radio_button;
-use gpui_luma::controls::radio_group;
 use gpui_luma::controls::slider;
 use gpui_luma::controls::switch;
 use gpui_luma::controls::textfield;
@@ -17,7 +24,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::pane::{PaymentPanel, SystemPanel, WorkspaceDensity, WorkspacePanel};
+use super::super::pane::{PaymentPanel, SystemPanel, WorkspacePanel};
 
 pub(in crate::gallery) fn build_payment_panel(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> PaymentPanel {
     let checkbox_template = theme.checkbox_template();
@@ -77,13 +84,11 @@ pub(in crate::gallery) fn build_workspace_panel(
                 div().font_family("lucide").child(char::from(icon).to_string()).into_any_element()
             })
             .spawn(cx),
-        workspace_density_radio_group: radio_group::new("intro-workspace-density")
-            .items(WorkspaceDensity::all())
-            .item_id(|density: &WorkspaceDensity| density.id().into())
-            .item_label(|density: &WorkspaceDensity| density.label().into())
-            .item_template(radio_group::selection_state_template(theme.radio_button_template()))
-            .template(radio_group::horizontal_group_template())
-            .selected(WorkspaceDensity::Balanced)
+        workspace_density_control_group: control_group::new("intro-workspace-density")
+            .items(workspace_density_items())
+            .selection_mode(control_group::ControlSelectionMode::SingleRequired)
+            .selected("balanced")
+            .template(workspace_density_template(theme.radio_button_template()))
             .spawn(cx),
         workspace_popup_menu: PopupMenu::new("intro-workspace-popup")
             .label("Workspace Menu")
@@ -153,6 +158,14 @@ fn workspace_layout_items() -> [ChoiceGroupItem; 4] {
     ]
 }
 
+fn workspace_density_items() -> [ControlGroupItem; 3] {
+    [
+        ControlGroupItem::new("compact").label("Compact"),
+        ControlGroupItem::new("balanced").label("Balanced"),
+        ControlGroupItem::new("comfortable").label("Comfortable"),
+    ]
+}
+
 fn workspace_icon_demo_items() -> [ChoiceGroupItem; 3] {
     [
         ChoiceGroupItem::new("left", "left").label("Left"),
@@ -172,4 +185,82 @@ fn workspace_menu_items() -> [MenuItem; 5] {
         ]),
         MenuItem::new("delete").label("Delete").icon(LucideIcon::Trash2),
     ]
+}
+
+fn workspace_density_template(
+    button_template: Arc<dyn ButtonTemplate<bool>>,
+) -> control_group::ControlGroupTemplate<ControlGroupItem> {
+    Arc::new(move |model, handlers, window, cx| {
+        render_workspace_density_group(model, handlers, &button_template, window, cx)
+    })
+}
+
+fn render_workspace_density_group(
+    model: &ControlGroupRenderModel<'_, ControlGroupItem>,
+    handlers: ControlGroupTemplateHandlers,
+    button_template: &Arc<dyn ButtonTemplate<bool>>,
+    window: &mut Window,
+    cx: &mut gpui::App,
+) -> gpui::Stateful<gpui::Div> {
+    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
+        handlers;
+
+    let mut item_hovers = item_hovers.into_iter();
+    let mut item_mouse_downs = item_mouse_downs.into_iter();
+    let mut item_mouse_ups = item_mouse_ups.into_iter();
+    let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
+    let mut item_clicks = item_clicks.into_iter();
+
+    let mut root = div().id(model.id.clone()).flex().items_center().gap_3();
+
+    for item in &model.items {
+        let Some(item_hover) = item_hovers.next() else {
+            break;
+        };
+        let Some(item_mouse_down) = item_mouse_downs.next() else {
+            break;
+        };
+        let Some(item_mouse_up) = item_mouse_ups.next() else {
+            break;
+        };
+        let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
+            break;
+        };
+        let Some(item_click) = item_clicks.next() else {
+            break;
+        };
+
+        let render_model = ButtonRenderModel {
+            id: format!("{}-{}", model.id, ControlGroupItemLike::id(item.item)).into(),
+            data: item.selected,
+            content: Arc::new({
+                let label = ControlGroupItemLike::label(item.item).clone();
+                move |_, _| div().child(label.clone()).into_any_element()
+            }),
+            kind: ButtonKind::Standard,
+            role: ButtonFamilyRole::Text,
+            size: ButtonSize::Md,
+            state: item.state.interaction_state(),
+            round: false,
+            radius_override: Cell::new(None),
+        };
+
+        let mut button = button_template
+            .render(&render_model, window, cx)
+            .on_hover(item_hover)
+            .on_mouse_down(MouseButton::Left, item_mouse_down)
+            .on_mouse_up(MouseButton::Left, item_mouse_up)
+            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
+            .on_click(item_click);
+
+        if item.enabled {
+            button = button.cursor_pointer();
+        } else {
+            button = button.opacity(0.56);
+        }
+
+        root = root.child(button);
+    }
+
+    root
 }

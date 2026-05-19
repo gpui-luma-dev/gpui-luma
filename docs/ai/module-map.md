@@ -138,6 +138,10 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `choice_group/*`
   - multi-item composite choice control
   - key exports include builder/model/item types and `ChoiceGroupEvent`
+- `control_group/*`
+  - generic lookless composite selection engine
+  - owns selection semantics, active-item navigation, and managed/unmanaged selection state
+  - exports generic item/template contracts for future semantic wrappers
 - `radio_group/*`
   - generic single-select radio composition control with group-level keyboard/focus behavior
   - exports builder/template helpers plus `RadioGroupEvent<T>` and typed `RadioItemState<T>`

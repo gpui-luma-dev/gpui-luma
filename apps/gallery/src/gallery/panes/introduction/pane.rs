@@ -4,11 +4,11 @@ use gpui::{AnyElement, Context, Entity, FontWeight, SharedString, div, prelude::
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::choice_group::ChoiceGroup;
 use gpui_luma::controls::combobox::ComboBox;
+use gpui_luma::controls::control_group::{ControlGroup, ControlGroupItem};
 use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::radio_button;
-use gpui_luma::controls::radio_group::RadioGroup;
 use gpui_luma::controls::slider::Slider;
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::controls::textfield::TextField;
@@ -43,7 +43,7 @@ pub(super) struct WorkspacePanel {
     pub(super) workspace_popup_menu: Entity<PopupMenu>,
     pub(super) workspace_layout_choice_group: ChoiceGroup,
     pub(super) workspace_icon_demo_choice_group: ChoiceGroup,
-    pub(super) workspace_density_radio_group: Entity<RadioGroup<WorkspaceDensity>>,
+    pub(super) workspace_density_control_group: ControlGroup<ControlGroupItem>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -54,14 +54,6 @@ pub(super) enum WorkspaceDensity {
 }
 
 impl WorkspaceDensity {
-    pub(super) fn id(&self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Balanced => "balanced",
-            Self::Comfortable => "comfortable",
-        }
-    }
-
     pub(super) fn label(&self) -> &'static str {
         match self {
             Self::Compact => "Compact",
@@ -70,8 +62,13 @@ impl WorkspaceDensity {
         }
     }
 
-    pub(super) fn all() -> [Self; 3] {
-        [Self::Compact, Self::Balanced, Self::Comfortable]
+    pub(super) fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "compact" => Some(Self::Compact),
+            "balanced" => Some(Self::Balanced),
+            "comfortable" => Some(Self::Comfortable),
+            _ => None,
+        }
     }
 }
 
