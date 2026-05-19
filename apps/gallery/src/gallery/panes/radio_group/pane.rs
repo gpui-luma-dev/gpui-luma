@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Div, Entity, Stateful, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::radio_group::{
+    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioItemState, SelectionMode,
+};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::radio_group::{self, RadioGroup, RadioGroupEvent, RadioItemState, SelectionMode};
 use super::super::shared::{gallery_pane, notify_entity};
 
 const DENSITY_OPTION_COUNT: usize = 3;
@@ -53,73 +55,65 @@ pub(in crate::gallery) struct RadioGroupPane {
 
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let vertical_group = cx.new(|cx| {
-            radio_group::new("radio-group-density-vertical")
-                .items(Density::all())
-                .item_id(|density: &Density| density.id().into())
-                .item_label(|density: &Density| density.label().into())
-                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
-                .template(radio_group::vertical_group_template())
-                .selected(Density::Comfortable)
-                .mode(SelectionMode::SingleRequired)
-                .build(cx)
-        });
+        let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
+            .items(Density::all())
+            .item_id(|density: &Density| density.id().into())
+            .item_label(|density: &Density| density.label().into())
+            .item_template(sdk_radio_group::selection_state_template(theme.radio_button_template()))
+            .template(sdk_radio_group::vertical_group_template())
+            .selected(Density::Comfortable)
+            .mode(SelectionMode::SingleRequired)
+            .spawn(cx);
 
-        let horizontal_group = cx.new(|cx| {
-            radio_group::new("radio-group-density-horizontal")
-                .items(Density::all())
-                .item_id(|density: &Density| density.id().into())
-                .item_label(|density: &Density| density.label().into())
-                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
-                .template(radio_group::horizontal_group_template())
-                .selected(Density::Comfortable)
-                .mode(SelectionMode::SingleRequired)
-                .build(cx)
-        });
+        let horizontal_group = sdk_radio_group::new("radio-group-density-horizontal")
+            .items(Density::all())
+            .item_id(|density: &Density| density.id().into())
+            .item_label(|density: &Density| density.label().into())
+            .item_template(sdk_radio_group::selection_state_template(theme.radio_button_template()))
+            .template(sdk_radio_group::horizontal_group_template())
+            .selected(Density::Comfortable)
+            .mode(SelectionMode::SingleRequired)
+            .spawn(cx);
 
-        let indented_group = cx.new(|cx| {
-            radio_group::new("radio-group-density-indented")
-                .items(Density::all())
-                .item_id(|density: &Density| density.id().into())
-                .item_label(|density: &Density| density.label().into())
-                .item_template(radio_group::selection_state_template(theme.radio_button_template()))
-                .selected(Density::Comfortable)
-                .mode(SelectionMode::SingleRequired)
-                .with_template(|group, _window, _cx| {
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_start()
-                        .children(group.buttons().iter().cloned().enumerate().map(|(index, button)| {
-                            div()
-                                .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
-                                .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| {
-                                    row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP))
-                                })
-                                .child(button)
-                        }))
-                        .into_any_element()
-                })
-                .build(cx)
-        });
+        let indented_group = sdk_radio_group::new("radio-group-density-indented")
+            .items(Density::all())
+            .item_id(|density: &Density| density.id().into())
+            .item_label(|density: &Density| density.label().into())
+            .item_template(sdk_radio_group::selection_state_template(theme.radio_button_template()))
+            .selected(Density::Comfortable)
+            .mode(SelectionMode::SingleRequired)
+            .with_template(|group, _window, _cx| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .children(group.buttons().iter().cloned().enumerate().map(|(index, button)| {
+                        div()
+                            .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
+                            .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| {
+                                row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP))
+                            })
+                            .child(button)
+                    }))
+                    .into_any_element()
+            })
+            .spawn(cx);
 
-        let delivery_group = cx.new(|cx| {
-            radio_group::new("radio-group-delivery-window")
-                .items(DeliveryWindow::all())
-                .item_id(|delivery: &DeliveryWindow| delivery.id().into())
-                .item_label(|delivery: &DeliveryWindow| delivery.day().into())
-                .item_template(delivery_window_template(theme))
-                .mode(SelectionMode::SingleAllowNone)
-                .with_template(|group, _window, _cx| {
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(DELIVERY_GROUP_GAP))
-                        .children(group.buttons().iter().cloned())
-                        .into_any_element()
-                })
-                .build(cx)
-        });
+        let delivery_group = sdk_radio_group::new("radio-group-delivery-window")
+            .items(DeliveryWindow::all())
+            .item_id(|delivery: &DeliveryWindow| delivery.id().into())
+            .item_label(|delivery: &DeliveryWindow| delivery.day().into())
+            .item_template(delivery_window_template(theme))
+            .mode(SelectionMode::SingleAllowNone)
+            .with_template(|group, _window, _cx| {
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(DELIVERY_GROUP_GAP))
+                    .children(group.buttons().iter().cloned())
+                    .into_any_element()
+            })
+            .spawn(cx);
 
         Self {
             vertical_group,

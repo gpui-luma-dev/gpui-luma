@@ -1,14 +1,14 @@
+mod control;
+mod focus;
+
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
 use gpui::{App, Div, Stateful, Window, div, prelude::*};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-mod control;
-mod focus;
-
-pub(in crate::gallery) use control::{RadioGroup, RadioGroupEvent, RadioGroupTemplate, RadioItemState, SelectionMode, new};
+pub use control::{RadioGroup, RadioGroupBuilder, RadioGroupEvent, RadioGroupTemplate, RadioItemState, SelectionMode, new};
+use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 struct SelectionStateTemplate<T> {
     base: Arc<dyn ButtonTemplate<bool>>,
@@ -51,16 +51,14 @@ where
     }
 }
 
-pub(in crate::gallery) fn selection_state_template<T>(
-    base: Arc<dyn ButtonTemplate<bool>>,
-) -> Arc<dyn ButtonTemplate<RadioItemState<T>>>
+pub fn selection_state_template<T>(base: Arc<dyn ButtonTemplate<bool>>) -> Arc<dyn ButtonTemplate<RadioItemState<T>>>
 where
     T: Clone + Send + Sync + 'static,
 {
     Arc::new(SelectionStateTemplate { base, _marker: PhantomData })
 }
 
-pub(in crate::gallery) fn vertical_group_template<T>() -> RadioGroupTemplate<T>
+pub fn vertical_group_template<T>() -> RadioGroupTemplate<T>
 where
     T: Clone + Eq + 'static,
 {
@@ -69,7 +67,7 @@ where
     })
 }
 
-pub(in crate::gallery) fn horizontal_group_template<T>() -> RadioGroupTemplate<T>
+pub fn horizontal_group_template<T>() -> RadioGroupTemplate<T>
 where
     T: Clone + Eq + 'static,
 {

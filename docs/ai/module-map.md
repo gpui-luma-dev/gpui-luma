@@ -138,6 +138,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `choice_group/*`
   - multi-item composite choice control
   - key exports include builder/model/item types and `ChoiceGroupEvent`
+- `radio_group/*`
+  - generic single-select radio composition control with group-level keyboard/focus behavior
+  - exports builder/template helpers plus `RadioGroupEvent<T>` and typed `RadioItemState<T>`
 
 ## Text controls
 
@@ -245,7 +248,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - Pane categories:
   - intro/meta: `introduction`, `search`, `settings`, `palette`, `theme_usage`
   - command: `button`, `icon_button`, `prototypes/*`
-  - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `choice_group`, `listbox`, `choice_controls_template`
+  - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `radio_button`, `radio_group`, `choice_group`, `listbox`, `choice_controls_template`
   - input: `textfield`, `textarea`, `slider`, `scrollbar`
   - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`
   - navigation/feedback: `navigation_sidebar`, `tabs_navigation`, `progress`
