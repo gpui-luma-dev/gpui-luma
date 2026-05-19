@@ -3,12 +3,13 @@ use gpui_luma::controls::choice_group::ChoiceGroupEvent;
 use gpui_luma::controls::combobox::ComboBoxEvent;
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::popup_menu::PopupMenuEvent;
+use gpui_luma::controls::radio_group::RadioGroupEvent;
 use gpui_luma::controls::slider::SliderEvent;
 use gpui_luma::controls::textfield::TextFieldEvent;
 
 use crate::gallery::control::GalleryApp;
 
-use super::{IntroButton, IntroField, IntroductionPane};
+use super::{IntroButton, IntroField, IntroductionPane, WorkspaceDensity};
 use crate::gallery::panes::shared::notify_entity;
 
 impl IntroductionPane {
@@ -60,8 +61,8 @@ impl IntroductionPane {
             },
         ));
         subscriptions.push(cx.subscribe(
-            &self.workspace.workspace_density_choice_group,
-            |app, _, event: &ChoiceGroupEvent, cx| {
+            &self.workspace.workspace_density_radio_group,
+            |app, _, event: &RadioGroupEvent<WorkspaceDensity>, cx| {
                 app.panes.introduction.handle_workspace_density_event(event, cx);
             },
         ));
@@ -105,7 +106,7 @@ impl IntroductionPane {
         notify_entity(&self.workspace.workspace_popup_menu, cx);
         notify_entity(&self.workspace.workspace_layout_choice_group, cx);
         notify_entity(&self.workspace.workspace_icon_demo_choice_group, cx);
-        notify_entity(&self.workspace.workspace_density_choice_group, cx);
+        notify_entity(&self.workspace.workspace_density_radio_group, cx);
     }
 
     fn notify_system_panel(&self, cx: &mut Context<GalleryApp>) {
@@ -185,11 +186,17 @@ impl IntroductionPane {
         cx.notify();
     }
 
-    fn handle_workspace_density_event(&mut self, event: &ChoiceGroupEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_workspace_density_event(
+        &mut self,
+        event: &RadioGroupEvent<WorkspaceDensity>,
+        cx: &mut Context<GalleryApp>,
+    ) {
         match event {
-            ChoiceGroupEvent::Change { label, .. } => {
-                self.workspace_density = label.clone();
-                self.last_event = SharedString::from("ChoiceGroup::Density");
+            RadioGroupEvent::Change { selected_value, .. } => {
+                self.workspace_density = selected_value
+                    .as_ref()
+                    .map_or_else(|| SharedString::from("None"), |density| SharedString::from(density.label()));
+                self.last_event = SharedString::from("RadioGroup::Density");
             }
         }
 

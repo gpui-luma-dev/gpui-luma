@@ -44,7 +44,7 @@ pub(in crate::gallery) fn render_workspace_card(pane: &IntroductionPane, theme: 
                         .text_color(chrome.body_text)
                         .child(format!("Density: {}", pane.workspace_density)),
                 )
-                .child(pane.workspace.workspace_density_choice_group.clone()),
+                .child(pane.workspace.workspace_density_radio_group.clone()),
         )
         .child(div().flex().items_center().gap(px(8.0)).child(pane.workspace.workspace_popup_menu.clone()))
         .child(
