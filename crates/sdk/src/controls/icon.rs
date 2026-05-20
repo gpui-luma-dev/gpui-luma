@@ -49,6 +49,14 @@ impl From<SharedString> for IconSource {
 
 pub const LUCIDE_FONT_FAMILY: &str = "lucide";
 
+pub fn lucide_glyph(icon: LucideIcon) -> AnyElement {
+    div()
+        .font_family(LUCIDE_FONT_FAMILY)
+        .font_weight(FontWeight::NORMAL)
+        .child(char::from(icon).to_string())
+        .into_any_element()
+}
+
 pub fn lucide_icon(icon: LucideIcon, color: Hsla, size: f32) -> AnyElement {
     div()
         .size(px(size))

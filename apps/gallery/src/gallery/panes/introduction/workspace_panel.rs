@@ -7,6 +7,7 @@ use gpui::{
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::choice_group::{self, ChoiceGroup, ChoiceGroupEvent, ChoiceGroupItem};
 use gpui_luma::controls::command::button::{ButtonKind, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
 use gpui_luma::controls::presenter::HasPresenter;
@@ -74,7 +75,7 @@ impl WorkspacePanel {
                     _ => LucideIcon::Settings,
                 };
 
-                div().font_family("lucide").child(char::from(icon).to_string()).into_any_element()
+                lucide_glyph(icon)
             })
             .spawn(cx);
         let density_radio_group = radio_group::horizontal("intro-workspace-density")
@@ -98,7 +99,7 @@ impl WorkspacePanel {
                     _ => LucideIcon::Settings,
                 };
 
-                div().font_family("lucide").child(char::from(icon).to_string()).into_any_element()
+                lucide_glyph(icon)
             })
             .spawn(cx);
 
