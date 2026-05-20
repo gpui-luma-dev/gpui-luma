@@ -4,9 +4,9 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Div, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::control_group::{
-    self as sdk_control_group, ControlGroup, ControlGroupEvent, ControlGroupItem, ControlGroupItemLike,
-    ControlGroupRenderModel, ControlGroupTemplateHandlers, ControlSelectionMode,
+use gpui_luma::controls::radio_group::{
+    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
+    RadioGroupTemplate, RadioGroupTemplateHandlers, SelectionMode,
 };
 
 use crate::gallery::control::GalleryApp;
@@ -46,10 +46,10 @@ const DELIVERY_DISABLED_OPACITY: f32 = 0.56;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioGroupPane {
-    vertical_group: ControlGroup<ControlGroupItem>,
-    horizontal_group: ControlGroup<ControlGroupItem>,
-    indented_group: ControlGroup<ControlGroupItem>,
-    delivery_group: ControlGroup<DeliveryWindowItem>,
+    vertical_group: RadioGroup<RadioGroupItem>,
+    horizontal_group: RadioGroup<RadioGroupItem>,
+    indented_group: RadioGroup<RadioGroupItem>,
+    delivery_group: RadioGroup<DeliveryWindowItem>,
     vertical_choice: String,
     horizontal_choice: String,
     indented_choice: String,
@@ -58,32 +58,29 @@ pub(in crate::gallery) struct RadioGroupPane {
 
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let vertical_group = sdk_control_group::new("radio-group-density-vertical")
+        let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
             .items(density_items())
             .template(radio_button_vertical_template(theme.radio_button_template()))
             .selected(Density::Comfortable.id())
-            .selection_mode(ControlSelectionMode::SingleRequired)
             .spawn(cx);
 
-        let horizontal_group = sdk_control_group::new("radio-group-density-horizontal")
+        let horizontal_group = sdk_radio_group::horizontal("radio-group-density-horizontal")
             .items(density_items())
             .template(radio_button_horizontal_template(theme.radio_button_template()))
             .selected(Density::Comfortable.id())
-            .selection_mode(ControlSelectionMode::SingleRequired)
             .spawn(cx);
 
-        let indented_group = sdk_control_group::new("radio-group-density-indented")
+        let indented_group = sdk_radio_group::new("radio-group-density-indented")
             .items(density_items())
             .template(radio_button_indented_template(theme.radio_button_template()))
             .selected(Density::Comfortable.id())
-            .selection_mode(ControlSelectionMode::SingleRequired)
             .spawn(cx);
 
-        let delivery_group = sdk_control_group::new("radio-group-delivery-window")
+        let delivery_group = sdk_radio_group::horizontal("radio-group-delivery-window")
             .items(delivery_window_items())
             .template(delivery_window_template(theme))
             .selected(DeliveryWindow::Today.id())
-            .selection_mode(ControlSelectionMode::SingleAllowNone)
+            .selection_mode(SelectionMode::SingleAllowNone)
             .spawn(cx);
 
         Self {
@@ -99,16 +96,16 @@ impl RadioGroupPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.vertical_group, |app, _, event: &ControlGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.vertical_group, |app, _, event: &RadioGroupEvent, cx| {
             app.panes.radio_group.handle_vertical_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.horizontal_group, |app, _, event: &ControlGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.horizontal_group, |app, _, event: &RadioGroupEvent, cx| {
             app.panes.radio_group.handle_horizontal_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.indented_group, |app, _, event: &ControlGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.indented_group, |app, _, event: &RadioGroupEvent, cx| {
             app.panes.radio_group.handle_indented_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.delivery_group, |app, _, event: &ControlGroupEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.delivery_group, |app, _, event: &RadioGroupEvent, cx| {
             app.panes.radio_group.handle_delivery_event(event, cx);
         }));
     }
@@ -160,26 +157,26 @@ impl RadioGroupPane {
         notify_entity(&self.delivery_group, cx);
     }
 
-    fn handle_vertical_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
-        let ControlGroupEvent::Change { selected_ids, .. } = event;
+    fn handle_vertical_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_ids, .. } = event;
         self.vertical_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
-    fn handle_horizontal_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
-        let ControlGroupEvent::Change { selected_ids, .. } = event;
+    fn handle_horizontal_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_ids, .. } = event;
         self.horizontal_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
-    fn handle_indented_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
-        let ControlGroupEvent::Change { selected_ids, .. } = event;
+    fn handle_indented_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_ids, .. } = event;
         self.indented_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
 
-    fn handle_delivery_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
-        let ControlGroupEvent::Change { selected_ids, .. } = event;
+    fn handle_delivery_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
+        let RadioGroupEvent::Change { selected_ids, .. } = event;
         self.delivery_choice = selected_ids.first().map_or_else(|| "None".to_string(), ToString::to_string);
         cx.notify();
     }
@@ -264,7 +261,7 @@ impl DeliveryWindowItem {
     }
 }
 
-impl ControlGroupItemLike for DeliveryWindowItem {
+impl RadioGroupItemLike for DeliveryWindowItem {
     fn id(&self) -> &gpui::SharedString {
         &self.id
     }
@@ -283,11 +280,11 @@ struct DeliveryWindowTemplateSpec {
     focus_ring: gpui::Hsla,
 }
 
-fn density_items() -> [ControlGroupItem; DENSITY_OPTION_COUNT] {
+fn density_items() -> [RadioGroupItem; DENSITY_OPTION_COUNT] {
     [
-        ControlGroupItem::new(Density::Compact.id()).label(Density::Compact.label()),
-        ControlGroupItem::new(Density::Comfortable.id()).label(Density::Comfortable.label()),
-        ControlGroupItem::new(Density::Expanded.id()).label(Density::Expanded.label()),
+        RadioGroupItem::new(Density::Compact.id()).label(Density::Compact.label()),
+        RadioGroupItem::new(Density::Comfortable.id()).label(Density::Comfortable.label()),
+        RadioGroupItem::new(Density::Expanded.id()).label(Density::Expanded.label()),
     ]
 }
 
@@ -376,7 +373,7 @@ fn delivery_window_card(
 
 fn radio_button_vertical_template(
     button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> sdk_control_group::ControlGroupTemplate<ControlGroupItem> {
+) -> RadioGroupTemplate<RadioGroupItem> {
     Arc::new(move |model, handlers, window, cx| {
         div()
             .id(model.id.clone())
@@ -390,7 +387,7 @@ fn radio_button_vertical_template(
 
 fn radio_button_horizontal_template(
     button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> sdk_control_group::ControlGroupTemplate<ControlGroupItem> {
+) -> RadioGroupTemplate<RadioGroupItem> {
     Arc::new(move |model, handlers, window, cx| {
         div().id(model.id.clone()).flex().items_center().gap_3().children(render_radio_button_rows(
             model,
@@ -404,7 +401,7 @@ fn radio_button_horizontal_template(
 
 fn radio_button_indented_template(
     button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> sdk_control_group::ControlGroupTemplate<ControlGroupItem> {
+) -> RadioGroupTemplate<RadioGroupItem> {
     Arc::new(move |model, handlers, window, cx| {
         div().id(model.id.clone()).flex().flex_col().items_start().children(
             render_radio_button_rows(model, handlers, &button_template, window, cx).into_iter().enumerate().map(
@@ -421,16 +418,16 @@ fn radio_button_indented_template(
 }
 
 fn render_radio_button_rows<T>(
-    model: &ControlGroupRenderModel<'_, T>,
-    handlers: ControlGroupTemplateHandlers,
+    model: &RadioGroupRenderModel<'_, T>,
+    handlers: RadioGroupTemplateHandlers,
     button_template: &Arc<dyn ButtonTemplate<bool>>,
     window: &mut Window,
     cx: &mut App,
 ) -> Vec<AnyElement>
 where
-    T: ControlGroupItemLike + 'static,
+    T: RadioGroupItemLike + 'static,
 {
-    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
+    let RadioGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
         handlers;
 
     let mut item_hovers = item_hovers.into_iter();
@@ -492,7 +489,7 @@ where
     rows
 }
 
-fn delivery_window_template(theme: &GalleryThemePack) -> sdk_control_group::ControlGroupTemplate<DeliveryWindowItem> {
+fn delivery_window_template(theme: &GalleryThemePack) -> RadioGroupTemplate<DeliveryWindowItem> {
     let tokens = theme.tokens();
     let spec = Arc::new(DeliveryWindowTemplateSpec {
         selected_background: tokens.palette.data.accent_4,
@@ -504,7 +501,7 @@ fn delivery_window_template(theme: &GalleryThemePack) -> sdk_control_group::Cont
     });
 
     Arc::new(move |model, handlers, _window, _cx| {
-        let ControlGroupTemplateHandlers {
+        let RadioGroupTemplateHandlers {
             item_hovers,
             item_mouse_downs,
             item_mouse_ups,
@@ -552,22 +549,22 @@ fn delivery_window_template(theme: &GalleryThemePack) -> sdk_control_group::Cont
     })
 }
 
-fn render_example<T>(label: &'static str, group: ControlGroup<T>, choice: &str, text_color: gpui::Hsla) -> AnyElement
+fn render_example<T>(label: &'static str, group: RadioGroup<T>, choice: &str, text_color: gpui::Hsla) -> AnyElement
 where
-    T: ControlGroupItemLike + 'static,
+    T: RadioGroupItemLike + 'static,
 {
     render_example_with_padding(label, group, choice, text_color, EXAMPLE_PADDING_Y)
 }
 
 fn render_example_with_padding<T>(
     label: &'static str,
-    group: ControlGroup<T>,
+    group: RadioGroup<T>,
     choice: &str,
     text_color: gpui::Hsla,
     padding_y: f32,
 ) -> AnyElement
 where
-    T: ControlGroupItemLike + 'static,
+    T: RadioGroupItemLike + 'static,
 {
     div()
         .flex()

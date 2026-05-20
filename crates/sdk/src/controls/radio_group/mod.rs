@@ -1,77 +1,67 @@
-mod control;
-mod focus;
+use gpui::{Entity, SharedString};
 
-use std::cell::Cell;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use crate::controls::control_group::{
+    self as control_group, ControlGroupBuilder, ControlGroupControl, ControlGroupEvent, ControlGroupItem,
+    ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
+    ControlSelectionMode,
+};
 
-use gpui::{App, Div, Stateful, Window, div, prelude::*};
+// 1. Semantic Type Aliases
+// This makes the idea of a "Radio Group" visible in function signatures and state
+pub type RadioGroup<T> = Entity<ControlGroupControl<T>>;
+pub type RadioGroupEvent = ControlGroupEvent;
+pub type RadioGroupBuilder<T> = ControlGroupBuilder<T>;
+pub type RadioGroupItem = ControlGroupItem;
+pub type RadioGroupRenderModel<'a, T> = ControlGroupRenderModel<'a, T>;
+pub type RadioGroupTemplate<T> = ControlGroupTemplate<T>;
+pub type RadioGroupTemplateHandlers = ControlGroupTemplateHandlers;
+pub type SelectionMode = ControlSelectionMode;
+pub use crate::controls::control_group::ControlGroupItemLike as RadioGroupItemLike;
 
-pub use control::{RadioGroup, RadioGroupBuilder, RadioGroupEvent, RadioGroupTemplate, RadioItemState, SelectionMode, new};
-use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-
-struct SelectionStateTemplate<T> {
-    base: Arc<dyn ButtonTemplate<bool>>,
-    _marker: PhantomData<T>,
+// 2. The Semantic Constructor
+// We return a ControlGroupBuilder pre-configured for radio behavior.
+pub fn new<T>(id: impl Into<SharedString>) -> RadioGroupBuilder<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    control_group::new(id)
+        // A Radio Group inherently requires exactly one item to be selected
+        .single_required()
+        .template(radio_group_container_template())
 }
 
-impl<T> ButtonTemplate<RadioItemState<T>> for SelectionStateTemplate<T>
+// Example of how you might wrap a horizontal variant if you wanted
+pub fn horizontal<T>(id: impl Into<SharedString>) -> RadioGroupBuilder<T>
 where
-    T: Clone + Send + Sync + 'static,
+    T: ControlGroupItemLike + 'static,
 {
-    fn render(&self, model: &ButtonRenderModel<RadioItemState<T>>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let value = model.data.value.clone();
-        let content = model.content.clone();
-        let bool_model = ButtonRenderModel {
-            id: model.id.clone(),
-            data: model.data.is_selected,
-            content: Arc::new(move |bool_model, cx| {
-                let rich_model = ButtonRenderModel {
-                    id: bool_model.id.clone(),
-                    data: RadioItemState { is_selected: bool_model.data, value: value.clone() },
-                    content: content.clone(),
-                    kind: bool_model.kind,
-                    role: bool_model.role,
-                    size: bool_model.size,
-                    state: bool_model.state,
-                    round: bool_model.round,
-                    radius_override: Cell::new(bool_model.radius_override.get()),
-                };
-                content(&rich_model, cx)
-            }),
-            kind: model.kind,
-            role: model.role,
-            size: model.size,
-            state: model.state,
-            round: model.round,
-            radius_override: Cell::new(model.radius_override.get()),
-        };
-
-        self.base.render(&bool_model, window, cx)
-    }
+    new(id).template(horizontal_group_container_template())
 }
 
-pub fn selection_state_template<T>(base: Arc<dyn ButtonTemplate<bool>>) -> Arc<dyn ButtonTemplate<RadioItemState<T>>>
+pub fn radio_group_container_template<T>() -> RadioGroupTemplate<T>
 where
-    T: Clone + Send + Sync + 'static,
+    T: ControlGroupItemLike + 'static,
 {
-    Arc::new(SelectionStateTemplate { base, _marker: PhantomData })
+    control_group::vertical_group_template()
 }
 
-pub fn vertical_group_template<T>() -> RadioGroupTemplate<T>
+pub fn horizontal_group_container_template<T>() -> RadioGroupTemplate<T>
 where
-    T: Clone + Eq + 'static,
+    T: ControlGroupItemLike + 'static,
 {
-    Arc::new(|group, _window, _cx| {
-        div().flex().flex_col().gap_2().children(group.buttons().iter().cloned()).into_any_element()
-    })
+    control_group::horizontal_group_template()
 }
 
-pub fn horizontal_group_template<T>() -> RadioGroupTemplate<T>
+pub fn default_radio_group_container_template<T>() -> RadioGroupTemplate<T>
 where
-    T: Clone + Eq + 'static,
+    T: ControlGroupItemLike + 'static,
 {
-    Arc::new(|group, _window, _cx| {
-        div().flex().items_center().gap_3().children(group.buttons().iter().cloned()).into_any_element()
-    })
+    radio_group_container_template()
+}
+
+pub fn default_horizontal_group_container_template<T>() -> RadioGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    horizontal_group_container_template()
 }

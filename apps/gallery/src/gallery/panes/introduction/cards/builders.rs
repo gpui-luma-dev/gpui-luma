@@ -7,15 +7,16 @@ use gpui_luma::controls::choice_group::{self, ChoiceGroupItem};
 use gpui_luma::controls::combobox::{self, SelectionItem, TypingPolicy};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonKind};
-use gpui_luma::controls::control_group::{
-    self, ControlGroupItem, ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplateHandlers,
-};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuPlacement};
 use gpui_luma::controls::progress;
 use gpui_luma::controls::radio_button;
+use gpui_luma::controls::radio_group::{
+    self as radio_group, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel, RadioGroupTemplate,
+    RadioGroupTemplateHandlers,
+};
 use gpui_luma::controls::slider;
 use gpui_luma::controls::switch;
 use gpui_luma::controls::textfield;
@@ -84,9 +85,8 @@ pub(in crate::gallery) fn build_workspace_panel(
                 div().font_family("lucide").child(char::from(icon).to_string()).into_any_element()
             })
             .spawn(cx),
-        workspace_density_control_group: control_group::new("intro-workspace-density")
+        workspace_density_radio_group: radio_group::horizontal("intro-workspace-density")
             .items(workspace_density_items())
-            .selection_mode(control_group::ControlSelectionMode::SingleRequired)
             .selected("balanced")
             .template(workspace_density_template(theme.radio_button_template()))
             .spawn(cx),
@@ -158,11 +158,11 @@ fn workspace_layout_items() -> [ChoiceGroupItem; 4] {
     ]
 }
 
-fn workspace_density_items() -> [ControlGroupItem; 3] {
+fn workspace_density_items() -> [RadioGroupItem; 3] {
     [
-        ControlGroupItem::new("compact").label("Compact"),
-        ControlGroupItem::new("balanced").label("Balanced"),
-        ControlGroupItem::new("comfortable").label("Comfortable"),
+        RadioGroupItem::new("compact").label("Compact"),
+        RadioGroupItem::new("balanced").label("Balanced"),
+        RadioGroupItem::new("comfortable").label("Comfortable"),
     ]
 }
 
@@ -187,22 +187,20 @@ fn workspace_menu_items() -> [MenuItem; 5] {
     ]
 }
 
-fn workspace_density_template(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> control_group::ControlGroupTemplate<ControlGroupItem> {
+fn workspace_density_template(button_template: Arc<dyn ButtonTemplate<bool>>) -> RadioGroupTemplate<RadioGroupItem> {
     Arc::new(move |model, handlers, window, cx| {
         render_workspace_density_group(model, handlers, &button_template, window, cx)
     })
 }
 
 fn render_workspace_density_group(
-    model: &ControlGroupRenderModel<'_, ControlGroupItem>,
-    handlers: ControlGroupTemplateHandlers,
+    model: &RadioGroupRenderModel<'_, RadioGroupItem>,
+    handlers: RadioGroupTemplateHandlers,
     button_template: &Arc<dyn ButtonTemplate<bool>>,
     window: &mut Window,
     cx: &mut gpui::App,
 ) -> gpui::Stateful<gpui::Div> {
-    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
+    let RadioGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
         handlers;
 
     let mut item_hovers = item_hovers.into_iter();
@@ -231,10 +229,10 @@ fn render_workspace_density_group(
         };
 
         let render_model = ButtonRenderModel {
-            id: format!("{}-{}", model.id, ControlGroupItemLike::id(item.item)).into(),
+            id: format!("{}-{}", model.id, RadioGroupItemLike::id(item.item)).into(),
             data: item.selected,
             content: Arc::new({
-                let label = ControlGroupItemLike::label(item.item).clone();
+                let label = RadioGroupItemLike::label(item.item).clone();
                 move |_, _| div().child(label.clone()).into_any_element()
             }),
             kind: ButtonKind::Standard,

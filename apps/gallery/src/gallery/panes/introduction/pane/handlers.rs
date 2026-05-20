@@ -2,8 +2,8 @@ use gpui::{Context, SharedString, Subscription};
 use gpui_luma::controls::choice_group::ChoiceGroupEvent;
 use gpui_luma::controls::combobox::ComboBoxEvent;
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::popup_menu::PopupMenuEvent;
+use gpui_luma::controls::radio_group::RadioGroupEvent;
 use gpui_luma::controls::slider::SliderEvent;
 use gpui_luma::controls::textfield::TextFieldEvent;
 
@@ -61,8 +61,8 @@ impl IntroductionPane {
             },
         ));
         subscriptions.push(cx.subscribe(
-            &self.workspace.workspace_density_control_group,
-            |app, _, event: &ControlGroupEvent, cx| {
+            &self.workspace.workspace_density_radio_group,
+            |app, _, event: &RadioGroupEvent, cx| {
                 app.panes.introduction.handle_workspace_density_event(event, cx);
             },
         ));
@@ -106,7 +106,7 @@ impl IntroductionPane {
         notify_entity(&self.workspace.workspace_popup_menu, cx);
         notify_entity(&self.workspace.workspace_layout_choice_group, cx);
         notify_entity(&self.workspace.workspace_icon_demo_choice_group, cx);
-        notify_entity(&self.workspace.workspace_density_control_group, cx);
+        notify_entity(&self.workspace.workspace_density_radio_group, cx);
     }
 
     fn notify_system_panel(&self, cx: &mut Context<GalleryApp>) {
@@ -186,9 +186,9 @@ impl IntroductionPane {
         cx.notify();
     }
 
-    fn handle_workspace_density_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_workspace_density_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ControlGroupEvent::Change { selected_ids, .. } => {
+            RadioGroupEvent::Change { selected_ids, .. } => {
                 self.workspace_density = selected_ids.first().map_or_else(
                     || SharedString::from("None"),
                     |selected_id| {
@@ -196,7 +196,7 @@ impl IntroductionPane {
                             .map_or_else(|| selected_id.clone(), |density| SharedString::from(density.label()))
                     },
                 );
-                self.last_event = SharedString::from("ControlGroup::Density");
+                self.last_event = SharedString::from("RadioGroup::Density");
             }
         }
 

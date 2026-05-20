@@ -143,8 +143,8 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - owns selection semantics, active-item navigation, and managed/unmanaged selection state
   - exports generic item/template contracts for future semantic wrappers
 - `radio_group/*`
-  - generic single-select radio composition control with group-level keyboard/focus behavior
-  - exports builder/template helpers plus `RadioGroupEvent<T>` and typed `RadioItemState<T>`
+  - semantic wrapper over `control_group` for radio-style single selection
+  - exposes radio-oriented constructor names/types while delegating behavior to `control_group`
 
 ## Text controls
 

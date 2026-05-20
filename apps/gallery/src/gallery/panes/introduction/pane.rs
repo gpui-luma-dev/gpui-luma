@@ -4,11 +4,11 @@ use gpui::{AnyElement, Context, Entity, FontWeight, SharedString, div, prelude::
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::choice_group::ChoiceGroup;
 use gpui_luma::controls::combobox::ComboBox;
-use gpui_luma::controls::control_group::{ControlGroup, ControlGroupItem};
 use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::radio_button;
+use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use gpui_luma::controls::slider::Slider;
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::controls::textfield::TextField;
@@ -43,7 +43,7 @@ pub(super) struct WorkspacePanel {
     pub(super) workspace_popup_menu: Entity<PopupMenu>,
     pub(super) workspace_layout_choice_group: ChoiceGroup,
     pub(super) workspace_icon_demo_choice_group: ChoiceGroup,
-    pub(super) workspace_density_control_group: ControlGroup<ControlGroupItem>,
+    pub(super) workspace_density_radio_group: RadioGroup<RadioGroupItem>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
