@@ -1,23 +1,12 @@
-mod handlers;
-
-use gpui::{AnyElement, Context, Entity, FontWeight, SharedString, div, prelude::*, px};
-use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::choice_group::ChoiceGroup;
-use gpui_luma::controls::combobox::ComboBox;
-use gpui_luma::controls::command::button::Button;
-use gpui_luma::controls::popup_menu::PopupMenu;
-use gpui_luma::controls::progress::Progress;
-use gpui_luma::controls::radio_button;
-use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
-use gpui_luma::controls::slider::Slider;
-use gpui_luma::controls::switch::Switch;
-use gpui_luma::controls::textfield::TextField;
+use gpui::{AnyElement, Context, Entity, EventEmitter, FontWeight, SharedString, Subscription, div, prelude::*, px};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::gallery_pane_with_description;
-use super::cards::{build_payment_panel, build_system_panel, build_workspace_panel, render_cards_row};
+use super::super::shared::{gallery_pane_with_description, notify_entity};
+use super::payment_panel::PaymentPanel;
+use super::system_panel::SystemPanel;
+use super::workspace_panel::WorkspacePanel;
 
 const INTRO_DESCRIPTION: &str = concat!(
     "A control-dense landing page built with real interactive gpui-luma controls. ",
@@ -28,65 +17,11 @@ const INTRO_HEADING: &str = "Foundation Controls for GPUI";
 const INTRO_SUBHEADING: &str = "A real, interactive introduction screen that combines command, input, choice, and feedback controls in one composition.";
 
 #[derive(Clone)]
-pub(super) struct PaymentPanel {
-    pub(super) submit_button: Entity<Button>,
-    pub(super) cancel_button: Entity<Button>,
-    pub(super) name_field: TextField,
-    pub(super) email_field: TextField,
-    pub(super) payment_combobox: ComboBox,
-    pub(super) same_as_shipping_checkbox: Checkbox,
-    pub(super) payment_method_radio: radio_button::RadioButton,
-}
-
-#[derive(Clone)]
-pub(super) struct WorkspacePanel {
-    pub(super) workspace_popup_menu: Entity<PopupMenu>,
-    pub(super) workspace_layout_choice_group: ChoiceGroup,
-    pub(super) workspace_icon_demo_choice_group: ChoiceGroup,
-    pub(super) workspace_density_radio_group: RadioGroup<RadioGroupItem>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorkspaceDensity {
-    Compact,
-    Balanced,
-    Comfortable,
-}
-
-impl WorkspaceDensity {
-    pub(super) fn label(&self) -> &'static str {
-        match self {
-            Self::Compact => "Compact",
-            Self::Balanced => "Balanced",
-            Self::Comfortable => "Comfortable",
-        }
-    }
-
-    pub(super) fn from_id(id: &str) -> Option<Self> {
-        match id {
-            "compact" => Some(Self::Compact),
-            "balanced" => Some(Self::Balanced),
-            "comfortable" => Some(Self::Comfortable),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub(super) struct SystemPanel {
-    pub(super) terms_checkbox: Checkbox,
-    pub(super) social_checkbox: Checkbox,
-    pub(super) referral_checkbox: Checkbox,
-    pub(super) two_factor_switch: Switch,
-    pub(super) budget_slider: Slider,
-    pub(super) completion_progress: Progress,
-}
-
-#[derive(Clone)]
 pub(in crate::gallery) struct IntroductionPane {
-    pub(super) payment: PaymentPanel,
-    pub(super) workspace: WorkspacePanel,
-    pub(super) system: SystemPanel,
+    event_bus: Entity<EventBus>,
+    payment_panel: Entity<PaymentPanel>,
+    workspace_panel: Entity<WorkspacePanel>,
+    system_panel: Entity<SystemPanel>,
 
     name_value: SharedString,
     email_value: SharedString,
@@ -110,52 +45,119 @@ pub(in crate::gallery) struct IntroductionPane {
     last_event: SharedString,
 }
 
-#[derive(Clone, Copy)]
-enum IntroButton {
-    Submit,
-    Cancel,
+#[derive(Clone, Debug)]
+pub(super) enum AppEvent {
+    PaymentSubmit,
+    PaymentCancel,
+    PaymentChanged {
+        name: SharedString,
+        email: SharedString,
+        payment_selection_set: bool,
+        same_as_shipping: bool,
+        event_name: SharedString,
+    },
+    WorkspaceChanged {
+        layout: SharedString,
+        density: SharedString,
+        icon_demo: SharedString,
+        action: SharedString,
+        event_name: SharedString,
+    },
+    SystemChanged {
+        budget: f32,
+        accepted_terms: bool,
+        social_source: bool,
+        referral_source: bool,
+        two_factor_enabled: bool,
+        event_name: SharedString,
+    },
 }
 
-#[derive(Clone, Copy)]
-enum IntroField {
-    Name,
-    Email,
+pub(super) struct EventBus;
+
+impl EventEmitter<AppEvent> for EventBus {}
+
+struct CompletionInputs<'a> {
+    name_value: &'a SharedString,
+    email_value: &'a SharedString,
+    payment_selection_set: bool,
+    accepted_terms: bool,
+    social_source: bool,
+    referral_source: bool,
+    two_factor_enabled: bool,
+    workspace_density: &'a SharedString,
+    budget: f32,
 }
 
 impl IntroductionPane {
     // ===== Construction =====
 
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let payment = build_payment_panel(cx, theme);
-        let workspace = build_workspace_panel(cx, theme);
-        let system = build_system_panel(cx, theme);
+        let event_bus = cx.new(|_| EventBus);
+        let payment_panel = cx.new(|cx| PaymentPanel::new(cx, theme, event_bus.clone()));
+        let workspace_panel = cx.new(|cx| WorkspacePanel::new(cx, theme, event_bus.clone()));
+
+        let name_value = SharedString::default();
+        let email_value = SharedString::default();
+        let payment_selection_set = false;
+        let same_as_shipping = true;
+        let accepted_terms = false;
+        let social_source = true;
+        let referral_source = false;
+        let two_factor_enabled = false;
+        let workspace_layout = SharedString::from("Grid");
+        let workspace_density = SharedString::from("Balanced");
+        let workspace_icon_demo = SharedString::from("Left");
+        let workspace_action = SharedString::from("None");
+        let budget = 40.0;
+        let completion = Self::compute_completion(&CompletionInputs {
+            name_value: &name_value,
+            email_value: &email_value,
+            payment_selection_set,
+            accepted_terms,
+            social_source,
+            referral_source,
+            two_factor_enabled,
+            workspace_density: &workspace_density,
+            budget,
+        });
+        let system_panel = cx.new(|cx| SystemPanel::new(cx, theme, event_bus.clone(), completion));
 
         Self {
-            payment,
-            workspace,
-            system,
-
-            name_value: SharedString::default(),
-            email_value: SharedString::default(),
-            payment_selection_set: false,
-
-            same_as_shipping: true,
-            accepted_terms: false,
-            social_source: true,
-            referral_source: false,
-            two_factor_enabled: false,
-
-            workspace_layout: SharedString::from("Grid"),
-            workspace_density: SharedString::from("Balanced"),
-            workspace_icon_demo: SharedString::from("Left"),
-            workspace_action: SharedString::from("None"),
-
-            budget: 40.0,
-            completion: 30.0,
+            event_bus,
+            payment_panel,
+            workspace_panel,
+            system_panel,
+            name_value,
+            email_value,
+            payment_selection_set,
+            same_as_shipping,
+            accepted_terms,
+            social_source,
+            referral_source,
+            two_factor_enabled,
+            workspace_layout,
+            workspace_density,
+            workspace_icon_demo,
+            workspace_action,
+            budget,
+            completion,
             clicks_submit: 0,
             clicks_cancel: 0,
             last_event: SharedString::from("Ready"),
         }
+    }
+
+    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        subscriptions.push(cx.subscribe(&self.event_bus, |app, _, event: &AppEvent, cx| {
+            app.panes.introduction.handle_app_event(event, cx);
+        }));
+    }
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.payment_panel, cx);
+        notify_entity(&self.workspace_panel, cx);
+        notify_entity(&self.system_panel, cx);
     }
 
     // ===== Render =====
@@ -215,8 +217,19 @@ impl IntroductionPane {
             .into_any_element()
     }
 
-    fn render_panel_row(&self, theme: &GalleryThemePack) -> AnyElement {
-        render_cards_row(self, theme)
+    fn render_panel_row(&self, _theme: &GalleryThemePack) -> AnyElement {
+        div()
+            .w_full()
+            .mt(px(32.0))
+            .flex()
+            .flex_wrap()
+            .justify_center()
+            .items_stretch()
+            .gap(px(16.0))
+            .child(self.payment_panel.clone())
+            .child(self.workspace_panel.clone())
+            .child(self.system_panel.clone())
+            .into_any_element()
     }
 
     fn render_status_line(&self, muted_text: gpui::Hsla) -> AnyElement {
@@ -230,5 +243,122 @@ impl IntroductionPane {
                 self.clicks_submit, self.clicks_cancel, self.last_event
             ))
             .into_any_element()
+    }
+
+    fn handle_app_event(&mut self, event: &AppEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            AppEvent::PaymentSubmit => {
+                self.clicks_submit += 1;
+                self.last_event = SharedString::from("Button::Submit");
+            }
+            AppEvent::PaymentCancel => {
+                self.clicks_cancel += 1;
+                self.last_event = SharedString::from("Button::Cancel");
+            }
+            AppEvent::PaymentChanged { name, email, payment_selection_set, same_as_shipping, event_name } => {
+                self.name_value = name.clone();
+                self.email_value = email.clone();
+                self.payment_selection_set = *payment_selection_set;
+                self.same_as_shipping = *same_as_shipping;
+                self.last_event = event_name.clone();
+                self.recompute_completion(cx);
+            }
+            AppEvent::WorkspaceChanged { layout, density, icon_demo, action, event_name } => {
+                self.workspace_layout = layout.clone();
+                self.workspace_density = density.clone();
+                self.workspace_icon_demo = icon_demo.clone();
+                self.workspace_action = action.clone();
+                self.last_event = event_name.clone();
+                self.recompute_completion(cx);
+            }
+            AppEvent::SystemChanged {
+                budget,
+                accepted_terms,
+                social_source,
+                referral_source,
+                two_factor_enabled,
+                event_name,
+            } => {
+                self.budget = *budget;
+                self.accepted_terms = *accepted_terms;
+                self.social_source = *social_source;
+                self.referral_source = *referral_source;
+                self.two_factor_enabled = *two_factor_enabled;
+                self.last_event = event_name.clone();
+                self.recompute_completion(cx);
+            }
+        }
+
+        cx.notify();
+    }
+
+    fn recompute_completion(&mut self, cx: &mut Context<GalleryApp>) {
+        self.completion = Self::compute_completion(&self.completion_inputs());
+
+        let completion = self.completion;
+        self.system_panel.update(cx, |panel, cx| panel.set_completion(completion, cx));
+    }
+
+    fn completion_inputs(&self) -> CompletionInputs<'_> {
+        CompletionInputs {
+            name_value: &self.name_value,
+            email_value: &self.email_value,
+            payment_selection_set: self.payment_selection_set,
+            accepted_terms: self.accepted_terms,
+            social_source: self.social_source,
+            referral_source: self.referral_source,
+            two_factor_enabled: self.two_factor_enabled,
+            workspace_density: &self.workspace_density,
+            budget: self.budget,
+        }
+    }
+
+    fn compute_completion(inputs: &CompletionInputs<'_>) -> f32 {
+        let mut score = 0.0f32;
+        let mut max_score = 0.0f32;
+
+        max_score += 1.0;
+        if !inputs.name_value.is_empty() {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if !inputs.email_value.is_empty() {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if inputs.payment_selection_set {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if inputs.accepted_terms {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if inputs.two_factor_enabled {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if inputs.social_source || inputs.referral_source {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        if !inputs.workspace_density.is_empty() && inputs.workspace_density.as_ref() != "None" {
+            score += 1.0;
+        }
+
+        max_score += 1.0;
+        score += inputs.budget / 100.0;
+
+        if max_score > 0.0 {
+            (score / max_score) * 100.0
+        } else {
+            0.0
+        }
     }
 }
