@@ -13,9 +13,9 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
 use super::{
-    autocomplete, button, checkbox, choice_controls_template, choice_group, combobox, context_menu, floating_menu,
-    icon_button, introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
-    radio_group, scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
+    autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu, icon_button,
+    introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, radio_group,
+    scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
     shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
@@ -49,7 +49,6 @@ enum GalleryPageKind {
     Checkbox,
     RadioButton,
     RadioGroup,
-    ChoiceGroup,
     ChoiceTemplates,
     ListBox,
     Slider,
@@ -122,8 +121,6 @@ const CHECKBOX_PAGE: GalleryPage =
     GalleryPage { id: "checkbox", label: "Checkbox", icon: None, kind: GalleryPageKind::Checkbox };
 const RADIO_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "radio-button", label: "Radio Button", icon: None, kind: GalleryPageKind::RadioButton };
-const CHOICE_GROUP_PAGE: GalleryPage =
-    GalleryPage { id: "choice-group", label: "Choice Group", icon: None, kind: GalleryPageKind::ChoiceGroup };
 const RADIO_GROUP_PAGE: GalleryPage =
     GalleryPage { id: "radio-group", label: "Radio Group", icon: None, kind: GalleryPageKind::RadioGroup };
 const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
@@ -201,7 +198,6 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     SWITCH_PAGE,
     CHECKBOX_PAGE,
     RADIO_BUTTON_PAGE,
-    CHOICE_GROUP_PAGE,
     RADIO_GROUP_PAGE,
     CHOICE_TEMPLATES_PAGE,
     LISTBOX_PAGE,
@@ -293,7 +289,6 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) checkbox: checkbox::CheckboxPane,
     pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) radio_group: radio_group::RadioGroupPane,
-    pub(super) choice_group: choice_group::ChoiceGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
     pub(super) listbox: listbox::ListBoxPane,
     pub(super) slider: slider::SliderPane,
@@ -370,7 +365,6 @@ impl GalleryPanes {
             checkbox: checkbox::CheckboxPane::new(cx, theme),
             radio_button: radio_button::RadioButtonPane::new(cx, theme),
             radio_group: radio_group::RadioGroupPane::new(cx, theme),
-            choice_group: choice_group::ChoiceGroupPane::new(cx, theme),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, theme),
             listbox: listbox::ListBoxPane::new(cx, theme),
             slider: slider::SliderPane::new(cx, theme),
@@ -403,7 +397,6 @@ impl GalleryPanes {
         self.checkbox.subscribe(cx, subscriptions);
         self.radio_button.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
-        self.choice_group.subscribe(cx, subscriptions);
         self.listbox.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
@@ -435,7 +428,6 @@ impl GalleryPanes {
         self.checkbox.notify_controls(cx);
         self.radio_button.notify_controls(cx);
         self.radio_group.notify_controls(cx);
-        self.choice_group.notify_controls(cx);
         self.choice_templates.notify_controls(cx);
         self.listbox.notify_controls(cx);
         self.slider.notify_controls(cx);
@@ -477,7 +469,6 @@ impl GalleryPanes {
             GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
             GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
-            GalleryPageKind::ChoiceGroup => self.choice_group.render(&self.theme),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.theme),
             GalleryPageKind::ListBox => self.listbox.render(&self.theme),
             GalleryPageKind::Slider => self.slider.render(&self.theme),

@@ -69,10 +69,11 @@ This pattern improves consistency and makes style/theming separable from behavio
   - stores theme + active mode
   - provides pre-wired template/theme implementations for controls
   - supports live mode toggling (light/dark)
-- `control_group` is intentionally theme-agnostic:
-  - no `theme.rs`
-  - exposes container + item template hooks for semantic wrappers to style explicitly
+- `control_group` provides optional themed list chrome via `ControlGroupTheme` + `ThemedControlGroupTemplate` (`ControlTemplate` + modifiers from `controls/template.rs`):
+  - group border/background/radius/padding from `border.default` and `surface.subtle.background`
+  - item visuals still come from `ControlGroupItemTemplate` (e.g. `button_item_template` + `ButtonTemplate`)
   - owns selection semantics (`SingleRequired`, `SingleAllowNone`, `Multiple`) and managed/unmanaged selection state
+- `button_group` is a semantic wrapper presetting horizontal icon-toolbar layout + rounded group modifier
 
 ## Error-Handling Architecture
 

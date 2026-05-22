@@ -35,7 +35,7 @@ pub fn horizontal<T>(id: impl Into<SharedString>) -> RadioGroupBuilder<T>
 where
     T: ControlGroupItemLike + 'static,
 {
-    new(id).template(horizontal_group_container_template())
+    new(id).horizontal()
 }
 
 pub fn radio_group_container_template<T>() -> RadioGroupTemplate<T>

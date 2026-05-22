@@ -12,7 +12,12 @@ use gpui_luma::controls::radio_group::{
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+
+const RADIO_GROUP_DESCRIPTION: &str = concat!(
+    "Radio groups use single-selection semantics with custom item templates. ",
+    "Examples below show vertical, horizontal, and card-style layouts."
+);
 
 const DENSITY_OPTION_COUNT: usize = 3;
 const PANE_EXAMPLE_GAP: f32 = 24.0;
@@ -113,25 +118,33 @@ impl RadioGroupPane {
     pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
         let chrome = theme.chrome();
 
-        gallery_pane(
+        gallery_pane_with_usage_description(
             "Radio Group",
+            Some(RADIO_GROUP_DESCRIPTION),
+            "Radio Button",
             div()
                 .flex()
                 .flex_col()
                 .items_start()
                 .gap(px(PANE_EXAMPLE_GAP))
-                .child(render_example(
-                    "Vertical default",
-                    self.vertical_group.clone(),
-                    &self.vertical_choice,
-                    chrome.body_text,
-                ))
-                .child(render_example(
-                    "Horizontal default",
-                    self.horizontal_group.clone(),
-                    &self.horizontal_choice,
-                    chrome.body_text,
-                ))
+                .child(
+                    div()
+                        .flex()
+                        .items_start()
+                        .gap(px(PANE_EXAMPLE_GAP))
+                        .child(render_example(
+                            "Vertical default",
+                            self.vertical_group.clone(),
+                            &self.vertical_choice,
+                            chrome.body_text,
+                        ))
+                        .child(render_example(
+                            "Horizontal default",
+                            self.horizontal_group.clone(),
+                            &self.horizontal_choice,
+                            chrome.body_text,
+                        )),
+                )
                 .child(render_example_with_padding(
                     "Horizontal custom indent",
                     self.indented_group.clone(),
@@ -569,6 +582,8 @@ where
     div()
         .flex()
         .flex_col()
+        .flex_none()
+        .items_start()
         .gap(px(EXAMPLE_CONTENT_GAP))
         .rounded(px(EXAMPLE_BORDER_RADIUS))
         .border(px(EXAMPLE_BORDER_WIDTH))

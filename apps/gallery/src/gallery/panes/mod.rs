@@ -3,7 +3,6 @@ mod button;
 mod combobox;
 mod checkbox;
 mod choice_controls_template;
-mod choice_group;
 mod context_menu;
 mod floating_menu;
 mod icon_button;

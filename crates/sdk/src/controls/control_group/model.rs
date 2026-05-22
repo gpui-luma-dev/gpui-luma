@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Entity, IntoElement, SharedString};
+use gpui::{App, AppContext, Div, Entity, IntoElement, SharedString, Stateful, Window};
 
 use super::control::ControlGroupControl;
 use super::template::{
     ControlGroupItemTemplate, ControlGroupTemplate, default_control_group_template, make_control_group_item_template,
+    template_with_modifier,
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 
@@ -67,6 +68,29 @@ pub enum ControlSelectionMode {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ControlGroupLayout {
+    #[default]
+    Vertical,
+    Horizontal,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ControlGroupChromeModel {
+    pub enabled: bool,
+    pub layout: ControlGroupLayout,
+    pub item_count: usize,
+}
+
+impl<'a, T> From<&ControlGroupRenderModel<'a, T>> for ControlGroupChromeModel
+where
+    T: ControlGroupItemLike + 'static,
+{
+    fn from(model: &ControlGroupRenderModel<'a, T>) -> Self {
+        Self { enabled: model.enabled, layout: model.layout, item_count: model.items.len() }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ControlGroupStateMode {
     #[default]
     Unmanaged,
@@ -86,6 +110,7 @@ where
     pub(crate) selection_mode: ControlSelectionMode,
     pub(crate) state_mode: ControlGroupStateMode,
     pub(crate) enabled: bool,
+    pub(crate) layout: ControlGroupLayout,
     pub(crate) template: ControlGroupTemplate<T>,
     pub(crate) item_template: Option<ControlGroupItemTemplate<T>>,
 }
@@ -143,6 +168,7 @@ where
     pub selection_mode: ControlSelectionMode,
     pub state_mode: ControlGroupStateMode,
     pub enabled: bool,
+    pub layout: ControlGroupLayout,
     pub focus: ControlFocusState,
     pub item_template: Option<&'a ControlGroupItemTemplate<T>>,
 }
@@ -169,10 +195,24 @@ where
                 selection_mode: ControlSelectionMode::SingleAllowNone,
                 state_mode: ControlGroupStateMode::Unmanaged,
                 enabled: true,
+                layout: ControlGroupLayout::default(),
                 template: default_control_group_template(),
                 item_template: None,
             },
         }
+    }
+
+    pub fn layout(mut self, layout: ControlGroupLayout) -> Self {
+        self.model.layout = layout;
+        self
+    }
+
+    pub fn horizontal(self) -> Self {
+        self.layout(ControlGroupLayout::Horizontal)
+    }
+
+    pub fn vertical(self) -> Self {
+        self.layout(ControlGroupLayout::Vertical)
     }
 
     pub fn item(mut self, item: T) -> Self {
@@ -264,7 +304,7 @@ where
 
     pub fn with_item_template<F, E>(self, template: F) -> Self
     where
-        F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
     {
         self.item_template(make_control_group_item_template(template))
@@ -277,6 +317,14 @@ where
 
     pub fn template(mut self, template: ControlGroupTemplate<T>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.model.template = template_with_modifier(self.model.template.clone(), modifier);
         self
     }
 

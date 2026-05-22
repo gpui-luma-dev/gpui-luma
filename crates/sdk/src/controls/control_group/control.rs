@@ -187,6 +187,7 @@ where
             selection_mode: self.model.selection_mode,
             state_mode: self.model.state_mode,
             enabled: self.model.enabled,
+            layout: self.model.layout,
             focus,
             item_template: self.model.item_template.as_ref(),
         }
@@ -597,7 +598,7 @@ mod tests {
         compute_next_selected_ids, enabled_item_index_by_id, next_enabled_index, normalize_active_id,
         normalize_selected_ids,
     };
-    use crate::controls::control_group::{ControlGroupItem, default_control_group_template};
+    use crate::controls::control_group::{ControlGroupItem, ControlGroupLayout, default_control_group_template};
 
     #[test]
     fn normalize_single_required_falls_back_to_first_enabled_item() {
@@ -726,6 +727,7 @@ mod tests {
             selection_mode,
             state_mode,
             enabled: true,
+            layout: ControlGroupLayout::default(),
             template: default_control_group_template(),
             item_template: None,
         }

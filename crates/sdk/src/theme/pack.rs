@@ -28,6 +28,10 @@ use crate::controls::{
 use crate::controls::button_family::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
 };
+use crate::controls::control_group::{
+    ControlGroupItemLike, ControlGroupListAppearance, ControlGroupTemplate, ControlGroupTheme,
+    DefaultControlGroupTheme, control_group_template_with_theme,
+};
 use crate::controls::checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme};
 use crate::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme};
 use crate::controls::floating_menu::DefaultFloatingMenuTheme;
@@ -132,6 +136,17 @@ impl LumaThemePack {
 
     pub fn button_family_theme(&self) -> Arc<dyn ButtonFamilyTheme> {
         self.live_theme.clone()
+    }
+
+    pub fn control_group_theme(&self) -> Arc<dyn ControlGroupTheme> {
+        self.live_theme.clone()
+    }
+
+    pub fn control_group_template<T>(&self) -> ControlGroupTemplate<T>
+    where
+        T: ControlGroupItemLike + 'static,
+    {
+        control_group_template_with_theme(self.control_group_theme())
     }
 
     pub fn button_template(&self) -> Arc<dyn ButtonTemplate<()>> {
@@ -280,6 +295,12 @@ impl ButtonFamilyTheme for LumaLiveTheme {
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
         DefaultButtonFamilyTheme::new(self.state.tokens()).resolve(variant, role, size, state)
+    }
+}
+
+impl ControlGroupTheme for LumaLiveTheme {
+    fn resolve_list(&self, enabled: bool) -> ControlGroupListAppearance {
+        DefaultControlGroupTheme::new(self.state.tokens()).resolve_list(enabled)
     }
 }
 

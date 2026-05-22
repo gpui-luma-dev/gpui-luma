@@ -1,11 +1,16 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div,
     prelude::*,
 };
 
-use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupRenderModel, ControlSelectionMode};
+use super::model::{
+    ControlGroupChromeModel, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupRenderModel,
+    ControlSelectionMode,
+};
+use super::theme::{ControlGroupTheme, default_control_group_theme};
+use super::themed_template::{ThemedControlGroupTemplate, themed_control_group_template};
 
 pub type ControlGroupClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ControlGroupHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -20,16 +25,17 @@ pub struct ControlGroupTemplateHandlers {
     pub item_clicks: Vec<ControlGroupClickHandler>,
 }
 
-pub type ControlGroupItemTemplate<T> =
-    Arc<dyn for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type ControlGroupItemTemplate<T> = Arc<
+    dyn for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+>;
 
 pub fn make_control_group_item_template<T, F, E>(template: F) -> ControlGroupItemTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
-    F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut App) -> E + Send + Sync + 'static,
+    F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
     E: IntoElement + 'static,
 {
-    Arc::new(move |model, cx| template(model, cx).into_any_element())
+    Arc::new(move |model, window, cx| template(model, window, cx).into_any_element())
 }
 
 pub type ControlGroupTemplate<T> = Arc<
@@ -48,24 +54,49 @@ pub fn default_control_group_template<T>() -> ControlGroupTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
 {
-    Arc::new(default_control_group_template_impl::<T>)
+    control_group_template_with_theme(default_control_group_theme())
 }
 
-fn default_control_group_template_impl<T>(
-    model: &ControlGroupRenderModel<'_, T>,
-    handlers: ControlGroupTemplateHandlers,
-    _window: &mut Window,
-    cx: &mut App,
-) -> Stateful<Div>
+pub fn control_group_template_with_theme<T>(theme: Arc<dyn ControlGroupTheme>) -> ControlGroupTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
 {
-    div()
-        .id(model.id.clone())
-        .flex()
-        .flex_col()
-        .items_start()
-        .children(render_control_group_items(model, handlers, cx))
+    wrap_themed_control_group_template(ThemedControlGroupTemplate::new(theme))
+}
+
+fn wrap_themed_control_group_template<T>(themed: ThemedControlGroupTemplate) -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let themed = Arc::new(themed);
+    Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
+}
+
+pub fn template_with_modifier<T, F>(template: ControlGroupTemplate<T>, modifier: F) -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+    F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
+{
+    let modifier = Arc::new(modifier);
+    Arc::new(move |model, handlers, window, cx| {
+        let chrome = ControlGroupChromeModel::from(model);
+        let root = template(model, handlers, window, cx);
+        modifier(root, &chrome)
+    })
+}
+
+fn default_themed_control_group_template() -> Arc<ThemedControlGroupTemplate> {
+    static TEMPLATE: OnceLock<Arc<ThemedControlGroupTemplate>> = OnceLock::new();
+
+    TEMPLATE.get_or_init(|| Arc::new(themed_control_group_template())).clone()
+}
+
+pub fn shared_control_group_template<T>() -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let themed = default_themed_control_group_template();
+    Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
 }
 
 fn default_item_content<T>(model: &ControlGroupItemRenderModel<'_, T>) -> AnyElement
@@ -103,6 +134,7 @@ where
 pub(crate) fn render_control_group_items<T>(
     model: &ControlGroupRenderModel<'_, T>,
     handlers: ControlGroupTemplateHandlers,
+    window: &mut Window,
     cx: &mut App,
 ) -> Vec<AnyElement>
 where
@@ -136,7 +168,7 @@ where
         };
 
         let content = if let Some(item_template) = model.item_template {
-            item_template(item, cx)
+            item_template(item, window, cx)
         } else {
             default_item_content(item)
         };

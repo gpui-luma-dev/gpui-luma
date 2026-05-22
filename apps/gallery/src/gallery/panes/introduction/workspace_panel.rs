@@ -2,15 +2,16 @@ use std::cell::Cell;
 use std::sync::Arc;
 
 use gpui::{
-    App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*, px,
+    App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*,
+    transparent_black, px,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::choice_group::{self, ChoiceGroup, ChoiceGroupEvent, ChoiceGroupItem};
+use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
+use gpui_luma::controls::control_group::button_item_template;
 use gpui_luma::controls::command::button::{ButtonKind, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
-use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{
     self as radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
     RadioGroupTemplate, RadioGroupTemplateHandlers,
@@ -52,8 +53,8 @@ pub(super) struct WorkspacePanel {
     theme: GalleryThemePack,
     event_bus: Entity<EventBus>,
     popup_menu: Entity<PopupMenu>,
-    layout_choice_group: ChoiceGroup,
-    icon_demo_choice_group: ChoiceGroup,
+    layout_icon_group: IconGroup<IconGroupItem>,
+    icon_demo_icon_group: IconGroup<IconGroupItem>,
     density_radio_group: RadioGroup<RadioGroupItem>,
     layout: SharedString,
     density: SharedString,
@@ -64,20 +65,28 @@ pub(super) struct WorkspacePanel {
 
 impl WorkspacePanel {
     pub(super) fn new(cx: &mut Context<Self>, theme: &GalleryThemePack, event_bus: Entity<EventBus>) -> Self {
-        let layout_choice_group = choice_group::toolbar_icons_multiple("intro-workspace-layout")
-            .managed_selected("grid")
-            .items(layout_items())
-            .content(|item, _| {
-                let icon = match item.item_id.as_ref() {
-                    "grid" => LucideIcon::PanelTop,
-                    "list" => LucideIcon::List,
-                    "kanban" => LucideIcon::Columns3,
-                    _ => LucideIcon::Settings,
-                };
+        let layout_icon_group =
+            button_group::icon_toolbar_multiple("intro-workspace-layout", theme.control_group_theme())
+                .with_template_modifier(|element, _| element.bg(transparent_black()))
+                .managed_selected("grid")
+                .items(layout_items())
+                .item_template(button_item_template(
+                    theme.toggle_template(),
+                    ButtonKind::Ghost,
+                    |selected| ButtonFamilyRole::Toggle { selected },
+                    true,
+                    |item: &IconGroupItem| {
+                        let icon = match item.id().as_ref() {
+                            "grid" => LucideIcon::PanelTop,
+                            "list" => LucideIcon::List,
+                            "kanban" => LucideIcon::Columns3,
+                            _ => LucideIcon::Settings,
+                        };
 
-                lucide_glyph(icon)
-            })
-            .spawn(cx);
+                        lucide_glyph(icon)
+                    },
+                ))
+                .spawn(cx);
         let density_radio_group = radio_group::horizontal("intro-workspace-density")
             .items(density_items())
             .selected("balanced")
@@ -88,29 +97,35 @@ impl WorkspacePanel {
             .items(menu_items())
             .placement(PopupMenuPlacement::BelowStart)
             .spawn(cx);
-        let icon_demo_choice_group = choice_group::toolbar_icons("intro-workspace-icon-demo")
+        let icon_demo_icon_group = button_group::horizontal("intro-workspace-icon-demo", theme.control_group_theme())
             .managed_selected("left")
             .items(icon_demo_items())
-            .content(|item, _| {
-                let icon = match item.item_id.as_ref() {
-                    "left" => LucideIcon::List,
-                    "center" => LucideIcon::PanelTop,
-                    "right" => LucideIcon::Columns3,
-                    _ => LucideIcon::Settings,
-                };
+            .item_template(button_item_template(
+                theme.toggle_template(),
+                ButtonKind::Ghost,
+                |selected| ButtonFamilyRole::Toggle { selected },
+                true,
+                |item: &IconGroupItem| {
+                    let icon = match item.id().as_ref() {
+                        "left" => LucideIcon::List,
+                        "center" => LucideIcon::PanelTop,
+                        "right" => LucideIcon::Columns3,
+                        _ => LucideIcon::Settings,
+                    };
 
-                lucide_glyph(icon)
-            })
+                    lucide_glyph(icon)
+                },
+            ))
             .spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&popup_menu, |this, _, event: &PopupMenuEvent, cx| {
                 this.handle_popup_menu_event(event, cx);
             }),
-            cx.subscribe(&layout_choice_group, |this, _, event: &ChoiceGroupEvent, cx| {
+            cx.subscribe(&layout_icon_group, |this, _, event: &IconGroupEvent, cx| {
                 this.handle_layout_event(event, cx);
             }),
-            cx.subscribe(&icon_demo_choice_group, |this, _, event: &ChoiceGroupEvent, cx| {
+            cx.subscribe(&icon_demo_icon_group, |this, _, event: &IconGroupEvent, cx| {
                 this.handle_icon_demo_event(event, cx);
             }),
             cx.subscribe(&density_radio_group, |this, _, event: &RadioGroupEvent, cx| {
@@ -122,8 +137,8 @@ impl WorkspacePanel {
             theme: theme.clone(),
             event_bus,
             popup_menu,
-            layout_choice_group,
-            icon_demo_choice_group,
+            layout_icon_group,
+            icon_demo_icon_group,
             density_radio_group,
             layout: SharedString::from("Grid"),
             density: SharedString::from("Balanced"),
@@ -143,41 +158,41 @@ impl WorkspacePanel {
         }
     }
 
-    fn handle_layout_event(&mut self, event: &ChoiceGroupEvent, cx: &mut Context<Self>) {
+    fn handle_layout_event(&mut self, event: &IconGroupEvent, cx: &mut Context<Self>) {
         match event {
-            ChoiceGroupEvent::Change { label, selected_ids, selected, .. } => {
+            IconGroupEvent::Change { changed_id, selected_ids, selected, .. } => {
                 self.layout = if *selected {
-                    label.clone()
+                    layout_label(changed_id.as_ref())
                 } else {
                     SharedString::from("None")
                 };
 
                 let next_selected_ids = selected_ids.clone();
-                self.layout_choice_group.update(cx, move |group, cx| {
-                    group.set_managed_selected_ids(next_selected_ids.clone(), cx);
+                self.layout_icon_group.update(cx, |group, cx| {
+                    group.set_managed_selected_ids(next_selected_ids, cx);
                 });
 
-                self.emit_change("ChoiceGroup::Layout", cx);
+                self.emit_change("IconGroup::Layout", cx);
                 cx.notify();
             }
         }
     }
 
-    fn handle_icon_demo_event(&mut self, event: &ChoiceGroupEvent, cx: &mut Context<Self>) {
+    fn handle_icon_demo_event(&mut self, event: &IconGroupEvent, cx: &mut Context<Self>) {
         match event {
-            ChoiceGroupEvent::Change { label, selected_ids, selected, .. } => {
+            IconGroupEvent::Change { changed_id, selected_ids, selected, .. } => {
                 self.icon_demo = if *selected {
-                    label.clone()
+                    icon_demo_label(changed_id.as_ref())
                 } else {
                     SharedString::from("None")
                 };
 
                 let next_selected_ids = selected_ids.clone();
-                self.icon_demo_choice_group.update(cx, move |group, cx| {
-                    group.set_managed_selected_ids(next_selected_ids.clone(), cx);
+                self.icon_demo_icon_group.update(cx, |group, cx| {
+                    group.set_managed_selected_ids(next_selected_ids, cx);
                 });
 
-                self.emit_change("ChoiceGroup::IconDemo", cx);
+                self.emit_change("IconGroup::IconDemo", cx);
                 cx.notify();
             }
         }
@@ -243,7 +258,7 @@ impl Render for WorkspacePanel {
                             .text_color(chrome.body_text)
                             .child(format!("Layout: {}", self.layout)),
                     )
-                    .child(self.layout_choice_group.clone()),
+                    .child(self.layout_icon_group.clone()),
             )
             .child(
                 div()
@@ -274,7 +289,7 @@ impl Render for WorkspacePanel {
                             .text_color(chrome.muted_text)
                             .child(format!("Icon demo: {}", self.icon_demo)),
                     )
-                    .child(self.icon_demo_choice_group.clone()),
+                    .child(self.icon_demo_icon_group.clone()),
             )
             .child(
                 div()
@@ -287,13 +302,23 @@ impl Render for WorkspacePanel {
     }
 }
 
-fn layout_items() -> [ChoiceGroupItem; 4] {
+fn layout_items() -> [IconGroupItem; 4] {
     [
-        ChoiceGroupItem::new("grid", "grid").label("Grid"),
-        ChoiceGroupItem::new("list", "list").label("List"),
-        ChoiceGroupItem::new("kanban", "kanban").label("Kanban"),
-        ChoiceGroupItem::new("another", "another").label("Another"),
+        IconGroupItem::new("grid").label("Grid"),
+        IconGroupItem::new("list").label("List"),
+        IconGroupItem::new("kanban").label("Kanban"),
+        IconGroupItem::new("another").label("Another"),
     ]
+}
+
+fn layout_label(id: &str) -> SharedString {
+    match id {
+        "grid" => SharedString::from("Grid"),
+        "list" => SharedString::from("List"),
+        "kanban" => SharedString::from("Kanban"),
+        "another" => SharedString::from("Another"),
+        _ => SharedString::from(id.to_owned()),
+    }
 }
 
 fn density_items() -> [RadioGroupItem; 3] {
@@ -304,12 +329,21 @@ fn density_items() -> [RadioGroupItem; 3] {
     ]
 }
 
-fn icon_demo_items() -> [ChoiceGroupItem; 3] {
+fn icon_demo_items() -> [IconGroupItem; 3] {
     [
-        ChoiceGroupItem::new("left", "left").label("Left"),
-        ChoiceGroupItem::new("center", "center").label("Center"),
-        ChoiceGroupItem::new("right", "right").label("Right"),
+        IconGroupItem::new("left").label("Left"),
+        IconGroupItem::new("center").label("Center"),
+        IconGroupItem::new("right").label("Right"),
     ]
+}
+
+fn icon_demo_label(id: &str) -> SharedString {
+    match id {
+        "left" => SharedString::from("Left"),
+        "center" => SharedString::from("Center"),
+        "right" => SharedString::from("Right"),
+        _ => SharedString::from(id.to_owned()),
+    }
 }
 
 fn menu_items() -> [MenuItem; 5] {

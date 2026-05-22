@@ -139,9 +139,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - multi-item composite choice control
   - key exports include builder/model/item types and `ChoiceGroupEvent`
 - `control_group/*`
-  - generic lookless composite selection engine
+  - generic composite selection engine with themed list chrome (`theme.rs`, `themed_template.rs`)
+  - `button_item_template` bridges items to `ButtonTemplate`
   - owns selection semantics, active-item navigation, and managed/unmanaged selection state
-  - exports generic item/template contracts for future semantic wrappers
+- `button_group/*`
+  - semantic wrapper over `control_group` for horizontal icon toolbars (`icon_toolbar`, `horizontal`)
 - `radio_group/*`
   - semantic wrapper over `control_group` for radio-style single selection
   - exposes radio-oriented constructor names/types while delegating behavior to `control_group`
