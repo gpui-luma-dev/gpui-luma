@@ -8,3 +8,6 @@ gallery-rel:
 
 loc:
     tokei --types Rust
+
+clippy:
+    cargo clippy --all-targets

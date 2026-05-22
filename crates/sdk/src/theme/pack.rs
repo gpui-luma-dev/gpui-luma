@@ -12,7 +12,7 @@ use crate::controls::{
     popup_menu::{PopupMenuTemplate, ThemedPopupMenuTemplate},
     selector::{SelectorTemplate, ThemedSelectorTemplate},
     progress::{ProgressTemplate, ThemedProgressTemplate},
-    listbox::{ListBoxTemplate, ThemedListBoxTemplate},
+    listbox::{ListBoxItem, listbox_template_with_theme},
     radio_button::ThemedRadioButtonTemplate,
     selection_panel::{
         SelectionPanelAppearanceProvider, SelectionPanelControl, SelectionPanelItem, default_selection_panel_appearance,
@@ -239,8 +239,8 @@ impl LumaThemePack {
         Arc::new(ThemedProgressTemplate::new(self.live_theme.clone()))
     }
 
-    pub fn listbox_template(&self) -> Arc<dyn ListBoxTemplate> {
-        Arc::new(ThemedListBoxTemplate::new(self.live_theme.clone()))
+    pub fn listbox_template(&self) -> crate::controls::control_group::ControlGroupTemplate<ListBoxItem> {
+        listbox_template_with_theme(self.live_theme.clone())
     }
 
     pub fn selection_panel_appearance_provider(&self) -> SelectionPanelAppearanceProvider {

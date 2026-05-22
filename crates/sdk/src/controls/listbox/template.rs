@@ -1,66 +1,48 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{
-    App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*,
-};
+use gpui::{App, Div, ElementId, MouseButton, Stateful, Window, div, px, prelude::*};
 
-use super::ListBoxRenderModel;
+use super::ListBoxItem;
+use crate::controls::control_group::{
+    ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
+};
 use crate::controls::listbox::{ListBoxRowAppearance, ListBoxTheme, default_listbox_theme};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
-
-pub type ListBoxClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type ListBoxHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type ListBoxMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type ListBoxMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-
-pub struct ListBoxTemplateHandlers {
-    pub item_hovers: Vec<ListBoxHoverHandler>,
-    pub item_mouse_downs: Vec<ListBoxMouseDownHandler>,
-    pub item_mouse_ups: Vec<ListBoxMouseUpHandler>,
-    pub item_mouse_up_outs: Vec<ListBoxMouseUpHandler>,
-    pub item_clicks: Vec<ListBoxClickHandler>,
-}
-
-pub trait ListBoxTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &ListBoxRenderModel<'_>,
-        handlers: ListBoxTemplateHandlers,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
-}
+use crate::theme::ControlSize;
 
 pub struct ThemedListBoxTemplate {
     theme: Arc<dyn ListBoxTheme>,
+    size: ControlSize,
 }
 
 impl ThemedListBoxTemplate {
     pub fn new(theme: Arc<dyn ListBoxTheme>) -> Self {
-        Self { theme }
+        Self { theme, size: ControlSize::Md }
     }
-}
 
-pub fn default_listbox_template() -> Arc<dyn ListBoxTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn ListBoxTemplate>> = OnceLock::new();
+    pub fn with_size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        self
+    }
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedListBoxTemplate::new(default_listbox_theme()))).clone()
-}
-
-impl ListBoxTemplate for ThemedListBoxTemplate {
     fn render(
         &self,
-        model: &ListBoxRenderModel<'_>,
-        handlers: ListBoxTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
+        model: &ControlGroupRenderModel<'_, ListBoxItem>,
+        handlers: ControlGroupTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
     ) -> Stateful<Div> {
-        let ListBoxTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
-            handlers;
+        let ControlGroupTemplateHandlers {
+            item_hovers,
+            item_mouse_downs,
+            item_mouse_ups,
+            item_mouse_up_outs,
+            item_clicks,
+        } = handlers;
 
-        let list_appearance = self.theme.resolve_list(model.enabled, model.focus.focused, model.size);
+        let list_appearance = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
         let focused_probe_list_appearance = if model.enabled {
-            Some(self.theme.resolve_list(model.enabled, true, model.size))
+            Some(self.theme.resolve_list(model.enabled, true, self.size))
         } else {
             None
         };
@@ -115,11 +97,11 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
                 break;
             };
 
-            let row_appearance = self.theme.resolve_row(item.selected, item.state.interaction_state(), model.size);
+            let row_appearance = self.theme.resolve_row(item.selected, item.state.interaction_state(), self.size);
             let focused_probe_row_appearance = if any_item_enabled && !item.state.disabled {
                 let mut focused_state = item.state.interaction_state();
                 focused_state.focused = true;
-                Some(self.theme.resolve_row(item.selected, focused_state, model.size))
+                Some(self.theme.resolve_row(item.selected, focused_state, self.size))
             } else {
                 None
             };
@@ -129,37 +111,26 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
                     .map(|probe| adorner_oversize_extent(probe.adorner))
                     .unwrap_or(0.0),
             );
-            let row = if model.item_button_template.is_some() {
-                let content =
-                    super::item_template::render_listbox_row_content(model, item.content_model.clone(), _window, _cx);
-                div()
-                    .id(ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.id).into()))
-                    .relative()
-                    .w_full()
-                    .min_h(px(row_appearance.height))
-                    .flex()
-                    .items_center()
-                    .px(px(row_appearance.padding_x))
-                    .py(px(row_appearance.padding_y))
-                    .rounded(px(row_appearance.radius))
-                    .bg(row_appearance.background)
-                    .text_color(row_appearance.label_color)
-                    .child(content)
+
+            let content = if let Some(item_template) = model.item_template {
+                item_template(item, window, cx)
             } else {
-                render_listbox_row_visual(
-                    ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.id).into()),
-                    item.state,
-                    (model.content)(&item.content_model, _cx),
-                    row_appearance,
-                )
-            }
+                div().child(ControlGroupItemLike::label(item.item).to_string()).into_any_element()
+            };
+
+            let row = render_listbox_row_visual(
+                ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.item.id()).into()),
+                item.state,
+                content,
+                row_appearance,
+            )
             .on_hover(item_hover)
             .on_mouse_down(MouseButton::Left, item_mouse_down)
             .on_mouse_up(MouseButton::Left, item_mouse_up)
             .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
             .on_click(item_click);
 
-            let row = if !item.state.disabled {
+            let row = if item.enabled {
                 row.cursor_pointer()
             } else {
                 row.opacity(0.56)
@@ -180,6 +151,26 @@ impl ListBoxTemplate for ThemedListBoxTemplate {
             root
         }
     }
+}
+
+pub fn default_listbox_template() -> ControlGroupTemplate<ListBoxItem> {
+    listbox_template_with_theme(default_listbox_theme())
+}
+
+pub fn listbox_template_with_theme(theme: Arc<dyn ListBoxTheme>) -> ControlGroupTemplate<ListBoxItem> {
+    let themed = Arc::new(ThemedListBoxTemplate::new(theme));
+    Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
+}
+
+fn default_themed_listbox_template() -> Arc<ThemedListBoxTemplate> {
+    static TEMPLATE: OnceLock<Arc<ThemedListBoxTemplate>> = OnceLock::new();
+
+    TEMPLATE.get_or_init(|| Arc::new(ThemedListBoxTemplate::new(default_listbox_theme()))).clone()
+}
+
+pub fn shared_listbox_template() -> ControlGroupTemplate<ListBoxItem> {
+    let themed = default_themed_listbox_template();
+    Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
 }
 
 fn render_listbox_row_visual(

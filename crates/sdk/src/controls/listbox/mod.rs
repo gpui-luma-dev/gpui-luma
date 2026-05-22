@@ -1,41 +1,40 @@
-mod control;
 mod item_template;
 mod model;
 mod template;
 mod theme;
 
-pub use control::{ListBoxControl, ListBoxEvent};
-pub use model::{
-    ListBoxBuilder, ListBoxContent, ListBoxItem, ListBoxItemButtonRenderModel, ListBoxItemButtonTemplate,
-    ListBoxItemContentModel, ListBoxModel, ListBoxRenderItem, ListBoxRenderModel, ListBoxSelectionMode,
-    ListBoxStateMode,
-};
-pub use item_template::default_listbox_item_button_template;
-pub use template::{
-    ListBoxClickHandler, ListBoxHoverHandler, ListBoxMouseDownHandler, ListBoxMouseUpHandler, ListBoxTemplate,
-    ListBoxTemplateHandlers, ThemedListBoxTemplate, default_listbox_template,
-};
+pub use model::ListBoxItem;
+pub use item_template::default_listbox_item_template;
+pub use template::{ThemedListBoxTemplate, default_listbox_template, listbox_template_with_theme, shared_listbox_template};
 pub use theme::{
     DefaultListBoxTheme, LISTBOX_THEME_USAGE, ListBoxListAppearance, ListBoxRowAppearance, ListBoxTheme,
     default_listbox_theme,
 };
 
-pub use crate::controls::button_family::ButtonKind as ListBoxKind;
-pub use crate::controls::state::{CompositeItemState as ListBoxItemState, ControlFocusState};
-pub use crate::theme::ControlSize as ListBoxSize;
+pub use crate::controls::control_group::{
+    ControlGroupBuilder, ControlGroupControl, ControlGroupEvent, ControlGroupItemState, ControlGroupStateMode,
+    ControlSelectionMode, ControlFocusState,
+};
 
 use gpui::{Entity, SharedString};
 
-pub type ListBox = Entity<ListBoxControl>;
+pub type ListBox = Entity<ControlGroupControl<ListBoxItem>>;
 
-pub fn new(id: impl Into<SharedString>) -> ListBoxBuilder {
-    ListBoxBuilder::new(id)
+fn listbox_builder(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
+    ControlGroupBuilder::new(id)
+        .vertical()
+        .template(default_listbox_template())
+        .item_template(default_listbox_item_template())
 }
 
-pub fn single(id: impl Into<SharedString>) -> ListBoxBuilder {
-    ListBoxBuilder::new(id).single()
+pub fn new(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
+    listbox_builder(id).single_required()
 }
 
-pub fn multiple(id: impl Into<SharedString>) -> ListBoxBuilder {
-    ListBoxBuilder::new(id).multiple()
+pub fn single(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
+    listbox_builder(id).single_required()
+}
+
+pub fn multiple(id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
+    listbox_builder(id).multiple()
 }

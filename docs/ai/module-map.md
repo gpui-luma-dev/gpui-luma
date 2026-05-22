@@ -206,8 +206,8 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - tab-list navigation and activation events
 - `listbox/*`
   - selector-style static list panel with single/multiple selection
-  - supports managed/unmanaged selection state and presenter-driven row content
-  - exports builder/model/template/theme + `ListBoxEvent`
+  - thin wrapper over `control_group` with listbox-specific templates and theme
+  - exports `ListBox`, `ListBoxItem`, constructors, and re-exports `ControlGroupEvent`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `slider/*`

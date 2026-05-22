@@ -1,5 +1,6 @@
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::listbox::{self, ListBox, ListBoxEvent, ListBoxItem};
+use gpui_luma::controls::control_group::ControlGroupEvent;
+use gpui_luma::controls::listbox::{self, ListBox, ListBoxItem};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
@@ -32,11 +33,11 @@ impl ListBoxPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.single, |app, _, event: &ListBoxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.single, |app, _, event: &ControlGroupEvent, cx| {
             app.panes.listbox.handle_single_event(event, cx);
         }));
 
-        subscriptions.push(cx.subscribe(&self.multiple, |app, _, event: &ListBoxEvent, cx| {
+        subscriptions.push(cx.subscribe(&self.multiple, |app, _, event: &ControlGroupEvent, cx| {
             app.panes.listbox.handle_multi_event(event, cx);
         }));
     }
@@ -92,18 +93,18 @@ impl ListBoxPane {
         notify_entity(&self.multiple, cx);
     }
 
-    fn handle_single_event(&mut self, event: &ListBoxEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_single_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ListBoxEvent::Change { changed_label, .. } => {
-                self.single_choice = changed_label.to_string();
+            ControlGroupEvent::Change { changed_id, .. } => {
+                self.single_choice = density_label(changed_id.as_ref());
                 cx.notify();
             }
         }
     }
 
-    fn handle_multi_event(&mut self, event: &ListBoxEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_multi_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ListBoxEvent::Change { selected_ids, .. } => {
+            ControlGroupEvent::Change { selected_ids, .. } => {
                 self.multi_choices = selected_ids.iter().map(|id| density_label(id.as_ref())).collect();
                 if self.multi_choices.is_empty() {
                     self.multi_choices.push("None".to_string());
