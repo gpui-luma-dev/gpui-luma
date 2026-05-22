@@ -188,7 +188,7 @@ pub fn default_control_key_bindings() -> Vec<KeyBinding> {
 
 #[cfg(test)]
 mod tests {
-    use gpui::{Action, KeyBinding};
+    use gpui::{Action, KeyBinding, Keystroke};
 
     use super::{
         ActivateControl, CloseSubmenu, ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue,
@@ -261,10 +261,14 @@ mod tests {
         assert!(has_binding::<ActivateControl>(&bindings, "space"));
     }
 
-    fn has_binding<A: Action>(bindings: &[KeyBinding], key: &str) -> bool {
+    fn has_binding<A: Action>(bindings: &[KeyBinding], keystrokes: &str) -> bool {
+        let expected = Keystroke::parse(keystrokes).expect("valid test keystroke");
         bindings.iter().any(|binding| {
             binding.keystrokes().len() == 1
-                && binding.keystrokes()[0].key() == key
+                && {
+                    let actual = binding.keystrokes()[0].inner();
+                    actual.key == expected.key && actual.modifiers == expected.modifiers
+                }
                 && binding.action().as_any().is::<A>()
         })
     }

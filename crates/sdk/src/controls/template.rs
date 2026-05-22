@@ -50,7 +50,16 @@ where
 ///
 /// Usage:
 /// ```rust
-/// define_control_template!(ButtonTemplate, dyn ButtonFamilyTheme, ModButtonRenderModel, ModButtonTemplate, default_button_family_theme());
+/// # use gpui_luma::define_control_template;
+/// # use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+/// # use gpui_luma::controls::checkbox::{CheckboxTheme, default_checkbox_theme};
+/// define_control_template!(
+///     ThemedCheckboxTemplate,
+///     dyn CheckboxTheme,
+///     ButtonRenderModel<bool>,
+///     ButtonTemplate<bool>,
+///     default_checkbox_theme()
+/// );
 /// ```
 #[macro_export]
 macro_rules! define_control_template {

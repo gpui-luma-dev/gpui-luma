@@ -77,6 +77,9 @@ pub const AUTOCOMPLETE_TEXTBOX_THEME_USAGE: ThemeUsage =
 pub const COMBOBOX_THEME_USAGE: ThemeUsage =
     ThemeUsage { label: "ComboBox", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
 
+pub const SEARCH_SELECTOR_THEME_USAGE: ThemeUsage =
+    ThemeUsage { label: "SearchSelector", parts: AUTOCOMPLETE_AND_COMBOBOX_THEME_PARTS };
+
 impl DefaultAutocompleteTextBoxTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
         Self { tokens }

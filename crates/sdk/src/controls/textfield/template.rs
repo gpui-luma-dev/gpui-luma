@@ -123,7 +123,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                             .h(px(caret_height))
                             .child(ch.to_string())
                             .when(
-                                model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
+                                model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
                                 |cell| {
                                     cell.child(
                                         div()
@@ -140,7 +140,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 } else {
                     row = row.child(
                         div().relative().flex_none().w(px(TEXTFIELD_TRAILING_HITBOX_WIDTH)).h(px(caret_height)).when(
-                            model.enabled && model.caret_visible && cursor == caret_ix && !selection.is_some(),
+                            model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
                             |cell| {
                                 cell.child(
                                     div()

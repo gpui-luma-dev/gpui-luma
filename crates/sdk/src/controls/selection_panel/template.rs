@@ -211,6 +211,7 @@ where
     Arc::new(DefaultSelectionPanelTemplate)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_selection_panel<T>(
     template: Arc<dyn SelectionPanelTemplate<T>>,
     model: &SelectionPanelRenderModel<'_, T>,

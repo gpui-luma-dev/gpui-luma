@@ -7,6 +7,7 @@ pub struct HostedContent {
     pub focus_handle: Option<FocusHandle>,
 }
 
+#[allow(clippy::type_complexity)]
 pub struct Presenter<State> {
     presenter: Arc<dyn for<'a, 'b, 'c> Fn(&'a State, &'b mut Window, &'c mut App) -> HostedContent + 'static>,
 }

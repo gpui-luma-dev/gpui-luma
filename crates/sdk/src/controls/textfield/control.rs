@@ -66,8 +66,7 @@ impl TextFieldControl {
     }
 
     pub(crate) fn from_builder(builder: TextFieldBuilder, cx: &mut Context<Self>) -> Self {
-        let mut state = TextFieldState::default();
-        state.cursor = builder.model.value.chars().count();
+        let state = TextFieldState { cursor: builder.model.value.chars().count(), ..Default::default() };
 
         let mut this = Self {
             model: builder.model,
@@ -564,7 +563,7 @@ impl Render for TextFieldControl {
                     },
                     move |bounds, cache, window, cx| {
                         window.handle_input(&input_focus_handle, ElementInputHandler::new(bounds, entity.clone()), cx);
-                        let _ = entity.update(cx, |this, cx| {
+                        entity.update(cx, |this, cx| {
                             if this.sync_horizontal_scroll(&cache) {
                                 cx.notify();
                             }

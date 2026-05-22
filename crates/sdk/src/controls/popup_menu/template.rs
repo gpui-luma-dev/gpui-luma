@@ -133,7 +133,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
 
         if model.open {
             let placement = resolve_popup_menu_placement(
-                model.trigger_bounds.clone(),
+                model.trigger_bounds,
                 model.placement,
                 &appearance,
                 model.items.len(),
@@ -258,7 +258,7 @@ mod tests {
         let appearance = appearance();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
-            Some(trigger.clone()),
+            Some(trigger),
             PopupMenuPlacement::Smart,
             &appearance,
             3,
@@ -275,7 +275,7 @@ mod tests {
         let appearance = appearance();
         let trigger = Bounds::new(point(px(12.0), px(300.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
-            Some(trigger.clone()),
+            Some(trigger),
             PopupMenuPlacement::Smart,
             &appearance,
             4,
@@ -292,7 +292,7 @@ mod tests {
         let appearance = appearance();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
-            Some(trigger.clone()),
+            Some(trigger),
             PopupMenuPlacement::AboveStart,
             &appearance,
             3,
@@ -309,7 +309,7 @@ mod tests {
         let trigger = Bounds::new(point(px(40.0), px(80.0)), size(px(160.0), px(32.0)));
         let menu_size = estimated_menu_size(&appearance, 5, trigger.size.width);
         let placement = resolve_popup_menu_placement(
-            Some(trigger.clone()),
+            Some(trigger),
             PopupMenuPlacement::CenteredOnTrigger,
             &appearance,
             5,

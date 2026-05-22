@@ -305,6 +305,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
 }
 
 #[deprecated(note = "Use SearchSelectorItemsTemplate::render with SearchSelectorItemsRenderModel")]
+#[allow(clippy::too_many_arguments)]
 pub fn render_popup_rows(
     menu_id: &SharedString,
     search_selector_id: &SharedString,

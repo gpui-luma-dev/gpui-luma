@@ -83,7 +83,7 @@ impl PopupMenu {
             label: &self.model.label,
             items: &self.model.items,
             open: self.open,
-            trigger_bounds: self.trigger_bounds.clone(),
+            trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
@@ -148,7 +148,7 @@ impl PopupMenu {
     }
 
     fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
-        self.trigger_bounds = Some(bounds.clone());
+        self.trigger_bounds = Some(*bounds);
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {

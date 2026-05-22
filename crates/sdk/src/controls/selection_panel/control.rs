@@ -447,6 +447,7 @@ where
         }
     }
 
+    #[allow(clippy::type_complexity)]
     fn template_handlers(
         &self,
         cx: &mut Context<Self>,

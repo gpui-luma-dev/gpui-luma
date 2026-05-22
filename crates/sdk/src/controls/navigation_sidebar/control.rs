@@ -408,7 +408,7 @@ impl NavigationSidebar {
             return None;
         }
 
-        let parent_bounds = self.rail_node_bounds.get(parent_node_id)?.clone();
+        let parent_bounds = *self.rail_node_bounds.get(parent_node_id)?;
         let items = parent.children.iter().filter(|node| node.visible).map(nav_node_to_menu_item).collect();
 
         Some(RenderedRailSubmenu {
@@ -596,7 +596,7 @@ impl NavigationSidebar {
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
-        self.rail_node_bounds.insert(node_id, bounds.clone());
+        self.rail_node_bounds.insert(node_id, *bounds);
     }
 
     fn handle_rail_submenu_mouse_down_out(
@@ -770,6 +770,7 @@ impl Render for NavigationSidebar {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_nodes(
     nodes: &[NavNode],
     depth: usize,
@@ -856,6 +857,7 @@ fn render_nodes(
     rendered_nodes
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_collapsed_rail_nodes(
     nodes: &[NavNode],
     selected_id: Option<&SharedString>,
@@ -867,10 +869,9 @@ fn render_collapsed_rail_nodes(
     cx: &mut Context<NavigationSidebar>,
 ) -> Vec<RenderedNavNode> {
     let sibling_count = collapsed_rail_node_count(nodes);
-    let mut visible_index = 0;
     let mut rendered_nodes = Vec::new();
 
-    for node in nodes.iter().filter(|node| collapsed_rail_node_visible(node)) {
+    for (visible_index, node) in nodes.iter().filter(|node| collapsed_rail_node_visible(node)).enumerate() {
         let focus_handle = node.enabled.then(|| {
             let focus_handle = rail_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
@@ -892,7 +893,6 @@ fn render_collapsed_rail_nodes(
             expanded: node.expanded,
             enabled: node.enabled,
         };
-        visible_index += 1;
 
         rendered_nodes.push(RenderedNavNode {
             id: node.id.clone(),

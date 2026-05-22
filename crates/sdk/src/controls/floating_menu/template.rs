@@ -149,6 +149,7 @@ pub fn render_floating_menu(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_floating_menu_with_template(
     template: Arc<dyn FloatingMenuTemplate>,
     id: &SharedString,

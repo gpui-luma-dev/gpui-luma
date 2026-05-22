@@ -159,12 +159,12 @@ where
             trigger_mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
             root_mouse_down_out: Box::new(cx.listener(Self::handle_mouse_down_out)),
             on_item_hover: Arc::new(move |model_index, hovered, _window, app| {
-                let _ = hover_entity.update(app, |this, cx| {
+                hover_entity.update(app, |this, cx| {
                     this.handle_item_hover(model_index, *hovered, cx);
                 });
             }),
             on_item_click: Arc::new(move |model_index, event, _window, app| {
-                let _ = click_entity.update(app, |this, cx| {
+                click_entity.update(app, |this, cx| {
                     this.handle_item_click(model_index, event, cx);
                 });
             }),

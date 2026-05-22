@@ -222,7 +222,7 @@ impl ComboBoxControl {
     }
 
     fn popup_page_size(&self) -> usize {
-        self.popup_surface.visible_row_count().min(14).max(1)
+        self.popup_surface.visible_row_count().clamp(1, 14)
     }
 
     fn move_highlight_page(&mut self, forward: bool, page_size: usize) {
@@ -273,54 +273,44 @@ impl ComboBoxControl {
                     cx.notify();
                 }
             }
-            "up" | "arrowup" => {
-                if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "up" | "arrowup" if self.behavior.state.open && !self.behavior.state.filtered.is_empty() => {
+                self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "pagedown" | "page_down" | "pgdown" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(true, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "pagedown" | "page_down" | "pgdown" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.move_highlight_page(true, self.popup_page_size());
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "pageup" | "page_up" | "pgup" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(false, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "pageup" | "page_up" | "pgup" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.move_highlight_page(false, self.popup_page_size());
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "home" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(0);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "home" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.behavior.state.highlighted_filtered = Some(0);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "end" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "end" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
             _ => {}
         }
@@ -393,7 +383,7 @@ impl ComboBoxControl {
     }
 
     fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
-        self.trigger_bounds = Some(bounds.clone());
+        self.trigger_bounds = Some(*bounds);
     }
 
     fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -484,8 +474,8 @@ impl Render for ComboBoxControl {
             let placeholder_width = placeholder_line.width().as_f32();
 
             let textfield_side_padding = (textfield_appearance.padding_x * 2.0) + textfield_appearance.border_width;
-            let prefix_width = self.model.show_down_arrow.then_some(18.0 + 10.0).unwrap_or(0.0);
-            let clear_width = self.model.show_clear_button.then_some(18.0 + 10.0).unwrap_or(0.0);
+            let prefix_width = if self.model.show_down_arrow { 18.0 + 10.0 } else { 0.0 };
+            let clear_width = if self.model.show_clear_button { 18.0 + 10.0 } else { 0.0 };
             let spacing = 8.0;
 
             px(textfield_side_padding + placeholder_width + prefix_width + clear_width + spacing)

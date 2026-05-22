@@ -18,7 +18,7 @@ pub trait ControlGroupTheme: Send + Sync {
     fn resolve_list(&self, enabled: bool) -> ControlGroupListAppearance;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DefaultControlGroupTheme {
     tokens: ThemeTokens,
 }
@@ -46,12 +46,6 @@ pub const CONTROL_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
         },
     ],
 };
-
-impl Default for DefaultControlGroupTheme {
-    fn default() -> Self {
-        Self { tokens: ThemeTokens::default() }
-    }
-}
 
 impl DefaultControlGroupTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

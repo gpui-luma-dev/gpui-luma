@@ -556,7 +556,7 @@ impl TextArea {
             .iter()
             .enumerate()
             .find(|(_, line)| cursor >= line.start && cursor <= line.end)
-            .or_else(|| cache.lines.iter().enumerate().last())
+            .or_else(|| cache.lines.iter().enumerate().next_back())
         else {
             return current;
         };
@@ -975,7 +975,7 @@ impl gpui::Element for TextAreaElement {
             while local_start < char_count {
                 let start_x = full_shaped.x_for_index(byte_offsets[local_start]);
                 let mut fit_end = local_start + 1;
-                for probe in (local_start + 1)..=char_count {
+                for (probe, _) in byte_offsets.iter().enumerate().take(char_count + 1).skip(local_start + 1) {
                     let probe_x = full_shaped.x_for_index(byte_offsets[probe]);
                     if probe_x - start_x <= wrap_width {
                         fit_end = probe;

@@ -16,7 +16,7 @@ mod text_selection;
 
 pub use behavior::SelectionItem;
 pub use control::{SearchSelector, SearchSelectorControl, SearchSelectorEvent};
-pub use crate::controls::autocomplete::COMBOBOX_THEME_USAGE as SEARCH_SELECTOR_THEME_USAGE;
+pub use crate::controls::autocomplete::SEARCH_SELECTOR_THEME_USAGE;
 pub use item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate, make_search_selector_item_template};
 pub use model::{SearchSelectorBuilder, SearchSelectorModel, new};
 pub use panel_template::{

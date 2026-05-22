@@ -195,23 +195,19 @@ impl AutocompleteTextBoxControl {
                 cx.stop_propagation();
                 cx.notify();
             }
-            "down" | "arrowdown" => {
-                if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MoveNext, &self.model.items);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "down" | "arrowdown" if self.behavior.state.open && !self.behavior.state.filtered.is_empty() => {
+                self.behavior.apply(SelectionEvent::MoveNext, &self.model.items);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "up" | "arrowup" => {
-                if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "up" | "arrowup" if self.behavior.state.open && !self.behavior.state.filtered.is_empty() => {
+                self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
             _ => {}
         }
@@ -226,7 +222,7 @@ impl AutocompleteTextBoxControl {
     }
 
     fn handle_trigger_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
-        self.trigger_bounds = Some(bounds.clone());
+        self.trigger_bounds = Some(*bounds);
     }
 
     fn handle_popup_scroll_wheel(&mut self, event: &ScrollWheelEvent, _window: &mut Window, cx: &mut Context<Self>) {

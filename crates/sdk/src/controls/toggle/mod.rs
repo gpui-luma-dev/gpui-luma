@@ -13,6 +13,7 @@ pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<bool> {
 }
 
 impl Toggle {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<bool> {
         new(id)
     }

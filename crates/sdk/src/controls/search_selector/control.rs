@@ -264,62 +264,50 @@ impl SearchSelectorControl {
                     cx.notify();
                 }
             }
-            "up" | "arrowup" => {
-                if self.behavior.state.open && !self.behavior.state.filtered.is_empty() {
-                    self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "up" | "arrowup" if self.behavior.state.open && !self.behavior.state.filtered.is_empty() => {
+                self.behavior.apply(SelectionEvent::MovePrevious, &self.model.items);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "pagedown" | "page_down" | "pgdown" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(true, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "pagedown" | "page_down" | "pgdown" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.move_highlight_page(true, self.popup_page_size());
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "pageup" | "page_up" | "pgup" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.move_highlight_page(false, self.popup_page_size());
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "pageup" | "page_up" | "pgup" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.move_highlight_page(false, self.popup_page_size());
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "home" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(0);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "home" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.behavior.state.highlighted_filtered = Some(0);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "end" => {
-                if !self.behavior.state.filtered.is_empty() {
-                    self.behavior.state.open = true;
-                    self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
-                    self.sync_popup_highlight_visibility(cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    cx.notify();
-                }
+            "end" if !self.behavior.state.filtered.is_empty() => {
+                self.behavior.state.open = true;
+                self.behavior.state.highlighted_filtered = Some(self.behavior.state.filtered.len() - 1);
+                self.sync_popup_highlight_visibility(cx);
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
             }
-            "enter" => {
-                if self.behavior.state.open {
-                    let result = self.behavior.apply(SelectionEvent::Submit, &self.model.items);
-                    self.handle_submit_result(result, cx);
-                    window.prevent_default();
-                    cx.stop_propagation();
-                }
+            "enter" if self.behavior.state.open => {
+                let result = self.behavior.apply(SelectionEvent::Submit, &self.model.items);
+                self.handle_submit_result(result, cx);
+                window.prevent_default();
+                cx.stop_propagation();
             }
             _ => {}
         }

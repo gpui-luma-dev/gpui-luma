@@ -274,7 +274,7 @@ mod tests {
         assert_eq!(behavior.state.filtered.len(), 1);
 
         behavior.apply(SelectionEvent::Escape, &items);
-        assert_eq!(behavior.state.open, false);
+        assert!(!behavior.state.open);
         assert_eq!(behavior.state.query.as_ref(), "");
         assert_eq!(behavior.state.selected_item, None);
         assert_eq!(behavior.state.status, SelectionStatus::Idle);

@@ -352,6 +352,7 @@ fn render_region(
     region
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_collapsed_rail_region(
     nodes: Vec<RenderedNavNode>,
     theme: &Arc<dyn NavigationSidebarTheme>,
