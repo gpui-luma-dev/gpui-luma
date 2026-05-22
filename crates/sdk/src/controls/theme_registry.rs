@@ -9,7 +9,6 @@ const REGISTERED_THEME_USAGES: &[&ThemeUsage] = &[
     &crate::controls::navigation_sidebar::NAVIGATION_SIDEBAR_THEME_USAGE,
     &crate::controls::button_family::ICON_BUTTON_THEME_USAGE,
     &crate::controls::button_family::TOGGLE_THEME_USAGE,
-    &crate::controls::choice_group::CHOICE_GROUP_THEME_USAGE,
     &crate::controls::control_group::CONTROL_GROUP_THEME_USAGE,
     &crate::controls::checkbox::CHECKBOX_THEME_USAGE,
     &crate::controls::radio_button::RADIO_BUTTON_THEME_USAGE,

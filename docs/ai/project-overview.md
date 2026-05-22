@@ -80,7 +80,7 @@ Frequently used controls:
 
 - command family: `command::button`, `command::icon_button`, plus `checkbox`, `radio_button`, `switch`, `toggle`
 - text inputs: `textfield`, `textarea`
-- list/select: `choice_group`, `selector`, `autocomplete`, `combobox`
+- list/select: `selector`, `autocomplete`, `combobox` (composite selection: `control_group`, `radio_group`, `button_group`)
 - menus: `popup_menu`, `context_menu`, `floating_menu`
 - navigation/layout: `navigation_sidebar`, `tabs_navigation`, `split_view`, `scrollbar`, `slider`, `progress`
 
@@ -124,7 +124,7 @@ Frequently used controls:
 - Strongly tested areas include:
   - text editing behavior (`controls/text/editing.rs`)
   - textarea state/control logic
-  - choice group normalization/navigation
+  - control group selection/normalization
   - menu navigation
   - selector/popup template placement
   - range math (`ControlRange`)
