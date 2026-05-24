@@ -108,7 +108,7 @@ Theme remains token/semantic-focused:
 
 - palette/tokens
 - typography/metric scale
-- semantic roles (prominent/danger/etc)
+- semantic roles (prominent/standard/ghost/etc)
 - mode (light/dark)
 
 Theme does **not** require callers to construct control-specific `Appearance`.

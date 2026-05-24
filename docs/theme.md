@@ -108,11 +108,6 @@ action.ghost.foreground
 action.ghost.hover_background
 action.ghost.pressed_background
 
-action.danger.background
-action.danger.foreground
-action.danger.hover_background
-action.danger.pressed_background
-
 state.hover.background
 state.hover.foreground
 state.pressed.background
@@ -304,16 +299,6 @@ Button ghost
   typography: text.label
   focus: focus.ring
 
-Button destructive
-  background: action.danger.background
-  foreground: action.danger.foreground
-  hover: action.danger.hover_background
-  pressed: action.danger.pressed_background
-  border: action.danger.background
-  radius: radius.md
-  typography: text.label
-  focus: focus.ring
-
 Icon button
   same color recipe as button variant
   radius: radius.pill or radius.md, decided by role
@@ -486,12 +471,6 @@ background = "hsla(0 0% 0% / 0)"
 foreground = "hsla(0 0% 20% / 1)"
 hover_background = "hsla(0 0% 92% / 1)"
 pressed_background = "hsla(0 0% 88% / 1)"
-
-[light.action.danger]
-background = "hsla(0 74% 50% / 1)"
-foreground = "hsla(0 0% 98% / 1)"
-hover_background = "hsla(0 74% 44% / 1)"
-pressed_background = "hsla(0 74% 38% / 1)"
 
 [light.state.hover]
 background = "hsla(0 0% 94% / 1)"
