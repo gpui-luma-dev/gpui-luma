@@ -14,6 +14,7 @@ impl Render for GalleryApp {
         let panes = self.panes.clone();
         let nav_selection = self.nav_selection.clone();
         let chrome = self.theme.chrome();
+        let sans_family = self.theme.tokens().typography.font.sans.family.clone();
         let active_mode = self.theme.mode();
         let toggle_icon = match active_mode {
             ThemeMode::Light => LucideIcon::Moon,
@@ -40,6 +41,7 @@ impl Render for GalleryApp {
                 .justify_between()
                 .px_2()
                 .text_color(chrome.title_text)
+                .font_family(sans_family.clone())
                 .child(div().child("GPUI-Luma Gallery"))
                 .child(
                     div()
@@ -70,6 +72,7 @@ impl Render for GalleryApp {
             .size_full()
             .flex()
             .flex_col()
+            .font_family(sans_family)
             .bg(chrome.app_background)
             .child(title_bar)
             .child(div().flex_1().min_h_0().child(self.split_view.clone()))
@@ -83,9 +86,11 @@ fn render_content_pane(
 ) -> AnyElement {
     let focus = pane_focus.clone();
     let chrome = theme.chrome();
+    let sans_family = theme.tokens().typography.font.sans.family.clone();
 
     div()
         .size_full()
+        .font_family(sans_family)
         .bg(chrome.content_background)
         .track_focus(&pane_focus)
         .capture_any_mouse_down(move |event, window, cx| {

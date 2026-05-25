@@ -1,0 +1,578 @@
+# Jarvis — manual import from tweakcn-jarvis.css (Phase 1)
+#
+# Source: crates/sdk/src/theme/tweakcn-jarvis.css
+# Mapping: docs/ai/next-step-theme-import.md (Subtle = outline, Standard = --secondary fill)
+#
+# Notable CSS vs native Luma (may need SDK/gallery follow-up):
+#   --radius: 0.25rem light (4px), 0.125rem dark (2px) — per-mode metrics below
+#   --font-sans: Rajdhani; --font-mono: JetBrains Mono; --tracking-normal: 0.02em (no TOML slot yet)
+#   Dark shadows use cyan glow (rgb 34,211,238) — approximated in elevation layers
+#
+# Derivation: prominent/standard +5% L hover, -8% L pressed; subtle outline hover --accent.
+
+name = "Jarvis"
+version = 1
+
+[light.palette.app]
+background = "hsl(210 40% 98%)"
+foreground = "hsl(222 47% 11%)"
+muted_foreground = "hsl(215 16% 47%)"
+
+[light.palette.surface.panel]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(222 47% 11%)"
+border = "hsl(214 32% 91%)"
+
+[light.palette.surface.floating]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(222 47% 11%)"
+border = "hsl(214 32% 91%)"
+
+[light.palette.surface.subtle]
+background = "hsl(210 40% 96%)"
+foreground = "hsl(215 16% 47%)"
+
+[light.palette.action.prominent]
+background = "hsl(191.6 91.4% 36.5%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(191.6 91.4% 41.5%)"
+pressed_background = "hsl(191.6 91.4% 28.5%)"
+border = "hsl(191.6 91.4% 36.5%)"
+
+[light.palette.action.subtle]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(222 47% 11%)"
+hover_background = "hsl(183.2 100% 96.3%)"
+pressed_background = "hsl(183.2 100% 92%)"
+border = "hsl(214 32% 91%)"
+
+[light.palette.action.standard]
+background = "hsl(210 40% 96%)"
+foreground = "hsl(222 47% 11%)"
+hover_background = "hsl(183.2 100% 96.3%)"
+pressed_background = "hsl(210 40% 88%)"
+border = "hsl(210 40% 96%)"
+
+[light.palette.action.ghost]
+background = "hsl(210 40% 98%)"
+foreground = "hsl(222 47% 11%)"
+hover_background = "hsl(183.2 100% 96.3%)"
+pressed_background = "hsl(183.2 100% 92%)"
+border = "hsla(0 0% 0% / 0)"
+
+[light.palette.state.hover]
+background = "hsl(183.2 100% 96.3%)"
+foreground = "hsl(191.6 91.4% 36.5%)"
+
+[light.palette.state.pressed]
+background = "hsl(183.2 100% 92%)"
+
+[light.palette.state.selected]
+background = "hsl(191.6 91.4% 36.5%)"
+foreground = "hsl(210 40% 98%)"
+
+[light.palette.state.disabled]
+background = "hsl(210 40% 96%)"
+foreground = "hsl(215 16% 47%)"
+
+[light.palette.form.input]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(222 47% 11%)"
+border = "hsl(214 32% 91%)"
+invalid_border = "hsl(0 84.2% 60.2%)"
+placeholder = "hsl(215 16% 47%)"
+
+[light.palette.focus]
+ring = "hsl(191.6 91.4% 36.5%)"
+
+[light.palette.border]
+default = "hsl(214 32% 91%)"
+strong = "hsl(215 16% 47%)"
+
+[light.palette.navigation]
+background = "hsl(210 40% 98%)"
+foreground = "hsl(215 29% 27%)"
+muted_foreground = "hsl(215 16% 47%)"
+hover_background = "hsl(214 32% 91%)"
+selected_background = "hsl(191.6 91.4% 36.5%)"
+selected_foreground = "hsl(0 0% 100%)"
+border = "hsl(214 32% 91%)"
+
+[light.palette.data]
+accent_1 = "hsl(191.6 91.4% 36.5%)"
+accent_2 = "hsl(188.7 94.5% 42.7%)"
+accent_3 = "hsl(187.9 85.7% 53.3%)"
+accent_4 = "hsl(187 92.4% 69%)"
+accent_5 = "hsl(186.2 93.5% 81.8%)"
+
+[dark.palette.app]
+background = "hsl(228.6 84% 4.9%)"
+foreground = "hsl(210 40% 98%)"
+muted_foreground = "hsl(215 20% 65%)"
+
+[dark.palette.surface.panel]
+background = "hsl(222 47% 11%)"
+foreground = "hsl(210 40% 98%)"
+border = "hsl(217 33% 17.5%)"
+
+[dark.palette.surface.floating]
+background = "hsl(228.6 84% 4.9%)"
+foreground = "hsl(210 40% 98%)"
+border = "hsl(217 33% 17.5%)"
+
+[dark.palette.surface.subtle]
+background = "hsl(217 33% 17.5%)"
+foreground = "hsl(215 20% 65%)"
+
+[dark.palette.action.prominent]
+background = "hsl(187.9 85.7% 53.3%)"
+foreground = "hsl(228.6 84% 4.9%)"
+hover_background = "hsl(187.9 85.7% 58.3%)"
+pressed_background = "hsl(187.9 85.7% 45.3%)"
+border = "hsl(187.9 85.7% 53.3%)"
+
+[dark.palette.action.subtle]
+background = "hsl(222 47% 11%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(196.4 64% 24%)"
+pressed_background = "hsl(196.4 64% 20%)"
+border = "hsl(217 33% 17.5%)"
+
+[dark.palette.action.standard]
+background = "hsl(217 33% 17.5%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(196.4 64% 24%)"
+pressed_background = "hsl(217 33% 12%)"
+border = "hsl(217 33% 17.5%)"
+
+[dark.palette.action.ghost]
+background = "hsl(228.6 84% 4.9%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(196.4 64% 24%)"
+pressed_background = "hsl(196.4 64% 20%)"
+border = "hsla(0 0% 0% / 0)"
+
+[dark.palette.state.hover]
+background = "hsl(196.4 64% 24%)"
+foreground = "hsl(187.9 85.7% 53.3%)"
+
+[dark.palette.state.pressed]
+background = "hsl(196.4 64% 20%)"
+
+[dark.palette.state.selected]
+background = "hsl(187.9 85.7% 53.3%)"
+foreground = "hsl(228.6 84% 4.9%)"
+
+[dark.palette.state.disabled]
+background = "hsl(217 33% 17.5%)"
+foreground = "hsl(215 20% 65%)"
+
+[dark.palette.form.input]
+background = "hsl(222 47% 11%)"
+foreground = "hsl(210 40% 98%)"
+border = "hsl(217 33% 17.5%)"
+invalid_border = "hsl(0 63% 31%)"
+placeholder = "hsl(215 20% 65%)"
+
+[dark.palette.focus]
+ring = "hsl(187.9 85.7% 53.3%)"
+
+[dark.palette.border]
+default = "hsl(217 33% 17.5%)"
+strong = "hsl(215 20% 65%)"
+
+[dark.palette.navigation]
+background = "hsl(228.6 84% 4.9%)"
+foreground = "hsl(215 20% 65%)"
+muted_foreground = "hsl(215 20% 65%)"
+hover_background = "hsl(217 33% 17.5%)"
+selected_background = "hsl(187.9 85.7% 53.3%)"
+selected_foreground = "hsl(228.6 84% 4.9%)"
+border = "hsl(217 33% 17.5%)"
+
+[dark.palette.data]
+accent_1 = "hsl(187.9 85.7% 53.3%)"
+accent_2 = "hsl(191.6 91.4% 36.5%)"
+accent_3 = "hsl(192.9 82.3% 31%)"
+accent_4 = "hsl(194.4 70% 27%)"
+accent_5 = "hsl(196.4 64% 24%)"
+
+[light.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[light.metrics.radius]
+none = 0
+sm = 0
+md = 2
+lg = 4
+xl = 8
+pill = 999
+
+[light.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[light.metrics.focus]
+width = 1
+offset = 0
+
+[light.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 2
+
+[light.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 4
+
+[light.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 4
+
+[light.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 2
+
+[light.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 4
+
+[light.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 4
+
+[light.typography.font.sans]
+family = "Rajdhani"
+
+[light.typography.font.mono]
+family = "JetBrains Mono"
+
+[light.typography.font.serif]
+family = "Georgia"
+
+[light.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[light.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[light.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[light.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[light.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[light.elevation.none]
+layers = []
+
+[[light.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.05)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[[light.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = -1
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 2
+blur = 4
+spread = -1
+
+[[light.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 8
+blur = 10
+spread = -1
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 4
+blur = 10
+spread = 0
+
+[light.colors]
+surface = "hsl(210 40% 98%)"
+surface_hover = "hsl(183.2 100% 96.3%)"
+surface_pressed = "hsl(183.2 100% 92%)"
+surface_disabled = "hsl(210 40% 96%)"
+prominent = "hsl(191.6 91.4% 36.5%)"
+prominent_hover = "hsl(191.6 91.4% 41.5%)"
+prominent_pressed = "hsl(191.6 91.4% 28.5%)"
+selected = "hsl(191.6 91.4% 36.5%)"
+selected_hover = "hsl(191.6 91.4% 41.5%)"
+selected_pressed = "hsl(191.6 91.4% 28.5%)"
+text = "hsl(222 47% 11%)"
+text_inverse = "hsl(210 40% 98%)"
+text_disabled = "hsl(215 16% 47%)"
+border = "hsl(214 32% 91%)"
+
+[dark.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[dark.metrics.radius]
+none = 0
+sm = 0
+md = 0
+lg = 2
+xl = 6
+pill = 999
+
+[dark.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[dark.metrics.focus]
+width = 1
+offset = 0
+
+[dark.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 0
+
+[dark.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 2
+
+[dark.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 2
+
+[dark.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 0
+
+[dark.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 2
+
+[dark.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 2
+
+[dark.typography.font.sans]
+family = "Rajdhani"
+
+[dark.typography.font.mono]
+family = "JetBrains Mono"
+
+[dark.typography.font.serif]
+family = "Georgia"
+
+[dark.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[dark.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[dark.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[dark.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[dark.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[dark.elevation.none]
+layers = []
+
+[[dark.elevation.control.layers]]
+color = "hsla(187 86% 53% / 0.1)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.thumb.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.menu.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.menu.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.popover.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.popover.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 2
+blur = 4
+spread = 0
+
+[[dark.elevation.panel.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(187 86% 53% / 0.5)"
+offset_x = 0
+offset_y = 0
+blur = 15
+spread = 1
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(187 86% 53% / 0.2)"
+offset_x = 0
+offset_y = 8
+blur = 10
+spread = 0
+
+[dark.colors]
+surface = "hsl(228.6 84% 4.9%)"
+surface_hover = "hsl(196.4 64% 24%)"
+surface_pressed = "hsl(196.4 64% 20%)"
+surface_disabled = "hsl(217 33% 17.5%)"
+prominent = "hsl(187.9 85.7% 53.3%)"
+prominent_hover = "hsl(187.9 85.7% 58.3%)"
+prominent_pressed = "hsl(187.9 85.7% 45.3%)"
+selected = "hsl(187.9 85.7% 53.3%)"
+selected_hover = "hsl(187.9 85.7% 58.3%)"
+selected_pressed = "hsl(187.9 85.7% 45.3%)"
+text = "hsl(210 40% 98%)"
+text_inverse = "hsl(228.6 84% 4.9%)"
+text_disabled = "hsl(215 20% 65%)"
+border = "hsl(217 33% 17.5%)"

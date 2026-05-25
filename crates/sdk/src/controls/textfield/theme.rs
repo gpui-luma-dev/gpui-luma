@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{Hsla, SharedString};
 
 use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 use crate::controls::textfield::TextFieldState;
@@ -12,7 +12,7 @@ pub enum TextFieldVariant {
     Ghost,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct TextFieldAppearance {
     pub background: Hsla,
     pub foreground: Hsla,
@@ -23,6 +23,7 @@ pub struct TextFieldAppearance {
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
     pub typography: LumaTextStyle,
+    pub font_family: SharedString,
     pub min_height: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -248,6 +249,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
+            font_family: typography.font.sans.family.clone().into(),
             min_height: metrics.control_height(size),
             padding_x: metrics.padding_x(size),
             padding_y: metrics.padding_y(size),

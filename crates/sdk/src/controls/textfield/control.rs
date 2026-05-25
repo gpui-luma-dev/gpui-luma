@@ -157,7 +157,11 @@ impl TextFieldControl {
 
     fn resolved_appearance(&self) -> TextFieldAppearance {
         let appearance = self.model.template.resolve_appearance(self.model.variant, self.state, self.model.enabled);
-        self.model.appearance_override.as_ref().map_or(appearance, |override_fn| override_fn(appearance))
+        if let Some(override_fn) = &self.model.appearance_override {
+            override_fn(appearance)
+        } else {
+            appearance
+        }
     }
 
     fn render_model_with_offsets<'a>(
@@ -186,7 +190,7 @@ impl TextFieldControl {
         let run = TextRun {
             len: self.model.value.len(),
             font: {
-                let mut font = font(".SystemUIFont");
+                let mut font = font(appearance.font_family.clone());
                 font.weight = appearance.typography.weight;
                 font
             },
@@ -504,7 +508,8 @@ impl Render for TextFieldControl {
         let entity = cx.entity();
         let input_focus_handle = self.focus_handle.clone();
         let value = self.model.value.clone();
-        let appearance = layout_preview.appearance;
+        let appearance = layout_preview.appearance.clone();
+        let canvas_appearance = appearance.clone();
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
 
@@ -528,30 +533,30 @@ impl Render for TextFieldControl {
                         let run = TextRun {
                             len: value.len(),
                             font: {
-                                let mut font = font(".SystemUIFont");
-                                font.weight = appearance.typography.weight;
+                                let mut font = font(canvas_appearance.font_family.clone());
+                                font.weight = canvas_appearance.typography.weight;
                                 font
                             },
-                            color: appearance.foreground,
+                            color: canvas_appearance.foreground,
                             background_color: None,
                             underline: None,
                             strikethrough: None,
                         };
                         let line = window.text_system().shape_line(
                             value.clone(),
-                            px(appearance.typography.size),
+                            px(canvas_appearance.typography.size),
                             &[run],
                             None,
                         );
-                        let x_offset = appearance.padding_x
+                        let x_offset = canvas_appearance.padding_x
                             + if has_prefix_icon {
-                                appearance.icon_size + appearance.gap
+                                canvas_appearance.icon_size + canvas_appearance.gap
                             } else {
                                 0.0
                             };
                         let text_viewport = Bounds::from_corners(
                             point(bounds.left() + px(x_offset), bounds.top()),
-                            point(bounds.right() - px(appearance.padding_x), bounds.bottom()),
+                            point(bounds.right() - px(canvas_appearance.padding_x), bounds.bottom()),
                         );
                         TextFieldLayoutCache {
                             bounds,

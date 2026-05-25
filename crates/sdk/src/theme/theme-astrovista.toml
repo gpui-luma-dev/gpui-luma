@@ -1,0 +1,580 @@
+# Astrovista — manual import from tweakcn-astrovista.css (Phase 1)
+#
+# Source: crates/sdk/src/theme/tweakcn-astrovista.css
+# Mapping: docs/ai/next-step-theme-import.md
+#
+# Action mapping (Luma slot names match visual weight, not shadcn recipe names):
+#   prominent → --primary (coral CTA)
+#   standard  → --secondary (filled navy; shadcn "secondary")
+#   subtle    → outline recipe: --card + --border (shadcn "outline"; visually quiet)
+#   ghost     → transparent + --accent hover
+#
+# Derivation when CSS has no hover/pressed: prominent/standard +5% L hover, -8% L pressed;
+# subtle outline: hover --accent, pressed accent -4% L.
+
+name = "Astrovista"
+version = 1
+
+[light.palette.app]
+background = "hsl(204 12.2% 92%)"
+foreground = "hsl(0 0% 20%)"
+muted_foreground = "hsl(220 8.9% 46.1%)"
+
+[light.palette.surface.panel]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 20%)"
+border = "hsl(0 0% 80%)"
+
+[light.palette.surface.floating]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 20%)"
+border = "hsl(0 0% 80%)"
+
+[light.palette.surface.subtle]
+background = "hsl(210 20% 98%)"
+foreground = "hsl(220 8.9% 46.1%)"
+
+[light.palette.action.prominent]
+background = "hsl(15.2 72.6% 54.1%)"
+foreground = "hsl(0 0% 100%)"
+hover_background = "hsl(15.2 72.6% 59.1%)"
+pressed_background = "hsl(15.2 72.6% 46.1%)"
+border = "hsl(15.2 72.6% 54.1%)"
+
+[light.palette.action.subtle]
+background = "hsl(0 0% 100%)"
+foreground = "hsl(0 0% 20%)"
+hover_background = "hsl(207.7 46.4% 89%)"
+pressed_background = "hsl(207.7 46.4% 85%)"
+border = "hsl(0 0% 80%)"
+
+[light.palette.action.standard]
+background = "hsl(217.3 44% 32.9%)"
+foreground = "hsl(0 0% 100%)"
+hover_background = "hsl(217.3 44% 37.9%)"
+pressed_background = "hsl(217.3 44% 24.9%)"
+border = "hsl(217.3 44% 32.9%)"
+
+[light.palette.action.ghost]
+background = "hsl(204 12.2% 92%)"
+foreground = "hsl(0 0% 20%)"
+hover_background = "hsl(207.7 46.4% 89%)"
+pressed_background = "hsl(207.7 46.4% 85%)"
+border = "hsla(0 0% 0% / 0)"
+
+[light.palette.state.hover]
+background = "hsl(207.7 46.4% 89%)"
+foreground = "hsl(224.4 64.3% 32.9%)"
+
+[light.palette.state.pressed]
+background = "hsl(207.7 46.4% 85%)"
+
+[light.palette.state.selected]
+background = "hsl(15.2 72.6% 54.1%)"
+foreground = "hsl(0 0% 100%)"
+
+[light.palette.state.disabled]
+background = "hsl(210 20% 98%)"
+foreground = "hsl(220 8.9% 46.1%)"
+
+[light.palette.form.input]
+background = "hsl(220 15.8% 96.3%)"
+foreground = "hsl(0 0% 20%)"
+border = "hsl(0 0% 80%)"
+invalid_border = "hsl(0 84.2% 60.2%)"
+placeholder = "hsl(220 8.9% 46.1%)"
+
+[light.palette.focus]
+ring = "hsl(13.2 73% 54.9%)"
+
+[light.palette.border]
+default = "hsl(0 0% 80%)"
+strong = "hsl(220 8.9% 46.1%)"
+
+[light.palette.navigation]
+background = "hsl(216 7.9% 87.6%)"
+foreground = "hsl(0 0% 20%)"
+muted_foreground = "hsl(220 8.9% 46.1%)"
+hover_background = "hsl(207.7 46.4% 89%)"
+selected_background = "hsl(13.2 73% 54.9%)"
+selected_foreground = "hsl(0 0% 100%)"
+border = "hsl(220 13% 91%)"
+
+[light.palette.data]
+accent_1 = "hsl(210 37.3% 60%)"
+accent_2 = "hsl(17.3 72.7% 56.9%)"
+accent_3 = "hsl(355 63.3% 55.1%)"
+accent_4 = "hsl(41.2 72.9% 58%)"
+accent_5 = "hsl(223.4 32.6% 34.9%)"
+
+[dark.palette.app]
+background = "hsl(0 0% 10.2%)"
+foreground = "hsl(0 0% 89.8%)"
+muted_foreground = "hsl(0 0% 50.2%)"
+
+[dark.palette.surface.panel]
+background = "hsl(0 0% 12.5%)"
+foreground = "hsl(0 0% 89.8%)"
+border = "hsl(0 0% 20.8%)"
+
+[dark.palette.surface.floating]
+background = "hsl(0 0% 12.5%)"
+foreground = "hsl(0 0% 89.8%)"
+border = "hsl(0 0% 20.8%)"
+
+[dark.palette.surface.subtle]
+background = "hsl(0 0% 16.5%)"
+foreground = "hsl(0 0% 50.2%)"
+
+[dark.palette.action.prominent]
+background = "hsl(15.2 72.6% 54.1%)"
+foreground = "hsl(0 0% 100%)"
+hover_background = "hsl(15.2 72.6% 59.1%)"
+pressed_background = "hsl(15.2 72.6% 46.1%)"
+border = "hsl(15.2 72.6% 54.1%)"
+
+[dark.palette.action.subtle]
+background = "hsl(0 0% 12.5%)"
+foreground = "hsl(0 0% 89.8%)"
+hover_background = "hsl(223.6 34.4% 25.1%)"
+pressed_background = "hsl(223.6 34.4% 21%)"
+border = "hsl(0 0% 20.8%)"
+
+[dark.palette.action.standard]
+background = "hsl(216.2 44.1% 28%)"
+foreground = "hsl(0 0% 89.8%)"
+hover_background = "hsl(216.2 44.1% 33%)"
+pressed_background = "hsl(216.2 44.1% 20%)"
+border = "hsl(216.2 44.1% 28%)"
+
+[dark.palette.action.ghost]
+background = "hsl(0 0% 10.2%)"
+foreground = "hsl(0 0% 89.8%)"
+hover_background = "hsl(223.6 34.4% 25.1%)"
+pressed_background = "hsl(223.6 34.4% 21%)"
+border = "hsla(0 0% 0% / 0)"
+
+[dark.palette.state.hover]
+background = "hsl(223.6 34.4% 25.1%)"
+foreground = "hsl(213.3 96.9% 87.3%)"
+
+[dark.palette.state.pressed]
+background = "hsl(223.6 34.4% 21%)"
+
+[dark.palette.state.selected]
+background = "hsl(15.2 72.6% 54.1%)"
+foreground = "hsl(0 0% 100%)"
+
+[dark.palette.state.disabled]
+background = "hsl(0 0% 16.5%)"
+foreground = "hsl(0 0% 50.2%)"
+
+[dark.palette.form.input]
+background = "hsl(0 0% 18.8%)"
+foreground = "hsl(0 0% 89.8%)"
+border = "hsl(0 0% 20.8%)"
+invalid_border = "hsl(0 84.2% 60.2%)"
+placeholder = "hsl(0 0% 50.2%)"
+
+[dark.palette.focus]
+ring = "hsl(13.2 73% 54.9%)"
+
+[dark.palette.border]
+default = "hsl(0 0% 20.8%)"
+strong = "hsl(0 0% 50.2%)"
+
+[dark.palette.navigation]
+background = "hsl(0 0% 12.2%)"
+foreground = "hsl(0 0% 89.8%)"
+muted_foreground = "hsl(0 0% 50.2%)"
+hover_background = "hsl(223.6 34.4% 25.1%)"
+selected_background = "hsl(13.2 73% 54.9%)"
+selected_foreground = "hsl(0 0% 100%)"
+border = "hsl(0 0% 20.8%)"
+
+[dark.palette.data]
+accent_1 = "hsl(210 37.1% 65.1%)"
+accent_2 = "hsl(17.3 72.7% 56.9%)"
+accent_3 = "hsl(355 63.3% 55.1%)"
+accent_4 = "hsl(41.2 72.9% 58%)"
+accent_5 = "hsl(223.4 32.6% 34.9%)"
+
+[light.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[light.metrics.radius]
+none = 0
+sm = 4
+md = 8
+lg = 8
+xl = 12
+pill = 999
+
+[light.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[light.metrics.focus]
+width = 1
+offset = 0
+
+[light.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 6
+
+[light.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 8
+
+[light.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 6
+
+[light.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 8
+
+[light.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[light.typography.font.sans]
+family = "Outfit"
+
+[light.typography.font.mono]
+family = "Fira Code"
+
+[light.typography.font.serif]
+family = "Merriweather"
+
+[light.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[light.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[light.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[light.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[light.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[light.elevation.none]
+layers = []
+
+[[light.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.05)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.14)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.1)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = -1
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.12)"
+offset_x = 0
+offset_y = 4
+blur = 8
+spread = -2
+
+[[light.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 2
+blur = 4
+spread = -1
+
+[[light.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.06)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.16)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[light.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.08)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[light.colors]
+surface = "hsl(204 12.2% 92%)"
+surface_hover = "hsl(207.7 46.4% 89%)"
+surface_pressed = "hsl(207.7 46.4% 85%)"
+surface_disabled = "hsl(210 20% 98%)"
+prominent = "hsl(15.2 72.6% 54.1%)"
+prominent_hover = "hsl(15.2 72.6% 59.1%)"
+prominent_pressed = "hsl(15.2 72.6% 46.1%)"
+selected = "hsl(15.2 72.6% 54.1%)"
+selected_hover = "hsl(15.2 72.6% 59.1%)"
+selected_pressed = "hsl(15.2 72.6% 46.1%)"
+text = "hsl(0 0% 20%)"
+text_inverse = "hsl(0 0% 100%)"
+text_disabled = "hsl(220 8.9% 46.1%)"
+border = "hsl(0 0% 80%)"
+
+[dark.metrics.spacing]
+s0 = 0
+s1 = 4
+s2 = 6
+s3 = 8
+s4 = 12
+s5 = 16
+s6 = 24
+
+[dark.metrics.radius]
+none = 0
+sm = 4
+md = 8
+lg = 8
+xl = 12
+pill = 999
+
+[dark.metrics.border_width]
+hairline = 0.5
+default = 1
+strong = 2
+
+[dark.metrics.focus]
+width = 1
+offset = 0
+
+[dark.metrics.control.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 6
+
+[dark.metrics.control.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 8
+
+[dark.metrics.control.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.metrics.sm]
+height = 28
+control_height = 28
+padding_x = 10
+padding_y = 5
+gap = 6
+radius = 6
+
+[dark.metrics.md]
+height = 36
+control_height = 36
+padding_x = 14
+padding_y = 8
+gap = 8
+radius = 8
+
+[dark.metrics.lg]
+height = 44
+control_height = 44
+padding_x = 18
+padding_y = 10
+gap = 10
+radius = 8
+
+[dark.typography.font.sans]
+family = "Outfit"
+
+[dark.typography.font.mono]
+family = "Fira Code"
+
+[dark.typography.font.serif]
+family = "Merriweather"
+
+[dark.typography.text.body]
+size = 14
+line_height = 20
+weight = 400
+
+[dark.typography.text.label]
+size = 13
+line_height = 18
+weight = 500
+
+[dark.typography.text.caption]
+size = 11
+line_height = 14
+weight = 500
+
+[dark.typography.text.title]
+size = 20
+line_height = 28
+weight = 600
+
+[dark.typography.text.code]
+size = 13
+line_height = 18
+weight = 400
+
+[dark.elevation.none]
+layers = []
+
+[[dark.elevation.control.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.thumb.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 1
+blur = 2
+spread = 0
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.28)"
+offset_x = 0
+offset_y = 6
+blur = 16
+spread = -6
+
+[[dark.elevation.menu.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.34)"
+offset_x = 0
+offset_y = 10
+blur = 24
+spread = -8
+
+[[dark.elevation.popover.layers]]
+color = "hsla(0 0% 0% / 0.18)"
+offset_x = 0
+offset_y = 2
+blur = 6
+spread = -2
+
+[[dark.elevation.panel.layers]]
+color = "hsla(0 0% 0% / 0.2)"
+offset_x = 0
+offset_y = 1
+blur = 3
+spread = 0
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.42)"
+offset_x = 0
+offset_y = 18
+blur = 32
+spread = -8
+
+[[dark.elevation.dialog.layers]]
+color = "hsla(0 0% 0% / 0.24)"
+offset_x = 0
+offset_y = 6
+blur = 12
+spread = -4
+
+[dark.colors]
+surface = "hsl(0 0% 10.2%)"
+surface_hover = "hsl(223.6 34.4% 25.1%)"
+surface_pressed = "hsl(223.6 34.4% 21%)"
+surface_disabled = "hsl(0 0% 16.5%)"
+prominent = "hsl(15.2 72.6% 54.1%)"
+prominent_hover = "hsl(15.2 72.6% 59.1%)"
+prominent_pressed = "hsl(15.2 72.6% 46.1%)"
+selected = "hsl(15.2 72.6% 54.1%)"
+selected_hover = "hsl(15.2 72.6% 59.1%)"
+selected_pressed = "hsl(15.2 72.6% 46.1%)"
+text = "hsl(0 0% 89.8%)"
+text_inverse = "hsl(0 0% 100%)"
+text_disabled = "hsl(0 0% 50.2%)"
+border = "hsl(0 0% 20.8%)"

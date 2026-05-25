@@ -37,18 +37,20 @@ Trying to map both **outline Cancel** and **filled navy secondary** onto Luma **
 Use **visual weight** names in the Luma API — not Radix/shadcn variant strings:
 
 ```text
-Prominent  →  Subtle  →  Standard  →  Ghost
-(loudest)      (filled,          (bordered      (quietest)
+Prominent  →  Standard  →  Subtle  →  Ghost
+(loudest)      (filled           (bordered      (quietest)
                 secondary tone)     neutral)
 ```
+
+`Subtle` means visually quiet (outline / bordered). `Standard` is the filled alternate tone (shadcn `secondary`), not the outline recipe.
 
 ### Confirmed shadcn import mapping (concept)
 
 | Luma (API) | shadcn recipe | Astrovista example |
 |---|---|---|
 | **Prominent** | `primary` / `default` | Coral “Upgrade Plan” |
-| **Subtle** | `secondary` (filled) | Navy filled chips / selective icon toggles |
-| **Standard** | `outline` | White card + grey border “Cancel” |
+| **Standard** | `secondary` (filled) | Navy filled chips / secondary actions |
+| **Subtle** | `outline` | White card + grey border “Cancel” |
 | **Ghost** | `ghost` | Transparent, hover tint only |
 
 **Link** and **destructive** are out of scope for the four-weight ladder — add later when product needs them.
@@ -64,8 +66,8 @@ Closest Radix → Luma weight mapping (Button / IconButton):
 | Radix recipe | Closest Luma weight |
 |---|---|
 | `solid` + accent color | Prominent |
-| `soft` / filled secondary surface | Subtle |
-| `surface` / `outline` | Standard |
+| `soft` / filled secondary surface | Standard |
+| `surface` / `outline` | Subtle |
 | `ghost`, `ghost-offset` | Ghost |
 
 Other Radix components (Badge, Callout, Select trigger) can reuse the same weight resolver; they are not separate Luma variant enums unless product needs demand it.
@@ -97,7 +99,7 @@ Add full role under `[*.palette.action.subtle]`:
 
 ```toml
 [light.palette.action.subtle]
-background = "…"      # typically from CSS --secondary
+background = "…"      # typically outline: --card + --border
 foreground = "…"
 hover_background = "…"
 pressed_background = "…"
@@ -110,13 +112,12 @@ border = "…"
 - Toggle selected state: default mapping stays **Prominent** or `state.selected` — not Subtle unless explicitly designed.
 - Icon toolbars / toggle groups: unselected → Standard or Ghost; selected → Prominent (existing gallery pattern).
 
-### 4. Re-map `action.standard` for imported themes
+### 4. Theme slots vs shadcn recipe names
 
-For shadcn **outline** imports, **`action.standard`** should be the bordered neutral recipe (card background + border), **not** the filled `--secondary` navy.
+- **`action.subtle`** — outline / bordered neutral (card background + `--border`). Visually quiet; matches `ButtonKind::Subtle`.
+- **`action.standard`** — filled secondary tone (`--secondary` in Astrovista). Matches `ButtonKind::Standard` (default kind).
 
-**`action.subtle`** owns the filled secondary tone (`--secondary` in Astrovista).
-
-This corrects an earlier mistake where `--secondary` was mapped to `action.standard`, making Standard buttons look like shadcn Secondary instead of Outline.
+Do not map navy `--secondary` to `action.subtle` — the gallery Subtle row will look like a solid fill instead of Cancel-style outline.
 
 ### 5. Gallery
 
@@ -132,20 +133,20 @@ When converting tweakcn CSS (`docs/ai/next-step-theme-import.md`):
 | CSS variable | Luma slot (after variant work) |
 |---|---|
 | `--primary` | `action.prominent.*` |
-| `--secondary` | `action.subtle.*` |
-| `--background` / `--card` + `--border` | `action.standard.*` (outline recipe) |
+| `--secondary` | `action.standard.*` |
+| `--card` + `--border` | `action.subtle.*` (outline recipe) |
 | `--accent` | `state.hover.*` (and dark-mode hover variants) |
 | `--destructive` | `form.input.invalid_border` only (no action role yet) |
 | `--muted` | `surface.subtle.*`, `state.disabled.*` |
 
-Derive hover/pressed for prominent and subtle when CSS exports only base pairs (+/- lightness steps, typically 4–9% L).
+Derive hover/pressed for prominent and standard (filled roles) when CSS exports only base pairs (+/- lightness steps, typically 4–9% L).
 
 ---
 
 ## Toggle / selection semantics (boundaries)
 
-- **Subtle** is filled but de-emphasized vs Prominent — not the same as Ghost hover-only.
-- **Standard** is the neutral bordered default — Cancel, secondary actions that need a box.
+- **Subtle** is the bordered / outline weight — Cancel, quiet secondary actions.
+- **Standard** is filled but de-emphasized vs Prominent (shadcn `secondary`) — not the same as Ghost hover-only.
 - **Prominent** remains the single primary CTA weight per surface unless product adds multi-accent rules later.
 
 Open questions (defer until implementation):
@@ -160,8 +161,8 @@ See also `docs/theme.md` open questions.
 
 ## Verification (when implemented)
 
-1. Astrovista import: Prominent = coral, Subtle = navy fill, Standard = white+border Cancel, Ghost = transparent.
-2. white-orange import: secondary orange maps to Subtle, not Standard.
+1. Astrovista import: Prominent = coral, Standard = navy fill, Subtle = white+border Cancel, Ghost = transparent.
+2. white-orange import: secondary orange maps to Standard (`action.standard`), not Subtle.
 3. Gallery Button pane shows four weights.
 4. `cargo test -p gpui-luma` theme tests cover `action.subtle` parse + resolve.
 5. No public API exposes shadcn names (`outline`, `secondary`, etc.).

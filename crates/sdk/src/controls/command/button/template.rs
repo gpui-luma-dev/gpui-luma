@@ -70,6 +70,7 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             .border_color(appearance.border)
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
+            .font_family(appearance.font_family.clone())
             .font_weight(appearance.typography.weight)
             .h(px(appearance.height));
 

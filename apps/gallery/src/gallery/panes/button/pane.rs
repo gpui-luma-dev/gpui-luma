@@ -288,7 +288,7 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    "Standard",
+                    "Subtle",
                     ButtonKind::Subtle,
                     &variants,
                     &samples,
@@ -300,7 +300,7 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    "Outline",
+                    "Standard",
                     ButtonKind::Standard,
                     &variants,
                     &samples,

@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{BoxShadow, Hsla};
+use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
@@ -17,6 +17,7 @@ pub struct SwitchAppearance {
     pub label_color: Hsla,
     pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
+    pub label_font_family: SharedString,
     pub width: f32,
     pub height: f32,
     pub thumb_size: f32,
@@ -198,6 +199,7 @@ impl SwitchTheme for DefaultSwitchTheme {
             },
             adorner,
             label_typography: typography.text.label,
+            label_font_family: typography.font.sans.family.clone().into(),
             width: 42.0,
             height: 22.0,
             thumb_size: metrics.control_height(size) * 0.5,

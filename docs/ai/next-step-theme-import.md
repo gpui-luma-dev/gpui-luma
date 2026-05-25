@@ -13,7 +13,7 @@ Guide for translating [shadcn/ui](https://ui.shadcn.com/) and [tweakcn](https://
 | Source CSS | Example TOML | Notes |
 |---|---|---|
 | `crates/sdk/src/theme/tweakcdn-white-orange.css` | `crates/sdk/src/theme/theme-astrovista2.toml` | Orange primary, light card panels |
-| `crates/sdk/src/theme/tweakcn-astrovista.css` | (manual conversion target) | Grey-blue canvas, coral primary, navy `--secondary` |
+| `crates/sdk/src/theme/tweakcn-astrovista.css` | `crates/sdk/src/theme/theme-astrovista.toml` | Grey-blue canvas, coral primary, navy `--secondary` |
 | — | `crates/sdk/src/theme/default-theme.toml` | Native Luma theme (SDK default via `DEFAULT_THEME_TOML`) |
 
 CSS sources live under `crates/sdk/src/theme/` for diffing during manual import.
@@ -99,14 +99,14 @@ Until `action.subtle` lands (`docs/ai/next-step-variants.md`), use this **interi
 |---|---|---|
 | `--primary` | `palette.action.prominent.*` | same |
 | `--primary-foreground` | prominent foreground | same |
-| `--secondary` | ⚠ avoid mapping to `action.standard` | `palette.action.subtle.*` |
-| `--secondary-foreground` | — | subtle foreground |
+| `--secondary` | `palette.action.standard.*` | Filled alternate tone (shadcn `secondary`) |
+| `--secondary-foreground` | standard foreground | |
 | `--destructive` | — | deferred (no action role yet) |
 | `--destructive-foreground` | — | deferred |
-| `--background` + `--border` | `palette.action.standard.*` (outline recipe) | same |
+| `--card` + `--border` | `palette.action.subtle.*` (outline recipe) | shadcn `outline` — visually quiet |
 | transparent / `--accent` hover | `palette.action.ghost.*` | same |
 
-**Outline vs secondary:** shadcn **outline** = bordered neutral (card bg + border). shadcn **secondary** = filled alternate tone. Mapping `--secondary` to `action.standard` makes Standard buttons look like filled navy instead of Cancel-style outline — wrong for Astrovista.
+**Outline vs secondary:** shadcn **outline** = bordered neutral (card bg + border) → Luma **`action.subtle`**. shadcn **secondary** = filled alternate tone → Luma **`action.standard`**. Do not put navy `--secondary` on `action.subtle` — that row is labeled Subtle in the gallery and should look bordered, not filled.
 
 ### State & interaction
 
@@ -176,13 +176,13 @@ Documented conversion targets:
 | `--background` | Grey-blue canvas `hsl(204 12.2% 92%)` | Near-black `hsl(0 0% 10.2%)` |
 | `--primary` | Coral `hsl(15.2 72.6% 54.1%)` | Same coral |
 | `--card` / `--popover` | White panels/menus | `hsl(0 0% 12.5%)` |
-| `--secondary` | Navy `hsl(217.3 44% 32.9%)` | Navy `hsl(216.2 44.1% 28%)` → **Subtle** when implemented |
+| `--secondary` | Navy `hsl(217.3 44% 32.9%)` | Navy `hsl(216.2 44.1% 28%)` → **`action.standard`** |
 | `--muted` | Subtle surfaces / disabled | Elevated chrome |
 | `--accent` | Hover states | Dark: `--sidebar-accent` for hover |
 | `--destructive` | `form.input.invalid_border` | Validation errors only |
 | `--sidebar-*` | Navigation palette | Navigation palette |
 
-Standard/outline buttons: white/card fill + grey `--border`, **not** navy secondary.
+**Subtle** (outline): white/card fill + grey `--border`. **Standard**: navy `--secondary` fill.
 
 ---
 
@@ -244,9 +244,10 @@ shadcn exports rarely include hover/pressed. Standard derivation for action role
 ```text
 prominent.hover_background   = lighten(prominent.background, 4–6% L)
 prominent.pressed_background = darken(prominent.background, 6–10% L)
+standard.hover_background    = lighten(standard.background, 4–6% L)  # --secondary fill
+subtle.border                = --border  # outline recipe
 ghost.hover_background       = map --accent or muted wash
 ghost.border                 = transparent (hsla 0 alpha)
-standard.border              = --border
 ```
 
 Document chosen percentages in the TOML file header for reproducibility.
@@ -297,7 +298,7 @@ After writing TOML:
 
 | Mistake | Symptom |
 |---|---|
-| Map `--secondary` → `action.standard` | Standard buttons become filled navy/orange instead of outline |
+| Map `--secondary` → `action.subtle` | Subtle row shows filled navy instead of outline Cancel |
 | Use `--background` for panel and app interchangeably | Flat UI; cards disappear |
 | Skip hover/pressed derivation | Buttons feel dead; SDK expects full action role |
 | Copy `@theme inline` into Luma | Irrelevant Tailwind wiring |

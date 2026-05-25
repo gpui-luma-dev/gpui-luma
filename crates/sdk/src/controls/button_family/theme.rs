@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
@@ -33,6 +33,7 @@ pub struct ButtonFamilyAppearance {
     pub border: Hsla,
     pub adorner: Option<AdornerSpec>,
     pub typography: LumaTextStyle,
+    pub font_family: SharedString,
     pub radius: f32,
     pub padding_x: f32,
     pub padding_y: f32,
@@ -338,6 +339,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             border,
             adorner,
             typography: typography.text.label,
+            font_family: typography.font.sans.family.clone().into(),
             radius: match role {
                 ButtonFamilyRole::Icon => metrics.radius.pill,
                 _ => metrics.radius(size),

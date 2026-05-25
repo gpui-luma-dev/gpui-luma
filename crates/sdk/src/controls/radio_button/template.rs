@@ -71,6 +71,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             .text_color(appearance.label_color)
             .text_size(px(appearance.label_typography.size))
             .line_height(px(appearance.label_typography.line_height))
+            .font_family(appearance.label_font_family.clone())
             .font_weight(appearance.label_typography.weight)
             .rounded(px(appearance.control_radius))
             .child(indicator)

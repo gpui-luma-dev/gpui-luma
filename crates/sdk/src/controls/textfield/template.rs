@@ -85,7 +85,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = model.appearance;
+        let appearance = model.appearance.clone();
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
@@ -208,6 +208,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .rounded(px(appearance.radius))
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
+            .font_family(appearance.font_family.clone())
             .font_weight(appearance.typography.weight)
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())

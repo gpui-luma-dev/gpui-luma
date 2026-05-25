@@ -28,18 +28,18 @@ pressed_background = "hsl(226 71% 40%)"
 border = "hsl(221 83% 53%)"
 
 [light.palette.action.subtle]
-background = "hsl(210 40% 96%)"
-foreground = "hsl(222 47% 11%)"
-hover_background = "hsl(214 32% 91%)"
-pressed_background = "hsl(213 27% 84%)"
-border = "hsl(210 40% 96%)"
-
-[light.palette.action.standard]
 background = "hsl(0 0% 100%)"
 foreground = "hsl(222 47% 11%)"
 hover_background = "hsl(210 40% 96%)"
 pressed_background = "hsl(214 32% 91%)"
 border = "hsl(213 27% 84%)"
+
+[light.palette.action.standard]
+background = "hsl(210 40% 96%)"
+foreground = "hsl(222 47% 11%)"
+hover_background = "hsl(214 32% 91%)"
+pressed_background = "hsl(213 27% 84%)"
+border = "hsl(210 40% 96%)"
 
 [light.palette.action.ghost]
 background = "hsl(210 40% 98%)"
@@ -313,18 +313,18 @@ pressed_background = "hsl(213 97% 87%)"
 border = "hsl(213 94% 68%)"
 
 [dark.palette.action.subtle]
-background = "hsl(217 33% 17%)"
-foreground = "hsl(210 40% 98%)"
-hover_background = "hsl(215 25% 27%)"
-pressed_background = "hsl(215 19% 35%)"
-border = "hsl(217 33% 17%)"
-
-[dark.palette.action.standard]
 background = "hsl(221 39% 11%)"
 foreground = "hsl(210 40% 98%)"
 hover_background = "hsl(217 33% 17%)"
 pressed_background = "hsl(215 25% 27%)"
 border = "hsl(215 25% 27%)"
+
+[dark.palette.action.standard]
+background = "hsl(217 33% 17%)"
+foreground = "hsl(210 40% 98%)"
+hover_background = "hsl(215 25% 27%)"
+pressed_background = "hsl(215 19% 35%)"
+border = "hsl(217 33% 17%)"
 
 [dark.palette.action.ghost]
 background = "hsl(217 33% 17%)"
