@@ -1,31 +1,25 @@
-//! Rajdhani from [Fontshare](https://www.fontshare.com/fonts/rajdhani) (OFL, see `Rajdhani_Complete/License/OFL.txt`).
+//! Rajdhani for the Jarvis gallery theme ([Fontshare](https://www.fontshare.com/fonts/rajdhani)).
+//! License: `fonts/Rajdhani/OFL.txt` (SIL OFL 1.1 — keep with the font). See `fonts/Rajdhani/README.md`.
 //!
-//! GPUI needs raw TTF/OTF bytes (`add_fonts`), not the WEB `.woff` bundle.
+//! Astrovista (default) uses system/Outfit — call [`load_rajdhani`] before switching to `themes::JARVIS`.
 
 use std::borrow::Cow;
 
 use anyhow::Context as _;
 use gpui::App;
 
-/// Family name to use in `.font_family(...)` / `theme.toml` `typography.font.sans`.
-pub const RAJDHANI_FAMILY: &str = "Rajdhani";
+/// Must match `themes/tweakcn-jarvis.toml` `typography.font.sans.family` and the name table in `Rajdhani-Variable.ttf`.
+pub const RAJDHANI_FAMILY: &str = "Rajdhani Variable";
 
-const RAJDHANI_VARIABLE: &[u8] = include_bytes!("Rajdhani_Complete/Fonts/TTF/Rajdhani-Variable.ttf");
-const RAJDHANI_REGULAR: &[u8] = include_bytes!("Rajdhani_Complete/Fonts/WEB/fonts/Rajdhani-Regular.ttf");
-const RAJDHANI_MEDIUM: &[u8] = include_bytes!("Rajdhani_Complete/Fonts/WEB/fonts/Rajdhani-Medium.ttf");
-const RAJDHANI_SEMIBOLD: &[u8] = include_bytes!("Rajdhani_Complete/Fonts/WEB/fonts/Rajdhani-SemiBold.ttf");
+const RAJDHANI_VARIABLE: &[u8] = include_bytes!("fonts/Rajdhani/Rajdhani-Variable.ttf");
 
+/// Registers Rajdhani (variable weight 300–700). No-op safe to call more than once only if GPUI allows; call once before Jarvis theme.
 pub fn load_rajdhani(cx: &mut App) -> anyhow::Result<()> {
     cx.text_system()
-        .add_fonts(vec![
-            Cow::Borrowed(RAJDHANI_VARIABLE),
-            Cow::Borrowed(RAJDHANI_REGULAR),
-            Cow::Borrowed(RAJDHANI_MEDIUM),
-            Cow::Borrowed(RAJDHANI_SEMIBOLD),
-        ])
-        .context("failed to register Rajdhani fonts")?;
+        .add_fonts(vec![Cow::Borrowed(RAJDHANI_VARIABLE)])
+        .context("failed to register Rajdhani variable font")?;
 
-    tracing::info!(family = RAJDHANI_FAMILY, "gallery sans fonts registered");
+    tracing::info!(family = RAJDHANI_FAMILY, "Rajdhani font registered for Jarvis theme");
 
     Ok(())
 }

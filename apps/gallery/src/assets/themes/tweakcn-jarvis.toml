@@ -5,7 +5,7 @@
 #
 # Notable CSS vs native Luma (may need SDK/gallery follow-up):
 #   --radius: 0.25rem light (4px), 0.125rem dark (2px) — per-mode metrics below
-#   --font-sans: Rajdhani; --font-mono: JetBrains Mono; --tracking-normal: 0.02em (no TOML slot yet)
+#   --font-sans: Rajdhani → embedded as "Rajdhani Variable" (variable TTF name table)
 #   Dark shadows use cyan glow (rgb 34,211,238) — approximated in elevation layers
 #
 # Derivation: prominent/standard +5% L hover, -8% L pressed; subtle outline hover --accent.
@@ -272,7 +272,8 @@ gap = 10
 radius = 4
 
 [light.typography.font.sans]
-family = "Rajdhani"
+# Must match the family name inside Rajdhani-Variable.ttf (not "Rajdhani").
+family = "Rajdhani Variable"
 
 [light.typography.font.mono]
 family = "JetBrains Mono"
@@ -462,7 +463,7 @@ gap = 10
 radius = 2
 
 [dark.typography.font.sans]
-family = "Rajdhani"
+family = "Rajdhani Variable"
 
 [dark.typography.font.mono]
 family = "JetBrains Mono"

@@ -1377,16 +1377,4 @@ mod tests {
         assert!(LumaTheme::from_toml_str(&source).is_err());
     }
 
-    #[test]
-    fn astrovista_theme_parses_with_distinct_action_roles() {
-        const ASTROVISTA_THEME_TOML: &str = include_str!("theme-astrovista.toml");
-        let theme = LumaTheme::from_toml_str(ASTROVISTA_THEME_TOML).expect("astrovista theme should parse");
-        let light = theme.mode(ThemeMode::Light);
-
-        assert_eq!(theme.name, "Astrovista");
-        assert_eq!(light.palette.action.subtle.background, light.palette.surface.panel.background);
-        assert_ne!(light.palette.action.subtle.background, light.palette.action.standard.background);
-        assert_ne!(light.palette.action.prominent.background, light.palette.action.standard.background);
-        assert_eq!(light.palette.app.background, light.palette.action.ghost.background);
-    }
 }

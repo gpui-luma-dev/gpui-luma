@@ -86,10 +86,17 @@ pub struct LumaChrome {
 
 impl LumaThemePack {
     pub fn new() -> Self {
-        let state =
-            Arc::new(LumaThemeState { theme: LumaTheme::native(), mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)) });
+        Self::from_theme(LumaTheme::native())
+    }
+
+    pub fn from_theme(theme: LumaTheme) -> Self {
+        let state = Arc::new(LumaThemeState { theme, mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)) });
 
         Self { state: state.clone(), live_theme: Arc::new(LumaLiveTheme { state }) }
+    }
+
+    pub fn from_toml_str(source: &str) -> anyhow::Result<Self> {
+        Ok(Self::from_theme(LumaTheme::from_toml_str(source)?))
     }
 
     pub fn chrome(&self) -> LumaChrome {

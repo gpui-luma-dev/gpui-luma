@@ -1,6 +1,7 @@
 # Astrovista — manual import from tweakcn-astrovista.css (Phase 1)
 #
-# Source: crates/sdk/src/theme/tweakcn-astrovista.css
+# Source: crates/sdk/src/theme/tweakcn-astrovista.css (CSS stays in SDK for reference)
+# Gallery: apps/gallery/src/assets/themes/tweakcn-astrovista.toml
 # Mapping: docs/ai/next-step-theme-import.md
 #
 # Action mapping (Luma slot names match visual weight, not shadcn recipe names):

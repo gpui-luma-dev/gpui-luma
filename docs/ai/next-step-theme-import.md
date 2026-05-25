@@ -13,7 +13,8 @@ Guide for translating [shadcn/ui](https://ui.shadcn.com/) and [tweakcn](https://
 | Source CSS | Example TOML | Notes |
 |---|---|---|
 | `crates/sdk/src/theme/tweakcdn-white-orange.css` | `crates/sdk/src/theme/theme-astrovista2.toml` | Orange primary, light card panels |
-| `crates/sdk/src/theme/tweakcn-astrovista.css` | `crates/sdk/src/theme/theme-astrovista.toml` | Grey-blue canvas, coral primary, navy `--secondary` |
+| `crates/sdk/src/theme/tweakcn-astrovista.css` | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` | Grey-blue canvas, coral primary, navy `--secondary` |
+| `crates/sdk/src/theme/tweakcn-jarvis.css` | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` | Teal Jarvis; `cargo run -p gpui-luma-gallery -- jarvis` |
 | — | `crates/sdk/src/theme/default-theme.toml` | Native Luma theme (SDK default via `DEFAULT_THEME_TOML`) |
 
 CSS sources live under `crates/sdk/src/theme/` for diffing during manual import.

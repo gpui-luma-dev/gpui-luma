@@ -5,7 +5,7 @@ use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::theme::{ThemeMode, set_active_theme_pack};
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
-use super::theme::GalleryThemePack;
+use super::theme::{GalleryThemeChoice, GalleryThemePack};
 
 pub struct GalleryApp {
     pub(super) focus_scope: FocusHandle,
@@ -23,11 +23,11 @@ pub struct GalleryApp {
 }
 
 impl GalleryApp {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>, theme_choice: GalleryThemeChoice) -> Self {
         let focus_scope = cx.focus_handle();
         let pane_focus = cx.focus_handle().tab_stop(true);
         window.focus(&focus_scope, cx);
-        let theme = GalleryThemePack::new();
+        let theme = theme_choice.theme_pack();
         theme.set_mode(ThemeMode::Dark);
         set_active_theme_pack(&theme);
         let chrome = theme.chrome();
