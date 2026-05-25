@@ -6,7 +6,7 @@ pub mod registry;
 
 pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 pub use interaction::{InteractionLayer, InteractionState};
-pub use pack::{LumaChrome, LumaThemePack};
+pub use pack::{LumaChrome, LumaThemePack, set_active_theme_pack};
 pub use registry::{PaletteColorToken, ThemePartUsage, ThemeUsage, palette_color_tokens, resolve_palette_color};
 pub use crate::controls::all_theme_usages;
 pub use tokens::{

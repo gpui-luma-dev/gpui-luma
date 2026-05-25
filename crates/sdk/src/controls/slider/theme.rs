@@ -29,6 +29,9 @@ pub struct DefaultSliderTheme {
 }
 
 pub fn default_slider_theme() -> Arc<dyn SliderTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn SliderTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSliderTheme::default())).clone()

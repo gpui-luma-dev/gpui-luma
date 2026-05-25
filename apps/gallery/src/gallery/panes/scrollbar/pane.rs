@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::scrollbar::{
     Scrollbar, ScrollbarBoundsHandler, ScrollbarDrag, ScrollbarDragMoveHandler, ScrollbarEvent, ScrollbarHoverHandler,
     ScrollbarMouseDownHandler, ScrollbarMouseUpHandler, ScrollbarOrientation, ScrollbarRenderModel,
-    ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,
+    ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers, default_scrollbar_template,
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::InteractionState;
@@ -42,7 +42,6 @@ impl ScrollbarPane {
                 .page_step(80)
                 .value(40)
                 .thumb_fraction(0.54)
-                .template(theme.scrollbar_template())
                 .spawn(cx),
             vertical_scrollbar: Scrollbar::new("scrollbar-vertical-example")
                 .vertical()
@@ -51,7 +50,6 @@ impl ScrollbarPane {
                 .page_step(80)
                 .value(80)
                 .thumb_fraction(0.45)
-                .template(theme.scrollbar_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ScrollbarStatePreview::new(theme)),
             horizontal_value: 40.0,
@@ -136,7 +134,7 @@ struct ScrollbarStateSample {
 
 impl ScrollbarStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.scrollbar_template() }
+        Self { theme: theme.clone(), template: default_scrollbar_template() }
     }
 }
 

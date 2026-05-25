@@ -24,6 +24,9 @@ pub struct DefaultControlGroupTheme {
 }
 
 pub fn default_control_group_theme() -> Arc<dyn ControlGroupTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn ControlGroupTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultControlGroupTheme::default())).clone()

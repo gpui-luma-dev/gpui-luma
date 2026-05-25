@@ -8,7 +8,7 @@ use gpui_luma::controls::tabs_navigation::{
     ControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent, TabsNavigationHoverHandler,
     TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    ThemedTabsNavigationTemplate,
+    ThemedTabsNavigationTemplate, default_tabs_navigation_template,
 };
 use gpui_luma::controls::tabs_navigation::{
     DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
@@ -32,11 +32,7 @@ pub(in crate::gallery) struct TabsNavigationPane {
 impl TabsNavigationPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            tabs: TabsNavigation::new("project-tabs")
-                .items(project_tabs())
-                .active("activity")
-                .template(theme.tabs_navigation_template())
-                .spawn(cx),
+            tabs: TabsNavigation::new("project-tabs").items(project_tabs()).active("activity").spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
                 .items(project_tabs())
                 .active("activity")
@@ -154,7 +150,7 @@ struct TabsNavigationStateSample {
 
 impl TabsNavigationStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.tabs_navigation_template() }
+        Self { theme: theme.clone(), template: default_tabs_navigation_template() }
     }
 }
 

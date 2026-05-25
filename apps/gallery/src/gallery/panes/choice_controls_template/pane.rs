@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
+use gpui_luma::controls::checkbox::default_checkbox_template;
+use gpui_luma::controls::radio_button::default_radio_button_template;
+use gpui_luma::controls::switch::default_switch_template;
+use gpui_luma::controls::toggle::default_toggle_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
-use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
 
@@ -132,10 +135,10 @@ impl ChoiceControlsTemplatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
-            radio_template: theme.radio_button_template(),
-            checkbox_template: theme.checkbox_template(),
-            switch_template: theme.switch_template(),
-            toggle_template: theme.toggle_template(),
+            radio_template: default_radio_button_template(),
+            checkbox_template: default_checkbox_template(),
+            switch_template: default_switch_template(),
+            toggle_template: default_toggle_template(),
         }
     }
 }

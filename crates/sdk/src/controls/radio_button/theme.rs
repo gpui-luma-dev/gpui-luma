@@ -36,6 +36,9 @@ pub struct DefaultRadioButtonTheme {
 }
 
 pub fn default_radio_button_theme() -> Arc<dyn RadioButtonTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn RadioButtonTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultRadioButtonTheme::default())).clone()

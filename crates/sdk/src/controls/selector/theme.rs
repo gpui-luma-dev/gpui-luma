@@ -34,6 +34,9 @@ pub struct DefaultSelectorTheme {
 }
 
 pub fn default_selector_theme() -> Arc<dyn SelectorTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn SelectorTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSelectorTheme::default())).clone()

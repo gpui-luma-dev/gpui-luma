@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::checkbox::{self, Checkbox};
+use gpui_luma::controls::checkbox::{self, Checkbox, default_checkbox_template};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -24,9 +24,8 @@ impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             default_checkbox: checkbox::new("checkbox-default")
-                .data(true)
+                .with_data(true)
                 .content(|_, _| div().child("As-is").into_any_element())
-                .template(theme.checkbox_template())
                 .spawn(cx),
             state_preview: cx.new(|_| CheckboxStatePreview::new(theme)),
             default_checked: true,
@@ -97,7 +96,7 @@ struct CheckboxStateSample {
 
 impl CheckboxStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), default_template: theme.checkbox_template() }
+        Self { theme: theme.clone(), default_template: default_checkbox_template() }
     }
 }
 

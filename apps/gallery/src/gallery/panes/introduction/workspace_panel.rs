@@ -5,10 +5,12 @@ use gpui::{
     App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*,
     transparent_black, px,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::button_item_template;
-use gpui_luma::controls::command::button::{ButtonKind, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::radio_button::default_radio_button_template;
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::toggle::default_toggle_template;
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
@@ -71,7 +73,7 @@ impl WorkspacePanel {
                 .managed_selected("grid")
                 .items(layout_items())
                 .item_template(button_item_template(
-                    theme.toggle_template(),
+                    default_toggle_template(),
                     ButtonKind::Ghost,
                     |selected| ButtonFamilyRole::Toggle { selected },
                     true,
@@ -90,7 +92,7 @@ impl WorkspacePanel {
         let density_radio_group = radio_group::horizontal("intro-workspace-density")
             .items(density_items())
             .selected("balanced")
-            .template(density_template(theme.radio_button_template()))
+            .template(density_template(default_radio_button_template()))
             .spawn(cx);
         let popup_menu = PopupMenu::new("intro-workspace-popup")
             .label("Workspace Menu")
@@ -101,7 +103,7 @@ impl WorkspacePanel {
             .managed_selected("left")
             .items(icon_demo_items())
             .item_template(button_item_template(
-                theme.toggle_template(),
+                default_toggle_template(),
                 ButtonKind::Ghost,
                 |selected| ButtonFamilyRole::Toggle { selected },
                 true,

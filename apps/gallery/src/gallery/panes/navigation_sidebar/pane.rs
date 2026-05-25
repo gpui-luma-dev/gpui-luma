@@ -84,7 +84,7 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 ];
 
 impl NavigationSidebarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
         let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Prominent card")
@@ -92,8 +92,6 @@ impl NavigationSidebarPane {
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_nodes())
             .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
-            .template(theme.navigation_sidebar_template())
-            .scrollbar_template(theme.scrollbar_template())
             .spawn(cx);
 
         Self { sidebar, collapsed: Rc::new(Cell::new(false)) }

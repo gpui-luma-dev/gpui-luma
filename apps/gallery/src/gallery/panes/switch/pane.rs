@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::switch::{self, Switch};
+use gpui_luma::controls::switch::{self, Switch, default_switch_template};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -23,11 +23,7 @@ pub(in crate::gallery) struct SwitchPane {
 impl SwitchPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            switch: switch::new("switch-example")
-                .data(true)
-                .content(|_, _| div().into_any_element())
-                .template(theme.switch_template())
-                .spawn(cx),
+            switch: switch::new("switch-example").with_data(true).content(|_, _| div().into_any_element()).spawn(cx),
             state_preview: cx.new(|_| SwitchStatePreview::new(theme)),
             on: true,
         }
@@ -97,7 +93,7 @@ struct SwitchStateSample {
 
 impl SwitchStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.switch_template() }
+        Self { theme: theme.clone(), template: default_switch_template() }
     }
 }
 

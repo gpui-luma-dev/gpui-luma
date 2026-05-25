@@ -138,7 +138,7 @@ let density_radio_group = radio_group::new("density")
             .when(active, |element| element.border_color(gpui::hsla(0.62, 0.60, 0.55, 1.0)))
             .child(
                 radio_button::new(format!("density-{}", density.id()))
-                    .data(selected)
+                    .typed(selected)
                     .template(context.theme().radio_button_template())
                     .spawn(context),
             )
@@ -215,7 +215,7 @@ column direction for custom templates.
   - group entity/focus handle
   - keyboard action handlers
   - child click subscriptions
-  - selected-state synchronization into child radio button `.data(...)`
+  - selected-state synchronization into child radio button `.with_data(...)`
   - unified change event emission
 
 - `item_template(...)` owns item presentation:

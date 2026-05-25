@@ -1,5 +1,5 @@
 use std::sync::{
-    Arc,
+    Arc, RwLock,
     atomic::{AtomicU8, Ordering},
 };
 
@@ -33,9 +33,10 @@ use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupListAppearance, ControlGroupTemplate, ControlGroupTheme,
     DefaultControlGroupTheme, control_group_template_with_theme,
 };
+use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
 use crate::controls::checkbox::{CheckboxAppearance, CheckboxTheme, DefaultCheckboxTheme};
 use crate::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme, DefaultContextMenuTheme};
-use crate::controls::floating_menu::DefaultFloatingMenuTheme;
+use crate::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuTheme};
 use crate::controls::navigation_sidebar::{
     DefaultNavigationSidebarTheme, NavigationSidebarItemAppearance, NavigationSidebarSectionAppearance,
     NavigationSidebarTheme,
@@ -68,7 +69,7 @@ struct LumaThemeState {
 }
 
 #[derive(Clone)]
-struct LumaLiveTheme {
+pub(crate) struct LumaLiveTheme {
     state: Arc<LumaThemeState>,
 }
 
@@ -223,7 +224,7 @@ impl LumaThemePack {
     pub fn navigation_sidebar_template(&self) -> Arc<dyn NavigationSidebarTemplate> {
         Arc::new(ThemedNavigationSidebarTemplate::new_with_floating_menu_theme(
             self.live_theme.clone(),
-            Arc::new(DefaultFloatingMenuTheme::new(self.state.tokens())),
+            crate::controls::floating_menu::default_floating_menu_theme(),
         ))
     }
 
@@ -423,6 +424,40 @@ impl ListBoxTheme for LumaLiveTheme {
     }
 }
 
+impl FloatingMenuTheme for LumaLiveTheme {
+    fn resolve(&self) -> crate::controls::floating_menu::FloatingMenuAppearance {
+        DefaultFloatingMenuTheme::new(self.state.tokens()).resolve()
+    }
+}
+
+impl AutocompleteTextBoxTheme for LumaLiveTheme {
+    fn resolve(&self) -> crate::controls::autocomplete::AutocompleteTextBoxAppearance {
+        DefaultAutocompleteTextBoxTheme::new(self.state.tokens()).resolve()
+    }
+}
+
+static ACTIVE_LIVE_THEME: RwLock<Option<Arc<LumaLiveTheme>>> = RwLock::new(None);
+
+/// Register the app's theme pack so SDK default templates resolve the current light/dark mode.
+///
+/// Call once at app startup, before spawning stock controls.
+pub fn set_active_theme_pack(pack: &LumaThemePack) {
+    if let Ok(mut active) = ACTIVE_LIVE_THEME.write() {
+        *active = Some(pack.live_theme.clone());
+    }
+}
+
+pub(crate) fn active_live_theme() -> Option<Arc<LumaLiveTheme>> {
+    ACTIVE_LIVE_THEME.read().ok().and_then(|active| active.as_ref().cloned())
+}
+
+#[cfg(test)]
+pub(crate) fn clear_active_theme_pack_for_tests() {
+    if let Ok(mut active) = ACTIVE_LIVE_THEME.write() {
+        *active = None;
+    }
+}
+
 fn mode_to_u8(mode: ThemeMode) -> u8 {
     match mode {
         ThemeMode::Light => 0,
@@ -434,5 +469,34 @@ fn u8_to_mode(mode: u8) -> ThemeMode {
     match mode {
         1 => ThemeMode::Dark,
         _ => ThemeMode::Light,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LumaThemePack, clear_active_theme_pack_for_tests, set_active_theme_pack};
+    use crate::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
+    use crate::theme::{ControlSize, InteractionState, ThemeMode};
+
+    #[test]
+    fn default_button_theme_follows_active_pack_mode() {
+        clear_active_theme_pack_for_tests();
+
+        let pack = LumaThemePack::new();
+        set_active_theme_pack(&pack);
+
+        pack.set_mode(ThemeMode::Light);
+        let light = default_button_family_theme()
+            .resolve(ButtonVariant::Prominent, ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default())
+            .background;
+
+        pack.set_mode(ThemeMode::Dark);
+        let dark = default_button_family_theme()
+            .resolve(ButtonVariant::Prominent, ButtonFamilyRole::Text, ControlSize::Md, InteractionState::default())
+            .background;
+
+        assert_ne!(light, dark);
+
+        clear_active_theme_pack_for_tests();
     }
 }

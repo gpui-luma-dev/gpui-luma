@@ -24,6 +24,9 @@ pub struct DefaultAutocompleteTextBoxTheme {
 }
 
 pub fn default_autocomplete_textbox_theme() -> Arc<dyn AutocompleteTextBoxTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn AutocompleteTextBoxTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultAutocompleteTextBoxTheme::default())).clone()

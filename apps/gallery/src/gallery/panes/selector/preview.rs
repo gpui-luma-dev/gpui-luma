@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
+    default_selector_template,
 };
 use gpui_luma::theme::InteractionState;
 
@@ -25,7 +26,7 @@ struct SelectorStateSample {
 
 impl SelectorStatePreview {
     pub(super) fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.selector_template() }
+        Self { theme: theme.clone(), template: default_selector_template() }
     }
 }
 

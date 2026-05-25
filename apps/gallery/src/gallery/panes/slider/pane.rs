@@ -7,6 +7,7 @@ use gpui::{
 use gpui_luma::controls::slider::{
     self, Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
+    default_slider_template,
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::InteractionState;
@@ -26,12 +27,7 @@ pub(in crate::gallery) struct SliderPane {
 impl SliderPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            slider: slider::new("slider-example")
-                .range(1..100)
-                .step(10)
-                .value(41)
-                .template(theme.slider_template())
-                .spawn(cx),
+            slider: slider::new("slider-example").range(1..100).step(10).value(41).spawn(cx),
             state_preview: cx.new(|_| SliderStatePreview::new(theme)),
             value: 41.0,
         }
@@ -97,7 +93,7 @@ struct SliderStateSample {
 
 impl SliderStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.slider_template() }
+        Self { theme: theme.clone(), template: default_slider_template() }
     }
 }
 

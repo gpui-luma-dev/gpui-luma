@@ -4,14 +4,13 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
+use gpui_luma::controls::checkbox;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
-
 use gpui_luma::controls::presenter::HasPresenter;
-// Checkbox was migrated to Button<bool>
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, Validator,
+    TextAreaTemplate, TextAreaTemplateHandlers, Validator, default_textarea_template,
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
 
@@ -42,10 +41,6 @@ pub(in crate::gallery) struct TextAreaPane {
 
 impl TextAreaPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let button_template = theme.button_template();
-        let checkbox_template = theme.checkbox_template();
-        let textarea_template = theme.textarea_template();
-
         Self {
             text_area: TextArea::new("gallery-textarea")
                 .placeholder("Write a multiline message")
@@ -53,26 +48,21 @@ impl TextAreaPane {
                 .rows(6)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(textarea_template.clone())
-                .theme(theme.textarea_theme())
                 .spawn(cx),
-            state_preview: cx.new(|_| TextAreaStatePreview::new(theme, textarea_template.clone())),
-            set_sample_button: action_button("textarea-set-sample", "Set Sample", &button_template, cx),
-            clear_button: action_button("textarea-clear", "Clear", &button_template, cx),
-            enabled_checkbox: Button::new("textarea-enabled")
-                .data(true)
+            state_preview: cx.new(|_| TextAreaStatePreview::new(theme)),
+            set_sample_button: action_button("textarea-set-sample", "Set Sample", cx),
+            clear_button: action_button("textarea-clear", "Clear", cx),
+            enabled_checkbox: checkbox::new("textarea-enabled")
+                .with_data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
-                .template(checkbox_template.clone())
                 .spawn(cx),
-            clean_on_escape_checkbox: Button::new("textarea-clean-on-escape")
-                .data(true)
+            clean_on_escape_checkbox: checkbox::new("textarea-clean-on-escape")
+                .with_data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
-                .template(checkbox_template.clone())
                 .spawn(cx),
-            validation_checkbox: Button::new("textarea-validation")
-                .data(false)
+            validation_checkbox: checkbox::new("textarea-validation")
+                .with_data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
-                .template(checkbox_template)
                 .spawn(cx),
             enabled: true,
             clean_on_escape: true,
@@ -261,13 +251,8 @@ enum TextAreaOption {
     StrictValidation,
 }
 
-fn action_button(
-    id: &'static str,
-    label: &'static str,
-    template: &Arc<dyn gpui_luma::controls::command::button::ButtonTemplate>,
-    cx: &mut Context<GalleryApp>,
-) -> Entity<Button> {
-    Button::new(id).label(label).template(template.clone()).spawn(cx)
+fn action_button(id: &'static str, label: &'static str, cx: &mut Context<GalleryApp>) -> Entity<Button> {
+    Button::new(id).label(label).spawn(cx)
 }
 
 fn render_telemetry(
@@ -313,8 +298,8 @@ struct TextAreaStateSample {
 }
 
 impl TextAreaStatePreview {
-    fn new(theme: &GalleryThemePack, template: Arc<dyn TextAreaTemplate>) -> Self {
-        Self { theme: theme.clone(), template }
+    fn new(theme: &GalleryThemePack) -> Self {
+        Self { theme: theme.clone(), template: default_textarea_template() }
     }
 }
 

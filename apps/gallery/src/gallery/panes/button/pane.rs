@@ -3,8 +3,9 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
+    default_button_template,
 };
-use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonKind, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
@@ -30,28 +31,16 @@ pub(in crate::gallery) struct ButtonPane {
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let button_template = theme.button_template();
-
         Self {
             default_button: Button::new("button-default-example")
                 .label("Standard")
                 .kind(ButtonKind::Standard)
-                .template(button_template.clone())
                 .spawn(cx),
-            subtle_button: Button::new("button-subtle-example")
-                .label("Subtle")
-                .kind(ButtonKind::Subtle)
-                .template(button_template.clone())
-                .spawn(cx),
-            ghost_button: Button::new("button-ghost-example")
-                .label("Ghost")
-                .kind(ButtonKind::Ghost)
-                .template(button_template.clone())
-                .spawn(cx),
+            subtle_button: Button::new("button-subtle-example").label("Subtle").kind(ButtonKind::Subtle).spawn(cx),
+            ghost_button: Button::new("button-ghost-example").label("Ghost").kind(ButtonKind::Ghost).spawn(cx),
             prominent_button: Button::new("button-prominent-example")
                 .label("Prominent")
                 .kind(ButtonKind::Prominent)
-                .template(button_template)
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
             default_clicks: 0,
@@ -229,9 +218,9 @@ impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
-            template: theme.button_template(),
+            template: default_button_template(),
             uniform_template: Arc::new(
-                DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(|element, _| element.w_full()),
+                DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(|element, _| element.w_full()),
             ),
             use_uniform_sizing: true,
         }

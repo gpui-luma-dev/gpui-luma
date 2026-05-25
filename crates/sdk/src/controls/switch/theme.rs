@@ -35,6 +35,9 @@ pub struct DefaultSwitchTheme {
 }
 
 pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn SwitchTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSwitchTheme::default())).clone()

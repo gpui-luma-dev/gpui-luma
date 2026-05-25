@@ -36,22 +36,17 @@ impl SystemPanel {
         event_bus: Entity<EventBus>,
         initial_completion: f32,
     ) -> Self {
-        let checkbox_template = theme.checkbox_template();
-
         let terms_checkbox = checkbox::new("intro-terms")
-            .data(false)
+            .with_data(false)
             .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-            .template(checkbox_template.clone())
             .spawn(cx);
         let social_checkbox = checkbox::new("intro-social-source")
-            .data(true)
+            .with_data(true)
             .content(|_, _| div().child("Social").into_any_element())
-            .template(checkbox_template.clone())
             .spawn(cx);
         let referral_checkbox = checkbox::new("intro-referral-source")
-            .data(false)
+            .with_data(false)
             .content(|_, _| div().child("Referral").into_any_element())
-            .template(checkbox_template)
             .spawn(cx);
         let two_factor_switch = switch::new("intro-two-factor")
             .content(|_, _| div().child("Two-factor authentication").into_any_element())

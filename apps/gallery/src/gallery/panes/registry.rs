@@ -324,7 +324,7 @@ impl GalleryPanes {
         nodes.extend(CONTROL_GROUPS.iter().map(|group| {
             let label = group.label;
             let button = Button::new(format!("{}-branch", group.id))
-                .data(group.expanded)
+                .typed(group.expanded)
                 .content(move |_, _| div().child(label).into_any_element())
                 .template(sidebar_disclosure_template(group.icon, theme))
                 .spawn(cx);
@@ -504,7 +504,7 @@ fn nav_node_for_page(
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
     let label = page.label;
     let button = Button::new(page.id)
-        .data(page.id == INTRODUCTION_PAGE.id)
+        .typed(page.id == INTRODUCTION_PAGE.id)
         .content(move |_, _| div().child(label).into_any_element())
         .template(sidebar_leaf_template(page.icon, reserve_icon_space, theme))
         .spawn(cx);

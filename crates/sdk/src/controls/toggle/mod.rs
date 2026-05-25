@@ -9,7 +9,7 @@ use crate::controls::button_family::{ButtonFamilyRole, button_variant, default_b
 pub struct Toggle;
 
 pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<bool> {
-    ButtonBuilder::new(id).data(false).template(default_toggle_template())
+    ButtonBuilder::new(id).typed(false).template(default_toggle_template())
 }
 
 impl Toggle {

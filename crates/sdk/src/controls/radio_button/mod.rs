@@ -16,5 +16,5 @@ use crate::controls::command::button::{Button, ButtonBuilder};
 pub type RadioButton = Entity<Button<bool>>;
 
 pub fn new(id: impl Into<SharedString>) -> ButtonBuilder<bool> {
-    ButtonBuilder::new(id).data(false).template(default_radio_button_template())
+    ButtonBuilder::new(id).typed(false).template(default_radio_button_template())
 }

@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, 
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::radio_button::{self, RadioButton};
+use gpui_luma::controls::radio_button::{self, RadioButton, default_radio_button_template};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::InteractionState;
 
@@ -24,9 +24,8 @@ impl RadioButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             radio_button: radio_button::new("radio-button-example")
-                .data(false)
+                .with_data(false)
                 .content(|_, _| div().child("Standalone").into_any_element())
-                .template(theme.radio_button_template())
                 .spawn(cx),
             state_preview: cx.new(|_| RadioButtonStatePreview::new(theme)),
             selected: false,
@@ -97,7 +96,7 @@ struct RadioButtonStateSample {
 
 impl RadioButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.radio_button_template() }
+        Self { theme: theme.clone(), template: default_radio_button_template() }
     }
 }
 

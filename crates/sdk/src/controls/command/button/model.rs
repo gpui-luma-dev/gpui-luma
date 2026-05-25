@@ -73,8 +73,28 @@ impl ButtonBuilder<()> {
     }
 }
 
-impl<D: Clone + 'static> ButtonBuilder<D> {
-    pub fn data<NewD: Clone + 'static>(self, data: NewD) -> ButtonBuilder<NewD> {
+impl ButtonBuilder<()> {
+    /// Converts an untyped button builder into a typed one.
+    ///
+    /// # Why this exists
+    ///
+    /// [`ButtonBuilder`] starts as [`ButtonBuilder<()>`] — a plain command control with no
+    /// application payload. Many controls (checkbox, toggle, custom reactive buttons) need a
+    /// typed `D` that templates and handlers read via [`ButtonRenderModel::data`].
+    ///
+    /// Call `typed` once at the start of a builder chain to pick that payload type and its
+    /// initial value. This is **not** the same as [`ButtonBuilder::with_data`]: `typed` creates a
+    /// fresh [`ButtonBuilder<D>`] and resets content and template to button defaults. Use
+    /// [`ButtonBuilder::with_data`] only after the builder is already configured (template,
+    /// content, kind, etc.) to change the initial payload without discarding that configuration.
+    ///
+    /// # Data binding
+    ///
+    /// Today, payload is set at build time and updated imperatively via
+    /// [`Button::set_data`](super::control::Button::set_data). A richer binding layer — where
+    /// external state drives control data automatically — is not implemented yet; `typed` /
+    /// `with_data` are the low-level hooks that future binding would sit on top of.
+    pub fn typed<D: Clone + 'static>(self, data: D) -> ButtonBuilder<D> {
         let old = self.model;
         let id = old.id.clone();
         ButtonBuilder {
@@ -91,6 +111,18 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
                 template: super::template::default_button_template(),
             },
         }
+    }
+}
+
+impl<D: Clone + 'static> ButtonBuilder<D> {
+    /// Sets the control payload without changing template, content, or other builder config.
+    ///
+    /// Prefer this over [`ButtonBuilder::typed`] when the builder is already specialized — for
+    /// example after `checkbox::new(...)` — and you only need a different initial checked/on
+    /// value.
+    pub fn with_data(mut self, data: D) -> Self {
+        self.model.data = data;
+        self
     }
 
     pub fn kind(mut self, kind: ButtonKind) -> Self {
@@ -141,5 +173,19 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
 impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for ButtonBuilder<D> {
     fn set_presenter(&mut self, content: ControlPresenter<ButtonRenderModel<D>>) {
         self.model.content = content;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::controls::checkbox::default_checkbox_template;
+
+    #[test]
+    fn with_data_preserves_specialized_template() {
+        let template = default_checkbox_template();
+        let builder = ButtonBuilder::new("checkbox-test").typed(false).template(template.clone()).with_data(true);
+
+        assert!(std::sync::Arc::ptr_eq(&builder.model.template, &template));
     }
 }

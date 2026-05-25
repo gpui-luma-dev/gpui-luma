@@ -28,9 +28,10 @@ use gpui_luma::controls::selector_panel::{
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
     default_selector_items_template,
 };
+use gpui_luma::controls::selector::default_selector_template;
 use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
-    TextFieldVariant,
+    TextFieldVariant, default_textfield_template, default_textfield_theme,
 };
 use gpui_luma::theme::{ControlSize, InteractionState};
 use lucide_icons::Icon as LucideIcon;
@@ -129,14 +130,14 @@ impl SelectorControlsTemplatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
-            textfield_template: theme.textfield_template(),
-            textfield_theme: theme.textfield_theme(),
+            textfield_template: default_textfield_template(),
+            textfield_theme: default_textfield_theme(),
             autocomplete_template: default_autocomplete_textbox_template(),
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),
             combobox_items_template: default_combobox_items_template(),
             combobox_panel_template: default_combobox_panel_template(),
-            selector_template: theme.selector_template(),
+            selector_template: default_selector_template(),
             selector_items_template: default_selector_items_template(),
             search_selector_template: default_search_selector_template(),
             search_selector_items_template: default_search_selector_items_template(),

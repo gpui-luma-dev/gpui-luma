@@ -56,6 +56,9 @@ pub struct DefaultNavigationSidebarTheme {
 }
 
 pub fn default_navigation_sidebar_theme() -> Arc<dyn NavigationSidebarTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn NavigationSidebarTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultNavigationSidebarTheme::default())).clone()

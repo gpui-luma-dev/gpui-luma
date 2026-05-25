@@ -4,7 +4,7 @@
 
 **Not in scope here:** Which `theme.toml` is embedded, palette content, shadcn import, new button kinds, or theme file hot-reload. Those are separate theme-*authoring* tasks. This doc is only **active theme resolution**.
 
-**Status:** SDK incomplete — gallery may pass pack-built templates as a temporary workaround until defaults read the active pack.
+**Status:** Implemented — SDK defaults resolve the active pack when registered; gallery registers pack at startup and stock controls omit pack template workarounds.
 
 ---
 

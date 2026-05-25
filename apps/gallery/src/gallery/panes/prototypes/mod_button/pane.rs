@@ -73,7 +73,7 @@ impl ModButtonPane {
             .spawn(cx);
 
         let reactive_button = Button::new("reactive-btn")
-            .data(CounterState { count: 0 })
+            .typed(CounterState { count: 0 })
             .content(|model, _| {
                 div()
                     .flex()

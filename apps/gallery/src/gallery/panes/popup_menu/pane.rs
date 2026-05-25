@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
-    PopupMenuTemplateHandlers,
+    PopupMenuTemplateHandlers, default_popup_menu_template,
 };
 use gpui_luma::theme::InteractionState;
 use lucide_icons::Icon as LucideIcon;
@@ -34,25 +34,21 @@ impl PopupMenuPane {
                 .label("Smart popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::Smart)
-                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_below: PopupMenu::new("popup-menu-below-example")
                 .label("Below popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::BelowStart)
-                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_above: PopupMenu::new("popup-menu-above-example")
                 .label("Above popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::AboveStart)
-                .template(theme.popup_menu_template())
                 .spawn(cx),
             popup_centered: PopupMenu::new("popup-menu-centered-example")
                 .label("Centered popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
-                .template(theme.popup_menu_template())
                 .spawn(cx),
             state_preview: cx.new(|_| PopupMenuStatePreview::new(theme)),
             selection: "none".to_string(),
@@ -150,7 +146,7 @@ struct PopupMenuStateSample {
 
 impl PopupMenuStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.popup_menu_template() }
+        Self { theme: theme.clone(), template: default_popup_menu_template() }
     }
 }
 

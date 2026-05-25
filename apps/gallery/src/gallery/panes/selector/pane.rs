@@ -32,25 +32,21 @@ impl SelectorPane {
                 .label("Select status")
                 .items(selector_items())
                 .placement(SelectorPlacement::Smart)
-                .template(theme.selector_template())
                 .spawn(cx),
             selector_below: Selector::new("popup-selector-below-example")
                 .label("Below selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::BelowStart)
-                .template(theme.selector_template())
                 .spawn(cx),
             selector_above: Selector::new("popup-selector-above-example")
                 .label("Above selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::AboveStart)
-                .template(theme.selector_template())
                 .spawn(cx),
             selector_overlay: Selector::new("popup-selector-overlay-example")
                 .label("Overlay selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::OverlayOnTrigger)
-                .template(theme.selector_template())
                 .spawn(cx),
             selector_swatch: Selector::new("popup-selector-swatch-example")
                 .label("Choose color")
@@ -92,7 +88,6 @@ impl SelectorPane {
                                 ),
                         )
                 })
-                .template(theme.selector_template())
                 .spawn(cx),
             state_preview: cx.new(|_| SelectorStatePreview::new(theme)),
             panel_preview: cx.new(|_| SelectorPanelPreview::new(theme)),

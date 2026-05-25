@@ -2,7 +2,7 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::{ThemeMode, set_active_theme_pack};
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
 use super::theme::GalleryThemePack;
@@ -29,6 +29,7 @@ impl GalleryApp {
         window.focus(&focus_scope, cx);
         let theme = GalleryThemePack::new();
         theme.set_mode(ThemeMode::Dark);
+        set_active_theme_pack(&theme);
         let chrome = theme.chrome();
         let tokens = theme.tokens();
 
@@ -52,8 +53,6 @@ impl GalleryApp {
             .collapsible(true)
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
-            .template(theme.navigation_sidebar_template())
-            .scrollbar_template(theme.scrollbar_template())
             .spawn(cx);
         let panes = GalleryPanes::new(cx, &theme);
 

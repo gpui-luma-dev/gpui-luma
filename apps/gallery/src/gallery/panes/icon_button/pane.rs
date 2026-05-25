@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, default_button_template};
 use gpui_luma::controls::command::icon_button::{self, IconButton};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -28,24 +28,18 @@ pub(in crate::gallery) struct IconButtonPane {
 
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let button_template = theme.button_template();
-
         Self {
             default_icon_button: icon_button::new("icon-button-default-example", LucideIcon::Plus)
                 .kind(ButtonKind::Standard)
-                .template(button_template.clone())
                 .spawn(cx),
             subtle_icon_button: icon_button::new("icon-button-subtle-example", LucideIcon::Plus)
                 .kind(ButtonKind::Subtle)
-                .template(button_template.clone())
                 .spawn(cx),
             ghost_icon_button: icon_button::new("icon-button-ghost-example", LucideIcon::Plus)
                 .kind(ButtonKind::Ghost)
-                .template(button_template.clone())
                 .spawn(cx),
             prominent_icon_button: icon_button::new("icon-button-prominent-example", LucideIcon::Plus)
                 .kind(ButtonKind::Prominent)
-                .template(button_template)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
             default_icon_clicks: 0,
@@ -159,7 +153,7 @@ struct IconButtonStateSample {
 
 impl IconButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.button_template() }
+        Self { theme: theme.clone(), template: default_button_template() }
     }
 }
 

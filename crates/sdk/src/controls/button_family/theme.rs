@@ -56,6 +56,9 @@ pub struct DefaultButtonFamilyTheme {
 }
 
 pub fn default_button_family_theme() -> Arc<dyn ButtonFamilyTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn ButtonFamilyTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultButtonFamilyTheme::default())).clone()

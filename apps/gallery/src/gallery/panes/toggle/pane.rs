@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, 
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, ControlPresenter, HasPresenter,
 };
-use gpui_luma::controls::toggle;
+use gpui_luma::controls::toggle::{self, default_toggle_template};
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::InteractionState;
@@ -28,12 +28,11 @@ impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
             toggle: toggle::new("toggle-example")
-                .data(true)
+                .with_data(true)
                 .content(|_, _| div().child("Toggle").into_any_element())
-                .template(theme.toggle_template())
                 .spawn(cx),
             round_icon_toggle: toggle::new("toggle-round-icon-example")
-                .data(false)
+                .with_data(false)
                 .round(true)
                 .content(|_, _| {
                     div()
@@ -43,7 +42,6 @@ impl TogglePane {
                         .child(char::from(LucideIcon::Plus).to_string())
                         .into_any_element()
                 })
-                .template(theme.toggle_template())
                 .spawn(cx),
             state_preview: cx.new(|_| ToggleStatePreview::new(theme)),
             selected: true,
@@ -143,7 +141,7 @@ struct ToggleStateSample {
 
 impl ToggleStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: theme.toggle_template() }
+        Self { theme: theme.clone(), template: default_toggle_template() }
     }
 }
 

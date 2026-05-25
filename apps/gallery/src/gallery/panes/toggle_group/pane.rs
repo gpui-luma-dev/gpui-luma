@@ -1,8 +1,9 @@
-use gpui::{AnyElement, Context, Subscription, div, prelude::*};
+use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind};
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::button_item_template;
+use gpui_luma::controls::control_group::{button_item_template, default_control_group_template};
 use gpui_luma::controls::icon::lucide_glyph;
+use gpui_luma::controls::toggle::default_toggle_template;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -19,11 +20,14 @@ pub(in crate::gallery) struct ToggleGroupPane {
 }
 
 impl ToggleGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let group_theme = theme.control_group_theme();
-        let toggle_template = theme.toggle_template();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
+        let toggle_template = default_toggle_template();
+        let group_template = default_control_group_template();
 
-        let single_group = button_group::icon_toolbar("placement-toggle-group", group_theme.clone())
+        let single_group = button_group::new("placement-toggle-group")
+            .horizontal()
+            .template(group_template.clone())
+            .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
             .selected("bottom")
             .items(placement_items())
             .item_template(button_item_template(
@@ -35,7 +39,11 @@ impl ToggleGroupPane {
             ))
             .spawn(cx);
 
-        let multiple_group = button_group::icon_toolbar_multiple("edge-toggle-group", group_theme)
+        let multiple_group = button_group::new("edge-toggle-group")
+            .horizontal()
+            .template(group_template)
+            .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
+            .multiple()
             .selected_ids(["top", "left"])
             .items(edge_items())
             .item_template(button_item_template(

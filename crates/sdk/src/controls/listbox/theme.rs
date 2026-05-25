@@ -42,6 +42,9 @@ pub struct DefaultListBoxTheme {
 }
 
 pub fn default_listbox_theme() -> Arc<dyn ListBoxTheme> {
+    if let Some(live) = crate::theme::pack::active_live_theme() {
+        return live;
+    }
     static THEME: OnceLock<Arc<dyn ListBoxTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultListBoxTheme::default())).clone()

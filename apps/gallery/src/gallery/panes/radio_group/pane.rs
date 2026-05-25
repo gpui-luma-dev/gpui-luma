@@ -4,6 +4,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Div, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::radio_button::default_radio_button_template;
 use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
     RadioGroupTemplate, RadioGroupTemplateHandlers, SelectionMode,
@@ -65,19 +66,19 @@ impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
             .items(density_items())
-            .template(radio_button_vertical_template(theme.radio_button_template()))
+            .template(radio_button_vertical_template(default_radio_button_template()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
         let horizontal_group = sdk_radio_group::horizontal("radio-group-density-horizontal")
             .items(density_items())
-            .template(radio_button_horizontal_template(theme.radio_button_template()))
+            .template(radio_button_horizontal_template(default_radio_button_template()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
         let indented_group = sdk_radio_group::new("radio-group-density-indented")
             .items(density_items())
-            .template(radio_button_indented_template(theme.radio_button_template()))
+            .template(radio_button_indented_template(default_radio_button_template()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
