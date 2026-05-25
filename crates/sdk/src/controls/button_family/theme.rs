@@ -11,6 +11,7 @@ use crate::theme::{
 pub enum ButtonVariant {
     #[default]
     Standard,
+    Subtle,
     Ghost,
     Prominent,
 }
@@ -114,6 +115,30 @@ pub const BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
         ThemePartUsage {
             part: "prominent foreground",
             token: "action.prominent.foreground",
+            states: &["default", "hovered", "pressed", "focused"],
+            appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "subtle background",
+            token: "action.subtle.background",
+            states: &["default"],
+            appearance_fields: &["ButtonFamilyAppearance.background", "ButtonFamilyAppearance.border"],
+        },
+        ThemePartUsage {
+            part: "subtle hover background",
+            token: "action.subtle.hover_background",
+            states: &["hovered"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "subtle pressed background",
+            token: "action.subtle.pressed_background",
+            states: &["pressed"],
+            appearance_fields: &["ButtonFamilyAppearance.background"],
+        },
+        ThemePartUsage {
+            part: "subtle foreground",
+            token: "action.subtle.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
         },
@@ -256,6 +281,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             (_, _, true) => palette.state.disabled.foreground,
             (_, true, false) => palette.state.selected.foreground,
             (ButtonVariant::Standard, false, false) => palette.action.standard.foreground,
+            (ButtonVariant::Subtle, false, false) => palette.action.subtle.foreground,
             (ButtonVariant::Ghost, false, false) => palette.action.ghost.foreground,
             (ButtonVariant::Prominent, false, false) => palette.action.prominent.foreground,
         };
@@ -268,6 +294,9 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
             (ButtonVariant::Prominent, _, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
             (ButtonVariant::Prominent, _, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
             (ButtonVariant::Prominent, _, InteractionLayer::Default) => palette.action.prominent.background,
+            (ButtonVariant::Subtle, _, InteractionLayer::Pressed) => palette.action.subtle.pressed_background,
+            (ButtonVariant::Subtle, _, InteractionLayer::Hovered) => palette.action.subtle.hover_background,
+            (ButtonVariant::Subtle, _, InteractionLayer::Default) => palette.action.subtle.background,
             (ButtonVariant::Standard, _, InteractionLayer::Pressed) => palette.action.standard.pressed_background,
             (ButtonVariant::Standard, _, InteractionLayer::Hovered) => palette.action.standard.hover_background,
             (ButtonVariant::Standard, _, InteractionLayer::Default) => palette.action.standard.background,
@@ -279,6 +308,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let height = metrics.control_height(size);
         let border = match variant {
             ButtonVariant::Standard => palette.action.standard.border,
+            ButtonVariant::Subtle => palette.action.subtle.border,
             ButtonVariant::Ghost => palette.action.ghost.border,
             ButtonVariant::Prominent => palette.action.prominent.border,
         };

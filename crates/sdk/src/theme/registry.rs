@@ -42,6 +42,11 @@ pub fn palette_color_tokens(tokens: &super::ThemeTokens) -> Vec<PaletteColorToke
         token("action.prominent.hover_background", palette.action.prominent.hover_background),
         token("action.prominent.pressed_background", palette.action.prominent.pressed_background),
         token("action.prominent.border", palette.action.prominent.border),
+        token("action.subtle.background", palette.action.subtle.background),
+        token("action.subtle.foreground", palette.action.subtle.foreground),
+        token("action.subtle.hover_background", palette.action.subtle.hover_background),
+        token("action.subtle.pressed_background", palette.action.subtle.pressed_background),
+        token("action.subtle.border", palette.action.subtle.border),
         token("action.standard.background", palette.action.standard.background),
         token("action.standard.foreground", palette.action.standard.foreground),
         token("action.standard.hover_background", palette.action.standard.hover_background),
@@ -125,6 +130,10 @@ mod tests {
         let palette_tokens = palette_color_tokens(&tokens);
 
         for token_name in [
+            "action.subtle.background",
+            "action.subtle.foreground",
+            "action.subtle.hover_background",
+            "action.subtle.pressed_background",
             "action.standard.background",
             "action.standard.foreground",
             "action.standard.hover_background",

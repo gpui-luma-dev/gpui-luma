@@ -98,6 +98,11 @@ action.prominent.foreground
 action.prominent.hover_background
 action.prominent.pressed_background
 
+action.subtle.background
+action.subtle.foreground
+action.subtle.hover_background
+action.subtle.pressed_background
+
 action.standard.background
 action.standard.foreground
 action.standard.hover_background
@@ -285,6 +290,16 @@ Button prominent
   hover: action.prominent.hover_background
   pressed: action.prominent.pressed_background
   border: action.prominent.background
+  radius: radius.md
+  typography: text.label
+  focus: focus.ring
+
+Button subtle
+  background: action.subtle.background
+  foreground: action.subtle.foreground
+  hover: action.subtle.hover_background
+  pressed: action.subtle.pressed_background
+  border: action.subtle.border
   radius: radius.md
   typography: text.label
   focus: focus.ring

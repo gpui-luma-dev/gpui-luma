@@ -16,28 +16,40 @@ use super::super::shared::{gallery_pane_with_usage, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct IconButtonPane {
     default_icon_button: IconButton,
+    subtle_icon_button: IconButton,
     ghost_icon_button: IconButton,
     prominent_icon_button: IconButton,
     state_preview: Entity<IconButtonStatePreview>,
     default_icon_clicks: usize,
+    subtle_icon_clicks: usize,
     ghost_icon_clicks: usize,
     prominent_icon_clicks: usize,
 }
 
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+        let button_template = theme.button_template();
+
         Self {
             default_icon_button: icon_button::new("icon-button-default-example", LucideIcon::Plus)
                 .kind(ButtonKind::Standard)
+                .template(button_template.clone())
+                .spawn(cx),
+            subtle_icon_button: icon_button::new("icon-button-subtle-example", LucideIcon::Plus)
+                .kind(ButtonKind::Subtle)
+                .template(button_template.clone())
                 .spawn(cx),
             ghost_icon_button: icon_button::new("icon-button-ghost-example", LucideIcon::Plus)
                 .kind(ButtonKind::Ghost)
+                .template(button_template.clone())
                 .spawn(cx),
             prominent_icon_button: icon_button::new("icon-button-prominent-example", LucideIcon::Plus)
                 .kind(ButtonKind::Prominent)
+                .template(button_template)
                 .spawn(cx),
             state_preview: cx.new(|_| IconButtonStatePreview::new(theme)),
             default_icon_clicks: 0,
+            subtle_icon_clicks: 0,
             ghost_icon_clicks: 0,
             prominent_icon_clicks: 0,
         }
@@ -46,6 +58,9 @@ impl IconButtonPane {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.default_icon_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.icon_button.handle_default_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.subtle_icon_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.icon_button.handle_subtle_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.ghost_icon_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.icon_button.handle_ghost_event(event, cx);
@@ -70,6 +85,7 @@ impl IconButtonPane {
                         .items_center()
                         .gap(px(12.0))
                         .child(self.default_icon_button.clone())
+                        .child(self.subtle_icon_button.clone())
                         .child(self.ghost_icon_button.clone())
                         .child(self.prominent_icon_button.clone()),
                 )
@@ -81,6 +97,7 @@ impl IconButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_icon_button, cx);
+        notify_entity(&self.subtle_icon_button, cx);
         notify_entity(&self.ghost_icon_button, cx);
         notify_entity(&self.prominent_icon_button, cx);
         notify_entity(&self.state_preview, cx);
@@ -115,6 +132,10 @@ impl IconButtonPane {
         Self::toggle_icon(&self.default_icon_button, &mut self.default_icon_clicks, event, cx);
     }
 
+    fn handle_subtle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        Self::toggle_icon(&self.subtle_icon_button, &mut self.subtle_icon_clicks, event, cx);
+    }
+
     fn handle_ghost_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         Self::toggle_icon(&self.ghost_icon_button, &mut self.ghost_icon_clicks, event, cx);
     }
@@ -138,7 +159,7 @@ struct IconButtonStateSample {
 
 impl IconButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: gpui_luma::controls::command::button::default_button_template() }
+        Self { theme: theme.clone(), template: theme.button_template() }
     }
 }
 
@@ -183,6 +204,26 @@ impl Render for IconButtonStatePreview {
             )
             .child(render_state_row(
                 &self.template,
+                "prominent",
+                "Prominent",
+                ButtonKind::Prominent,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
+                "subtle",
+                "Subtle",
+                ButtonKind::Subtle,
+                &samples,
+                chrome.muted_text,
+                window,
+                cx,
+            ))
+            .child(render_state_row(
+                &self.template,
                 "default",
                 "Standard",
                 ButtonKind::Standard,
@@ -196,16 +237,6 @@ impl Render for IconButtonStatePreview {
                 "ghost",
                 "Ghost",
                 ButtonKind::Ghost,
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
-            .child(render_state_row(
-                &self.template,
-                "prominent",
-                "Prominent",
-                ButtonKind::Prominent,
                 &samples,
                 chrome.muted_text,
                 window,

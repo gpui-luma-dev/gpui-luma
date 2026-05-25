@@ -1,6 +1,6 @@
 # Next step: variant ladder (more button weights)
 
-**Status:** Tabled — concept agreed, **not implemented** in SDK or TOML yet.
+**Status:** Implemented in SDK, default theme, and gallery button/icon panes. Imported theme TOML remapping is still follow-up work.
 
 **Scope:** Luma public API names for action **visual weight**, plus theme slots to back them. This is separate from **active theme wiring** (`docs/ai/next-step-theme.md`) and **CSS import** (`docs/ai/next-step-theme-import.md`).
 
@@ -75,6 +75,8 @@ Other Radix components (Badge, Callout, Select trigger) can reuse the same weigh
 ---
 
 ## SDK changes (when implemented)
+
+Implemented in `ButtonKind` / `ButtonVariant`, `ActionPalette.subtle`, `DefaultButtonFamilyTheme::resolve`, and `default-theme.toml`.
 
 ### 1. Public API
 

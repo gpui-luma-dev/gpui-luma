@@ -11,8 +11,18 @@ use crate::theme::{ControlSize, InteractionState};
 pub enum ButtonKind {
     #[default]
     Standard,
+    Subtle,
     Ghost,
     Prominent,
+}
+
+pub fn button_variant(kind: ButtonKind) -> ButtonVariant {
+    match kind {
+        ButtonKind::Standard => ButtonVariant::Standard,
+        ButtonKind::Subtle => ButtonVariant::Subtle,
+        ButtonKind::Ghost => ButtonVariant::Ghost,
+        ButtonKind::Prominent => ButtonVariant::Prominent,
+    }
 }
 
 pub type ButtonSize = ControlSize;

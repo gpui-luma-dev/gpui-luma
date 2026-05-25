@@ -3,9 +3,8 @@ use std::sync::Arc;
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
-use crate::controls::button_family::ButtonKind;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::controls::button_family::{ButtonFamilyTheme, ButtonVariant, default_button_family_theme};
+use crate::controls::button_family::{ButtonFamilyTheme, button_variant, default_button_family_theme};
 use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -116,13 +115,5 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         }
 
         root
-    }
-}
-
-fn button_variant(kind: ButtonKind) -> ButtonVariant {
-    match kind {
-        ButtonKind::Standard => ButtonVariant::Standard,
-        ButtonKind::Ghost => ButtonVariant::Ghost,
-        ButtonKind::Prominent => ButtonVariant::Prominent,
     }
 }

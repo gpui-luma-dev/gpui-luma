@@ -89,6 +89,7 @@ pub struct SurfaceTonePalette {
 #[derive(Clone, Copy, Debug)]
 pub struct ActionPalette {
     pub prominent: ActionRolePalette,
+    pub subtle: ActionRolePalette,
     pub standard: ActionRolePalette,
     pub ghost: ActionRolePalette,
 }
@@ -439,11 +440,18 @@ impl LumaPalette {
                     pressed_background: rgb(0x1e40af).into(),
                     border: rgb(0x2563eb).into(),
                 },
-                standard: ActionRolePalette {
-                    background: rgb(0xf8fafc).into(),
+                subtle: ActionRolePalette {
+                    background: rgb(0xf1f5f9).into(),
                     foreground: rgb(0x0f172a).into(),
                     hover_background: rgb(0xe2e8f0).into(),
                     pressed_background: rgb(0xcbd5e1).into(),
+                    border: rgb(0xf1f5f9).into(),
+                },
+                standard: ActionRolePalette {
+                    background: rgb(0xffffff).into(),
+                    foreground: rgb(0x0f172a).into(),
+                    hover_background: rgb(0xf1f5f9).into(),
+                    pressed_background: rgb(0xe2e8f0).into(),
                     border: rgb(0xcbd5e1).into(),
                 },
                 ghost: ActionRolePalette {
@@ -518,11 +526,18 @@ impl LumaPalette {
                     pressed_background: rgb(0xbfdbfe).into(),
                     border: rgb(0x60a5fa).into(),
                 },
-                standard: ActionRolePalette {
+                subtle: ActionRolePalette {
                     background: rgb(0x1e293b).into(),
                     foreground: rgb(0xf8fafc).into(),
                     hover_background: rgb(0x334155).into(),
                     pressed_background: rgb(0x475569).into(),
+                    border: rgb(0x1e293b).into(),
+                },
+                standard: ActionRolePalette {
+                    background: rgb(0x111827).into(),
+                    foreground: rgb(0xf8fafc).into(),
+                    hover_background: rgb(0x1e293b).into(),
+                    pressed_background: rgb(0x334155).into(),
                     border: rgb(0x334155).into(),
                 },
                 ghost: ActionRolePalette {
@@ -818,6 +833,7 @@ struct RawSurfaceTonePalette {
 #[derive(Deserialize)]
 struct RawActionPalette {
     prominent: RawActionRolePalette,
+    subtle: RawActionRolePalette,
     #[serde(default)]
     standard: Option<RawActionRolePalette>,
     ghost: RawActionRolePalette,
@@ -1075,6 +1091,7 @@ impl RawActionPalette {
 
         Ok(ActionPalette {
             prominent: self.prominent.try_into_action_role()?,
+            subtle: self.subtle.try_into_action_role()?,
             standard: standard.try_into_action_role()?,
             ghost: self.ghost.try_into_action_role()?,
         })
@@ -1350,6 +1367,7 @@ mod tests {
         assert_eq!(light.metrics.radius.pill, 999.0);
         assert_eq!(light.typography.text.label.weight, gpui::FontWeight::MEDIUM);
         assert!(!light.elevation.menu.layers.is_empty());
+        assert_ne!(light.palette.action.subtle.background, light.palette.action.standard.background);
     }
 
     #[test]

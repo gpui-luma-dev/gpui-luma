@@ -4,7 +4,7 @@ use gpui::SharedString;
 use gpui::prelude::*;
 
 use crate::controls::command::button::{ButtonBuilder, ButtonTemplate, DefaultButtonTemplate};
-use crate::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
+use crate::controls::button_family::{ButtonFamilyRole, button_variant, default_button_family_theme};
 
 pub struct Toggle;
 
@@ -22,13 +22,8 @@ impl Toggle {
 pub fn default_toggle_template() -> Arc<dyn ButtonTemplate<bool>> {
     let button_family_theme = default_button_family_theme();
     Arc::new(DefaultButtonTemplate::new(button_family_theme.clone()).with_modifier(move |element, model| {
-        let variant = match model.kind {
-            crate::controls::button_family::ButtonKind::Standard => ButtonVariant::Standard,
-            crate::controls::button_family::ButtonKind::Ghost => ButtonVariant::Ghost,
-            crate::controls::button_family::ButtonKind::Prominent => ButtonVariant::Prominent,
-        };
         let appearance = button_family_theme.resolve(
-            variant,
+            button_variant(model.kind),
             ButtonFamilyRole::Toggle { selected: model.data },
             model.size,
             model.state,

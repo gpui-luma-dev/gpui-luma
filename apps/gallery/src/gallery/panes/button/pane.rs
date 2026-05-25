@@ -18,28 +18,44 @@ use super::labeling::render_vertical_section_rail;
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
     default_button: Entity<Button>,
+    subtle_button: Entity<Button>,
     ghost_button: Entity<Button>,
     prominent_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
     default_clicks: usize,
+    subtle_clicks: usize,
     ghost_clicks: usize,
     prominent_clicks: usize,
 }
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+        let button_template = theme.button_template();
+
         Self {
             default_button: Button::new("button-default-example")
                 .label("Standard")
                 .kind(ButtonKind::Standard)
+                .template(button_template.clone())
                 .spawn(cx),
-            ghost_button: Button::new("button-ghost-example").label("Ghost").kind(ButtonKind::Ghost).spawn(cx),
+            subtle_button: Button::new("button-subtle-example")
+                .label("Subtle")
+                .kind(ButtonKind::Subtle)
+                .template(button_template.clone())
+                .spawn(cx),
+            ghost_button: Button::new("button-ghost-example")
+                .label("Ghost")
+                .kind(ButtonKind::Ghost)
+                .template(button_template.clone())
+                .spawn(cx),
             prominent_button: Button::new("button-prominent-example")
                 .label("Prominent")
                 .kind(ButtonKind::Prominent)
+                .template(button_template)
                 .spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
             default_clicks: 0,
+            subtle_clicks: 0,
             ghost_clicks: 0,
             prominent_clicks: 0,
         }
@@ -48,6 +64,9 @@ impl ButtonPane {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.default_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_default_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.subtle_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_subtle_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.ghost_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_ghost_event(event, cx);
@@ -72,6 +91,7 @@ impl ButtonPane {
                         .items_center()
                         .gap(px(12.0))
                         .child(self.default_button.clone())
+                        .child(self.subtle_button.clone())
                         .child(self.ghost_button.clone())
                         .child(self.prominent_button.clone()),
                 )
@@ -83,6 +103,7 @@ impl ButtonPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_button, cx);
+        notify_entity(&self.subtle_button, cx);
         notify_entity(&self.ghost_button, cx);
         notify_entity(&self.prominent_button, cx);
         notify_entity(&self.state_preview, cx);
@@ -95,6 +116,19 @@ impl ButtonPane {
                 let label = format!("Default {}", self.default_clicks);
 
                 self.default_button.update(cx, |button, cx| {
+                    button.set_label(label, cx);
+                });
+            }
+        }
+    }
+
+    fn handle_subtle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ButtonEvent::Click => {
+                self.subtle_clicks += 1;
+                let label = format!("Subtle {}", self.subtle_clicks);
+
+                self.subtle_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -195,7 +229,7 @@ impl ButtonStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
         Self {
             theme: theme.clone(),
-            template: Arc::new(DefaultButtonTemplate::new(theme.button_family_theme())),
+            template: theme.button_template(),
             uniform_template: Arc::new(
                 DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(|element, _| element.w_full()),
             ),
@@ -266,6 +300,18 @@ impl Render for ButtonStatePreview {
                     &self.template,
                     &self.uniform_template,
                     "Standard",
+                    ButtonKind::Subtle,
+                    &variants,
+                    &samples,
+                    self.use_uniform_sizing,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_section(
+                    &self.template,
+                    &self.uniform_template,
+                    "Outline",
                     ButtonKind::Standard,
                     &variants,
                     &samples,
@@ -414,6 +460,7 @@ fn render_state_sample(
 fn button_kind_id(kind: ButtonKind) -> &'static str {
     match kind {
         ButtonKind::Prominent => "prominent",
+        ButtonKind::Subtle => "subtle",
         ButtonKind::Standard => "standard",
         ButtonKind::Ghost => "ghost",
     }

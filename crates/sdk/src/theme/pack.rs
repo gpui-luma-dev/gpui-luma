@@ -27,6 +27,7 @@ use crate::controls::{
 
 use crate::controls::button_family::{
     ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
+    button_variant,
 };
 use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupListAppearance, ControlGroupTemplate, ControlGroupTheme,
@@ -156,14 +157,9 @@ impl LumaThemePack {
     pub fn toggle_template(&self) -> Arc<dyn ButtonTemplate<bool>> {
         let button_family_theme = self.live_theme.clone();
         Arc::new(DefaultButtonTemplate::new(self.live_theme.clone()).with_modifier(move |element, model| {
-            let variant = match model.kind {
-                crate::controls::button_family::ButtonKind::Standard => ButtonVariant::Standard,
-                crate::controls::button_family::ButtonKind::Ghost => ButtonVariant::Ghost,
-                crate::controls::button_family::ButtonKind::Prominent => ButtonVariant::Prominent,
-            };
             let appearance = ButtonFamilyTheme::resolve(
                 button_family_theme.as_ref(),
-                variant,
+                button_variant(model.kind),
                 ButtonFamilyRole::Toggle { selected: model.data },
                 model.size,
                 model.state,
