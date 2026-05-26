@@ -869,6 +869,8 @@ into a concrete appearance.
 
 Text buttons use token radius and horizontal padding. Icon buttons use square sizing with circular radius. Toggle buttons use selected state through `ButtonFamilyRole::Toggle { selected }`.
 
+For toggle segments in a control group, pass a single **selected-segment** `ButtonKind` (for example `Standard` for filled secondary). The button-family theme resolves unselected toggle segments as `Subtle` (outline border and fill from `action.subtle.*` in the active theme), so callers do not need per-item kind functions. Use `toggle_button_item_template` with `default_toggle_template()` for icon toolbars.
+
 Example role-specific policy:
 
 ```rust

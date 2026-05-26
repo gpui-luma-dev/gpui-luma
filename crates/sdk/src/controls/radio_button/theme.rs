@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
+use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
@@ -28,7 +29,8 @@ pub struct RadioButtonAppearance {
 }
 
 pub trait RadioButtonTheme: Send + Sync {
-    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance;
+    /// `kind` selects the selected-state accent (`Standard` = secondary, `Prominent` = primary accent).
+    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> RadioButtonAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -73,36 +75,51 @@ pub const RADIO_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["RadioButtonAppearance.indicator_border"],
         },
         ThemePartUsage {
-            part: "checked indicator background",
+            part: "checked standard indicator border",
+            token: "action.standard.background",
+            states: &["checked standard"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
+        },
+        ThemePartUsage {
+            part: "checked standard indicator hover border",
+            token: "action.standard.hover_background",
+            states: &["checked standard hovered"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
+        },
+        ThemePartUsage {
+            part: "checked standard indicator pressed border",
+            token: "action.standard.pressed_background",
+            states: &["checked standard pressed"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
+        },
+        ThemePartUsage {
+            part: "checked standard dot",
+            token: "action.standard.foreground",
+            states: &["checked standard"],
+            appearance_fields: &["RadioButtonAppearance.dot_color"],
+        },
+        ThemePartUsage {
+            part: "checked prominent indicator border",
             token: "action.prominent.background",
-            states: &["checked"],
-            appearance_fields: &[
-                "RadioButtonAppearance.indicator_background",
-                "RadioButtonAppearance.indicator_border",
-            ],
+            states: &["checked prominent"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
         },
         ThemePartUsage {
-            part: "checked indicator hover background",
+            part: "checked prominent indicator hover border",
             token: "action.prominent.hover_background",
-            states: &["checked hovered"],
-            appearance_fields: &[
-                "RadioButtonAppearance.indicator_background",
-                "RadioButtonAppearance.indicator_border",
-            ],
+            states: &["checked prominent hovered"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
         },
         ThemePartUsage {
-            part: "checked indicator pressed background",
+            part: "checked prominent indicator pressed border",
             token: "action.prominent.pressed_background",
-            states: &["checked pressed"],
-            appearance_fields: &[
-                "RadioButtonAppearance.indicator_background",
-                "RadioButtonAppearance.indicator_border",
-            ],
+            states: &["checked prominent pressed"],
+            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
         },
         ThemePartUsage {
-            part: "checked dot",
+            part: "checked prominent dot",
             token: "action.prominent.foreground",
-            states: &["checked"],
+            states: &["checked prominent"],
             appearance_fields: &["RadioButtonAppearance.dot_color"],
         },
         ThemePartUsage {
@@ -143,12 +160,16 @@ impl DefaultRadioButtonTheme {
 }
 
 impl RadioButtonTheme for DefaultRadioButtonTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance {
+    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> RadioButtonAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
+        let checked_action = match button_variant(kind) {
+            ButtonVariant::Standard => &palette.action.standard,
+            _ => &palette.action.prominent,
+        };
 
         let indicator_background = match layer {
             InteractionLayer::Disabled => palette.state.disabled.background,
@@ -159,9 +180,9 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
 
         let selected_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
-            InteractionLayer::Hovered => palette.action.prominent.hover_background,
-            InteractionLayer::Default => palette.action.prominent.background,
+            InteractionLayer::Pressed => checked_action.pressed_background,
+            InteractionLayer::Hovered => checked_action.hover_background,
+            InteractionLayer::Default => checked_action.background,
         };
 
         let adorner = if state.focused {
@@ -179,15 +200,17 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             control_background: None,
             control_border: None,
             indicator_background,
-            indicator_border: if checked {
+            indicator_border: if checked && !state.disabled {
                 selected_color
             } else {
                 palette.form.input.border
             },
             dot_color: if state.disabled {
                 palette.state.disabled.foreground
+            } else if checked {
+                checked_action.foreground
             } else {
-                selected_color
+                palette.app.foreground
             },
             label_color: if state.disabled {
                 palette.state.disabled.foreground

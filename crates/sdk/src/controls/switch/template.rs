@@ -19,11 +19,11 @@ define_control_template!(
 
 impl ButtonTemplate<bool> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.data, model.state);
+        let appearance = self.theme.resolve(model.kind, model.data, model.state);
         let focused_probe_appearance = if model.state.disabled {
             None
         } else {
-            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
+            Some(self.theme.resolve(model.kind, model.data, InteractionState { focused: true, ..model.state }))
         };
 
         let thumb_left = if model.data {

@@ -309,20 +309,30 @@ impl ControlGroupTheme for LumaLiveTheme {
 }
 
 impl CheckboxTheme for LumaLiveTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
-        DefaultCheckboxTheme::new(self.state.tokens()).resolve(checked, state)
+    fn resolve(
+        &self,
+        kind: crate::controls::button_family::ButtonKind,
+        checked: bool,
+        state: InteractionState,
+    ) -> CheckboxAppearance {
+        DefaultCheckboxTheme::new(self.state.tokens()).resolve(kind, checked, state)
     }
 }
 
 impl SwitchTheme for LumaLiveTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
-        DefaultSwitchTheme::new(self.state.tokens()).resolve(on, state)
+    fn resolve(&self, kind: crate::controls::button_family::ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance {
+        DefaultSwitchTheme::new(self.state.tokens()).resolve(kind, on, state)
     }
 }
 
 impl RadioButtonTheme for LumaLiveTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance {
-        DefaultRadioButtonTheme::new(self.state.tokens()).resolve(checked, state)
+    fn resolve(
+        &self,
+        kind: crate::controls::button_family::ButtonKind,
+        checked: bool,
+        state: InteractionState,
+    ) -> RadioButtonAppearance {
+        DefaultRadioButtonTheme::new(self.state.tokens()).resolve(kind, checked, state)
     }
 }
 

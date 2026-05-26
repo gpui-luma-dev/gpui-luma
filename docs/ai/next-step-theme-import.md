@@ -2,22 +2,137 @@
 
 Guide for translating [shadcn/ui](https://ui.shadcn.com/) and [tweakcn](https://tweakcn.com/) theme exports into Luma’s native TOML format (`default-theme.toml` shape).
 
-**Related:** variant weight mapping (`docs/ai/next-step-variants.md`), active theme wiring (`docs/ai/next-step-theme.md`), strategy overview (`docs/theme.md`).
+**Related:**
 
-**Status:** Manual conversion validated in-repo; automated importer / lexicon resolver not built yet.
+| Doc | Role |
+|---|---|
+| `docs/ai/next-step-variants.md` | Four-weight ladder — **implemented** |
+| `docs/ai/next-step-theme.md` | Active theme wiring — **implemented** |
+| `docs/ai/theme-lexicon.md` | Lexicon grammar + import workflow — **lexicon file in repo** |
+| `docs/ai/next-step-codegen.md` | sdk-theme matrices / build codegen — **proposed** (post-import) |
+| `docs/theme.md` | Strategy overview |
+
+**Status (May 2026):**
+
+| Track | State |
+|---|---|
+| Manual CSS → TOML | **Done** for Astrovista and Jarvis (gallery assets) |
+| SDK native default | **`crates/sdk/src/theme/default-theme.toml`** only (`LumaTheme::native()` / `DEFAULT_THEME_TOML`) |
+| Active theme at runtime | **Done** — gallery registers `LumaThemePack` + `set_active_theme_pack` (see `next-step-theme.md`) |
+| Four-weight action ladder | **Done** — `action.subtle` / `ButtonKind::Subtle` (see `next-step-variants.md`) |
+| Choice controls + `ButtonKind` | **Done (interim Rust)** — checkbox, switch, radio, toggle resolve checked/on/selected via `Standard` vs `Prominent`; toggle unselected pairing → `Subtle` in button-family theme (see below) |
+| Gallery variant matrices | **Done** — Button, Toggle, Switch, Checkbox, Radio Button panes; Introduction panels use explicit kinds where needed |
+| **Lexicon TOML + human guide** | **Done** — `crates/sdk/src/theme/lexicon.toml`, `docs/ai/theme-lexicon.md` (binding rules for importer; validated against Astrovista/Jarvis manual TOML) |
+| **Automated import code** | **Next** — CSS catalog parser, lexicon resolver, `luma-theme import` CLI (lexicon exists; tool does not) |
+| sdk-theme codegen | **Proposed** — move choice appearance matrices out of Rust (see `next-step-codegen.md`) |
+| white-orange TOML | **Not in repo** |
+| Full typography import from CSS | **Not done** — sizes still copied from native Luma scale |
+| In-app theme picker | **Not done** — gallery uses CLI only |
+
+### What “done” means for import
+
+Foundation work is in place so the **importer can be implemented against stable targets**:
+
+1. **Target schema** — full Luma `theme.toml` shape with four action roles, navigation, form, state pairs.
+2. **Reference outputs** — hand-authored `tweakcn-astrovista.toml` and `tweakcn-jarvis.toml` as golden files the importer should reproduce (modulo documented derivation rules).
+3. **Binding spec** — `lexicon.toml` cascade grammar (`token`, `palette`, `path`, `inherit`, transforms) documented in `theme-lexicon.md`.
+4. **Runtime consumer** — gallery loads imported TOML via CLI; controls resolve colors from active pack (no per-control palette hacks in templates).
+5. **Variant semantics** — importers map CSS to **`action.prominent` / `action.standard` / `action.subtle` / `action.ghost`**, not to control Rust code.
+
+**Still manual / interim (not replaced by import yet):**
+
+- Hover/pressed derivation percentages in TOML headers.
+- Choice **policy** (which `ButtonKind` per control) — today `.kind(...)` in app/gallery code + Rust `match` in `*Theme::resolve`; future: sdk-theme + codegen (`next-step-codegen.md`).
+- Typography sizes and gallery demo label `text_size(px(...))` hardcoding.
+
+**Next engineering step:** implement the import pipeline (catalog → lexicon resolve → TOML emit → `LumaTheme::from_toml_str` validate → diff against golden Astrovista/Jarvis files).
 
 ---
 
-## Reference files in this repo
+## Repository layout (current)
 
-| Source CSS | Example TOML | Notes |
+Imported tweakcn themes live in the **gallery app**, not the SDK crate. The SDK ships one native theme for library defaults and tests.
+
+| Role | Path |
+|---|---|
+| SDK native theme | `crates/sdk/src/theme/default-theme.toml` |
+| Import lexicon (bindings) | `crates/sdk/src/theme/lexicon.toml` |
+| Lexicon human guide | `docs/ai/theme-lexicon.md` |
+| Imported Astrovista | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` |
+| Imported Jarvis | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` |
+| Gallery wiring | `apps/gallery/src/gallery/theme.rs` (`include_str!` + `GalleryThemeChoice`) |
+| Jarvis sans font | `apps/gallery/src/assets/fonts/Rajdhani/Rajdhani-Variable.ttf` + `OFL.txt` |
+| Font registration | `apps/gallery/src/assets/fonts.rs` — `load_rajdhani()` |
+
+**Source CSS** used for the manual imports is **not** checked in under `crates/sdk/src/theme/` today. Keep tweakcn export files locally (or re-add under `crates/sdk/src/theme/` as `tweakcn-*.css`) when diffing future edits. Other CSS under `apps/gallery/themes/` is unrelated monochrome exports.
+
+**Removed / renamed** (historical):
+
+- `theme-astrovista.toml` / `jarvis-theme.toml` → **`tweakcn-astrovista.toml`** / **`tweakcn-jarvis.toml`**
+- `theme-astrovista2.toml` (white-orange) — never added; still a future import
+
+---
+
+## Gallery preview
+
+```bash
+cargo run -p gpui-luma-gallery              # SDK default-theme.toml
+cargo run -p gpui-luma-gallery -- astrovista
+cargo run -p gpui-luma-gallery -- jarvis    # loads Rajdhani before open
+```
+
+- First positional arg: `default` | `astrovista` | `jarvis` (case-insensitive). Missing arg → **`default`**.
+- Startup: `gpui_luma::init` → optional `fonts::load_rajdhani` (Jarvis only) → `set_active_theme_pack` → window.
+- Parse tests: `apps/gallery/src/gallery/theme.rs` (`astrovista_theme_parses_*`, `jarvis_theme_sans_family_matches_embedded_font`).
+
+Validate visually: **Palette** + **Theme Usage** panes, button matrix (four weights), **Toggle / Switch / Checkbox / Radio Button** template matrices (Standard vs Prominent rows), Introduction panels, light/dark title bar toggle.
+
+**Interim product convention (until sdk-theme codegen):** use **`ButtonKind::Standard`** for stock forms and groups; set **`ButtonKind::Prominent`** only where the design needs primary accent (gallery matrices, explicit intro cases). Astrovista exercises the full color ladder; Jarvis leans on borders + Rajdhani with a quieter palette contrast.
+
+---
+
+## Reference files
+
+| Source (tweakcn export) | TOML in repo | Notes |
 |---|---|---|
-| `crates/sdk/src/theme/tweakcdn-white-orange.css` | `crates/sdk/src/theme/theme-astrovista2.toml` | Orange primary, light card panels |
-| `crates/sdk/src/theme/tweakcn-astrovista.css` | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` | Grey-blue canvas, coral primary, navy `--secondary` |
-| `crates/sdk/src/theme/tweakcn-jarvis.css` | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` | Teal Jarvis; `cargo run -p gpui-luma-gallery -- jarvis` |
-| — | `crates/sdk/src/theme/default-theme.toml` | Native Luma theme (SDK default via `DEFAULT_THEME_TOML`) |
+| tweakcn-astrovista.css | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` | Coral primary, navy `--secondary` → **Standard**, outline → **Subtle** |
+| tweakcn-jarvis.css | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` | Teal primary; Rajdhani sans (embedded) |
+| tweakcn white-orange (planned) | — | Not imported; was planned as `theme-astrovista2.toml` |
+| — | `crates/sdk/src/theme/default-theme.toml` | Native Luma; SDK + gallery `default` CLI |
 
-CSS sources live under `crates/sdk/src/theme/` for diffing during manual import.
+---
+
+## Fonts (GPUI / gallery)
+
+Luma TOML only stores **family name strings**. GPUI does not load web fonts from CSS `@import`; apps must **`TextSystem::add_fonts`** with TTF/OTF bytes.
+
+| Theme | TOML `typography.font.sans.family` | Gallery behavior |
+|---|---|---|
+| **Jarvis** | `Rajdhani Variable` | `load_rajdhani()` in `main.rs` when CLI is `jarvis`; variable TTF in `assets/fonts/Rajdhani/` |
+| **Astrovista** | `Outfit` (from CSS intent) | **Not embedded** — system/fallback sans until Outfit is bundled |
+| **Default** | Native stack in `default-theme.toml` | No extra gallery fonts |
+| **Mono** (Jarvis TOML) | `JetBrains Mono` | System font only — not embedded |
+
+**Lesson (Jarvis):** Fontshare’s variable file registers as **`Rajdhani Variable`**, not `Rajdhani`. TOML and `RAJDHANI_FAMILY` in `fonts.rs` must match the font’s **name table**, or GPUI falls back to system UI. See `apps/gallery/src/assets/fonts/Rajdhani/README.md`.
+
+Trimmed Fontshare tree: keep **variable TTF + OFL** only; drop woff/eot duplicates.
+
+---
+
+## Typography (current gap vs tweakcn)
+
+Imported TOMLs **copy metrics and typography sizes from `default-theme.toml`**, not from tweakcn `rem` / Tailwind scale. CSS `--font-sans` / `--font-mono` map to **family only**.
+
+Typical Luma scale today:
+
+| Role | Size (px) | Used by |
+|---|---|---|
+| `text.label` | 13 | Buttons, nav items, most control chrome |
+| `text.body` | 14 | Text fields, text areas |
+| `text.caption` | 11 | Secondary labels |
+| `text.title` | 20 | Headings |
+
+tweakcn/shadcn often renders controls at **`text-sm` (14px)** and page copy at **16px root**. The gallery can feel **~1–2px smaller** than the tweakcn preview even when colors match. Follow-up: bump `typography.text.*` in imported TOML and/or replace gallery **hardcoded** `text_size(px(11.0))` demo labels with theme roles.
 
 ---
 
@@ -53,12 +168,13 @@ Colors are normalized **`hsl(...)` / `hsla(...)`** only. Every action role inclu
 
 ```text
 tweakcn / shadcn CSS
-  → parse :root and .dark into flat token catalog
-  → explicit CSS-token → Luma-path mapping (see tables below)
+  → parse :root and .dark into flat token catalog          ← import code (next)
+  → apply lexicon.toml bindings (crates/sdk/src/theme/lexicon.toml)  ← spec done
   → derive missing states (hover, pressed, invalid, disabled)
   → inherit metrics / typography / elevation from base Luma theme where CSS is silent
   → validate via LumaTheme::from_toml_str
-  → gallery visual check (Palette + Theme Usage panes)
+  → gallery visual check (Palette + Theme Usage panes; CLI theme arg)
+  → (optional) diff against golden tweakcn-*.toml in gallery assets
 ```
 
 **Do not** map CSS directly into control appearance structs or template code.
@@ -92,22 +208,20 @@ Apply independently for **`[light.*]`** and **`[dark.*]`** (always author both m
 
 Panel/floating **border** usually from `--border`, not a separate card-border variable.
 
-### Action roles (current three-weight model)
+### Action roles (four-weight model — implemented)
 
-Until `action.subtle` lands (`docs/ai/next-step-variants.md`), use this **interim** mapping for imports:
+Map imports using `docs/ai/next-step-variants.md`:
 
-| CSS variable | Luma path (today) | Target path (after Subtle) |
+| CSS / shadcn recipe | Luma path | `ButtonKind` |
 |---|---|---|
-| `--primary` | `palette.action.prominent.*` | same |
-| `--primary-foreground` | prominent foreground | same |
-| `--secondary` | `palette.action.standard.*` | Filled alternate tone (shadcn `secondary`) |
-| `--secondary-foreground` | standard foreground | |
-| `--destructive` | — | deferred (no action role yet) |
-| `--destructive-foreground` | — | deferred |
-| `--card` + `--border` | `palette.action.subtle.*` (outline recipe) | shadcn `outline` — visually quiet |
-| transparent / `--accent` hover | `palette.action.ghost.*` | same |
+| `--primary` | `palette.action.prominent.*` | Prominent |
+| `--secondary` (filled) | `palette.action.standard.*` | Standard |
+| `--card` + `--border` (outline) | `palette.action.subtle.*` | Subtle |
+| transparent / `--accent` hover | `palette.action.ghost.*` | Ghost |
 
-**Outline vs secondary:** shadcn **outline** = bordered neutral (card bg + border) → Luma **`action.subtle`**. shadcn **secondary** = filled alternate tone → Luma **`action.standard`**. Do not put navy `--secondary` on `action.subtle` — that row is labeled Subtle in the gallery and should look bordered, not filled.
+**Outline vs secondary:** shadcn **outline** → **`action.subtle`**. shadcn **secondary** (filled navy/orange) → **`action.standard`**. Do not map navy `--secondary` to `action.subtle` — the gallery Subtle row will look filled instead of bordered.
+
+`--destructive` → `palette.form.input.invalid_border` only (no destructive button role yet).
 
 ### State & interaction
 
@@ -119,7 +233,6 @@ Until `action.subtle` lands (`docs/ai/next-step-variants.md`), use this **interi
 | `--border` | `palette.border.default` | |
 | — | `palette.border.strong` | Derive or inherit from base theme |
 | `--input` | `palette.form.input.border` and/or background | Often border in shadcn |
-| `--destructive` | `palette.form.input.invalid_border` | Validation errors only; no destructive button role yet |
 
 Derive when CSS is silent:
 
@@ -138,7 +251,7 @@ Use consistent derivation rules per theme; document them in the TOML header comm
 | `--foreground` | `palette.form.input.foreground` |
 | `--input` | `palette.form.input.border` |
 | `--muted-foreground` | `palette.form.input.placeholder` |
-| `--destructive` | `palette.form.input.invalid_border` | Validation errors only; no destructive button role yet |
+| `--destructive` | `palette.form.input.invalid_border` |
 
 Prefer explicit choices over implicit “card vs background” — shadcn themes disagree.
 
@@ -170,34 +283,36 @@ Dark mode: Astrovista uses `--sidebar-accent` for hover where light mode uses `-
 
 ## Astrovista example (tweakcn-astrovista.css)
 
-Documented conversion targets:
+Documented conversion targets (validated in `tweakcn-astrovista.toml`):
 
 | Token | Light | Dark |
 |---|---|---|
 | `--background` | Grey-blue canvas `hsl(204 12.2% 92%)` | Near-black `hsl(0 0% 10.2%)` |
 | `--primary` | Coral `hsl(15.2 72.6% 54.1%)` | Same coral |
 | `--card` / `--popover` | White panels/menus | `hsl(0 0% 12.5%)` |
-| `--secondary` | Navy `hsl(217.3 44% 32.9%)` | Navy `hsl(216.2 44.1% 28%)` → **`action.standard`** |
+| `--secondary` | Navy fill → **`action.standard`** | Navy → **`action.standard`** |
 | `--muted` | Subtle surfaces / disabled | Elevated chrome |
 | `--accent` | Hover states | Dark: `--sidebar-accent` for hover |
 | `--destructive` | `form.input.invalid_border` | Validation errors only |
 | `--sidebar-*` | Navigation palette | Navigation palette |
 
-**Subtle** (outline): white/card fill + grey `--border`. **Standard**: navy `--secondary` fill.
+**Subtle** (outline): card fill + `--border`. **Standard**: navy `--secondary` fill. **Prominent**: coral `--primary`.
 
 ---
 
 ## white-orange example (tweakcdn-white-orange.css)
 
+**Not imported yet.**
+
 | Token | Role |
 |---|---|
 | `--primary` `hsl(24 100% 50%)` | Prominent / brand orange |
-| `--secondary` | Second orange in this theme — map to **Subtle**, not Standard |
+| `--secondary` | Second orange in this theme — map to **Standard** or **Subtle** per visual (see variants doc) |
 | `--card` | Slightly tinted panel bg vs pure white app bg |
 | `--muted` | Subtle surface grey |
 | `--ring` | Focus ring (orange family) |
 
-Reference TOML: `theme-astrovista2.toml` (despite the name, maps white-orange CSS comments in header).
+Planned TOML name was `theme-astrovista2.toml`; use `tweakcn-white-orange.toml` under gallery assets when added.
 
 ---
 
@@ -209,12 +324,12 @@ CSS exports partial metrics. **Inherit** from `default-theme.toml` unless the CS
 |---|---|---|
 | `--radius` | `metrics.radius.md` (and scale sm/lg relative) | Convert rem → px (`0.5rem` → 8px at 16px root) |
 | `--spacing` | base for `metrics.spacing.*` | Often 4px grid |
-| `--font-sans` | `typography.font_family.sans` | Strip `@import`; Luma loads fonts separately |
-| `--font-mono` | `typography.font_family.mono` | |
+| `--font-sans` | `typography.font.sans.family` | Strip `@import`; register TTF in gallery/SDK separately |
+| `--font-mono` | `typography.font.mono.family` | Same |
 | `--shadow-sm` … `--shadow-xl` | `elevation.*` | Prefer parsing layers; fallback to native elevation tokens |
-| `--tracking-normal` | label typography tracking | Optional |
+| `--tracking-normal` | label typography tracking | Optional — no TOML slot yet |
 
-Keep full metrics/typography/elevation blocks in imported TOML — copy from native theme, then override only what CSS defines.
+Keep full metrics/typography/elevation blocks in imported TOML — copy from native theme, then override only what CSS defines (today: mostly **colors + radius + font families**).
 
 ---
 
@@ -255,43 +370,66 @@ Document chosen percentages in the TOML file header for reproducibility.
 
 ---
 
-## Configurable mapping (future importer)
+## Configurable mapping (lexicon — spec done, resolver next)
 
-Because the same CSS token means different things per theme, a future importer should use **binding rules**, not hardcoded 1:1 names:
+The importer should use **binding rules**, not hardcoded 1:1 CSS names. The lexicon file and grammar are **authored**; the Rust resolver that applies them to a parsed CSS catalog is **not written yet**.
+
+| Artifact | Path | Status |
+|---|---|---|
+| Binding lexicon | `crates/sdk/src/theme/lexicon.toml` | **In repo** — light/dark paths, `[palette]` semantic layer, `[[conflicts]]` notes |
+| Human guide | `docs/ai/theme-lexicon.md` | **In repo** — cascade forms, import workflow, Astrovista/Jarvis validation notes |
+| Catalog parser | — | **Not built** |
+| Lexicon resolver + TOML emitter | — | **Not built** |
+| CLI | — | **Not built** (planned interface below) |
+
+Example binding shape (implemented in lexicon, not yet executed by tooling):
 
 ```toml
-# Conceptual binding (not implemented)
 [light.palette.action.prominent]
-background = [{ token = "primary" }, { inherit = "base" }]
+background = [{ palette = "brand" }, { token = "primary" }, { inherit = "base" }]
 
 [light.palette.form.input]
 background = [{ token = "card" }, { token = "background" }, { inherit = "base" }]
 ```
 
-Binding kinds discussed in planning:
+Binding kinds (see `theme-lexicon.md`):
 
 | Kind | Meaning |
 |---|---|
 | `{ token = "primary" }` | Lookup in parsed CSS catalog for current mode |
+| `{ palette = "brand" }` | Semantic alias from `[palette]` in lexicon |
 | `{ path = "palette.app.background" }` | Another resolved Luma path |
 | `{ derive = "lighten", from = "primary", amount = "8%" }` | Transform |
 | `{ inherit = "base" }` | Keep native `default-theme.toml` value |
-| `[ { token = "card" }, { token = "background" }, { inherit = "base" } ]` | Cascade / default-if-missing |
+| `[ { token = "card" }, { token = "background" }, { inherit = "base" } ]` | Cascade / first match wins |
 
-Lexicon should be **source-agnostic**; CSS files register as named catalogs (`astrovista`, `white-orange`, …).
+Lexicon is **source-agnostic**; CSS files register as named catalogs (`astrovista`, `jarvis`, `white-orange`, …) when the importer lands.
+
+Planned CLI (first milestone):
+
+```bash
+luma-theme import path/to/tweakcn-astrovista.css \
+  --lexicon crates/sdk/src/theme/lexicon.toml \
+  --base crates/sdk/src/theme/default-theme.toml \
+  --out apps/gallery/src/assets/themes/tweakcn-astrovista.toml
+```
+
+Success criteria for v1: output parses with `LumaTheme::from_toml_str` and **matches** hand-maintained Astrovista/Jarvis TOML within documented derivation tolerance (or produces a reviewable diff).
 
 ---
 
 ## Validation checklist
 
-After writing TOML:
+After writing or editing TOML:
 
 1. `LumaTheme::from_toml_str` parses without error (both modes complete).
-2. `cargo test -p gpui-luma -- theme` passes.
-3. Gallery **Palette** pane shows expected semantic groups.
+2. `cargo test -p gpui-luma -- theme` and gallery theme tests in `apps/gallery/src/gallery/theme.rs` pass.
+3. Gallery **Palette** pane shows expected semantic groups (`-- astrovista` / `-- jarvis`).
 4. Gallery **Theme Usage** pane: no unexpected “Reserved / unused” for imported roles you care about.
-5. Spot-check controls: Prominent, Standard (outline), Ghost, form fields, navigation sidebar, floating menus.
+5. Spot-check controls: **Prominent, Subtle, Standard, Ghost**, form fields, navigation sidebar, floating menus; **choice controls** (toggle toolbar Standard selected + Subtle unselected, switch/checkbox/radio Standard vs Prominent matrix rows).
 6. Toggle light/dark in gallery title bar — pairs remain coherent.
+7. **Fonts:** Jarvis — sans renders as Rajdhani (not system UI); Astrovista — accept fallback until Outfit is embedded.
+8. After automated import exists: **diff** tool output against `tweakcn-astrovista.toml` / `tweakcn-jarvis.toml` golden files.
 
 ---
 
@@ -306,25 +444,44 @@ After writing TOML:
 | Import only `:root` | Dark mode broken or falls back incorrectly |
 | Map `--accent` only to ghost | Hover states wrong on lists/menus |
 | Put `--destructive` only in orphan `[*.colors]` tables | Loader ignores it; wire to `form.input.invalid_border` or drop |
+| TOML `family = "Rajdhani"` with variable TTF only | System fallback; use **`Rajdhani Variable`** or embed static cuts |
+| Expect CSS `@import` to load fonts | GPUI needs `add_fonts` + matching family name |
 
 ---
 
 ## SDK schema notes
 
-Ensure Rust loader matches authored TOML:
+Loader and themes in repo already include:
 
-- `palette.action.subtle.*` — add when variant work lands
-- Orphan `[*.colors].destructive_*` tables should wire into `form.input.invalid_border` or be removed to avoid false confidence
+- `palette.action.subtle.*` — required for imported tweakcn themes
+- `LumaThemePack::from_toml_str` for gallery-embedded TOML
 
-Check `crates/sdk/src/theme/tokens.rs` and `registry.rs` when adding new palette roles.
+Orphan `[*.colors].destructive_*` tables should wire into `form.input.invalid_border` or be removed to avoid false confidence.
+
+Check `crates/sdk/src/theme/tokens.rs` when adding new palette roles.
 
 ---
 
 ## Explicitly future work
 
-- CLI: `luma-theme import tweakcn-astrovista.css --bindings lexicon.toml`
+### Next: import tooling
+
+- **CSS catalog parser** (`:root` / `.dark` → flat token map per mode)
+- **Lexicon resolver** — apply `lexicon.toml` cascade to catalog + `default-theme.toml` base
+- **TOML emitter** — full light/dark sections, derivation for hover/pressed where lexicon/catalog silent
+- **CLI:** `luma-theme import …` (interface above)
+- **Golden tests** — importer output ≈ hand-maintained `tweakcn-astrovista.toml` / `tweakcn-jarvis.toml`
+
+### After import (separate tracks)
+
+- **sdk-theme codegen** — choice appearance matrices + defaults in data, not Rust `match` (`next-step-codegen.md`)
+- **white-orange** → `apps/gallery/src/assets/themes/tweakcn-white-orange.toml`
+- Re-check in **source CSS** under `crates/sdk/src/theme/` for diffing (optional hygiene)
+- Typography: import tweakcn `rem` scale into `typography.text.*`; reduce gallery hardcoded demo sizes
+- Embed **Outfit** (Astrovista) and optional **JetBrains Mono** (Jarvis)
+- In-app theme picker (beyond CLI `default` / `astrovista` / `jarvis`)
 - Primitive palette layer (`[light.primitives]` + `{ ref = "brand" }`) for deduplicated authoring
 - Automated contrast warnings on import
 - oklch → hsl conversion in tooling
 
-For variant naming when importing, always follow `docs/ai/next-step-variants.md` — map CSS tokens to the **target** Luma ladder even before `ButtonKind::Subtle` exists in code.
+For variant naming when importing, follow `docs/ai/next-step-variants.md` — map CSS tokens to the **four-weight** Luma ladder (`prominent` / `standard` / `subtle` / `ghost`).

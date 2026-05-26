@@ -1,4 +1,5 @@
 mod button_item_template;
+mod toggle_button_item_template;
 mod control;
 mod model;
 mod template;
@@ -11,6 +12,7 @@ pub use model::{
     ControlGroupLayout, ControlGroupModel, ControlGroupRenderModel, ControlGroupStateMode, ControlSelectionMode,
 };
 pub use button_item_template::button_item_template;
+pub use toggle_button_item_template::toggle_button_item_template;
 pub use template::{
     ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemTemplate, ControlGroupMouseDownHandler,
     ControlGroupMouseUpHandler, ControlGroupTemplate, ControlGroupTemplateHandlers, default_control_group_template,

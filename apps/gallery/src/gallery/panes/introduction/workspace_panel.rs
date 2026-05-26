@@ -7,7 +7,7 @@ use gpui::{
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::button_item_template;
+use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::radio_button::default_radio_button_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::toggle::default_toggle_template;
@@ -72,10 +72,9 @@ impl WorkspacePanel {
                 .with_template_modifier(|element, _| element.bg(transparent_black()))
                 .managed_selected("grid")
                 .items(layout_items())
-                .item_template(button_item_template(
+                .item_template(toggle_button_item_template(
                     default_toggle_template(),
-                    ButtonKind::Ghost,
-                    |selected| ButtonFamilyRole::Toggle { selected },
+                    ButtonKind::Prominent,
                     true,
                     |item: &IconGroupItem| {
                         let icon = match item.id().as_ref() {
@@ -102,10 +101,9 @@ impl WorkspacePanel {
         let icon_demo_icon_group = button_group::horizontal("intro-workspace-icon-demo", theme.control_group_theme())
             .managed_selected("left")
             .items(icon_demo_items())
-            .item_template(button_item_template(
+            .item_template(toggle_button_item_template(
                 default_toggle_template(),
-                ButtonKind::Ghost,
-                |selected| ButtonFamilyRole::Toggle { selected },
+                ButtonKind::Standard,
                 true,
                 |item: &IconGroupItem| {
                     let icon = match item.id().as_ref() {
@@ -407,7 +405,7 @@ fn render_density_group(
                 let label = RadioGroupItemLike::label(item.item).clone();
                 move |_, _| div().child(label.clone()).into_any_element()
             }),
-            kind: ButtonKind::Standard,
+            kind: ButtonKind::Prominent,
             role: ButtonFamilyRole::Text,
             size: ButtonSize::Md,
             state: item.state.interaction_state(),

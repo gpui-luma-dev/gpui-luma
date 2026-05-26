@@ -43,7 +43,7 @@ pub(super) struct PaymentPanel {
 impl PaymentPanel {
     pub(super) fn new(cx: &mut Context<Self>, theme: &GalleryThemePack, event_bus: Entity<EventBus>) -> Self {
         let submit_button = Button::new("intro-submit").label("Submit").kind(ButtonKind::Prominent).spawn(cx);
-        let cancel_button = Button::new("intro-cancel").label("Cancel").spawn(cx);
+        let cancel_button = Button::new("intro-cancel").label("Cancel").kind(ButtonKind::Subtle).spawn(cx);
         let name_field = textfield::new("intro-name")
             .placeholder("Name on card")
             .full_width(true)
@@ -63,10 +63,12 @@ impl PaymentPanel {
             .show_clear_button(false)
             .spawn(cx);
         let same_as_shipping_checkbox = checkbox::new("intro-same-as-shipping")
+            .kind(ButtonKind::Prominent)
             .with_data(true)
             .content(|_, _| div().child("Same as shipping address").into_any_element())
             .spawn(cx);
         let payment_method_radio = radio_button::new("intro-payment-method-radio")
+            .kind(ButtonKind::Standard)
             .with_data(true)
             .content(|_, _| div().child("Use this as default payment method").into_any_element())
             .spawn(cx);

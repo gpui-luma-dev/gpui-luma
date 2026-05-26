@@ -1,7 +1,7 @@
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind};
+use gpui_luma::controls::button_family::ButtonKind;
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::{button_item_template, default_control_group_template};
+use gpui_luma::controls::control_group::{default_control_group_template, toggle_button_item_template};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::toggle::default_toggle_template;
 use lucide_icons::Icon as LucideIcon;
@@ -30,10 +30,9 @@ impl ToggleGroupPane {
             .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
             .selected("bottom")
             .items(placement_items())
-            .item_template(button_item_template(
+            .item_template(toggle_button_item_template(
                 toggle_template.clone(),
                 ButtonKind::Ghost,
-                |selected| ButtonFamilyRole::Toggle { selected },
                 true,
                 placement_icon_content,
             ))
@@ -46,10 +45,9 @@ impl ToggleGroupPane {
             .multiple()
             .selected_ids(["top", "left"])
             .items(edge_items())
-            .item_template(button_item_template(
+            .item_template(toggle_button_item_template(
                 toggle_template,
                 ButtonKind::Ghost,
-                |selected| ButtonFamilyRole::Toggle { selected },
                 true,
                 placement_icon_content,
             ))

@@ -1,40 +1,51 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::checkbox::{self, Checkbox, default_checkbox_template};
-use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryThemePack;
 
+use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
-    default_checkbox: Checkbox,
+    standard_checkbox: Checkbox,
+    prominent_checkbox: Checkbox,
     state_preview: Entity<CheckboxStatePreview>,
-    default_checked: bool,
+    standard_checked: bool,
+    prominent_checked: bool,
 }
 
 impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
         Self {
-            default_checkbox: checkbox::new("checkbox-default")
+            standard_checkbox: checkbox::new("checkbox-standard-example")
+                .kind(ButtonKind::Standard)
                 .with_data(true)
-                .content(|_, _| div().child("As-is").into_any_element())
+                .content(|_, _| div().child("Standard").into_any_element())
+                .spawn(cx),
+            prominent_checkbox: checkbox::new("checkbox-prominent-example")
+                .kind(ButtonKind::Prominent)
+                .with_data(false)
+                .content(|_, _| div().child("Prominent").into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| CheckboxStatePreview::new(theme)),
-            default_checked: true,
+            standard_checked: true,
+            prominent_checked: false,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.default_checkbox, |app, _, event: &ButtonEvent, cx| {
-            app.panes.checkbox.handle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.standard_checkbox, |app, _, event: &ButtonEvent, cx| {
+            app.panes.checkbox.handle_standard_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.prominent_checkbox, |app, _, event: &ButtonEvent, cx| {
+            app.panes.checkbox.handle_prominent_event(event, cx);
         }));
     }
 
@@ -49,13 +60,29 @@ impl CheckboxPane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(div().flex().items_center().gap_3().child(self.default_checkbox.clone()))
                 .child(
                     div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.body_text)
-                        .child(format!("Checked: as-is={}", self.default_checked)),
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .justify_center()
+                        .gap(px(12.0))
+                        .child(self.standard_checkbox.clone())
+                        .child(
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .text_color(chrome.body_text)
+                                .child(format!("Standard checked: {}", self.standard_checked)),
+                        )
+                        .child(self.prominent_checkbox.clone())
+                        .child(
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .text_color(chrome.body_text)
+                                .child(format!("Prominent checked: {}", self.prominent_checked)),
+                        ),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
@@ -64,20 +91,30 @@ impl CheckboxPane {
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.default_checkbox, cx);
+        notify_entity(&self.standard_checkbox, cx);
+        notify_entity(&self.prominent_checkbox, cx);
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            ButtonEvent::Click => {
-                self.default_checkbox.update(cx, |button, cx| {
-                    let new_checked = !*button.data();
-                    button.set_data(new_checked, cx);
-                    self.default_checked = new_checked;
-                });
-                cx.notify();
-            }
+    fn flip_checkbox(checkbox: &Checkbox, checked: &mut bool, cx: &mut Context<GalleryApp>) {
+        checkbox.update(cx, |button, cx| {
+            let new_checked = !*button.data();
+            button.set_data(new_checked, cx);
+            *checked = new_checked;
+        });
+    }
+
+    fn handle_standard_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        if matches!(event, ButtonEvent::Click) {
+            Self::flip_checkbox(&self.standard_checkbox, &mut self.standard_checked, cx);
+            cx.notify();
+        }
+    }
+
+    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+        if matches!(event, ButtonEvent::Click) {
+            Self::flip_checkbox(&self.prominent_checkbox, &mut self.prominent_checked, cx);
+            cx.notify();
         }
     }
 }
@@ -85,18 +122,51 @@ impl CheckboxPane {
 #[derive(Clone)]
 struct CheckboxStatePreview {
     theme: GalleryThemePack,
-    default_template: Arc<dyn ButtonTemplate<bool>>,
+    template: Arc<dyn ButtonTemplate<bool>>,
 }
 
 struct CheckboxStateSample {
     id: &'static str,
-    label: &'static str,
+    header: &'static str,
     state: InteractionState,
+}
+
+#[derive(Clone, Copy)]
+enum CheckboxTemplateVariant {
+    IndicatorUnchecked,
+    IndicatorChecked,
+    LabeledUnchecked,
+    LabeledChecked,
+}
+
+impl CheckboxTemplateVariant {
+    fn id(self) -> &'static str {
+        match self {
+            Self::IndicatorUnchecked => "indicator-unchecked",
+            Self::IndicatorChecked => "indicator-checked",
+            Self::LabeledUnchecked => "labeled-unchecked",
+            Self::LabeledChecked => "labeled-checked",
+        }
+    }
+
+    fn checked(self) -> bool {
+        matches!(self, Self::IndicatorChecked | Self::LabeledChecked)
+    }
+
+    fn content(self) -> Arc<dyn Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync> {
+        match self {
+            Self::IndicatorUnchecked | Self::IndicatorChecked => Arc::new(move |_, _| div().into_any_element()),
+            Self::LabeledUnchecked | Self::LabeledChecked => {
+                let label = SharedString::from("Checkbox");
+                Arc::new(move |_, _| div().child(label.clone()).into_any_element())
+            }
+        }
+    }
 }
 
 impl CheckboxStatePreview {
     fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), default_template: default_checkbox_template() }
+        Self { theme: theme.clone(), template: default_checkbox_template() }
     }
 }
 
@@ -104,58 +174,77 @@ impl Render for CheckboxStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.theme.chrome();
         let samples = [
-            CheckboxStateSample { id: "default", label: "Standard", state: InteractionState::default() },
+            CheckboxStateSample { id: "default", header: "default", state: InteractionState::default() },
             CheckboxStateSample {
                 id: "hover",
-                label: "Hover",
+                header: "hover",
                 state: InteractionState { hovered: true, ..InteractionState::default() },
             },
             CheckboxStateSample {
-                id: "focus",
-                label: "Focus",
+                id: "focused",
+                header: "focused",
                 state: InteractionState { focused: true, ..InteractionState::default() },
             },
             CheckboxStateSample {
                 id: "pressed",
-                label: "Pressed",
+                header: "pressed",
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
             },
             CheckboxStateSample {
                 id: "disabled",
-                label: "Disabled",
+                header: "disabled",
                 state: InteractionState { disabled: true, ..InteractionState::default() },
             },
+        ];
+        let variants = [
+            CheckboxTemplateVariant::IndicatorUnchecked,
+            CheckboxTemplateVariant::IndicatorChecked,
+            CheckboxTemplateVariant::LabeledUnchecked,
+            CheckboxTemplateVariant::LabeledChecked,
         ];
 
         div()
             .flex()
             .flex_col()
-            .items_center()
-            .gap(px(14.0))
+            .gap(px(16.0))
             .child(
                 div()
                     .text_size(px(12.0))
                     .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Template state preview"),
+                    .child("Template matrix preview"),
             )
-            .child(render_presentation(
-                &self.default_template,
-                "default",
-                "Standard",
-                &samples,
-                chrome.muted_text,
-                window,
-                cx,
-            ))
+            .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
+                render_section(
+                    &self.template,
+                    "Prominent",
+                    ButtonKind::Prominent,
+                    &variants,
+                    &samples,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_section(
+                    &self.template,
+                    "Standard",
+                    ButtonKind::Standard,
+                    &variants,
+                    &samples,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+            ]))
     }
 }
 
-fn render_presentation(
+fn render_section(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    presentation_id: &'static str,
-    presentation_label: &'static str,
+    section_label: &'static str,
+    kind: ButtonKind,
+    variants: &[CheckboxTemplateVariant],
     samples: &[CheckboxStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
@@ -163,62 +252,72 @@ fn render_presentation(
 ) -> AnyElement {
     div()
         .flex()
-        .flex_col()
-        .items_center()
+        .items_start()
         .gap(px(8.0))
+        .child(render_vertical_section_rail(section_label, label_color))
         .child(
             div()
-                .text_size(px(11.0))
-                .line_height(px(15.0))
-                .font_weight(gpui::FontWeight::MEDIUM)
-                .text_color(label_color)
-                .child(presentation_label),
+                .flex()
+                .flex_col()
+                .items_start()
+                .gap(px(8.0))
+                .child(render_header_row(samples, label_color))
+                .children(variants.iter().map(|variant| {
+                    render_variant_row(template, kind, *variant, samples, window, cx)
+                })),
         )
-        .child(render_state_row(template, presentation_id, "Unchecked", false, samples, label_color, window, cx))
-        .child(render_state_row(template, presentation_id, "Checked", true, samples, label_color, window, cx))
         .into_any_element()
 }
 
-fn render_state_row(
+fn render_header_row(samples: &[CheckboxStateSample], label_color: gpui::Hsla) -> AnyElement {
+    div()
+        .flex()
+        .items_center()
+        .gap(px(8.0))
+        .children(samples.iter().map(|sample| {
+            div()
+                .w(px(116.0))
+                .flex()
+                .justify_center()
+                .text_size(px(11.0))
+                .line_height(px(15.0))
+                .text_color(label_color)
+                .child(sample.header)
+        }))
+        .into_any_element()
+}
+
+fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    presentation_id: &'static str,
-    row_label: &'static str,
-    checked: bool,
+    kind: ButtonKind,
+    variant: CheckboxTemplateVariant,
     samples: &[CheckboxStateSample],
-    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     div()
         .flex()
-        .flex_col()
         .items_center()
         .gap(px(8.0))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(row_label))
-        .child(
-            div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(samples.iter().map(
-                |sample| render_state_sample(template, presentation_id, checked, sample, label_color, window, cx),
-            )),
-        )
+        .children(samples.iter().map(|sample| render_state_sample(template, kind, variant, sample, window, cx)))
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    presentation_id: &'static str,
-    checked: bool,
+    kind: ButtonKind,
+    variant: CheckboxTemplateVariant,
     sample: &CheckboxStateSample,
-    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", presentation_id, checked, sample.id));
-    let label = SharedString::from("Checkbox");
+    let checked = variant.checked();
+    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: checked,
-        content: Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
-        kind: ButtonKind::Standard,
+        content: variant.content(),
+        kind,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
@@ -227,11 +326,19 @@ fn render_state_sample(
     };
 
     div()
+        .w(px(116.0))
         .flex()
-        .flex_col()
+        .justify_center()
         .items_center()
-        .gap(px(6.0))
         .child(template.render(&model, window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
+}
+
+fn button_kind_id(kind: ButtonKind) -> &'static str {
+    match kind {
+        ButtonKind::Prominent => "prominent",
+        ButtonKind::Subtle => "subtle",
+        ButtonKind::Standard => "standard",
+        ButtonKind::Ghost => "ghost",
+    }
 }

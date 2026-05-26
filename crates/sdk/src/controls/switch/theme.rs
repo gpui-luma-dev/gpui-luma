@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
+use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
@@ -27,7 +28,8 @@ pub struct SwitchAppearance {
 }
 
 pub trait SwitchTheme: Send + Sync {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance;
+    /// `kind` selects the on-state accent (`Standard` = filled secondary, `Prominent` = primary accent).
+    fn resolve(&self, kind: ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -72,27 +74,51 @@ pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["SwitchAppearance.track_border"],
         },
         ThemePartUsage {
-            part: "on track background",
+            part: "on standard track background",
+            token: "action.standard.background",
+            states: &["on standard"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on standard track hover background",
+            token: "action.standard.hover_background",
+            states: &["on standard hovered"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on standard track pressed background",
+            token: "action.standard.pressed_background",
+            states: &["on standard pressed"],
+            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
+        },
+        ThemePartUsage {
+            part: "on standard thumb",
+            token: "action.standard.foreground",
+            states: &["on standard"],
+            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
+        },
+        ThemePartUsage {
+            part: "on prominent track background",
             token: "action.prominent.background",
-            states: &["on"],
+            states: &["on prominent"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
-            part: "on track hover background",
+            part: "on prominent track hover background",
             token: "action.prominent.hover_background",
-            states: &["on hovered"],
+            states: &["on prominent hovered"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
-            part: "on track pressed background",
+            part: "on prominent track pressed background",
             token: "action.prominent.pressed_background",
-            states: &["on pressed"],
+            states: &["on prominent pressed"],
             appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
         },
         ThemePartUsage {
-            part: "on thumb",
+            part: "on prominent thumb",
             token: "action.prominent.foreground",
-            states: &["on"],
+            states: &["on prominent"],
             appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
         },
         ThemePartUsage {
@@ -141,19 +167,23 @@ impl DefaultSwitchTheme {
 }
 
 impl SwitchTheme for DefaultSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
+    fn resolve(&self, kind: ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let size = ControlSize::Md;
         let layer = state.layer();
+        let on_action = match button_variant(kind) {
+            ButtonVariant::Standard => &palette.action.standard,
+            _ => &palette.action.prominent,
+        };
 
         let track_background = match (on, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
-            (true, InteractionLayer::Default) => palette.action.prominent.background,
+            (true, InteractionLayer::Pressed) => on_action.pressed_background,
+            (true, InteractionLayer::Hovered) => on_action.hover_background,
+            (true, InteractionLayer::Default) => on_action.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -180,14 +210,14 @@ impl SwitchTheme for DefaultSwitchTheme {
             thumb_background: if state.disabled {
                 palette.state.disabled.foreground
             } else if on {
-                palette.action.prominent.foreground
+                on_action.foreground
             } else {
                 palette.surface.panel.background
             },
             thumb_border: if state.disabled {
                 palette.state.disabled.background
             } else if on {
-                palette.action.prominent.foreground
+                on_action.foreground
             } else {
                 palette.border.default
             },

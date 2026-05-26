@@ -1,0 +1,425 @@
+# Luma theme lexicon — binding recipes for CSS catalog → theme.toml resolution.
+#
+# See docs/ai/theme-lexicon.md for pipeline, grammar, and tuning workflow.
+#
+# Resolver inputs:  lexicon.toml + catalog (parsed CSS) + default-theme.toml (base)
+# Output:           theme.toml (concrete hsl values per Luma path)
+#
+# Cascade: first successful candidate wins; terminal fallback is always { inherit = "base" }.
+# Colors from { token } / { palette } are normalized by default (opt out: transform = ["no-normalize"]).
+
+schema_version = 1
+lexicon_version = 2
+
+[meta]
+description = "Default Luma lexicon for shadcn / tweakcn token catalogs"
+base_theme = "default-theme.toml"
+doc = "docs/ai/theme-lexicon.md"
+
+# Logical catalog token names (no -- prefix). Ingest maps CSS vars to these keys.
+token_vocabulary = [
+  "background", "foreground", "card", "card-foreground",
+  "popover", "popover-foreground",
+  "primary", "primary-foreground",
+  "secondary", "secondary-foreground",
+  "muted", "muted-foreground",
+  "accent", "accent-foreground",
+  "destructive", "destructive-foreground",
+  "border", "input", "ring",
+  "chart-1", "chart-2", "chart-3", "chart-4", "chart-5",
+  "sidebar", "sidebar-foreground",
+  "sidebar-primary", "sidebar-primary-foreground",
+  "sidebar-accent", "sidebar-accent-foreground",
+  "sidebar-border", "sidebar-ring",
+  "font-sans", "font-mono", "font-serif",
+  "radius", "spacing",
+  "shadow-2xs", "shadow-xs", "shadow-sm", "shadow", "shadow-md",
+  "shadow-lg", "shadow-xl", "shadow-2xl", "shadow-color",
+]
+
+# -----------------------------------------------------------------------------
+# Semantic palette — catalog tokens → named roles (tune conflicts here)
+# -----------------------------------------------------------------------------
+
+[palette]
+canvas = [{ token = "background" }]
+fg = [{ token = "foreground" }]
+fg_muted = [{ token = "muted-foreground" }, { token = "foreground" }]
+
+panel = [{ token = "card" }, { token = "background" }]
+panel_fg = [{ token = "card-foreground" }, { token = "foreground" }]
+panel_border = [{ token = "border" }]
+
+popover = [{ token = "popover" }, { token = "card" }]
+popover_fg = [{ token = "popover-foreground" }, { token = "card-foreground" }]
+
+muted_fill = [{ token = "muted" }, { token = "secondary" }]
+muted_fg = [{ token = "muted-foreground" }]
+
+brand = [{ token = "primary" }]
+brand_fg = [{ token = "primary-foreground" }]
+
+fill_secondary = [{ token = "secondary" }, { token = "muted" }]
+fill_secondary_fg = [{ token = "secondary-foreground" }, { token = "foreground" }]
+
+outline_surface = [{ token = "card" }, { token = "background" }]
+outline_fg = [{ token = "card-foreground" }, { token = "foreground" }]
+outline_border = [{ token = "border" }]
+
+accent = [{ token = "accent" }, { token = "muted" }]
+accent_fg = [{ token = "accent-foreground" }, { token = "foreground" }]
+
+destructive = [{ token = "destructive" }]
+destructive_fg = [{ token = "destructive-foreground" }]
+
+border = [{ token = "border" }]
+input_border = [{ token = "input" }, { token = "border" }]
+focus = [{ token = "ring" }, { token = "primary" }]
+
+nav_bg = [{ token = "sidebar" }, { token = "card" }, { token = "background" }]
+nav_fg = [{ token = "sidebar-foreground" }, { token = "foreground" }]
+nav_hover = [{ token = "sidebar-accent" }, { token = "accent" }, { token = "muted" }]
+nav_selected = [{ token = "sidebar-primary" }, { token = "primary" }]
+nav_selected_fg = [{ token = "sidebar-primary-foreground" }, { token = "primary-foreground" }]
+nav_border = [{ token = "sidebar-border" }, { token = "border" }]
+
+chart_1 = [{ token = "chart-1" }]
+chart_2 = [{ token = "chart-2" }]
+chart_3 = [{ token = "chart-3" }]
+chart_4 = [{ token = "chart-4" }]
+chart_5 = [{ token = "chart-5" }]
+
+# -----------------------------------------------------------------------------
+# Light mode — Luma paths
+# -----------------------------------------------------------------------------
+
+[light.palette.app]
+background = [{ palette = "canvas" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+muted_foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[light.palette.surface.panel]
+background = [{ palette = "panel" }, { inherit = "base" }]
+foreground = [{ palette = "panel_fg" }, { inherit = "base" }]
+border = [{ palette = "panel_border" }, { inherit = "base" }]
+
+[light.palette.surface.floating]
+background = [{ palette = "popover" }, { inherit = "base" }]
+foreground = [{ palette = "popover_fg" }, { inherit = "base" }]
+border = [{ palette = "panel_border" }, { inherit = "base" }]
+
+[light.palette.surface.subtle]
+background = [{ palette = "muted_fill" }, { inherit = "base" }]
+foreground = [{ palette = "muted_fg" }, { inherit = "base" }]
+
+[light.palette.action.prominent]
+background = [{ palette = "brand" }, { inherit = "base" }]
+foreground = [{ palette = "brand_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "brand", transform = ["darken(8%)"] }, { path = "palette.action.prominent.background", transform = ["darken(8%)"] }, { inherit = "base" }]
+pressed_background = [{ palette = "brand", transform = ["darken(16%)"] }, { path = "palette.action.prominent.background", transform = ["darken(16%)"] }, { inherit = "base" }]
+border = [{ path = "palette.action.prominent.background" }, { palette = "brand" }, { inherit = "base" }]
+
+[light.palette.action.standard]
+background = [{ palette = "fill_secondary" }, { inherit = "base" }]
+foreground = [{ palette = "fill_secondary_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "fill_secondary", transform = ["darken(4%)"] }, { palette = "accent" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.action.standard.hover_background", transform = ["darken(8%)"] }, { path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ palette = "border" }, { inherit = "base" }]
+
+[light.palette.action.subtle]
+background = [{ palette = "outline_surface" }, { inherit = "base" }]
+foreground = [{ palette = "outline_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "accent" }, { path = "palette.state.hover.background" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ palette = "outline_border" }, { inherit = "base" }]
+
+[light.palette.action.ghost]
+background = [{ palette = "canvas" }, { literal = "hsla(0 0% 0% / 0)" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+hover_background = [{ palette = "accent" }, { path = "palette.state.hover.background" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ literal = "hsla(0 0% 0% / 0)" }]
+
+[light.palette.state.hover]
+background = [{ palette = "accent" }, { inherit = "base" }]
+foreground = [{ palette = "accent_fg" }, { inherit = "base" }]
+
+[light.palette.state.pressed]
+background = [{ path = "palette.state.hover.background", transform = ["darken(8%)"] }, { palette = "border", transform = ["darken(4%)"] }, { inherit = "base" }]
+
+[light.palette.state.selected]
+background = [{ palette = "brand" }, { palette = "nav_selected" }, { inherit = "base" }]
+foreground = [{ palette = "brand_fg" }, { palette = "nav_selected_fg" }, { inherit = "base" }]
+
+[light.palette.state.disabled]
+background = [{ palette = "muted_fill" }, { inherit = "base" }]
+foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[light.palette.form.input]
+background = [{ palette = "panel" }, { palette = "canvas" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+border = [{ palette = "input_border" }, { inherit = "base" }]
+invalid_border = [{ palette = "destructive" }, { palette = "focus" }, { inherit = "base" }]
+placeholder = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[light.palette.focus]
+ring = [{ palette = "focus" }, { inherit = "base" }]
+
+[light.palette.border]
+default = [{ palette = "border" }, { inherit = "base" }]
+strong = [{ palette = "fg_muted" }, { path = "palette.border.default", transform = ["darken(20%)"] }, { inherit = "base" }]
+
+[light.palette.navigation]
+background = [{ palette = "nav_bg" }, { inherit = "base" }]
+foreground = [{ palette = "nav_fg" }, { inherit = "base" }]
+muted_foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+hover_background = [{ palette = "nav_hover" }, { inherit = "base" }]
+selected_background = [{ palette = "nav_selected" }, { palette = "brand" }, { inherit = "base" }]
+selected_foreground = [{ palette = "nav_selected_fg" }, { palette = "brand_fg" }, { inherit = "base" }]
+border = [{ palette = "nav_border" }, { inherit = "base" }]
+
+[light.palette.data]
+accent_1 = [{ palette = "chart_1" }, { palette = "brand" }, { inherit = "base" }]
+accent_2 = [{ palette = "chart_2" }, { inherit = "base" }]
+accent_3 = [{ palette = "chart_3" }, { inherit = "base" }]
+accent_4 = [{ palette = "chart_4" }, { inherit = "base" }]
+accent_5 = [{ palette = "chart_5" }, { inherit = "base" }]
+
+[light.metrics]
+_inherit = "base"
+
+[light.metrics.radius]
+none = [{ literal = 0 }]
+sm = [{ token = "radius", transform = ["rem_to_px(16)", "offset(-4)"] }, { inherit = "base" }]
+md = [{ token = "radius", transform = ["rem_to_px(16)", "offset(-2)"] }, { inherit = "base" }]
+lg = [{ token = "radius", transform = ["rem_to_px(16)"] }, { inherit = "base" }]
+xl = [{ token = "radius", transform = ["rem_to_px(16)", "offset(4)"] }, { inherit = "base" }]
+pill = [{ literal = 999 }, { inherit = "base" }]
+
+[light.typography.font.sans]
+family = [{ token = "font-sans", transform = ["first_font"] }, { inherit = "base" }]
+
+[light.typography.font.mono]
+family = [{ token = "font-mono", transform = ["first_font"] }, { inherit = "base" }]
+
+[light.typography.font.serif]
+family = [{ token = "font-serif", transform = ["first_font"] }, { inherit = "base" }]
+
+[light.typography.text]
+_inherit = "base"
+
+[light.elevation.none]
+_resolve = [{ inherit = "base" }]
+
+[light.elevation.control]
+_resolve = [{ token = "shadow-2xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.elevation.thumb]
+_resolve = [{ token = "shadow-xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.elevation.menu]
+_resolve = [{ token = "shadow-sm", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.elevation.popover]
+_resolve = [{ token = "shadow-md", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.elevation.panel]
+_resolve = [{ token = "shadow-xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.elevation.dialog]
+_resolve = [{ token = "shadow-xl", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[light.colors]
+_resolve = [{ from_palette = true }]
+
+[light.colors.overrides]
+destructive = [{ palette = "destructive" }, { inherit = "base" }]
+destructive_hover = [{ palette = "destructive", transform = ["darken(8%)"] }, { inherit = "base" }]
+destructive_pressed = [{ palette = "destructive", transform = ["darken(16%)"] }, { inherit = "base" }]
+
+# -----------------------------------------------------------------------------
+# Dark mode — same palette aliases; catalog supplies mode-specific values.
+# Override leaves only where dark semantics intentionally differ.
+# -----------------------------------------------------------------------------
+
+[dark.palette.app]
+background = [{ palette = "canvas" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+muted_foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[dark.palette.surface.panel]
+background = [{ palette = "panel" }, { inherit = "base" }]
+foreground = [{ palette = "panel_fg" }, { inherit = "base" }]
+border = [{ palette = "panel_border" }, { inherit = "base" }]
+
+[dark.palette.surface.floating]
+background = [{ palette = "popover" }, { inherit = "base" }]
+foreground = [{ palette = "popover_fg" }, { inherit = "base" }]
+border = [{ palette = "panel_border" }, { inherit = "base" }]
+
+[dark.palette.surface.subtle]
+background = [{ palette = "muted_fill" }, { inherit = "base" }]
+foreground = [{ palette = "muted_fg" }, { inherit = "base" }]
+
+[dark.palette.action.prominent]
+background = [{ palette = "brand" }, { inherit = "base" }]
+foreground = [{ palette = "brand_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "brand", transform = ["lighten(8%)"] }, { path = "palette.action.prominent.background", transform = ["lighten(8%)"] }, { inherit = "base" }]
+pressed_background = [{ palette = "brand", transform = ["lighten(16%)"] }, { path = "palette.action.prominent.background", transform = ["lighten(16%)"] }, { inherit = "base" }]
+border = [{ path = "palette.action.prominent.background" }, { palette = "brand" }, { inherit = "base" }]
+
+[dark.palette.action.standard]
+background = [{ palette = "fill_secondary" }, { inherit = "base" }]
+foreground = [{ palette = "fill_secondary_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "fill_secondary", transform = ["lighten(6%)"] }, { palette = "accent" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.action.standard.hover_background", transform = ["lighten(8%)"] }, { path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ palette = "border" }, { inherit = "base" }]
+
+[dark.palette.action.subtle]
+background = [{ palette = "outline_surface" }, { inherit = "base" }]
+foreground = [{ palette = "outline_fg" }, { inherit = "base" }]
+hover_background = [{ palette = "accent" }, { path = "palette.state.hover.background" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ palette = "outline_border" }, { inherit = "base" }]
+
+[dark.palette.action.ghost]
+background = [{ palette = "canvas" }, { literal = "hsla(0 0% 0% / 0)" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+hover_background = [{ palette = "accent" }, { path = "palette.state.hover.background" }, { inherit = "base" }]
+pressed_background = [{ path = "palette.state.pressed.background" }, { inherit = "base" }]
+border = [{ literal = "hsla(0 0% 0% / 0)" }]
+
+[dark.palette.state.hover]
+background = [{ palette = "accent" }, { inherit = "base" }]
+foreground = [{ palette = "accent_fg" }, { inherit = "base" }]
+
+[dark.palette.state.pressed]
+background = [{ path = "palette.state.hover.background", transform = ["lighten(8%)"] }, { palette = "border", transform = ["lighten(4%)"] }, { inherit = "base" }]
+
+[dark.palette.state.selected]
+background = [{ palette = "nav_selected" }, { palette = "brand" }, { inherit = "base" }]
+foreground = [{ palette = "nav_selected_fg" }, { palette = "brand_fg" }, { inherit = "base" }]
+
+[dark.palette.state.disabled]
+background = [{ palette = "muted_fill" }, { inherit = "base" }]
+foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[dark.palette.form.input]
+background = [{ palette = "panel" }, { palette = "canvas" }, { inherit = "base" }]
+foreground = [{ palette = "fg" }, { inherit = "base" }]
+border = [{ palette = "input_border" }, { inherit = "base" }]
+invalid_border = [{ palette = "destructive" }, { palette = "focus" }, { inherit = "base" }]
+placeholder = [{ palette = "fg_muted" }, { inherit = "base" }]
+
+[dark.palette.focus]
+ring = [{ token = "sidebar-ring" }, { palette = "focus" }, { inherit = "base" }]
+
+[dark.palette.border]
+default = [{ palette = "border" }, { inherit = "base" }]
+strong = [{ palette = "fg_muted" }, { path = "palette.border.default", transform = ["lighten(20%)"] }, { inherit = "base" }]
+
+[dark.palette.navigation]
+background = [{ palette = "nav_bg" }, { inherit = "base" }]
+foreground = [{ palette = "nav_fg" }, { inherit = "base" }]
+muted_foreground = [{ palette = "fg_muted" }, { inherit = "base" }]
+hover_background = [{ palette = "nav_hover" }, { inherit = "base" }]
+selected_background = [{ palette = "nav_selected" }, { palette = "brand" }, { inherit = "base" }]
+selected_foreground = [{ palette = "nav_selected_fg" }, { palette = "brand_fg" }, { inherit = "base" }]
+border = [{ palette = "nav_border" }, { inherit = "base" }]
+
+[dark.palette.data]
+accent_1 = [{ palette = "chart_1" }, { palette = "brand" }, { inherit = "base" }]
+accent_2 = [{ palette = "chart_2" }, { inherit = "base" }]
+accent_3 = [{ palette = "chart_3" }, { inherit = "base" }]
+accent_4 = [{ palette = "chart_4" }, { inherit = "base" }]
+accent_5 = [{ palette = "chart_5" }, { inherit = "base" }]
+
+[dark.metrics]
+_inherit = "base"
+
+[dark.metrics.radius]
+none = [{ literal = 0 }]
+sm = [{ token = "radius", transform = ["rem_to_px(16)", "offset(-4)"] }, { inherit = "base" }]
+md = [{ token = "radius", transform = ["rem_to_px(16)", "offset(-2)"] }, { inherit = "base" }]
+lg = [{ token = "radius", transform = ["rem_to_px(16)"] }, { inherit = "base" }]
+xl = [{ token = "radius", transform = ["rem_to_px(16)", "offset(4)"] }, { inherit = "base" }]
+pill = [{ literal = 999 }, { inherit = "base" }]
+
+[dark.typography.font.sans]
+family = [{ token = "font-sans", transform = ["first_font"] }, { inherit = "base" }]
+
+[dark.typography.font.mono]
+family = [{ token = "font-mono", transform = ["first_font"] }, { inherit = "base" }]
+
+[dark.typography.font.serif]
+family = [{ token = "font-serif", transform = ["first_font"] }, { inherit = "base" }]
+
+[dark.typography.text]
+_inherit = "base"
+
+[dark.elevation.none]
+_resolve = [{ inherit = "base" }]
+
+[dark.elevation.control]
+_resolve = [{ token = "shadow-2xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.elevation.thumb]
+_resolve = [{ token = "shadow-xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.elevation.menu]
+_resolve = [{ token = "shadow-sm", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.elevation.popover]
+_resolve = [{ token = "shadow-md", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.elevation.panel]
+_resolve = [{ token = "shadow-xs", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.elevation.dialog]
+_resolve = [{ token = "shadow-xl", transform = ["shadow_parse"] }, { inherit = "base" }]
+
+[dark.colors]
+_resolve = [{ from_palette = true }]
+
+[dark.colors.overrides]
+destructive = [{ palette = "destructive" }, { inherit = "base" }]
+destructive_hover = [{ palette = "destructive", transform = ["lighten(8%)"] }, { inherit = "base" }]
+destructive_pressed = [{ palette = "destructive", transform = ["lighten(16%)"] }, { inherit = "base" }]
+
+# -----------------------------------------------------------------------------
+# Known conflicts — tune [palette] or per-theme catalog overrides after gallery review
+# -----------------------------------------------------------------------------
+
+[[conflicts]]
+id = "brand-vs-selected-vs-nav"
+description = "primary / sidebar-primary compete for prominent, selected, and navigation.selected."
+paths = [
+  "palette.action.prominent.background",
+  "palette.state.selected.background",
+  "palette.navigation.selected_background",
+]
+resolution = "Adjust palette.nav_selected vs palette.brand per theme catalog; Astrovista dark may prefer sidebar-accent for hover."
+
+[[conflicts]]
+id = "secondary-vs-subtle"
+description = "shadcn secondary is a filled tone (Standard), not outline (Subtle)."
+paths = ["palette.action.standard.background", "palette.action.subtle.background"]
+resolution = "Never map --secondary to action.subtle; use fill_secondary vs outline_surface palette aliases."
+
+[[conflicts]]
+id = "font-family-name-table"
+description = "TOML font-sans may not match embedded TTF name table (e.g. Rajdhani Variable)."
+paths = ["typography.font.sans.family"]
+resolution = "Post-process first_font or per-theme font manifest; see gallery fonts.rs."
+
+[[conflicts]]
+id = "typography-scale"
+description = "text.* sizes inherit base Luma scale; tweakcn rem scale not imported yet."
+paths = ["typography.text.body.size", "typography.text.label.size"]
+resolution = "Future: map text-sm/text-base from catalog or theme-specific overrides."
+
+[[conflicts]]
+id = "white-orange-secondary"
+description = "white-orange theme may map --secondary to Subtle not Standard."
+paths = ["palette.action.standard.background", "palette.action.subtle.background"]
+resolution = "Per-catalog palette override when adding tweakcn-white-orange."

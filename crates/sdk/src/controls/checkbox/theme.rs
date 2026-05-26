@@ -2,6 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
+use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
@@ -29,7 +30,8 @@ pub struct CheckboxAppearance {
 }
 
 pub trait CheckboxTheme: Send + Sync {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance;
+    /// `kind` selects the checked-state accent (`Standard` = filled secondary, `Prominent` = primary accent).
+    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> CheckboxAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -74,27 +76,51 @@ pub const CHECKBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
             appearance_fields: &["CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
-            part: "checked indicator background",
+            part: "checked standard indicator background",
+            token: "action.standard.background",
+            states: &["checked standard"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked standard indicator hover background",
+            token: "action.standard.hover_background",
+            states: &["checked standard hovered"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked standard indicator pressed background",
+            token: "action.standard.pressed_background",
+            states: &["checked standard pressed"],
+            appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
+        },
+        ThemePartUsage {
+            part: "checked standard checkmark",
+            token: "action.standard.foreground",
+            states: &["checked standard"],
+            appearance_fields: &["CheckboxAppearance.checkmark_color"],
+        },
+        ThemePartUsage {
+            part: "checked prominent indicator background",
             token: "action.prominent.background",
-            states: &["checked"],
+            states: &["checked prominent"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
-            part: "checked indicator hover background",
+            part: "checked prominent indicator hover background",
             token: "action.prominent.hover_background",
-            states: &["checked hovered"],
+            states: &["checked prominent hovered"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
-            part: "checked indicator pressed background",
+            part: "checked prominent indicator pressed background",
             token: "action.prominent.pressed_background",
-            states: &["checked pressed"],
+            states: &["checked prominent pressed"],
             appearance_fields: &["CheckboxAppearance.indicator_background", "CheckboxAppearance.indicator_border"],
         },
         ThemePartUsage {
-            part: "checked checkmark",
+            part: "checked prominent checkmark",
             token: "action.prominent.foreground",
-            states: &["checked"],
+            states: &["checked prominent"],
             appearance_fields: &["CheckboxAppearance.checkmark_color"],
         },
         ThemePartUsage {
@@ -131,18 +157,22 @@ impl DefaultCheckboxTheme {
 }
 
 impl CheckboxTheme for DefaultCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxAppearance {
+    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> CheckboxAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
+        let checked_action = match button_variant(kind) {
+            ButtonVariant::Standard => &palette.action.standard,
+            _ => &palette.action.prominent,
+        };
 
         let indicator_background = match (checked, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
-            (true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
-            (true, InteractionLayer::Default) => palette.action.prominent.background,
+            (true, InteractionLayer::Pressed) => checked_action.pressed_background,
+            (true, InteractionLayer::Hovered) => checked_action.hover_background,
+            (true, InteractionLayer::Default) => checked_action.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -176,8 +206,10 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             },
             checkmark_color: if state.disabled {
                 palette.state.disabled.foreground
+            } else if checked {
+                checked_action.foreground
             } else {
-                palette.action.prominent.foreground
+                palette.app.foreground
             },
             label_color,
             adorner,

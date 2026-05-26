@@ -173,28 +173,34 @@ pub const TOGGLE_THEME_USAGE: ThemeUsage = ThemeUsage {
     label: "Toggle",
     parts: &[
         ThemePartUsage {
-            part: "unselected standard background",
-            token: "action.standard.background",
+            part: "unselected outline background",
+            token: "action.subtle.background",
             states: &["default"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected standard hover background",
-            token: "action.standard.hover_background",
+            part: "unselected outline hover background",
+            token: "action.subtle.hover_background",
             states: &["hovered"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected standard pressed background",
-            token: "action.standard.pressed_background",
+            part: "unselected outline pressed background",
+            token: "action.subtle.pressed_background",
             states: &["pressed"],
             appearance_fields: &["ButtonFamilyAppearance.background"],
         },
         ThemePartUsage {
-            part: "unselected standard foreground",
-            token: "action.standard.foreground",
+            part: "unselected outline foreground",
+            token: "action.subtle.foreground",
             states: &["default", "hovered", "pressed", "focused"],
             appearance_fields: &["ButtonFamilyAppearance.foreground"],
+        },
+        ThemePartUsage {
+            part: "unselected outline border",
+            token: "action.subtle.border",
+            states: &["default", "hovered", "pressed", "focused", "disabled"],
+            appearance_fields: &["ButtonFamilyAppearance.border"],
         },
         ThemePartUsage {
             part: "selected background",
@@ -279,10 +285,18 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
+        // Toggle segments declare the selected weight (`ButtonKind`); unselected segments
+        // always resolve as Subtle (outline via `action.subtle.*` from the active theme).
+        let variant = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
+            ButtonVariant::Subtle
+        } else {
+            variant
+        };
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
 
         let foreground = match (variant, selected, state.disabled) {
             (_, _, true) => palette.state.disabled.foreground,
+            (ButtonVariant::Standard, true, false) => palette.action.standard.foreground,
             (_, true, false) => palette.state.selected.foreground,
             (ButtonVariant::Standard, false, false) => palette.action.standard.foreground,
             (ButtonVariant::Subtle, false, false) => palette.action.subtle.foreground,
@@ -292,6 +306,9 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
 
         let background = match (variant, selected, state.layer()) {
             (_, _, InteractionLayer::Disabled) => palette.state.disabled.background,
+            (ButtonVariant::Standard, true, InteractionLayer::Pressed) => palette.action.standard.pressed_background,
+            (ButtonVariant::Standard, true, InteractionLayer::Hovered) => palette.action.standard.hover_background,
+            (ButtonVariant::Standard, true, InteractionLayer::Default) => palette.action.standard.background,
             (_, true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
             (_, true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
             (_, true, InteractionLayer::Default) => palette.state.selected.background,
