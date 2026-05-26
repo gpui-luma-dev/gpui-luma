@@ -1,0 +1,22 @@
+[package]
+name = "luma-theme"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "Import shadcn/tweakcn CSS theme exports into Luma theme.toml"
+
+[[bin]]
+name = "luma-theme"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+gpui-luma = { path = "../sdk" }
+palette.workspace = true
+serde = { workspace = true, features = ["derive"] }
+toml.workspace = true
+
+[dev-dependencies]
+pretty_assertions = "1"

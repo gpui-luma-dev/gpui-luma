@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use anyhow::Context as _;
 use gpui::App;
 
-/// Must match `themes/tweakcn-jarvis.toml` `typography.font.sans.family` and the name table in `Rajdhani-Variable.ttf`.
+/// Must match `themes/jarvis.toml` `typography.font.sans.family` and the name table in `Rajdhani-Variable.ttf`.
 pub const RAJDHANI_FAMILY: &str = "Rajdhani Variable";
 
 const RAJDHANI_VARIABLE: &[u8] = include_bytes!("fonts/Rajdhani/Rajdhani-Variable.ttf");

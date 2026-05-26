@@ -1376,5 +1376,4 @@ mod tests {
 
         assert!(LumaTheme::from_toml_str(&source).is_err());
     }
-
 }

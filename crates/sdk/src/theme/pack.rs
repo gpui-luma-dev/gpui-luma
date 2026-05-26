@@ -320,7 +320,12 @@ impl CheckboxTheme for LumaLiveTheme {
 }
 
 impl SwitchTheme for LumaLiveTheme {
-    fn resolve(&self, kind: crate::controls::button_family::ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance {
+    fn resolve(
+        &self,
+        kind: crate::controls::button_family::ButtonKind,
+        on: bool,
+        state: InteractionState,
+    ) -> SwitchAppearance {
         DefaultSwitchTheme::new(self.state.tokens()).resolve(kind, on, state)
     }
 }

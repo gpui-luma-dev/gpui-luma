@@ -88,14 +88,24 @@ Section `_inherit = "base"` means “copy entire subsection from `default-theme.
 
 ---
 
-## Importer usage (planned)
+## Importer usage
 
 ```bash
-# Conceptual CLI
-luma-theme import tweakcn-astrovista.css \
-  --lexicon crates/sdk/src/theme/lexicon.toml \
-  --base crates/sdk/src/theme/default-theme.toml \
-  --out apps/gallery/src/assets/themes/tweakcn-astrovista.toml
+# One file
+cargo run -p luma-theme -- import apps/gallery/tweakcn/astrovista.css \
+  --out apps/gallery/src/assets/themes/tweakcn-astrovista.toml \
+  --name "Astrovista"
+
+# Every *.css in a directory → *.toml in dest-dir
+cargo run -p luma-theme -- import \
+  --source-dir apps/gallery/tweakcn \
+  --dest-dir apps/gallery/src/assets/themes
+```
+
+Debug catalog only:
+
+```bash
+cargo run -p luma-theme -- catalog path/to/theme.css
 ```
 
 Resolver should emit a **binding report** per slot (which palette/token won, fallbacks used).

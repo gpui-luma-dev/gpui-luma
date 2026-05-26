@@ -23,7 +23,7 @@ Guide for translating [shadcn/ui](https://ui.shadcn.com/) and [tweakcn](https://
 | Choice controls + `ButtonKind` | **Done (interim Rust)** — checkbox, switch, radio, toggle resolve checked/on/selected via `Standard` vs `Prominent`; toggle unselected pairing → `Subtle` in button-family theme (see below) |
 | Gallery variant matrices | **Done** — Button, Toggle, Switch, Checkbox, Radio Button panes; Introduction panels use explicit kinds where needed |
 | **Lexicon TOML + human guide** | **Done** — `crates/sdk/src/theme/lexicon.toml`, `docs/ai/theme-lexicon.md` (binding rules for importer; validated against Astrovista/Jarvis manual TOML) |
-| **Automated import code** | **Next** — CSS catalog parser, lexicon resolver, `luma-theme import` CLI (lexicon exists; tool does not) |
+| **Automated import code** | **Closed (May 2026)** — `crates/luma-theme`; further import polish deferred — see [`fundamental-templates.md`](fundamental-templates.md) (SDK/theme split) |
 | sdk-theme codegen | **Proposed** — move choice appearance matrices out of Rust (see `next-step-codegen.md`) |
 | white-orange TOML | **Not in repo** |
 | Full typography import from CSS | **Not done** — sizes still copied from native Luma scale |
@@ -45,7 +45,7 @@ Foundation work is in place so the **importer can be implemented against stable 
 - Choice **policy** (which `ButtonKind` per control) — today `.kind(...)` in app/gallery code + Rust `match` in `*Theme::resolve`; future: sdk-theme + codegen (`next-step-codegen.md`).
 - Typography sizes and gallery demo label `text_size(px(...))` hardcoding.
 
-**Next engineering step:** implement the import pipeline (catalog → lexicon resolve → TOML emit → `LumaTheme::from_toml_str` validate → diff against golden Astrovista/Jarvis files).
+**Next engineering step (superseded):** import pipeline is implemented in `crates/luma-theme` — track closed for polish; **next:** SDK/theme split per [`fundamental-templates.md`](fundamental-templates.md).
 
 ---
 
@@ -64,7 +64,14 @@ Imported tweakcn themes live in the **gallery app**, not the SDK crate. The SDK 
 | Jarvis sans font | `apps/gallery/src/assets/fonts/Rajdhani/Rajdhani-Variable.ttf` + `OFL.txt` |
 | Font registration | `apps/gallery/src/assets/fonts.rs` — `load_rajdhani()` |
 
-**Source CSS** used for the manual imports is **not** checked in under `crates/sdk/src/theme/` today. Keep tweakcn export files locally (or re-add under `crates/sdk/src/theme/` as `tweakcn-*.css`) when diffing future edits. Other CSS under `apps/gallery/themes/` is unrelated monochrome exports.
+**Source CSS** for golden imports lives in **`apps/gallery/tweakcn/`**:
+
+| CSS input | Golden TOML |
+|---|---|
+| `apps/gallery/tweakcn/astrovista.css` | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` |
+| `apps/gallery/tweakcn/jarvis.css` | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` |
+
+Other files in that folder (e.g. `enhance-material.css`, monochrome exports) are additional samples; the historical `apps/gallery/themes/` path is no longer used for Astrovista/Jarvis.
 
 **Removed / renamed** (historical):
 
@@ -76,12 +83,13 @@ Imported tweakcn themes live in the **gallery app**, not the SDK crate. The SDK 
 ## Gallery preview
 
 ```bash
-cargo run -p gpui-luma-gallery              # SDK default-theme.toml
+cargo run -p gpui-luma-gallery                    # SDK default-theme.toml
 cargo run -p gpui-luma-gallery -- astrovista
-cargo run -p gpui-luma-gallery -- jarvis    # loads Rajdhani before open
+cargo run -p gpui-luma-gallery -- jarvis          # loads Rajdhani before open
+cargo run -p gpui-luma-gallery -- retro-arcade    # any stem in src/assets/themes/
 ```
 
-- First positional arg: `default` | `astrovista` | `jarvis` (case-insensitive). Missing arg → **`default`**.
+- First positional arg: `default` or a theme file stem under `apps/gallery/src/assets/themes/` (e.g. `retro-arcade` → `retro-arcade.toml`, case-insensitive). Missing arg → **`default`**.
 - Startup: `gpui_luma::init` → optional `fonts::load_rajdhani` (Jarvis only) → `set_active_theme_pack` → window.
 - Parse tests: `apps/gallery/src/gallery/theme.rs` (`astrovista_theme_parses_*`, `jarvis_theme_sans_family_matches_embedded_font`).
 
@@ -95,8 +103,8 @@ Validate visually: **Palette** + **Theme Usage** panes, button matrix (four weig
 
 | Source (tweakcn export) | TOML in repo | Notes |
 |---|---|---|
-| tweakcn-astrovista.css | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` | Coral primary, navy `--secondary` → **Standard**, outline → **Subtle** |
-| tweakcn-jarvis.css | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` | Teal primary; Rajdhani sans (embedded) |
+| `apps/gallery/tweakcn/astrovista.css` | `apps/gallery/src/assets/themes/tweakcn-astrovista.toml` | Coral primary, navy `--secondary` → **Standard**, outline → **Subtle** |
+| `apps/gallery/tweakcn/jarvis.css` | `apps/gallery/src/assets/themes/tweakcn-jarvis.toml` | Teal primary; Rajdhani sans (embedded) |
 | tweakcn white-orange (planned) | — | Not imported; was planned as `theme-astrovista2.toml` |
 | — | `crates/sdk/src/theme/default-theme.toml` | Native Luma; SDK + gallery `default` CLI |
 
@@ -408,10 +416,13 @@ Lexicon is **source-agnostic**; CSS files register as named catalogs (`astrovist
 Planned CLI (first milestone):
 
 ```bash
-luma-theme import path/to/tweakcn-astrovista.css \
-  --lexicon crates/sdk/src/theme/lexicon.toml \
-  --base crates/sdk/src/theme/default-theme.toml \
+# Single file
+luma-theme import apps/gallery/tweakcn/astrovista.css \
   --out apps/gallery/src/assets/themes/tweakcn-astrovista.toml
+
+# Batch: all *.css in source-dir → *.toml in dest-dir (same basename)
+luma-theme import --source-dir apps/gallery/tweakcn \
+  --dest-dir apps/gallery/src/assets/themes
 ```
 
 Success criteria for v1: output parses with `LumaTheme::from_toml_str` and **matches** hand-maintained Astrovista/Jarvis TOML within documented derivation tolerance (or produces a reviewable diff).
@@ -464,13 +475,13 @@ Check `crates/sdk/src/theme/tokens.rs` when adding new palette roles.
 
 ## Explicitly future work
 
-### Next: import tooling
+### Import tooling (delivered — maintenance mode)
 
-- **CSS catalog parser** (`:root` / `.dark` → flat token map per mode)
-- **Lexicon resolver** — apply `lexicon.toml` cascade to catalog + `default-theme.toml` base
-- **TOML emitter** — full light/dark sections, derivation for hover/pressed where lexicon/catalog silent
-- **CLI:** `luma-theme import …` (interface above)
-- **Golden tests** — importer output ≈ hand-maintained `tweakcn-astrovista.toml` / `tweakcn-jarvis.toml`
+- **CSS catalog parser** — `crates/luma-theme`
+- **Lexicon resolver + TOML emit + CLI** — `luma-theme import` / `catalog`; batch `--source-dir` / `--dest-dir`
+- **Gallery** — `apps/gallery/tweakcn/*.css` → `apps/gallery/src/assets/themes/*.toml`; CLI `-- <stem>`
+
+**Deferred** (Phase B in [`fundamental-templates.md`](fundamental-templates.md)): full golden diff, lexicon hover tuning, `shadow_parse`, studio app. Do not block SDK control work on these.
 
 ### After import (separate tracks)
 

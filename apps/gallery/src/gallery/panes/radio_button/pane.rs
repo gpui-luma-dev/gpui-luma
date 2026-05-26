@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*, px,
+};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::radio_button::{self, RadioButton, default_radio_button_template};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
@@ -262,9 +265,9 @@ fn render_section(
                 .items_start()
                 .gap(px(8.0))
                 .child(render_header_row(samples, label_color))
-                .children(variants.iter().map(|variant| {
-                    render_variant_row(template, kind, *variant, samples, window, cx)
-                })),
+                .children(
+                    variants.iter().map(|variant| render_variant_row(template, kind, *variant, samples, window, cx)),
+                ),
         )
         .into_any_element()
 }
@@ -312,7 +315,8 @@ fn render_state_sample(
     cx: &mut App,
 ) -> AnyElement {
     let selected = variant.selected();
-    let id = SharedString::from(format!("radio-button-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
+    let id =
+        SharedString::from(format!("radio-button-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: selected,

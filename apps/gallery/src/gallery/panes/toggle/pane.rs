@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{
-    Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter,
+use gpui::{
+    AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*, px,
 };
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::toggle::{self, default_toggle_template};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::theme::InteractionState;
@@ -344,9 +345,9 @@ fn render_section(
                 .items_start()
                 .gap(px(8.0))
                 .child(render_header_row(samples, label_color))
-                .children(variants.iter().map(|variant| {
-                    render_variant_row(template, kind, *variant, samples, window, cx)
-                })),
+                .children(
+                    variants.iter().map(|variant| render_variant_row(template, kind, *variant, samples, window, cx)),
+                ),
         )
         .into_any_element()
 }

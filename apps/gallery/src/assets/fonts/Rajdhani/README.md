@@ -1,6 +1,6 @@
 # Rajdhani (gallery — Jarvis theme only)
 
-Bundled for `themes/tweakcn-jarvis.toml` when the gallery runs with `jarvis` (`cargo run -p gpui-luma-gallery -- jarvis`).
+Bundled for `themes/jarvis.toml` when the gallery runs with `jarvis` (`cargo run -p gpui-luma-gallery -- jarvis`).
 
 | File | Purpose |
 |------|---------|
