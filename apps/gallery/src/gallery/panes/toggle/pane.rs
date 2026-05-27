@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::toggle;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -31,54 +31,26 @@ pub(in crate::gallery) struct TogglePane {
 impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            secondary_toggle: toggle::new("toggle-secondary-example")
+            secondary_toggle: radix_theme
+                .secondary_toggle("toggle-secondary-example")
                 .with_data(true)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| {
-                        theme.secondary_button(
-                            ButtonFamilyRole::Toggle { selected: model.data },
-                            model.size,
-                            model.state,
-                        )
-                    }
-                })
                 .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            primary_toggle: toggle::new("toggle-primary-example")
+            primary_toggle: radix_theme
+                .primary_toggle("toggle-primary-example")
                 .with_data(false)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| {
-                        theme.primary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-                    }
-                })
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            secondary_round_icon_toggle: toggle::new("toggle-secondary-round-icon-example")
+            secondary_round_icon_toggle: radix_theme
+                .secondary_toggle("toggle-secondary-round-icon-example")
                 .with_data(false)
                 .round(true)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| {
-                        theme.secondary_button(
-                            ButtonFamilyRole::Toggle { selected: model.data },
-                            model.size,
-                            model.state,
-                        )
-                    }
-                })
                 .content(|_, _| round_icon_glyph(false).into_any_element())
                 .spawn(cx),
-            primary_round_icon_toggle: toggle::new("toggle-primary-round-icon-example")
+            primary_round_icon_toggle: radix_theme
+                .primary_toggle("toggle-primary-round-icon-example")
                 .with_data(true)
                 .round(true)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| {
-                        theme.primary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-                    }
-                })
                 .content(|_, _| round_icon_glyph(true).into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| ToggleStatePreview::new(radix_theme)),
@@ -463,10 +435,10 @@ fn appearance_for_style(
     Arc::new(move |model| {
         let role = ButtonFamilyRole::Toggle { selected: model.data };
         match style {
-            RadixButtonStyle::Primary => theme.primary_button(role, model.size, model.state),
-            RadixButtonStyle::Secondary => theme.secondary_button(role, model.size, model.state),
-            RadixButtonStyle::Outline => theme.outline_button(role, model.size, model.state),
-            RadixButtonStyle::Ghost => theme.ghost_button(role, model.size, model.state),
+            RadixButtonStyle::Primary => theme.as_ref().resolve_primary_button(role, model.size, model.state),
+            RadixButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(role, model.size, model.state),
+            RadixButtonStyle::Outline => theme.as_ref().resolve_outline_button(role, model.size, model.state),
+            RadixButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(role, model.size, model.state),
         }
     })
 }

@@ -4,7 +4,6 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
-use gpui_luma::controls::checkbox;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{
@@ -13,6 +12,7 @@ use gpui_luma::controls::textarea::{
     TextAreaTemplate, TextAreaTemplateHandlers, Validator,
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
@@ -42,26 +42,29 @@ pub(in crate::gallery) struct TextAreaPane {
 impl TextAreaPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            text_area: TextArea::new("gallery-textarea")
+            text_area: radix_theme
+                .textarea("gallery-textarea")
                 .placeholder("Write a multiline message")
                 .full_width(true)
                 .rows(6)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(radix_theme.textarea_template())
                 .spawn(cx),
-            state_preview: cx.new(|_| TextAreaStatePreview::new(radix_theme)),
-            set_sample_button: action_button("textarea-set-sample", "Set Sample", cx),
-            clear_button: action_button("textarea-clear", "Clear", cx),
-            enabled_checkbox: checkbox::new("textarea-enabled")
+            state_preview: cx.new(|_| TextAreaStatePreview::new(radix_theme.clone())),
+            set_sample_button: action_button("textarea-set-sample", "Set Sample", &radix_theme, cx),
+            clear_button: action_button("textarea-clear", "Clear", &radix_theme, cx),
+            enabled_checkbox: radix_theme
+                .checkbox("textarea-enabled")
                 .with_data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
                 .spawn(cx),
-            clean_on_escape_checkbox: checkbox::new("textarea-clean-on-escape")
+            clean_on_escape_checkbox: radix_theme
+                .checkbox("textarea-clean-on-escape")
                 .with_data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
                 .spawn(cx),
-            validation_checkbox: checkbox::new("textarea-validation")
+            validation_checkbox: radix_theme
+                .checkbox("textarea-validation")
                 .with_data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
                 .spawn(cx),
@@ -252,8 +255,13 @@ enum TextAreaOption {
     StrictValidation,
 }
 
-fn action_button(id: &'static str, label: &'static str, cx: &mut Context<GalleryApp>) -> Entity<Button> {
-    Button::new(id).label(label).spawn(cx)
+fn action_button(
+    id: &'static str,
+    label: &'static str,
+    radix_theme: &Arc<RadixTheme>,
+    cx: &mut Context<GalleryApp>,
+) -> Entity<Button> {
+    radix_theme.secondary_button(id).label(label).spawn(cx)
 }
 
 fn render_telemetry(

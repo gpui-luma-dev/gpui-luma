@@ -9,6 +9,7 @@ use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers,
 };
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -30,26 +31,26 @@ impl PopupMenuPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let popup_template = radix_theme.popup_menu_template();
         Self {
-            popup_smart: PopupMenu::new("popup-menu-smart-example")
-                .template(popup_template.clone())
+            popup_smart: radix_theme
+                .popup_menu("popup-menu-smart-example")
                 .label("Smart popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::Smart)
                 .spawn(cx),
-            popup_below: PopupMenu::new("popup-menu-below-example")
-                .template(popup_template.clone())
+            popup_below: radix_theme
+                .popup_menu("popup-menu-below-example")
                 .label("Below popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::BelowStart)
                 .spawn(cx),
-            popup_above: PopupMenu::new("popup-menu-above-example")
-                .template(popup_template.clone())
+            popup_above: radix_theme
+                .popup_menu("popup-menu-above-example")
                 .label("Above popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::AboveStart)
                 .spawn(cx),
-            popup_centered: PopupMenu::new("popup-menu-centered-example")
-                .template(popup_template.clone())
+            popup_centered: radix_theme
+                .popup_menu("popup-menu-centered-example")
                 .label("Centered popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::CenteredOnTrigger)

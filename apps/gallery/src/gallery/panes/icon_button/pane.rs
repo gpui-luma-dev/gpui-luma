@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::controls::command::icon_button::{self, IconButton};
+use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -25,29 +26,15 @@ pub(in crate::gallery) struct IconButtonPane {
 impl IconButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            secondary_icon_button: icon_button::new("icon-button-secondary-example", LucideIcon::Plus)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.secondary_button(model.role, model.size, model.state)
-                })
+            secondary_icon_button: radix_theme
+                .secondary_icon_button("icon-button-secondary-example", LucideIcon::Plus)
                 .spawn(cx),
-            outline_icon_button: icon_button::new("icon-button-outline-example", LucideIcon::Plus)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.outline_button(model.role, model.size, model.state)
-                })
+            outline_icon_button: radix_theme
+                .outline_icon_button("icon-button-outline-example", LucideIcon::Plus)
                 .spawn(cx),
-            ghost_icon_button: icon_button::new("icon-button-ghost-example", LucideIcon::Plus)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.ghost_button(model.role, model.size, model.state)
-                })
-                .spawn(cx),
-            primary_icon_button: icon_button::new("icon-button-primary-example", LucideIcon::Plus)
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.primary_button(model.role, model.size, model.state)
-                })
+            ghost_icon_button: radix_theme.ghost_icon_button("icon-button-ghost-example", LucideIcon::Plus).spawn(cx),
+            primary_icon_button: radix_theme
+                .primary_icon_button("icon-button-primary-example", LucideIcon::Plus)
                 .spawn(cx),
             secondary_icon_clicks: 0,
             outline_icon_clicks: 0,

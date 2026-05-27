@@ -10,6 +10,7 @@ use gpui_luma::controls::tabs_navigation::{
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     ThemedTabsNavigationTemplate, TabsNavigationTheme,
 };
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -27,19 +28,14 @@ pub(in crate::gallery) struct TabsNavigationPane {
 
 impl TabsNavigationPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let tabs_template = radix_theme.tabs_navigation_template();
         Self {
-            tabs: TabsNavigation::new("project-tabs")
-                .items(project_tabs())
-                .active("activity")
-                .template(tabs_template.clone())
-                .spawn(cx),
+            tabs: radix_theme.tabs_navigation("project-tabs").items(project_tabs()).active("activity").spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
                 .items(project_tabs())
                 .active("activity")
                 .template(local_tabs_navigation_template(radix_theme.clone()))
                 .spawn(cx),
-            state_preview: cx.new(|_| TabsNavigationStatePreview::new(radix_theme)),
+            state_preview: cx.new(|_| TabsNavigationStatePreview::new(radix_theme.clone())),
             active_label: "Activity".to_string(),
             local_theme_active_label: "Activity".to_string(),
         }

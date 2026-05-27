@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::{self, Checkbox};
+use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::progress::{self, Progress};
-use gpui_luma::controls::slider::{self, Slider, SliderEvent};
-use gpui_luma::controls::switch::{self, Switch};
-use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
+use gpui_luma::controls::progress::Progress;
+use gpui_luma::controls::slider::{Slider, SliderEvent};
+use gpui_luma::controls::switch::Switch;
+use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::theme::RadixTheme;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -37,36 +38,28 @@ impl SystemPanel {
         event_bus: Entity<EventBus>,
         initial_completion: f32,
     ) -> Self {
-        let terms_checkbox = checkbox::new("intro-terms")
-            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
+        let terms_checkbox = radix_theme
+            .primary_checkbox("intro-terms")
             .with_data(false)
             .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
             .spawn(cx);
-        let social_checkbox = checkbox::new("intro-social-source")
-            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
+        let social_checkbox = radix_theme
+            .primary_checkbox("intro-social-source")
             .with_data(true)
             .content(|_, _| div().child("Social").into_any_element())
             .spawn(cx);
-        let referral_checkbox = checkbox::new("intro-referral-source")
-            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
+        let referral_checkbox = radix_theme
+            .primary_checkbox("intro-referral-source")
             .with_data(false)
             .content(|_, _| div().child("Referral").into_any_element())
             .spawn(cx);
-        let two_factor_switch = switch::new("intro-two-factor")
-            .template(radix_theme.switch_template(RadixButtonStyle::Primary))
+        let two_factor_switch = radix_theme
+            .primary_switch("intro-two-factor")
             .content(|_, _| div().child("Two-factor authentication").into_any_element())
             .spawn(cx);
-        let budget_slider = slider::new("intro-budget")
-            .template(radix_theme.slider_template())
-            .range(0..100)
-            .step(5)
-            .value(40)
-            .spawn(cx);
-        let completion_progress = progress::new("intro-completion")
-            .template(radix_theme.progress_template())
-            .range(0..100)
-            .value(initial_completion as i32)
-            .spawn(cx);
+        let budget_slider = radix_theme.slider("intro-budget").range(0..100).step(5).value(40).spawn(cx);
+        let completion_progress =
+            radix_theme.progress("intro-completion").range(0..100).value(initial_completion as i32).spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&terms_checkbox, |this, _, _: &ButtonEvent, cx| {

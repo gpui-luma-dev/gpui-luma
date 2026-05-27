@@ -5,8 +5,9 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::switch::{self, Switch};
+use gpui_luma::controls::switch::Switch;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -26,13 +27,13 @@ pub(in crate::gallery) struct SwitchPane {
 impl SwitchPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            secondary_switch: switch::new("switch-secondary-example")
-                .template(radix_theme.switch_template(RadixButtonStyle::Secondary))
+            secondary_switch: radix_theme
+                .secondary_switch("switch-secondary-example")
                 .with_data(true)
                 .content(|_, _| div().into_any_element())
                 .spawn(cx),
-            primary_switch: switch::new("switch-primary-example")
-                .template(radix_theme.switch_template(RadixButtonStyle::Primary))
+            primary_switch: radix_theme
+                .primary_switch("switch-primary-example")
                 .with_data(false)
                 .content(|_, _| div().into_any_element())
                 .spawn(cx),

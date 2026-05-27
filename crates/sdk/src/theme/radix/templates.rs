@@ -4,10 +4,11 @@ use crate::controls::autocomplete::AutocompleteTextBoxTheme;
 use crate::controls::button_family::{ButtonFamilyRole, ButtonFamilyTheme};
 use crate::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use crate::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
-use crate::controls::context_menu::ContextMenuTheme;
+use crate::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupTemplate, ControlGroupTheme, control_group_template_with_theme,
 };
+use crate::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use crate::controls::floating_menu::FloatingMenuTheme;
 use crate::controls::navigation_sidebar::{
     NavigationSidebarTemplate, NavigationSidebarTheme, ThemedNavigationSidebarTemplate,
@@ -240,6 +241,10 @@ pub fn context_menu_theme(theme: Arc<RadixTheme>) -> Arc<dyn ContextMenuTheme> {
     Arc::new(RadixContextMenuTheme { theme: theme.as_ref().clone() })
 }
 
+pub fn context_menu_template(theme: Arc<RadixTheme>) -> Arc<dyn crate::controls::context_menu::ContextMenuTemplate> {
+    Arc::new(ThemedContextMenuTemplate::new(context_menu_theme(Arc::clone(&theme))))
+}
+
 struct RadixSelectorTheme {
     theme: RadixTheme,
 }
@@ -440,6 +445,17 @@ pub fn listbox_theme(theme: Arc<RadixTheme>) -> Arc<dyn ListBoxTheme> {
 
 pub fn listbox_template(theme: Arc<RadixTheme>) -> ControlGroupTemplate<crate::controls::listbox::ListBoxItem> {
     listbox_template_with_theme(listbox_theme(theme))
+}
+
+pub fn radio_group_template<T>(
+    theme: Arc<RadixTheme>,
+    style: RadixButtonStyle,
+    layout: RadioGroupLayout,
+) -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    radio_group_buttons_template(theme.radio_button_template(style), layout)
 }
 
 struct RadixProgressTheme {

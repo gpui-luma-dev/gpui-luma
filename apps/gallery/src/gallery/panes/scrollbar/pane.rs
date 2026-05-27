@@ -10,6 +10,7 @@ use gpui_luma::controls::scrollbar::{
     ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -35,8 +36,8 @@ impl ScrollbarPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let scrollbar_template = radix_theme.scrollbar_template();
         Self {
-            horizontal_scrollbar: Scrollbar::new("scrollbar-horizontal-example")
-                .template(scrollbar_template.clone())
+            horizontal_scrollbar: radix_theme
+                .scrollbar("scrollbar-horizontal-example")
                 .horizontal()
                 .range(0..220)
                 .step(20)
@@ -44,8 +45,8 @@ impl ScrollbarPane {
                 .value(40)
                 .thumb_fraction(0.54)
                 .spawn(cx),
-            vertical_scrollbar: Scrollbar::new("scrollbar-vertical-example")
-                .template(scrollbar_template.clone())
+            vertical_scrollbar: radix_theme
+                .scrollbar("scrollbar-vertical-example")
                 .vertical()
                 .range(0..240)
                 .step(20)

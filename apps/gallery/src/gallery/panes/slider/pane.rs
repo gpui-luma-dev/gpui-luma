@@ -5,10 +5,11 @@ use gpui::{
     SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::slider::{
-    self, Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
+    Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -26,12 +27,7 @@ impl SliderPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let slider_template = radix_theme.slider_template();
         Self {
-            slider: slider::new("slider-example")
-                .template(slider_template.clone())
-                .range(1..100)
-                .step(10)
-                .value(41)
-                .spawn(cx),
+            slider: radix_theme.slider("slider-example").range(1..100).step(10).value(41).spawn(cx),
             state_preview: cx.new(|_| SliderStatePreview::new(radix_theme.clone(), slider_template)),
             value: 41.0,
         }

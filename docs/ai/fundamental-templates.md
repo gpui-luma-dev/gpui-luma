@@ -361,7 +361,7 @@ Gallery product themes load from **`apps/gallery/tweakcn/*.css`** into `RadixThe
 | Layer | Path | Role |
 |---|---|---|
 | CSS catalog | `crates/sdk/src/theme/radix/catalog/` | Parse `:root` / `.dark`; `CssTokenMap::color("input")`; `--radius` / `--font-sans` → metrics & typography |
-| Control properties | `crates/sdk/src/theme/radix/` | Switch, checkbox, radio map token names → `*Appearance` fields (e.g. switch off: track `input`, thumb `foreground`) |
+| Control properties | `crates/sdk/src/theme/radix/` | Switch, checkbox, radio map token names → `*Appearance` fields (e.g. switch off: track `input`, track border `border`, thumb `background`, thumb border `border`) |
 | Cached palette | `crates/sdk/src/theme/radix/palette.rs` | Derived action roles for buttons/chrome; not the only source of truth |
 | Theme API | `RadixTheme::token()` / `token_color()` / `catalog()` | Introspect active mode catalog |
 

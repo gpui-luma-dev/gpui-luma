@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
+use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::icon::lucide_glyph;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -22,20 +23,19 @@ pub(in crate::gallery) struct ToggleGroupPane {
 impl ToggleGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let toggle_template = radix_theme.toggle_template(RadixButtonStyle::Ghost);
-        let group_template = radix_theme.control_group_template();
 
-        let single_group = button_group::new("placement-toggle-group")
+        let single_group = radix_theme
+            .button_group("placement-toggle-group")
             .horizontal()
-            .template(group_template.clone())
             .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
             .selected("bottom")
             .items(placement_items())
             .item_template(toggle_button_item_template(toggle_template.clone(), true, placement_icon_content))
             .spawn(cx);
 
-        let multiple_group = button_group::new("edge-toggle-group")
+        let multiple_group = radix_theme
+            .button_group("edge-toggle-group")
             .horizontal()
-            .template(group_template)
             .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
             .multiple()
             .selected_ids(["top", "left"])

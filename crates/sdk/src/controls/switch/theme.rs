@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{ControlSize, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SwitchAppearance {
@@ -52,17 +52,14 @@ impl SwitchTheme for DefaultSwitchTheme {
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let size = ControlSize::Md;
-        let layer = state.layer();
         let on_action = palette.action.prominent;
 
-        let track_background = match (on, layer) {
-            (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => on_action.pressed_background,
-            (true, InteractionLayer::Hovered) => on_action.hover_background,
-            (true, InteractionLayer::Default) => on_action.background,
-            (false, InteractionLayer::Pressed) => palette.state.pressed.background,
-            (false, InteractionLayer::Hovered) => palette.state.hover.background,
-            (false, InteractionLayer::Default) => palette.form.input.background,
+        let track_background = if state.disabled {
+            palette.state.disabled.background
+        } else if on {
+            on_action.background
+        } else {
+            palette.form.input.background
         };
 
         let adorner = if state.focused {
@@ -76,27 +73,26 @@ impl SwitchTheme for DefaultSwitchTheme {
             None
         };
 
+        let track_border = if on && !state.disabled {
+            track_background
+        } else {
+            palette.border.default
+        };
+
+        let (thumb_background, thumb_border) = if state.disabled {
+            (palette.state.disabled.foreground, palette.state.disabled.background)
+        } else if on {
+            let thumb = on_action.foreground;
+            (thumb, thumb)
+        } else {
+            (palette.app.background, palette.border.default)
+        };
+
         SwitchAppearance {
             track_background,
-            track_border: if on && !state.disabled {
-                track_background
-            } else {
-                palette.form.input.border
-            },
-            thumb_background: if state.disabled {
-                palette.state.disabled.foreground
-            } else if on {
-                on_action.foreground
-            } else {
-                palette.surface.panel.background
-            },
-            thumb_border: if state.disabled {
-                palette.state.disabled.background
-            } else if on {
-                on_action.foreground
-            } else {
-                palette.border.default
-            },
+            track_border,
+            thumb_background,
+            thumb_border,
             thumb_shadow: elevation.thumb.to_box_shadows(),
             label_color: if state.disabled {
                 palette.state.disabled.foreground

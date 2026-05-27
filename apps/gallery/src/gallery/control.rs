@@ -2,6 +2,7 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{RadixTheme, ThemeMode};
 use std::sync::Arc;
 
@@ -46,14 +47,13 @@ impl GalleryApp {
         let navigation = GalleryPanes::navigation(cx, radix_theme.clone());
         let route_buttons = navigation.route_buttons.clone();
         let branch_buttons = navigation.branch_buttons.clone();
-        let navigation_sidebar = NavigationSidebar::new("gallery-nav")
+        let navigation_sidebar = radix_theme
+            .navigation_sidebar("gallery-nav")
             .title("GPUI-Luma")
             .subtitle("Control gallery")
             .collapsible(true)
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
-            .template(radix_theme.navigation_sidebar_template())
-            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
         let panes = GalleryPanes::new(cx, radix_theme.clone());
 

@@ -3,7 +3,6 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::theme::InteractionState;
 use crate::controls::switch::{SwitchTheme, default_switch_theme};
 
 use crate::controls::template::TemplateWithModifiers;
@@ -20,11 +19,6 @@ define_control_template!(
 impl ButtonTemplate<bool> for ThemedSwitchTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
         let appearance = self.theme.resolve(model.data, model.state);
-        let focused_probe_appearance = if model.state.disabled {
-            None
-        } else {
-            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
-        };
 
         let thumb_left = if model.data {
             appearance.width - appearance.thumb_size - appearance.padding
@@ -55,8 +49,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .rounded(px(appearance.radius))
             .child(thumb);
 
-        let oversize_extent = adorner_oversize_extent(appearance.adorner)
-            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+        let oversize_extent = adorner_oversize_extent(appearance.adorner);
         let mut track = div().relative().child(track_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {

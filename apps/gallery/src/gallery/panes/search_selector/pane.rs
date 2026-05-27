@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::search_selector::{self, SearchSelector, SearchSelectorEvent, SelectionItem};
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, SelectionItem};
+use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
@@ -14,18 +15,12 @@ pub(in crate::gallery) struct SearchSelectorPane {
 
 impl SearchSelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let popup_radix = radix_theme.clone();
-        let selector = search_selector::new("gallery-search-selector", search_selector_demo_items())
+        let selector = radix_theme
+            .search_selector("gallery-search-selector", search_selector_demo_items())
             .placeholder("Choose a state…")
             .search_placeholder("Selection search")
             .full_width(true)
             .clean_on_escape(true)
-            .textfield_template(radix_theme.textfield_template())
-            .textfield_theme(radix_theme.textfield_theme())
-            .scrollbar_template(radix_theme.scrollbar_template())
-            .popup_appearance_provider(std::sync::Arc::new(move || {
-                popup_radix.selector_items_panel_appearance(ControlSize::Md)
-            }))
             .spawn(cx);
 
         Self { selector }

@@ -3,6 +3,7 @@ mod autocomplete;
 mod button;
 mod catalog;
 mod checkbox;
+mod controls;
 mod color;
 mod context_menu;
 mod control_group;
@@ -13,6 +14,7 @@ mod listbox;
 mod mode;
 mod navigation_sidebar;
 mod palette;
+pub mod prelude;
 mod popup_menu;
 mod progress;
 mod radio;
@@ -29,6 +31,9 @@ mod textfield;
 mod textarea;
 mod usage;
 
+pub use controls::{
+    RadixButtonStyleExt, RadixCheckboxStyleExt, RadixSwitchStyleExt, RadixTextFieldExt, RadixThemeControlExt,
+};
 pub use usage::all_radix_theme_usages;
 
 use std::sync::{
@@ -152,7 +157,7 @@ impl RadixTheme {
         }
     }
 
-    pub fn primary_button(
+    pub fn resolve_primary_button(
         &self,
         role: ButtonFamilyRole,
         size: ControlSize,
@@ -161,7 +166,7 @@ impl RadixTheme {
         resolve_button_appearance(self.mode_tokens(), RadixButtonStyle::Primary, role, size, state)
     }
 
-    pub fn secondary_button(
+    pub fn resolve_secondary_button(
         &self,
         role: ButtonFamilyRole,
         size: ControlSize,
@@ -170,7 +175,7 @@ impl RadixTheme {
         resolve_button_appearance(self.mode_tokens(), RadixButtonStyle::Secondary, role, size, state)
     }
 
-    pub fn outline_button(
+    pub fn resolve_outline_button(
         &self,
         role: ButtonFamilyRole,
         size: ControlSize,
@@ -179,7 +184,7 @@ impl RadixTheme {
         resolve_button_appearance(self.mode_tokens(), RadixButtonStyle::Outline, role, size, state)
     }
 
-    pub fn ghost_button(
+    pub fn resolve_ghost_button(
         &self,
         role: ButtonFamilyRole,
         size: ControlSize,
@@ -234,6 +239,10 @@ impl RadixTheme {
 
     pub fn context_menu_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::context_menu::ContextMenuTheme> {
         templates::context_menu_theme(Arc::clone(self))
+    }
+
+    pub fn context_menu_template(self: &Arc<Self>) -> Arc<dyn crate::controls::context_menu::ContextMenuTemplate> {
+        templates::context_menu_template(Arc::clone(self))
     }
 
     pub fn selector_template(self: &Arc<Self>) -> Arc<dyn crate::controls::selector::SelectorTemplate> {
@@ -323,6 +332,34 @@ impl RadixTheme {
 
     pub fn listbox_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::listbox::ListBoxTheme> {
         templates::listbox_theme(Arc::clone(self))
+    }
+
+    pub fn radio_group_template<T>(
+        self: &Arc<Self>,
+        style: RadixButtonStyle,
+    ) -> crate::controls::control_group::ControlGroupTemplate<T>
+    where
+        T: crate::controls::control_group::ControlGroupItemLike + 'static,
+    {
+        templates::radio_group_template(
+            Arc::clone(self),
+            style,
+            crate::controls::radio_group::RadioGroupLayout::Vertical,
+        )
+    }
+
+    pub fn radio_group_horizontal_template<T>(
+        self: &Arc<Self>,
+        style: RadixButtonStyle,
+    ) -> crate::controls::control_group::ControlGroupTemplate<T>
+    where
+        T: crate::controls::control_group::ControlGroupItemLike + 'static,
+    {
+        templates::radio_group_template(
+            Arc::clone(self),
+            style,
+            crate::controls::radio_group::RadioGroupLayout::Horizontal,
+        )
     }
 
     pub fn progress_template(self: &Arc<Self>) -> Arc<dyn crate::controls::progress::ProgressTemplate> {

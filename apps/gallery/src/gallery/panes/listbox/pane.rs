@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
-use gpui_luma::controls::listbox::{self, ListBox, ListBoxItem};
-
+use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
@@ -20,15 +20,14 @@ pub(in crate::gallery) struct ListBoxPane {
 
 impl ListBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let listbox_template = radix_theme.listbox_template();
-        let single = listbox::new("listbox-density-single")
-            .template(listbox_template.clone())
+        let single = radix_theme
+            .listbox("listbox-density-single")
             .items(density_items())
             .selected("comfortable")
             .spawn(cx);
 
-        let multiple = listbox::multiple("listbox-density-multiple")
-            .template(listbox_template)
+        let multiple = radix_theme
+            .listbox_multiple("listbox-density-multiple")
             .items(density_items())
             .selected_ids(["compact", "expanded"])
             .spawn(cx);

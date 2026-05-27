@@ -5,8 +5,9 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::radio_button::{self, RadioButton};
+use gpui_luma::controls::radio_button::RadioButton;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -26,13 +27,13 @@ pub(in crate::gallery) struct RadioButtonPane {
 impl RadioButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            secondary_radio: radio_button::new("radio-button-secondary-example")
-                .template(radix_theme.radio_button_template(RadixButtonStyle::Secondary))
+            secondary_radio: radix_theme
+                .secondary_radio("radio-button-secondary-example")
                 .with_data(true)
                 .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            primary_radio: radio_button::new("radio-button-primary-example")
-                .template(radix_theme.radio_button_template(RadixButtonStyle::Primary))
+            primary_radio: radix_theme
+                .primary_radio("radio-button-primary-example")
                 .with_data(false)
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),

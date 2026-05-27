@@ -1,14 +1,12 @@
-use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Div, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
+use gpui::{AnyElement, Context, Div, Subscription, div, prelude::*, px};
+use gpui_luma::controls::command::button::ButtonTemplate;
 use gpui_luma::controls::radio_group::{
-    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
-    RadioGroupTemplate, RadioGroupTemplateHandlers, SelectionMode,
+    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupTemplate,
+    RadioGroupTemplateHandlers, SelectionMode, render_radio_button_rows,
 };
-
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -64,16 +62,21 @@ pub(in crate::gallery) struct RadioGroupPane {
 
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let secondary_vertical = radix_theme.radio_group_template(RadixButtonStyle::Secondary);
+        let secondary_horizontal = radix_theme.radio_group_horizontal_template(RadixButtonStyle::Secondary);
         let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Secondary);
-        let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
+
+        let vertical_group = radix_theme
+            .radio_group("radio-group-density-vertical")
+            .template(secondary_vertical)
             .items(density_items())
-            .template(radio_button_vertical_template(radio_template.clone()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
-        let horizontal_group = sdk_radio_group::horizontal("radio-group-density-horizontal")
+        let horizontal_group = radix_theme
+            .radio_group_horizontal("radio-group-density-horizontal")
+            .template(secondary_horizontal)
             .items(density_items())
-            .template(radio_button_horizontal_template(radio_template.clone()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
@@ -386,34 +389,6 @@ fn delivery_window_card(
     }
 }
 
-fn radio_button_vertical_template(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupTemplate<RadioGroupItem> {
-    Arc::new(move |model, handlers, window, cx| {
-        div()
-            .id(model.id.clone())
-            .flex()
-            .flex_col()
-            .gap_2()
-            .items_start()
-            .children(render_radio_button_rows(model, handlers, &button_template, window, cx))
-    })
-}
-
-fn radio_button_horizontal_template(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupTemplate<RadioGroupItem> {
-    Arc::new(move |model, handlers, window, cx| {
-        div().id(model.id.clone()).flex().items_center().gap_3().children(render_radio_button_rows(
-            model,
-            handlers,
-            &button_template,
-            window,
-            cx,
-        ))
-    })
-}
-
 fn radio_button_indented_template(
     button_template: Arc<dyn ButtonTemplate<bool>>,
 ) -> RadioGroupTemplate<RadioGroupItem> {
@@ -430,78 +405,6 @@ fn radio_button_indented_template(
             ),
         )
     })
-}
-
-fn render_radio_button_rows<T>(
-    model: &RadioGroupRenderModel<'_, T>,
-    handlers: RadioGroupTemplateHandlers,
-    button_template: &Arc<dyn ButtonTemplate<bool>>,
-    window: &mut Window,
-    cx: &mut App,
-) -> Vec<AnyElement>
-where
-    T: RadioGroupItemLike + 'static,
-{
-    let RadioGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
-        handlers;
-
-    let mut item_hovers = item_hovers.into_iter();
-    let mut item_mouse_downs = item_mouse_downs.into_iter();
-    let mut item_mouse_ups = item_mouse_ups.into_iter();
-    let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-    let mut item_clicks = item_clicks.into_iter();
-    let mut rows = Vec::with_capacity(model.items.len());
-
-    for item in &model.items {
-        let Some(item_hover) = item_hovers.next() else {
-            break;
-        };
-        let Some(item_mouse_down) = item_mouse_downs.next() else {
-            break;
-        };
-        let Some(item_mouse_up) = item_mouse_ups.next() else {
-            break;
-        };
-        let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-            break;
-        };
-        let Some(item_click) = item_clicks.next() else {
-            break;
-        };
-
-        let render_model = ButtonRenderModel {
-            id: format!("{}-{}", model.id, item.item.id()).into(),
-            data: item.selected,
-            content: Arc::new({
-                let label = item.item.label().clone();
-                move |_, _| div().child(label.clone()).into_any_element()
-            }),
-            role: ButtonFamilyRole::Text,
-            size: ButtonSize::Md,
-            state: item.state.interaction_state(),
-            round: false,
-            radius_override: Cell::new(None),
-            appearance: None,
-        };
-
-        let mut button = button_template
-            .render(&render_model, window, cx)
-            .on_hover(item_hover)
-            .on_mouse_down(gpui::MouseButton::Left, item_mouse_down)
-            .on_mouse_up(gpui::MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(gpui::MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
-
-        if item.enabled {
-            button = button.cursor_pointer();
-        } else {
-            button = button.opacity(DELIVERY_DISABLED_OPACITY);
-        }
-
-        rows.push(button.into_any_element());
-    }
-
-    rows
 }
 
 fn delivery_window_template(radix_theme: Arc<RadixTheme>) -> RadioGroupTemplate<DeliveryWindowItem> {

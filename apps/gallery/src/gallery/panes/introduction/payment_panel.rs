@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::{self, Checkbox};
-use gpui_luma::controls::combobox::{self, ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::checkbox::Checkbox;
+use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::radio_button;
-use gpui_luma::controls::textfield::{self, TextField, TextFieldEvent};
-use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
+use gpui_luma::controls::radio_button::RadioButton;
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::theme::RadixTheme;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -33,7 +34,7 @@ pub(super) struct PaymentPanel {
     email_field: TextField,
     payment_combobox: ComboBox,
     same_as_shipping_checkbox: Checkbox,
-    payment_method_radio: radio_button::RadioButton,
+    payment_method_radio: RadioButton,
     name_value: SharedString,
     email_value: SharedString,
     payment_selection_set: bool,
@@ -43,34 +44,22 @@ pub(super) struct PaymentPanel {
 
 impl PaymentPanel {
     pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
-        let submit_button = Button::new("intro-submit")
-            .label("Submit")
-            .with_appearance({
-                let theme = radix_theme.clone();
-                move |model| theme.primary_button(model.role, model.size, model.state)
-            })
-            .spawn(cx);
-        let cancel_button = Button::new("intro-cancel")
-            .label("Cancel")
-            .with_appearance({
-                let theme = radix_theme.clone();
-                move |model| theme.secondary_button(model.role, model.size, model.state)
-            })
-            .spawn(cx);
-        let name_field = textfield::new("intro-name")
-            .template(radix_theme.textfield_template())
+        let submit_button = radix_theme.primary_button("intro-submit").label("Submit").spawn(cx);
+        let cancel_button = radix_theme.secondary_button("intro-cancel").label("Cancel").spawn(cx);
+        let name_field = radix_theme
+            .textfield("intro-name")
             .placeholder("Name on card")
             .full_width(true)
             .clean_on_escape(true)
             .spawn(cx);
-        let email_field = textfield::new("intro-email")
-            .template(radix_theme.textfield_template())
+        let email_field = radix_theme
+            .textfield("intro-email")
             .placeholder("Email address")
             .full_width(true)
             .clean_on_escape(true)
             .spawn(cx);
-        let payment_combobox = combobox::new("intro-payment-combobox", payment_method_items())
-            .textfield_template(radix_theme.textfield_template())
+        let payment_combobox = radix_theme
+            .combobox("intro-payment-combobox", payment_method_items())
             .placeholder("Select payment method…")
             .full_width(true)
             .clean_on_escape(true)
@@ -78,13 +67,13 @@ impl PaymentPanel {
             .show_down_arrow(true)
             .show_clear_button(false)
             .spawn(cx);
-        let same_as_shipping_checkbox = checkbox::new("intro-same-as-shipping")
-            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
+        let same_as_shipping_checkbox = radix_theme
+            .primary_checkbox("intro-same-as-shipping")
             .with_data(true)
             .content(|_, _| div().child("Same as shipping address").into_any_element())
             .spawn(cx);
-        let payment_method_radio = radio_button::new("intro-payment-method-radio")
-            .template(radix_theme.radio_button_template(RadixButtonStyle::Primary))
+        let payment_method_radio = radix_theme
+            .primary_radio("intro-payment-method-radio")
             .with_data(true)
             .content(|_, _| div().child("Use this as default payment method").into_any_element())
             .spawn(cx);

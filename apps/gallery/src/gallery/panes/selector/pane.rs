@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, hsla, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorPlacement, SelectorItem};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -26,36 +27,36 @@ pub(in crate::gallery) struct SelectorPane {
 
 impl SelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let selector_template = radix_theme.selector_template();
         let initial_swatch_id = selected_swatch_id();
         let initial_swatch_label = selected_swatch_label();
 
         Self {
-            selector_smart: Selector::new("popup-selector-smart-example")
+            selector_smart: radix_theme
+                .selector("popup-selector-smart-example")
                 .label("Select status")
                 .items(selector_items())
                 .placement(SelectorPlacement::Smart)
-                .template(selector_template.clone())
                 .spawn(cx),
-            selector_below: Selector::new("popup-selector-below-example")
+            selector_below: radix_theme
+                .selector("popup-selector-below-example")
                 .label("Below selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::BelowStart)
-                .template(selector_template.clone())
                 .spawn(cx),
-            selector_above: Selector::new("popup-selector-above-example")
+            selector_above: radix_theme
+                .selector("popup-selector-above-example")
                 .label("Above selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::AboveStart)
-                .template(selector_template.clone())
                 .spawn(cx),
-            selector_overlay: Selector::new("popup-selector-overlay-example")
+            selector_overlay: radix_theme
+                .selector("popup-selector-overlay-example")
                 .label("Overlay selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::OverlayOnTrigger)
-                .template(selector_template.clone())
                 .spawn(cx),
-            selector_swatch: Selector::new("popup-selector-swatch-example")
+            selector_swatch: radix_theme
+                .selector("popup-selector-swatch-example")
                 .label("Choose color")
                 .items(swatch_items())
                 .selected_id(initial_swatch_id)
@@ -95,7 +96,6 @@ impl SelectorPane {
                                 ),
                         )
                 })
-                .template(selector_template.clone())
                 .spawn(cx),
             state_preview: cx.new(|_| SelectorStatePreview::new(radix_theme.clone())),
             panel_preview: cx.new(|_| SelectorPanelPreview::new(radix_theme.clone())),

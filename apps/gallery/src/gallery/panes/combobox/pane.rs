@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Subscription, anchored, deferred, div, point, prelude::*, px};
 use gpui_luma::controls::combobox::{
-    self, ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
+    ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, SelectionItem, TypingPolicy,
 };
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -17,7 +18,8 @@ pub(in crate::gallery) struct ComboBoxPane {
 
 impl ComboBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let strict_combobox = combobox::new("gallery-combobox-strict", combobox_demo_items())
+        let strict_combobox = radix_theme
+            .combobox("gallery-combobox-strict", combobox_demo_items())
             .items_template(Arc::new(GalleryComboboxItemsTemplate::new(radix_theme.clone())))
             .panel_template(Arc::new(GalleryComboboxPanelTemplate::new(radix_theme.clone())))
             .placeholder("Strict mode (exact match only)…")
@@ -26,8 +28,6 @@ impl ComboBoxPane {
             .typing_policy(TypingPolicy::Strict)
             .show_down_arrow(true)
             .show_clear_button(true)
-            .textfield_template(radix_theme.textfield_template())
-            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { strict_combobox }

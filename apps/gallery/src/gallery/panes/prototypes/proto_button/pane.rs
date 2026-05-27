@@ -8,7 +8,8 @@ use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
-use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme, ThemeMode};
+use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::theme::{InteractionState, RadixTheme, ThemeMode};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
@@ -96,13 +97,7 @@ pub(in crate::gallery) struct ButtonPane {
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let default_button = Button::new("button-default")
-            .label("Default ProtoButton")
-            .with_appearance({
-                let theme = radix_theme.clone();
-                move |model| theme.secondary_button(model.role, model.size, model.state)
-            })
-            .spawn(cx);
+        let default_button = radix_theme.secondary_button("button-default").label("Default ProtoButton").spawn(cx);
 
         let danger_button = Button::new("button-danger")
             .label("Danger Action")
@@ -121,28 +116,16 @@ impl ButtonPane {
         let state_preview =
             cx.new(move |_| ButtonStatePreview::new(preview_theme, demo_template.clone(), Some(demo_radius)));
 
-        let radius_down_button = Button::new("button-radius-down")
-            .label("Radius -")
-            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
-            .spawn(cx);
-        let radius_up_button = Button::new("button-radius-up")
-            .label("Radius +")
-            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
-            .spawn(cx);
+        let radius_down_button = radix_theme.secondary_button("button-radius-down").label("Radius -").spawn(cx);
+        let radius_up_button = radix_theme.secondary_button("button-radius-up").label("Radius +").spawn(cx);
 
-        let flip_bg_fg_button = Button::new("button-flip-bg-fg")
-            .label("Flip bg/fg")
-            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
-            .spawn(cx);
+        let flip_bg_fg_button = radix_theme.secondary_button("button-flip-bg-fg").label("Flip bg/fg").spawn(cx);
 
-        let reset_button = Button::new("button-reset")
-            .label("Reset")
-            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
-            .spawn(cx);
+        let reset_button = radix_theme.secondary_button("button-reset").label("Reset").spawn(cx);
 
-        let state_cycle_button = Button::new("button-state-cycle")
+        let state_cycle_button = radix_theme
+            .secondary_button("button-state-cycle")
             .label(format!("State: {}", visual_state_label(ButtonVisualState::Default)))
-            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
             .spawn(cx);
 
         Self {

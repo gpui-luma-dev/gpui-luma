@@ -1,3 +1,5 @@
+mod themed_template;
+
 use gpui::{Entity, SharedString};
 
 use crate::controls::control_group::{
@@ -5,6 +7,8 @@ use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
     ControlSelectionMode,
 };
+
+pub use themed_template::{RadioGroupLayout, radio_group_buttons_template, render_radio_button_rows};
 
 // 1. Semantic Type Aliases
 // This makes the idea of a "Radio Group" visible in function signatures and state

@@ -9,8 +9,8 @@ pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 pub use interaction::{InteractionLayer, InteractionState};
 pub use pack::LumaChrome;
 pub use radix::{
-    CssTokenCatalog, CssTokenMap, RadixButtonStyle, RadixModeTokens, RadixTheme, all_radix_theme_usages,
-    parse_css_catalog,
+    CssTokenCatalog, CssTokenMap, RadixButtonStyle, RadixButtonStyleExt, RadixModeTokens, RadixTextFieldExt,
+    RadixTheme, RadixThemeControlExt, all_radix_theme_usages, parse_css_catalog,
 };
 pub use registry::{ThemePartUsage, ThemeUsage};
 pub use tokens::{

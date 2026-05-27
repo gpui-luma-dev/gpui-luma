@@ -9,6 +9,7 @@ use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
 };
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -33,34 +34,10 @@ pub(in crate::gallery) struct ButtonPane {
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            secondary_button: Button::new("button-secondary-example")
-                .label("Secondary")
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.secondary_button(model.role, model.size, model.state)
-                })
-                .spawn(cx),
-            outline_button: Button::new("button-outline-example")
-                .label("Outline")
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.outline_button(model.role, model.size, model.state)
-                })
-                .spawn(cx),
-            ghost_button: Button::new("button-ghost-example")
-                .label("Ghost")
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.ghost_button(model.role, model.size, model.state)
-                })
-                .spawn(cx),
-            primary_button: Button::new("button-primary-example")
-                .label("Primary")
-                .with_appearance({
-                    let theme = radix_theme.clone();
-                    move |model| theme.primary_button(model.role, model.size, model.state)
-                })
-                .spawn(cx),
+            secondary_button: radix_theme.secondary_button("button-secondary-example").label("Secondary").spawn(cx),
+            outline_button: radix_theme.outline_button("button-outline-example").label("Outline").spawn(cx),
+            ghost_button: radix_theme.ghost_button("button-ghost-example").label("Ghost").spawn(cx),
+            primary_button: radix_theme.primary_button("button-primary-example").label("Primary").spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(radix_theme)),
             secondary_clicks: 0,
             outline_clicks: 0,
@@ -485,10 +462,10 @@ fn appearance_for_style(
     style: RadixButtonStyle,
 ) -> gpui_luma::controls::command::button::ButtonAppearanceSource<()> {
     Arc::new(move |model| match style {
-        RadixButtonStyle::Primary => theme.primary_button(model.role, model.size, model.state),
-        RadixButtonStyle::Secondary => theme.secondary_button(model.role, model.size, model.state),
-        RadixButtonStyle::Outline => theme.outline_button(model.role, model.size, model.state),
-        RadixButtonStyle::Ghost => theme.ghost_button(model.role, model.size, model.state),
+        RadixButtonStyle::Primary => theme.as_ref().resolve_primary_button(model.role, model.size, model.state),
+        RadixButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),
+        RadixButtonStyle::Outline => theme.as_ref().resolve_outline_button(model.role, model.size, model.state),
+        RadixButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(model.role, model.size, model.state),
     })
 }
 

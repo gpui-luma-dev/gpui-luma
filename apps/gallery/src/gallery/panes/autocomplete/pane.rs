@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::autocomplete::{self, AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
+use gpui_luma::controls::autocomplete::{AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
@@ -14,13 +15,11 @@ pub(in crate::gallery) struct AutocompleteTextFieldPane {
 
 impl AutocompleteTextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let demo_items = autocomplete_demo_items();
-        let autocomplete_textbox = autocomplete::new("prototype-autocomplete", demo_items)
+        let autocomplete_textbox = radix_theme
+            .autocomplete("prototype-autocomplete", autocomplete_demo_items())
             .placeholder("Start typing…")
             .full_width(true)
             .clean_on_escape(true)
-            .textfield_template(radix_theme.textfield_template())
-            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { autocomplete_textbox }

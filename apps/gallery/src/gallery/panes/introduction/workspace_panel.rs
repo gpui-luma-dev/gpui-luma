@@ -6,12 +6,13 @@ use gpui::{
     transparent_black, px,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
+use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 use gpui_luma::controls::radio_group::{
     self as radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
@@ -66,12 +67,11 @@ impl WorkspacePanel {
     pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
         let toggle_primary = radix_theme.toggle_template(RadixButtonStyle::Primary);
         let toggle_secondary = radix_theme.toggle_template(RadixButtonStyle::Secondary);
-        let group_template = radix_theme.control_group_template();
         let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
 
-        let layout_icon_group = button_group::new("intro-workspace-layout")
+        let layout_icon_group = radix_theme
+            .button_group("intro-workspace-layout")
             .horizontal()
-            .template(group_template.clone())
             .with_template_modifier(|element, _| element.bg(transparent_black()))
             .managed_selected("grid")
             .items(layout_items())
@@ -91,15 +91,15 @@ impl WorkspacePanel {
             .selected("balanced")
             .template(density_template(radio_template))
             .spawn(cx);
-        let popup_menu = PopupMenu::new("intro-workspace-popup")
-            .template(radix_theme.popup_menu_template())
+        let popup_menu = radix_theme
+            .popup_menu("intro-workspace-popup")
             .label("Workspace Menu")
             .items(menu_items())
             .placement(PopupMenuPlacement::BelowStart)
             .spawn(cx);
-        let icon_demo_icon_group = button_group::new("intro-workspace-icon-demo")
+        let icon_demo_icon_group = radix_theme
+            .button_group("intro-workspace-icon-demo")
             .horizontal()
-            .template(group_template)
             .managed_selected("left")
             .items(icon_demo_items())
             .item_template(toggle_button_item_template(toggle_secondary, true, |item: &IconGroupItem| {

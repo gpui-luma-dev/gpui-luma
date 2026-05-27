@@ -4,15 +4,15 @@ use gpui::{
     AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, TextRun, Window, div, font,
     prelude::*, px,
 };
-use gpui_luma::controls::checkbox;
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{
-    self, TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
+    TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
     TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldVariant, Validator,
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -45,34 +45,33 @@ pub(in crate::gallery) struct TextFieldPane {
 
 impl TextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let textfield_template = radix_theme.textfield_template();
         Self {
-            text_field: textfield::new("gallery-textfield")
+            text_field: radix_theme
+                .textfield("gallery-textfield")
                 .placeholder("Type and press Enter")
                 .prefix_icon(LucideIcon::Search)
                 .variant(TextFieldVariant::Standard)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(textfield_template.clone())
                 .spawn(cx),
-            plain_text_field: textfield::new("gallery-textfield-plain")
+            plain_text_field: radix_theme
+                .textfield("gallery-textfield-plain")
                 .placeholder("Text field without icon")
                 .prefix_icon(LucideIcon::Search)
                 .variant(TextFieldVariant::Ghost)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(textfield_template.clone())
                 .spawn(cx),
-            compact_plain_text_field: textfield::new("gallery-textfield-compact")
+            compact_plain_text_field: radix_theme
+                .textfield("gallery-textfield-compact")
                 .placeholder("Compact ghost (appearance override)")
                 .prefix_icon(LucideIcon::Search)
                 .variant(TextFieldVariant::Ghost)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .template(textfield_template)
                 .appearance_override(|mut appearance| {
                     appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
                     appearance.typography.line_height = appearance.typography.size;
@@ -81,18 +80,21 @@ impl TextFieldPane {
                     appearance
                 })
                 .spawn(cx),
-            state_preview: cx.new(|_| TextFieldStatePreview::new(radix_theme)),
-            set_sample_button: action_button("textfield-set-sample", "Set Sample", cx),
-            clear_button: action_button("textfield-clear", "Clear", cx),
-            enabled_checkbox: checkbox::new("textfield-enabled")
+            state_preview: cx.new(|_| TextFieldStatePreview::new(radix_theme.clone())),
+            set_sample_button: action_button("textfield-set-sample", "Set Sample", &radix_theme, cx),
+            clear_button: action_button("textfield-clear", "Clear", &radix_theme, cx),
+            enabled_checkbox: radix_theme
+                .checkbox("textfield-enabled")
                 .with_data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
                 .spawn(cx),
-            clean_on_escape_checkbox: checkbox::new("textfield-clean-on-escape")
+            clean_on_escape_checkbox: radix_theme
+                .checkbox("textfield-clean-on-escape")
                 .with_data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
                 .spawn(cx),
-            validation_checkbox: checkbox::new("textfield-validation")
+            validation_checkbox: radix_theme
+                .checkbox("textfield-validation")
                 .with_data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
                 .spawn(cx),
@@ -310,8 +312,13 @@ enum TextFieldOption {
     StrictValidation,
 }
 
-fn action_button(id: &'static str, label: &'static str, cx: &mut Context<GalleryApp>) -> Entity<Button> {
-    Button::new(id).label(label).spawn(cx)
+fn action_button(
+    id: &'static str,
+    label: &'static str,
+    radix_theme: &Arc<RadixTheme>,
+    cx: &mut Context<GalleryApp>,
+) -> Entity<Button> {
+    radix_theme.secondary_button(id).label(label).spawn(cx)
 }
 
 fn render_telemetry(

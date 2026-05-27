@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::progress::{self, Progress, ProgressRenderModel, ProgressTemplate};
+use gpui_luma::controls::progress::{Progress, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
@@ -17,13 +18,8 @@ pub(in crate::gallery) struct ProgressPane {
 
 impl ProgressPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let progress_template = radix_theme.progress_template();
         Self {
-            progress: progress::new("progress-example")
-                .template(progress_template.clone())
-                .range(1..100)
-                .value(41)
-                .spawn(cx),
+            progress: radix_theme.progress("progress-example").range(1..100).value(41).spawn(cx),
             state_preview: cx.new(|_| ProgressStatePreview::new(radix_theme)),
         }
     }

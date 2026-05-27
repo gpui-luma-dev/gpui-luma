@@ -3,6 +3,7 @@ use std::{cell::Cell, rc::Rc};
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
@@ -86,15 +87,14 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 
 impl NavigationSidebarPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
+        let sidebar = radix_theme
+            .navigation_sidebar("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Prominent card")
             .collapsible(true)
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_nodes())
             .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
-            .template(radix_theme.navigation_sidebar_template())
-            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { sidebar, collapsed: Rc::new(Cell::new(false)) }

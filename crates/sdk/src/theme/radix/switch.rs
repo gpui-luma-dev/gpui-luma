@@ -1,22 +1,23 @@
-//! Switch property mappings (Radix Themes surface / shadcn):
+//! Switch property mappings (shadcn Switch):
 //!
-//! | State    | Track token | Thumb token                    |
-//! |----------|-------------|--------------------------------|
-//! | Off      | `input`     | `background` (fallback `card`) |
-//! | On       | `{style}`   | `{style}-foreground`           |
-//! | Disabled | `muted`     | `muted-foreground`             |
+//! | State    | Track token | Track border     | Thumb token              |
+//! |----------|-------------|------------------|--------------------------|
+//! | Off      | `input`     | `border`         | `background` / `border`  |
+//! | On       | `{style}`   | matches track bg | `{style}-foreground`     |
+//! | Disabled | `muted`     | `border`         | `muted-foreground` / `muted` |
+//!
+//! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
+//! surface). Only `focused` adds a focus ring via the adorner.
 
 use crate::controls::switch::SwitchAppearance;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTheme, ThemeMode};
 
 use super::focus::focus_adorner;
-use super::resolve::{
-    resolve_action_foreground, resolve_action_layer, resolve_color, resolve_color_layer, resolve_label_color,
-};
+use super::resolve::{resolve_action_layer, resolve_color, resolve_label_color};
 use super::RadixButtonStyle;
 use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
+use super::palette::{RadixActionRole, RadixPalette};
 
 pub(crate) fn switch_appearance(
     mode: &RadixModeTokens,
@@ -50,7 +51,6 @@ fn switch_appearance_from_palette(
     on: bool,
     state: InteractionState,
 ) -> SwitchAppearance {
-    let layer = state.layer();
     let size = ControlSize::Md;
     let thumb_shadow = {
         let native = LumaTheme::native();
@@ -58,31 +58,25 @@ fn switch_appearance_from_palette(
     };
     let on_action = palette.action(style);
 
-    let track_background = match (on, layer) {
-        (_, InteractionLayer::Disabled) => palette.disabled_background,
-        (true, InteractionLayer::Pressed) => on_action.pressed_background,
-        (true, InteractionLayer::Hovered) => on_action.hover_background,
-        (true, InteractionLayer::Default) => on_action.background,
-        (false, InteractionLayer::Pressed) => palette.muted_background,
-        (false, InteractionLayer::Hovered) => palette.muted_background,
-        (false, InteractionLayer::Default) => palette.input_background,
+    let track_background = if state.disabled {
+        palette.disabled_background
+    } else if on {
+        on_action.background
+    } else {
+        palette.input_background
     };
 
-    let (thumb_background, thumb_border) = if state.disabled {
-        (palette.disabled_foreground, palette.disabled_background)
-    } else if on {
-        (on_action.foreground, on_action.foreground)
+    let track_border = if on && !state.disabled {
+        track_background
     } else {
-        (palette.panel_background, palette.border_default)
+        palette.border_default
     };
+
+    let (thumb_background, thumb_border) = switch_thumb_surface_palette(palette, on_action, on, state.disabled);
 
     SwitchAppearance {
         track_background,
-        track_border: if on && !state.disabled {
-            track_background
-        } else {
-            palette.border_default
-        },
+        track_border,
         thumb_background,
         thumb_border,
         thumb_shadow,
@@ -112,17 +106,18 @@ pub(crate) fn switch_appearance_from_catalog(
     on: bool,
     state: InteractionState,
 ) -> anyhow::Result<SwitchAppearance> {
-    let layer = state.layer();
     let size = ControlSize::Md;
     let thumb_shadow = {
         let native = LumaTheme::native();
         native.mode(theme_mode).elevation.thumb.to_box_shadows()
     };
 
-    let track_background = match (on, layer) {
-        (_, InteractionLayer::Disabled) => resolve_color(catalog, "muted")?,
-        (true, _) => resolve_action_layer(catalog, style, layer)?,
-        (false, _) => resolve_color_layer(catalog, "input", layer, false)?,
+    let track_background = if state.disabled {
+        resolve_color(catalog, "muted")?
+    } else if on {
+        resolve_action_layer(catalog, style, InteractionLayer::Default)?
+    } else {
+        resolve_color(catalog, "input")?
     };
 
     let track_border = if on && !state.disabled {
@@ -165,13 +160,31 @@ fn switch_thumb_colors(
     }
 
     if on {
-        let thumb = resolve_action_foreground(catalog, style)?;
+        let thumb = super::resolve::resolve_action_foreground(catalog, style)?;
         return Ok((thumb, thumb));
     }
 
-    let thumb = catalog.color_first(&["background", "card"])?;
+    let thumb = resolve_color(catalog, "background")?;
     let border = resolve_color(catalog, "border")?;
     Ok((thumb, border))
+}
+
+fn switch_thumb_surface_palette(
+    palette: &RadixPalette,
+    on_action: RadixActionRole,
+    on: bool,
+    disabled: bool,
+) -> (gpui::Hsla, gpui::Hsla) {
+    if disabled {
+        return (palette.disabled_foreground, palette.disabled_background);
+    }
+
+    if on {
+        let thumb = on_action.foreground;
+        return (thumb, thumb);
+    }
+
+    (palette.app_background, palette.border_default)
 }
 
 #[cfg(test)]
@@ -184,6 +197,7 @@ mod tests {
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::switch_appearance_from_catalog;
+    use super::switch_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -219,12 +233,120 @@ mod tests {
         .expect("switch");
 
         let input = catalog.color("input").expect("input");
-        let background = catalog.color("background").expect("background");
         let border = catalog.color("border").expect("border");
+        let background = catalog.color("background").expect("background");
         assert_eq!(appearance.track_background, input);
         assert_eq!(appearance.track_border, border);
         assert_eq!(appearance.thumb_background, background);
         assert_eq!(appearance.thumb_border, border);
+    }
+
+    #[test]
+    fn on_switch_uses_style_track_and_card_thumb() {
+        let catalog = sample_catalog();
+        let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let appearance = switch_appearance_from_catalog(
+            &catalog,
+            &mode.metrics,
+            &mode.typography,
+            ThemeMode::Light,
+            RadixButtonStyle::Primary,
+            true,
+            InteractionState::default(),
+        )
+        .expect("switch");
+
+        let primary = catalog.color("primary").expect("primary");
+        let primary_foreground = catalog.color("primary-foreground").expect("primary-foreground");
+        assert_eq!(appearance.track_background, primary);
+        assert_eq!(appearance.track_border, primary);
+        assert_eq!(appearance.thumb_background, primary_foreground);
+        assert!(appearance.thumb_background.l > appearance.track_background.l);
+    }
+
+    #[test]
+    fn astrovista_light_off_switch_uses_background_thumb_and_border_track() {
+        let css = include_str!("../../../../../apps/gallery/tweakcn/astrovista.css");
+        let theme = crate::theme::RadixTheme::from_css_str(css).expect("astrovista css");
+        let appearance = switch_appearance(
+            theme.mode_tokens(),
+            ThemeMode::Light,
+            RadixButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+        );
+
+        let catalog = &theme.mode_tokens().catalog;
+        let input = catalog.color("input").expect("input");
+        let border = catalog.color("border").expect("border");
+        let background = catalog.color("background").expect("background");
+        let card = catalog.color("card").expect("card");
+        assert_eq!(appearance.track_background, input);
+        assert_eq!(appearance.track_border, border);
+        assert_eq!(appearance.thumb_background, background);
+        assert_eq!(appearance.thumb_border, border);
+        assert_ne!(appearance.thumb_background, card);
+        assert!(appearance.thumb_background.l < appearance.track_background.l);
+    }
+
+    #[test]
+    fn astrovista_dark_off_switch_uses_background_thumb() {
+        let css = include_str!("../../../../../apps/gallery/tweakcn/astrovista.css");
+        let theme = crate::theme::RadixTheme::from_css_str(css).expect("astrovista css");
+        theme.set_mode(ThemeMode::Dark);
+        let appearance = switch_appearance(
+            theme.mode_tokens(),
+            ThemeMode::Dark,
+            RadixButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+        );
+
+        let catalog = &theme.mode_tokens().catalog;
+        let input = catalog.color("input").expect("input");
+        let background = catalog.color("background").expect("background");
+        assert_eq!(appearance.track_background, input);
+        assert_eq!(appearance.thumb_background, background);
+    }
+
+    #[test]
+    fn hover_and_pressed_match_default_track_for_off_switch() {
+        let catalog = sample_catalog();
+        let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let default = switch_appearance_from_catalog(
+            &catalog,
+            &mode.metrics,
+            &mode.typography,
+            ThemeMode::Light,
+            RadixButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+        )
+        .expect("default");
+        let hovered = switch_appearance_from_catalog(
+            &catalog,
+            &mode.metrics,
+            &mode.typography,
+            ThemeMode::Light,
+            RadixButtonStyle::Primary,
+            false,
+            InteractionState { hovered: true, ..InteractionState::default() },
+        )
+        .expect("hovered");
+        let pressed = switch_appearance_from_catalog(
+            &catalog,
+            &mode.metrics,
+            &mode.typography,
+            ThemeMode::Light,
+            RadixButtonStyle::Primary,
+            false,
+            InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+        )
+        .expect("pressed");
+
+        assert_eq!(default.track_background, hovered.track_background);
+        assert_eq!(default.track_background, pressed.track_background);
+        assert_eq!(default.thumb_background, hovered.thumb_background);
     }
 
     #[test]

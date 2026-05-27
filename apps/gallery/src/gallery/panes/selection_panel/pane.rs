@@ -12,6 +12,7 @@ use gpui_luma::controls::selection_panel::{
     render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
+use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
 use lucide_icons::Icon as LucideIcon;
 
@@ -37,9 +38,8 @@ impl SelectionPanelPane {
             })
             .collect::<Vec<_>>();
 
-        let interactive_panel = SelectionPanelControl::new("gallery-selection-panel", cx);
+        let interactive_panel = radix_theme.selection_panel("gallery-selection-panel", cx);
         interactive_panel.update(cx, |panel, cx| {
-            panel.with_scrollbar_template(radix_theme.scrollbar_template(), cx);
             panel.set_panel_id("gallery-selection-panel-popup", cx);
             panel.set_items(interactive_items.clone(), cx);
             panel.with_item_template(
@@ -98,9 +98,8 @@ impl SelectionPanelPane {
             panel.set_active_visible_index(Some(1), cx);
         });
 
-        let parameterized_panel = SelectionPanelControl::new("gallery-selection-panel-parameterized", cx);
+        let parameterized_panel = radix_theme.selection_panel("gallery-selection-panel-parameterized", cx);
         parameterized_panel.update(cx, |panel, cx| {
-            panel.with_scrollbar_template(radix_theme.scrollbar_template(), cx);
             panel.set_panel_id("gallery-selection-panel-parameterized-popup", cx);
             panel.set_items(interactive_items, cx);
             panel.with_template(
