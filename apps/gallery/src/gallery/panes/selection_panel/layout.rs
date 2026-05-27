@@ -1,6 +1,5 @@
 use gpui::{AnyElement, FontWeight, div, hsla, prelude::*, px};
-
-use crate::gallery::theme::GalleryThemePack;
+use gpui_luma::theme::RadixTheme;
 
 pub(super) const PAGE_SPEC: PageSpec = PageSpec {
     title: "Selection Panel",
@@ -58,8 +57,8 @@ pub(super) struct Section {
     description: &'static str,
 }
 
-pub(super) fn render_page_header(header: HeaderSpec, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+pub(super) fn render_page_header(header: HeaderSpec, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -97,13 +96,13 @@ pub(super) fn render_page_header(header: HeaderSpec, theme: &GalleryThemePack) -
                 .flex()
                 .items_center()
                 .gap(px(8.0))
-                .children(header.metrics.iter().copied().map(|metric| render_metric_chip(metric, theme))),
+                .children(header.metrics.iter().copied().map(|metric| render_metric_chip(metric, radix_theme))),
         )
         .into_any_element()
 }
 
-pub(super) fn render_section(section: Section, content: AnyElement, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+pub(super) fn render_section(section: Section, content: AnyElement, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .w_full()
@@ -115,7 +114,7 @@ pub(super) fn render_section(section: Section, content: AnyElement, theme: &Gall
         .border_color(chrome.border)
         .bg(chrome.panel_background)
         .p(px(14.0))
-        .child(render_section_header(section, theme))
+        .child(render_section_header(section, radix_theme))
         .child(content)
         .into_any_element()
 }
@@ -148,8 +147,8 @@ pub(super) fn render_live_panel_sample(
         .into_any_element()
 }
 
-fn render_section_header(section: Section, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_section_header(section: Section, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -174,8 +173,8 @@ fn render_section_header(section: Section, theme: &GalleryThemePack) -> AnyEleme
         .into_any_element()
 }
 
-fn render_metric_chip(metric: MetricSpec, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_metric_chip(metric: MetricSpec, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .px(px(8.0))

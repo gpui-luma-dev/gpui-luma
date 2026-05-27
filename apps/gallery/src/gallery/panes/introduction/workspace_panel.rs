@@ -8,19 +8,16 @@ use gpui::{
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
-use gpui_luma::controls::radio_button::default_radio_button_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::toggle::default_toggle_template;
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
+use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 use gpui_luma::controls::radio_group::{
     self as radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
     RadioGroupTemplate, RadioGroupTemplateHandlers,
 };
 use lucide_icons::Icon as LucideIcon;
-
-use crate::gallery::theme::GalleryThemePack;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -52,7 +49,7 @@ impl WorkspaceDensity {
 }
 
 pub(super) struct WorkspacePanel {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     event_bus: Entity<EventBus>,
     popup_menu: Entity<PopupMenu>,
     layout_icon_group: IconGroup<IconGroupItem>,
@@ -66,43 +63,51 @@ pub(super) struct WorkspacePanel {
 }
 
 impl WorkspacePanel {
-    pub(super) fn new(cx: &mut Context<Self>, theme: &GalleryThemePack, event_bus: Entity<EventBus>) -> Self {
-        let layout_icon_group =
-            button_group::icon_toolbar_multiple("intro-workspace-layout", theme.control_group_theme())
-                .with_template_modifier(|element, _| element.bg(transparent_black()))
-                .managed_selected("grid")
-                .items(layout_items())
-                .item_template(toggle_button_item_template(
-                    default_toggle_template(),
-                    ButtonKind::Prominent,
-                    true,
-                    |item: &IconGroupItem| {
-                        let icon = match item.id().as_ref() {
-                            "grid" => LucideIcon::PanelTop,
-                            "list" => LucideIcon::List,
-                            "kanban" => LucideIcon::Columns3,
-                            _ => LucideIcon::Settings,
-                        };
+    pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
+        let toggle_template = radix_theme.toggle_template(RadixButtonStyle::Ghost);
+        let group_template = radix_theme.control_group_template();
+        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
 
-                        lucide_glyph(icon)
-                    },
-                ))
-                .spawn(cx);
+        let layout_icon_group = button_group::new("intro-workspace-layout")
+            .horizontal()
+            .template(group_template.clone())
+            .with_template_modifier(|element, _| element.bg(transparent_black()))
+            .managed_selected("grid")
+            .items(layout_items())
+            .item_template(toggle_button_item_template(
+                toggle_template.clone(),
+                ButtonKind::Prominent,
+                true,
+                |item: &IconGroupItem| {
+                    let icon = match item.id().as_ref() {
+                        "grid" => LucideIcon::PanelTop,
+                        "list" => LucideIcon::List,
+                        "kanban" => LucideIcon::Columns3,
+                        _ => LucideIcon::Settings,
+                    };
+
+                    lucide_glyph(icon)
+                },
+            ))
+            .spawn(cx);
         let density_radio_group = radio_group::horizontal("intro-workspace-density")
             .items(density_items())
             .selected("balanced")
-            .template(density_template(default_radio_button_template()))
+            .template(density_template(radio_template))
             .spawn(cx);
         let popup_menu = PopupMenu::new("intro-workspace-popup")
+            .template(radix_theme.popup_menu_template())
             .label("Workspace Menu")
             .items(menu_items())
             .placement(PopupMenuPlacement::BelowStart)
             .spawn(cx);
-        let icon_demo_icon_group = button_group::horizontal("intro-workspace-icon-demo", theme.control_group_theme())
+        let icon_demo_icon_group = button_group::new("intro-workspace-icon-demo")
+            .horizontal()
+            .template(group_template)
             .managed_selected("left")
             .items(icon_demo_items())
             .item_template(toggle_button_item_template(
-                default_toggle_template(),
+                toggle_template,
                 ButtonKind::Standard,
                 true,
                 |item: &IconGroupItem| {
@@ -134,7 +139,7 @@ impl WorkspacePanel {
         ];
 
         Self {
-            theme: theme.clone(),
+            radix_theme,
             event_bus,
             popup_menu,
             layout_icon_group,
@@ -235,7 +240,7 @@ impl WorkspacePanel {
 
 impl Render for WorkspacePanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
 
         card_container(chrome.border, chrome.panel_background)
             .child(card_title(
@@ -411,6 +416,7 @@ fn render_density_group(
             state: item.state.interaction_state(),
             round: false,
             radius_override: Cell::new(None),
+            appearance: None,
         };
 
         let mut button = button_template

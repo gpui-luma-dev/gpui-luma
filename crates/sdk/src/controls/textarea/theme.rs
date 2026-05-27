@@ -33,6 +33,10 @@ pub struct DefaultTextAreaTheme {
 }
 
 pub fn default_textarea_theme() -> Arc<dyn TextAreaTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.textarea_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

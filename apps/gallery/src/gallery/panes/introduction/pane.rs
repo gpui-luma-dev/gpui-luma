@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Entity, EventEmitter, FontWeight, SharedString, Subscription, div, prelude::*, px};
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_description, notify_entity};
 use super::payment_panel::PaymentPanel;
@@ -92,10 +94,10 @@ struct CompletionInputs<'a> {
 impl IntroductionPane {
     // ===== Construction =====
 
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let event_bus = cx.new(|_| EventBus);
-        let payment_panel = cx.new(|cx| PaymentPanel::new(cx, theme, event_bus.clone()));
-        let workspace_panel = cx.new(|cx| WorkspacePanel::new(cx, theme, event_bus.clone()));
+        let payment_panel = cx.new(|cx| PaymentPanel::new(cx, radix_theme.clone(), event_bus.clone()));
+        let workspace_panel = cx.new(|cx| WorkspacePanel::new(cx, radix_theme.clone(), event_bus.clone()));
 
         let name_value = SharedString::default();
         let email_value = SharedString::default();
@@ -121,7 +123,7 @@ impl IntroductionPane {
             workspace_density: &workspace_density,
             budget,
         });
-        let system_panel = cx.new(|cx| SystemPanel::new(cx, theme, event_bus.clone(), completion));
+        let system_panel = cx.new(|cx| SystemPanel::new(cx, radix_theme.clone(), event_bus.clone(), completion));
 
         Self {
             event_bus,
@@ -162,8 +164,8 @@ impl IntroductionPane {
 
     // ===== Render =====
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_description(
             "Introduction",
@@ -188,12 +190,12 @@ impl IntroductionPane {
                                 .flex()
                                 .flex_col()
                                 .gap(px(16.0))
-                                .child(self.render_panel_row(theme))
+                                .child(self.render_panel_row())
                                 .child(self.render_status_line(chrome.muted_text)),
                         ),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -217,7 +219,7 @@ impl IntroductionPane {
             .into_any_element()
     }
 
-    fn render_panel_row(&self, _theme: &GalleryThemePack) -> AnyElement {
+    fn render_panel_row(&self) -> AnyElement {
         div()
             .w_full()
             .mt(px(32.0))

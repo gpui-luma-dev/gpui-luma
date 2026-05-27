@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{self, ListBox, ListBoxItem};
 
+use gpui_luma::theme::RadixTheme;
+
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -16,10 +19,16 @@ pub(in crate::gallery) struct ListBoxPane {
 }
 
 impl ListBoxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
-        let single = listbox::new("listbox-density-single").items(density_items()).selected("comfortable").spawn(cx);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let listbox_template = radix_theme.listbox_template();
+        let single = listbox::new("listbox-density-single")
+            .template(listbox_template.clone())
+            .items(density_items())
+            .selected("comfortable")
+            .spawn(cx);
 
         let multiple = listbox::multiple("listbox-density-multiple")
+            .template(listbox_template)
             .items(density_items())
             .selected_ids(["compact", "expanded"])
             .spawn(cx);
@@ -42,8 +51,8 @@ impl ListBoxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "ListBox",
@@ -84,7 +93,7 @@ impl ListBoxPane {
                         ),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

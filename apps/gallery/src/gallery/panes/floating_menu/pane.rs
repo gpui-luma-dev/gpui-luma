@@ -1,34 +1,37 @@
+use std::sync::Arc;
+
 use gpui::{
     AnyElement, App, ClickEvent, Context, FontWeight, IntoElement, SharedString, Subscription, Window, div, prelude::*,
     px,
 };
 use gpui_luma::controls::floating_menu::{
-    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuState, FloatingMenuStepDirection,
-    render_floating_menu,
+    FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuState,
+    FloatingMenuStepDirection, FloatingMenuTheme, render_floating_menu,
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::state::MenuPath;
-use gpui_luma::controls::floating_menu::{DefaultFloatingMenuTheme, FloatingMenuAppearance, FloatingMenuTheme};
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::gallery_pane_with_usage;
 
 #[derive(Clone)]
-pub(in crate::gallery) struct FloatingMenuPane;
+pub(in crate::gallery) struct FloatingMenuPane {
+    menu_theme: Arc<dyn FloatingMenuTheme>,
+}
 
 impl FloatingMenuPane {
-    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>) -> Self {
-        Self
+    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        Self { menu_theme: radix_theme.floating_menu_theme() }
     }
 
     pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
-        let appearance = DefaultFloatingMenuTheme::new(theme.tokens()).resolve();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
+        let appearance = self.menu_theme.resolve();
 
         gallery_pane_with_usage(
             "Floating Menu",
@@ -76,7 +79,7 @@ impl FloatingMenuPane {
                         .child(floating_menu_state_machine_snapshot()),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

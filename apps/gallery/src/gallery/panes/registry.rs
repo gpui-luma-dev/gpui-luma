@@ -7,10 +7,10 @@ use gpui::{
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, entity_presenter};
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::{
     autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu, icon_button,
@@ -271,7 +271,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
-    pub(in crate::gallery) theme: GalleryThemePack,
+    pub(in crate::gallery) radix_theme: Arc<RadixTheme>,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
@@ -308,13 +308,19 @@ impl GalleryPanes {
         INTRODUCTION_PAGE.id
     }
 
-    pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> GalleryNavigation {
+    pub(in crate::gallery) fn navigation(
+        cx: &mut Context<GalleryApp>,
+        radix_theme: Arc<RadixTheme>,
+    ) -> GalleryNavigation {
+        let sidebar_theme = radix_theme.navigation_sidebar_theme();
         let mut route_buttons = Vec::new();
         let mut branch_buttons = Vec::new();
-        let mut nodes: Vec<NavNode> =
-            PRIMARY_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
+        let mut nodes: Vec<NavNode> = PRIMARY_PAGES
+            .iter()
+            .map(|page| nav_node_for_page(page, cx, &mut route_buttons, sidebar_theme.clone()))
+            .collect();
 
-        let label_theme = theme.navigation_sidebar_theme();
+        let label_theme = sidebar_theme.clone();
         nodes.push(NavNode::new("controls-label").presenter(
             move |state: &NavNodeState, window: &mut Window, cx: &mut App| {
                 controls_label_presenter(state, window, cx, label_theme.clone())
@@ -326,7 +332,7 @@ impl GalleryPanes {
             let button = Button::new(format!("{}-branch", group.id))
                 .typed(group.expanded)
                 .content(move |_, _| div().child(label).into_any_element())
-                .template(sidebar_disclosure_template(group.icon, theme))
+                .template(sidebar_disclosure_template(group.icon, sidebar_theme.clone()))
                 .spawn(cx);
             let focus_handle = focus_handle_for(&button, cx);
             branch_buttons.push(GalleryBranchButton { node_id: group.id, button: button.clone() });
@@ -336,47 +342,54 @@ impl GalleryPanes {
                 .icon(group.icon)
                 .presenter(entity_presenter(button, focus_handle))
                 .expanded(group.expanded)
-                .children(group.pages.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)))
+                .children(
+                    group
+                        .pages
+                        .iter()
+                        .map(|page| nav_node_for_page(page, cx, &mut route_buttons, sidebar_theme.clone())),
+                )
         }));
 
-        let footer_nodes =
-            BOTTOM_PAGES.iter().map(|page| nav_node_for_page(page, cx, &mut route_buttons, theme)).collect();
+        let footer_nodes = BOTTOM_PAGES
+            .iter()
+            .map(|page| nav_node_for_page(page, cx, &mut route_buttons, sidebar_theme.clone()))
+            .collect();
 
         GalleryNavigation { nodes, footer_nodes, route_buttons, branch_buttons }
     }
 
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            theme: theme.clone(),
-            introduction: introduction::IntroductionPane::new(cx, theme),
-            decorated_button: prototypes::ButtonPane::new(cx, theme),
-            autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, theme),
-            combobox: combobox::ComboBoxPane::new(cx, theme),
-            search_selector: search_selector::SearchSelectorPane::new(cx, theme),
-            selector: selector::SelectorPane::new(cx, theme),
-            selection_panel: selection_panel::SelectionPanelPane::new(cx, theme),
-            selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, theme),
-            custom_button: prototypes::ModButtonPane::new(cx, theme),
-            button: button::ButtonPane::new(cx, theme),
-            icon_button: icon_button::IconButtonPane::new(cx, theme),
-            toggle: toggle::TogglePane::new(cx, theme),
-            toggle_group: toggle_group::ToggleGroupPane::new(cx, theme),
-            switch: switch::SwitchPane::new(cx, theme),
-            checkbox: checkbox::CheckboxPane::new(cx, theme),
-            radio_button: radio_button::RadioButtonPane::new(cx, theme),
-            radio_group: radio_group::RadioGroupPane::new(cx, theme),
-            choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, theme),
-            listbox: listbox::ListBoxPane::new(cx, theme),
-            slider: slider::SliderPane::new(cx, theme),
-            scrollbar: scrollbar::ScrollbarPane::new(cx, theme),
-            textarea: textarea::TextAreaPane::new(cx, theme),
-            textfield: textfield::TextFieldPane::new(cx, theme),
-            floating_menu: floating_menu::FloatingMenuPane::new(cx),
-            popup_menu: popup_menu::PopupMenuPane::new(cx, theme),
-            context_menu: context_menu::ContextMenuPane::new(cx, theme),
-            navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, theme),
-            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, theme),
-            progress: progress::ProgressPane::new(cx, theme),
+            radix_theme: radix_theme.clone(),
+            introduction: introduction::IntroductionPane::new(cx, radix_theme.clone()),
+            decorated_button: prototypes::ButtonPane::new(cx, radix_theme.clone()),
+            autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, radix_theme.clone()),
+            combobox: combobox::ComboBoxPane::new(cx, radix_theme.clone()),
+            search_selector: search_selector::SearchSelectorPane::new(cx, radix_theme.clone()),
+            selector: selector::SelectorPane::new(cx, radix_theme.clone()),
+            selection_panel: selection_panel::SelectionPanelPane::new(cx, radix_theme.clone()),
+            selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, radix_theme.clone()),
+            custom_button: prototypes::ModButtonPane::new(cx, radix_theme.clone()),
+            button: button::ButtonPane::new(cx, radix_theme.clone()),
+            icon_button: icon_button::IconButtonPane::new(cx, radix_theme.clone()),
+            toggle: toggle::TogglePane::new(cx, radix_theme.clone()),
+            toggle_group: toggle_group::ToggleGroupPane::new(cx, radix_theme.clone()),
+            switch: switch::SwitchPane::new(cx, radix_theme.clone()),
+            checkbox: checkbox::CheckboxPane::new(cx, radix_theme.clone()),
+            radio_button: radio_button::RadioButtonPane::new(cx, radix_theme.clone()),
+            radio_group: radio_group::RadioGroupPane::new(cx, radix_theme.clone()),
+            choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, radix_theme.clone()),
+            listbox: listbox::ListBoxPane::new(cx, radix_theme.clone()),
+            slider: slider::SliderPane::new(cx, radix_theme.clone()),
+            scrollbar: scrollbar::ScrollbarPane::new(cx, radix_theme.clone()),
+            textarea: textarea::TextAreaPane::new(cx, radix_theme.clone()),
+            textfield: textfield::TextFieldPane::new(cx, radix_theme.clone()),
+            floating_menu: floating_menu::FloatingMenuPane::new(cx, radix_theme.clone()),
+            popup_menu: popup_menu::PopupMenuPane::new(cx, radix_theme.clone()),
+            context_menu: context_menu::ContextMenuPane::new(cx, radix_theme.clone()),
+            navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, radix_theme.clone()),
+            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, radix_theme.clone()),
+            progress: progress::ProgressPane::new(cx, radix_theme.clone()),
         }
     }
 
@@ -445,43 +458,43 @@ impl GalleryPanes {
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
         let Some(page) = page_for_id(selection) else {
             debug_assert!(false, "unknown gallery page id: {selection}");
-            return render_unknown_page(selection, &self.theme);
+            return render_unknown_page(selection, &self.radix_theme);
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => self.introduction.render(&self.theme),
-            GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.theme),
-            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.theme),
-            GalleryPageKind::ComboBox => self.combobox.render(&self.theme),
-            GalleryPageKind::SearchSelector => self.search_selector.render(&self.theme),
-            GalleryPageKind::Selector => self.selector.render(&self.theme),
-            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.theme),
-            GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.theme),
-            GalleryPageKind::Search => search::render(&self.theme),
-            GalleryPageKind::Palette => palette::render(&self.theme),
-            GalleryPageKind::ThemeUsage => theme_usage::render(&self.theme),
-            GalleryPageKind::Button => self.button.render(&self.theme),
-            GalleryPageKind::CustomButton => self.custom_button.render(&self.theme),
-            GalleryPageKind::IconButton => self.icon_button.render(&self.theme),
-            GalleryPageKind::Toggle => self.toggle.render(&self.theme),
-            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.theme),
-            GalleryPageKind::Switch => self.switch.render(&self.theme),
-            GalleryPageKind::Checkbox => self.checkbox.render(&self.theme),
-            GalleryPageKind::RadioButton => self.radio_button.render(&self.theme),
-            GalleryPageKind::RadioGroup => self.radio_group.render(&self.theme),
-            GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.theme),
-            GalleryPageKind::ListBox => self.listbox.render(&self.theme),
-            GalleryPageKind::Slider => self.slider.render(&self.theme),
-            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.theme),
-            GalleryPageKind::TextArea => self.textarea.render(&self.theme),
-            GalleryPageKind::TextField => self.textfield.render(&self.theme),
-            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.theme),
-            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.theme),
-            GalleryPageKind::ContextMenu => self.context_menu.render(&self.theme),
-            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.theme),
-            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.theme),
-            GalleryPageKind::Progress => self.progress.render(&self.theme),
-            GalleryPageKind::Settings => settings::render(&self.theme),
+            GalleryPageKind::Introduction => self.introduction.render(&self.radix_theme),
+            GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.radix_theme),
+            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.radix_theme),
+            GalleryPageKind::ComboBox => self.combobox.render(&self.radix_theme),
+            GalleryPageKind::SearchSelector => self.search_selector.render(&self.radix_theme),
+            GalleryPageKind::Selector => self.selector.render(&self.radix_theme),
+            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.radix_theme),
+            GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.radix_theme),
+            GalleryPageKind::Search => search::render(&self.radix_theme),
+            GalleryPageKind::Palette => palette::render(&self.radix_theme),
+            GalleryPageKind::ThemeUsage => theme_usage::render(&self.radix_theme),
+            GalleryPageKind::Button => self.button.render(&self.radix_theme),
+            GalleryPageKind::CustomButton => self.custom_button.render(&self.radix_theme),
+            GalleryPageKind::IconButton => self.icon_button.render(&self.radix_theme),
+            GalleryPageKind::Toggle => self.toggle.render(&self.radix_theme),
+            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.radix_theme),
+            GalleryPageKind::Switch => self.switch.render(&self.radix_theme),
+            GalleryPageKind::Checkbox => self.checkbox.render(&self.radix_theme),
+            GalleryPageKind::RadioButton => self.radio_button.render(&self.radix_theme),
+            GalleryPageKind::RadioGroup => self.radio_group.render(&self.radix_theme),
+            GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.radix_theme),
+            GalleryPageKind::ListBox => self.listbox.render(&self.radix_theme),
+            GalleryPageKind::Slider => self.slider.render(&self.radix_theme),
+            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.radix_theme),
+            GalleryPageKind::TextArea => self.textarea.render(&self.radix_theme),
+            GalleryPageKind::TextField => self.textfield.render(&self.radix_theme),
+            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.radix_theme),
+            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.radix_theme),
+            GalleryPageKind::ContextMenu => self.context_menu.render(&self.radix_theme),
+            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.radix_theme),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.radix_theme),
+            GalleryPageKind::Progress => self.progress.render(&self.radix_theme),
+            GalleryPageKind::Settings => settings::render(&self.radix_theme),
         }
     }
 }
@@ -499,14 +512,14 @@ fn nav_node_for_page(
     page: &GalleryPage,
     cx: &mut Context<GalleryApp>,
     route_buttons: &mut Vec<GalleryRouteButton>,
-    theme: &GalleryThemePack,
+    sidebar_theme: Arc<dyn NavigationSidebarTheme>,
 ) -> NavNode {
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
     let label = page.label;
     let button = Button::new(page.id)
         .typed(page.id == INTRODUCTION_PAGE.id)
         .content(move |_, _| div().child(label).into_any_element())
-        .template(sidebar_leaf_template(page.icon, reserve_icon_space, theme))
+        .template(sidebar_leaf_template(page.icon, reserve_icon_space, sidebar_theme.clone()))
         .spawn(cx);
     let focus_handle = focus_handle_for(&button, cx);
 
@@ -595,8 +608,11 @@ impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
     }
 }
 
-fn sidebar_disclosure_template(icon: LucideIcon, theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<bool>> {
-    Arc::new(SidebarDisclosureTemplate { icon, theme: theme.navigation_sidebar_theme() })
+fn sidebar_disclosure_template(
+    icon: LucideIcon,
+    theme: Arc<dyn NavigationSidebarTheme>,
+) -> Arc<dyn ButtonTemplate<bool>> {
+    Arc::new(SidebarDisclosureTemplate { icon, theme })
 }
 
 struct SidebarLeafTemplate {
@@ -659,9 +675,9 @@ impl ButtonTemplate<bool> for SidebarLeafTemplate {
 fn sidebar_leaf_template(
     icon: Option<LucideIcon>,
     reserve_icon_space: bool,
-    theme: &GalleryThemePack,
+    theme: Arc<dyn NavigationSidebarTheme>,
 ) -> Arc<dyn ButtonTemplate<bool>> {
-    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme: theme.navigation_sidebar_theme() })
+    Arc::new(SidebarLeafTemplate { icon, reserve_icon_space, theme })
 }
 
 fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
@@ -679,8 +695,8 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .into_any_element()
 }
 
-fn render_unknown_page(selection: &str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_unknown_page(selection: &str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     gallery_pane(
         "Unknown Page",
@@ -688,6 +704,6 @@ fn render_unknown_page(selection: &str, theme: &GalleryThemePack) -> AnyElement 
             .text_color(chrome.body_text)
             .child(format!("No gallery pane is registered for `{selection}`."))
             .into_any_element(),
-        theme,
+        radix_theme,
     )
 }

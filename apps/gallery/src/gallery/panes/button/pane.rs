@@ -1,71 +1,90 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*, px,
+};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
 };
-use gpui_luma::controls::button_family::{ButtonKind, ButtonSize, default_button_family_theme};
-use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 use super::labeling::render_vertical_section_rail;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
-    default_button: Entity<Button>,
-    subtle_button: Entity<Button>,
+    secondary_button: Entity<Button>,
+    outline_button: Entity<Button>,
     ghost_button: Entity<Button>,
-    prominent_button: Entity<Button>,
+    primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
-    default_clicks: usize,
-    subtle_clicks: usize,
+    secondary_clicks: usize,
+    outline_clicks: usize,
     ghost_clicks: usize,
-    prominent_clicks: usize,
+    primary_clicks: usize,
 }
 
 impl ButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            default_button: Button::new("button-default-example")
-                .label("Standard")
-                .kind(ButtonKind::Standard)
+            secondary_button: Button::new("button-secondary-example")
+                .label("Secondary")
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| theme.secondary_button(model.role, model.size, model.state)
+                })
                 .spawn(cx),
-            subtle_button: Button::new("button-subtle-example").label("Subtle").kind(ButtonKind::Subtle).spawn(cx),
-            ghost_button: Button::new("button-ghost-example").label("Ghost").kind(ButtonKind::Ghost).spawn(cx),
-            prominent_button: Button::new("button-prominent-example")
-                .label("Prominent")
-                .kind(ButtonKind::Prominent)
+            outline_button: Button::new("button-outline-example")
+                .label("Outline")
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| theme.outline_button(model.role, model.size, model.state)
+                })
                 .spawn(cx),
-            state_preview: cx.new(|_| ButtonStatePreview::new(theme)),
-            default_clicks: 0,
-            subtle_clicks: 0,
+            ghost_button: Button::new("button-ghost-example")
+                .label("Ghost")
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| theme.ghost_button(model.role, model.size, model.state)
+                })
+                .spawn(cx),
+            primary_button: Button::new("button-primary-example")
+                .label("Primary")
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| theme.primary_button(model.role, model.size, model.state)
+                })
+                .spawn(cx),
+            state_preview: cx.new(|_| ButtonStatePreview::new(radix_theme)),
+            secondary_clicks: 0,
+            outline_clicks: 0,
             ghost_clicks: 0,
-            prominent_clicks: 0,
+            primary_clicks: 0,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.default_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_default_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.secondary_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.subtle_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_subtle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.outline_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_outline_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.ghost_button, |app, _, event: &ButtonEvent, cx| {
             app.panes.button.handle_ghost_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_button, |app, _, event: &ButtonEvent, cx| {
-            app.panes.button.handle_prominent_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.primary_button, |app, _, event: &ButtonEvent, cx| {
+            app.panes.button.handle_primary_event(event, cx);
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage(
             "Command (Text)",
             "Button",
@@ -79,45 +98,43 @@ impl ButtonPane {
                         .flex()
                         .items_center()
                         .gap(px(12.0))
-                        .child(self.default_button.clone())
-                        .child(self.subtle_button.clone())
-                        .child(self.ghost_button.clone())
-                        .child(self.prominent_button.clone()),
+                        .child(self.primary_button.clone())
+                        .child(self.secondary_button.clone())
+                        .child(self.outline_button.clone())
+                        .child(self.ghost_button.clone()),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.default_button, cx);
-        notify_entity(&self.subtle_button, cx);
+        notify_entity(&self.secondary_button, cx);
+        notify_entity(&self.outline_button, cx);
         notify_entity(&self.ghost_button, cx);
-        notify_entity(&self.prominent_button, cx);
+        notify_entity(&self.primary_button, cx);
         notify_entity(&self.state_preview, cx);
     }
 
-    fn handle_default_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
-                self.default_clicks += 1;
-                let label = format!("Default {}", self.default_clicks);
-
-                self.default_button.update(cx, |button, cx| {
+                self.secondary_clicks += 1;
+                let label = format!("Secondary {}", self.secondary_clicks);
+                self.secondary_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
         }
     }
 
-    fn handle_subtle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_outline_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
-                self.subtle_clicks += 1;
-                let label = format!("Subtle {}", self.subtle_clicks);
-
-                self.subtle_button.update(cx, |button, cx| {
+                self.outline_clicks += 1;
+                let label = format!("Outline {}", self.outline_clicks);
+                self.outline_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -129,7 +146,6 @@ impl ButtonPane {
             ButtonEvent::Click => {
                 self.ghost_clicks += 1;
                 let label = format!("Ghost {}", self.ghost_clicks);
-
                 self.ghost_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
@@ -137,13 +153,12 @@ impl ButtonPane {
         }
     }
 
-    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ButtonEvent::Click => {
-                self.prominent_clicks += 1;
-                let label = format!("Prominent {}", self.prominent_clicks);
-
-                self.prominent_button.update(cx, |button, cx| {
+                self.primary_clicks += 1;
+                let label = format!("Primary {}", self.primary_clicks);
+                self.primary_button.update(cx, |button, cx| {
                     button.set_label(label, cx);
                 });
             }
@@ -153,7 +168,7 @@ impl ButtonPane {
 
 #[derive(Clone)]
 struct ButtonStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn ButtonTemplate<()>>,
     uniform_template: Arc<dyn ButtonTemplate<()>>,
     use_uniform_sizing: bool,
@@ -215,9 +230,9 @@ impl ButtonTemplateVariant {
 }
 
 impl ButtonStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            theme: theme.clone(),
+            radix_theme,
             template: default_button_template(),
             uniform_template: Arc::new(
                 DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(|element, _| element.w_full()),
@@ -229,7 +244,7 @@ impl ButtonStatePreview {
 
 impl Render for ButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
             ButtonStateSample {
@@ -268,7 +283,7 @@ impl Render for ButtonStatePreview {
                 div()
                     .text_size(px(12.0))
                     .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
                     .child("Template matrix preview"),
             )
@@ -276,8 +291,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    "Prominent",
-                    ButtonKind::Prominent,
+                    &self.radix_theme,
+                    "Primary",
+                    RadixButtonStyle::Primary,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -288,8 +304,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    "Subtle",
-                    ButtonKind::Subtle,
+                    &self.radix_theme,
+                    "Secondary",
+                    RadixButtonStyle::Secondary,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -300,8 +317,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    "Standard",
-                    ButtonKind::Standard,
+                    &self.radix_theme,
+                    "Outline",
+                    RadixButtonStyle::Outline,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -312,8 +330,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
+                    &self.radix_theme,
                     "Ghost",
-                    ButtonKind::Ghost,
+                    RadixButtonStyle::Ghost,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -328,8 +347,9 @@ impl Render for ButtonStatePreview {
 fn render_section(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
+    radix_theme: &Arc<RadixTheme>,
     section_label: &'static str,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
     use_uniform_sizing: bool,
@@ -353,7 +373,8 @@ fn render_section(
                     render_variant_row(
                         template,
                         uniform_template,
-                        kind,
+                        radix_theme,
+                        style,
                         *variant,
                         samples,
                         use_uniform_sizing,
@@ -386,7 +407,8 @@ fn render_header_row(samples: &[ButtonStateSample], label_color: gpui::Hsla) -> 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
-    kind: ButtonKind,
+    radix_theme: &Arc<RadixTheme>,
+    style: RadixButtonStyle,
     variant: ButtonTemplateVariant,
     samples: &[ButtonStateSample],
     use_uniform_sizing: bool,
@@ -398,7 +420,17 @@ fn render_variant_row(
         .items_center()
         .gap(px(8.0))
         .children(samples.iter().map(|sample| {
-            render_state_sample(template, uniform_template, kind, variant, sample, use_uniform_sizing, window, cx)
+            render_state_sample(
+                template,
+                uniform_template,
+                radix_theme,
+                style,
+                variant,
+                sample,
+                use_uniform_sizing,
+                window,
+                cx,
+            )
         }))
         .into_any_element()
 }
@@ -406,19 +438,21 @@ fn render_variant_row(
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
-    kind: ButtonKind,
+    radix_theme: &Arc<RadixTheme>,
+    style: RadixButtonStyle,
     variant: ButtonTemplateVariant,
     sample: &ButtonStateSample,
     use_uniform_sizing: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("button-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
+    let id = SharedString::from(format!("button-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
+    let appearance = appearance_for_style(radix_theme.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: (),
         content: variant.content(),
-        kind,
+        kind: ButtonKind::Standard,
         role: if matches!(variant, ButtonTemplateVariant::IconButton) {
             ButtonFamilyRole::Icon
         } else {
@@ -428,6 +462,7 @@ fn render_state_sample(
         state: sample.state,
         round: variant.round(),
         radius_override: std::cell::Cell::new(None),
+        appearance: Some(appearance),
     };
 
     let active_template = if use_uniform_sizing && !matches!(variant, ButtonTemplateVariant::IconButton) {
@@ -446,12 +481,24 @@ fn render_state_sample(
     div().w(px(116.0)).flex().justify_center().items_center().child(rendered).into_any_element()
 }
 
-fn button_kind_id(kind: ButtonKind) -> &'static str {
-    match kind {
-        ButtonKind::Prominent => "prominent",
-        ButtonKind::Subtle => "subtle",
-        ButtonKind::Standard => "standard",
-        ButtonKind::Ghost => "ghost",
+fn appearance_for_style(
+    theme: Arc<RadixTheme>,
+    style: RadixButtonStyle,
+) -> gpui_luma::controls::command::button::ButtonAppearanceSource<()> {
+    Arc::new(move |model| match style {
+        RadixButtonStyle::Primary => theme.primary_button(model.role, model.size, model.state),
+        RadixButtonStyle::Secondary => theme.secondary_button(model.role, model.size, model.state),
+        RadixButtonStyle::Outline => theme.outline_button(model.role, model.size, model.state),
+        RadixButtonStyle::Ghost => theme.ghost_button(model.role, model.size, model.state),
+    })
+}
+
+fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+    match style {
+        RadixButtonStyle::Primary => "primary",
+        RadixButtonStyle::Secondary => "secondary",
+        RadixButtonStyle::Outline => "outline",
+        RadixButtonStyle::Ghost => "ghost",
     }
 }
 

@@ -9,11 +9,11 @@ use gpui_luma::controls::command::button::{
 };
 use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
-use gpui_luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
-use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
+use crate::gallery::theme::GalleryChrome;
 
 const DEMO_RADIUS: f32 = 0.0;
 const DEMO_BACKGROUND: Hsla = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 1.0 };
@@ -75,7 +75,7 @@ impl<T> ButtonStatefulOverride<T> {
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ButtonPane {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     default_button: Entity<Button>,
     danger_button: Entity<Button>,
     demo_button: Entity<Button>,
@@ -96,12 +96,18 @@ pub(in crate::gallery) struct ButtonPane {
 }
 
 impl ButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let default_button = Button::new("button-default").label("Default ProtoButton").spawn(cx);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let default_button = Button::new("button-default")
+            .label("Default ProtoButton")
+            .with_appearance({
+                let theme = radix_theme.clone();
+                move |model| theme.secondary_button(model.role, model.size, model.state)
+            })
+            .spawn(cx);
 
         let danger_button = Button::new("button-danger")
             .label("Danger Action")
-            .template(danger_button_template(theme))
+            .template(danger_button_template(&radix_theme))
             .spawn(cx);
 
         let demo_radius = DEMO_RADIUS;
@@ -109,10 +115,12 @@ impl ButtonPane {
         let demo_foreground_overrides = ButtonStatefulOverride { base: Some(DEMO_FOREGROUND), ..Default::default() };
 
         let demo_template =
-            demo_button_template(&demo_background_overrides, &demo_foreground_overrides, demo_radius, theme);
+            demo_button_template(&demo_background_overrides, &demo_foreground_overrides, demo_radius, &radix_theme);
         let demo_button = Button::new("button-demo").label("Demo Action").template(demo_template.clone()).spawn(cx);
 
-        let state_preview = cx.new(move |_| ButtonStatePreview::new(theme, demo_template.clone(), Some(demo_radius)));
+        let preview_theme = radix_theme.clone();
+        let state_preview =
+            cx.new(move |_| ButtonStatePreview::new(preview_theme, demo_template.clone(), Some(demo_radius)));
 
         let radius_down_button =
             Button::new("button-radius-down").label("Radius -").kind(ButtonKind::Standard).spawn(cx);
@@ -129,7 +137,7 @@ impl ButtonPane {
             .spawn(cx);
 
         Self {
-            theme: theme.clone(),
+            radix_theme,
             default_button,
             danger_button,
             demo_button,
@@ -173,8 +181,8 @@ impl ButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_description(
             "Button",
@@ -187,9 +195,9 @@ impl ButtonPane {
                 .items_stretch()
                 .justify_center()
                 .gap(px(28.0))
-                .child(self.render_demo_column(chrome, theme))
+                .child(self.render_demo_column(chrome))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -206,7 +214,7 @@ impl ButtonPane {
         notify_entity(&self.state_cycle_button, cx);
     }
 
-    fn render_demo_column(&self, chrome: GalleryChrome, _theme: &GalleryThemePack) -> AnyElement {
+    fn render_demo_column(&self, chrome: GalleryChrome) -> AnyElement {
         let theme_appearance = default_button_family_theme().resolve(
             ButtonVariant::Standard,
             ButtonFamilyRole::Text,
@@ -443,7 +451,7 @@ impl ButtonPane {
         write_state_override(&mut self.demo_background_overrides, self.selected_visual_state, background.clone());
         write_state_override(&mut self.demo_foreground_overrides, self.selected_visual_state, foreground.clone());
 
-        let theme = self.theme.clone();
+        let theme = self.radix_theme.clone();
         let bg_overrides = self.demo_background_overrides.clone();
         let fg_overrides = self.demo_foreground_overrides.clone();
 
@@ -462,7 +470,7 @@ impl ButtonPane {
 
 #[derive(Clone)]
 struct ButtonStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn ButtonTemplate<()>>,
     radius: Option<f32>,
 }
@@ -474,8 +482,8 @@ struct ButtonStateSample {
 }
 
 impl ButtonStatePreview {
-    fn new(theme: &GalleryThemePack, template: Arc<dyn ButtonTemplate<()>>, radius: Option<f32>) -> Self {
-        Self { theme: theme.clone(), template, radius }
+    fn new(radix_theme: Arc<RadixTheme>, template: Arc<dyn ButtonTemplate<()>>, radius: Option<f32>) -> Self {
+        Self { radix_theme, template, radius }
     }
 
     fn set_template(&mut self, template: Arc<dyn ButtonTemplate<()>>, radius: Option<f32>, cx: &mut Context<Self>) {
@@ -487,7 +495,7 @@ impl ButtonStatePreview {
 
 impl Render for ButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             ButtonStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ButtonStateSample {
@@ -557,6 +565,7 @@ fn render_button_state_sample(
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(radius),
+        appearance: None,
     };
 
     div()
@@ -569,18 +578,16 @@ fn render_button_state_sample(
         .into_any_element()
 }
 
-fn danger_button_template(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<()>> {
-    let theme = theme.clone();
-    Arc::new(DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(move |element, model| {
-        let tokens = theme.tokens();
-        let palette = tokens.palette;
-
+fn danger_button_template(radix_theme: &RadixTheme) -> Arc<dyn ButtonTemplate<()>> {
+    let mode = radix_theme.mode();
+    let disabled_bg = radix_theme.chrome().panel_background;
+    Arc::new(DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(move |element, model| {
         let (danger_background, danger_hover_background, danger_pressed_background, danger_foreground): (
             Hsla,
             Hsla,
             Hsla,
             Hsla,
-        ) = match theme.mode() {
+        ) = match mode {
             ThemeMode::Light => {
                 (rgb(0xdc2626).into(), rgb(0xb91c1c).into(), rgb(0x991b1b).into(), rgb(0xffffff).into())
             }
@@ -588,7 +595,7 @@ fn danger_button_template(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<()
         };
 
         let bg = if model.state.disabled {
-            palette.state.disabled.background
+            disabled_bg
         } else if model.state.pressed {
             danger_pressed_background
         } else if model.state.hovered {
@@ -605,11 +612,11 @@ fn demo_button_template(
     bg_overrides: &ButtonStatefulOverride<Hsla>,
     fg_overrides: &ButtonStatefulOverride<Hsla>,
     radius: f32,
-    theme: &GalleryThemePack,
+    _radix_theme: &RadixTheme,
 ) -> Arc<dyn ButtonTemplate<()>> {
     let bg_overrides = bg_overrides.clone();
     let fg_overrides = fg_overrides.clone();
-    Arc::new(DefaultButtonTemplate::new(theme.button_family_theme()).with_modifier(move |element, model| {
+    Arc::new(DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(move |element, model| {
         let visual_state = ButtonVisualState::from(model.state);
         let mut element = element;
 

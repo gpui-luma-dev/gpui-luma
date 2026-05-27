@@ -29,6 +29,10 @@ pub struct DefaultScrollbarTheme {
 }
 
 pub fn default_scrollbar_theme() -> Arc<dyn ScrollbarTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.scrollbar_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

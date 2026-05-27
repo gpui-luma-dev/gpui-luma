@@ -3,17 +3,14 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
-    default_selector_template,
 };
-use gpui_luma::theme::InteractionState;
-
-use crate::gallery::theme::GalleryThemePack;
+use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use super::pane::selector_items;
 
 #[derive(Clone)]
 pub(super) struct SelectorStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn SelectorTemplate>,
 }
 
@@ -25,14 +22,14 @@ struct SelectorStateSample {
 }
 
 impl SelectorStatePreview {
-    pub(super) fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_selector_template() }
+    pub(super) fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.selector_template() }
     }
 }
 
 impl Render for SelectorStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             SelectorStateSample {
                 id: "default",

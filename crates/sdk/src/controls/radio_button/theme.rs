@@ -39,6 +39,10 @@ pub struct DefaultRadioButtonTheme {
 }
 
 pub fn default_radio_button_theme() -> Arc<dyn RadioButtonTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.radio_button_theme(crate::theme::RadixButtonStyle::Primary);
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

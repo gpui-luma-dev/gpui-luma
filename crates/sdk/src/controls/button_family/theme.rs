@@ -2,10 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::adorner::AdornerSpec;
+
+use crate::theme::radix::{RadixModeTokens, button_appearance};
+use crate::theme::{ControlSize, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonVariant {
@@ -57,6 +57,10 @@ pub struct DefaultButtonFamilyTheme {
 }
 
 pub fn default_button_family_theme() -> Arc<dyn ButtonFamilyTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.button_family_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }
@@ -273,6 +277,17 @@ impl DefaultButtonFamilyTheme {
     }
 }
 
+fn radix_style_from_variant(variant: ButtonVariant) -> crate::theme::radix::RadixButtonStyle {
+    use crate::theme::radix::RadixButtonStyle;
+
+    match variant {
+        ButtonVariant::Prominent => RadixButtonStyle::Primary,
+        ButtonVariant::Standard => RadixButtonStyle::Secondary,
+        ButtonVariant::Subtle => RadixButtonStyle::Outline,
+        ButtonVariant::Ghost => RadixButtonStyle::Ghost,
+    }
+}
+
 impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
     fn resolve(
         &self,
@@ -281,96 +296,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
-        let typography = &self.tokens.typography;
-        let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-        // Toggle segments declare the selected weight (`ButtonKind`); unselected segments
-        // always resolve as Subtle (outline via `action.subtle.*` from the active theme).
-        let variant = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
-            ButtonVariant::Subtle
-        } else {
-            variant
-        };
-        let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
-
-        let foreground = match (variant, selected, state.disabled) {
-            (_, _, true) => palette.state.disabled.foreground,
-            (ButtonVariant::Standard, true, false) => palette.action.standard.foreground,
-            (_, true, false) => palette.state.selected.foreground,
-            (ButtonVariant::Standard, false, false) => palette.action.standard.foreground,
-            (ButtonVariant::Subtle, false, false) => palette.action.subtle.foreground,
-            (ButtonVariant::Ghost, false, false) => palette.action.ghost.foreground,
-            (ButtonVariant::Prominent, false, false) => palette.action.prominent.foreground,
-        };
-
-        let background = match (variant, selected, state.layer()) {
-            (_, _, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (ButtonVariant::Standard, true, InteractionLayer::Pressed) => palette.action.standard.pressed_background,
-            (ButtonVariant::Standard, true, InteractionLayer::Hovered) => palette.action.standard.hover_background,
-            (ButtonVariant::Standard, true, InteractionLayer::Default) => palette.action.standard.background,
-            (_, true, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
-            (_, true, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
-            (_, true, InteractionLayer::Default) => palette.state.selected.background,
-            (ButtonVariant::Prominent, _, InteractionLayer::Pressed) => palette.action.prominent.pressed_background,
-            (ButtonVariant::Prominent, _, InteractionLayer::Hovered) => palette.action.prominent.hover_background,
-            (ButtonVariant::Prominent, _, InteractionLayer::Default) => palette.action.prominent.background,
-            (ButtonVariant::Subtle, _, InteractionLayer::Pressed) => palette.action.subtle.pressed_background,
-            (ButtonVariant::Subtle, _, InteractionLayer::Hovered) => palette.action.subtle.hover_background,
-            (ButtonVariant::Subtle, _, InteractionLayer::Default) => palette.action.subtle.background,
-            (ButtonVariant::Standard, _, InteractionLayer::Pressed) => palette.action.standard.pressed_background,
-            (ButtonVariant::Standard, _, InteractionLayer::Hovered) => palette.action.standard.hover_background,
-            (ButtonVariant::Standard, _, InteractionLayer::Default) => palette.action.standard.background,
-            (ButtonVariant::Ghost, _, InteractionLayer::Pressed) => palette.state.pressed.background,
-            (ButtonVariant::Ghost, _, InteractionLayer::Hovered) => palette.state.hover.background,
-            (ButtonVariant::Ghost, _, InteractionLayer::Default) => transparent,
-        };
-
-        let height = metrics.control_height(size);
-        let border = match variant {
-            ButtonVariant::Standard => palette.action.standard.border,
-            ButtonVariant::Subtle => palette.action.subtle.border,
-            ButtonVariant::Ghost => palette.action.ghost.border,
-            ButtonVariant::Prominent => palette.action.prominent.border,
-        };
-
-        let adorner = if state.focused {
-            let (placement, distance) = match variant {
-                ButtonVariant::Ghost => (AdornerPlacement::Inset, metrics.border_width.default),
-                _ => (AdornerPlacement::Oversize, metrics.border_width.default + metrics.focus.width),
-            };
-
-            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-                color: palette.focus.ring,
-                placement,
-                distance,
-                width: metrics.focus.width,
-            }))
-        } else {
-            None
-        };
-
-        ButtonFamilyAppearance {
-            background,
-            foreground,
-            border,
-            adorner,
-            typography: typography.text.label,
-            font_family: typography.font.sans.family.clone().into(),
-            radius: match role {
-                ButtonFamilyRole::Icon => metrics.radius.pill,
-                _ => metrics.radius(size),
-            },
-            padding_x: match role {
-                ButtonFamilyRole::Icon => 0.0,
-                _ => metrics.padding_x(size),
-            },
-            padding_y: match role {
-                ButtonFamilyRole::Icon => 0.0,
-                _ => metrics.padding_y(size),
-            },
-            gap: metrics.gap(size),
-            height,
-        }
+        let mode = RadixModeTokens::from_luma_tokens(&self.tokens);
+        button_appearance(&mode, radix_style_from_variant(variant), role, size, state)
     }
 }

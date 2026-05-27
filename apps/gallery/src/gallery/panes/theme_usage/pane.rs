@@ -1,21 +1,25 @@
 use std::collections::BTreeMap;
 
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{PaletteColorToken, ThemePartUsage, ThemeUsage, all_theme_usages, palette_color_tokens};
+use gpui_luma::theme::{RadixTheme, ThemePartUsage, ThemeUsage, all_radix_theme_usages};
 
 use crate::gallery::panes::shared::format_compact_hsla;
-use crate::gallery::theme::GalleryThemePack;
 
 type UsageRef = (&'static str, &'static ThemePartUsage);
 
-pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-    let tokens = theme.tokens();
-    let usages = all_theme_usages();
-    let palette_tokens = palette_color_tokens(&tokens);
+#[derive(Clone)]
+struct CatalogToken {
+    token: String,
+    color: gpui::Hsla,
+}
+
+pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
+    let catalog_tokens = catalog_tokens(radix_theme);
+    let usages = all_radix_theme_usages();
     let by_token = usage_by_token(usages);
-    let sdk_token_count = palette_tokens.iter().filter(|token| by_token.contains_key(token.token)).count();
-    let shared_value_count = shared_value_groups(&palette_tokens).len();
+    let sdk_token_count = catalog_tokens.iter().filter(|token| by_token.contains_key(token.token.as_str())).count();
+    let shared_value_count = shared_value_groups(&catalog_tokens).len();
 
     div()
         .size_full()
@@ -49,26 +53,37 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                                 .text_size(px(13.0))
                                 .line_height(px(18.0))
                                 .text_color(chrome.muted_text)
-                                .child("SDK resolver metadata for semantic color token usage"),
+                                .child("Radix CSS token usage metadata for migrated controls"),
                         ),
                 )
                 .child(div().flex().gap(px(8.0)).children([
-                    render_count_badge("Components", usages.len().to_string(), theme),
-                    render_count_badge("Palette tokens", palette_tokens.len().to_string(), theme),
-                    render_count_badge("Used by SDK", sdk_token_count.to_string(), theme),
-                    render_count_badge("Shared values", shared_value_count.to_string(), theme),
+                    render_count_badge("Components", usages.len().to_string(), radix_theme),
+                    render_count_badge("Catalog tokens", catalog_tokens.len().to_string(), radix_theme),
+                    render_count_badge("Used by SDK", sdk_token_count.to_string(), radix_theme),
+                    render_count_badge("Shared values", shared_value_count.to_string(), radix_theme),
                 ]))
                 .child(
                     div()
                         .flex()
                         .gap(px(20.0))
                         .items_start()
-                        .child(render_by_token(&palette_tokens, &by_token, theme))
-                        .child(render_by_component(usages, theme)),
+                        .child(render_by_token(&catalog_tokens, &by_token, radix_theme))
+                        .child(render_by_component(usages, radix_theme)),
                 )
-                .child(render_shared_values(&palette_tokens, &by_token, theme)),
+                .child(render_shared_values(&catalog_tokens, &by_token, radix_theme)),
         )
         .into_any_element()
+}
+
+fn catalog_tokens(radix_theme: &RadixTheme) -> Vec<CatalogToken> {
+    let catalog = &radix_theme.mode_tokens().catalog;
+    let mut tokens: Vec<CatalogToken> = catalog
+        .tokens
+        .keys()
+        .filter_map(|token| catalog.color(token).ok().map(|color| CatalogToken { token: token.clone(), color }))
+        .collect();
+    tokens.sort_by(|left, right| left.token.cmp(&right.token));
+    tokens
 }
 
 fn usage_by_token(usages: &'static [&'static ThemeUsage]) -> BTreeMap<&'static str, Vec<UsageRef>> {
@@ -84,11 +99,11 @@ fn usage_by_token(usages: &'static [&'static ThemeUsage]) -> BTreeMap<&'static s
 }
 
 fn render_by_token(
-    palette_tokens: &[PaletteColorToken],
+    catalog_tokens: &[CatalogToken],
     by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    let chrome = theme.chrome();
+    let chrome = radix_theme.chrome();
 
     div()
         .flex_1()
@@ -96,9 +111,9 @@ fn render_by_token(
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("By Token", theme))
-        .children(palette_tokens.iter().map(|token| {
-            let consumers = by_token.get(token.token);
+        .child(section_title("By Token", radix_theme))
+        .children(catalog_tokens.iter().map(|token| {
+            let consumers = by_token.get(token.token.as_str());
 
             div()
                 .flex()
@@ -108,7 +123,7 @@ fn render_by_token(
                 .border_color(chrome.border)
                 .rounded(px(6.0))
                 .p(px(10.0))
-                .child(render_token_header(token, consumers.is_some(), theme))
+                .child(render_token_header(token, consumers.is_some(), radix_theme))
                 .children(consumers.into_iter().flat_map(|parts| {
                     parts.iter().map(|(component, part)| {
                         div()
@@ -133,8 +148,8 @@ fn render_by_token(
         .into_any_element()
 }
 
-fn render_by_component(usages: &'static [&'static ThemeUsage], theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_by_component(usages: &'static [&'static ThemeUsage], radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex_1()
@@ -142,7 +157,7 @@ fn render_by_component(usages: &'static [&'static ThemeUsage], theme: &GalleryTh
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("By Component", theme))
+        .child(section_title("By Component", radix_theme))
         .children(usages.iter().map(|usage| {
             div()
                 .flex()
@@ -160,24 +175,24 @@ fn render_by_component(usages: &'static [&'static ThemeUsage], theme: &GalleryTh
                         .text_color(chrome.title_text)
                         .child(usage.label),
                 )
-                .children(usage.parts.iter().map(|part| render_component_part(part, theme)))
+                .children(usage.parts.iter().map(|part| render_component_part(part, radix_theme)))
         }))
         .into_any_element()
 }
 
 fn render_shared_values(
-    palette_tokens: &[PaletteColorToken],
+    catalog_tokens: &[CatalogToken],
     by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    let chrome = theme.chrome();
-    let groups = shared_value_groups(palette_tokens);
+    let chrome = radix_theme.chrome();
+    let groups = shared_value_groups(catalog_tokens);
 
     div()
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("Shared Values", theme))
+        .child(section_title("Shared Values", radix_theme))
         .child(div().flex().flex_wrap().gap(px(12.0)).children(groups.into_iter().map(|(value, tokens)| {
             div()
                 .w(px(360.0))
@@ -213,24 +228,27 @@ fn render_shared_values(
                                 .text_color(chrome.title_text)
                                 .child(token_label(token)),
                         )
-                        .child(render_status_badge(token_status(token, by_token.contains_key(token.token)), theme))
+                        .child(render_status_badge(
+                            token_status(by_token.contains_key(token.token.as_str())),
+                            radix_theme,
+                        ))
                 }))
         })))
         .into_any_element()
 }
 
-fn shared_value_groups(palette_tokens: &[PaletteColorToken]) -> Vec<(String, Vec<&PaletteColorToken>)> {
-    let mut by_value: BTreeMap<String, Vec<&PaletteColorToken>> = BTreeMap::new();
+fn shared_value_groups(catalog_tokens: &[CatalogToken]) -> Vec<(String, Vec<&CatalogToken>)> {
+    let mut by_value: BTreeMap<String, Vec<&CatalogToken>> = BTreeMap::new();
 
-    for token in palette_tokens {
+    for token in catalog_tokens {
         by_value.entry(format_compact_hsla(token.color)).or_default().push(token);
     }
 
     by_value.into_iter().filter(|(_, tokens)| tokens.len() > 1).collect()
 }
 
-fn section_title(title: &'static str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn section_title(title: &'static str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .text_size(px(13.0))
@@ -241,8 +259,8 @@ fn section_title(title: &'static str, theme: &GalleryThemePack) -> AnyElement {
         .into_any_element()
 }
 
-fn render_count_badge(label: &'static str, value: String, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_count_badge(label: &'static str, value: String, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -260,8 +278,8 @@ fn render_count_badge(label: &'static str, value: String, theme: &GalleryThemePa
         .into_any_element()
 }
 
-fn render_token_header(token: &PaletteColorToken, used_by_sdk: bool, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_token_header(token: &CatalogToken, used_by_sdk: bool, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -294,12 +312,12 @@ fn render_token_header(token: &PaletteColorToken, used_by_sdk: bool, theme: &Gal
                         .child(format_compact_hsla(token.color)),
                 ),
         )
-        .child(render_status_badge(token_status(token, used_by_sdk), theme))
+        .child(render_status_badge(token_status(used_by_sdk), radix_theme))
         .into_any_element()
 }
 
-fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_component_part(part: &ThemePartUsage, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -327,7 +345,7 @@ fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> Any
                         .text_size(px(12.0))
                         .line_height(px(17.0))
                         .text_color(chrome.body_text)
-                        .child(part.token),
+                        .child(format!("--{}", part.token)),
                 ),
         )
         .child(
@@ -341,8 +359,8 @@ fn render_component_part(part: &ThemePartUsage, theme: &GalleryThemePack) -> Any
         .into_any_element()
 }
 
-fn render_status_badge(status: &'static str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_status_badge(status: &'static str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex_none()
@@ -358,22 +376,10 @@ fn render_status_badge(status: &'static str, theme: &GalleryThemePack) -> AnyEle
         .into_any_element()
 }
 
-fn token_status(token: &PaletteColorToken, used_by_sdk: bool) -> &'static str {
-    if used_by_sdk {
-        "Used by SDK"
-    } else if token.gallery_chrome {
-        "Gallery Chrome"
-    } else if token.reserved {
-        "Reserved"
-    } else {
-        "No current usage"
-    }
+fn token_status(used_by_sdk: bool) -> &'static str {
+    if used_by_sdk { "Used by SDK" } else { "No current usage" }
 }
 
-fn token_label(token: &PaletteColorToken) -> String {
-    if token.reserved {
-        format!("{} *", token.token)
-    } else {
-        token.token.to_string()
-    }
+fn token_label(token: &CatalogToken) -> String {
+    format!("--{}", token.token)
 }

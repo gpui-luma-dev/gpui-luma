@@ -10,7 +10,9 @@ impl AssetSource for Assets {
 
         let bytes = match path {
             "assets/labels/prominent-label.svg" => Some(include_bytes!("labels/prominent-label.svg").as_slice()),
+            "assets/labels/primary-label.svg" => Some(include_bytes!("labels/primary-label.svg").as_slice()),
             "assets/labels/standard-label.svg" => Some(include_bytes!("labels/standard-label.svg").as_slice()),
+            "assets/labels/secondary-label.svg" => Some(include_bytes!("labels/secondary-label.svg").as_slice()),
             "assets/labels/outline-label.svg" => Some(include_bytes!("labels/outline-label.svg").as_slice()),
             "assets/labels/subtle-label.svg" => Some(include_bytes!("labels/subtle-label.svg").as_slice()),
             "assets/labels/ghost-label.svg" => Some(include_bytes!("labels/ghost-label.svg").as_slice()),
@@ -35,7 +37,9 @@ impl AssetSource for Assets {
             "assets" => vec![SharedString::from("assets/labels")],
             "assets/labels" => vec![
                 SharedString::from("assets/labels/prominent-label.svg"),
+                SharedString::from("assets/labels/primary-label.svg"),
                 SharedString::from("assets/labels/standard-label.svg"),
+                SharedString::from("assets/labels/secondary-label.svg"),
                 SharedString::from("assets/labels/outline-label.svg"),
                 SharedString::from("assets/labels/subtle-label.svg"),
                 SharedString::from("assets/labels/ghost-label.svg"),

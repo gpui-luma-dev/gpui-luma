@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::command::button::ButtonEvent;
@@ -5,14 +7,13 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::progress::{self, Progress};
 use gpui_luma::controls::slider::{self, Slider, SliderEvent};
 use gpui_luma::controls::switch::{self, Switch};
-
-use crate::gallery::theme::GalleryThemePack;
+use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
 pub(super) struct SystemPanel {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     event_bus: Entity<EventBus>,
     terms_checkbox: Checkbox,
     social_checkbox: Checkbox,
@@ -32,28 +33,40 @@ pub(super) struct SystemPanel {
 impl SystemPanel {
     pub(super) fn new(
         cx: &mut Context<Self>,
-        theme: &GalleryThemePack,
+        radix_theme: Arc<RadixTheme>,
         event_bus: Entity<EventBus>,
         initial_completion: f32,
     ) -> Self {
         let terms_checkbox = checkbox::new("intro-terms")
+            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
             .with_data(false)
             .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
             .spawn(cx);
         let social_checkbox = checkbox::new("intro-social-source")
+            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
             .with_data(true)
             .content(|_, _| div().child("Social").into_any_element())
             .spawn(cx);
         let referral_checkbox = checkbox::new("intro-referral-source")
+            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
             .with_data(false)
             .content(|_, _| div().child("Referral").into_any_element())
             .spawn(cx);
         let two_factor_switch = switch::new("intro-two-factor")
+            .template(radix_theme.switch_template(RadixButtonStyle::Primary))
             .content(|_, _| div().child("Two-factor authentication").into_any_element())
             .spawn(cx);
-        let budget_slider = slider::new("intro-budget").range(0..100).step(5).value(40).spawn(cx);
-        let completion_progress =
-            progress::new("intro-completion").range(0..100).value(initial_completion as i32).spawn(cx);
+        let budget_slider = slider::new("intro-budget")
+            .template(radix_theme.slider_template())
+            .range(0..100)
+            .step(5)
+            .value(40)
+            .spawn(cx);
+        let completion_progress = progress::new("intro-completion")
+            .template(radix_theme.progress_template())
+            .range(0..100)
+            .value(initial_completion as i32)
+            .spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&terms_checkbox, |this, _, _: &ButtonEvent, cx| {
@@ -74,7 +87,7 @@ impl SystemPanel {
         ];
 
         Self {
-            theme: theme.clone(),
+            radix_theme,
             event_bus,
             terms_checkbox,
             social_checkbox,
@@ -162,7 +175,7 @@ impl SystemPanel {
 
 impl Render for SystemPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
 
         card_container(chrome.border, chrome.panel_background)
             .child(card_title(

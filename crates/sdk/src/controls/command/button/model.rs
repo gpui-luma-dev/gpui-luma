@@ -7,7 +7,7 @@ use super::control::Button;
 use super::template::ButtonTemplate;
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
-use crate::controls::button_family::ButtonFamilyRole;
+use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
 use lucide_icons::Icon as LucideIcon;
 
 #[derive(Clone)]
@@ -22,6 +22,8 @@ impl From<LucideIcon> for ControlIcon {
     }
 }
 
+pub type ButtonAppearanceSource<D> = Arc<dyn Fn(&ButtonRenderModel<D>) -> ButtonFamilyAppearance + Send + Sync>;
+
 #[derive(Clone)]
 pub struct ButtonModel<D = ()> {
     pub(crate) id: SharedString,
@@ -33,6 +35,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
     pub(crate) round: bool,
+    pub(crate) appearance: Option<ButtonAppearanceSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
 
@@ -46,6 +49,7 @@ pub struct ButtonRenderModel<D> {
     pub state: ButtonState,
     pub round: bool,
     pub radius_override: Cell<Option<f32>>,
+    pub appearance: Option<ButtonAppearanceSource<D>>,
 }
 
 pub struct ButtonBuilder<D = ()> {
@@ -67,6 +71,7 @@ impl ButtonBuilder<()> {
                 enabled: true,
                 tab_stop: true,
                 round: false,
+                appearance: None,
                 template: super::template::default_button_template(),
             },
         }
@@ -108,6 +113,7 @@ impl ButtonBuilder<()> {
                 enabled: old.enabled,
                 tab_stop: old.tab_stop,
                 round: old.round,
+                appearance: None,
                 template: super::template::default_button_template(),
             },
         }
@@ -122,6 +128,14 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
     /// value.
     pub fn with_data(mut self, data: D) -> Self {
         self.model.data = data;
+        self
+    }
+
+    pub fn with_appearance<F>(mut self, resolve: F) -> Self
+    where
+        F: Fn(&ButtonRenderModel<D>) -> ButtonFamilyAppearance + Send + Sync + 'static,
+    {
+        self.model.appearance = Some(Arc::new(resolve));
         self
     }
 

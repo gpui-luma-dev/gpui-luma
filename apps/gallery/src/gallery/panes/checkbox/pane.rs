@@ -5,55 +5,54 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::checkbox::{self, Checkbox, default_checkbox_template};
+use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
-    standard_checkbox: Checkbox,
-    prominent_checkbox: Checkbox,
+    secondary_checkbox: Checkbox,
+    primary_checkbox: Checkbox,
     state_preview: Entity<CheckboxStatePreview>,
-    standard_checked: bool,
-    prominent_checked: bool,
+    secondary_checked: bool,
+    primary_checked: bool,
 }
 
 impl CheckboxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            standard_checkbox: checkbox::new("checkbox-standard-example")
-                .kind(ButtonKind::Standard)
+            secondary_checkbox: checkbox::new("checkbox-secondary-example")
+                .template(radix_theme.checkbox_template(RadixButtonStyle::Secondary))
                 .with_data(true)
-                .content(|_, _| div().child("Standard").into_any_element())
+                .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            prominent_checkbox: checkbox::new("checkbox-prominent-example")
-                .kind(ButtonKind::Prominent)
+            primary_checkbox: checkbox::new("checkbox-primary-example")
+                .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
                 .with_data(false)
-                .content(|_, _| div().child("Prominent").into_any_element())
+                .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| CheckboxStatePreview::new(theme)),
-            standard_checked: true,
-            prominent_checked: false,
+            state_preview: cx.new(|_| CheckboxStatePreview::new(radix_theme)),
+            secondary_checked: true,
+            primary_checked: false,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.standard_checkbox, |app, _, event: &ButtonEvent, cx| {
-            app.panes.checkbox.handle_standard_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.secondary_checkbox, |app, _, event: &ButtonEvent, cx| {
+            app.panes.checkbox.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_checkbox, |app, _, event: &ButtonEvent, cx| {
-            app.panes.checkbox.handle_prominent_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.primary_checkbox, |app, _, event: &ButtonEvent, cx| {
+            app.panes.checkbox.handle_primary_event(event, cx);
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Checkbox",
@@ -70,32 +69,32 @@ impl CheckboxPane {
                         .items_center()
                         .justify_center()
                         .gap(px(12.0))
-                        .child(self.standard_checkbox.clone())
+                        .child(self.secondary_checkbox.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Standard checked: {}", self.standard_checked)),
+                                .child(format!("Secondary checked: {}", self.secondary_checked)),
                         )
-                        .child(self.prominent_checkbox.clone())
+                        .child(self.primary_checkbox.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Prominent checked: {}", self.prominent_checked)),
+                                .child(format!("Primary checked: {}", self.primary_checked)),
                         ),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.standard_checkbox, cx);
-        notify_entity(&self.prominent_checkbox, cx);
+        notify_entity(&self.secondary_checkbox, cx);
+        notify_entity(&self.primary_checkbox, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -107,16 +106,16 @@ impl CheckboxPane {
         });
     }
 
-    fn handle_standard_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_checkbox(&self.standard_checkbox, &mut self.standard_checked, cx);
+            Self::flip_checkbox(&self.secondary_checkbox, &mut self.secondary_checked, cx);
             cx.notify();
         }
     }
 
-    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_checkbox(&self.prominent_checkbox, &mut self.prominent_checked, cx);
+            Self::flip_checkbox(&self.primary_checkbox, &mut self.primary_checked, cx);
             cx.notify();
         }
     }
@@ -124,8 +123,7 @@ impl CheckboxPane {
 
 #[derive(Clone)]
 struct CheckboxStatePreview {
-    theme: GalleryThemePack,
-    template: Arc<dyn ButtonTemplate<bool>>,
+    radix_theme: Arc<RadixTheme>,
 }
 
 struct CheckboxStateSample {
@@ -168,14 +166,14 @@ impl CheckboxTemplateVariant {
 }
 
 impl CheckboxStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_checkbox_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme }
     }
 }
 
 impl Render for CheckboxStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             CheckboxStateSample { id: "default", header: "default", state: InteractionState::default() },
             CheckboxStateSample {
@@ -220,9 +218,9 @@ impl Render for CheckboxStatePreview {
             )
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
-                    &self.template,
-                    "Prominent",
-                    ButtonKind::Prominent,
+                    &self.radix_theme,
+                    "Primary",
+                    RadixButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -230,9 +228,9 @@ impl Render for CheckboxStatePreview {
                     cx,
                 ),
                 render_section(
-                    &self.template,
-                    "Standard",
-                    ButtonKind::Standard,
+                    &self.radix_theme,
+                    "Secondary",
+                    RadixButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -244,15 +242,16 @@ impl Render for CheckboxStatePreview {
 }
 
 fn render_section(
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    radix_theme: &Arc<RadixTheme>,
     section_label: &'static str,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variants: &[CheckboxTemplateVariant],
     samples: &[CheckboxStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let template = radix_theme.checkbox_template(style);
     div()
         .flex()
         .items_start()
@@ -266,7 +265,7 @@ fn render_section(
                 .gap(px(8.0))
                 .child(render_header_row(samples, label_color))
                 .children(
-                    variants.iter().map(|variant| render_variant_row(template, kind, *variant, samples, window, cx)),
+                    variants.iter().map(|variant| render_variant_row(&template, style, *variant, samples, window, cx)),
                 ),
         )
         .into_any_element()
@@ -292,7 +291,7 @@ fn render_header_row(samples: &[CheckboxStateSample], label_color: gpui::Hsla) -
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variant: CheckboxTemplateVariant,
     samples: &[CheckboxStateSample],
     window: &mut Window,
@@ -302,30 +301,31 @@ fn render_variant_row(
         .flex()
         .items_center()
         .gap(px(8.0))
-        .children(samples.iter().map(|sample| render_state_sample(template, kind, variant, sample, window, cx)))
+        .children(samples.iter().map(|sample| render_state_sample(template, style, variant, sample, window, cx)))
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variant: CheckboxTemplateVariant,
     sample: &CheckboxStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let checked = variant.checked();
-    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
+    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: checked,
         content: variant.content(),
-        kind,
+        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(None),
+        appearance: None,
     };
 
     div()
@@ -337,11 +337,11 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn button_kind_id(kind: ButtonKind) -> &'static str {
-    match kind {
-        ButtonKind::Prominent => "prominent",
-        ButtonKind::Subtle => "subtle",
-        ButtonKind::Standard => "standard",
-        ButtonKind::Ghost => "ghost",
+fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+    match style {
+        RadixButtonStyle::Primary => "primary",
+        RadixButtonStyle::Secondary => "secondary",
+        RadixButtonStyle::Outline => "outline",
+        RadixButtonStyle::Ghost => "ghost",
     }
 }

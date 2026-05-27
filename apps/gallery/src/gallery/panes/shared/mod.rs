@@ -5,21 +5,21 @@ pub(in crate::gallery) use template_pipeline::{
 };
 
 use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{ThemePartUsage, all_theme_usages, resolve_palette_color};
+use gpui_luma::theme::{RadixTheme, ThemePartUsage, all_radix_theme_usages};
 
-use crate::gallery::{control::GalleryApp, theme::GalleryThemePack};
+use crate::gallery::control::GalleryApp;
 
-pub(super) fn gallery_pane(title: &'static str, content: AnyElement, theme: &GalleryThemePack) -> AnyElement {
-    gallery_pane_with_description(title, None, content, theme)
+pub(super) fn gallery_pane(title: &'static str, content: AnyElement, radix_theme: &RadixTheme) -> AnyElement {
+    gallery_pane_with_description(title, None, content, radix_theme)
 }
 
 pub(super) fn gallery_pane_with_description(
     title: &'static str,
     description: Option<&'static str>,
     content: AnyElement,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    let chrome = theme.chrome();
+    let chrome = radix_theme.chrome();
 
     div()
         .size_full()
@@ -42,9 +42,9 @@ pub(super) fn gallery_pane_with_usage(
     title: &'static str,
     usage_component: &'static str,
     content: AnyElement,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    gallery_pane_with_usage_description(title, None, usage_component, content, theme)
+    gallery_pane_with_usage_description(title, None, usage_component, content, radix_theme)
 }
 
 pub(super) fn gallery_pane_with_usage_description(
@@ -52,9 +52,9 @@ pub(super) fn gallery_pane_with_usage_description(
     description: Option<&'static str>,
     usage_component: &'static str,
     content: AnyElement,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, theme)
+    gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, radix_theme)
 }
 
 pub(super) fn gallery_pane_with_usage_descriptions(
@@ -62,9 +62,9 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     description: Option<&'static str>,
     usage_components: &[&'static str],
     content: AnyElement,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    let chrome = theme.chrome();
+    let chrome = radix_theme.chrome();
 
     div()
         .size_full()
@@ -96,7 +96,7 @@ pub(super) fn gallery_pane_with_usage_descriptions(
                         .occlude()
                         .child(content),
                 )
-                .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, theme))),
+                .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, radix_theme))),
         )
         .into_any_element()
 }
@@ -137,8 +137,8 @@ pub(super) fn notify_entity<T: 'static>(entity: &Entity<T>, cx: &mut Context<Gal
     entity.update(cx, |_, cx| cx.notify());
 }
 
-fn render_usage_panels(components: &[&'static str], theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_usage_panels(components: &[&'static str], radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     let panel = div()
         .id("theme-usage")
@@ -164,14 +164,13 @@ fn render_usage_panels(components: &[&'static str], theme: &GalleryThemePack) ->
         );
 
     panel
-        .children(components.iter().copied().map(|component| render_usage_component_section(component, theme)))
+        .children(components.iter().copied().map(|component| render_usage_component_section(component, radix_theme)))
         .into_any_element()
 }
 
-fn render_usage_component_section(component: &'static str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-    let tokens = theme.tokens();
-    let usage = all_theme_usages().iter().copied().find(|usage| usage.label == component);
+fn render_usage_component_section(component: &'static str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
+    let usage = all_radix_theme_usages().iter().copied().find(|usage| usage.label == component);
     let parts = usage.map(|usage| usage.parts).unwrap_or(&[]);
 
     div()
@@ -187,26 +186,22 @@ fn render_usage_component_section(component: &'static str, theme: &GalleryThemeP
                 .text_color(chrome.title_text)
                 .child(component),
         )
-        .children(parts.iter().map(|part| render_usage_part(part, &tokens, theme)))
+        .children(parts.iter().map(|part| render_usage_part(part, radix_theme)))
         .when(usage.is_none(), |section| {
             section.child(
                 div()
                     .text_size(px(12.0))
                     .line_height(px(17.0))
                     .text_color(chrome.muted_text)
-                    .child("No theme usage metadata registered."),
+                    .child("No Radix theme usage metadata registered."),
             )
         })
         .into_any_element()
 }
 
-fn render_usage_part(
-    part: &ThemePartUsage,
-    tokens: &gpui_luma::theme::ThemeTokens,
-    theme: &GalleryThemePack,
-) -> AnyElement {
-    let chrome = theme.chrome();
-    let color = resolve_palette_color(tokens, part.token);
+fn render_usage_part(part: &ThemePartUsage, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
+    let color = resolve_radix_token_color(radix_theme, part.token);
 
     div()
         .flex()
@@ -248,7 +243,7 @@ fn render_usage_part(
                 .text_size(px(11.0))
                 .line_height(px(15.0))
                 .text_color(chrome.body_text)
-                .child(part.token),
+                .child(format!("--{token}", token = part.token)),
         )
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(chrome.muted_text).child(format!(
             "{} -> {}",
@@ -267,6 +262,10 @@ fn render_usage_part(
             )
         })
         .into_any_element()
+}
+
+fn resolve_radix_token_color(radix_theme: &RadixTheme, token: &str) -> Option<Hsla> {
+    radix_theme.token_color(token).ok()
 }
 
 pub(in crate::gallery::panes) fn format_compact_hsla(color: Hsla) -> String {

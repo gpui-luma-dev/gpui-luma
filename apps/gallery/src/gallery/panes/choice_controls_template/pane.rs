@@ -1,17 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::checkbox::default_checkbox_template;
-use gpui_luma::controls::radio_button::default_radio_button_template;
-use gpui_luma::controls::switch::default_switch_template;
-use gpui_luma::controls::toggle::default_toggle_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::{gallery_pane_with_description, notify_entity};
@@ -27,11 +22,11 @@ pub(in crate::gallery) struct ChoiceControlsTemplatePane {
 }
 
 impl ChoiceControlsTemplatePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        Self { state_preview: cx.new(|_| ChoiceControlsTemplatePreview::new(theme)) }
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        Self { state_preview: cx.new(|_| ChoiceControlsTemplatePreview::new(radix_theme)) }
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_description(
             "Choice Templates",
             Some(CHOICE_TEMPLATES_DESCRIPTION),
@@ -42,7 +37,7 @@ impl ChoiceControlsTemplatePane {
                 .gap(px(16.0))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -53,7 +48,7 @@ impl ChoiceControlsTemplatePane {
 
 #[derive(Clone)]
 struct ChoiceControlsTemplatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     radio_template: Arc<dyn ButtonTemplate<bool>>,
     checkbox_template: Arc<dyn ButtonTemplate<bool>>,
     switch_template: Arc<dyn ButtonTemplate<bool>>,
@@ -132,20 +127,20 @@ impl ChoiceTemplateControl {
 }
 
 impl ChoiceControlsTemplatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            theme: theme.clone(),
-            radio_template: default_radio_button_template(),
-            checkbox_template: default_checkbox_template(),
-            switch_template: default_switch_template(),
-            toggle_template: default_toggle_template(),
+            radio_template: radix_theme.radio_button_template(RadixButtonStyle::Primary),
+            checkbox_template: radix_theme.checkbox_template(RadixButtonStyle::Primary),
+            switch_template: radix_theme.switch_template(RadixButtonStyle::Primary),
+            toggle_template: radix_theme.toggle_template(RadixButtonStyle::Ghost),
+            radix_theme,
         }
     }
 }
 
 impl Render for ChoiceControlsTemplatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let states = [
             ChoiceTemplateStateSample { id: "default", label: "Default", state: InteractionState::default() },
             ChoiceTemplateStateSample {
@@ -295,6 +290,7 @@ fn render_control_cell(
         state: state_sample.state,
         round: control.round(),
         radius_override: std::cell::Cell::new(None),
+        appearance: None,
     };
 
     div()

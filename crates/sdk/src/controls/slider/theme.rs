@@ -29,6 +29,10 @@ pub struct DefaultSliderTheme {
 }
 
 pub fn default_slider_theme() -> Arc<dyn SliderTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.slider_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

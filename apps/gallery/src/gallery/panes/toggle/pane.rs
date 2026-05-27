@@ -4,81 +4,108 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::toggle::{self, default_toggle_template};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TogglePane {
-    standard_toggle: Entity<Button<bool>>,
-    prominent_toggle: Entity<Button<bool>>,
-    standard_round_icon_toggle: Entity<Button<bool>>,
-    prominent_round_icon_toggle: Entity<Button<bool>>,
+    secondary_toggle: Entity<Button<bool>>,
+    primary_toggle: Entity<Button<bool>>,
+    secondary_round_icon_toggle: Entity<Button<bool>>,
+    primary_round_icon_toggle: Entity<Button<bool>>,
     state_preview: Entity<ToggleStatePreview>,
-    standard_selected: bool,
-    prominent_selected: bool,
-    standard_round_icon_selected: bool,
-    prominent_round_icon_selected: bool,
+    secondary_selected: bool,
+    primary_selected: bool,
+    secondary_round_icon_selected: bool,
+    primary_round_icon_selected: bool,
 }
 
 impl TogglePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            standard_toggle: toggle::new("toggle-standard-example")
-                .kind(ButtonKind::Standard)
+            secondary_toggle: toggle::new("toggle-secondary-example")
                 .with_data(true)
-                .content(|_, _| div().child("Standard").into_any_element())
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| {
+                        theme.secondary_button(
+                            ButtonFamilyRole::Toggle { selected: model.data },
+                            model.size,
+                            model.state,
+                        )
+                    }
+                })
+                .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            prominent_toggle: toggle::new("toggle-prominent-example")
-                .kind(ButtonKind::Prominent)
+            primary_toggle: toggle::new("toggle-primary-example")
                 .with_data(false)
-                .content(|_, _| div().child("Prominent").into_any_element())
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| {
+                        theme.primary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
+                    }
+                })
+                .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            standard_round_icon_toggle: toggle::new("toggle-standard-round-icon-example")
-                .kind(ButtonKind::Standard)
+            secondary_round_icon_toggle: toggle::new("toggle-secondary-round-icon-example")
                 .with_data(false)
                 .round(true)
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| {
+                        theme.secondary_button(
+                            ButtonFamilyRole::Toggle { selected: model.data },
+                            model.size,
+                            model.state,
+                        )
+                    }
+                })
                 .content(|_, _| round_icon_glyph(false).into_any_element())
                 .spawn(cx),
-            prominent_round_icon_toggle: toggle::new("toggle-prominent-round-icon-example")
-                .kind(ButtonKind::Prominent)
+            primary_round_icon_toggle: toggle::new("toggle-primary-round-icon-example")
                 .with_data(true)
                 .round(true)
+                .with_appearance({
+                    let theme = radix_theme.clone();
+                    move |model| {
+                        theme.primary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
+                    }
+                })
                 .content(|_, _| round_icon_glyph(true).into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| ToggleStatePreview::new(theme)),
-            standard_selected: true,
-            prominent_selected: false,
-            standard_round_icon_selected: false,
-            prominent_round_icon_selected: true,
+            state_preview: cx.new(|_| ToggleStatePreview::new(radix_theme)),
+            secondary_selected: true,
+            primary_selected: false,
+            secondary_round_icon_selected: false,
+            primary_round_icon_selected: true,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.standard_toggle, |app, _, event: &ButtonEvent, cx| {
-            app.panes.toggle.handle_standard_toggle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.secondary_toggle, |app, _, event: &ButtonEvent, cx| {
+            app.panes.toggle.handle_secondary_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_toggle, |app, _, event: &ButtonEvent, cx| {
-            app.panes.toggle.handle_prominent_toggle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.primary_toggle, |app, _, event: &ButtonEvent, cx| {
+            app.panes.toggle.handle_primary_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.standard_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
-            app.panes.toggle.handle_standard_round_icon_toggle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.secondary_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
+            app.panes.toggle.handle_secondary_round_icon_toggle_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
-            app.panes.toggle.handle_prominent_round_icon_toggle_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.primary_round_icon_toggle, |app, _, event: &ButtonEvent, cx| {
+            app.panes.toggle.handle_primary_round_icon_toggle_event(event, cx);
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Toggle",
@@ -95,21 +122,21 @@ impl TogglePane {
                         .items_center()
                         .justify_center()
                         .gap(px(12.0))
-                        .child(self.standard_toggle.clone())
+                        .child(self.primary_toggle.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Standard selected: {}", self.standard_selected)),
+                                .child(format!("Primary selected: {}", self.primary_selected)),
                         )
-                        .child(self.prominent_toggle.clone())
+                        .child(self.secondary_toggle.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Prominent selected: {}", self.prominent_selected)),
+                                .child(format!("Secondary selected: {}", self.secondary_selected)),
                         ),
                 )
                 .child(
@@ -119,34 +146,34 @@ impl TogglePane {
                         .items_center()
                         .justify_center()
                         .gap(px(12.0))
-                        .child(self.standard_round_icon_toggle.clone())
+                        .child(self.primary_round_icon_toggle.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Standard icon selected: {}", self.standard_round_icon_selected)),
+                                .child(format!("Primary icon selected: {}", self.primary_round_icon_selected)),
                         )
-                        .child(self.prominent_round_icon_toggle.clone())
+                        .child(self.secondary_round_icon_toggle.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Prominent icon selected: {}", self.prominent_round_icon_selected)),
+                                .child(format!("Secondary icon selected: {}", self.secondary_round_icon_selected)),
                         ),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.standard_toggle, cx);
-        notify_entity(&self.prominent_toggle, cx);
-        notify_entity(&self.standard_round_icon_toggle, cx);
-        notify_entity(&self.prominent_round_icon_toggle, cx);
+        notify_entity(&self.secondary_toggle, cx);
+        notify_entity(&self.primary_toggle, cx);
+        notify_entity(&self.secondary_round_icon_toggle, cx);
+        notify_entity(&self.primary_round_icon_toggle, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -158,39 +185,39 @@ impl TogglePane {
         });
     }
 
-    fn handle_standard_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_toggle(&self.standard_toggle, &mut self.standard_selected, cx);
+            Self::flip_toggle(&self.secondary_toggle, &mut self.secondary_selected, cx);
             cx.notify();
         }
     }
 
-    fn handle_prominent_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_toggle(&self.prominent_toggle, &mut self.prominent_selected, cx);
+            Self::flip_toggle(&self.primary_toggle, &mut self.primary_selected, cx);
             cx.notify();
         }
     }
 
-    fn handle_standard_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.standard_round_icon_toggle.update(cx, |button, cx| {
+            self.secondary_round_icon_toggle.update(cx, |button, cx| {
                 let new_selected = !*button.data();
                 button.set_data(new_selected, cx);
                 button.set_presenter(Arc::new(move |_, _| round_icon_glyph(new_selected).into_any_element()), cx);
-                self.standard_round_icon_selected = new_selected;
+                self.secondary_round_icon_selected = new_selected;
             });
             cx.notify();
         }
     }
 
-    fn handle_prominent_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_round_icon_toggle_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.prominent_round_icon_toggle.update(cx, |button, cx| {
+            self.primary_round_icon_toggle.update(cx, |button, cx| {
                 let new_selected = !*button.data();
                 button.set_data(new_selected, cx);
                 button.set_presenter(Arc::new(move |_, _| round_icon_glyph(new_selected).into_any_element()), cx);
-                self.prominent_round_icon_selected = new_selected;
+                self.primary_round_icon_selected = new_selected;
             });
             cx.notify();
         }
@@ -199,7 +226,7 @@ impl TogglePane {
 
 #[derive(Clone)]
 struct ToggleStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn ButtonTemplate<bool>>,
 }
 
@@ -248,14 +275,14 @@ impl ToggleTemplateVariant {
 }
 
 impl ToggleStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_toggle_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.toggle_template(RadixButtonStyle::Ghost) }
     }
 }
 
 impl Render for ToggleStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             ToggleStateSample { id: "default", header: "default", state: InteractionState::default() },
             ToggleStateSample {
@@ -301,8 +328,9 @@ impl Render for ToggleStatePreview {
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
                     &self.template,
-                    "Prominent",
-                    ButtonKind::Prominent,
+                    &self.radix_theme,
+                    "Primary",
+                    RadixButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -311,8 +339,9 @@ impl Render for ToggleStatePreview {
                 ),
                 render_section(
                     &self.template,
-                    "Standard",
-                    ButtonKind::Standard,
+                    &self.radix_theme,
+                    "Secondary",
+                    RadixButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -325,8 +354,9 @@ impl Render for ToggleStatePreview {
 
 fn render_section(
     template: &Arc<dyn ButtonTemplate<bool>>,
+    radix_theme: &Arc<RadixTheme>,
     section_label: &'static str,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variants: &[ToggleTemplateVariant],
     samples: &[ToggleStateSample],
     label_color: gpui::Hsla,
@@ -346,7 +376,9 @@ fn render_section(
                 .gap(px(8.0))
                 .child(render_header_row(samples, label_color))
                 .children(
-                    variants.iter().map(|variant| render_variant_row(template, kind, *variant, samples, window, cx)),
+                    variants
+                        .iter()
+                        .map(|variant| render_variant_row(template, radix_theme, style, *variant, samples, window, cx)),
                 ),
         )
         .into_any_element()
@@ -372,7 +404,8 @@ fn render_header_row(samples: &[ToggleStateSample], label_color: gpui::Hsla) -> 
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    radix_theme: &Arc<RadixTheme>,
+    style: RadixButtonStyle,
     variant: ToggleTemplateVariant,
     samples: &[ToggleStateSample],
     window: &mut Window,
@@ -382,30 +415,37 @@ fn render_variant_row(
         .flex()
         .items_center()
         .gap(px(8.0))
-        .children(samples.iter().map(|sample| render_state_sample(template, kind, variant, sample, window, cx)))
+        .children(
+            samples
+                .iter()
+                .map(|sample| render_state_sample(template, radix_theme, style, variant, sample, window, cx)),
+        )
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    radix_theme: &Arc<RadixTheme>,
+    style: RadixButtonStyle,
     variant: ToggleTemplateVariant,
     sample: &ToggleStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let selected = variant.selected();
-    let id = SharedString::from(format!("toggle-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
+    let id = SharedString::from(format!("toggle-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
+    let appearance = appearance_for_style(radix_theme.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: selected,
         content: variant.content(),
-        kind,
+        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Toggle { selected },
         size: ButtonSize::Md,
         state: sample.state,
         round: variant.round(),
         radius_override: std::cell::Cell::new(None),
+        appearance: Some(appearance),
     };
 
     div()
@@ -417,12 +457,27 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn button_kind_id(kind: ButtonKind) -> &'static str {
-    match kind {
-        ButtonKind::Prominent => "prominent",
-        ButtonKind::Subtle => "subtle",
-        ButtonKind::Standard => "standard",
-        ButtonKind::Ghost => "ghost",
+fn appearance_for_style(
+    theme: Arc<RadixTheme>,
+    style: RadixButtonStyle,
+) -> gpui_luma::controls::command::button::ButtonAppearanceSource<bool> {
+    Arc::new(move |model| {
+        let role = ButtonFamilyRole::Toggle { selected: model.data };
+        match style {
+            RadixButtonStyle::Primary => theme.primary_button(role, model.size, model.state),
+            RadixButtonStyle::Secondary => theme.secondary_button(role, model.size, model.state),
+            RadixButtonStyle::Outline => theme.outline_button(role, model.size, model.state),
+            RadixButtonStyle::Ghost => theme.ghost_button(role, model.size, model.state),
+        }
+    })
+}
+
+fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+    match style {
+        RadixButtonStyle::Primary => "primary",
+        RadixButtonStyle::Secondary => "secondary",
+        RadixButtonStyle::Outline => "outline",
+        RadixButtonStyle::Ghost => "ghost",
     }
 }
 

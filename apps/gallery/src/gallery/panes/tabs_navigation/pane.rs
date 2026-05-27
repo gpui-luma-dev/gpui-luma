@@ -8,15 +8,11 @@ use gpui_luma::controls::tabs_navigation::{
     ControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent, TabsNavigationHoverHandler,
     TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    ThemedTabsNavigationTemplate, default_tabs_navigation_template,
+    ThemedTabsNavigationTemplate, TabsNavigationTheme,
 };
-use gpui_luma::controls::tabs_navigation::{
-    DefaultTabsNavigationTheme, TabsNavigationItemAppearance, TabsNavigationListAppearance, TabsNavigationTheme,
-};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -30,15 +26,20 @@ pub(in crate::gallery) struct TabsNavigationPane {
 }
 
 impl TabsNavigationPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let tabs_template = radix_theme.tabs_navigation_template();
         Self {
-            tabs: TabsNavigation::new("project-tabs").items(project_tabs()).active("activity").spawn(cx),
+            tabs: TabsNavigation::new("project-tabs")
+                .items(project_tabs())
+                .active("activity")
+                .template(tabs_template.clone())
+                .spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
                 .items(project_tabs())
                 .active("activity")
-                .template(local_tabs_navigation_template(theme))
+                .template(local_tabs_navigation_template(radix_theme.clone()))
                 .spawn(cx),
-            state_preview: cx.new(|_| TabsNavigationStatePreview::new(theme)),
+            state_preview: cx.new(|_| TabsNavigationStatePreview::new(radix_theme)),
             active_label: "Activity".to_string(),
             local_theme_active_label: "Activity".to_string(),
         }
@@ -53,7 +54,7 @@ impl TabsNavigationPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage(
             "Tabs Navigation",
             "Tabs Navigation",
@@ -69,7 +70,7 @@ impl TabsNavigationPane {
                         .items_center()
                         .gap_3()
                         .child(self.tabs.clone())
-                        .child(render_tab_content(&self.active_label, theme)),
+                        .child(render_tab_content(&self.active_label, radix_theme)),
                 )
                 .child(self.state_preview.clone())
                 .child(
@@ -79,12 +80,12 @@ impl TabsNavigationPane {
                         .items_center()
                         .gap_3()
                         .mt(px(10.0))
-                        .child(render_example_label("Local theme customization", theme))
+                        .child(render_example_label("Local theme customization", radix_theme))
                         .child(self.local_theme_tabs.clone())
-                        .child(render_tab_content(&self.local_theme_active_label, theme)),
+                        .child(render_tab_content(&self.local_theme_active_label, radix_theme)),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -114,28 +115,31 @@ impl TabsNavigationPane {
 }
 
 struct LocalTabsNavigationTheme {
-    theme: GalleryThemePack,
+    inner: Arc<dyn TabsNavigationTheme>,
 }
 
 impl TabsNavigationTheme for LocalTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool) -> TabsNavigationListAppearance {
-        DefaultTabsNavigationTheme::new(self.theme.tokens()).resolve_list(enabled)
+    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
+        self.inner.resolve_list(enabled)
     }
 
-    fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance {
-        let unfocused_state = InteractionState { focused: false, ..state };
-
-        DefaultTabsNavigationTheme::new(self.theme.tokens()).resolve_item(active, unfocused_state)
+    fn resolve_item(
+        &self,
+        active: bool,
+        state: InteractionState,
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
+        self.inner.resolve_item(active, InteractionState { focused: false, ..state })
     }
 }
 
-fn local_tabs_navigation_template(theme: &GalleryThemePack) -> Arc<dyn TabsNavigationTemplate> {
-    Arc::new(ThemedTabsNavigationTemplate::new(Arc::new(LocalTabsNavigationTheme { theme: theme.clone() })))
+fn local_tabs_navigation_template(radix_theme: Arc<RadixTheme>) -> Arc<dyn TabsNavigationTemplate> {
+    let inner = radix_theme.tabs_navigation_theme();
+    Arc::new(ThemedTabsNavigationTemplate::new(Arc::new(LocalTabsNavigationTheme { inner })))
 }
 
 #[derive(Clone)]
 struct TabsNavigationStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn TabsNavigationTemplate>,
 }
 
@@ -149,14 +153,14 @@ struct TabsNavigationStateSample {
 }
 
 impl TabsNavigationStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_tabs_navigation_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.tabs_navigation_template() }
     }
 }
 
 impl Render for TabsNavigationStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             TabsNavigationStateSample {
                 id: "inactive",
@@ -345,8 +349,8 @@ fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 
-fn render_example_label(label: &'static str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_example_label(label: &'static str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .text_size(px(12.0))
@@ -357,8 +361,8 @@ fn render_example_label(label: &'static str, theme: &GalleryThemePack) -> AnyEle
         .into_any_element()
 }
 
-fn render_tab_content(active_label: &str, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_tab_content(active_label: &str, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .w(px(360.0))

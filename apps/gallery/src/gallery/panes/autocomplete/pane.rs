@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::autocomplete::{self, AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
-use crate::gallery::theme::GalleryThemePack;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct AutocompleteTextFieldPane {
@@ -11,15 +13,14 @@ pub(in crate::gallery) struct AutocompleteTextFieldPane {
 }
 
 impl AutocompleteTextFieldPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let theme_clone = theme.clone();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let demo_items = autocomplete_demo_items();
         let autocomplete_textbox = autocomplete::new("prototype-autocomplete", demo_items)
             .placeholder("Start typing…")
             .full_width(true)
             .clean_on_escape(true)
-            .textfield_template(theme_clone.textfield_template())
-            .scrollbar_template(theme_clone.scrollbar_template())
+            .textfield_template(radix_theme.textfield_template())
+            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { autocomplete_textbox }
@@ -34,7 +35,7 @@ impl AutocompleteTextFieldPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, _theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage_descriptions(
             "Autocomplete TextBox",
             Some("Autocomplete text box"),
@@ -47,7 +48,7 @@ impl AutocompleteTextFieldPane {
                 .gap(px(18.0))
                 .child(self.autocomplete_textbox.clone())
                 .into_any_element(),
-            _theme,
+            radix_theme,
         )
     }
 

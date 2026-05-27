@@ -5,12 +5,10 @@ use gpui_luma::controls::combobox::{
     self, ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, SelectionItem, TypingPolicy,
 };
-use gpui_luma::controls::selector_panel::default_selector_items_panel_appearance;
-use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::{ControlSize, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
-use crate::gallery::theme::GalleryThemePack;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ComboBoxPane {
@@ -18,19 +16,18 @@ pub(in crate::gallery) struct ComboBoxPane {
 }
 
 impl ComboBoxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let theme_clone = theme.clone();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let strict_combobox = combobox::new("gallery-combobox-strict", combobox_demo_items())
-            .items_template(Arc::new(GalleryComboboxItemsTemplate::new(theme_clone.clone())))
-            .panel_template(Arc::new(GalleryComboboxPanelTemplate::new(theme_clone.clone())))
+            .items_template(Arc::new(GalleryComboboxItemsTemplate::new(radix_theme.clone())))
+            .panel_template(Arc::new(GalleryComboboxPanelTemplate::new(radix_theme.clone())))
             .placeholder("Strict mode (exact match only)…")
             .full_width(true)
             .clean_on_escape(true)
             .typing_policy(TypingPolicy::Strict)
             .show_down_arrow(true)
             .show_clear_button(true)
-            .textfield_template(theme_clone.textfield_template())
-            .scrollbar_template(theme_clone.scrollbar_template())
+            .textfield_template(radix_theme.textfield_template())
+            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { strict_combobox }
@@ -42,7 +39,7 @@ impl ComboBoxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage_descriptions(
             "ComboBox",
             Some("Select-oriented input with dropdown trigger, open/close toggle, and strict typing policy."),
@@ -57,12 +54,12 @@ impl ComboBoxPane {
                     div()
                         .text_size(px(11.0))
                         .line_height(px(15.0))
-                        .text_color(theme.chrome().muted_text)
+                        .text_color(radix_theme.chrome().muted_text)
                         .child("Strict typing policy + down arrow"),
                 )
                 .child(self.strict_combobox.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -73,12 +70,12 @@ impl ComboBoxPane {
 
 #[derive(Clone)]
 struct GalleryComboboxItemsTemplate {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
 }
 
 impl GalleryComboboxItemsTemplate {
-    fn new(theme: GalleryThemePack) -> Self {
-        Self { theme }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme }
     }
 }
 
@@ -89,7 +86,7 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
         handlers: ComboBoxItemsTemplateHandlers,
         cx: &mut App,
     ) -> gpui::Stateful<gpui::Div> {
-        let appearance = default_selector_items_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
         let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
 
         let mut root = div()
@@ -142,11 +139,12 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
 
             row = row.cursor_pointer().on_hover(hover).hover({
                 let hover_background = appearance.item_hover_background;
-                move |style| style.bg(hover_background)
+                let hover_foreground = appearance.item_hover_foreground;
+                move |style| style.bg(hover_background).text_color(hover_foreground)
             });
 
             if active {
-                row = row.bg(appearance.item_hover_background);
+                row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
             }
 
             if let Some(click) = clicks.next() {
@@ -162,18 +160,18 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
 
 #[derive(Clone)]
 struct GalleryComboboxPanelTemplate {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
 }
 
 impl GalleryComboboxPanelTemplate {
-    fn new(theme: GalleryThemePack) -> Self {
-        Self { theme }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme }
     }
 }
 
 impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
     fn render(&self, model: ComboBoxPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
-        let appearance = default_selector_items_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
 
         if let Some(bounds) = model.popup_bounds {
             return deferred(

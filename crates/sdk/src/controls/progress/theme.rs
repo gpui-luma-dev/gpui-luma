@@ -22,6 +22,10 @@ pub struct DefaultProgressTheme {
 }
 
 pub fn default_progress_theme() -> Arc<dyn ProgressTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.progress_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

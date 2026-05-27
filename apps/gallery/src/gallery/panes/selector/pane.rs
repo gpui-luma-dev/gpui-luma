@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, hsla, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorPlacement, SelectorItem};
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::panel_preview::SelectorPanelPreview;
 use super::preview::SelectorStatePreview;
@@ -23,7 +25,8 @@ pub(in crate::gallery) struct SelectorPane {
 }
 
 impl SelectorPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let selector_template = radix_theme.selector_template();
         let initial_swatch_id = selected_swatch_id();
         let initial_swatch_label = selected_swatch_label();
 
@@ -32,21 +35,25 @@ impl SelectorPane {
                 .label("Select status")
                 .items(selector_items())
                 .placement(SelectorPlacement::Smart)
+                .template(selector_template.clone())
                 .spawn(cx),
             selector_below: Selector::new("popup-selector-below-example")
                 .label("Below selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::BelowStart)
+                .template(selector_template.clone())
                 .spawn(cx),
             selector_above: Selector::new("popup-selector-above-example")
                 .label("Above selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::AboveStart)
+                .template(selector_template.clone())
                 .spawn(cx),
             selector_overlay: Selector::new("popup-selector-overlay-example")
                 .label("Overlay selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::OverlayOnTrigger)
+                .template(selector_template.clone())
                 .spawn(cx),
             selector_swatch: Selector::new("popup-selector-swatch-example")
                 .label("Choose color")
@@ -88,9 +95,10 @@ impl SelectorPane {
                                 ),
                         )
                 })
+                .template(selector_template.clone())
                 .spawn(cx),
-            state_preview: cx.new(|_| SelectorStatePreview::new(theme)),
-            panel_preview: cx.new(|_| SelectorPanelPreview::new(theme)),
+            state_preview: cx.new(|_| SelectorStatePreview::new(radix_theme.clone())),
+            panel_preview: cx.new(|_| SelectorPanelPreview::new(radix_theme.clone())),
             selection: initial_swatch_label.to_string(),
             selected_swatch_id: initial_swatch_id.to_string(),
         }
@@ -102,8 +110,8 @@ impl SelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Selector",
@@ -139,7 +147,7 @@ impl SelectorPane {
                 )
                 .child(self.selector_smart.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

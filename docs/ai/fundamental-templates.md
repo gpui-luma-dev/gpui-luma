@@ -352,10 +352,28 @@ Renaming shadcn `primary` → `prominent` moved coupling into lexicon, gallery, 
 
 ---
 
+## Radix catalog + properties (in progress)
+
+Gallery product themes load from **`apps/gallery/tweakcn/*.css`** into `RadixTheme`. The SDK keeps the full token map per mode and resolves controls through declarative property mappings:
+
+| Layer | Path | Role |
+|---|---|---|
+| CSS catalog | `crates/sdk/src/theme/radix/catalog/` | Parse `:root` / `.dark`; `CssTokenMap::color("input")`; `--radius` / `--font-sans` → metrics & typography |
+| Control properties | `crates/sdk/src/theme/radix/properties/` | Switch, checkbox, radio map token names → `*Appearance` fields (e.g. switch off: track `input`, thumb `foreground`) |
+| Cached palette | `crates/sdk/src/theme/radix/palette.rs` | Derived action roles for buttons/chrome; not the only source of truth |
+| Theme API | `RadixTheme::token()` / `token_color()` / `catalog()` | Introspect active mode catalog |
+
+**Still scaffolded from native Luma:** control heights, spacing scale, elevation/shadows, button hover derivation (palette `darken()`).
+
+---
+
 ## Code references
 
 | Topic | Path |
 |---|---|
+| Radix catalog | `crates/sdk/src/theme/radix/catalog/` |
+| Radix properties | `crates/sdk/src/theme/radix/properties/` |
+| Radix theme | `crates/sdk/src/theme/radix/mod.rs` |
 | Button kind | `crates/sdk/src/controls/button_family/mod.rs` |
 | Resolve matrix | `crates/sdk/src/controls/button_family/theme.rs` |
 | Button template | `crates/sdk/src/controls/command/button/template.rs` |

@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::radial::radial_context_menu_template;
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
@@ -25,17 +27,18 @@ enum ContextMenuPresentation {
 }
 
 impl ContextMenuPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let context_menu_theme = radix_theme.context_menu_theme();
         Self {
             default_context_menu: ContextMenu::new("context-menu-default-example")
                 .label("Right-click me: Default")
                 .items(default_context_menu_items())
-                .template(gallery_context_menu_template(theme.context_menu_theme()))
+                .template(gallery_context_menu_template(context_menu_theme.clone()))
                 .spawn(cx),
             radial_context_menu: ContextMenu::new("context-menu-radial-example")
                 .label("Right-click me: Radial")
                 .items(radial_context_menu_items())
-                .template(radial_context_menu_template(theme.context_menu_theme()))
+                .template(radial_context_menu_template(context_menu_theme))
                 .spawn(cx),
             default_selection: "none".to_string(),
             radial_selection: "none".to_string(),
@@ -51,8 +54,8 @@ impl ContextMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Context Menu",
@@ -88,7 +91,7 @@ impl ContextMenuPane {
                     )),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

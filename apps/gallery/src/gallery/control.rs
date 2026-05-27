@@ -2,15 +2,16 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::theme::{ThemeMode, set_active_theme_pack};
+use gpui_luma::theme::{RadixTheme, ThemeMode, set_active_radix_theme};
+use std::sync::Arc;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
-use super::theme::{GalleryThemeChoice, GalleryThemePack};
+use super::theme::GalleryThemeChoice;
 
 pub struct GalleryApp {
     pub(super) focus_scope: FocusHandle,
     pub(super) pane_focus: FocusHandle,
-    pub(super) theme: GalleryThemePack,
+    pub(super) radix_theme: Arc<RadixTheme>,
     pub(super) split_view: Entity<SplitView>,
     pub(super) navigation_sidebar: Entity<NavigationSidebar>,
     pub(super) panes: GalleryPanes,
@@ -27,11 +28,10 @@ impl GalleryApp {
         let focus_scope = cx.focus_handle();
         let pane_focus = cx.focus_handle().tab_stop(true);
         window.focus(&focus_scope, cx);
-        let theme = theme_choice.theme_pack();
-        theme.set_mode(ThemeMode::Dark);
-        set_active_theme_pack(&theme);
-        let chrome = theme.chrome();
-        let tokens = theme.tokens();
+        let radix_theme = theme_choice.radix_theme();
+        radix_theme.set_mode(ThemeMode::Dark);
+        set_active_radix_theme(radix_theme.clone());
+        let chrome = radix_theme.chrome();
 
         let split_view = SplitView::new("gallery-shell")
             .sidebar_width(px(280.0))
@@ -41,10 +41,10 @@ impl GalleryApp {
             .collapsed(false)
             .resizable(true)
             .separator_color(chrome.border)
-            .separator_hover_color(tokens.palette.border.strong)
+            .separator_hover_color(chrome.border)
             .spawn(cx);
         let initial_selection = GalleryPanes::initial_selection();
-        let navigation = GalleryPanes::navigation(cx, &theme);
+        let navigation = GalleryPanes::navigation(cx, radix_theme.clone());
         let route_buttons = navigation.route_buttons.clone();
         let branch_buttons = navigation.branch_buttons.clone();
         let navigation_sidebar = NavigationSidebar::new("gallery-nav")
@@ -53,8 +53,10 @@ impl GalleryApp {
             .collapsible(true)
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
+            .template(radix_theme.navigation_sidebar_template())
+            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
-        let panes = GalleryPanes::new(cx, &theme);
+        let panes = GalleryPanes::new(cx, radix_theme.clone());
 
         let mut subscriptions = vec![
             cx.subscribe(&split_view, |this, _, event: &SplitViewEvent, cx| {
@@ -83,7 +85,7 @@ impl GalleryApp {
         Self {
             focus_scope,
             pane_focus,
-            theme,
+            radix_theme,
             split_view,
             navigation_sidebar,
             panes,

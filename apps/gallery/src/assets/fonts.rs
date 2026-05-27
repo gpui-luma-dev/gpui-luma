@@ -8,7 +8,8 @@ use std::borrow::Cow;
 use anyhow::Context as _;
 use gpui::App;
 
-/// Must match `themes/jarvis.toml` `typography.font.sans.family` and the name table in `Rajdhani-Variable.ttf`.
+/// Must match the typographic family in `Rajdhani-Variable.ttf` (name ID 16).
+/// tweakcn exports `--font-sans: Rajdhani`; the catalog maps that alias at load time.
 pub const RAJDHANI_FAMILY: &str = "Rajdhani Variable";
 
 const RAJDHANI_VARIABLE: &[u8] = include_bytes!("fonts/Rajdhani/Rajdhani-Variable.ttf");
@@ -22,4 +23,33 @@ pub fn load_rajdhani(cx: &mut App) -> anyhow::Result<()> {
     tracing::info!(family = RAJDHANI_FAMILY, "Rajdhani font registered for Jarvis theme");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use font_kit::handle::Handle;
+    use font_kit::loader::Loader;
+    use font_kit::sources::mem::MemSource;
+
+    #[test]
+    fn embedded_rajdhani_registers_under_core_text_family_name() {
+        let bytes = include_bytes!("fonts/Rajdhani/Rajdhani-Variable.ttf");
+        let mut source = MemSource::empty();
+        let font = source
+            .add_font(Handle::from_memory(Arc::new(bytes.to_vec()), 0))
+            .expect("register embedded Rajdhani");
+
+        let family = font.family_name();
+        let postscript = font.postscript_name().unwrap_or_default();
+        let has_m = font.glyph_for_char('m').is_some();
+        eprintln!("family={family:?} postscript={postscript:?} has_m={has_m}");
+
+        let families = source.all_families().expect("list families");
+        eprintln!("mem source families: {families:?}");
+
+        assert!(has_m, "Rajdhani must include an 'm' glyph or GPUI will skip loading it");
+        assert!(source.select_family_by_name(&family).is_ok(), "GPUI must resolve family {family:?}");
+    }
 }

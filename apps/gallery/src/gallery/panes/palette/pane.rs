@@ -1,34 +1,21 @@
-use std::collections::BTreeMap;
-
-use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{LumaPalette, PaletteColorToken, ThemeTokens, palette_color_tokens};
+use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::panes::shared::format_compact_hsla;
-use crate::gallery::theme::GalleryThemePack;
 
-struct ColorItem {
-    label: &'static str,
-    color: Hsla,
-    reserved: bool,
+struct CatalogColorItem {
+    token: String,
+    color: gpui::Hsla,
 }
 
-struct PaletteSection {
+struct CatalogSection {
     title: &'static str,
-    items: Vec<ColorItem>,
+    items: Vec<CatalogColorItem>,
 }
 
-#[derive(Clone)]
-struct SharedColorGroup {
-    color: Hsla,
-    tokens: Vec<&'static str>,
-}
-
-pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-    let tokens = theme.tokens();
-    let sections = palette_sections(&tokens);
-    let shared_groups = shared_color_groups(&palette_color_tokens(&tokens));
-    let shared_by_value = shared_by_value(&shared_groups);
+pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
+    let sections = catalog_sections(radix_theme);
 
     div()
         .size_full()
@@ -62,14 +49,7 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                                 .text_size(px(13.0))
                                 .line_height(px(18.0))
                                 .text_color(chrome.muted_text)
-                                .child(format!("{} theme v{}", theme.theme_name(), theme.theme_version())),
-                        )
-                        .child(
-                            div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
-                                .text_color(chrome.muted_text)
-                                .child("* reserved for future SDK components"),
+                                .child("CSS custom properties from the active tweakcn theme"),
                         ),
                 )
                 .child(
@@ -77,121 +57,74 @@ pub(in crate::gallery) fn render(theme: &GalleryThemePack) -> AnyElement {
                         .flex()
                         .flex_col()
                         .gap(px(20.0))
-                        .children(sections.into_iter().map(|section| render_section(section, &shared_by_value, theme)))
-                        .when(!shared_groups.is_empty(), |content| {
-                            content.child(render_shared_values(shared_groups, theme))
-                        }),
+                        .children(sections.into_iter().map(|section| render_section(section, radix_theme))),
                 ),
         )
         .into_any_element()
 }
 
-fn palette_sections(tokens: &ThemeTokens) -> Vec<PaletteSection> {
-    let palette = &tokens.palette;
+fn catalog_sections(radix_theme: &RadixTheme) -> Vec<CatalogSection> {
+    let catalog = radix_theme.mode_tokens().catalog.clone();
+    let mut core = Vec::new();
+    let mut sidebar = Vec::new();
+    let mut chart = Vec::new();
+    let mut other = Vec::new();
 
-    vec![
-        PaletteSection {
-            title: "App",
-            items: vec![
-                item("background", palette.app.background),
-                item("foreground", palette.app.foreground),
-                item("muted_foreground", palette.app.muted_foreground),
-            ],
-        },
-        PaletteSection {
-            title: "Surface",
-            items: vec![
-                item("panel.background", palette.surface.panel.background),
-                item("panel.foreground", palette.surface.panel.foreground),
-                item("panel.border", palette.surface.panel.border),
-                item("floating.background", palette.surface.floating.background),
-                item("floating.foreground", palette.surface.floating.foreground),
-                item("floating.border", palette.surface.floating.border),
-                item("subtle.background", palette.surface.subtle.background),
-                item("subtle.foreground", palette.surface.subtle.foreground),
-            ],
-        },
-        PaletteSection { title: "Action", items: action_items(palette) },
-        PaletteSection {
-            title: "State",
-            items: vec![
-                item("hover.background", palette.state.hover.background),
-                item("hover.foreground", palette.state.hover.foreground),
-                item("pressed.background", palette.state.pressed.background),
-                item("selected.background", palette.state.selected.background),
-                item("selected.foreground", palette.state.selected.foreground),
-                item("disabled.background", palette.state.disabled.background),
-                item("disabled.foreground", palette.state.disabled.foreground),
-            ],
-        },
-        PaletteSection {
-            title: "Form, Focus, Border",
-            items: vec![
-                item("input.background", palette.form.input.background),
-                reserved_item("input.foreground", palette.form.input.foreground),
-                item("input.border", palette.form.input.border),
-                reserved_item("input.placeholder", palette.form.input.placeholder),
-                item("focus.ring", palette.focus.ring),
-                item("border.default", palette.border.default),
-                reserved_item("border.strong", palette.border.strong),
-            ],
-        },
-        PaletteSection {
-            title: "Navigation",
-            items: vec![
-                item("background", palette.navigation.background),
-                item("foreground", palette.navigation.foreground),
-                item("muted_foreground", palette.navigation.muted_foreground),
-                item("hover_background", palette.navigation.hover_background),
-                item("selected_background", palette.navigation.selected_background),
-                item("selected_foreground", palette.navigation.selected_foreground),
-                item("border", palette.navigation.border),
-            ],
-        },
-        PaletteSection {
-            title: "Data",
-            items: vec![
-                reserved_item("accent_1", palette.data.accent_1),
-                reserved_item("accent_2", palette.data.accent_2),
-                reserved_item("accent_3", palette.data.accent_3),
-                reserved_item("accent_4", palette.data.accent_4),
-                reserved_item("accent_5", palette.data.accent_5),
-            ],
-        },
-    ]
+    for (token, _) in catalog.tokens.iter() {
+        let Ok(color) = catalog.color(token) else {
+            continue;
+        };
+        let item = CatalogColorItem { token: token.clone(), color };
+        if token.starts_with("sidebar") {
+            sidebar.push(item);
+        } else if token.starts_with("chart-") {
+            chart.push(item);
+        } else if matches!(
+            token.as_str(),
+            "background"
+                | "foreground"
+                | "card"
+                | "card-foreground"
+                | "popover"
+                | "popover-foreground"
+                | "primary"
+                | "primary-foreground"
+                | "secondary"
+                | "secondary-foreground"
+                | "muted"
+                | "muted-foreground"
+                | "accent"
+                | "accent-foreground"
+                | "destructive"
+                | "destructive-foreground"
+                | "border"
+                | "input"
+                | "ring"
+        ) {
+            core.push(item);
+        } else {
+            other.push(item);
+        }
+    }
+
+    let mut sections = Vec::new();
+    if !core.is_empty() {
+        sections.push(CatalogSection { title: "Core", items: core });
+    }
+    if !sidebar.is_empty() {
+        sections.push(CatalogSection { title: "Sidebar", items: sidebar });
+    }
+    if !chart.is_empty() {
+        sections.push(CatalogSection { title: "Chart", items: chart });
+    }
+    if !other.is_empty() {
+        sections.push(CatalogSection { title: "Other", items: other });
+    }
+    sections
 }
 
-fn action_items(palette: &LumaPalette) -> Vec<ColorItem> {
-    vec![
-        item("prominent.background", palette.action.prominent.background),
-        item("prominent.foreground", palette.action.prominent.foreground),
-        item("prominent.hover_background", palette.action.prominent.hover_background),
-        item("prominent.pressed_background", palette.action.prominent.pressed_background),
-        item("standard.background", palette.action.standard.background),
-        item("standard.foreground", palette.action.standard.foreground),
-        item("standard.hover_background", palette.action.standard.hover_background),
-        item("standard.pressed_background", palette.action.standard.pressed_background),
-        item("ghost.background", palette.action.ghost.background),
-        item("ghost.foreground", palette.action.ghost.foreground),
-        item("ghost.hover_background", palette.action.ghost.hover_background),
-        item("ghost.pressed_background", palette.action.ghost.pressed_background),
-    ]
-}
-
-fn item(label: &'static str, color: Hsla) -> ColorItem {
-    ColorItem { label, color, reserved: false }
-}
-
-fn reserved_item(label: &'static str, color: Hsla) -> ColorItem {
-    ColorItem { label, color, reserved: true }
-}
-
-fn render_section(
-    section: PaletteSection,
-    shared_by_value: &BTreeMap<String, usize>,
-    theme: &GalleryThemePack,
-) -> AnyElement {
-    let chrome = theme.chrome();
+fn render_section(section: CatalogSection, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -205,21 +138,18 @@ fn render_section(
                 .text_color(chrome.title_text)
                 .child(section.title),
         )
-        .child(div().flex().flex_wrap().gap(px(12.0)).children(section.items.into_iter().map(|item| {
-            let shared_count = shared_by_value.get(&color_key(item.color)).copied().unwrap_or_default();
-
-            render_color_item(item, shared_count, theme)
-        })))
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .gap(px(12.0))
+                .children(section.items.into_iter().map(|item| render_color_item(item, radix_theme))),
+        )
         .into_any_element()
 }
 
-fn render_color_item(item: ColorItem, shared_count: usize, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-    let name = if item.reserved {
-        format!("{} *", item.label)
-    } else {
-        item.label.to_string()
-    };
+fn render_color_item(item: CatalogColorItem, radix_theme: &RadixTheme) -> AnyElement {
+    let chrome = radix_theme.chrome();
 
     div()
         .flex()
@@ -237,11 +167,12 @@ fn render_color_item(item: ColorItem, shared_count: usize, theme: &GalleryThemeP
                 .child(
                     div()
                         .truncate()
+                        .font_family("Monaco")
                         .text_size(px(12.0))
                         .line_height(px(16.0))
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(chrome.title_text)
-                        .child(name),
+                        .child(format!("--{}", item.token)),
                 )
                 .child(
                     div()
@@ -253,122 +184,5 @@ fn render_color_item(item: ColorItem, shared_count: usize, theme: &GalleryThemeP
                         .child(format_compact_hsla(item.color)),
                 ),
         )
-        .when(shared_count > 1, |row| row.child(render_shared_badge(shared_count, theme)))
         .into_any_element()
-}
-
-fn render_shared_values(groups: Vec<SharedColorGroup>, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(10.0))
-        .child(
-            div()
-                .text_size(px(13.0))
-                .line_height(px(18.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(chrome.title_text)
-                .child("Shared Values"),
-        )
-        .child(
-            div()
-                .flex()
-                .flex_wrap()
-                .gap(px(12.0))
-                .children(groups.into_iter().map(|group| render_shared_group(group, theme))),
-        )
-        .into_any_element()
-}
-
-fn render_shared_group(group: SharedColorGroup, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-
-    div()
-        .w(px(360.0))
-        .flex()
-        .flex_col()
-        .gap(px(8.0))
-        .border_1()
-        .border_color(chrome.border)
-        .rounded(px(6.0))
-        .p(px(10.0))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .gap(px(10.0))
-                .child(div().size(px(28.0)).bg(group.color).border_1().border_color(chrome.border).rounded(px(3.0)))
-                .child(
-                    div()
-                        .min_w(px(0.0))
-                        .flex()
-                        .flex_col()
-                        .gap(px(1.0))
-                        .child(
-                            div()
-                                .font_family("Monaco")
-                                .text_size(px(11.0))
-                                .line_height(px(15.0))
-                                .text_color(chrome.muted_text)
-                                .child(format_compact_hsla(group.color)),
-                        )
-                        .child(
-                            div()
-                                .text_size(px(11.0))
-                                .line_height(px(15.0))
-                                .text_color(chrome.muted_text)
-                                .child(format!("{} keys", group.tokens.len())),
-                        ),
-                ),
-        )
-        .children(group.tokens.into_iter().map(|token| {
-            div()
-                .font_family("Monaco")
-                .text_size(px(12.0))
-                .line_height(px(17.0))
-                .text_color(chrome.title_text)
-                .child(token)
-        }))
-        .into_any_element()
-}
-
-fn render_shared_badge(count: usize, theme: &GalleryThemePack) -> AnyElement {
-    let chrome = theme.chrome();
-
-    div()
-        .flex_none()
-        .border_1()
-        .border_color(chrome.border)
-        .rounded(px(3.0))
-        .px(px(6.0))
-        .py(px(2.0))
-        .text_size(px(10.0))
-        .line_height(px(14.0))
-        .text_color(chrome.muted_text)
-        .child(format!("{count} keys"))
-        .into_any_element()
-}
-
-fn shared_color_groups(tokens: &[PaletteColorToken]) -> Vec<SharedColorGroup> {
-    let mut by_value: BTreeMap<String, SharedColorGroup> = BTreeMap::new();
-
-    for token in tokens {
-        by_value
-            .entry(color_key(token.color))
-            .or_insert_with(|| SharedColorGroup { color: token.color, tokens: Vec::new() })
-            .tokens
-            .push(token.token);
-    }
-
-    by_value.into_values().filter(|group| group.tokens.len() > 1).collect()
-}
-
-fn shared_by_value(groups: &[SharedColorGroup]) -> BTreeMap<String, usize> {
-    groups.iter().map(|group| (color_key(group.color), group.tokens.len())).collect()
-}
-
-fn color_key(color: Hsla) -> String {
-    format!("{:.6}:{:.6}:{:.6}:{:.6}", color.h, color.s, color.l, color.a)
 }

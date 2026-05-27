@@ -207,11 +207,12 @@ where
     if model.enabled {
         row = row.cursor_pointer().on_hover(hover).hover({
             let hover_background = model.appearance.item_hover_background;
-            move |style| style.bg(hover_background)
+            let hover_foreground = model.appearance.item_hover_foreground;
+            move |style| style.bg(hover_background).text_color(hover_foreground)
         });
 
         if model.active || model.pressed {
-            row = row.bg(model.appearance.item_hover_background);
+            row = row.bg(model.appearance.item_hover_background).text_color(model.appearance.item_hover_foreground);
         }
 
         if let Some(mouse_down) = mouse_down {

@@ -1,11 +1,11 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::search_selector::{self, SearchSelector, SearchSelectorEvent, SelectionItem};
-use gpui_luma::controls::selector_panel::default_selector_items_panel_appearance;
-use gpui_luma::theme::ControlSize;
+use gpui_luma::theme::{ControlSize, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
-use crate::gallery::theme::GalleryThemePack;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SearchSelectorPane {
@@ -13,19 +13,18 @@ pub(in crate::gallery) struct SearchSelectorPane {
 }
 
 impl SearchSelectorPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let theme_clone = theme.clone();
-        let popup_theme = theme_clone.clone();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let popup_radix = radix_theme.clone();
         let selector = search_selector::new("gallery-search-selector", search_selector_demo_items())
             .placeholder("Choose a state…")
             .search_placeholder("Selection search")
             .full_width(true)
             .clean_on_escape(true)
-            .textfield_template(theme_clone.textfield_template())
-            .textfield_theme(theme_clone.textfield_theme())
-            .scrollbar_template(theme_clone.scrollbar_template())
+            .textfield_template(radix_theme.textfield_template())
+            .textfield_theme(radix_theme.textfield_theme())
+            .scrollbar_template(radix_theme.scrollbar_template())
             .popup_appearance_provider(std::sync::Arc::new(move || {
-                default_selector_items_panel_appearance(&popup_theme.tokens(), ControlSize::Md)
+                popup_radix.selector_items_panel_appearance(ControlSize::Md)
             }))
             .spawn(cx);
 
@@ -38,7 +37,7 @@ impl SearchSelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage_descriptions(
             "SearchSelector",
             Some(
@@ -55,12 +54,12 @@ impl SearchSelectorPane {
                     div()
                         .text_size(px(11.0))
                         .line_height(px(15.0))
-                        .text_color(theme.chrome().muted_text)
+                        .text_color(radix_theme.chrome().muted_text)
                         .child("Read-only trigger + popup search input"),
                 )
                 .child(self.selector.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

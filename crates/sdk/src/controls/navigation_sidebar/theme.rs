@@ -56,6 +56,10 @@ pub struct DefaultNavigationSidebarTheme {
 }
 
 pub fn default_navigation_sidebar_theme() -> Arc<dyn NavigationSidebarTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.navigation_sidebar_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

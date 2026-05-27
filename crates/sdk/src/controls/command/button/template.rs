@@ -3,13 +3,56 @@ use std::sync::Arc;
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::controls::button_family::{ButtonFamilyTheme, button_variant, default_button_family_theme};
+use crate::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyTheme, button_variant, default_button_family_theme,
+};
 use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
+use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+
+fn resolve_appearance<D>(theme: &Arc<dyn ButtonFamilyTheme>, model: &ButtonRenderModel<D>) -> ButtonFamilyAppearance {
+    if let Some(resolve) = &model.appearance {
+        return resolve(model);
+    }
+
+    theme.resolve(button_variant(model.kind), model.role, model.size, model.state)
+}
+
+fn resolve_focus_probe_appearance<D: Clone>(
+    theme: &Arc<dyn ButtonFamilyTheme>,
+    model: &ButtonRenderModel<D>,
+) -> Option<ButtonFamilyAppearance> {
+    if model.state.disabled {
+        return None;
+    }
+
+    if let Some(resolve) = &model.appearance {
+        let focused_state = InteractionState { focused: true, ..model.state };
+        let focused_model = ButtonRenderModel {
+            id: model.id.clone(),
+            data: model.data.clone(),
+            content: model.content.clone(),
+            kind: model.kind,
+            role: model.role,
+            size: model.size,
+            state: focused_state,
+            round: model.round,
+            radius_override: std::cell::Cell::new(model.radius_override.get()),
+            appearance: model.appearance.clone(),
+        };
+        return Some(resolve(&focused_model));
+    }
+
+    Some(theme.resolve(
+        button_variant(model.kind),
+        model.role,
+        model.size,
+        InteractionState { focused: true, ..model.state },
+    ))
+}
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
     fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
@@ -40,23 +83,14 @@ impl<D: 'static> TemplateWithModifiers<ButtonRenderModel<D>> for DefaultButtonTe
     }
 }
 
-pub fn default_button_template<D: 'static>() -> Arc<dyn ButtonTemplate<D>> {
+pub fn default_button_template<D: Clone + 'static>() -> Arc<dyn ButtonTemplate<D>> {
     Arc::new(DefaultButtonTemplate::new(default_button_family_theme()))
 }
 
-impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
+impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
     fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve(button_variant(model.kind), model.role, model.size, model.state);
-        let focused_probe_appearance = if model.state.disabled {
-            None
-        } else {
-            Some(self.theme.resolve(
-                button_variant(model.kind),
-                model.role,
-                model.size,
-                InteractionState { focused: true, ..model.state },
-            ))
-        };
+        let appearance = resolve_appearance(&self.theme, model);
+        let focused_probe_appearance = resolve_focus_probe_appearance(&self.theme, model);
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -116,5 +150,52 @@ impl<D: 'static> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         }
 
         root
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use gpui::Hsla;
+
+    use super::*;
+    use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole, ButtonKind, ButtonSize};
+    use crate::theme::{InteractionState, LumaTextStyle};
+
+    fn lime_appearance() -> ButtonFamilyAppearance {
+        ButtonFamilyAppearance {
+            background: Hsla { h: 120.0, s: 1.0, l: 0.5, a: 1.0 },
+            foreground: Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 },
+            border: Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 },
+            adorner: None,
+            typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
+            font_family: "test".into(),
+            radius: 8.0,
+            padding_x: 12.0,
+            padding_y: 6.0,
+            gap: 6.0,
+            height: 32.0,
+        }
+    }
+
+    #[test]
+    fn with_appearance_overrides_kind_resolution() {
+        let template: DefaultButtonTemplate<()> = DefaultButtonTemplate::new(default_button_family_theme());
+        let model = ButtonRenderModel {
+            id: "appearance-test".into(),
+            data: (),
+            content: Arc::new(|_, _| div().into_any_element()),
+            kind: ButtonKind::Prominent,
+            role: ButtonFamilyRole::Text,
+            size: ButtonSize::Md,
+            state: InteractionState::default(),
+            round: false,
+            radius_override: std::cell::Cell::new(None),
+            appearance: Some(Arc::new(|_| lime_appearance())),
+        };
+
+        let appearance = resolve_appearance(&template.theme, &model);
+        assert_eq!(appearance.background, lime_appearance().background);
     }
 }

@@ -7,8 +7,7 @@ use gpui::{
 use gpui_luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
     AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate, AutocompleteTextBoxTemplateHandlers,
-    AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme, default_autocomplete_items_template,
-    default_autocomplete_textbox_template,
+    default_autocomplete_items_template, default_autocomplete_textbox_template,
 };
 use gpui_luma::controls::combobox::{
     ComboBoxItemsTemplate, ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplate, ComboBoxTemplateHandlers,
@@ -25,19 +24,16 @@ use gpui_luma::controls::selector::{
 };
 use gpui_luma::controls::selector_panel::{
     SelectorItem as SelectorPanelItem, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
-    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
-    default_selector_items_template,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
-use gpui_luma::controls::selector::default_selector_template;
 use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
-    TextFieldVariant, default_textfield_template, default_textfield_theme,
+    TextFieldVariant,
 };
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::theme::{ControlSize, InteractionState, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{
     gallery_pane_with_description, notify_entity, render_combobox_popup_preview_from_templates,
@@ -55,11 +51,11 @@ pub(in crate::gallery) struct SelectorControlsTemplatePane {
 }
 
 impl SelectorControlsTemplatePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        Self { state_preview: cx.new(|_| SelectorControlsTemplatePreview::new(theme)) }
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        Self { state_preview: cx.new(|_| SelectorControlsTemplatePreview::new(radix_theme)) }
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_description(
             "Selector Templates",
             Some(SELECTOR_TEMPLATES_DESCRIPTION),
@@ -70,7 +66,7 @@ impl SelectorControlsTemplatePane {
                 .gap(px(16.0))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -81,7 +77,7 @@ impl SelectorControlsTemplatePane {
 
 #[derive(Clone)]
 struct SelectorControlsTemplatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     textfield_template: Arc<dyn TextFieldTemplate>,
     textfield_theme: Arc<dyn TextFieldTheme>,
     autocomplete_template: Arc<dyn AutocompleteTextBoxTemplate>,
@@ -127,28 +123,28 @@ impl SelectorTemplateControl {
 }
 
 impl SelectorControlsTemplatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            theme: theme.clone(),
-            textfield_template: default_textfield_template(),
-            textfield_theme: default_textfield_theme(),
+            textfield_template: radix_theme.textfield_template(),
+            textfield_theme: radix_theme.textfield_theme(),
             autocomplete_template: default_autocomplete_textbox_template(),
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),
             combobox_items_template: default_combobox_items_template(),
             combobox_panel_template: default_combobox_panel_template(),
-            selector_template: default_selector_template(),
+            selector_template: radix_theme.selector_template(),
             selector_items_template: default_selector_items_template(),
             search_selector_template: default_search_selector_template(),
             search_selector_items_template: default_search_selector_items_template(),
             search_selector_panel_template: default_search_selector_panel_template(),
+            radix_theme,
         }
     }
 }
 
 impl Render for SelectorControlsTemplatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let states = [
             SelectorTemplateStateSample {
                 id: "default",
@@ -326,8 +322,8 @@ fn render_autocomplete_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
-    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
+    let status_theme = preview.radix_theme.autocomplete_textbox_theme().resolve();
+    let popup_appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
         textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
@@ -362,8 +358,8 @@ fn render_combobox_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = DefaultAutocompleteTextBoxTheme::new(preview.theme.tokens()).resolve();
-    let popup_appearance = default_selector_items_panel_appearance(&preview.theme.tokens(), ControlSize::Md);
+    let status_theme = preview.radix_theme.autocomplete_textbox_theme().resolve();
+    let popup_appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
 
     let popup_bounds = (state.id == "pressed")
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
@@ -451,8 +447,8 @@ fn render_search_selector_trigger(
         minimum_trigger_width: px(168.0),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
-        status_color: preview.theme.chrome().muted_text,
-        muted_text_color: preview.theme.chrome().muted_text,
+        status_color: preview.radix_theme.chrome().muted_text,
+        muted_text_color: preview.radix_theme.chrome().muted_text,
         popup_content: None,
     };
 
@@ -505,8 +501,7 @@ fn render_popup_preview(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let tokens = preview.theme.tokens();
-    let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
+    let appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = popup_items_for_control(control);
     let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect::<Vec<_>>();

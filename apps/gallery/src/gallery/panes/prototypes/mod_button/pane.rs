@@ -3,14 +3,11 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
 use gpui_luma::controls::command::button::ButtonKind;
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
-use gpui_luma::controls::button_family::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, ButtonVariant, DefaultButtonFamilyTheme,
-};
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::controls::button_family::default_button_family_theme;
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
-
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::{GalleryChrome, GalleryThemePack};
+use crate::gallery::theme::GalleryChrome;
 
 use super::super::super::shared::{gallery_pane_with_description, notify_entity};
 
@@ -40,12 +37,17 @@ pub(in crate::gallery) struct ModButtonPane {
 }
 
 impl ModButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
-        let basic_button = Button::new("Button").spawn(cx);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let basic_button = Button::new("Button")
+            .with_appearance({
+                let theme = radix_theme.clone();
+                move |model| theme.primary_button(model.role, model.size, model.state)
+            })
+            .spawn(cx);
 
         let modified_button = Button::new("Modified Button")
             .kind(ButtonKind::Standard)
-            .template(modified_button_template::<()>(theme))
+            .template(modified_button_template::<()>())
             .spawn(cx);
 
         let custom_button = Button::new("custom-btn")
@@ -69,7 +71,7 @@ impl ModButtonPane {
                     .text_color(color)
             })
             .kind(ButtonKind::Standard)
-            .template(modified_button_template::<()>(theme))
+            .template(modified_button_template::<()>())
             .spawn(cx);
 
         let reactive_button = Button::new("reactive-btn")
@@ -90,10 +92,15 @@ impl ModButtonPane {
                     .child("Reactive Counter")
             })
             .kind(ButtonKind::Standard)
-            .template(modified_button_template::<CounterState>(theme))
+            .template(modified_button_template::<CounterState>())
             .spawn(cx);
 
-        let standard_icon_only = Button::icon("std-icon-only", LucideIcon::Smile).kind(ButtonKind::Standard).spawn(cx);
+        let standard_icon_only = Button::icon("std-icon-only", LucideIcon::Smile)
+            .with_appearance({
+                let theme = radix_theme.clone();
+                move |model| theme.secondary_button(model.role, model.size, model.state)
+            })
+            .spawn(cx);
 
         let standard_text_icon = Button::new("Label")
             .content(|_, _| {
@@ -161,8 +168,8 @@ impl ModButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_description(
             "Command (Customized)",
@@ -247,7 +254,7 @@ impl ModButtonPane {
                         ),
                 )
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -387,8 +394,8 @@ fn render_example_card(
         .into_any_element()
 }
 
-fn modified_button_template<D: 'static>(theme: &GalleryThemePack) -> Arc<dyn ButtonTemplate<D>> {
-    let mut template = DefaultButtonTemplate::new(Arc::new(GalleryModButtonFamilyTheme { theme: theme.clone() }));
+fn modified_button_template<D: Clone + 'static>() -> Arc<dyn ButtonTemplate<D>> {
+    let mut template = DefaultButtonTemplate::new(default_button_family_theme());
 
     template = template
         .with_modifier(|el, model| {
@@ -417,21 +424,4 @@ fn modified_button_template<D: 'static>(theme: &GalleryThemePack) -> Arc<dyn But
         });
 
     Arc::new(template)
-}
-
-#[derive(Clone)]
-struct GalleryModButtonFamilyTheme {
-    theme: GalleryThemePack,
-}
-
-impl ButtonFamilyTheme for GalleryModButtonFamilyTheme {
-    fn resolve(
-        &self,
-        variant: ButtonVariant,
-        role: ButtonFamilyRole,
-        size: ControlSize,
-        state: InteractionState,
-    ) -> ButtonFamilyAppearance {
-        DefaultButtonFamilyTheme::new(self.theme.tokens()).resolve(variant, role, size, state)
-    }
 }

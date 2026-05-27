@@ -1,11 +1,12 @@
+use std::sync::Arc;
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -84,7 +85,7 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 ];
 
 impl NavigationSidebarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let sidebar = NavigationSidebar::new("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Prominent card")
@@ -92,6 +93,8 @@ impl NavigationSidebarPane {
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_nodes())
             .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
+            .template(radix_theme.navigation_sidebar_template())
+            .scrollbar_template(radix_theme.scrollbar_template())
             .spawn(cx);
 
         Self { sidebar, collapsed: Rc::new(Cell::new(false)) }
@@ -107,8 +110,8 @@ impl NavigationSidebarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
         let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
 
         gallery_pane_with_usage(
@@ -124,7 +127,7 @@ impl NavigationSidebarPane {
                 .border_color(chrome.border)
                 .child(self.sidebar.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

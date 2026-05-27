@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
-use gpui_luma::controls::progress::{self, Progress, ProgressRenderModel, ProgressTemplate, default_progress_template};
+use gpui_luma::controls::progress::{self, Progress, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -16,14 +16,19 @@ pub(in crate::gallery) struct ProgressPane {
 }
 
 impl ProgressPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let progress_template = radix_theme.progress_template();
         Self {
-            progress: progress::new("progress-example").range(1..100).value(41).spawn(cx),
-            state_preview: cx.new(|_| ProgressStatePreview::new(theme)),
+            progress: progress::new("progress-example")
+                .template(progress_template.clone())
+                .range(1..100)
+                .value(41)
+                .spawn(cx),
+            state_preview: cx.new(|_| ProgressStatePreview::new(radix_theme)),
         }
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage(
             "Progress",
             "Progress",
@@ -35,7 +40,7 @@ impl ProgressPane {
                 .child(self.progress.clone())
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -47,7 +52,7 @@ impl ProgressPane {
 
 #[derive(Clone)]
 struct ProgressStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn ProgressTemplate>,
 }
 
@@ -59,14 +64,14 @@ struct ProgressStateSample {
 }
 
 impl ProgressStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_progress_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { template: radix_theme.progress_template(), radix_theme }
     }
 }
 
 impl Render for ProgressStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             ProgressStateSample { id: "empty", label: "Empty", value: 0.0, enabled: true },
             ProgressStateSample { id: "quarter", label: "25%", value: 25.0, enabled: true },

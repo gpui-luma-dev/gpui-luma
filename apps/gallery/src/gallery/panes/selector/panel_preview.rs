@@ -6,16 +6,13 @@ use gpui::{
 use gpui_luma::controls::selector::ControlFocusState;
 use gpui_luma::controls::selector_panel::{
     SelectorItem, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
-    SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPath, default_selector_items_panel_appearance,
-    default_selector_items_template,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPath, default_selector_items_template,
 };
-use gpui_luma::theme::ControlSize;
-
-use crate::gallery::theme::GalleryThemePack;
+use gpui_luma::theme::{ControlSize, RadixTheme};
 
 #[derive(Clone)]
 pub(super) struct SelectorPanelPreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
 }
 
@@ -28,15 +25,15 @@ struct SelectorPanelSample {
 }
 
 impl SelectorPanelPreview {
-    pub(super) fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_selector_items_template() }
+    pub(super) fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme, template: default_selector_items_template() }
     }
 }
 
 impl Render for SelectorPanelPreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
-        let appearance = default_selector_items_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        let chrome = self.radix_theme.chrome();
+        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
 
         let samples = vec![
             SelectorPanelSample {

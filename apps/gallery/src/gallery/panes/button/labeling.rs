@@ -64,9 +64,9 @@ fn render_rotated_section_label(section_label: &'static str, label_color: Hsla) 
 
 fn label_asset_path_for_section(section_label: &'static str) -> &'static str {
     match section_label {
-        "Prominent" => "assets/labels/prominent-label.svg",
-        "Standard" => "assets/labels/standard-label.svg",
-        "Subtle" => "assets/labels/subtle-label.svg",
+        "Primary" | "Prominent" => "assets/labels/primary-label.svg",
+        "Secondary" | "Standard" => "assets/labels/secondary-label.svg",
+        "Outline" | "Subtle" => "assets/labels/outline-label.svg",
         "Ghost" => "assets/labels/ghost-label.svg",
         "Selected" => "assets/labels/selected-label.svg",
         "Unselected" => "assets/labels/unselected-label.svg",

@@ -8,16 +8,15 @@ use gpui_luma::controls::selection_panel::{
     SelectionPanelAppearance, SelectionPanelClickHandler, SelectionPanelControl, SelectionPanelEvent,
     SelectionPanelHoverHandler, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelMouseDownHandler,
     SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate, item_template_with_modifier,
-    make_selection_panel_item_template, template_with_modifier, default_selection_panel_appearance,
-    default_selection_panel_template, render_selection_panel,
+    make_selection_panel_item_template, template_with_modifier, default_selection_panel_template,
+    render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
-use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_usage_descriptions, notify_entity};
-use crate::gallery::theme::GalleryThemePack;
 use super::layout::{PAGE_SPEC, render_live_panel_sample, render_page_header, render_section};
 
 #[derive(Clone)]
@@ -29,7 +28,7 @@ pub(in crate::gallery) struct SelectionPanelPane {
 }
 
 impl SelectionPanelPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let interactive_items = (1..=20)
             .map(|index| {
                 SelectionPanelItem::new(format!("item-{index}"))
@@ -38,9 +37,9 @@ impl SelectionPanelPane {
             })
             .collect::<Vec<_>>();
 
-        let interactive_panel = theme.selection_panel("gallery-selection-panel", cx);
-
+        let interactive_panel = SelectionPanelControl::new("gallery-selection-panel", cx);
         interactive_panel.update(cx, |panel, cx| {
+            panel.with_scrollbar_template(radix_theme.scrollbar_template(), cx);
             panel.set_panel_id("gallery-selection-panel-popup", cx);
             panel.set_items(interactive_items.clone(), cx);
             panel.with_item_template(
@@ -85,9 +84,9 @@ impl SelectionPanelPane {
             panel.set_scrolling(true, cx);
             panel.set_appearance_provider(
                 std::sync::Arc::new({
-                    let interactive_theme = theme.clone();
+                    let radix = radix_theme.clone();
                     move |size| {
-                        let mut appearance = default_selection_panel_appearance(&interactive_theme.tokens(), size);
+                        let mut appearance = radix.selection_panel_appearance(size);
                         appearance.min_width = 320.0;
                         appearance
                     }
@@ -99,8 +98,9 @@ impl SelectionPanelPane {
             panel.set_active_visible_index(Some(1), cx);
         });
 
-        let parameterized_panel = theme.selection_panel("gallery-selection-panel-parameterized", cx);
+        let parameterized_panel = SelectionPanelControl::new("gallery-selection-panel-parameterized", cx);
         parameterized_panel.update(cx, |panel, cx| {
+            panel.with_scrollbar_template(radix_theme.scrollbar_template(), cx);
             panel.set_panel_id("gallery-selection-panel-parameterized-popup", cx);
             panel.set_items(interactive_items, cx);
             panel.with_template(
@@ -121,9 +121,9 @@ impl SelectionPanelPane {
             panel.set_scrolling(true, cx);
             panel.set_appearance_provider(
                 std::sync::Arc::new({
-                    let interactive_theme = theme.clone();
+                    let radix = radix_theme.clone();
                     move |size| {
-                        let mut appearance = default_selection_panel_appearance(&interactive_theme.tokens(), size);
+                        let mut appearance = radix.selection_panel_appearance(size);
                         appearance.min_width = 320.0;
                         appearance
                     }
@@ -136,10 +136,10 @@ impl SelectionPanelPane {
         });
 
         Self {
-            template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(theme.clone())),
+            template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(radix_theme.clone())),
             interactive_panel,
             parameterized_panel,
-            event_demo: cx.new(|_| SelectionPanelEventDemo::new(theme.clone())),
+            event_demo: cx.new(|_| SelectionPanelEventDemo::new(radix_theme.clone())),
         }
     }
 
@@ -164,8 +164,8 @@ impl SelectionPanelPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
         let sections = PAGE_SPEC.sections;
 
         gallery_pane_with_usage_descriptions(
@@ -184,8 +184,8 @@ impl SelectionPanelPane {
                 .gap(px(16.0))
                 .overflow_y_scroll()
                 .p(px(2.0))
-                .child(render_page_header(PAGE_SPEC.header, theme))
-                .child(render_section(sections[0], self.template_preview.clone().into_any_element(), theme))
+                .child(render_page_header(PAGE_SPEC.header, radix_theme))
+                .child(render_section(sections[0], self.template_preview.clone().into_any_element(), radix_theme))
                 .child(render_section(
                     sections[1],
                     div()
@@ -207,15 +207,15 @@ impl SelectionPanelPane {
                             chrome.border,
                         ))
                         .into_any_element(),
-                    theme,
+                    radix_theme,
                 ))
                 .child(render_section(
                     sections[2],
                     div().flex().justify_center().child(self.event_demo.clone()).into_any_element(),
-                    theme,
+                    radix_theme,
                 ))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -229,20 +229,20 @@ impl SelectionPanelPane {
 
 #[derive(Clone)]
 struct SelectionPanelTemplatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn SelectionPanelTemplate<SelectionPanelItem>>,
 }
 
 impl SelectionPanelTemplatePreview {
-    fn new(theme: GalleryThemePack) -> Self {
-        Self { theme, template: default_selection_panel_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme, template: default_selection_panel_template() }
     }
 }
 
 impl Render for SelectionPanelTemplatePreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
-        let mut appearance = default_selection_panel_appearance(&self.theme.tokens(), ControlSize::Md);
+        let chrome = self.radix_theme.chrome();
+        let mut appearance = self.radix_theme.selection_panel_appearance(ControlSize::Md);
         appearance.min_width = 220.0;
         appearance.padding = 7.0;
 
@@ -307,7 +307,7 @@ impl Render for SelectionPanelTemplatePreview {
 }
 
 struct SelectionPanelEventDemo {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     hover_changes: usize,
     activate_rows: usize,
     active_index_changes: usize,
@@ -315,9 +315,9 @@ struct SelectionPanelEventDemo {
 }
 
 impl SelectionPanelEventDemo {
-    fn new(theme: GalleryThemePack) -> Self {
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            theme,
+            radix_theme,
             hover_changes: 0,
             activate_rows: 0,
             active_index_changes: 0,
@@ -348,7 +348,7 @@ impl SelectionPanelEventDemo {
 
 impl Render for SelectionPanelEventDemo {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let style = event_demo_style(self.theme.mode());
+        let style = event_demo_style(self.radix_theme.mode());
 
         div()
             .w(px(500.0))

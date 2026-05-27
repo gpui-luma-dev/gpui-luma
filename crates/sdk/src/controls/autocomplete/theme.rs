@@ -24,6 +24,10 @@ pub struct DefaultAutocompleteTextBoxTheme {
 }
 
 pub fn default_autocomplete_textbox_theme() -> Arc<dyn AutocompleteTextBoxTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.autocomplete_textbox_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

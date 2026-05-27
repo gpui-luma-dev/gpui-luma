@@ -38,6 +38,10 @@ pub struct DefaultSwitchTheme {
 }
 
 pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.switch_theme(crate::theme::RadixButtonStyle::Primary);
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

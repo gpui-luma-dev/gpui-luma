@@ -7,13 +7,12 @@ use gpui::{
 use gpui_luma::controls::scrollbar::{
     Scrollbar, ScrollbarBoundsHandler, ScrollbarDrag, ScrollbarDragMoveHandler, ScrollbarEvent, ScrollbarHoverHandler,
     ScrollbarMouseDownHandler, ScrollbarMouseUpHandler, ScrollbarOrientation, ScrollbarRenderModel,
-    ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers, default_scrollbar_template,
+    ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -33,9 +32,11 @@ enum ScrollbarPresentation {
 }
 
 impl ScrollbarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let scrollbar_template = radix_theme.scrollbar_template();
         Self {
             horizontal_scrollbar: Scrollbar::new("scrollbar-horizontal-example")
+                .template(scrollbar_template.clone())
                 .horizontal()
                 .range(0..220)
                 .step(20)
@@ -44,6 +45,7 @@ impl ScrollbarPane {
                 .thumb_fraction(0.54)
                 .spawn(cx),
             vertical_scrollbar: Scrollbar::new("scrollbar-vertical-example")
+                .template(scrollbar_template.clone())
                 .vertical()
                 .range(0..240)
                 .step(20)
@@ -51,7 +53,7 @@ impl ScrollbarPane {
                 .value(80)
                 .thumb_fraction(0.45)
                 .spawn(cx),
-            state_preview: cx.new(|_| ScrollbarStatePreview::new(theme)),
+            state_preview: cx.new(|_| ScrollbarStatePreview::new(radix_theme.clone(), scrollbar_template)),
             horizontal_value: 40.0,
             vertical_value: 80.0,
         }
@@ -66,7 +68,7 @@ impl ScrollbarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         gallery_pane_with_usage(
             "Scrollbar",
             "Scrollbar",
@@ -75,10 +77,10 @@ impl ScrollbarPane {
                 .flex_col()
                 .items_center()
                 .gap_4()
-                .child(self.scrollbar_example(theme))
+                .child(self.scrollbar_example(radix_theme))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -109,20 +111,20 @@ impl ScrollbarPane {
         }
     }
 
-    fn scrollbar_example(&self, theme: &GalleryThemePack) -> AnyElement {
+    fn scrollbar_example(&self, radix_theme: &RadixTheme) -> AnyElement {
         scrollbar_pair(
             self.horizontal_value,
             self.vertical_value,
             self.horizontal_scrollbar.clone(),
             self.vertical_scrollbar.clone(),
-            theme,
+            radix_theme,
         )
     }
 }
 
 #[derive(Clone)]
 struct ScrollbarStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn ScrollbarTemplate>,
 }
 
@@ -133,14 +135,14 @@ struct ScrollbarStateSample {
 }
 
 impl ScrollbarStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_scrollbar_template() }
+    fn new(radix_theme: Arc<RadixTheme>, template: Arc<dyn ScrollbarTemplate>) -> Self {
+        Self { radix_theme, template }
     }
 }
 
 impl Render for ScrollbarStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             ScrollbarStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ScrollbarStateSample {
@@ -293,9 +295,9 @@ fn scrollbar_pair(
     vertical_value: f32,
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
-    theme: &GalleryThemePack,
+    radix_theme: &RadixTheme,
 ) -> AnyElement {
-    let chrome = theme.chrome();
+    let chrome = radix_theme.chrome();
     let mut demo_content = div()
         .absolute()
         .left(px(-horizontal_value))

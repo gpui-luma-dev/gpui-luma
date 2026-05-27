@@ -11,13 +11,12 @@ use gpui_luma::controls::textfield::{
     self, TextField, TextFieldClickHandler, TextFieldEvent, TextFieldHoverHandler, TextFieldKeyDownHandler,
     TextFieldMouseDownHandler, TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel,
     TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldVariant, Validator,
-    default_textfield_template,
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
+use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 
@@ -45,7 +44,8 @@ pub(in crate::gallery) struct TextFieldPane {
 }
 
 impl TextFieldPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let textfield_template = radix_theme.textfield_template();
         Self {
             text_field: textfield::new("gallery-textfield")
                 .placeholder("Type and press Enter")
@@ -54,6 +54,7 @@ impl TextFieldPane {
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
+                .template(textfield_template.clone())
                 .spawn(cx),
             plain_text_field: textfield::new("gallery-textfield-plain")
                 .placeholder("Text field without icon")
@@ -62,6 +63,7 @@ impl TextFieldPane {
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
+                .template(textfield_template.clone())
                 .spawn(cx),
             compact_plain_text_field: textfield::new("gallery-textfield-compact")
                 .placeholder("Compact ghost (appearance override)")
@@ -70,6 +72,7 @@ impl TextFieldPane {
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
+                .template(textfield_template)
                 .appearance_override(|mut appearance| {
                     appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
                     appearance.typography.line_height = appearance.typography.size;
@@ -78,7 +81,7 @@ impl TextFieldPane {
                     appearance
                 })
                 .spawn(cx),
-            state_preview: cx.new(|_| TextFieldStatePreview::new(theme)),
+            state_preview: cx.new(|_| TextFieldStatePreview::new(radix_theme)),
             set_sample_button: action_button("textfield-set-sample", "Set Sample", cx),
             clear_button: action_button("textfield-clear", "Clear", cx),
             enabled_checkbox: checkbox::new("textfield-enabled")
@@ -133,8 +136,8 @@ impl TextFieldPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage_description(
             "TextField",
@@ -185,7 +188,7 @@ impl TextFieldPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -341,7 +344,7 @@ fn render_telemetry(
 
 #[derive(Clone)]
 struct TextFieldStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn TextFieldTemplate>,
 }
 
@@ -354,14 +357,15 @@ struct TextFieldStateSample {
 }
 
 impl TextFieldStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_textfield_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.textfield_template() }
     }
 }
 
 impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
+        let textfield_theme = self.radix_theme.textfield_theme();
         let samples = [
             TextFieldStateSample { id: "default", label: "Standard", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {
@@ -414,7 +418,7 @@ impl Render for TextFieldStatePreview {
                 samples.into_iter().map(|sample| {
                     render_state_sample(
                         &self.template,
-                        self.theme.textfield_theme(),
+                        textfield_theme.clone(),
                         sample,
                         TextFieldVariant::Standard,
                         chrome.muted_text,
@@ -435,7 +439,7 @@ impl Render for TextFieldStatePreview {
                 samples.into_iter().map(|sample| {
                     render_state_sample(
                         &self.template,
-                        self.theme.textfield_theme(),
+                        textfield_theme.clone(),
                         sample,
                         TextFieldVariant::Ghost,
                         chrome.muted_text,

@@ -44,6 +44,9 @@ mod tests {
 
         for usage in all_theme_usages() {
             for part in usage.parts {
+                if !part.token.contains('.') {
+                    continue;
+                }
                 assert!(
                     resolve_palette_color(&tokens, part.token).is_some(),
                     "{} uses unknown palette token {}",

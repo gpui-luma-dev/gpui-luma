@@ -10,12 +10,12 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, Validator, default_textarea_template,
+    TextAreaTemplate, TextAreaTemplateHandlers, Validator,
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
+use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 
@@ -40,7 +40,7 @@ pub(in crate::gallery) struct TextAreaPane {
 }
 
 impl TextAreaPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
             text_area: TextArea::new("gallery-textarea")
                 .placeholder("Write a multiline message")
@@ -48,8 +48,9 @@ impl TextAreaPane {
                 .rows(6)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
+                .template(radix_theme.textarea_template())
                 .spawn(cx),
-            state_preview: cx.new(|_| TextAreaStatePreview::new(theme)),
+            state_preview: cx.new(|_| TextAreaStatePreview::new(radix_theme)),
             set_sample_button: action_button("textarea-set-sample", "Set Sample", cx),
             clear_button: action_button("textarea-clear", "Clear", cx),
             enabled_checkbox: checkbox::new("textarea-enabled")
@@ -97,8 +98,8 @@ impl TextAreaPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
         let value = self.value.as_ref();
         let line_count = if value.is_empty() { 0 } else { value.lines().count() };
 
@@ -148,7 +149,7 @@ impl TextAreaPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -285,7 +286,7 @@ fn render_telemetry(
 
 #[derive(Clone)]
 struct TextAreaStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn TextAreaTemplate>,
 }
 
@@ -298,14 +299,15 @@ struct TextAreaStateSample {
 }
 
 impl TextAreaStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_textarea_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.textarea_template() }
     }
 }
 
 impl Render for TextAreaStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
+        let textarea_theme = self.radix_theme.textarea_theme();
         let samples = [
             TextAreaStateSample { id: "default", label: "Standard", state: TextAreaState::default(), enabled: true },
             TextAreaStateSample {
@@ -351,14 +353,7 @@ impl Render for TextAreaStatePreview {
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.into_iter().map(|sample| {
-                    render_state_sample(
-                        &self.template,
-                        self.theme.textarea_theme(),
-                        sample,
-                        chrome.muted_text,
-                        window,
-                        cx,
-                    )
+                    render_state_sample(&self.template, textarea_theme.clone(), sample, chrome.muted_text, window, cx)
                 }),
             ))
     }

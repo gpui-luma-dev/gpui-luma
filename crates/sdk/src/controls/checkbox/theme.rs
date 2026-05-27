@@ -40,6 +40,10 @@ pub struct DefaultCheckboxTheme {
 }
 
 pub fn default_checkbox_theme() -> Arc<dyn CheckboxTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.checkbox_theme(crate::theme::RadixButtonStyle::Primary);
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

@@ -19,6 +19,7 @@ pub struct SelectorItemsPanelAppearance {
     pub min_width: f32,
     pub item_disabled_foreground: gpui::Hsla,
     pub item_hover_background: gpui::Hsla,
+    pub item_hover_foreground: gpui::Hsla,
     pub item_typography: LumaTextStyle,
     pub item_height: f32,
     pub item_padding_x: f32,
@@ -46,6 +47,7 @@ pub fn default_selector_items_panel_appearance(
         min_width: 180.0,
         item_disabled_foreground: palette.state.disabled.foreground,
         item_hover_background: palette.state.hover.background,
+        item_hover_foreground: palette.state.hover.foreground,
         item_typography: typography.text.label,
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
@@ -166,11 +168,12 @@ where
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
                     let hover_background = appearance.item_hover_background;
-                    move |style| style.bg(hover_background)
+                    let hover_foreground = appearance.item_hover_foreground;
+                    move |style| style.bg(hover_background).text_color(hover_foreground)
                 });
 
                 if active {
-                    row = row.bg(appearance.item_hover_background);
+                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
                 }
 
                 if let Some(click) = clicks.next() {

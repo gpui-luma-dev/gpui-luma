@@ -2,7 +2,7 @@ use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, Render, W
 use gpui_luma::controls::split_view::render_pane;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::{RadixTheme, ThemeMode};
 use lucide_icons::Icon as LucideIcon;
 
 use super::control::GalleryApp;
@@ -13,9 +13,10 @@ impl Render for GalleryApp {
         let navigation_sidebar = self.navigation_sidebar.clone();
         let panes = self.panes.clone();
         let nav_selection = self.nav_selection.clone();
-        let chrome = self.theme.chrome();
-        let sans_family = self.theme.tokens().typography.font.sans.family.clone();
-        let active_mode = self.theme.mode();
+        let chrome = self.radix_theme.chrome();
+        let sans_family = self.radix_theme.mode_tokens().typography.font.sans.family.clone();
+        let content_sans_family = sans_family.clone();
+        let active_mode = self.radix_theme.mode();
         let toggle_icon = match active_mode {
             ThemeMode::Light => LucideIcon::Moon,
             ThemeMode::Dark => LucideIcon::Sun,
@@ -25,7 +26,12 @@ impl Render for GalleryApp {
             split_view.set_panes(
                 render_pane(move || navigation_sidebar.clone()),
                 render_pane(move || {
-                    render_content_pane(panes.render_selected(&nav_selection), pane_focus.clone(), &panes.theme)
+                    render_content_pane(
+                        panes.render_selected(&nav_selection),
+                        pane_focus.clone(),
+                        &panes.radix_theme,
+                        content_sans_family.clone(),
+                    )
                 }),
             );
         });
@@ -59,7 +65,11 @@ impl Render for GalleryApp {
                         .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
                         .active(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.18)))
                         .on_click(cx.listener(|this, _, _, cx| {
-                            this.theme.toggle_mode();
+                            let mode = match this.radix_theme.mode() {
+                                ThemeMode::Light => ThemeMode::Dark,
+                                ThemeMode::Dark => ThemeMode::Light,
+                            };
+                            this.radix_theme.set_mode(mode);
                             tracing::info!("title bar theme toggled");
                             cx.notify();
                         }))
@@ -82,11 +92,11 @@ impl Render for GalleryApp {
 fn render_content_pane(
     content: AnyElement,
     pane_focus: FocusHandle,
-    theme: &crate::gallery::theme::GalleryThemePack,
+    radix_theme: &RadixTheme,
+    sans_family: String,
 ) -> AnyElement {
     let focus = pane_focus.clone();
-    let chrome = theme.chrome();
-    let sans_family = theme.tokens().typography.font.sans.family.clone();
+    let chrome = radix_theme.chrome();
 
     div()
         .size_full()

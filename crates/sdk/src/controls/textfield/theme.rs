@@ -43,6 +43,10 @@ pub struct DefaultTextFieldTheme {
 }
 
 pub fn default_textfield_theme() -> Arc<dyn TextFieldTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.textfield_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

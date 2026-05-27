@@ -1,39 +1,52 @@
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
-pub(in crate::gallery) use gpui_luma::theme::{LumaChrome as GalleryChrome, LumaThemePack as GalleryThemePack};
+use std::sync::Arc;
 
-/// `apps/gallery/src/assets/themes/`
+use gpui_luma::theme::RadixTheme;
+
+pub(in crate::gallery) use gpui_luma::theme::{LumaChrome as GalleryChrome};
+
+/// `apps/gallery/tweakcn/` — Radix product themes (CSS source of truth).
+pub(in crate::gallery) fn tweakcn_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tweakcn")
+}
+
+/// `apps/gallery/src/assets/themes/` — legacy Luma TOML samples (tests / import tooling).
 pub(in crate::gallery) fn themes_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/assets/themes")
+}
+
+fn theme_css_path(stem: &str) -> PathBuf {
+    tweakcn_dir().join(format!("{stem}.css"))
 }
 
 fn theme_toml_path(stem: &str) -> PathBuf {
     themes_dir().join(format!("{stem}.toml"))
 }
 
-/// Lists theme file stems (e.g. `retro-arcade`) sorted for usage text.
+/// Lists tweakcn CSS theme stems (e.g. `retro-arcade`) sorted for usage text.
 pub(in crate::gallery) fn available_theme_names() -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(themes_dir()) else {
+    let Ok(entries) = std::fs::read_dir(tweakcn_dir()) else {
         return Vec::new();
     };
 
     let mut names: Vec<String> = entries
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
-        .filter(|path| path.is_file() && path.extension() == Some(OsStr::new("toml")))
+        .filter(|path| path.is_file() && path.extension() == Some(OsStr::new("css")))
         .filter_map(|path| path.file_stem().and_then(|s| s.to_str()).map(str::to_string))
         .collect();
     names.sort();
     names
 }
 
-/// Startup theme: `default` or a file stem under [`themes_dir`] (e.g. `retro-arcade`).
+/// Startup theme: `default` or a CSS stem under [`tweakcn_dir`] (e.g. `retro-arcade`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GalleryThemeChoice {
-    /// SDK [`GalleryThemePack::new`] / `default-theme.toml`.
+    /// Native SDK palette when no tweakcn CSS is selected.
     Default,
-    /// `themes/<stem>.toml` loaded at runtime.
+    /// `tweakcn/<stem>.css` loaded at runtime.
     Named(String),
 }
 
@@ -55,14 +68,14 @@ impl GalleryThemeChoice {
             return Ok(Self::Default);
         }
 
-        let path = theme_toml_path(&stem);
+        let path = theme_css_path(&stem);
         if path.is_file() {
             return Ok(Self::Named(stem));
         }
 
         let available = available_theme_names();
         let hint = if available.is_empty() {
-            format!("no .toml themes found in {}", themes_dir().display())
+            format!("no .css themes found in {}", tweakcn_dir().display())
         } else {
             format!("available: {}", available.join(", "))
         };
@@ -82,15 +95,15 @@ impl GalleryThemeChoice {
         matches!(self, Self::Named(stem) if stem == "jarvis")
     }
 
-    pub fn theme_pack(self) -> GalleryThemePack {
+    pub fn radix_theme(self) -> Arc<RadixTheme> {
         match self {
-            Self::Default => GalleryThemePack::new(),
+            Self::Default => Arc::new(RadixTheme::native()),
             Self::Named(stem) => {
-                let path = theme_toml_path(&stem);
-                let source = std::fs::read_to_string(&path)
-                    .unwrap_or_else(|err| panic!("read gallery theme {}: {err}", path.display()));
-                GalleryThemePack::from_toml_str(&source)
-                    .unwrap_or_else(|err| panic!("parse gallery theme {}: {err}", path.display()))
+                let path = theme_css_path(&stem);
+                Arc::new(
+                    RadixTheme::from_css_path(&path)
+                        .unwrap_or_else(|err| panic!("parse radix theme {}: {err}", path.display())),
+                )
             }
         }
     }
@@ -98,17 +111,17 @@ impl GalleryThemeChoice {
 
 #[cfg(test)]
 mod tests {
-    use gpui_luma::theme::{LumaTheme, ThemeMode};
+    use gpui_luma::theme::{LumaTheme, ThemeMode, RadixTheme};
 
-    use super::{available_theme_names, theme_toml_path, themes_dir};
+    use super::{available_theme_names, theme_css_path, theme_toml_path, themes_dir, tweakcn_dir};
 
-    fn read_theme(stem: &str) -> String {
+    fn read_theme_toml(stem: &str) -> String {
         std::fs::read_to_string(theme_toml_path(stem)).expect("read theme toml")
     }
 
     #[test]
-    fn themes_dir_exists_and_lists_imported_samples() {
-        assert!(themes_dir().is_dir());
+    fn tweakcn_dir_exists_and_lists_imported_samples() {
+        assert!(tweakcn_dir().is_dir());
         let names = available_theme_names();
         assert!(names.iter().any(|name| name == "astrovista"));
         assert!(names.iter().any(|name| name == "jarvis"));
@@ -124,16 +137,32 @@ mod tests {
     }
 
     #[test]
-    fn jarvis_theme_sans_family_matches_embedded_font() {
+    fn retro_arcade_css_loads_into_radix_theme() {
+        let path = theme_css_path("retro-arcade");
+        let theme = RadixTheme::from_css_path(&path).expect("retro-arcade css should parse");
+        let palette = &theme.mode_tokens().palette;
+        assert_ne!(palette.primary.background, palette.secondary.background);
+    }
+
+    #[test]
+    fn jarvis_css_sans_family_matches_embedded_font() {
         use crate::fonts::RAJDHANI_FAMILY;
 
-        let theme = LumaTheme::from_toml_str(&read_theme("jarvis")).expect("jarvis theme should parse");
-        assert_eq!(theme.mode(ThemeMode::Light).typography.font.sans.family, RAJDHANI_FAMILY);
+        let path = theme_css_path("jarvis");
+        let theme = RadixTheme::from_css_path(&path).expect("jarvis css should parse");
+        assert_eq!(theme.mode_tokens().typography.font.sans.family, RAJDHANI_FAMILY);
+    }
+
+    #[test]
+    fn retro_arcade_css_applies_radius_from_catalog() {
+        let path = theme_css_path("retro-arcade");
+        let theme = RadixTheme::from_css_path(&path).expect("retro-arcade css should parse");
+        assert_eq!(theme.mode_tokens().metrics.radius.md, 10.0);
     }
 
     #[test]
     fn astrovista_theme_parses_with_distinct_action_roles() {
-        let theme = LumaTheme::from_toml_str(&read_theme("astrovista")).expect("astrovista theme should parse");
+        let theme = LumaTheme::from_toml_str(&read_theme_toml("astrovista")).expect("astrovista theme should parse");
         let light = theme.mode(ThemeMode::Light);
 
         assert_eq!(theme.name, "Astrovista");
@@ -141,5 +170,11 @@ mod tests {
         assert_ne!(light.palette.action.subtle.background, light.palette.action.standard.background);
         assert_ne!(light.palette.action.prominent.background, light.palette.action.standard.background);
         assert_eq!(light.palette.app.background, light.palette.action.ghost.background);
+    }
+
+    #[test]
+    fn themes_dir_still_has_legacy_toml_samples() {
+        assert!(themes_dir().is_dir());
+        assert!(theme_toml_path("jarvis").is_file());
     }
 }

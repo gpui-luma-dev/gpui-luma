@@ -1,13 +1,14 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_family::ButtonKind;
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::{default_control_group_template, toggle_button_item_template};
+use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma::controls::toggle::default_toggle_template;
+use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage_descriptions, notify_entity};
 
@@ -20,9 +21,9 @@ pub(in crate::gallery) struct ToggleGroupPane {
 }
 
 impl ToggleGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _theme: &GalleryThemePack) -> Self {
-        let toggle_template = default_toggle_template();
-        let group_template = default_control_group_template();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let toggle_template = radix_theme.toggle_template(RadixButtonStyle::Ghost);
+        let group_template = radix_theme.control_group_template();
 
         let single_group = button_group::new("placement-toggle-group")
             .horizontal()
@@ -70,8 +71,8 @@ impl ToggleGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage_descriptions(
             "Toggle Group",
@@ -95,7 +96,7 @@ impl ToggleGroupPane {
                     div().text_color(chrome.body_text).child(format!("Multiple: {}", self.visible_edges.join(", "))),
                 ))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 

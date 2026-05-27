@@ -4,14 +4,14 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Div, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::controls::radio_button::default_radio_button_template;
 use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
     RadioGroupTemplate, RadioGroupTemplateHandlers, SelectionMode,
 };
 
+use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
+
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 
@@ -63,28 +63,29 @@ pub(in crate::gallery) struct RadioGroupPane {
 }
 
 impl RadioGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
         let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
             .items(density_items())
-            .template(radio_button_vertical_template(default_radio_button_template()))
+            .template(radio_button_vertical_template(radio_template.clone()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
         let horizontal_group = sdk_radio_group::horizontal("radio-group-density-horizontal")
             .items(density_items())
-            .template(radio_button_horizontal_template(default_radio_button_template()))
+            .template(radio_button_horizontal_template(radio_template.clone()))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
         let indented_group = sdk_radio_group::new("radio-group-density-indented")
             .items(density_items())
-            .template(radio_button_indented_template(default_radio_button_template()))
+            .template(radio_button_indented_template(radio_template))
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
         let delivery_group = sdk_radio_group::horizontal("radio-group-delivery-window")
             .items(delivery_window_items())
-            .template(delivery_window_template(theme))
+            .template(delivery_window_template(radix_theme.clone()))
             .selected(DeliveryWindow::Today.id())
             .selection_mode(SelectionMode::SingleAllowNone)
             .spawn(cx);
@@ -116,8 +117,8 @@ impl RadioGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage_description(
             "Radio Group",
@@ -160,7 +161,7 @@ impl RadioGroupPane {
                     chrome.body_text,
                 ))
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -481,6 +482,7 @@ where
             state: item.state.interaction_state(),
             round: false,
             radius_override: Cell::new(None),
+            appearance: None,
         };
 
         let mut button = button_template
@@ -503,15 +505,15 @@ where
     rows
 }
 
-fn delivery_window_template(theme: &GalleryThemePack) -> RadioGroupTemplate<DeliveryWindowItem> {
-    let tokens = theme.tokens();
+fn delivery_window_template(radix_theme: Arc<RadixTheme>) -> RadioGroupTemplate<DeliveryWindowItem> {
+    let chrome = radix_theme.chrome();
     let spec = Arc::new(DeliveryWindowTemplateSpec {
-        selected_background: tokens.palette.data.accent_4,
-        selected_foreground: tokens.palette.action.prominent.foreground,
-        background: tokens.palette.surface.subtle.background,
-        foreground: tokens.palette.app.foreground,
-        muted_foreground: tokens.palette.app.muted_foreground,
-        focus_ring: tokens.palette.focus.ring,
+        selected_background: radix_theme.token_color("accent").unwrap_or(chrome.panel_background),
+        selected_foreground: radix_theme.token_color("accent-foreground").unwrap_or(chrome.title_text),
+        background: chrome.panel_background,
+        foreground: chrome.body_text,
+        muted_foreground: chrome.muted_text,
+        focus_ring: radix_theme.token_color("ring").unwrap_or(chrome.border),
     });
 
     Arc::new(move |model, handlers, _window, _cx| {

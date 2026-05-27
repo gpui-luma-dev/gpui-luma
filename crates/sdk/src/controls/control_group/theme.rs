@@ -24,6 +24,10 @@ pub struct DefaultControlGroupTheme {
 }
 
 pub fn default_control_group_theme() -> Arc<dyn ControlGroupTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.control_group_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

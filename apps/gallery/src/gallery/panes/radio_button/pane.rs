@@ -5,55 +5,54 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::controls::radio_button::{self, RadioButton, default_radio_button_template};
+use gpui_luma::controls::radio_button::{self, RadioButton};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioButtonPane {
-    standard_radio: RadioButton,
-    prominent_radio: RadioButton,
+    secondary_radio: RadioButton,
+    primary_radio: RadioButton,
     state_preview: Entity<RadioButtonStatePreview>,
-    standard_selected: bool,
-    prominent_selected: bool,
+    secondary_selected: bool,
+    primary_selected: bool,
 }
 
 impl RadioButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         Self {
-            standard_radio: radio_button::new("radio-button-standard-example")
-                .kind(ButtonKind::Standard)
+            secondary_radio: radio_button::new("radio-button-secondary-example")
+                .template(radix_theme.radio_button_template(RadixButtonStyle::Secondary))
                 .with_data(true)
-                .content(|_, _| div().child("Standard").into_any_element())
+                .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            prominent_radio: radio_button::new("radio-button-prominent-example")
-                .kind(ButtonKind::Prominent)
+            primary_radio: radio_button::new("radio-button-primary-example")
+                .template(radix_theme.radio_button_template(RadixButtonStyle::Primary))
                 .with_data(false)
-                .content(|_, _| div().child("Prominent").into_any_element())
+                .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| RadioButtonStatePreview::new(theme)),
-            standard_selected: true,
-            prominent_selected: false,
+            state_preview: cx.new(|_| RadioButtonStatePreview::new(radix_theme)),
+            secondary_selected: true,
+            primary_selected: false,
         }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.standard_radio, |app, _, event: &ButtonEvent, cx| {
-            app.panes.radio_button.handle_standard_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.secondary_radio, |app, _, event: &ButtonEvent, cx| {
+            app.panes.radio_button.handle_secondary_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.prominent_radio, |app, _, event: &ButtonEvent, cx| {
-            app.panes.radio_button.handle_prominent_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.primary_radio, |app, _, event: &ButtonEvent, cx| {
+            app.panes.radio_button.handle_primary_event(event, cx);
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Radio Button",
@@ -70,32 +69,32 @@ impl RadioButtonPane {
                         .items_center()
                         .justify_center()
                         .gap(px(12.0))
-                        .child(self.standard_radio.clone())
+                        .child(self.primary_radio.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Standard selected: {}", self.standard_selected)),
+                                .child(format!("Primary selected: {}", self.primary_selected)),
                         )
-                        .child(self.prominent_radio.clone())
+                        .child(self.secondary_radio.clone())
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(format!("Prominent selected: {}", self.prominent_selected)),
+                                .child(format!("Secondary selected: {}", self.secondary_selected)),
                         ),
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.standard_radio, cx);
-        notify_entity(&self.prominent_radio, cx);
+        notify_entity(&self.secondary_radio, cx);
+        notify_entity(&self.primary_radio, cx);
         notify_entity(&self.state_preview, cx);
     }
 
@@ -107,16 +106,16 @@ impl RadioButtonPane {
         });
     }
 
-    fn handle_standard_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_radio(&self.standard_radio, &mut self.standard_selected, cx);
+            Self::flip_radio(&self.secondary_radio, &mut self.secondary_selected, cx);
             cx.notify();
         }
     }
 
-    fn handle_prominent_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
+    fn handle_primary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            Self::flip_radio(&self.prominent_radio, &mut self.prominent_selected, cx);
+            Self::flip_radio(&self.primary_radio, &mut self.primary_selected, cx);
             cx.notify();
         }
     }
@@ -124,8 +123,7 @@ impl RadioButtonPane {
 
 #[derive(Clone)]
 struct RadioButtonStatePreview {
-    theme: GalleryThemePack,
-    template: Arc<dyn ButtonTemplate<bool>>,
+    radix_theme: Arc<RadixTheme>,
 }
 
 struct RadioButtonStateSample {
@@ -168,14 +166,14 @@ impl RadioButtonTemplateVariant {
 }
 
 impl RadioButtonStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_radio_button_template() }
+    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+        Self { radix_theme }
     }
 }
 
 impl Render for RadioButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             RadioButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
             RadioButtonStateSample {
@@ -220,9 +218,9 @@ impl Render for RadioButtonStatePreview {
             )
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
-                    &self.template,
-                    "Prominent",
-                    ButtonKind::Prominent,
+                    &self.radix_theme,
+                    "Primary",
+                    RadixButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -230,9 +228,9 @@ impl Render for RadioButtonStatePreview {
                     cx,
                 ),
                 render_section(
-                    &self.template,
-                    "Standard",
-                    ButtonKind::Standard,
+                    &self.radix_theme,
+                    "Secondary",
+                    RadixButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -244,15 +242,16 @@ impl Render for RadioButtonStatePreview {
 }
 
 fn render_section(
-    template: &Arc<dyn ButtonTemplate<bool>>,
+    radix_theme: &Arc<RadixTheme>,
     section_label: &'static str,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variants: &[RadioButtonTemplateVariant],
     samples: &[RadioButtonStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let template = radix_theme.radio_button_template(style);
     div()
         .flex()
         .items_start()
@@ -266,7 +265,7 @@ fn render_section(
                 .gap(px(8.0))
                 .child(render_header_row(samples, label_color))
                 .children(
-                    variants.iter().map(|variant| render_variant_row(template, kind, *variant, samples, window, cx)),
+                    variants.iter().map(|variant| render_variant_row(&template, style, *variant, samples, window, cx)),
                 ),
         )
         .into_any_element()
@@ -292,7 +291,7 @@ fn render_header_row(samples: &[RadioButtonStateSample], label_color: gpui::Hsla
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variant: RadioButtonTemplateVariant,
     samples: &[RadioButtonStateSample],
     window: &mut Window,
@@ -302,13 +301,13 @@ fn render_variant_row(
         .flex()
         .items_center()
         .gap(px(8.0))
-        .children(samples.iter().map(|sample| render_state_sample(template, kind, variant, sample, window, cx)))
+        .children(samples.iter().map(|sample| render_state_sample(template, style, variant, sample, window, cx)))
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
+    style: RadixButtonStyle,
     variant: RadioButtonTemplateVariant,
     sample: &RadioButtonStateSample,
     window: &mut Window,
@@ -316,17 +315,18 @@ fn render_state_sample(
 ) -> AnyElement {
     let selected = variant.selected();
     let id =
-        SharedString::from(format!("radio-button-preview-{}-{}-{}", button_kind_id(kind), variant.id(), sample.id));
+        SharedString::from(format!("radio-button-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: selected,
         content: variant.content(),
-        kind,
+        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(None),
+        appearance: None,
     };
 
     div()
@@ -338,11 +338,11 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn button_kind_id(kind: ButtonKind) -> &'static str {
-    match kind {
-        ButtonKind::Prominent => "prominent",
-        ButtonKind::Subtle => "subtle",
-        ButtonKind::Standard => "standard",
-        ButtonKind::Ghost => "ghost",
+fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+    match style {
+        RadixButtonStyle::Primary => "primary",
+        RadixButtonStyle::Secondary => "secondary",
+        RadixButtonStyle::Outline => "outline",
+        RadixButtonStyle::Ghost => "ghost",
     }
 }

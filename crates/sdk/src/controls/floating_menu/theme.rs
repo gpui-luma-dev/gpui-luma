@@ -15,6 +15,7 @@ pub struct FloatingMenuAppearance {
     pub min_width: f32,
     pub item_disabled_foreground: Hsla,
     pub item_hover_background: Hsla,
+    pub item_hover_foreground: Hsla,
     pub item_typography: LumaTextStyle,
     pub item_height: f32,
     pub item_padding_x: f32,
@@ -34,6 +35,10 @@ pub struct DefaultFloatingMenuTheme {
 }
 
 pub fn default_floating_menu_theme() -> Arc<dyn FloatingMenuTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.floating_menu_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }
@@ -66,9 +71,15 @@ pub const FLOATING_MENU_THEME_PARTS: &[ThemePartUsage] = &[
     },
     ThemePartUsage {
         part: "item hover background",
-        token: "state.hover.background",
+        token: "accent",
         states: &["item hovered"],
         appearance_fields: &["FloatingMenuAppearance.item_hover_background"],
+    },
+    ThemePartUsage {
+        part: "item hover foreground",
+        token: "accent-foreground",
+        states: &["item hovered"],
+        appearance_fields: &["FloatingMenuAppearance.item_hover_foreground"],
     },
     ThemePartUsage {
         part: "disabled item foreground",
@@ -106,6 +117,7 @@ pub(crate) fn default_floating_menu_appearance(tokens: &ThemeTokens, size: Contr
         min_width: 180.0,
         item_disabled_foreground: palette.state.disabled.foreground,
         item_hover_background: palette.state.hover.background,
+        item_hover_foreground: palette.state.hover.foreground,
         item_typography: typography.text.label,
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,

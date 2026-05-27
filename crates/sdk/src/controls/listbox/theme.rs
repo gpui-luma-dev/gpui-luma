@@ -42,6 +42,10 @@ pub struct DefaultListBoxTheme {
 }
 
 pub fn default_listbox_theme() -> Arc<dyn ListBoxTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.listbox_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }

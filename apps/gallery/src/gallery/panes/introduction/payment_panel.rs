@@ -1,12 +1,13 @@
+use std::sync::Arc;
+
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::{self, Checkbox};
 use gpui_luma::controls::combobox::{self, ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
-use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonKind};
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_button;
 use gpui_luma::controls::textfield::{self, TextField, TextFieldEvent};
-
-use crate::gallery::theme::GalleryThemePack;
+use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -24,7 +25,7 @@ enum PaymentField {
 }
 
 pub(super) struct PaymentPanel {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     event_bus: Entity<EventBus>,
     submit_button: Entity<Button>,
     cancel_button: Entity<Button>,
@@ -41,20 +42,35 @@ pub(super) struct PaymentPanel {
 }
 
 impl PaymentPanel {
-    pub(super) fn new(cx: &mut Context<Self>, theme: &GalleryThemePack, event_bus: Entity<EventBus>) -> Self {
-        let submit_button = Button::new("intro-submit").label("Submit").kind(ButtonKind::Prominent).spawn(cx);
-        let cancel_button = Button::new("intro-cancel").label("Cancel").kind(ButtonKind::Subtle).spawn(cx);
+    pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
+        let submit_button = Button::new("intro-submit")
+            .label("Submit")
+            .with_appearance({
+                let theme = radix_theme.clone();
+                move |model| theme.primary_button(model.role, model.size, model.state)
+            })
+            .spawn(cx);
+        let cancel_button = Button::new("intro-cancel")
+            .label("Cancel")
+            .with_appearance({
+                let theme = radix_theme.clone();
+                move |model| theme.secondary_button(model.role, model.size, model.state)
+            })
+            .spawn(cx);
         let name_field = textfield::new("intro-name")
+            .template(radix_theme.textfield_template())
             .placeholder("Name on card")
             .full_width(true)
             .clean_on_escape(true)
             .spawn(cx);
         let email_field = textfield::new("intro-email")
+            .template(radix_theme.textfield_template())
             .placeholder("Email address")
             .full_width(true)
             .clean_on_escape(true)
             .spawn(cx);
         let payment_combobox = combobox::new("intro-payment-combobox", payment_method_items())
+            .textfield_template(radix_theme.textfield_template())
             .placeholder("Select payment method…")
             .full_width(true)
             .clean_on_escape(true)
@@ -63,12 +79,12 @@ impl PaymentPanel {
             .show_clear_button(false)
             .spawn(cx);
         let same_as_shipping_checkbox = checkbox::new("intro-same-as-shipping")
-            .kind(ButtonKind::Prominent)
+            .template(radix_theme.checkbox_template(RadixButtonStyle::Primary))
             .with_data(true)
             .content(|_, _| div().child("Same as shipping address").into_any_element())
             .spawn(cx);
         let payment_method_radio = radio_button::new("intro-payment-method-radio")
-            .kind(ButtonKind::Standard)
+            .template(radix_theme.radio_button_template(RadixButtonStyle::Primary))
             .with_data(true)
             .content(|_, _| div().child("Use this as default payment method").into_any_element())
             .spawn(cx);
@@ -95,7 +111,7 @@ impl PaymentPanel {
         ];
 
         Self {
-            theme: theme.clone(),
+            radix_theme,
             event_bus,
             submit_button,
             cancel_button,
@@ -176,7 +192,7 @@ impl PaymentPanel {
 
 impl Render for PaymentPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
 
         card_container(chrome.border, chrome.panel_background)
             .child(card_title(

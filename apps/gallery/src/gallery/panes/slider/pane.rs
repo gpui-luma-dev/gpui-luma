@@ -7,13 +7,11 @@ use gpui::{
 use gpui_luma::controls::slider::{
     self, Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
-    default_slider_template,
 };
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{InteractionState, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::theme::GalleryThemePack;
 
 use super::super::shared::{gallery_pane_with_usage, notify_entity};
 
@@ -25,10 +23,16 @@ pub(in crate::gallery) struct SliderPane {
 }
 
 impl SliderPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, theme: &GalleryThemePack) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let slider_template = radix_theme.slider_template();
         Self {
-            slider: slider::new("slider-example").range(1..100).step(10).value(41).spawn(cx),
-            state_preview: cx.new(|_| SliderStatePreview::new(theme)),
+            slider: slider::new("slider-example")
+                .template(slider_template.clone())
+                .range(1..100)
+                .step(10)
+                .value(41)
+                .spawn(cx),
+            state_preview: cx.new(|_| SliderStatePreview::new(radix_theme.clone(), slider_template)),
             value: 41.0,
         }
     }
@@ -39,8 +43,8 @@ impl SliderPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, theme: &GalleryThemePack) -> AnyElement {
-        let chrome = theme.chrome();
+    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+        let chrome = radix_theme.chrome();
 
         gallery_pane_with_usage(
             "Slider",
@@ -60,7 +64,7 @@ impl SliderPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            theme,
+            radix_theme,
         )
     }
 
@@ -81,7 +85,7 @@ impl SliderPane {
 
 #[derive(Clone)]
 struct SliderStatePreview {
-    theme: GalleryThemePack,
+    radix_theme: Arc<RadixTheme>,
     template: Arc<dyn SliderTemplate>,
 }
 
@@ -92,14 +96,14 @@ struct SliderStateSample {
 }
 
 impl SliderStatePreview {
-    fn new(theme: &GalleryThemePack) -> Self {
-        Self { theme: theme.clone(), template: default_slider_template() }
+    fn new(radix_theme: Arc<RadixTheme>, template: Arc<dyn SliderTemplate>) -> Self {
+        Self { radix_theme, template }
     }
 }
 
 impl Render for SliderStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.theme.chrome();
+        let chrome = self.radix_theme.chrome();
         let samples = [
             SliderStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             SliderStateSample {

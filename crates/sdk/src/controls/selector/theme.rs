@@ -34,6 +34,10 @@ pub struct DefaultSelectorTheme {
 }
 
 pub fn default_selector_theme() -> Arc<dyn SelectorTheme> {
+    if let Some(radix) = crate::theme::radix::active_radix_theme() {
+        return radix.selector_theme();
+    }
+
     if let Some(live) = crate::theme::pack::active_live_theme() {
         return live;
     }
