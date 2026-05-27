@@ -29,13 +29,12 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - custom title-bar rendering and platform-specific window control behavior
 
 - `theme/mod.rs`
-  - submodules: `adorner`, `interaction`, `pack`, `tokens`, `registry`
-  - re-exports token/theme/usage APIs and `all_theme_usages`
+  - submodules: `adorner`, `interaction`, `pack`, `radix`, `tokens`, `registry`
+  - re-exports token APIs, `RadixTheme`, `set_active_radix_theme`, and `all_radix_theme_usages`
 
 - `controls/mod.rs`
   - exports control families and shared infra modules
   - crate-private support modules: `button_family_template`, `interaction`, `menu_navigation`, `text`
-  - re-exports `all_theme_usages`
 
 ## `apps/gallery` (`gpui-luma-gallery`)
 
@@ -52,7 +51,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `gallery/template.rs`
   - render implementation for root gallery shell
 - `gallery/theme.rs`
-  - aliases SDK theme pack/chrome as gallery types
+  - `GalleryThemeChoice` (CLI `default` or tweakcn CSS stem)
+  - `tweakcn_dir()`, `available_theme_names()`, `radix_theme()` loader
+  - re-exports `LumaChrome` as `GalleryChrome`
 - `gallery/panes/registry.rs`
   - page registry, nav model, pane constructor/subscription/dispatch
 - `gallery/panes/*`
@@ -107,9 +108,6 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 
 - `interaction.rs` (crate-private)
   - reusable pointer/focus interaction state helpers
-
-- `theme_registry.rs`
-  - manually curated list of control theme usages via `all_theme_usages()`
 
 ## Command/button family
 
@@ -226,9 +224,13 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - TOML parsing and conversion into typed theme model
 
 - `pack.rs`
-  - `LumaThemePack`: runtime theme holder and template/theme provider
-  - `LumaChrome`: app/gallery chrome colors
-  - exposes control-specific theme/template trait object factories
+  - `LumaChrome`: app/gallery shell chrome colors
+
+- `radix/mod.rs`
+  - `RadixTheme`: CSS catalog + mode tokens + control resolvers/template factories
+  - `active.rs`: `set_active_radix_theme` / `active_radix_theme`
+  - `usage.rs`: `all_radix_theme_usages()` — hand-maintained CSS token usage metadata
+  - `catalog/`, `properties/`, `appearance/`, `recipes/`: CSS parse + per-control Radix resolvers
 
 - `registry.rs`
   - palette token introspection (`PaletteColorToken`)
@@ -281,5 +283,5 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `theme/tokens.rs`: parsing schema drift and default-theme invariant
 - `controls/textarea/control.rs`, `controls/textfield/control.rs`: complex interaction state + async cursor/selection tasks
 - `controls/navigation_sidebar/control.rs`: large state transitions and nested nav behavior
-- `controls/theme_registry.rs`: manual registration maintenance
+- `theme/radix/usage.rs`: manual Radix usage registration maintenance
 - `apps/gallery/src/gallery/panes/registry.rs`: string-ID routing and broad wiring surface

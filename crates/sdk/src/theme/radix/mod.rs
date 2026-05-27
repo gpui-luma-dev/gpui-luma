@@ -128,6 +128,11 @@ impl RadixTheme {
         &self.state.catalog
     }
 
+    /// `true` when the theme was loaded from tweakcn/shadcn CSS (non-empty catalog).
+    pub fn has_css_catalog(&self) -> bool {
+        !self.state.light.catalog.tokens.is_empty() || !self.state.dark.catalog.tokens.is_empty()
+    }
+
     pub fn token(&self, name: &str) -> Option<&str> {
         self.mode_tokens().catalog.get(name)
     }

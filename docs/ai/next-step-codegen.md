@@ -4,7 +4,7 @@
 
 **Scope:** Appearance matrices, per-control variant support, default choice weights, and build-time validation/code generation. Templates stay responsible for **structure** (layout, geometry, interaction wiring); themes stay responsible for **values and policy**.
 
-**Not in scope here:** Palette import from tweakcn (`docs/ai/next-step-theme-import.md`), active pack wiring (`docs/ai/next-step-theme.md`), or adding new ladder rungs to the public API (`docs/ai/next-step-variants.md`). Those docs remain separate; codegen consumes their outputs.
+**Not in scope here:** Palette import from tweakcn ([`next-step-theme-import.md`](next-step-theme-import.md) — superseded), active theme wiring ([`next-step-theme.md`](next-step-theme.md) — superseded), or adding new ladder rungs to the public API (`docs/ai/next-step-variants.md`). Those docs remain separate; codegen consumes their outputs.
 
 ---
 

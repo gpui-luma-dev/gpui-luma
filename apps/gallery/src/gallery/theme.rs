@@ -86,6 +86,14 @@ impl GalleryThemeChoice {
         matches!(self, Self::Named(stem) if stem == "jarvis")
     }
 
+    /// `cargo run -p gpui-luma-gallery -- <stem>|default|…`
+    pub(in crate::gallery) fn cli_usage_line() -> String {
+        let program = "gpui-luma-gallery";
+        let mut options = vec!["default".to_string()];
+        options.extend(available_theme_names());
+        format!("cargo run -p {program} -- [{}]", options.join("|"))
+    }
+
     pub fn radix_theme(self) -> Arc<RadixTheme> {
         match self {
             Self::Default => Arc::new(RadixTheme::native()),
@@ -145,5 +153,18 @@ mod tests {
         let path = theme_css_path("retro-arcade");
         let theme = RadixTheme::from_css_path(&path).expect("retro-arcade css should parse");
         assert_eq!(theme.mode_tokens().metrics.radius.md, 10.0);
+    }
+
+    #[test]
+    fn native_theme_has_empty_css_catalog() {
+        let theme = RadixTheme::native();
+        assert!(!theme.has_css_catalog());
+    }
+
+    #[test]
+    fn css_theme_has_css_catalog() {
+        let path = theme_css_path("retro-arcade");
+        let theme = RadixTheme::from_css_path(&path).expect("retro-arcade css should parse");
+        assert!(theme.has_css_catalog());
     }
 }

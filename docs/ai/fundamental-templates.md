@@ -1,10 +1,12 @@
 # Fundamental templates + SDK/theme divorce
 
+> **Phase A note (May 2026):** Phase A closed **differently** than originally planned — gallery loads tweakcn CSS directly via `RadixTheme` (no `luma-theme` CLI, no `assets/themes` TOML). This doc remains the design record for optional **Phase B** (SDK/theme crate split). See [`next-steps-finalized.md`](next-steps-finalized.md).
+
 **Status (May 2026):**
 
 | Phase | State | Summary |
 |---|---|---|
-| **A — Theme import & gallery wiring** | **Closed (good enough)** | `luma-theme` CLI, batch import, gallery theme-by-stem; validated problems import was meant to surface |
+| **A — Theme import & gallery wiring** | **Closed (Radix/CSS path)** | Direct CSS → `RadixTheme`; TOML import toolchain removed |
 | **B — SDK/theme split** | **Next** | `Appearance`-only SDK; theme in separate crate(s); dev theme for control work |
 
 This doc is the **design record** for Phase B. It subsumes earlier “adapters / recipes” notes and the button `.kind` migration plan.

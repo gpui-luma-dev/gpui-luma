@@ -4,6 +4,7 @@ use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{RadixTheme, ThemePartUsage, ThemeUsage, all_radix_theme_usages};
 
 use crate::gallery::panes::shared::format_compact_hsla;
+use crate::gallery::panes::shared::render_sparse_catalog_callout;
 
 type UsageRef = (&'static str, &'static ThemePartUsage);
 
@@ -48,14 +49,15 @@ pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
                                 .text_color(chrome.title_text)
                                 .child("Theme Usage"),
                         )
-                        .child(
-                            div()
-                                .text_size(px(13.0))
-                                .line_height(px(18.0))
-                                .text_color(chrome.muted_text)
-                                .child("Radix CSS token usage metadata for migrated controls"),
-                        ),
+                        .child(div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.muted_text).child(
+                            if radix_theme.has_css_catalog() {
+                                "Radix CSS token usage metadata for migrated controls"
+                            } else {
+                                "SDK resolver metadata — CSS catalog empty on native default theme"
+                            },
+                        )),
                 )
+                .when_some(render_sparse_catalog_callout(radix_theme), |panel, callout| panel.child(callout))
                 .child(div().flex().gap(px(8.0)).children([
                     render_count_badge("Components", usages.len().to_string(), radix_theme),
                     render_count_badge("Catalog tokens", catalog_tokens.len().to_string(), radix_theme),

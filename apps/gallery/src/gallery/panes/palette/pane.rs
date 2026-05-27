@@ -2,6 +2,7 @@ use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{RadixModeTokens, RadixTheme};
 
 use crate::gallery::panes::shared::format_compact_hsla;
+use crate::gallery::panes::shared::render_sparse_catalog_callout;
 
 struct CatalogColorItem {
     token: String,
@@ -53,14 +54,15 @@ pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
                                 .text_color(chrome.title_text)
                                 .child("Palette"),
                         )
-                        .child(
-                            div()
-                                .text_size(px(13.0))
-                                .line_height(px(18.0))
-                                .text_color(chrome.muted_text)
-                                .child("CSS custom properties from the active tweakcn theme"),
-                        ),
+                        .child(div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.muted_text).child(
+                            if radix_theme.has_css_catalog() {
+                                "CSS custom properties from the active tweakcn theme"
+                            } else {
+                                "No tweakcn CSS loaded — native default uses the embedded SDK palette only"
+                            },
+                        )),
                 )
+                .when_some(render_sparse_catalog_callout(radix_theme), |panel, callout| panel.child(callout))
                 .child(div().flex().flex_col().gap(px(24.0)).children(palettes.into_iter().map(render_mode_palette))),
         )
         .into_any_element()

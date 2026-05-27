@@ -32,7 +32,7 @@ Top-level modules:
 - `init` – global SDK init (`init(cx)`) currently registers Lucide font bytes
 - `focus` – shared focus actions/context and focus-scope extension trait
 - `keyhandling` – default keyboard action profiles + default key bindings
-- `theme` – theme tokens, theme usage registry, runtime theme pack, interaction/adorner types
+- `theme` – native tokens, Radix/CSS runtime theming, usage registry, interaction/adorner types
 - `controls` – control library (buttons, inputs, menus, navigation, layout helpers)
 - `shell` – shared shell components (`TitleBar`)
 
@@ -62,8 +62,10 @@ High-level flow:
 
 ## Theme APIs
 
-- `theme::LumaTheme`, `theme::ThemeTokens`, `theme::ThemeMode`
-- `theme::LumaThemePack` (runtime light/dark mode and template/theme providers)
+- `theme::LumaTheme`, `theme::ThemeTokens`, `theme::ThemeMode` — native fallback schema
+- `theme::RadixTheme`, `theme::set_active_radix_theme` — CSS-first product runtime theme
+- `theme::all_radix_theme_usages` — CSS token usage metadata for gallery introspection
+- `theme::LumaChrome` — shell chrome colors
 - `theme::ThemeUsage`, `theme::ThemePartUsage`
 - `theme::palette_color_tokens(...)`, `theme::resolve_palette_color(...)`
 
@@ -135,7 +137,7 @@ Frequently used controls:
 ## Known Risks
 
 - `LumaTheme::native()` can panic if embedded TOML becomes invalid.
-- Theme usage registry is manually curated (`controls/theme_registry.rs`), so omissions are possible when adding new controls/themes.
+- Theme usage registry is manually curated (`theme/radix/usage.rs`), so omissions are possible when adding new controls/themes.
 - Autocomplete and combobox behavior are similar but separate, creating drift risk.
 - Large stateful modules (`textarea`, `textfield`, `navigation_sidebar`) are regression-prone without broader integration tests.
 - Gallery routing uses string IDs; accidental mismatches are possible.

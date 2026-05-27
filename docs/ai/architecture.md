@@ -23,8 +23,11 @@ The project is structured around two complementary concerns:
   - `keyhandling.rs`: control key profiles + default key bindings
 
 - **Theming subsystem**
-  - `theme/tokens.rs`: theme schema + parsing + defaults + mode selection
-  - `theme/pack.rs`: runtime theme pack (`LumaThemePack`) with light/dark toggling and live trait-object providers
+  - `theme/tokens.rs`: native theme schema + parsing + defaults + mode selection (`LumaTheme::native()` fallback)
+  - `theme/radix/*`: CSS-first product theming — `RadixTheme`, CSS catalog parse, control appearance resolvers, template factories
+  - `theme/radix/active.rs`: global active theme registration (`set_active_radix_theme` / `active_radix_theme`)
+  - `theme/radix/usage.rs`: hand-maintained usage metadata (`all_radix_theme_usages`)
+  - `theme/pack.rs`: `LumaChrome` shell colors only (historical module name)
   - `theme/registry.rs`: palette token metadata/introspection API
   - `theme/interaction.rs`: generic interaction-state layer precedence
   - `theme/adorner.rs`: adorner/focus-ring descriptors (current policy: one optional adorner per appearance)
@@ -65,10 +68,11 @@ This pattern improves consistency and makes style/theming separable from behavio
 - Many templates accept handler bundles (`...TemplateHandlers`) to bridge control logic to rendering hooks.
 - `ControlTemplate<T, M>` plus modifier pipelines provide composability.
 - TextField supports per-instance appearance specialization (`.appearance_override(...)`) without adding global variants/tokens; overrides are applied after appearance resolution and used consistently by both template rendering and text layout/shaping.
-- `LumaThemePack` serves as runtime adapter:
-  - stores theme + active mode
-  - provides pre-wired template/theme implementations for controls
-  - supports live mode toggling (light/dark)
+- `RadixTheme` serves as the product runtime theme:
+  - loads tweakcn/shadcn CSS catalogs (`RadixTheme::from_css_path`) or native fallback (`RadixTheme::native()`)
+  - stores active light/dark mode and exposes control template/theme factories
+  - gallery registers one `Arc<RadixTheme>` at startup via `set_active_radix_theme`
+  - SDK `default_*_theme()` helpers consult `active_radix_theme()` before falling back to `ThemeTokens::default()`
 - `control_group` provides optional themed list chrome via `ControlGroupTheme` + `ThemedControlGroupTemplate` (`ControlTemplate` + modifiers from `controls/template.rs`):
   - group border/background/radius/padding from `border.default` and `surface.subtle.background`
   - item visuals still come from `ControlGroupItemTemplate` (e.g. `button_item_template` + `ButtonTemplate`)
@@ -91,6 +95,20 @@ This pattern improves consistency and makes style/theming separable from behavio
 
 ## Gallery Architecture (`apps/gallery`)
 
+## Theme loading
+
+```
+apps/gallery/tweakcn/<stem>.css
+        ↓
+GalleryThemeChoice (CLI: default or CSS stem)
+        ↓
+RadixTheme::from_css_path / RadixTheme::native()
+        ↓
+set_active_radix_theme (GalleryApp startup)
+        ↓
+GalleryPanes + per-pane render(&RadixTheme)
+```
+
 ## Main components
 
 - `main.rs` – application setup + SDK bootstrap + window open
@@ -111,7 +129,7 @@ This pattern improves consistency and makes style/theming separable from behavio
 
 - `SplitView` and `NavigationSidebar` are synchronized bidirectionally (collapsed state + width updates).
 - Pane entities subscribe to events in centralized `GalleryPanes::subscribe`.
-- Theme mode toggle in title bar updates `LumaThemePack` and triggers notify.
+- Theme mode toggle in title bar updates `RadixTheme` mode and triggers notify.
 
 ## Public API Surface (Most Important)
 
@@ -129,7 +147,7 @@ This pattern improves consistency and makes style/theming separable from behavio
 
 ## Known Architectural Risks
 
-- Manual registries (`theme_registry`, gallery page registry) can drift.
+- Manual registries (`theme/radix/usage.rs`, gallery page registry) can drift.
 - String-based IDs in gallery routing are typo-prone.
 - Several large control modules centralize complex state logic, increasing regression surface.
 - Runtime visuals rely on successful icon font initialization.

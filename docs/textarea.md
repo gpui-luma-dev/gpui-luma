@@ -289,7 +289,7 @@ Strict validation demo validator allows:
 - space
 - newline
 
-The pane now uses `theme.textarea_template()` from `GalleryThemePack` (instead of constructing a themed template inline), so theme helper usage is centralized and compile warnings are avoided.
+The pane uses `radix_theme.textarea_template()` from the gallery's active `RadixTheme` (passed via `GalleryPanes`), so theme helper usage is centralized and compile warnings are avoided.
 
 ---
 
