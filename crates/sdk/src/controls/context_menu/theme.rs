@@ -3,9 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct ContextMenuAppearance {
@@ -34,95 +32,10 @@ pub fn default_context_menu_theme() -> Arc<dyn ContextMenuTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.context_menu_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn ContextMenuTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultContextMenuTheme::default())).clone()
 }
-
-pub const CONTEXT_MENU_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Context Menu",
-    parts: &[
-        ThemePartUsage {
-            part: "target background",
-            token: "action.ghost.background",
-            states: &["default"],
-            appearance_fields: &["ContextMenuAppearance.target_background"],
-        },
-        ThemePartUsage {
-            part: "target hover background",
-            token: "action.ghost.hover_background",
-            states: &["hovered"],
-            appearance_fields: &["ContextMenuAppearance.target_background"],
-        },
-        ThemePartUsage {
-            part: "target pressed background",
-            token: "action.ghost.pressed_background",
-            states: &["pressed"],
-            appearance_fields: &["ContextMenuAppearance.target_background"],
-        },
-        ThemePartUsage {
-            part: "target foreground",
-            token: "action.ghost.foreground",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["ContextMenuAppearance.target_foreground"],
-        },
-        ThemePartUsage {
-            part: "target border",
-            token: "border.default",
-            states: &["default", "hovered", "pressed", "focused", "disabled"],
-            appearance_fields: &["ContextMenuAppearance.target_border"],
-        },
-        ThemePartUsage {
-            part: "menu background",
-            token: "surface.floating.background",
-            states: &["open"],
-            appearance_fields: &["ContextMenuAppearance.floating_menu.background"],
-        },
-        ThemePartUsage {
-            part: "menu border",
-            token: "surface.floating.border",
-            states: &["open"],
-            appearance_fields: &["ContextMenuAppearance.floating_menu.border"],
-        },
-        ThemePartUsage {
-            part: "item foreground",
-            token: "surface.floating.foreground",
-            states: &["open"],
-            appearance_fields: &["ContextMenuAppearance.floating_menu.foreground"],
-        },
-        ThemePartUsage {
-            part: "item hover background",
-            token: "state.hover.background",
-            states: &["item hovered"],
-            appearance_fields: &["ContextMenuAppearance.floating_menu.item_hover_background"],
-        },
-        ThemePartUsage {
-            part: "disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled", "item disabled"],
-            appearance_fields: &[
-                "ContextMenuAppearance.target_foreground",
-                "ContextMenuAppearance.floating_menu.item_disabled_foreground",
-            ],
-        },
-        ThemePartUsage {
-            part: "disabled target background",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["ContextMenuAppearance.target_background"],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["ContextMenuAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultContextMenuTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

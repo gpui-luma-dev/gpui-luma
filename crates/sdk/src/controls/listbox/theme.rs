@@ -3,9 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct ListBoxListAppearance {
@@ -45,80 +43,10 @@ pub fn default_listbox_theme() -> Arc<dyn ListBoxTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.listbox_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn ListBoxTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultListBoxTheme::default())).clone()
 }
-
-pub const LISTBOX_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "ListBox",
-    parts: &[
-        ThemePartUsage {
-            part: "list background",
-            token: "form.input.background",
-            states: &["enabled"],
-            appearance_fields: &["ListBoxListAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "list border and row dividers",
-            token: "form.input.border",
-            states: &["default", "enabled", "disabled"],
-            appearance_fields: &["ListBoxListAppearance.border", "ListBoxListAppearance.divider"],
-        },
-        ThemePartUsage {
-            part: "row background",
-            token: "surface.subtle.background",
-            states: &["unselected"],
-            appearance_fields: &["ListBoxRowAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "row hover background",
-            token: "state.hover.background",
-            states: &["unselected hovered"],
-            appearance_fields: &["ListBoxRowAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "row pressed background",
-            token: "state.pressed.background",
-            states: &["pressed"],
-            appearance_fields: &["ListBoxRowAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "focused row background",
-            token: "state.hover.background",
-            states: &["focused"],
-            appearance_fields: &["ListBoxRowAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "row foreground",
-            token: "app.foreground",
-            states: &["unselected"],
-            appearance_fields: &["ListBoxRowAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "disabled background",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["ListBoxListAppearance.background", "ListBoxRowAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["ListBoxRowAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "focused list ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["ListBoxListAppearance.adorner"],
-        },
-    ],
-};
 
 impl DefaultListBoxTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

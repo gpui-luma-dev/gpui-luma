@@ -12,17 +12,8 @@ pub(in crate::gallery) fn tweakcn_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tweakcn")
 }
 
-/// `apps/gallery/src/assets/themes/` — legacy Luma TOML samples (tests / import tooling).
-pub(in crate::gallery) fn themes_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/assets/themes")
-}
-
 fn theme_css_path(stem: &str) -> PathBuf {
     tweakcn_dir().join(format!("{stem}.css"))
-}
-
-fn theme_toml_path(stem: &str) -> PathBuf {
-    themes_dir().join(format!("{stem}.toml"))
 }
 
 /// Lists tweakcn CSS theme stems (e.g. `retro-arcade`) sorted for usage text.
@@ -111,13 +102,9 @@ impl GalleryThemeChoice {
 
 #[cfg(test)]
 mod tests {
-    use gpui_luma::theme::{LumaTheme, ThemeMode, RadixTheme};
+    use gpui_luma::theme::RadixTheme;
 
-    use super::{available_theme_names, theme_css_path, theme_toml_path, themes_dir, tweakcn_dir};
-
-    fn read_theme_toml(stem: &str) -> String {
-        std::fs::read_to_string(theme_toml_path(stem)).expect("read theme toml")
-    }
+    use super::{available_theme_names, theme_css_path, tweakcn_dir};
 
     #[test]
     fn tweakcn_dir_exists_and_lists_imported_samples() {
@@ -158,23 +145,5 @@ mod tests {
         let path = theme_css_path("retro-arcade");
         let theme = RadixTheme::from_css_path(&path).expect("retro-arcade css should parse");
         assert_eq!(theme.mode_tokens().metrics.radius.md, 10.0);
-    }
-
-    #[test]
-    fn astrovista_theme_parses_with_distinct_action_roles() {
-        let theme = LumaTheme::from_toml_str(&read_theme_toml("astrovista")).expect("astrovista theme should parse");
-        let light = theme.mode(ThemeMode::Light);
-
-        assert_eq!(theme.name, "Astrovista");
-        assert_eq!(light.palette.action.subtle.background, light.palette.surface.panel.background);
-        assert_ne!(light.palette.action.subtle.background, light.palette.action.standard.background);
-        assert_ne!(light.palette.action.prominent.background, light.palette.action.standard.background);
-        assert_eq!(light.palette.app.background, light.palette.action.ghost.background);
-    }
-
-    #[test]
-    fn themes_dir_still_has_legacy_toml_samples() {
-        assert!(themes_dir().is_dir());
-        assert!(theme_toml_path("jarvis").is_file());
     }
 }

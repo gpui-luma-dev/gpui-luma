@@ -116,6 +116,14 @@ impl RadixTheme {
         }
     }
 
+    pub fn light_tokens(&self) -> &RadixModeTokens {
+        &self.state.light
+    }
+
+    pub fn dark_tokens(&self) -> &RadixModeTokens {
+        &self.state.dark
+    }
+
     pub fn catalog(&self) -> &CssTokenCatalog {
         &self.state.catalog
     }

@@ -46,7 +46,7 @@ pub use model::{
     SelectorRenderModel, SelectorItem, SelectorItemLike,
 };
 pub use template::{SelectorTemplate, SelectorTemplateHandlers, ThemedSelectorTemplate, default_selector_template};
-pub use theme::{DefaultSelectorTheme, SELECTOR_THEME_USAGE, SelectorAppearance, SelectorTheme, default_selector_theme};
+pub use theme::{DefaultSelectorTheme, SelectorAppearance, SelectorTheme, default_selector_theme};
 
 pub use crate::controls::state::ControlFocusState;
 pub use crate::theme::InteractionState as SelectorState;

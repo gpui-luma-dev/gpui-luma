@@ -11,8 +11,6 @@ pub use template::{
     ThemedScrollbarTemplate, default_scrollbar_template,
 };
 
-pub use theme::{
-    DefaultScrollbarTheme, SCROLLBAR_THEME_USAGE, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme,
-};
+pub use theme::{DefaultScrollbarTheme, ScrollbarAppearance, ScrollbarTheme, default_scrollbar_theme};
 
 pub use crate::theme::InteractionState as ScrollbarState;

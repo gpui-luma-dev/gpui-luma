@@ -1,6 +1,6 @@
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SelectionPanelAppearance {
@@ -20,46 +20,6 @@ pub struct SelectionPanelAppearance {
     pub item_gap: f32,
     pub item_icon_size: f32,
     pub item_radius: f32,
-}
-
-pub const SELECTION_PANEL_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Selection Panel",
-    parts: &[
-        ThemePartUsage {
-            part: "panel background",
-            token: "surface.floating.background",
-            states: &["default"],
-            appearance_fields: &["SelectionPanelAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "panel foreground",
-            token: "surface.floating.foreground",
-            states: &["default"],
-            appearance_fields: &["SelectionPanelAppearance.foreground"],
-        },
-        ThemePartUsage {
-            part: "panel border",
-            token: "surface.floating.border",
-            states: &["default"],
-            appearance_fields: &["SelectionPanelAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "item hover background",
-            token: "state.hover.background",
-            states: &["hovered", "active", "pressed"],
-            appearance_fields: &["SelectionPanelAppearance.item_hover_background"],
-        },
-        ThemePartUsage {
-            part: "item disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["SelectionPanelAppearance.item_disabled_foreground"],
-        },
-    ],
-};
-
-pub fn selection_panel_theme_usage() -> &'static ThemeUsage {
-    &SELECTION_PANEL_THEME_USAGE
 }
 
 pub fn default_selection_panel_appearance(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelAppearance {

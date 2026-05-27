@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuAppearance {
@@ -38,56 +38,10 @@ pub fn default_floating_menu_theme() -> Arc<dyn FloatingMenuTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.floating_menu_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn FloatingMenuTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultFloatingMenuTheme::default())).clone()
 }
-
-pub const FLOATING_MENU_THEME_USAGE: ThemeUsage =
-    ThemeUsage { label: "Floating Menu", parts: FLOATING_MENU_THEME_PARTS };
-
-pub const FLOATING_MENU_THEME_PARTS: &[ThemePartUsage] = &[
-    ThemePartUsage {
-        part: "menu background",
-        token: "surface.floating.background",
-        states: &["open"],
-        appearance_fields: &["FloatingMenuAppearance.background"],
-    },
-    ThemePartUsage {
-        part: "menu border",
-        token: "surface.floating.border",
-        states: &["open"],
-        appearance_fields: &["FloatingMenuAppearance.border"],
-    },
-    ThemePartUsage {
-        part: "item foreground",
-        token: "surface.floating.foreground",
-        states: &["open"],
-        appearance_fields: &["FloatingMenuAppearance.foreground"],
-    },
-    ThemePartUsage {
-        part: "item hover background",
-        token: "accent",
-        states: &["item hovered"],
-        appearance_fields: &["FloatingMenuAppearance.item_hover_background"],
-    },
-    ThemePartUsage {
-        part: "item hover foreground",
-        token: "accent-foreground",
-        states: &["item hovered"],
-        appearance_fields: &["FloatingMenuAppearance.item_hover_foreground"],
-    },
-    ThemePartUsage {
-        part: "disabled item foreground",
-        token: "state.disabled.foreground",
-        states: &["item disabled"],
-        appearance_fields: &["FloatingMenuAppearance.item_disabled_foreground"],
-    },
-];
 
 impl DefaultFloatingMenuTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

@@ -4,7 +4,7 @@ use gpui::{Hsla, hsla};
 
 use crate::controls::scrollbar::ScrollbarOrientation;
 
-use crate::theme::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarAppearance {
@@ -32,56 +32,10 @@ pub fn default_scrollbar_theme() -> Arc<dyn ScrollbarTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.scrollbar_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn ScrollbarTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultScrollbarTheme::default())).clone()
 }
-
-pub const SCROLLBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Scrollbar",
-    parts: &[
-        ThemePartUsage {
-            part: "thumb background",
-            token: "border.default",
-            states: &["default"],
-            appearance_fields: &["ScrollbarAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "thumb hover background",
-            token: "state.hover.background",
-            states: &["hovered"],
-            appearance_fields: &["ScrollbarAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "thumb pressed background",
-            token: "state.pressed.background",
-            states: &["pressed"],
-            appearance_fields: &["ScrollbarAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "disabled track",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["ScrollbarAppearance.track_background"],
-        },
-        ThemePartUsage {
-            part: "disabled thumb",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["ScrollbarAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["ScrollbarAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultScrollbarTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

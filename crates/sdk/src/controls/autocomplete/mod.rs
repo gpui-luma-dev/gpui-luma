@@ -14,7 +14,6 @@ pub use template::{
     default_autocomplete_items_template, default_autocomplete_textbox_template,
 };
 pub use theme::{
-    DefaultAutocompleteTextBoxTheme, AUTOCOMPLETE_TEXTBOX_THEME_USAGE, COMBOBOX_THEME_USAGE,
-    SEARCH_SELECTOR_THEME_USAGE, AutocompleteTextBoxAppearance, AutocompleteTextBoxTheme,
+    DefaultAutocompleteTextBoxTheme, AutocompleteTextBoxAppearance, AutocompleteTextBoxTheme,
     default_autocomplete_textbox_theme,
 };

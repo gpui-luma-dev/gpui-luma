@@ -12,10 +12,7 @@ pub use template::{
     TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldTemplate, TextFieldTemplateHandlers,
     ThemedTextFieldTemplate, default_textfield_template,
 };
-pub use theme::{
-    DefaultTextFieldTheme, TEXTFIELD_THEME_USAGE, TextFieldAppearance, TextFieldTheme, TextFieldVariant,
-    default_textfield_theme,
-};
+pub use theme::{DefaultTextFieldTheme, TextFieldAppearance, TextFieldTheme, TextFieldVariant, default_textfield_theme};
 
 use gpui::{Entity, SharedString};
 

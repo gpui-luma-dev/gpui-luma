@@ -4,9 +4,7 @@ use gpui::{Hsla, SharedString};
 
 use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct RadioButtonAppearance {
@@ -42,120 +40,10 @@ pub fn default_radio_button_theme() -> Arc<dyn RadioButtonTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.radio_button_theme(crate::theme::RadixButtonStyle::Primary);
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn RadioButtonTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultRadioButtonTheme::default())).clone()
 }
-
-pub const RADIO_BUTTON_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Radio Button",
-    parts: &[
-        ThemePartUsage {
-            part: "unchecked indicator background",
-            token: "form.input.background",
-            states: &["unchecked"],
-            appearance_fields: &["RadioButtonAppearance.indicator_background"],
-        },
-        ThemePartUsage {
-            part: "unchecked indicator hover background",
-            token: "state.hover.background",
-            states: &["unchecked hovered"],
-            appearance_fields: &["RadioButtonAppearance.indicator_background"],
-        },
-        ThemePartUsage {
-            part: "unchecked indicator pressed background",
-            token: "state.pressed.background",
-            states: &["unchecked pressed"],
-            appearance_fields: &["RadioButtonAppearance.indicator_background"],
-        },
-        ThemePartUsage {
-            part: "unchecked indicator border",
-            token: "form.input.border",
-            states: &["unchecked", "unchecked hovered", "unchecked pressed"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border"],
-        },
-        ThemePartUsage {
-            part: "checked standard indicator border",
-            token: "action.standard.background",
-            states: &["checked standard"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked standard indicator hover border",
-            token: "action.standard.hover_background",
-            states: &["checked standard hovered"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked standard indicator pressed border",
-            token: "action.standard.pressed_background",
-            states: &["checked standard pressed"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked standard dot",
-            token: "action.standard.foreground",
-            states: &["checked standard"],
-            appearance_fields: &["RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked prominent indicator border",
-            token: "action.prominent.background",
-            states: &["checked prominent"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked prominent indicator hover border",
-            token: "action.prominent.hover_background",
-            states: &["checked prominent hovered"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked prominent indicator pressed border",
-            token: "action.prominent.pressed_background",
-            states: &["checked prominent pressed"],
-            appearance_fields: &["RadioButtonAppearance.indicator_border", "RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "checked prominent dot",
-            token: "action.prominent.foreground",
-            states: &["checked prominent"],
-            appearance_fields: &["RadioButtonAppearance.dot_color"],
-        },
-        ThemePartUsage {
-            part: "label",
-            token: "app.foreground",
-            states: &["default", "checked"],
-            appearance_fields: &["RadioButtonAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "disabled fill",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["RadioButtonAppearance.indicator_background"],
-        },
-        ThemePartUsage {
-            part: "disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &[
-                "RadioButtonAppearance.indicator_border",
-                "RadioButtonAppearance.dot_color",
-                "RadioButtonAppearance.label_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["RadioButtonAppearance.adorner"],
-        },
-    ],
-};
 
 impl DefaultRadioButtonTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

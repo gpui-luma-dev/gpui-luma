@@ -38,8 +38,5 @@ pub mod template;
 pub(crate) mod text;
 pub mod textarea;
 pub mod textfield;
-pub mod theme_registry;
 pub mod toggle;
 pub mod value;
-
-pub use theme_registry::all_theme_usages;

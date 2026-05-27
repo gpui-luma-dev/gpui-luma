@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{InteractionLayer, InteractionState, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SliderAppearance {
@@ -32,68 +32,10 @@ pub fn default_slider_theme() -> Arc<dyn SliderTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.slider_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn SliderTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSliderTheme::default())).clone()
 }
-
-pub const SLIDER_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Slider",
-    parts: &[
-        ThemePartUsage {
-            part: "track background",
-            token: "surface.subtle.background",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["SliderAppearance.track_background"],
-        },
-        ThemePartUsage {
-            part: "fill background",
-            token: "action.prominent.background",
-            states: &["default"],
-            appearance_fields: &["SliderAppearance.fill_background", "SliderAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "fill hover background",
-            token: "action.prominent.hover_background",
-            states: &["hovered"],
-            appearance_fields: &["SliderAppearance.fill_background"],
-        },
-        ThemePartUsage {
-            part: "fill pressed background",
-            token: "action.prominent.pressed_background",
-            states: &["pressed"],
-            appearance_fields: &["SliderAppearance.fill_background"],
-        },
-        ThemePartUsage {
-            part: "thumb background",
-            token: "surface.panel.background",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &["SliderAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "disabled track",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["SliderAppearance.track_background", "SliderAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "disabled fill and thumb",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["SliderAppearance.fill_background", "SliderAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["SliderAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultSliderTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

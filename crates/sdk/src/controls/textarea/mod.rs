@@ -12,4 +12,4 @@ pub use template::{
     TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaDragMoveHandler, TextAreaTemplate,
     TextAreaTemplateHandlers, ThemedTextAreaTemplate, default_textarea_template,
 };
-pub use theme::{DefaultTextAreaTheme, TEXTAREA_THEME_USAGE, TextAreaAppearance, TextAreaTheme, default_textarea_theme};
+pub use theme::{DefaultTextAreaTheme, TextAreaAppearance, TextAreaTheme, default_textarea_theme};

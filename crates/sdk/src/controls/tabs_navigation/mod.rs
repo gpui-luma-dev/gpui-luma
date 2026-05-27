@@ -14,8 +14,8 @@ pub use template::{
 };
 
 pub use theme::{
-    DefaultTabsNavigationTheme, TABS_NAVIGATION_THEME_USAGE, TabsNavigationListAppearance,
-    TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme,
+    DefaultTabsNavigationTheme, TabsNavigationListAppearance, TabsNavigationItemAppearance, TabsNavigationTheme,
+    default_tabs_navigation_theme,
 };
 
 pub use crate::controls::state::{CompositeItemState as TabsNavigationItemState, ControlFocusState};

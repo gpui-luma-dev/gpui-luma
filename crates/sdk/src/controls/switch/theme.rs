@@ -4,9 +4,7 @@ use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SwitchAppearance {
@@ -41,128 +39,10 @@ pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.switch_theme(crate::theme::RadixButtonStyle::Primary);
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn SwitchTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSwitchTheme::default())).clone()
 }
-
-pub const SWITCH_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Switch",
-    parts: &[
-        ThemePartUsage {
-            part: "off track background",
-            token: "form.input.background",
-            states: &["off"],
-            appearance_fields: &["SwitchAppearance.track_background"],
-        },
-        ThemePartUsage {
-            part: "off track hover background",
-            token: "state.hover.background",
-            states: &["off hovered"],
-            appearance_fields: &["SwitchAppearance.track_background"],
-        },
-        ThemePartUsage {
-            part: "off track pressed background",
-            token: "state.pressed.background",
-            states: &["off pressed"],
-            appearance_fields: &["SwitchAppearance.track_background"],
-        },
-        ThemePartUsage {
-            part: "off track border",
-            token: "form.input.border",
-            states: &["off", "off hovered", "off pressed"],
-            appearance_fields: &["SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on standard track background",
-            token: "action.standard.background",
-            states: &["on standard"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on standard track hover background",
-            token: "action.standard.hover_background",
-            states: &["on standard hovered"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on standard track pressed background",
-            token: "action.standard.pressed_background",
-            states: &["on standard pressed"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on standard thumb",
-            token: "action.standard.foreground",
-            states: &["on standard"],
-            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "on prominent track background",
-            token: "action.prominent.background",
-            states: &["on prominent"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on prominent track hover background",
-            token: "action.prominent.hover_background",
-            states: &["on prominent hovered"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on prominent track pressed background",
-            token: "action.prominent.pressed_background",
-            states: &["on prominent pressed"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-        },
-        ThemePartUsage {
-            part: "on prominent thumb",
-            token: "action.prominent.foreground",
-            states: &["on prominent"],
-            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "off thumb background",
-            token: "surface.panel.background",
-            states: &["off"],
-            appearance_fields: &["SwitchAppearance.thumb_background"],
-        },
-        ThemePartUsage {
-            part: "off thumb border",
-            token: "border.default",
-            states: &["off"],
-            appearance_fields: &["SwitchAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "label",
-            token: "app.foreground",
-            states: &["default", "on"],
-            appearance_fields: &["SwitchAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "disabled fill",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["SwitchAppearance.track_background", "SwitchAppearance.thumb_border"],
-        },
-        ThemePartUsage {
-            part: "disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["SwitchAppearance.thumb_background", "SwitchAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["SwitchAppearance.adorner"],
-        },
-    ],
-};
 
 impl DefaultSwitchTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

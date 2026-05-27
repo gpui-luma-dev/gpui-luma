@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::{ControlSize, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ControlGroupListAppearance {
@@ -27,32 +27,10 @@ pub fn default_control_group_theme() -> Arc<dyn ControlGroupTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.control_group_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn ControlGroupTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultControlGroupTheme::default())).clone()
 }
-
-pub const CONTROL_GROUP_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Control Group",
-    parts: &[
-        ThemePartUsage {
-            part: "list background",
-            token: "surface.subtle.background",
-            states: &["enabled"],
-            appearance_fields: &["ControlGroupListAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "list border",
-            token: "border.default",
-            states: &["default", "enabled", "disabled"],
-            appearance_fields: &["ControlGroupListAppearance.border"],
-        },
-    ],
-};
 
 impl DefaultControlGroupTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

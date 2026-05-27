@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 use crate::controls::textarea::TextAreaState;
 
 #[derive(Clone, Debug)]
@@ -36,84 +36,10 @@ pub fn default_textarea_theme() -> Arc<dyn TextAreaTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.textarea_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn TextAreaTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTextAreaTheme::default())).clone()
 }
-
-pub const TEXTAREA_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "TextArea",
-    parts: &[
-        ThemePartUsage {
-            part: "background",
-            token: "form.input.background",
-            states: &["default"],
-            appearance_fields: &["TextAreaAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "hover background",
-            token: "state.hover.background",
-            states: &["hovered"],
-            appearance_fields: &["TextAreaAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "foreground",
-            token: "form.input.foreground",
-            states: &["default", "focused"],
-            appearance_fields: &["TextAreaAppearance.foreground", "TextAreaAppearance.caret"],
-        },
-        ThemePartUsage {
-            part: "border",
-            token: "form.input.border",
-            states: &["default", "hovered", "disabled"],
-            appearance_fields: &["TextAreaAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "placeholder",
-            token: "form.input.placeholder",
-            states: &["empty"],
-            appearance_fields: &["TextAreaAppearance.placeholder"],
-        },
-        ThemePartUsage {
-            part: "selection",
-            token: "state.selected.background",
-            states: &["selection"],
-            appearance_fields: &["TextAreaAppearance.selection_background"],
-        },
-        ThemePartUsage {
-            part: "invalid border",
-            token: "form.input.invalid_border",
-            states: &["invalid"],
-            appearance_fields: &["TextAreaAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "disabled fill",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["TextAreaAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &[
-                "TextAreaAppearance.foreground",
-                "TextAreaAppearance.placeholder",
-                "TextAreaAppearance.caret",
-            ],
-        },
-        ThemePartUsage {
-            part: "focus ring",
-            token: "focus.ring",
-            states: &["focus visible"],
-            appearance_fields: &["TextAreaAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultTextAreaTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

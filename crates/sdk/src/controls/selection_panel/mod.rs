@@ -19,7 +19,4 @@ pub use template::{
     SelectionPanelRenderModel, SelectionPanelTemplate, SelectionPanelTemplateHandlers,
     default_selection_panel_template, render_selection_panel, template_with_modifier,
 };
-pub use theme::{
-    SELECTION_PANEL_THEME_USAGE, SelectionPanelAppearance, default_selection_panel_appearance,
-    selection_panel_theme_usage,
-};
+pub use theme::{SelectionPanelAppearance, default_selection_panel_appearance};

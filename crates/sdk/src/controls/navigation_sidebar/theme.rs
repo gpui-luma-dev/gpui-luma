@@ -2,9 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct NavigationSidebarContainerAppearance {
@@ -44,10 +42,6 @@ pub trait NavigationSidebarTheme: Send + Sync {
         state: InteractionState,
         size: ControlSize,
     ) -> NavigationSidebarItemAppearance;
-
-    fn usage(&self) -> &'static ThemeUsage {
-        navigation_sidebar_theme_usage()
-    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -59,147 +53,10 @@ pub fn default_navigation_sidebar_theme() -> Arc<dyn NavigationSidebarTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.navigation_sidebar_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn NavigationSidebarTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultNavigationSidebarTheme::default())).clone()
 }
-
-pub fn navigation_sidebar_theme_usage() -> &'static ThemeUsage {
-    &NAVIGATION_SIDEBAR_THEME_USAGE
-}
-
-pub const NAVIGATION_SIDEBAR_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Navigation Sidebar",
-    parts: &[
-        ThemePartUsage {
-            part: "container background",
-            token: "navigation.background",
-            states: &["default"],
-            appearance_fields: &["NavigationSidebarContainerAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "container foreground",
-            token: "navigation.foreground",
-            states: &["default"],
-            appearance_fields: &["NavigationSidebarContainerAppearance.foreground"],
-        },
-        ThemePartUsage {
-            part: "container border",
-            token: "navigation.border",
-            states: &["default"],
-            appearance_fields: &["NavigationSidebarContainerAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "section label",
-            token: "navigation.muted_foreground",
-            states: &["default"],
-            appearance_fields: &["NavigationSidebarSectionAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "branch foreground",
-            token: "navigation.foreground",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &[
-                "NavigationSidebarItemAppearance.foreground",
-                "NavigationSidebarItemAppearance.icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "branch disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &[
-                "NavigationSidebarItemAppearance.foreground",
-                "NavigationSidebarItemAppearance.icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "branch hover background",
-            token: "navigation.hover_background",
-            states: &["hovered"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "branch pressed background",
-            token: "state.pressed.background",
-            states: &["pressed"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "branch focus ring",
-            token: "focus.ring",
-            states: &["focused"],
-            appearance_fields: &["NavigationSidebarItemAppearance.focus_ring"],
-        },
-        ThemePartUsage {
-            part: "item foreground",
-            token: "navigation.foreground",
-            states: &["default", "hovered", "pressed", "focused"],
-            appearance_fields: &[
-                "NavigationSidebarItemAppearance.foreground",
-                "NavigationSidebarItemAppearance.icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "item disabled foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &[
-                "NavigationSidebarItemAppearance.foreground",
-                "NavigationSidebarItemAppearance.icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "item hover background",
-            token: "navigation.hover_background",
-            states: &["hovered"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "item pressed background",
-            token: "state.pressed.background",
-            states: &["pressed"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "selected item background",
-            token: "navigation.selected_background",
-            states: &["selected"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "selected item foreground",
-            token: "navigation.selected_foreground",
-            states: &["selected", "selected hovered", "selected pressed", "selected focused"],
-            appearance_fields: &[
-                "NavigationSidebarItemAppearance.foreground",
-                "NavigationSidebarItemAppearance.icon_color",
-            ],
-        },
-        ThemePartUsage {
-            part: "selected item hover background",
-            token: "action.prominent.hover_background",
-            states: &["selected hovered"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "selected item pressed background",
-            token: "action.prominent.pressed_background",
-            states: &["selected pressed"],
-            appearance_fields: &["NavigationSidebarItemAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "item focus ring",
-            token: "focus.ring",
-            states: &["focused", "selected focused"],
-            appearance_fields: &["NavigationSidebarItemAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultNavigationSidebarTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
@@ -289,25 +146,5 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         }
 
         appearance
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::navigation_sidebar_theme_usage;
-
-    #[test]
-    fn usage_metadata_describes_navigation_sidebar_tokens() {
-        let usage = navigation_sidebar_theme_usage();
-
-        assert_eq!(usage.label, "Navigation Sidebar");
-        assert!(usage.parts.iter().any(|part| part.token == "navigation.selected_background"));
-
-        for part in usage.parts {
-            assert!(!part.part.is_empty());
-            assert!(!part.token.is_empty());
-            assert!(!part.states.is_empty());
-            assert!(!part.appearance_fields.is_empty());
-        }
     }
 }

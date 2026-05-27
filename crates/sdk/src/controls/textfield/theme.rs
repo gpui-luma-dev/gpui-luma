@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage};
+use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -46,121 +46,10 @@ pub fn default_textfield_theme() -> Arc<dyn TextFieldTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.textfield_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn TextFieldTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTextFieldTheme::default())).clone()
 }
-
-pub const TEXTFIELD_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "TextField",
-    parts: &[
-        ThemePartUsage {
-            part: "standard.background",
-            token: "form.input.background",
-            states: &["standard default", "standard focused"],
-            appearance_fields: &["TextFieldAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "standard.hover_background",
-            token: "state.hover.background",
-            states: &["standard hovered"],
-            appearance_fields: &["TextFieldAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "standard.foreground",
-            token: "form.input.foreground",
-            states: &["standard default", "standard focused"],
-            appearance_fields: &["TextFieldAppearance.foreground", "TextFieldAppearance.caret"],
-        },
-        ThemePartUsage {
-            part: "standard.border",
-            token: "form.input.border",
-            states: &["standard default", "standard hovered", "standard disabled"],
-            appearance_fields: &["TextFieldAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "standard.placeholder_and_icon",
-            token: "form.input.placeholder",
-            states: &["standard empty"],
-            appearance_fields: &["TextFieldAppearance.placeholder", "TextFieldAppearance.icon"],
-        },
-        ThemePartUsage {
-            part: "standard.invalid_border",
-            token: "form.input.invalid_border",
-            states: &["standard invalid"],
-            appearance_fields: &["TextFieldAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "ghost.background",
-            token: "action.ghost.background",
-            states: &["ghost focused"],
-            appearance_fields: &["TextFieldAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "ghost.hover_background",
-            token: "action.ghost.hover_background",
-            states: &["ghost hovered"],
-            appearance_fields: &["TextFieldAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "ghost.foreground",
-            token: "action.ghost.foreground",
-            states: &["ghost default", "ghost focused"],
-            appearance_fields: &["TextFieldAppearance.foreground", "TextFieldAppearance.caret"],
-        },
-        ThemePartUsage {
-            part: "ghost.border",
-            token: "action.ghost.border",
-            states: &["ghost default", "ghost hovered", "ghost focused", "ghost invalid", "ghost disabled"],
-            appearance_fields: &["TextFieldAppearance.border"],
-        },
-        ThemePartUsage {
-            part: "ghost.placeholder_and_icon",
-            token: "action.ghost.foreground",
-            states: &["ghost empty"],
-            appearance_fields: &["TextFieldAppearance.placeholder", "TextFieldAppearance.icon"],
-        },
-        ThemePartUsage {
-            part: "ghost.invalid_border",
-            token: "form.input.invalid_border",
-            states: &[],
-            appearance_fields: &[],
-        },
-        ThemePartUsage {
-            part: "selection",
-            token: "state.selected.background",
-            states: &["selection"],
-            appearance_fields: &["TextFieldAppearance.selection_background"],
-        },
-        ThemePartUsage {
-            part: "disabled.background",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["TextFieldAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "disabled.foreground",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &[
-                "TextFieldAppearance.foreground",
-                "TextFieldAppearance.placeholder",
-                "TextFieldAppearance.icon",
-                "TextFieldAppearance.caret",
-            ],
-        },
-        ThemePartUsage {
-            part: "focus.ring",
-            token: "focus.ring",
-            states: &["focus visible"],
-            appearance_fields: &["TextFieldAppearance.focus_ring"],
-        },
-    ],
-};
 
 impl DefaultTextFieldTheme {
     pub fn new(tokens: ThemeTokens) -> Self {

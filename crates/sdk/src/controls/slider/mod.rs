@@ -10,7 +10,7 @@ pub use template::{
     SliderTemplate, SliderTemplateHandlers, ThemedSliderTemplate, default_slider_template,
 };
 
-pub use theme::{DefaultSliderTheme, SLIDER_THEME_USAGE, SliderAppearance, SliderTheme, default_slider_theme};
+pub use theme::{DefaultSliderTheme, SliderAppearance, SliderTheme, default_slider_theme};
 
 pub use crate::theme::InteractionState as SliderState;
 

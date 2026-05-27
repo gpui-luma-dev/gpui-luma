@@ -2,9 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemePartUsage, ThemeTokens, ThemeUsage,
-};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct TabsNavigationListAppearance {
@@ -40,50 +38,10 @@ pub fn default_tabs_navigation_theme() -> Arc<dyn TabsNavigationTheme> {
     if let Some(radix) = crate::theme::radix::active_radix_theme() {
         return radix.tabs_navigation_theme();
     }
-
-    if let Some(live) = crate::theme::pack::active_live_theme() {
-        return live;
-    }
     static THEME: OnceLock<Arc<dyn TabsNavigationTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTabsNavigationTheme::default())).clone()
 }
-
-pub const TABS_NAVIGATION_THEME_USAGE: ThemeUsage = ThemeUsage {
-    label: "Tabs Navigation",
-    parts: &[
-        ThemePartUsage {
-            part: "inactive label",
-            token: "app.foreground",
-            states: &["inactive"],
-            appearance_fields: &["TabsNavigationItemAppearance.label_color"],
-        },
-        ThemePartUsage {
-            part: "active label and indicator",
-            token: "action.prominent.background",
-            states: &["active", "active hovered", "active pressed"],
-            appearance_fields: &["TabsNavigationItemAppearance.label_color", "TabsNavigationItemAppearance.indicator"],
-        },
-        ThemePartUsage {
-            part: "focus indicator",
-            token: "focus.ring",
-            states: &["focused", "active focused"],
-            appearance_fields: &["TabsNavigationItemAppearance.indicator"],
-        },
-        ThemePartUsage {
-            part: "disabled list background",
-            token: "state.disabled.background",
-            states: &["disabled"],
-            appearance_fields: &["TabsNavigationListAppearance.background"],
-        },
-        ThemePartUsage {
-            part: "disabled label",
-            token: "state.disabled.foreground",
-            states: &["disabled"],
-            appearance_fields: &["TabsNavigationItemAppearance.label_color"],
-        },
-    ],
-};
 
 impl DefaultTabsNavigationTheme {
     pub fn new(tokens: ThemeTokens) -> Self {
