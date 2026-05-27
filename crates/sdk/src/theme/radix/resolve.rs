@@ -2,9 +2,9 @@ use gpui::{Hsla, hsla};
 
 use crate::theme::InteractionLayer;
 
-use super::super::RadixButtonStyle;
-use super::super::catalog::CssTokenMap;
-use super::super::color::darken;
+use super::RadixButtonStyle;
+use super::catalog::CssTokenMap;
+use super::color::darken;
 
 pub(crate) fn resolve_color(catalog: &CssTokenMap, token: &str) -> anyhow::Result<Hsla> {
     catalog.color(token)

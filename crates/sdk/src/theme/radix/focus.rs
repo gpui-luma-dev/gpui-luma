@@ -2,7 +2,7 @@ use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec}
 use crate::theme::MetricTokens;
 
 use super::resolve::resolve_color;
-use super::super::catalog::CssTokenMap;
+use super::catalog::CssTokenMap;
 
 pub(crate) fn focus_ring_color(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
     resolve_color(catalog, "ring")

@@ -1,290 +1,229 @@
-# Next step: sdk-theme codegen (data-driven appearance)
+# Next step: appearance codegen
 
-**Status:** Proposed — not implemented. Documents the target architecture for moving **color and choice policy** out of hand-written Rust `match` blocks and into a build-validated **sdk-theme** data file.
+**Status:** Proposed — not implemented.
 
-**Scope:** Appearance matrices, per-control variant support, default choice weights, and build-time validation/code generation. Templates stay responsible for **structure** (layout, geometry, interaction wiring); themes stay responsible for **values and policy**.
-
-**Not in scope here:** Palette import from tweakcn ([`next-step-theme-import.md`](next-step-theme-import.md) — superseded), active theme wiring ([`next-step-theme.md`](next-step-theme.md) — superseded), or adding new ladder rungs to the public API (`docs/ai/next-step-variants.md`). Those docs remain separate; codegen consumes their outputs.
+**Scope:** Appearance matrices, per-control variant support, default choice weights, and build-time validation/code generation. Templates stay responsible for structure (layout, geometry, interaction wiring); themes stay responsible for values and policy.
 
 ---
 
-## Problem today
+## The actual problem
 
-After the variant-ladder and choice-control work (toggle, switch, checkbox, radio), appearance policy is spread across many `*Theme::resolve` implementations as large `match` expressions that mostly **swap token paths** based on `(control state, ButtonKind, interaction layer)`.
+The hardest appearance constructor in the tree is **`theme/radix/button.rs`**, not the choice controls in `properties/`. It builds `ButtonFamilyAppearance` from four coupled axes:
 
-Examples of policy currently encoded in Rust rather than data:
-
-- Checkbox / switch / radio: checked/on + `ButtonKind::Standard` vs `Prominent` → `action.standard.*` vs `action.prominent.*`
-- Button-family toggle: unselected segments always resolve as `Subtle`; selected weight comes from `model.kind`
-- Per-control defaults: everything inherits `ButtonKind::Standard` from `ButtonBuilder` unless `.kind(...)` is set
-
-This works for the gallery and Astrovista, but it is a **code smell**: the matrices are style sheets written as Rust. Adding a control state or changing a default requires touching multiple resolver files and risks drift between checkbox, switch, radio, and button-family paths.
-
-### Interim product convention (until codegen lands)
-
-Live with the current code using this rule:
-
-- **`ButtonKind::Standard` by default** everywhere it applies (forms, groups, toolbars, intro panels).
-- **`ButtonKind::Prominent` only when explicitly needed** (primary emphasis, gallery matrix rows, deliberate demos).
-- **Astrovista** exercises the full ladder (coral prominent, navy standard, subtle outlines); **Jarvis** stresses typography and borders more than dramatic choice-state color contrast — same policy can work on both; palette TOML supplies the hues.
-
-Explicit `.kind(...)` remains the override for matrices, introduction panels, and one-offs.
-
----
-
-## Target architecture
-
-Separate three concerns that are mixed today:
-
-| Layer | Owns | Example |
+| Axis | Values | Effect |
 |---|---|---|
-| **SDK (Rust)** | Control APIs, interaction, template **structure**, closed **variant enum** | `ButtonKind`, thumb position, focus adorners |
-| **sdk-theme (data)** | Which variants each control supports, **defaults**, appearance **matrices** (state × variant → token path) | `checkbox.checked + prominent → action.prominent.background` |
-| **App theme TOML** | **Palette values** (HSL) + optional policy overrides | Astrovista `action.standard.background = "hsl(...)"` |
-| **Instance API** | Force a variant when theme default is wrong for one control | `.kind(ButtonKind::Prominent)` |
+| **Style** | `Primary`, `Secondary`, `Outline`, `Ghost` | Selects `RadixPalette::action(style)` |
+| **Role** | `Text`, `Icon`, `Toggle { selected }` | Metrics; toggle unselected **rewrites style → Outline** |
+| **Selection** | toggle selected or not | Background/foreground take different palette branches when selected |
+| **Interaction** | default / hovered / pressed / disabled | Layer on fill colors |
+
+That policy is two large `match` blocks plus inline role logic:
+
+```rust
+// Style override — pairing rule, not visible in a simple token table
+let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
+    RadixButtonStyle::Outline
+} else {
+    style
+};
+
+// foreground: 7 arms on (style, selected, disabled)
+// button_background: 19 arms on (style, selected, layer)
+```
+
+Simpler controls (checkbox, switch, radio) mostly call shared primitives (`resolve_action_layer`, `outline`) with one style axis. **Button is the reference implementation** — if we can represent button appearance declaratively, the rest compose from the same resolver vocabulary.
+
+Today the matrix lives only as Rust matches. `usage.rs` documents button tokens separately and still drifts. There is no validated data layer between “what we intend” and “what `button_appearance` does”.
+
+**This is not a palette-import problem.** Colors come from tweakcn CSS → `RadixPalette`. No `lexicon.toml`, no `default-theme.toml`, no theme TOML stems. Codegen targets **how `ButtonFamilyAppearance` (and siblings) get constructed**, not where palette values are stored.
+
+---
+
+## What we want instead
+
+A **declarative appearance matrix** for button-family: for each colored field on `ButtonFamilyAppearance`, declare the token/palette source for each `(style, role, selected, layer)` cell — including **style rewrite rules** and **selection branches**.
 
 ```text
-sdk-theme.toml (embedded in SDK, validated at build)
-  ├── global ladder: prominent | standard | subtle | ghost
-  ├── per-control: supported variants, default weights, pairing rules
-  └── appearance matrix: (control, slot, state, variant, layer) → token path
-
-default-theme.toml + imported themes (Astrovista, Jarvis, …)
-  └── palette only — HSL values for action.*, form.*, state.*, …
-
-Runtime
-  effective_variant = instance.kind ?? theme.choice.<control> ?? sdk-theme default
-  appearance[slot]  = resolve_token(matrix entry, active ThemeTokens)
-  template            = draw using appearance fields (no color match)
+tweakcn CSS  →  RadixPalette (runtime)
+                      ↓
+button appearance matrix (build-time data)
+                      ↓
+generated lookups  →  ButtonFamilyAppearance
+                      ↓
+ButtonTemplate / toggle segments  →  paint only
 ```
 
-Policy like “toggle unselected uses Subtle” belongs in **sdk-theme**, not in `DefaultButtonFamilyTheme` Rust long term.
+Checkbox, switch, and radio matrices should **reuse the same style/action primitives** defined for button, not be piloted first.
+
+### Split responsibilities
+
+| Concern | Owner | Button example |
+|---|---|---|
+| **Color slot policy** | Appearance matrix | `background` when toggle selected + primary style + hovered → `primary.hover` |
+| **Style rewrite / pairing** | Matrix `rewrite` or `when.role` rules | toggle unselected → effective style `outline` |
+| **Selection semantics** | Matrix rows keyed on `selected` | selected toggle + non-secondary → `palette.selected_background` |
+| **Resolver primitives** | Rust (`palette.action`, layer hover/press) | Map matrix `source` strings to `RadixActionRole` fields |
+| **Metrics & role layout** | Rust | icon pill radius, padding_x/y by `ButtonFamilyRole` |
+| **Focus adorner geometry** | Rust | ghost inset vs oversize ring — placement is structure, color is `focus_ring` |
+| **GPUI interaction** | Control templates | hit targets, toggle selection — no tokens |
 
 ---
 
-## Analogy: attributes + reflection (other languages)
+## Button matrix (conceptual shape)
 
-In ecosystems with attributes/reflection, controls declare supported variants (A, B, C) and a **data file** maps control × state × variant → aesthetic properties; the **build** proves the file matches control capabilities.
-
-Rust has no runtime reflection for this. The equivalent is:
-
-1. **Declarative matrix** in `sdk-theme.toml`
-2. **`build.rs` validation** — unknown variant names, invalid token paths, or unsupported control/state combos fail the build
-3. **Optional codegen** — emit lookup tables or thin resolver glue so Rust stops duplicating matrices by hand
-
-The developer experience goal: **A, B, C remain typed enum variants** (`ButtonKind::Standard`, etc.) at the call site, while **which variant applies by default** and **which token fills which appearance field** live in data tied to the SDK build.
-
----
-
-## sdk-theme.toml (conceptual shape)
-
-Two sections: **choice policy** (which ladder rung when) and **appearance matrix** (which token fills which slot).
-
-### Global ladder
-
-Variant names in TOML are **strings that must match the SDK ladder** — TOML configures known rungs; it does not invent new ones without an SDK release.
+Pilot file: button-family appearance recipe — **not** a theme pack.
 
 ```toml
-[ladder]
-variants = ["prominent", "standard", "subtle", "ghost"]
-```
+[controls.button_family]
+styles = ["primary", "secondary", "outline", "ghost"]
 
-### Per-control choice policy
+# Effective style after role rules
+[[controls.button_family.rewrite]]
+when = { role = "toggle", selected = false }
+effective_style = "outline"
 
-```toml
-[controls.checkbox]
-selected_variants = ["standard", "prominent"]
-default_selected = "standard"   # or "prominent" per product/theme override later
+[controls.button_family.slots.background]
+[[controls.button_family.slots.background.when]]
+disabled = true
+source = "palette:disabled_background"
 
-[controls.switch]
-on_variants = ["standard", "prominent"]
-default_on = "standard"
-
-[controls.radio]
-selected_variants = ["standard", "prominent"]
-default_selected = "standard"
-
-[controls.toggle]
-selected_variants = ["standard", "prominent"]
-default_selected = "standard"
-unselected = "subtle"           # pairing rule (today hardcoded in button-family Rust)
-
-[controls.button_family.toggle_segment]
-# same pairing semantics as toggle in control groups
-unselected = "subtle"
-```
-
-App theme TOML may optionally override `[light.choice.*]` / `[dark.choice.*]` for brand-specific defaults without changing sdk-theme structure.
-
-### Appearance matrix (per control)
-
-Declare **slots** (maps to `*Appearance` struct fields) and **entries** (state + variant + interaction layer → token path on `ThemeTokens`):
-
-```toml
-[controls.checkbox.slots]
-indicator_background = "CheckboxAppearance.indicator_background"
-indicator_border     = "CheckboxAppearance.indicator_border"
-checkmark_color      = "CheckboxAppearance.checkmark_color"
-
-# Conceptual — exact schema TBD at implementation
-[[controls.checkbox.matrix]]
-state = "checked"
-variant = "standard"
+[[controls.button_family.slots.background.when]]
+selected = true
+style = "secondary"
 layer = "default"
-indicator_background = "action.standard.background"
-checkmark_color      = "action.standard.foreground"
+source = "action:background"       # secondary action role
 
-[[controls.checkbox.matrix]]
-state = "checked"
-variant = "prominent"
+[[controls.button_family.slots.background.when]]
+selected = true
+style = "secondary"
+layer = "hovered"
+source = "action:hover_background"
+
+# … pressed, other layers …
+
+[[controls.button_family.slots.background.when]]
+selected = true
+# style != secondary — uses selection palette, not action(style)
+source = "palette:selected_background"
+
+[[controls.button_family.slots.background.when]]
+selected = false
+style = "primary"                  # or any non-rewrite style
 layer = "default"
-indicator_background = "action.prominent.background"
-checkmark_color      = "action.prominent.foreground"
+source = "action:background"
+
+[controls.button_family.slots.foreground]
+[[controls.button_family.slots.foreground.when]]
+disabled = true
+source = "palette:disabled_foreground"
+
+[[controls.button_family.slots.foreground.when]]
+selected = true
+style = "secondary"
+source = "action:foreground"
+
+[[controls.button_family.slots.foreground.when]]
+selected = true
+source = "palette:selected_foreground"
+
+[[controls.button_family.slots.foreground.when]]
+source = "action:foreground"       # all unselected styles
+
+[controls.button_family.slots.border]
+source = "action:border"           # from effective style's action role
 ```
 
-Same pattern extends to switch, radio, button-family (toggle segments), and eventually plain buttons — one engine, many control tables.
+Generated code replaces `button_background(...)` and the foreground `match`. A thin `assemble_button_appearance(...)` keeps metrics, adorner placement, and the style-rewrite prelude (or that prelude is also generated from `rewrite` rules).
 
 ---
 
-## Codegen patterns (implementation options)
+## Why button first
 
-Three patterns, in recommended order:
+1. **Highest match complexity** — 19 + 7 arms before counting role/style rewrite.
+2. **Hub for the style ladder** — `RadixButtonStyle`, `palette.action(style)`, and `properties/action.rs` token pairs all exist because of button.
+3. **Downstream consumers** — toggle templates, `button_family_theme`, gallery button pane, and choice controls that inherit `{style}` semantics.
+4. **Proves the hard cases** — style rewrite, selection palette vs action role, interaction layers on filled roles.
 
-### Pattern 1 — Hand-written enum, codegen validates + emits lookup tables (first milestone)
-
-- Keep `ButtonKind` / `ButtonVariant` as manually maintained Rust enums (see `docs/ai/next-step-variants.md`).
-- `build.rs` reads `sdk-theme.toml` and:
-  - validates every variant string ∈ ladder
-  - validates every token path exists on `ThemeTokens`
-  - validates every matrix row references a supported control state
-- Emits `generated/checkbox_matrix.rs` (or similar): static tables used by `CheckboxTheme::resolve` instead of hand-written `match` arms.
-
-**API unchanged:** `checkbox::new(...).kind(ButtonKind::Prominent)`.
-
-### Pattern 2 — Codegen emits enum + tables from sdk-theme (single source of truth)
-
-- Global ladder defined only in `sdk-theme.toml`.
-- Build emits `ButtonKind` and per-control `SUPPORTED_VARIANTS` constants.
-- SDK releases that add `destructive` update the ladder in one file, regenerate Rust.
-
-**Trade-off:** stronger consistency; generated public API requires stable codegen and review discipline.
-
-### Pattern 3 — Fully generic runtime resolver (later)
-
-- One Rust engine: `(control_id, slot, state, variant, layer) → token path → Hsla`.
-- All control-specific `*Theme::resolve` thin wrappers or removed.
-- Matrices live entirely in sdk-theme; build validates completeness (every required cell filled).
-
-**Trade-off:** least duplicated Rust; highest investment in schema and debugging tooling.
+Once button is data-driven, checkbox/switch/radio matrices become short compositions of the same `action:*` and `outline` sources.
 
 ---
 
-## Resolution order (instance → theme → sdk-theme)
-
-When implemented, effective variant for choice controls should resolve in this order:
-
-1. **Explicit instance** — `.kind(ButtonKind::…)` on the builder (gallery matrices, intro overrides).
-2. **App theme policy** — optional `[light.choice.checkbox]` / `[dark.choice.checkbox]` in imported theme TOML.
-3. **sdk-theme default** — per-control `default_selected` / `default_on` / pairing rules.
-4. **SDK fallback** — hard-coded safety default (likely `standard`) if data is missing (should not happen when build validation passes).
-
-Open design question for implementation: whether “omit `.kind()`” means **inherit theme default** vs **Standard**. Today they are the same because the builder always sets `Standard`. Theme-level defaults require distinguishing **unset** from **explicit Standard** on the model, or a dedicated “inherit” sentinel in the API.
-
----
-
-## Build-time guarantees
-
-Codegen should fail the SDK build when:
+## Codegen / validation (build time)
 
 | Check | Why |
 |---|---|
-| Unknown variant string in sdk-theme | Prevents typos (`"prominant"`) |
-| Token path not on `ThemeTokens` | Prevents dead matrix entries |
-| Matrix row for unsupported control/state | Keeps data aligned with control capabilities |
-| Missing required matrix cell | Prevents incomplete appearance at runtime |
-| `ThemeUsage` / gallery matrix docs drift from sdk-theme | Optional: generate `ThemePartUsage` snippets from the same file |
+| Every slot name ∈ `ButtonFamilyAppearance` | No typos |
+| Every `when` clause uses known `(style, role, selected, layer)` combos | Matches `ButtonFamilyRole` capabilities |
+| Every `source` references a valid palette field or action primitive | Dead paths fail at build |
+| Rewrite rules cover toggle unselected (and any future pairing) | No hidden Rust overrides |
+| Full grid covered for `(effective_style, selected, layer)` on background/foreground | No runtime fallback arms |
 
-This is how **sdk-theme stays tied to the build** without runtime reflection.
+**Emit:**
 
----
+1. Static lookup tables indexed by compressed state key, **or**
+2. Generated `match` with identical semantics to today's `button.rs` but never hand-edited.
 
-## What stays in Rust (not codegen)
+Optional later: derive `usage.rs` button parts from the same matrix.
 
-Even with full matrices in data, Rust remains responsible for:
-
-- **Template structure** — switch thumb travel, radio dot geometry, checkbox checkmark glyph, button border width
-- **Interaction** — hover, press, focus, disabled, group selection semantics
-- **Layout policy** — icon vs text padding, control-group chrome (may have its own sdk-theme section later)
-- **New ladder rungs** — adding `Destructive` requires enum + palette slot + lexicon + sdk-theme row (not TOML-only extensibility)
-
-Codegen removes **color-swapping match smell**; it does not replace the control framework.
+No runtime TOML. Palette still loaded from CSS only.
 
 ---
 
-## Relationship to existing theme pipeline
+## Design & DX Recommendations
 
-```text
-tweakcn CSS  →  catalog  →  palette (lexicon)  →  theme.toml (colors)
-                                                      ↑
-sdk-theme.toml (behavior + matrices) ─────────────────┘
-         ↓ build.rs
-    generated Rust tables + validation
-         ↓
-    *Theme::resolve reads matrix + active ThemeTokens
-```
+### 1. Developer Experience (DX) & Debugging
+- **Clean Generated Code**: The build script should emit human-readable Rust `match` blocks rather than opaque binary tables, with comments pointing back to the corresponding TOML source/rules to support standard Rust IDE navigation and debugging.
+- **Cargo Rebuild Tracking**: The `build.rs` script must register dependencies via `cargo:rerun-if-changed=path/to/matrix.toml` so edits to the declarative rules trigger immediate recompilations.
 
-| Artifact | Role after codegen |
-|---|---|
-| `lexicon.toml` | Import: catalog → Luma **palette paths** (colors) |
-| `default-theme.toml` | Base **palette** + metrics + typography |
-| `sdk-theme.toml` | **Behavior + appearance matrices** (new) |
-| `tweakcn-astrovista.toml` etc. | Palette overrides; optional choice policy overrides |
-| Hand-written `*Theme::resolve` | Shrinks to generic resolve or generated glue |
+### 2. Schema Optimization & Redundancy
+- **Defaults and Mixins**: To avoid repeating boilerplate (e.g. `disabled = true -> source = "palette:disabled_background"`) across every slot of every control, the schema should support a shared `[defaults]` block or wildcard (`_`) fallbacks.
 
-See also: `docs/ai/theme-lexicon.md`, `docs/ai/next-step-theme-import.md`.
+### 3. Deterministic Rewrite Ordering
+- **Sequential Evaluation**: Rewrite rules (e.g. converting unselected toggles to `outline` style) must be evaluated sequentially in the order they are defined to establish the final `effective_style` before slot evaluation.
 
 ---
 
-## Phased rollout (suggested)
+
+
+## What stays hand-written in Rust
+
+- `RadixPalette::action`, catalog → palette conversion
+- Button **metrics** by role and size — height, padding, radius, typography
+- Focus **adorner placement** (inset vs oversize) — geometry policy
+- `RadixTheme` loading, mode toggle
+- Control templates — paint `ButtonFamilyAppearance` fields only
+
+---
+
+## Rollout
 
 | Phase | Deliverable |
 |---|---|
-| **0 (now)** | Standard default + explicit Prominent; document convention; stop adding new policy to templates |
-| **1** | Author `sdk-theme.toml` for **one** control (checkbox); `build.rs` validates; codegen emits lookup; replace checkbox `match` arms |
-| **2** | Migrate switch, radio, button-family toggle pairing to same file + engine |
-| **3** | Optional app-theme `[*.choice.*]` overrides; unset vs explicit `.kind()` API decision |
-| **4** | Generate `ThemeUsage` / theme matrix docs from sdk-theme; consider Pattern 2 for ladder enum |
+| **0 (now)** | Treat `button.rs` matches as the spec; stop adding arms by hand |
+| **1** | Appearance matrix + codegen for **button-family**; delete `button_background` / foreground matches |
+| **2** | Express checkbox, switch, radio as compositions of button action primitives |
+| **3** | Remaining `properties/*` controls (slider, textfield, navigation_sidebar, …) |
+| **4** | Generate or verify `usage.rs` from matrices |
 
 ---
 
-## Success criteria
+## Key paths (today)
 
-When this work is done:
-
-1. Changing checkbox checked appearance for `prominent` vs `standard` is an **sdk-theme edit**, not a Rust diff across `checkbox/theme.rs`.
-2. Toggle unselected → `subtle` is **data policy**, not a special case in `button_family/theme.rs`.
-3. `cargo build -p gpui-luma` fails if sdk-theme references invalid variants or token paths.
-4. Public API still exposes **`ButtonKind`** (or generated equivalent) for explicit overrides and gallery matrices.
-5. Astrovista and Jarvis differ by **palette TOML** (and optional choice overrides), not forked resolver logic.
-
----
-
-## Related code and docs
-
-| Topic | Path |
+| Role | Path |
 |---|---|
-| Variant ladder | `docs/ai/next-step-variants.md`, `crates/sdk/src/controls/button_family/theme.rs` |
-| Choice themes (interim match blocks) | `crates/sdk/src/controls/{checkbox,switch,radio_button}/theme.rs` |
-| Toggle pairing (interim) | `crates/sdk/src/controls/button_family/theme.rs` |
-| Active palette resolve | `docs/ai/next-step-theme.md`, `crates/sdk/src/theme/pack.rs` |
-| Import / lexicon | `docs/ai/theme-lexicon.md`, `crates/sdk/src/theme/lexicon.toml` |
-| Gallery variant matrices | `apps/gallery/src/gallery/panes/{toggle,switch,checkbox,radio_button}/pane.rs` |
+| **Pilot — appearance construction** | `crates/sdk/src/theme/radix/button.rs` |
+| Style enum + palette action lookup | `crates/sdk/src/theme/radix/palette.rs` |
+| CSS token pairs for catalog path | `crates/sdk/src/theme/radix/action.rs` |
+| `ButtonFamilyAppearance` definition | `crates/sdk/src/controls/button_family/theme.rs` |
+| Theme factories / toggle binding | `crates/sdk/src/theme/radix/templates.rs` |
+| CSS palette (runtime) | `apps/gallery/tweakcn/*.css` → `RadixTheme::from_css_path` |
+| Simpler controls (follow button) | `crates/sdk/src/theme/radix/{checkbox,switch,radio}.rs` |
 
 ---
 
-## Explicitly elsewhere
+## Explicitly not this work
 
-- Hot-reloading sdk-theme at runtime
-- User-defined variant names beyond the SDK ladder without a release
-- Replacing GPUI template code with generated UI markup
-- Per-theme codegen (matrices are SDK-scoped; themes override palette and optional policy only)
+- `lexicon.toml`, `default-theme.toml`, imported theme TOML, or palette-import CLI
+- Replacing tweakcn CSS as the palette source
+- Moving button metrics or focus-ring geometry into data files
+- Runtime-reloaded appearance matrices

@@ -1,4 +1,4 @@
-use super::super::RadixButtonStyle;
+use super::RadixButtonStyle;
 
 /// Maps a Radix button style to tweakcn token names for filled roles.
 pub fn style_token_pair(style: RadixButtonStyle) -> (&'static str, &'static str) {
