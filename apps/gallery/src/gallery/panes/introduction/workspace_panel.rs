@@ -5,7 +5,7 @@ use gpui::{
     App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*,
     transparent_black, px,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::button_group::{self, IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
@@ -64,7 +64,8 @@ pub(super) struct WorkspacePanel {
 
 impl WorkspacePanel {
     pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
-        let toggle_template = radix_theme.toggle_template(RadixButtonStyle::Ghost);
+        let toggle_primary = radix_theme.toggle_template(RadixButtonStyle::Primary);
+        let toggle_secondary = radix_theme.toggle_template(RadixButtonStyle::Secondary);
         let group_template = radix_theme.control_group_template();
         let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
 
@@ -74,21 +75,16 @@ impl WorkspacePanel {
             .with_template_modifier(|element, _| element.bg(transparent_black()))
             .managed_selected("grid")
             .items(layout_items())
-            .item_template(toggle_button_item_template(
-                toggle_template.clone(),
-                ButtonKind::Prominent,
-                true,
-                |item: &IconGroupItem| {
-                    let icon = match item.id().as_ref() {
-                        "grid" => LucideIcon::PanelTop,
-                        "list" => LucideIcon::List,
-                        "kanban" => LucideIcon::Columns3,
-                        _ => LucideIcon::Settings,
-                    };
+            .item_template(toggle_button_item_template(toggle_primary.clone(), true, |item: &IconGroupItem| {
+                let icon = match item.id().as_ref() {
+                    "grid" => LucideIcon::PanelTop,
+                    "list" => LucideIcon::List,
+                    "kanban" => LucideIcon::Columns3,
+                    _ => LucideIcon::Settings,
+                };
 
-                    lucide_glyph(icon)
-                },
-            ))
+                lucide_glyph(icon)
+            }))
             .spawn(cx);
         let density_radio_group = radio_group::horizontal("intro-workspace-density")
             .items(density_items())
@@ -106,21 +102,16 @@ impl WorkspacePanel {
             .template(group_template)
             .managed_selected("left")
             .items(icon_demo_items())
-            .item_template(toggle_button_item_template(
-                toggle_template,
-                ButtonKind::Standard,
-                true,
-                |item: &IconGroupItem| {
-                    let icon = match item.id().as_ref() {
-                        "left" => LucideIcon::List,
-                        "center" => LucideIcon::PanelTop,
-                        "right" => LucideIcon::Columns3,
-                        _ => LucideIcon::Settings,
-                    };
+            .item_template(toggle_button_item_template(toggle_secondary, true, |item: &IconGroupItem| {
+                let icon = match item.id().as_ref() {
+                    "left" => LucideIcon::List,
+                    "center" => LucideIcon::PanelTop,
+                    "right" => LucideIcon::Columns3,
+                    _ => LucideIcon::Settings,
+                };
 
-                    lucide_glyph(icon)
-                },
-            ))
+                lucide_glyph(icon)
+            }))
             .spawn(cx);
 
         let subscriptions = vec![
@@ -410,7 +401,6 @@ fn render_density_group(
                 let label = RadioGroupItemLike::label(item.item).clone();
                 move |_, _| div().child(label.clone()).into_any_element()
             }),
-            kind: ButtonKind::Prominent,
             role: ButtonFamilyRole::Text,
             size: ButtonSize::Md,
             state: item.state.interaction_state(),

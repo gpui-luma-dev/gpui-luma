@@ -4,12 +4,11 @@ use gpui::{AnyElement, IntoElement};
 
 use super::model::{ControlGroupItemLike, ControlGroupItemRenderModel};
 use super::template::{ControlGroupItemTemplate, make_control_group_item_template};
-use crate::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 pub fn button_item_template<T>(
     button_template: Arc<dyn ButtonTemplate<bool>>,
-    kind: ButtonKind,
     role_fn: impl Fn(bool) -> ButtonFamilyRole + Send + Sync + 'static,
     round: bool,
     content_fn: impl Fn(&T) -> AnyElement + Send + Sync + 'static,
@@ -28,7 +27,6 @@ where
                 let content_fn = Arc::clone(&content_fn);
                 move |_, _| content_fn(&item_data)
             }),
-            kind,
             role: role_fn(item.selected),
             size: ButtonSize::Sm,
             state: item.state.interaction_state(),

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
@@ -132,7 +132,7 @@ impl ChoiceControlsTemplatePreview {
             radio_template: radix_theme.radio_button_template(RadixButtonStyle::Primary),
             checkbox_template: radix_theme.checkbox_template(RadixButtonStyle::Primary),
             switch_template: radix_theme.switch_template(RadixButtonStyle::Primary),
-            toggle_template: radix_theme.toggle_template(RadixButtonStyle::Ghost),
+            toggle_template: radix_theme.toggle_template(RadixButtonStyle::Secondary),
             radix_theme,
         }
     }
@@ -284,7 +284,6 @@ fn render_control_cell(
         id,
         data: selected,
         content: control.content(selected),
-        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: state_sample.state,

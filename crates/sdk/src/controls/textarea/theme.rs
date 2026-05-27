@@ -33,9 +33,6 @@ pub struct DefaultTextAreaTheme {
 }
 
 pub fn default_textarea_theme() -> Arc<dyn TextAreaTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.textarea_theme();
-    }
     static THEME: OnceLock<Arc<dyn TextAreaTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTextAreaTheme::default())).clone()

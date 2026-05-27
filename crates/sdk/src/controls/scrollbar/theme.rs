@@ -29,9 +29,6 @@ pub struct DefaultScrollbarTheme {
 }
 
 pub fn default_scrollbar_theme() -> Arc<dyn ScrollbarTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.scrollbar_theme();
-    }
     static THEME: OnceLock<Arc<dyn ScrollbarTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultScrollbarTheme::default())).clone()

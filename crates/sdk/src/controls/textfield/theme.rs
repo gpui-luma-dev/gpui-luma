@@ -43,9 +43,6 @@ pub struct DefaultTextFieldTheme {
 }
 
 pub fn default_textfield_theme() -> Arc<dyn TextFieldTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.textfield_theme();
-    }
     static THEME: OnceLock<Arc<dyn TextFieldTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTextFieldTheme::default())).clone()

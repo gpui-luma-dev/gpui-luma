@@ -10,7 +10,7 @@ pub use interaction::{InteractionLayer, InteractionState};
 pub use pack::LumaChrome;
 pub use radix::{
     CssTokenCatalog, CssTokenMap, RadixButtonStyle, RadixModeTokens, RadixTheme, all_radix_theme_usages,
-    parse_css_catalog, set_active_radix_theme,
+    parse_css_catalog,
 };
 pub use registry::{ThemePartUsage, ThemeUsage};
 pub use tokens::{

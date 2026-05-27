@@ -32,9 +32,6 @@ pub struct DefaultPopupMenuTheme {
 }
 
 pub fn default_popup_menu_theme() -> Arc<dyn PopupMenuTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.popup_menu_theme();
-    }
     static THEME: OnceLock<Arc<dyn PopupMenuTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultPopupMenuTheme::default())).clone()

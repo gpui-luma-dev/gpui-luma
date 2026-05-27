@@ -7,9 +7,8 @@ use gpui::{
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
 };
-use gpui_luma::controls::button_family::{ButtonKind, ButtonSize};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonVariant, default_button_family_theme};
-use gpui_luma::theme::{InteractionState, ThemeMode, RadixTheme};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
+use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme, ThemeMode};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};
@@ -122,18 +121,28 @@ impl ButtonPane {
         let state_preview =
             cx.new(move |_| ButtonStatePreview::new(preview_theme, demo_template.clone(), Some(demo_radius)));
 
-        let radius_down_button =
-            Button::new("button-radius-down").label("Radius -").kind(ButtonKind::Standard).spawn(cx);
-        let radius_up_button = Button::new("button-radius-up").label("Radius +").kind(ButtonKind::Standard).spawn(cx);
+        let radius_down_button = Button::new("button-radius-down")
+            .label("Radius -")
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
+            .spawn(cx);
+        let radius_up_button = Button::new("button-radius-up")
+            .label("Radius +")
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
+            .spawn(cx);
 
-        let flip_bg_fg_button =
-            Button::new("button-flip-bg-fg").label("Flip bg/fg").kind(ButtonKind::Standard).spawn(cx);
+        let flip_bg_fg_button = Button::new("button-flip-bg-fg")
+            .label("Flip bg/fg")
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
+            .spawn(cx);
 
-        let reset_button = Button::new("button-reset").label("Reset").kind(ButtonKind::Standard).spawn(cx);
+        let reset_button = Button::new("button-reset")
+            .label("Reset")
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
+            .spawn(cx);
 
         let state_cycle_button = Button::new("button-state-cycle")
             .label(format!("State: {}", visual_state_label(ButtonVisualState::Default)))
-            .kind(ButtonKind::Standard)
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
             .spawn(cx);
 
         Self {
@@ -216,7 +225,6 @@ impl ButtonPane {
 
     fn render_demo_column(&self, chrome: GalleryChrome) -> AnyElement {
         let theme_appearance = default_button_family_theme().resolve(
-            ButtonVariant::Standard,
             ButtonFamilyRole::Text,
             ButtonSize::Md,
             interaction_state_for_visual_state(self.selected_visual_state),
@@ -559,7 +567,6 @@ fn render_button_state_sample(
         id,
         data: (),
         content,
-        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,

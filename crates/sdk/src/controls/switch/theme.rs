@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
@@ -26,8 +25,7 @@ pub struct SwitchAppearance {
 }
 
 pub trait SwitchTheme: Send + Sync {
-    /// `kind` selects the on-state accent (`Standard` = filled secondary, `Prominent` = primary accent).
-    fn resolve(&self, kind: ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance;
+    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -36,9 +34,6 @@ pub struct DefaultSwitchTheme {
 }
 
 pub fn default_switch_theme() -> Arc<dyn SwitchTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.switch_theme(crate::theme::RadixButtonStyle::Primary);
-    }
     static THEME: OnceLock<Arc<dyn SwitchTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultSwitchTheme::default())).clone()
@@ -51,17 +46,14 @@ impl DefaultSwitchTheme {
 }
 
 impl SwitchTheme for DefaultSwitchTheme {
-    fn resolve(&self, kind: ButtonKind, on: bool, state: InteractionState) -> SwitchAppearance {
+    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
         let size = ControlSize::Md;
         let layer = state.layer();
-        let on_action = match button_variant(kind) {
-            ButtonVariant::Standard => &palette.action.standard,
-            _ => &palette.action.prominent,
-        };
+        let on_action = palette.action.prominent;
 
         let track_background = match (on, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,

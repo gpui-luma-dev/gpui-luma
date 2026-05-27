@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use crate::controls::autocomplete::AutocompleteTextBoxTheme;
-use crate::controls::button_family::{
-    ButtonFamilyRole, ButtonFamilyTheme, ButtonKind, ButtonVariant, default_button_family_theme,
-};
+use crate::controls::button_family::{ButtonFamilyRole, ButtonFamilyTheme};
 use crate::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use crate::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::context_menu::ContextMenuTheme;
@@ -55,45 +53,101 @@ use super::textfield::textfield_appearance;
 use super::button::button_appearance;
 use super::{RadixButtonStyle, RadixTheme};
 
-struct RadixButtonFamilyTheme {
+struct RadixStyledButtonFamilyTheme {
     theme: RadixTheme,
+    style: RadixButtonStyle,
 }
 
-impl ButtonFamilyTheme for RadixButtonFamilyTheme {
+impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
     fn resolve(
         &self,
-        variant: ButtonVariant,
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
     ) -> crate::controls::button_family::ButtonFamilyAppearance {
-        button_appearance(self.theme.mode_tokens(), radix_style_from_variant(variant), role, size, state)
+        button_appearance(self.theme.mode_tokens(), self.style, role, size, state)
     }
 }
 
-fn radix_style_from_variant(variant: ButtonVariant) -> RadixButtonStyle {
-    match variant {
-        ButtonVariant::Prominent => RadixButtonStyle::Primary,
-        ButtonVariant::Standard => RadixButtonStyle::Secondary,
-        ButtonVariant::Subtle => RadixButtonStyle::Outline,
-        ButtonVariant::Ghost => RadixButtonStyle::Ghost,
-    }
+pub fn styled_button_family_theme(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonFamilyTheme> {
+    Arc::new(RadixStyledButtonFamilyTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn button_family_theme(theme: Arc<RadixTheme>) -> Arc<dyn ButtonFamilyTheme> {
-    Arc::new(RadixButtonFamilyTheme { theme: theme.as_ref().clone() })
+    styled_button_family_theme(theme, RadixButtonStyle::Secondary)
 }
 
-pub fn checkbox_theme(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn CheckboxTheme> {
-    Arc::new(RadixCheckboxTheme { theme: theme.as_ref().clone(), style })
+pub fn button_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<()>> {
+    Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
 
-pub fn switch_theme(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn SwitchTheme> {
-    Arc::new(RadixSwitchTheme { theme: theme.as_ref().clone(), style })
+struct RadixStyledSwitchTheme {
+    theme: RadixTheme,
+    style: RadixButtonStyle,
 }
 
-pub fn radio_button_theme(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn RadioButtonTheme> {
-    Arc::new(RadixRadioButtonTheme { theme: theme.as_ref().clone(), style })
+impl SwitchTheme for RadixStyledSwitchTheme {
+    fn resolve(&self, on: bool, state: InteractionState) -> crate::controls::switch::SwitchAppearance {
+        switch_appearance(self.theme.mode_tokens(), self.theme.mode(), self.style, on, state)
+    }
+}
+
+struct RadixStyledCheckboxTheme {
+    theme: RadixTheme,
+    style: RadixButtonStyle,
+}
+
+impl CheckboxTheme for RadixStyledCheckboxTheme {
+    fn resolve(&self, checked: bool, state: InteractionState) -> crate::controls::checkbox::CheckboxAppearance {
+        checkbox_appearance(self.theme.mode_tokens(), self.style, checked, state)
+    }
+}
+
+struct RadixStyledRadioButtonTheme {
+    theme: RadixTheme,
+    style: RadixButtonStyle,
+}
+
+impl RadioButtonTheme for RadixStyledRadioButtonTheme {
+    fn resolve(&self, selected: bool, state: InteractionState) -> crate::controls::radio_button::RadioButtonAppearance {
+        radio_button_appearance(self.theme.mode_tokens(), self.style, selected, state)
+    }
+}
+
+pub fn checkbox_theme(theme: Arc<RadixTheme>) -> Arc<dyn CheckboxTheme> {
+    checkbox_theme_with_style(theme, RadixButtonStyle::Primary)
+}
+
+pub fn checkbox_theme_with_style(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn CheckboxTheme> {
+    Arc::new(RadixStyledCheckboxTheme { theme: theme.as_ref().clone(), style })
+}
+
+pub fn switch_theme(theme: Arc<RadixTheme>) -> Arc<dyn SwitchTheme> {
+    switch_theme_with_style(theme, RadixButtonStyle::Primary)
+}
+
+pub fn switch_theme_with_style(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn SwitchTheme> {
+    Arc::new(RadixStyledSwitchTheme { theme: theme.as_ref().clone(), style })
+}
+
+pub fn radio_button_theme(theme: Arc<RadixTheme>) -> Arc<dyn RadioButtonTheme> {
+    radio_button_theme_with_style(theme, RadixButtonStyle::Primary)
+}
+
+pub fn radio_button_theme_with_style(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn RadioButtonTheme> {
+    Arc::new(RadixStyledRadioButtonTheme { theme: theme.as_ref().clone(), style })
+}
+
+pub fn switch_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+    Arc::new(ThemedSwitchTemplate::new(switch_theme_with_style(theme, style)))
+}
+
+pub fn checkbox_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+    Arc::new(ThemedCheckboxTemplate::new(checkbox_theme_with_style(theme, style)))
+}
+
+pub fn radio_button_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
+    Arc::new(ThemedRadioButtonTemplate::new(radio_button_theme_with_style(theme, style)))
 }
 
 pub fn slider_theme(theme: Arc<RadixTheme>) -> Arc<dyn SliderTheme> {
@@ -110,69 +164,6 @@ pub fn selector_theme(theme: Arc<RadixTheme>) -> Arc<dyn SelectorTheme> {
 
 pub fn popup_menu_theme(theme: Arc<RadixTheme>) -> Arc<dyn PopupMenuTheme> {
     Arc::new(RadixPopupMenuTheme { theme: theme.as_ref().clone() })
-}
-
-struct RadixSwitchTheme {
-    theme: RadixTheme,
-    style: RadixButtonStyle,
-}
-
-impl SwitchTheme for RadixSwitchTheme {
-    fn resolve(
-        &self,
-        _kind: ButtonKind,
-        on: bool,
-        state: InteractionState,
-    ) -> crate::controls::switch::SwitchAppearance {
-        switch_appearance(self.theme.mode_tokens(), self.theme.mode(), self.style, on, state)
-    }
-}
-
-struct RadixCheckboxTheme {
-    theme: RadixTheme,
-    style: RadixButtonStyle,
-}
-
-impl CheckboxTheme for RadixCheckboxTheme {
-    fn resolve(
-        &self,
-        _kind: ButtonKind,
-        checked: bool,
-        state: InteractionState,
-    ) -> crate::controls::checkbox::CheckboxAppearance {
-        checkbox_appearance(self.theme.mode_tokens(), self.style, checked, state)
-    }
-}
-
-struct RadixRadioButtonTheme {
-    theme: RadixTheme,
-    style: RadixButtonStyle,
-}
-
-impl RadioButtonTheme for RadixRadioButtonTheme {
-    fn resolve(
-        &self,
-        _kind: ButtonKind,
-        selected: bool,
-        state: InteractionState,
-    ) -> crate::controls::radio_button::RadioButtonAppearance {
-        radio_button_appearance(self.theme.mode_tokens(), self.style, selected, state)
-    }
-}
-
-pub fn switch_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
-    Arc::new(ThemedSwitchTemplate::new(Arc::new(RadixSwitchTheme { theme: theme.as_ref().clone(), style })))
-}
-
-pub fn checkbox_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
-    Arc::new(ThemedCheckboxTemplate::new(Arc::new(RadixCheckboxTheme { theme: theme.as_ref().clone(), style })))
-}
-
-pub fn radio_button_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
-    Arc::new(ThemedRadioButtonTemplate::new(Arc::new(RadixRadioButtonTheme {
-        theme: theme.as_ref().clone(),
-        style,
-    })))
 }
 
 struct RadixSliderTheme {
@@ -470,27 +461,14 @@ pub fn progress_theme(theme: Arc<RadixTheme>) -> Arc<dyn ProgressTheme> {
 }
 
 pub fn toggle_template(theme: Arc<RadixTheme>, style: RadixButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
-    let radix = theme.as_ref().clone();
-    Arc::new(DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(move |element, model| {
+    let button_theme = styled_button_family_theme(theme, style);
+    Arc::new(DefaultButtonTemplate::new(button_theme.clone()).with_modifier(move |element, model| {
         if model.appearance.is_some() {
             return element;
         }
 
-        let appearance = match style {
-            RadixButtonStyle::Primary => {
-                radix.primary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-            }
-            RadixButtonStyle::Secondary => {
-                radix.secondary_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-            }
-            RadixButtonStyle::Outline => {
-                radix.outline_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-            }
-            RadixButtonStyle::Ghost => {
-                radix.ghost_button(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state)
-            }
-        };
-
+        let appearance =
+            button_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
         element.bg(appearance.background).text_color(appearance.foreground).border_color(appearance.border)
     }))
 }

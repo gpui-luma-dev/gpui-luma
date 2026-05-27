@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize, default_button_family_theme};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
@@ -452,7 +452,6 @@ fn render_state_sample(
         id,
         data: (),
         content: variant.content(),
-        kind: ButtonKind::Standard,
         role: if matches!(variant, ButtonTemplateVariant::IconButton) {
             ButtonFamilyRole::Icon
         } else {

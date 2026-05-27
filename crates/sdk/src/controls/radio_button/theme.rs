@@ -2,7 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::controls::button_family::{ButtonKind, ButtonVariant, button_variant};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
@@ -27,8 +26,7 @@ pub struct RadioButtonAppearance {
 }
 
 pub trait RadioButtonTheme: Send + Sync {
-    /// `kind` selects the selected-state accent (`Standard` = secondary, `Prominent` = primary accent).
-    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> RadioButtonAppearance;
+    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -37,9 +35,6 @@ pub struct DefaultRadioButtonTheme {
 }
 
 pub fn default_radio_button_theme() -> Arc<dyn RadioButtonTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.radio_button_theme(crate::theme::RadixButtonStyle::Primary);
-    }
     static THEME: OnceLock<Arc<dyn RadioButtonTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultRadioButtonTheme::default())).clone()
@@ -52,16 +47,13 @@ impl DefaultRadioButtonTheme {
 }
 
 impl RadioButtonTheme for DefaultRadioButtonTheme {
-    fn resolve(&self, kind: ButtonKind, checked: bool, state: InteractionState) -> RadioButtonAppearance {
+    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
         let layer = state.layer();
-        let checked_action = match button_variant(kind) {
-            ButtonVariant::Standard => &palette.action.standard,
-            _ => &palette.action.prominent,
-        };
+        let checked_action = palette.action.prominent;
 
         let indicator_background = match layer {
             InteractionLayer::Disabled => palette.state.disabled.background,

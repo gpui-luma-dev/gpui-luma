@@ -35,9 +35,6 @@ pub struct DefaultFloatingMenuTheme {
 }
 
 pub fn default_floating_menu_theme() -> Arc<dyn FloatingMenuTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.floating_menu_theme();
-    }
     static THEME: OnceLock<Arc<dyn FloatingMenuTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultFloatingMenuTheme::default())).clone()

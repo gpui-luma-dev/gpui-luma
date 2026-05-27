@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Context, Div, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
@@ -64,7 +64,7 @@ pub(in crate::gallery) struct RadioGroupPane {
 
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
+        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Secondary);
         let vertical_group = sdk_radio_group::new("radio-group-density-vertical")
             .items(density_items())
             .template(radio_button_vertical_template(radio_template.clone()))
@@ -476,7 +476,6 @@ where
                 let label = item.item.label().clone();
                 move |_, _| div().child(label.clone()).into_any_element()
             }),
-            kind: ButtonKind::Standard,
             role: ButtonFamilyRole::Text,
             size: ButtonSize::Md,
             state: item.state.interaction_state(),

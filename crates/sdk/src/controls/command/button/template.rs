@@ -3,9 +3,7 @@ use std::sync::Arc;
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
-use crate::controls::button_family::{
-    ButtonFamilyAppearance, ButtonFamilyTheme, button_variant, default_button_family_theme,
-};
+use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyTheme, default_button_family_theme};
 use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -18,7 +16,7 @@ fn resolve_appearance<D>(theme: &Arc<dyn ButtonFamilyTheme>, model: &ButtonRende
         return resolve(model);
     }
 
-    theme.resolve(button_variant(model.kind), model.role, model.size, model.state)
+    theme.resolve(model.role, model.size, model.state)
 }
 
 fn resolve_focus_probe_appearance<D: Clone>(
@@ -35,7 +33,6 @@ fn resolve_focus_probe_appearance<D: Clone>(
             id: model.id.clone(),
             data: model.data.clone(),
             content: model.content.clone(),
-            kind: model.kind,
             role: model.role,
             size: model.size,
             state: focused_state,
@@ -46,12 +43,7 @@ fn resolve_focus_probe_appearance<D: Clone>(
         return Some(resolve(&focused_model));
     }
 
-    Some(theme.resolve(
-        button_variant(model.kind),
-        model.role,
-        model.size,
-        InteractionState { focused: true, ..model.state },
-    ))
+    Some(theme.resolve(model.role, model.size, InteractionState { focused: true, ..model.state }))
 }
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
@@ -160,7 +152,7 @@ mod tests {
     use gpui::Hsla;
 
     use super::*;
-    use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole, ButtonKind, ButtonSize};
+    use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole, ButtonSize};
     use crate::theme::{InteractionState, LumaTextStyle};
 
     fn lime_appearance() -> ButtonFamilyAppearance {
@@ -180,13 +172,12 @@ mod tests {
     }
 
     #[test]
-    fn with_appearance_overrides_kind_resolution() {
+    fn with_appearance_overrides_style_resolution() {
         let template: DefaultButtonTemplate<()> = DefaultButtonTemplate::new(default_button_family_theme());
         let model = ButtonRenderModel {
             id: "appearance-test".into(),
             data: (),
             content: Arc::new(|_, _| div().into_any_element()),
-            kind: ButtonKind::Prominent,
             role: ButtonFamilyRole::Text,
             size: ButtonSize::Md,
             state: InteractionState::default(),

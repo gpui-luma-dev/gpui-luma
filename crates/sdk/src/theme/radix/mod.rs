@@ -1,5 +1,4 @@
 mod action;
-mod active;
 mod autocomplete;
 mod button;
 mod catalog;
@@ -31,21 +30,17 @@ mod textarea;
 mod usage;
 
 pub use usage::all_radix_theme_usages;
-pub use active::set_active_radix_theme;
-pub(crate) use active::active_radix_theme;
 
 use std::sync::{
     Arc,
     atomic::{AtomicU8, Ordering},
 };
 
-pub(crate) use button::button_appearance;
+pub(crate) use button::button_appearance as resolve_button_appearance;
 pub use button::RadixButtonStyle;
 pub use catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 pub use mode::RadixModeTokens;
 pub use palette::{RadixActionRole, RadixPalette};
-
-use button::button_appearance as resolve_button_appearance;
 
 use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
 use crate::theme::pack::LumaChrome;
@@ -214,6 +209,13 @@ impl RadixTheme {
         templates::radio_button_template(Arc::clone(self), style)
     }
 
+    pub fn button_template(
+        self: &Arc<Self>,
+        style: RadixButtonStyle,
+    ) -> Arc<dyn crate::controls::command::button::ButtonTemplate<()>> {
+        templates::button_template(Arc::clone(self), style)
+    }
+
     pub fn slider_template(self: &Arc<Self>) -> Arc<dyn crate::controls::slider::SliderTemplate> {
         templates::slider_template(Arc::clone(self))
     }
@@ -342,22 +344,16 @@ impl RadixTheme {
         templates::button_family_theme(Arc::clone(self))
     }
 
-    pub fn checkbox_theme(
-        self: &Arc<Self>,
-        style: RadixButtonStyle,
-    ) -> Arc<dyn crate::controls::checkbox::CheckboxTheme> {
-        templates::checkbox_theme(Arc::clone(self), style)
+    pub fn checkbox_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::checkbox::CheckboxTheme> {
+        templates::checkbox_theme(Arc::clone(self))
     }
 
-    pub fn switch_theme(self: &Arc<Self>, style: RadixButtonStyle) -> Arc<dyn crate::controls::switch::SwitchTheme> {
-        templates::switch_theme(Arc::clone(self), style)
+    pub fn switch_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::switch::SwitchTheme> {
+        templates::switch_theme(Arc::clone(self))
     }
 
-    pub fn radio_button_theme(
-        self: &Arc<Self>,
-        style: RadixButtonStyle,
-    ) -> Arc<dyn crate::controls::radio_button::RadioButtonTheme> {
-        templates::radio_button_theme(Arc::clone(self), style)
+    pub fn radio_button_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::radio_button::RadioButtonTheme> {
+        templates::radio_button_theme(Arc::clone(self))
     }
 
     pub fn slider_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::slider::SliderTheme> {

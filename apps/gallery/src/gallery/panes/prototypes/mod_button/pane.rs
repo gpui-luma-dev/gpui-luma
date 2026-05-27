@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
-use gpui_luma::controls::command::button::ButtonKind;
+use gpui_luma::theme::RadixButtonStyle;
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use gpui_luma::controls::button_family::default_button_family_theme;
 use gpui_luma::theme::RadixTheme;
@@ -45,10 +45,7 @@ impl ModButtonPane {
             })
             .spawn(cx);
 
-        let modified_button = Button::new("Modified Button")
-            .kind(ButtonKind::Standard)
-            .template(modified_button_template::<()>())
-            .spawn(cx);
+        let modified_button = Button::new("Modified Button").template(modified_button_template::<()>()).spawn(cx);
 
         let custom_button = Button::new("custom-btn")
             .content(|model, _| {
@@ -70,7 +67,6 @@ impl ModButtonPane {
                     .child("Custom Layout")
                     .text_color(color)
             })
-            .kind(ButtonKind::Standard)
             .template(modified_button_template::<()>())
             .spawn(cx);
 
@@ -91,7 +87,6 @@ impl ModButtonPane {
                     )
                     .child("Reactive Counter")
             })
-            .kind(ButtonKind::Standard)
             .template(modified_button_template::<CounterState>())
             .spawn(cx);
 
@@ -106,31 +101,32 @@ impl ModButtonPane {
             .content(|_, _| {
                 div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
-            .kind(ButtonKind::Standard)
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
             .spawn(cx);
 
         let standard_icon_text = Button::new("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
             })
-            .kind(ButtonKind::Standard)
+            .template(radix_theme.button_template(RadixButtonStyle::Secondary))
             .spawn(cx);
 
-        let prominent_icon_only =
-            Button::icon("prom-icon-only", LucideIcon::Smile).kind(ButtonKind::Prominent).spawn(cx);
+        let prominent_icon_only = Button::icon("prom-icon-only", LucideIcon::Smile)
+            .template(radix_theme.button_template(RadixButtonStyle::Primary))
+            .spawn(cx);
 
         let prominent_text_icon = Button::new("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
-            .kind(ButtonKind::Prominent)
+            .template(radix_theme.button_template(RadixButtonStyle::Primary))
             .spawn(cx);
 
         let prominent_icon_text = Button::new("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
             })
-            .kind(ButtonKind::Prominent)
+            .template(radix_theme.button_template(RadixButtonStyle::Primary))
             .spawn(cx);
 
         Self {

@@ -16,6 +16,7 @@ use super::resolve::{
 use super::RadixButtonStyle;
 use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
+use super::palette::RadixPalette;
 
 pub(crate) fn switch_appearance(
     mode: &RadixModeTokens,
@@ -24,8 +25,82 @@ pub(crate) fn switch_appearance(
     on: bool,
     state: InteractionState,
 ) -> SwitchAppearance {
+    if mode.catalog.tokens.is_empty() {
+        return switch_appearance_from_palette(
+            &mode.palette,
+            &mode.metrics,
+            &mode.typography,
+            theme_mode,
+            style,
+            on,
+            state,
+        );
+    }
+
     switch_appearance_from_catalog(&mode.catalog, &mode.metrics, &mode.typography, theme_mode, style, on, state)
         .unwrap_or_else(|err| panic!("switch properties: {err}"))
+}
+
+fn switch_appearance_from_palette(
+    palette: &RadixPalette,
+    metrics: &crate::theme::MetricTokens,
+    typography: &crate::theme::LumaTypography,
+    theme_mode: ThemeMode,
+    style: RadixButtonStyle,
+    on: bool,
+    state: InteractionState,
+) -> SwitchAppearance {
+    let layer = state.layer();
+    let size = ControlSize::Md;
+    let thumb_shadow = {
+        let native = LumaTheme::native();
+        native.mode(theme_mode).elevation.thumb.to_box_shadows()
+    };
+    let on_action = palette.action(style);
+
+    let track_background = match (on, layer) {
+        (_, InteractionLayer::Disabled) => palette.disabled_background,
+        (true, InteractionLayer::Pressed) => on_action.pressed_background,
+        (true, InteractionLayer::Hovered) => on_action.hover_background,
+        (true, InteractionLayer::Default) => on_action.background,
+        (false, InteractionLayer::Pressed) => palette.muted_background,
+        (false, InteractionLayer::Hovered) => palette.muted_background,
+        (false, InteractionLayer::Default) => palette.input_background,
+    };
+
+    let (thumb_background, thumb_border) = if state.disabled {
+        (palette.disabled_foreground, palette.disabled_background)
+    } else if on {
+        (on_action.foreground, on_action.foreground)
+    } else {
+        (palette.panel_background, palette.border_default)
+    };
+
+    SwitchAppearance {
+        track_background,
+        track_border: if on && !state.disabled {
+            track_background
+        } else {
+            palette.border_default
+        },
+        thumb_background,
+        thumb_border,
+        thumb_shadow,
+        label_color: if state.disabled {
+            palette.disabled_foreground
+        } else {
+            palette.app_foreground
+        },
+        adorner: super::focus::focus_adorner_from_palette(palette, metrics, state.focused),
+        label_typography: typography.text.label,
+        label_font_family: typography.font.sans.family.clone().into(),
+        width: 42.0,
+        height: 22.0,
+        thumb_size: metrics.control_height(size) * 0.5,
+        padding: 2.0,
+        gap: metrics.gap(size),
+        radius: metrics.radius.pill,
+    }
 }
 
 pub(crate) fn switch_appearance_from_catalog(

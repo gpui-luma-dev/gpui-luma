@@ -6,8 +6,9 @@ use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 use super::control::Button;
 use super::template::ButtonTemplate;
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
-use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonKind, ButtonSize};
-use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
+use crate::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
+};
 use lucide_icons::Icon as LucideIcon;
 
 #[derive(Clone)]
@@ -29,7 +30,6 @@ pub struct ButtonModel<D = ()> {
     pub(crate) id: SharedString,
     pub(crate) data: D,
     pub(crate) content: ControlPresenter<ButtonRenderModel<D>>,
-    pub(crate) kind: ButtonKind,
     pub(crate) role: ButtonFamilyRole,
     pub(crate) size: ButtonSize,
     pub(crate) enabled: bool,
@@ -43,7 +43,6 @@ pub struct ButtonRenderModel<D> {
     pub id: SharedString,
     pub data: D,
     pub content: ControlPresenter<ButtonRenderModel<D>>,
-    pub kind: ButtonKind,
     pub role: ButtonFamilyRole,
     pub size: ButtonSize,
     pub state: ButtonState,
@@ -65,7 +64,6 @@ impl ButtonBuilder<()> {
                 id: id.clone(),
                 data: (),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
-                kind: ButtonKind::Standard,
                 role: ButtonFamilyRole::Text,
                 size: ButtonSize::Md,
                 enabled: true,
@@ -91,7 +89,7 @@ impl ButtonBuilder<()> {
     /// initial value. This is **not** the same as [`ButtonBuilder::with_data`]: `typed` creates a
     /// fresh [`ButtonBuilder<D>`] and resets content and template to button defaults. Use
     /// [`ButtonBuilder::with_data`] only after the builder is already configured (template,
-    /// content, kind, etc.) to change the initial payload without discarding that configuration.
+    /// content, style, etc.) to change the initial payload without discarding that configuration.
     ///
     /// # Data binding
     ///
@@ -107,7 +105,6 @@ impl ButtonBuilder<()> {
                 id: old.id,
                 data: data.clone(),
                 content: Arc::new(move |_, _| div().child(id.clone()).into_any_element()),
-                kind: old.kind,
                 role: old.role,
                 size: old.size,
                 enabled: old.enabled,
@@ -136,11 +133,6 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         F: Fn(&ButtonRenderModel<D>) -> ButtonFamilyAppearance + Send + Sync + 'static,
     {
         self.model.appearance = Some(Arc::new(resolve));
-        self
-    }
-
-    pub fn kind(mut self, kind: ButtonKind) -> Self {
-        self.model.kind = kind;
         self
     }
 

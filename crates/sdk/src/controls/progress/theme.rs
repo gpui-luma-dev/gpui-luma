@@ -22,9 +22,6 @@ pub struct DefaultProgressTheme {
 }
 
 pub fn default_progress_theme() -> Arc<dyn ProgressTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.progress_theme();
-    }
     static THEME: OnceLock<Arc<dyn ProgressTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultProgressTheme::default())).clone()

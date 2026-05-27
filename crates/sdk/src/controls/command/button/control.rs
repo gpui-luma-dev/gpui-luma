@@ -85,7 +85,6 @@ impl<D: Clone + 'static> Button<D> {
             id: self.model.id.clone(),
             data: self.model.data.clone(),
             content: self.model.content.clone(),
-            kind: self.model.kind,
             role: self.model.role,
             size: self.model.size,
             state: self.command.render_state(self.model.enabled, window),

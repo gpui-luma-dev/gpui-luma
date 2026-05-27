@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::checkbox::{self, Checkbox};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -319,7 +319,6 @@ fn render_state_sample(
         id,
         data: checked,
         content: variant.content(),
-        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,

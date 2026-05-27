@@ -2,7 +2,7 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::theme::{RadixTheme, ThemeMode, set_active_radix_theme};
+use gpui_luma::theme::{RadixTheme, ThemeMode};
 use std::sync::Arc;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
@@ -30,7 +30,6 @@ impl GalleryApp {
         window.focus(&focus_scope, cx);
         let radix_theme = theme_choice.radix_theme();
         radix_theme.set_mode(ThemeMode::Dark);
-        set_active_radix_theme(radix_theme.clone());
         let chrome = radix_theme.chrome();
 
         let split_view = SplitView::new("gallery-shell")

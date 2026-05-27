@@ -50,9 +50,6 @@ pub struct DefaultNavigationSidebarTheme {
 }
 
 pub fn default_navigation_sidebar_theme() -> Arc<dyn NavigationSidebarTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.navigation_sidebar_theme();
-    }
     static THEME: OnceLock<Arc<dyn NavigationSidebarTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultNavigationSidebarTheme::default())).clone()

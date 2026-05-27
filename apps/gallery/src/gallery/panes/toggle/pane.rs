@@ -4,7 +4,7 @@ use gpui::{
     AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Subscription, Window, div,
     prelude::*, px,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonKind, ButtonSize};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::toggle;
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
@@ -276,7 +276,7 @@ impl ToggleTemplateVariant {
 
 impl ToggleStatePreview {
     fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.toggle_template(RadixButtonStyle::Ghost) }
+        Self { radix_theme: radix_theme.clone(), template: radix_theme.toggle_template(RadixButtonStyle::Secondary) }
     }
 }
 
@@ -439,7 +439,6 @@ fn render_state_sample(
         id,
         data: selected,
         content: variant.content(),
-        kind: ButtonKind::Standard,
         role: ButtonFamilyRole::Toggle { selected },
         size: ButtonSize::Md,
         state: sample.state,

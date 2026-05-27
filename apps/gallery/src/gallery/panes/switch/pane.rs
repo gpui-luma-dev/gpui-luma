@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::switch::{self, Switch};
-use gpui_luma::controls::button_family::ButtonSize;
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
@@ -319,8 +319,7 @@ fn render_state_sample(
         id,
         data: on,
         content: variant.content(),
-        kind: gpui_luma::controls::button_family::ButtonKind::Standard,
-        role: gpui_luma::controls::button_family::ButtonFamilyRole::Text,
+        role: ButtonFamilyRole::Text,
         size: ButtonSize::Md,
         state: sample.state,
         round: false,

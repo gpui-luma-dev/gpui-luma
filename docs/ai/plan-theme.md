@@ -5,19 +5,12 @@ This document outlines the roadmap for standardizing the GPUI-Luma Radix theme s
 ## 1. Objectives
 
 - **Code-First Ergonomics**: Simplify widget declaration. Replace verbose `.with_appearance` and `.template` closures with clean, chainable builder helpers (e.g., `.primary()`, `.secondary()`).
-- **Remove Legacy Patterns**: Deprecate/remove `ButtonKind` and `ButtonVariant` mapping. Use direct style variant mapping (`RadixButtonStyle`).
+- **Remove Legacy Patterns**: Deprecate/remove `ButtonKind` and `ButtonVariant` mapping. Use direct style variant mapping (`RadixButtonStyle`). (COMPLETED)
 - **Theme Code Consolidation**: Merge tiny and single-line files in `crates/sdk/src/theme/radix` into logical modules to reduce directory clutter.
 
 ---
 
 ## 2. Proposed Roadmap
-
-### Phase 0: Pre-Task (Consolidation & Directory Flattening)
-Flatten the `properties/` nested directory directly into `radix/`. This is the recommended immediate choice because it:
-- Removes all 20+ single-line files.
-- Eliminates the extra nesting directory.
-- Brings all controls in line with the structure already used by `button.rs`.
-- Requires very minor changes to imports (simply moving the files and updating `mod.rs`).
 
 ### Phase 1: Style Variant Standardization
 Align all core controls to direct `RadixButtonStyle` options.

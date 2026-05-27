@@ -35,9 +35,6 @@ pub struct DefaultTabsNavigationTheme {
 }
 
 pub fn default_tabs_navigation_theme() -> Arc<dyn TabsNavigationTheme> {
-    if let Some(radix) = crate::theme::radix::active_radix_theme() {
-        return radix.tabs_navigation_theme();
-    }
     static THEME: OnceLock<Arc<dyn TabsNavigationTheme>> = OnceLock::new();
 
     THEME.get_or_init(|| Arc::new(DefaultTabsNavigationTheme::default())).clone()
