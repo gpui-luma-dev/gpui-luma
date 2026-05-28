@@ -1,23 +1,18 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::radio_button::RadioButton;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
+use crate::gallery::forms::declare_form;
+
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
-
-#[derive(Clone, Copy)]
-enum PaymentButton {
-    Submit,
-    Cancel,
-}
 
 #[derive(Clone, Copy)]
 enum PaymentField {
@@ -25,105 +20,85 @@ enum PaymentField {
     Email,
 }
 
-pub(super) struct PaymentPanel {
-    radix_theme: Arc<RadixTheme>,
-    event_bus: Entity<EventBus>,
-    submit_button: Entity<Button>,
-    cancel_button: Entity<Button>,
-    name_field: TextField,
-    email_field: TextField,
-    payment_combobox: ComboBox,
-    same_as_shipping_checkbox: Checkbox,
-    payment_method_radio: RadioButton,
-    name_value: SharedString,
-    email_value: SharedString,
-    payment_selection_set: bool,
-    same_as_shipping: bool,
-    _subscriptions: Vec<Subscription>,
+declare_form! {
+    pub(super) struct PaymentPanel {
+        controls: {
+            submit_button: Entity<Button> = radix_theme.primary_button("intro-submit").label("Submit")
+                => ButtonEvent |this, _event, cx| {
+                    this.event_bus.update(cx, |_bus, cx| {
+                        cx.emit(AppEvent::PaymentSubmit);
+                    });
+                },
+            cancel_button: Entity<Button> = radix_theme.secondary_button("intro-cancel").label("Cancel")
+                => ButtonEvent |this, _event, cx| {
+                    this.event_bus.update(cx, |_bus, cx| {
+                        cx.emit(AppEvent::PaymentCancel);
+                    });
+                },
+            name_field: TextField = radix_theme
+                .textfield("intro-name")
+                .placeholder("Name on card")
+                .full_width(true)
+                .clean_on_escape(true)
+                => TextFieldEvent |this, event, cx| {
+                    this.handle_textfield_event(PaymentField::Name, event, cx);
+                },
+            email_field: TextField = radix_theme
+                .textfield("intro-email")
+                .placeholder("Email address")
+                .full_width(true)
+                .clean_on_escape(true)
+                => TextFieldEvent |this, event, cx| {
+                    this.handle_textfield_event(PaymentField::Email, event, cx);
+                },
+            payment_combobox: ComboBox = radix_theme
+                .combobox("intro-payment-combobox", payment_method_items())
+                .placeholder("Select payment method…")
+                .full_width(true)
+                .clean_on_escape(true)
+                .typing_policy(TypingPolicy::Strict)
+                .show_down_arrow(true)
+                .show_clear_button(false)
+                => ComboBoxEvent |this, event, cx| {
+                    this.handle_payment_combobox_event(event, cx);
+                },
+            same_as_shipping_checkbox: Checkbox = radix_theme
+                .primary_checkbox("intro-same-as-shipping")
+                .with_data(true)
+                .content(|_, _| div().child("Same as shipping address").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.same_as_shipping = !this.same_as_shipping;
+                    this.same_as_shipping_checkbox.update(cx, |button, cx| button.set_data(this.same_as_shipping, cx));
+                    this.emit_change("Checkbox::SameAsShipping", cx);
+                    cx.notify();
+                },
+            default_payment_method_checkbox: Checkbox = radix_theme
+                .secondary_checkbox("intro-default-payment-method")
+                .with_data(true)
+                .content(|_, _| div().child("Use this as default payment method").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.default_payment_method = !this.default_payment_method;
+                    this.default_payment_method_checkbox
+                        .update(cx, |button, cx| button.set_data(this.default_payment_method, cx));
+                    this.emit_change("Checkbox::DefaultPaymentMethod", cx);
+                    cx.notify();
+                },
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            event_bus: Entity<EventBus>,
+        },
+        fields: {
+            name_value: SharedString = SharedString::default(),
+            email_value: SharedString = SharedString::default(),
+            payment_selection_set: bool = false,
+            same_as_shipping: bool = true,
+            default_payment_method: bool = true,
+        }
+    }
 }
 
 impl PaymentPanel {
-    pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
-        let submit_button = radix_theme.primary_button("intro-submit").label("Submit").spawn(cx);
-        let cancel_button = radix_theme.secondary_button("intro-cancel").label("Cancel").spawn(cx);
-        let name_field = radix_theme
-            .textfield("intro-name")
-            .placeholder("Name on card")
-            .full_width(true)
-            .clean_on_escape(true)
-            .spawn(cx);
-        let email_field = radix_theme
-            .textfield("intro-email")
-            .placeholder("Email address")
-            .full_width(true)
-            .clean_on_escape(true)
-            .spawn(cx);
-        let payment_combobox = radix_theme
-            .combobox("intro-payment-combobox", payment_method_items())
-            .placeholder("Select payment method…")
-            .full_width(true)
-            .clean_on_escape(true)
-            .typing_policy(TypingPolicy::Strict)
-            .show_down_arrow(true)
-            .show_clear_button(false)
-            .spawn(cx);
-        let same_as_shipping_checkbox = radix_theme
-            .primary_checkbox("intro-same-as-shipping")
-            .with_data(true)
-            .content(|_, _| div().child("Same as shipping address").into_any_element())
-            .spawn(cx);
-        let payment_method_radio = radix_theme
-            .primary_radio("intro-payment-method-radio")
-            .with_data(true)
-            .content(|_, _| div().child("Use this as default payment method").into_any_element())
-            .spawn(cx);
-
-        let subscriptions = vec![
-            cx.subscribe(&submit_button, |this, _, _: &ButtonEvent, cx| {
-                this.handle_button_event(PaymentButton::Submit, cx);
-            }),
-            cx.subscribe(&cancel_button, |this, _, _: &ButtonEvent, cx| {
-                this.handle_button_event(PaymentButton::Cancel, cx);
-            }),
-            cx.subscribe(&name_field, |this, _, event: &TextFieldEvent, cx| {
-                this.handle_textfield_event(PaymentField::Name, event, cx);
-            }),
-            cx.subscribe(&email_field, |this, _, event: &TextFieldEvent, cx| {
-                this.handle_textfield_event(PaymentField::Email, event, cx);
-            }),
-            cx.subscribe(&payment_combobox, |this, _, event: &ComboBoxEvent, cx| {
-                this.handle_payment_combobox_event(event, cx);
-            }),
-            cx.subscribe(&same_as_shipping_checkbox, |this, _, _: &ButtonEvent, cx| {
-                this.handle_same_as_shipping_event(cx);
-            }),
-        ];
-
-        Self {
-            radix_theme,
-            event_bus,
-            submit_button,
-            cancel_button,
-            name_field,
-            email_field,
-            payment_combobox,
-            same_as_shipping_checkbox,
-            payment_method_radio,
-            name_value: SharedString::default(),
-            email_value: SharedString::default(),
-            payment_selection_set: false,
-            same_as_shipping: true,
-            _subscriptions: subscriptions,
-        }
-    }
-
-    fn handle_button_event(&mut self, button: PaymentButton, cx: &mut Context<Self>) {
-        self.event_bus.update(cx, |_bus, cx| match button {
-            PaymentButton::Submit => cx.emit(AppEvent::PaymentSubmit),
-            PaymentButton::Cancel => cx.emit(AppEvent::PaymentCancel),
-        });
-    }
-
     fn handle_textfield_event(&mut self, field: PaymentField, event: &TextFieldEvent, cx: &mut Context<Self>) {
         match event {
             TextFieldEvent::Change { value } | TextFieldEvent::Submit { value } => {
@@ -154,18 +129,12 @@ impl PaymentPanel {
         }
     }
 
-    fn handle_same_as_shipping_event(&mut self, cx: &mut Context<Self>) {
-        self.same_as_shipping = !self.same_as_shipping;
-        self.same_as_shipping_checkbox.update(cx, |button, cx| button.set_data(self.same_as_shipping, cx));
-        self.emit_change("Checkbox::SameAsShipping", cx);
-        cx.notify();
-    }
-
     fn emit_change(&self, event_name: &'static str, cx: &mut Context<Self>) {
         let name = self.name_value.clone();
         let email = self.email_value.clone();
         let payment_selection_set = self.payment_selection_set;
         let same_as_shipping = self.same_as_shipping;
+        let default_payment_method = self.default_payment_method;
 
         self.event_bus.update(cx, |_bus, cx| {
             cx.emit(AppEvent::PaymentChanged {
@@ -173,6 +142,7 @@ impl PaymentPanel {
                 email,
                 payment_selection_set,
                 same_as_shipping,
+                default_payment_method,
                 event_name: SharedString::from(event_name),
             });
         });
@@ -202,7 +172,7 @@ impl Render for PaymentPanel {
                     .child(self.submit_button.clone())
                     .child(self.cancel_button.clone()),
             )
-            .child(self.payment_method_radio.clone())
+            .child(self.default_payment_method_checkbox.clone())
     }
 }
 

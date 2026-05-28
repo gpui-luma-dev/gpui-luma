@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::presenter::HasPresenter;
@@ -10,94 +10,64 @@ use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
+use crate::gallery::forms::declare_form;
+
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
-pub(super) struct SystemPanel {
-    radix_theme: Arc<RadixTheme>,
-    event_bus: Entity<EventBus>,
-    terms_checkbox: Checkbox,
-    social_checkbox: Checkbox,
-    referral_checkbox: Checkbox,
-    two_factor_switch: Switch,
-    budget_slider: Slider,
-    completion_progress: Progress,
-    accepted_terms: bool,
-    social_source: bool,
-    referral_source: bool,
-    two_factor_enabled: bool,
-    budget: f32,
-    completion: f32,
-    _subscriptions: Vec<Subscription>,
+declare_form! {
+    pub(super) struct SystemPanel {
+        controls: {
+            terms_checkbox: Checkbox = radix_theme
+                .primary_checkbox("intro-terms")
+                .with_data(false)
+                .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.handle_terms_event(cx);
+                },
+            social_checkbox: Checkbox = radix_theme
+                .primary_checkbox("intro-social-source")
+                .with_data(true)
+                .content(|_, _| div().child("Social").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.handle_social_event(cx);
+                },
+            referral_checkbox: Checkbox = radix_theme
+                .primary_checkbox("intro-referral-source")
+                .with_data(false)
+                .content(|_, _| div().child("Referral").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.handle_referral_event(cx);
+                },
+            two_factor_switch: Switch = radix_theme
+                .primary_switch("intro-two-factor")
+                .content(|_, _| div().child("Two-factor authentication").into_any_element())
+                => ButtonEvent |this, event, cx| {
+                    this.handle_two_factor_event(event, cx);
+                },
+            budget_slider: Slider = radix_theme.slider("intro-budget").range(0..100).step(5).value(40)
+                => SliderEvent |this, event, cx| {
+                    this.handle_budget_event(event, cx);
+                },
+            completion_progress: Progress = radix_theme.progress("intro-completion").range(0..100).value(initial_completion as i32),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            event_bus: Entity<EventBus>,
+            initial_completion: f32,
+        },
+        fields: {
+            accepted_terms: bool = false,
+            social_source: bool = true,
+            referral_source: bool = false,
+            two_factor_enabled: bool = false,
+            budget: f32 = 40.0,
+            completion: f32 = initial_completion,
+        }
+    }
 }
 
 impl SystemPanel {
-    pub(super) fn new(
-        cx: &mut Context<Self>,
-        radix_theme: Arc<RadixTheme>,
-        event_bus: Entity<EventBus>,
-        initial_completion: f32,
-    ) -> Self {
-        let terms_checkbox = radix_theme
-            .primary_checkbox("intro-terms")
-            .with_data(false)
-            .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-            .spawn(cx);
-        let social_checkbox = radix_theme
-            .primary_checkbox("intro-social-source")
-            .with_data(true)
-            .content(|_, _| div().child("Social").into_any_element())
-            .spawn(cx);
-        let referral_checkbox = radix_theme
-            .primary_checkbox("intro-referral-source")
-            .with_data(false)
-            .content(|_, _| div().child("Referral").into_any_element())
-            .spawn(cx);
-        let two_factor_switch = radix_theme
-            .primary_switch("intro-two-factor")
-            .content(|_, _| div().child("Two-factor authentication").into_any_element())
-            .spawn(cx);
-        let budget_slider = radix_theme.slider("intro-budget").range(0..100).step(5).value(40).spawn(cx);
-        let completion_progress =
-            radix_theme.progress("intro-completion").range(0..100).value(initial_completion as i32).spawn(cx);
-
-        let subscriptions = vec![
-            cx.subscribe(&terms_checkbox, |this, _, _: &ButtonEvent, cx| {
-                this.handle_terms_event(cx);
-            }),
-            cx.subscribe(&social_checkbox, |this, _, _: &ButtonEvent, cx| {
-                this.handle_social_event(cx);
-            }),
-            cx.subscribe(&referral_checkbox, |this, _, _: &ButtonEvent, cx| {
-                this.handle_referral_event(cx);
-            }),
-            cx.subscribe(&two_factor_switch, |this, _, event: &ButtonEvent, cx| {
-                this.handle_two_factor_event(event, cx);
-            }),
-            cx.subscribe(&budget_slider, |this, _, event: &SliderEvent, cx| {
-                this.handle_budget_event(event, cx);
-            }),
-        ];
-
-        Self {
-            radix_theme,
-            event_bus,
-            terms_checkbox,
-            social_checkbox,
-            referral_checkbox,
-            two_factor_switch,
-            budget_slider,
-            completion_progress,
-            accepted_terms: false,
-            social_source: true,
-            referral_source: false,
-            two_factor_enabled: false,
-            budget: 40.0,
-            completion: initial_completion,
-            _subscriptions: subscriptions,
-        }
-    }
-
     pub(super) fn set_completion(&mut self, completion: f32, cx: &mut Context<Self>) {
         self.completion = completion;
         self.completion_progress.update(cx, |progress, cx| progress.set_value(completion as f64, cx));

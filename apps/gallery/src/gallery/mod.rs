@@ -1,4 +1,5 @@
 mod control;
+mod forms;
 mod panes;
 mod template;
 mod theme;

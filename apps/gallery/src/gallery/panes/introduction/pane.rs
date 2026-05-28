@@ -30,6 +30,7 @@ pub(in crate::gallery) struct IntroductionPane {
     payment_selection_set: bool,
 
     same_as_shipping: bool,
+    default_payment_method: bool,
     accepted_terms: bool,
     social_source: bool,
     referral_source: bool,
@@ -56,6 +57,7 @@ pub(super) enum AppEvent {
         email: SharedString,
         payment_selection_set: bool,
         same_as_shipping: bool,
+        default_payment_method: bool,
         event_name: SharedString,
     },
     WorkspaceChanged {
@@ -103,6 +105,7 @@ impl IntroductionPane {
         let email_value = SharedString::default();
         let payment_selection_set = false;
         let same_as_shipping = true;
+        let default_payment_method = true;
         let accepted_terms = false;
         let social_source = true;
         let referral_source = false;
@@ -134,6 +137,7 @@ impl IntroductionPane {
             email_value,
             payment_selection_set,
             same_as_shipping,
+            default_payment_method,
             accepted_terms,
             social_source,
             referral_source,
@@ -257,11 +261,19 @@ impl IntroductionPane {
                 self.clicks_cancel += 1;
                 self.last_event = SharedString::from("Button::Cancel");
             }
-            AppEvent::PaymentChanged { name, email, payment_selection_set, same_as_shipping, event_name } => {
+            AppEvent::PaymentChanged {
+                name,
+                email,
+                payment_selection_set,
+                same_as_shipping,
+                default_payment_method,
+                event_name,
+            } => {
                 self.name_value = name.clone();
                 self.email_value = email.clone();
                 self.payment_selection_set = *payment_selection_set;
                 self.same_as_shipping = *same_as_shipping;
+                self.default_payment_method = *default_payment_method;
                 self.last_event = event_name.clone();
                 self.recompute_completion(cx);
             }

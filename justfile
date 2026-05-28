@@ -1,7 +1,7 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    cargo run -p gpui-luma-gallery
+    cargo run -p gpui-luma-gallery -- astrovista
 
 gallery-rel:
     cargo run -p gpui-luma-gallery --release

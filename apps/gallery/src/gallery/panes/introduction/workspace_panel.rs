@@ -2,8 +2,8 @@ use std::cell::Cell;
 use std::sync::Arc;
 
 use gpui::{
-    App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*,
-    transparent_black, px,
+    App, Context, Entity, IntoElement, MouseButton, Render, SharedString, Window, div, prelude::*, transparent_black,
+    px,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
@@ -19,6 +19,8 @@ use gpui_luma::controls::radio_group::{
     RadioGroupTemplate, RadioGroupTemplateHandlers,
 };
 use lucide_icons::Icon as LucideIcon;
+
+use crate::gallery::forms::declare_form;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -49,101 +51,88 @@ impl WorkspaceDensity {
     }
 }
 
-pub(super) struct WorkspacePanel {
-    radix_theme: Arc<RadixTheme>,
-    event_bus: Entity<EventBus>,
-    popup_menu: Entity<PopupMenu>,
-    layout_icon_group: IconGroup<IconGroupItem>,
-    icon_demo_icon_group: IconGroup<IconGroupItem>,
-    density_radio_group: RadioGroup<RadioGroupItem>,
-    layout: SharedString,
-    density: SharedString,
-    icon_demo: SharedString,
-    action: SharedString,
-    _subscriptions: Vec<Subscription>,
+declare_form! {
+    pub(super) struct WorkspacePanel {
+        controls: {
+            popup_menu: Entity<PopupMenu> = radix_theme
+                .popup_menu("intro-workspace-popup")
+                .label("Workspace Menu")
+                .items(menu_items())
+                .placement(PopupMenuPlacement::BelowStart)
+                => PopupMenuEvent |this, event, cx| {
+                    this.handle_popup_menu_event(event, cx);
+                },
+            layout_icon_group: IconGroup<IconGroupItem> = {
+                let toggle_primary = radix_theme.toggle_template(RadixButtonStyle::Primary);
+
+                radix_theme
+                    .button_group("intro-workspace-layout")
+                    .horizontal()
+                    .with_template_modifier(|element, _| element.bg(transparent_black()))
+                    .managed_selected("grid")
+                    .items(layout_items())
+                    .item_template(toggle_button_item_template(toggle_primary.clone(), true, |item: &IconGroupItem| {
+                        let icon = match item.id().as_ref() {
+                            "grid" => LucideIcon::PanelTop,
+                            "list" => LucideIcon::List,
+                            "kanban" => LucideIcon::Columns3,
+                            _ => LucideIcon::Settings,
+                        };
+
+                        lucide_glyph(icon)
+                    }))
+                }
+                => IconGroupEvent |this, event, cx| {
+                    this.handle_layout_event(event, cx);
+                },
+            icon_demo_icon_group: IconGroup<IconGroupItem> = {
+                let toggle_secondary = radix_theme.toggle_template(RadixButtonStyle::Secondary);
+
+                radix_theme
+                    .button_group("intro-workspace-icon-demo")
+                    .horizontal()
+                    .managed_selected("left")
+                    .items(icon_demo_items())
+                    .item_template(toggle_button_item_template(toggle_secondary, true, |item: &IconGroupItem| {
+                        let icon = match item.id().as_ref() {
+                            "left" => LucideIcon::List,
+                            "center" => LucideIcon::PanelTop,
+                            "right" => LucideIcon::Columns3,
+                            _ => LucideIcon::Settings,
+                        };
+
+                        lucide_glyph(icon)
+                    }))
+                }
+                => IconGroupEvent |this, event, cx| {
+                    this.handle_icon_demo_event(event, cx);
+                },
+            density_radio_group: RadioGroup<RadioGroupItem> = {
+                let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
+
+                radio_group::horizontal("intro-workspace-density")
+                    .items(density_items())
+                    .selected("balanced")
+                    .template(density_template(radio_template))
+                }
+                => RadioGroupEvent |this, event, cx| {
+                    this.handle_density_event(event, cx);
+                },
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            event_bus: Entity<EventBus>,
+        },
+        fields: {
+            layout: SharedString = SharedString::from("Grid"),
+            density: SharedString = SharedString::from("Balanced"),
+            icon_demo: SharedString = SharedString::from("Left"),
+            action: SharedString = SharedString::from("None"),
+        }
+    }
 }
 
 impl WorkspacePanel {
-    pub(super) fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, event_bus: Entity<EventBus>) -> Self {
-        let toggle_primary = radix_theme.toggle_template(RadixButtonStyle::Primary);
-        let toggle_secondary = radix_theme.toggle_template(RadixButtonStyle::Secondary);
-        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
-
-        let layout_icon_group = radix_theme
-            .button_group("intro-workspace-layout")
-            .horizontal()
-            .with_template_modifier(|element, _| element.bg(transparent_black()))
-            .managed_selected("grid")
-            .items(layout_items())
-            .item_template(toggle_button_item_template(toggle_primary.clone(), true, |item: &IconGroupItem| {
-                let icon = match item.id().as_ref() {
-                    "grid" => LucideIcon::PanelTop,
-                    "list" => LucideIcon::List,
-                    "kanban" => LucideIcon::Columns3,
-                    _ => LucideIcon::Settings,
-                };
-
-                lucide_glyph(icon)
-            }))
-            .spawn(cx);
-        let density_radio_group = radio_group::horizontal("intro-workspace-density")
-            .items(density_items())
-            .selected("balanced")
-            .template(density_template(radio_template))
-            .spawn(cx);
-        let popup_menu = radix_theme
-            .popup_menu("intro-workspace-popup")
-            .label("Workspace Menu")
-            .items(menu_items())
-            .placement(PopupMenuPlacement::BelowStart)
-            .spawn(cx);
-        let icon_demo_icon_group = radix_theme
-            .button_group("intro-workspace-icon-demo")
-            .horizontal()
-            .managed_selected("left")
-            .items(icon_demo_items())
-            .item_template(toggle_button_item_template(toggle_secondary, true, |item: &IconGroupItem| {
-                let icon = match item.id().as_ref() {
-                    "left" => LucideIcon::List,
-                    "center" => LucideIcon::PanelTop,
-                    "right" => LucideIcon::Columns3,
-                    _ => LucideIcon::Settings,
-                };
-
-                lucide_glyph(icon)
-            }))
-            .spawn(cx);
-
-        let subscriptions = vec![
-            cx.subscribe(&popup_menu, |this, _, event: &PopupMenuEvent, cx| {
-                this.handle_popup_menu_event(event, cx);
-            }),
-            cx.subscribe(&layout_icon_group, |this, _, event: &IconGroupEvent, cx| {
-                this.handle_layout_event(event, cx);
-            }),
-            cx.subscribe(&icon_demo_icon_group, |this, _, event: &IconGroupEvent, cx| {
-                this.handle_icon_demo_event(event, cx);
-            }),
-            cx.subscribe(&density_radio_group, |this, _, event: &RadioGroupEvent, cx| {
-                this.handle_density_event(event, cx);
-            }),
-        ];
-
-        Self {
-            radix_theme,
-            event_bus,
-            popup_menu,
-            layout_icon_group,
-            icon_demo_icon_group,
-            density_radio_group,
-            layout: SharedString::from("Grid"),
-            density: SharedString::from("Balanced"),
-            icon_demo: SharedString::from("Left"),
-            action: SharedString::from("None"),
-            _subscriptions: subscriptions,
-        }
-    }
-
     fn handle_popup_menu_event(&mut self, event: &PopupMenuEvent, cx: &mut Context<Self>) {
         match event {
             PopupMenuEvent::Select { label, .. } => {
