@@ -10,8 +10,6 @@ use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
-use crate::gallery::forms::declare_form;
-
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
@@ -140,46 +138,42 @@ impl Render for SystemPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.radix_theme.chrome();
 
-        card_container(chrome.border, chrome.panel_background)
-            .child(card_title(
-                "System & Preferences",
-                "Choice controls plus progress feedback.",
-                chrome.title_text,
-                chrome.muted_text,
-            ))
-            .child(self.two_factor_switch.clone())
-            .child(self.terms_checkbox.clone())
-            .child(self.social_checkbox.clone())
-            .child(self.referral_checkbox.clone())
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.0))
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .font_weight(gpui::FontWeight::MEDIUM)
-                            .text_color(chrome.body_text)
-                            .child(format!("Budget: {:.0}%", self.budget)),
-                    )
-                    .child(self.budget_slider.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.0))
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .font_weight(gpui::FontWeight::MEDIUM)
-                            .text_color(chrome.body_text)
-                            .child(format!("Profile completion: {:.0}%", self.completion)),
-                    )
-                    .child(self.completion_progress.clone()),
-            )
+        card_container(
+            chrome.border,
+            chrome.panel_background,
+            vstack! {
+                gap=10.0;
+                card_title(
+                    "System & Preferences",
+                    "Choice controls plus progress feedback.",
+                    chrome.title_text,
+                    chrome.muted_text,
+                ),
+                self.two_factor_switch.clone(),
+                self.terms_checkbox.clone(),
+                self.social_checkbox.clone(),
+                self.referral_checkbox.clone(),
+                vstack! {
+                    gap=6.0;
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(gpui::FontWeight::MEDIUM)
+                        .text_color(chrome.body_text)
+                        .child(format!("Budget: {:.0}%", self.budget)),
+                    self.budget_slider.clone(),
+                },
+                vstack! {
+                    gap=6.0;
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(gpui::FontWeight::MEDIUM)
+                        .text_color(chrome.body_text)
+                        .child(format!("Profile completion: {:.0}%", self.completion)),
+                    self.completion_progress.clone(),
+                },
+            },
+        )
     }
 }

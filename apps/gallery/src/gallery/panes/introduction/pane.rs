@@ -174,68 +174,56 @@ impl IntroductionPane {
         gallery_pane_with_description(
             "Introduction",
             Some(INTRO_DESCRIPTION),
-            div()
+            hstack! {
+                vstack! {
+                    gap=16.0;
+                    self.render_intro_header(chrome.title_text, chrome.body_text),
+                    vstack! {
+                        gap=16.0;
+                        self.render_panel_row(),
+                        self.render_status_line(chrome.muted_text),
+                    }
+                    .w_full(),
+                }
                 .w_full()
-                .pt(px(32.0))
-                .flex()
-                .justify_center()
-                .child(
-                    div()
-                        .w_full()
-                        .max_w(px(1180.0))
-                        .flex()
-                        .flex_col()
-                        .gap(px(0.0))
-                        .child(self.render_intro_header(chrome.title_text, chrome.body_text))
-                        .gap(px(16.0))
-                        .child(
-                            div()
-                                .w_full()
-                                .flex()
-                                .flex_col()
-                                .gap(px(16.0))
-                                .child(self.render_panel_row())
-                                .child(self.render_status_line(chrome.muted_text)),
-                        ),
-                )
-                .into_any_element(),
+                .max_w(px(1180.0)),
+            }
+            .w_full()
+            .pt(px(32.0))
+            .justify_center()
+            .into_any_element(),
             radix_theme,
         )
     }
 
     fn render_intro_header(&self, title_color: gpui::Hsla, body_color: gpui::Hsla) -> AnyElement {
-        div()
-            .w_full()
-            .max_w(px(860.0))
-            .flex()
-            .flex_col()
-            .items_start()
-            .gap(px(32.0))
-            .child(
-                div()
-                    .text_size(px(44.0))
-                    .line_height(px(52.0))
-                    .font_weight(FontWeight::BOLD)
-                    .text_color(title_color)
-                    .child(INTRO_HEADING),
-            )
-            .child(div().text_size(px(17.0)).line_height(px(26.0)).text_color(body_color).child(INTRO_SUBHEADING))
-            .into_any_element()
+        vstack! {
+            gap=32.0 align=start;
+            div()
+                .text_size(px(44.0))
+                .line_height(px(52.0))
+                .font_weight(FontWeight::BOLD)
+                .text_color(title_color)
+                .child(INTRO_HEADING),
+            div().text_size(px(17.0)).line_height(px(26.0)).text_color(body_color).child(INTRO_SUBHEADING),
+        }
+        .w_full()
+        .max_w(px(860.0))
+        .into_any_element()
     }
 
     fn render_panel_row(&self) -> AnyElement {
-        div()
-            .w_full()
-            .mt(px(32.0))
-            .flex()
-            .flex_wrap()
-            .justify_center()
-            .items_stretch()
-            .gap(px(16.0))
-            .child(self.payment_panel.clone())
-            .child(self.workspace_panel.clone())
-            .child(self.system_panel.clone())
-            .into_any_element()
+        flow! {
+            gap=16.0;
+            self.payment_panel.clone(),
+            self.workspace_panel.clone(),
+            self.system_panel.clone(),
+        }
+        .w_full()
+        .mt(px(32.0))
+        .justify_center()
+        .items_stretch()
+        .into_any_element()
     }
 
     fn render_status_line(&self, muted_text: gpui::Hsla) -> AnyElement {

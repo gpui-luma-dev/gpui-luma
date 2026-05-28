@@ -20,8 +20,6 @@ use gpui_luma::controls::radio_group::{
 };
 use lucide_icons::Icon as LucideIcon;
 
-use crate::gallery::forms::declare_form;
-
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
@@ -222,68 +220,58 @@ impl Render for WorkspacePanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.radix_theme.chrome();
 
-        card_container(chrome.border, chrome.panel_background)
-            .child(card_title(
-                "Workspace",
-                "Toggle groups, radio groups, icon actions, and popup menus.",
-                chrome.title_text,
-                chrome.muted_text,
-            ))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_start()
-                    .gap(px(6.0))
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .font_weight(gpui::FontWeight::MEDIUM)
-                            .text_color(chrome.body_text)
-                            .child(format!("Layout: {}", self.layout)),
-                    )
-                    .child(self.layout_icon_group.clone()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.0))
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .font_weight(gpui::FontWeight::MEDIUM)
-                            .text_color(chrome.body_text)
-                            .child(format!("Density: {}", self.density)),
-                    )
-                    .child(self.density_radio_group.clone()),
-            )
-            .child(div().flex().items_center().gap(px(8.0)).child(self.popup_menu.clone()))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_start()
-                    .gap(px(6.0))
-                    .child(
-                        div()
-                            .text_size(px(11.0))
-                            .line_height(px(15.0))
-                            .text_color(chrome.muted_text)
-                            .child(format!("Icon demo: {}", self.icon_demo)),
-                    )
-                    .child(self.icon_demo_icon_group.clone()),
-            )
-            .child(
+        card_container(
+            chrome.border,
+            chrome.panel_background,
+            vstack! {
+                gap=10.0;
+                card_title(
+                    "Workspace",
+                    "Toggle groups, radio groups, icon actions, and popup menus.",
+                    chrome.title_text,
+                    chrome.muted_text,
+                ),
+                vstack! {
+                    gap=6.0 align=start;
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(gpui::FontWeight::MEDIUM)
+                        .text_color(chrome.body_text)
+                        .child(format!("Layout: {}", self.layout)),
+                    self.layout_icon_group.clone(),
+                },
+                vstack! {
+                    gap=6.0;
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .font_weight(gpui::FontWeight::MEDIUM)
+                        .text_color(chrome.body_text)
+                        .child(format!("Density: {}", self.density)),
+                    self.density_radio_group.clone(),
+                },
+                hstack! {
+                    gap=8.0 align=center;
+                    self.popup_menu.clone(),
+                },
+                vstack! {
+                    gap=6.0 align=start;
+                    div()
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .text_color(chrome.muted_text)
+                        .child(format!("Icon demo: {}", self.icon_demo)),
+                    self.icon_demo_icon_group.clone(),
+                },
                 div()
                     .pt(px(2.0))
                     .text_size(px(11.0))
                     .line_height(px(16.0))
                     .text_color(chrome.muted_text)
                     .child(format!("Workspace action: {} | Icon demo: {}", self.action, self.icon_demo)),
-            )
+            },
+        )
     }
 }
 

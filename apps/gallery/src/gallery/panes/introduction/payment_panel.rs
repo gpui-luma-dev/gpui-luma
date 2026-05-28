@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 use gpui_luma::controls::presenter::HasPresenter;
@@ -8,8 +8,6 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
-
-use crate::gallery::forms::declare_form;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -153,26 +151,29 @@ impl Render for PaymentPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.radix_theme.chrome();
 
-        card_container(chrome.border, chrome.panel_background)
-            .child(card_title(
-                "Payment Method",
-                "All transactions are secure and encrypted.",
-                chrome.title_text,
-                chrome.muted_text,
-            ))
-            .child(self.name_field.clone())
-            .child(self.email_field.clone())
-            .child(self.payment_combobox.clone())
-            .child(self.same_as_shipping_checkbox.clone())
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(8.0))
-                    .child(self.submit_button.clone())
-                    .child(self.cancel_button.clone()),
-            )
-            .child(self.default_payment_method_checkbox.clone())
+        card_container(
+            chrome.border,
+            chrome.panel_background,
+            vstack! {
+                gap=10.0;
+                card_title(
+                    "Payment Method",
+                    "All transactions are secure and encrypted.",
+                    chrome.title_text,
+                    chrome.muted_text,
+                ),
+                self.name_field.clone(),
+                self.email_field.clone(),
+                self.payment_combobox.clone(),
+                self.same_as_shipping_checkbox.clone(),
+                hstack! {
+                    gap=8.0 align=center;
+                    self.submit_button.clone(),
+                    self.cancel_button.clone(),
+                },
+                self.default_payment_method_checkbox.clone(),
+            },
+        )
     }
 }
 

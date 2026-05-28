@@ -1,17 +1,15 @@
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
 
-pub(super) fn card_container(border: gpui::Hsla, panel: gpui::Hsla) -> gpui::Div {
+pub(super) fn card_container(border: gpui::Hsla, panel: gpui::Hsla, content: impl IntoElement) -> gpui::Div {
     div()
         .w(px(360.0))
         .max_w_full()
-        .flex()
-        .flex_col()
-        .gap(px(10.0))
         .border_1()
         .border_color(border)
         .rounded(px(12.0))
         .bg(panel)
         .p(px(14.0))
+        .child(content)
 }
 
 pub(super) fn card_title(
