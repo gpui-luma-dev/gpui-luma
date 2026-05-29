@@ -192,10 +192,10 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "ListView",
         parts: &[
-            part("list background", "background", &["enabled"], &["ListViewListAppearance.background"]),
-            part("list border", "input", &["enabled"], &["ListViewListAppearance.border"]),
-            part("header background", "muted", &["enabled"], &["ListViewListAppearance.header_background"]),
-            part("header label", "muted-foreground", &["enabled"], &["ListViewListAppearance.header_label_color"]),
+            part("list background", "background", &["enabled"], &["ListViewAppearance.background"]),
+            part("list border", "input", &["enabled"], &["ListViewAppearance.border"]),
+            part("header background", "muted", &["enabled"], &["ListViewAppearance.header_background"]),
+            part("header label", "muted-foreground", &["enabled"], &["ListViewAppearance.header_label_color"]),
             part("row hover", "muted", &["hovered"], &["ListViewRowAppearance.background"]),
             part("row active", "muted", &["focused"], &["ListViewRowAppearance.background"]),
             part("row divider", "border", &["enabled"], &["ListViewRowAppearance.divider"]),

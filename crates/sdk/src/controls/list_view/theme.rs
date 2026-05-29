@@ -6,7 +6,7 @@ use crate::theme::adorner::AdornerSpec;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct ListViewListAppearance {
+pub struct ListViewAppearance {
     pub background: Hsla,
     pub border: Hsla,
     pub header_background: Hsla,
@@ -17,7 +17,7 @@ pub struct ListViewListAppearance {
     pub padding_y: f32,
 }
 
-impl ListViewListAppearance {
+impl ListViewAppearance {
     pub fn inner_radius(&self, border_width: f32) -> f32 {
         (self.radius - border_width).max(0.0)
     }
@@ -37,7 +37,7 @@ pub struct ListViewRowAppearance {
 }
 
 pub trait ListViewTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewListAppearance;
+    fn resolve_appearance(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewAppearance;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowAppearance;
 }
 
@@ -59,11 +59,11 @@ impl DefaultListViewTheme {
 }
 
 impl ListViewTheme for DefaultListViewTheme {
-    fn resolve_list(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListViewListAppearance {
+    fn resolve_appearance(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListViewAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        ListViewListAppearance {
+        ListViewAppearance {
             background: if enabled {
                 palette.form.input.background
             } else {

@@ -142,10 +142,7 @@ where
 fn parse_alpha(alpha: &str) -> Result<f32> {
     let alpha = alpha.trim();
     if let Some(percent) = alpha.strip_suffix('%') {
-        return percent
-            .parse::<f32>()
-            .context("invalid alpha percentage")
-            .map(|v| v / 100.0);
+        return percent.parse::<f32>().context("invalid alpha percentage").map(|v| v / 100.0);
     }
     alpha.parse::<f32>().context("invalid alpha")
 }

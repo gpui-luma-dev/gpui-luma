@@ -36,7 +36,7 @@ use super::checkbox::checkbox_appearance;
 use super::control_group::control_group_list_appearance;
 use super::context_menu::context_menu_appearance;
 use super::floating_menu::floating_menu_appearance;
-use super::list_view::{list_view_list_appearance, list_view_row_appearance};
+use super::list_view::{list_view_appearance, list_view_row_appearance};
 use super::navigation_sidebar::{
     navigation_sidebar_branch_appearance, navigation_sidebar_container_appearance, navigation_sidebar_item_appearance,
     navigation_sidebar_section_appearance,
@@ -454,13 +454,13 @@ struct RadixListViewTheme {
 }
 
 impl ListViewTheme for RadixListViewTheme {
-    fn resolve_list(
+    fn resolve_appearance(
         &self,
         enabled: bool,
         focused: bool,
         size: ControlSize,
-    ) -> crate::controls::list_view::ListViewListAppearance {
-        list_view_list_appearance(self.theme.mode_tokens(), enabled, focused, size)
+    ) -> crate::controls::list_view::ListViewAppearance {
+        list_view_appearance(self.theme.mode_tokens(), enabled, focused, size)
     }
 
     fn resolve_row(

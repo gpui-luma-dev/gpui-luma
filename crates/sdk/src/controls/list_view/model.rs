@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, AppContext, Div, Entity, ListAlignment, SharedString
 
 use super::control::ListViewControl;
 use super::template::{ListViewTemplate, default_list_view_template, list_view_template_with_modifier};
-use super::theme::{ListViewListAppearance, ListViewTheme, default_list_view_theme};
+use super::theme::{ListViewAppearance, ListViewTheme, default_list_view_theme};
 use crate::controls::state::ControlFocusState;
 use crate::theme::ControlSize;
 
@@ -12,12 +12,12 @@ pub type ListViewLabelFn<T> = Arc<dyn Fn(&T) -> SharedString + Send + Sync + 'st
 pub type ListViewEnabledFn<T> = Arc<dyn Fn(&T) -> bool + Send + Sync + 'static>;
 
 #[derive(Clone, Debug)]
-pub struct ListViewItem {
+pub struct ListViewLabel {
     pub(crate) label: SharedString,
     pub(crate) enabled: bool,
 }
 
-impl ListViewItem {
+impl ListViewLabel {
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self { label: label.into(), enabled: true }
     }
@@ -43,16 +43,15 @@ pub enum ListSelectionMode {
 
 pub struct ListViewRenderModel<'a> {
     pub id: &'a SharedString,
-    pub list: ListViewListAppearance,
-    pub item_count: usize,
+    pub appearance: ListViewAppearance,
+    pub row_count: usize,
     pub selection_mode: ListSelectionMode,
     pub enabled: bool,
     pub size: ControlSize,
     pub focus: ControlFocusState,
 }
 
-pub type ListViewListAppearanceOverride =
-    Arc<dyn Fn(ListViewListAppearance) -> ListViewListAppearance + Send + Sync + 'static>;
+pub type ListViewAppearanceOverride = Arc<dyn Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static>;
 
 pub type ListViewHeaderTemplate =
     Arc<dyn for<'a> Fn(&ListViewRenderModel<'a>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
@@ -66,12 +65,12 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct ListViewItemRenderModel<'a, T>
+pub struct ListViewRowRenderModel<'a, T>
 where
     T: 'static,
 {
     pub list_id: &'a SharedString,
-    pub item: &'a T,
+    pub row: &'a T,
     pub index: usize,
     pub sibling_count: usize,
     pub selected: bool,
@@ -83,13 +82,13 @@ where
     pub enabled: bool,
 }
 
-pub type ListViewItemTemplate<T> =
-    Arc<dyn for<'a> Fn(&ListViewItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type ListViewRowTemplate<T> =
+    Arc<dyn for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
 
-pub fn make_list_view_item_template<T, F, E>(template: F) -> ListViewItemTemplate<T>
+pub fn make_list_view_row_template<T, F, E>(template: F) -> ListViewRowTemplate<T>
 where
     T: 'static,
-    F: for<'a> Fn(&ListViewItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+    F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
     E: gpui::IntoElement + 'static,
 {
     Arc::new(move |model, window, cx| template(model, window, cx).into_any_element())
@@ -177,25 +176,25 @@ where
     pub(crate) size: ControlSize,
     pub(crate) alignment: ListAlignment,
     pub(crate) overdraw: f32,
-    pub(crate) item_label: ListViewLabelFn<T>,
-    pub(crate) item_enabled: ListViewEnabledFn<T>,
+    pub(crate) row_label: ListViewLabelFn<T>,
+    pub(crate) row_enabled: ListViewEnabledFn<T>,
     pub(crate) template: Arc<dyn ListViewTemplate>,
     pub(crate) header_template: Option<ListViewHeaderTemplate>,
-    pub(crate) item_template: Option<ListViewItemTemplate<T>>,
+    pub(crate) row_template: Option<ListViewRowTemplate<T>>,
     pub(crate) theme: Arc<dyn ListViewTheme>,
-    pub(crate) list_appearance_override: Option<ListViewListAppearanceOverride>,
+    pub(crate) appearance_override: Option<ListViewAppearanceOverride>,
 }
 
 impl<T> ListViewModel<T>
 where
     T: 'static,
 {
-    pub(crate) fn label_for_item(&self, item: &T) -> SharedString {
-        (self.item_label)(item)
+    pub(crate) fn label_for_row(&self, row: &T) -> SharedString {
+        (self.row_label)(row)
     }
 
-    pub(crate) fn item_is_enabled(&self, item: &T) -> bool {
-        (self.item_enabled)(item)
+    pub(crate) fn row_is_enabled(&self, row: &T) -> bool {
+        (self.row_enabled)(row)
     }
 }
 
@@ -214,9 +213,9 @@ where
     columns: Vec<ListViewColumn<T>>,
 }
 
-impl ListViewBuilder<ListViewItem> {
+impl ListViewBuilder<ListViewLabel> {
     pub fn new(id: impl Into<SharedString>) -> Self {
-        Self::new_typed(id).item_label(|item| item.label.clone()).item_enabled(|item| item.enabled)
+        Self::new_typed(id).row_label(|row| row.label.clone()).row_enabled(|row| row.enabled)
     }
 }
 
@@ -236,13 +235,13 @@ where
                 size: ControlSize::Md,
                 alignment: ListAlignment::Top,
                 overdraw: 480.0,
-                item_label: Arc::new(|_| SharedString::default()),
-                item_enabled: Arc::new(|_| true),
+                row_label: Arc::new(|_| SharedString::default()),
+                row_enabled: Arc::new(|_| true),
                 template: default_list_view_template(),
                 header_template: None,
-                item_template: None,
+                row_template: None,
                 theme: default_list_view_theme(),
-                list_appearance_override: None,
+                appearance_override: None,
             },
         }
     }
@@ -312,20 +311,20 @@ where
         self
     }
 
-    pub fn item_label<F, S>(mut self, label: F) -> Self
+    pub fn row_label<F, S>(mut self, label: F) -> Self
     where
         F: Fn(&T) -> S + Send + Sync + 'static,
         S: Into<SharedString>,
     {
-        self.model.item_label = Arc::new(move |item| label(item).into());
+        self.model.row_label = Arc::new(move |row| label(row).into());
         self
     }
 
-    pub fn item_enabled<F>(mut self, enabled: F) -> Self
+    pub fn row_enabled<F>(mut self, enabled: F) -> Self
     where
         F: Fn(&T) -> bool + Send + Sync + 'static,
     {
-        self.model.item_enabled = Arc::new(enabled);
+        self.model.row_enabled = Arc::new(enabled);
         self
     }
 
@@ -339,18 +338,18 @@ where
         self
     }
 
-    pub fn list_appearance_override<F>(mut self, override_fn: F) -> Self
+    pub fn appearance_override<F>(mut self, override_fn: F) -> Self
     where
-        F: Fn(ListViewListAppearance) -> ListViewListAppearance + Send + Sync + 'static,
+        F: Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static,
     {
-        self.model.list_appearance_override = Some(Arc::new(override_fn));
+        self.model.appearance_override = Some(Arc::new(override_fn));
         self
     }
 
     pub fn square_corners(self) -> Self {
-        self.list_appearance_override(|mut list| {
-            list.radius = 0.0;
-            list
+        self.appearance_override(|mut appearance| {
+            appearance.radius = 0.0;
+            appearance
         })
     }
 
@@ -376,30 +375,30 @@ where
         self
     }
 
-    pub fn item_template(mut self, item_template: ListViewItemTemplate<T>) -> Self {
-        self.model.item_template = Some(item_template);
+    pub fn row_template(mut self, row_template: ListViewRowTemplate<T>) -> Self {
+        self.model.row_template = Some(row_template);
         self
     }
 
-    pub fn with_item_template<F, E>(mut self, template: F) -> Self
+    pub fn with_row_template<F, E>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&ListViewItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: gpui::IntoElement + 'static,
     {
-        self.model.item_template = Some(make_list_view_item_template(template));
+        self.model.row_template = Some(make_list_view_row_template(template));
         self
     }
 
     pub fn grid_view(mut self, columns: impl IntoIterator<Item = ListViewColumn<T>>) -> Self {
         let columns: Arc<[ListViewColumn<T>]> = columns.into_iter().collect::<Vec<_>>().into();
         let header_columns = Arc::clone(&columns);
-        let item_columns = Arc::clone(&columns);
+        let row_columns = Arc::clone(&columns);
 
         self.model.header_template = Some(make_list_view_header_template(move |_model, _window, _cx| {
             render_grid_view_header(header_columns.as_ref())
         }));
-        self.model.item_template = Some(make_list_view_item_template(move |model, _window, _cx| {
-            render_grid_view_row(model.item, item_columns.as_ref())
+        self.model.row_template = Some(make_list_view_row_template(move |model, _window, _cx| {
+            render_grid_view_cells(model.row, row_columns.as_ref())
         }));
         self
     }
@@ -454,17 +453,17 @@ where
     row.into_any_element()
 }
 
-fn render_grid_view_row<T>(item: &T, columns: &[ListViewColumn<T>]) -> AnyElement
+fn render_grid_view_cells<T>(row: &T, columns: &[ListViewColumn<T>]) -> AnyElement
 where
     T: 'static,
 {
-    let mut row = div().w_full().flex().items_center();
+    let mut cells = div().w_full().flex().items_center();
 
     for column in columns {
-        row = row.child(render_grid_view_column_slot(column.width(), column.render_cell(item)));
+        cells = cells.child(render_grid_view_column_slot(column.width(), column.render_cell(row)));
     }
 
-    row.into_any_element()
+    cells.into_any_element()
 }
 
 fn render_grid_view_column_slot(width: ListViewColumnWidth, content: AnyElement) -> AnyElement {

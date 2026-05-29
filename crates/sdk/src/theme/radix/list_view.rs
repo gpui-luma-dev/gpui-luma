@@ -2,23 +2,23 @@
 
 use gpui::hsla;
 
-use crate::controls::list_view::{ListViewListAppearance, ListViewRowAppearance};
+use crate::controls::list_view::{ListViewAppearance, ListViewRowAppearance};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
 
 use super::mode::RadixModeTokens;
 use super::resolve::{resolve_color, resolve_color_layer};
 
-pub(crate) fn list_view_list_appearance(
+pub(crate) fn list_view_appearance(
     mode: &RadixModeTokens,
     enabled: bool,
     focused: bool,
     size: ControlSize,
-) -> ListViewListAppearance {
+) -> ListViewAppearance {
     if mode.catalog.tokens.is_empty() {
-        list_view_list_from_palette(mode, enabled, focused, size)
+        list_view_appearance_from_palette(mode, enabled, focused, size)
     } else {
-        list_view_list_from_catalog(&mode.catalog, mode, enabled, focused, size)
-            .unwrap_or_else(|err| panic!("list view list properties: {err}"))
+        list_view_appearance_from_catalog(&mode.catalog, mode, enabled, focused, size)
+            .unwrap_or_else(|err| panic!("list view appearance properties: {err}"))
     }
 }
 
@@ -36,16 +36,16 @@ pub(crate) fn list_view_row_appearance(
     }
 }
 
-fn list_view_list_from_palette(
+fn list_view_appearance_from_palette(
     mode: &RadixModeTokens,
     enabled: bool,
     _focused: bool,
     size: ControlSize,
-) -> ListViewListAppearance {
+) -> ListViewAppearance {
     let palette = &mode.palette;
     let metrics = &mode.metrics;
 
-    ListViewListAppearance {
+    ListViewAppearance {
         background: if enabled {
             palette.app_background
         } else {
@@ -69,16 +69,16 @@ fn list_view_list_from_palette(
     }
 }
 
-fn list_view_list_from_catalog(
+fn list_view_appearance_from_catalog(
     catalog: &super::catalog::CssTokenMap,
     mode: &RadixModeTokens,
     enabled: bool,
     _focused: bool,
     size: ControlSize,
-) -> anyhow::Result<ListViewListAppearance> {
+) -> anyhow::Result<ListViewAppearance> {
     let metrics = &mode.metrics;
 
-    Ok(ListViewListAppearance {
+    Ok(ListViewAppearance {
         background: if enabled {
             resolve_color(catalog, "background")?
         } else {

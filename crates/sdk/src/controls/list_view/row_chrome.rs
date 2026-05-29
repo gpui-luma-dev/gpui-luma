@@ -3,7 +3,7 @@ use gpui::{AnyElement, Stateful, div, prelude::*, px};
 use super::theme::ListViewRowAppearance;
 use crate::theme::adorner::{render_optional_adorner_with_focus_radius};
 
-pub(crate) fn render_list_view_row(
+pub(crate) fn render_list_view_row_chrome(
     id: impl Into<gpui::ElementId>,
     content: AnyElement,
     appearance: ListViewRowAppearance,

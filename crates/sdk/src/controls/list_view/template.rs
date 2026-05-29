@@ -27,7 +27,7 @@ pub struct DefaultListViewShellTemplate;
 
 impl DefaultListViewShellTemplate {
     pub fn paint_shell(model: &ListViewRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
-        let list = &model.list;
+        let list = &model.appearance;
         let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
 
         let root = div()
