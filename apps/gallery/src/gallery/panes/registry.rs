@@ -14,8 +14,8 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu, icon_button,
-    introduction, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button, radio_group,
-    scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
+    introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
+    radio_group, scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
     shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
@@ -51,6 +51,7 @@ enum GalleryPageKind {
     RadioGroup,
     ChoiceTemplates,
     ListBox,
+    ListView,
     Slider,
     Scrollbar,
     TextArea,
@@ -131,6 +132,8 @@ const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
 };
 const LISTBOX_PAGE: GalleryPage =
     GalleryPage { id: "listbox", label: "ListBox", icon: None, kind: GalleryPageKind::ListBox };
+const LIST_VIEW_PAGE: GalleryPage =
+    GalleryPage { id: "list-view", label: "ListView", icon: None, kind: GalleryPageKind::ListView };
 const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
@@ -201,6 +204,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     RADIO_GROUP_PAGE,
     CHOICE_TEMPLATES_PAGE,
     LISTBOX_PAGE,
+    LIST_VIEW_PAGE,
     TOGGLE_GROUP_PAGE,
 ];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
@@ -291,6 +295,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
     pub(super) listbox: listbox::ListBoxPane,
+    pub(super) list_view: list_view::ListViewPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) textarea: textarea::TextAreaPane,
@@ -380,6 +385,7 @@ impl GalleryPanes {
             radio_group: radio_group::RadioGroupPane::new(cx, radix_theme.clone()),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, radix_theme.clone()),
             listbox: listbox::ListBoxPane::new(cx, radix_theme.clone()),
+            list_view: list_view::ListViewPane::new(cx, radix_theme.clone()),
             slider: slider::SliderPane::new(cx, radix_theme.clone()),
             scrollbar: scrollbar::ScrollbarPane::new(cx, radix_theme.clone()),
             textarea: textarea::TextAreaPane::new(cx, radix_theme.clone()),
@@ -411,6 +417,7 @@ impl GalleryPanes {
         self.radio_button.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
         self.listbox.subscribe(cx, subscriptions);
+        self.list_view.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
         self.textarea.subscribe(cx, subscriptions);
@@ -443,6 +450,7 @@ impl GalleryPanes {
         self.radio_group.notify_controls(cx);
         self.choice_templates.notify_controls(cx);
         self.listbox.notify_controls(cx);
+        self.list_view.notify_controls(cx);
         self.slider.notify_controls(cx);
         self.scrollbar.notify_controls(cx);
         self.textarea.notify_controls(cx);
@@ -484,6 +492,7 @@ impl GalleryPanes {
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.radix_theme),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.radix_theme),
             GalleryPageKind::ListBox => self.listbox.render(&self.radix_theme),
+            GalleryPageKind::ListView => self.list_view.render(&self.radix_theme),
             GalleryPageKind::Slider => self.slider.render(&self.radix_theme),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.radix_theme),
             GalleryPageKind::TextArea => self.textarea.render(&self.radix_theme),

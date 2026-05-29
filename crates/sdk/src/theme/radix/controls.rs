@@ -16,6 +16,7 @@ use crate::controls::combobox::{self, ComboBoxBuilder};
 use crate::controls::command::button::{Button, ButtonBuilder, ControlIcon};
 use crate::controls::command::icon_button;
 use crate::controls::control_group::{ControlGroupBuilder, ControlGroupItemLike};
+use crate::controls::list_view::{self, ListViewBuilder, ListViewItemLike};
 use crate::controls::listbox::{self, ListBoxItem};
 use crate::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarBuilder};
 use crate::controls::context_menu::ContextMenu;
@@ -78,6 +79,9 @@ pub trait RadixThemeControlExt {
     fn context_menu(&self, id: impl Into<SharedString>) -> crate::controls::context_menu::ContextMenuBuilder;
     fn listbox(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
     fn listbox_multiple(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem>;
+    fn list_view<T>(&self, id: impl Into<SharedString>) -> ListViewBuilder<T>
+    where
+        T: ListViewItemLike + 'static;
     fn radio_group<T>(&self, id: impl Into<SharedString>) -> RadioGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
@@ -257,6 +261,13 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
 
     fn listbox_multiple(&self, id: impl Into<SharedString>) -> ControlGroupBuilder<ListBoxItem> {
         listbox::multiple(id).template(self.listbox_template())
+    }
+
+    fn list_view<T>(&self, id: impl Into<SharedString>) -> ListViewBuilder<T>
+    where
+        T: ListViewItemLike + 'static,
+    {
+        list_view::new(id).theme(self.list_view_theme()).template(self.list_view_template())
     }
 
     fn radio_group<T>(&self, id: impl Into<SharedString>) -> RadioGroupBuilder<T>

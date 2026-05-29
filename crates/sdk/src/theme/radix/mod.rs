@@ -10,6 +10,7 @@ mod control_group;
 mod css;
 mod floating_menu;
 mod focus;
+mod list_view;
 mod listbox;
 mod mode;
 mod navigation_sidebar;
@@ -332,6 +333,14 @@ impl RadixTheme {
 
     pub fn listbox_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::listbox::ListBoxTheme> {
         templates::listbox_theme(Arc::clone(self))
+    }
+
+    pub fn list_view_template(self: &Arc<Self>) -> Arc<dyn crate::controls::list_view::ListViewTemplate> {
+        templates::list_view_template(Arc::clone(self))
+    }
+
+    pub fn list_view_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::list_view::ListViewTheme> {
+        templates::list_view_theme(Arc::clone(self))
     }
 
     pub fn radio_group_template<T>(

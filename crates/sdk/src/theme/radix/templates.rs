@@ -10,6 +10,7 @@ use crate::controls::control_group::{
 };
 use crate::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use crate::controls::floating_menu::FloatingMenuTheme;
+use crate::controls::list_view::{ListViewTheme, list_view_template_with_theme};
 use crate::controls::navigation_sidebar::{
     NavigationSidebarTemplate, NavigationSidebarTheme, ThemedNavigationSidebarTemplate,
 };
@@ -35,6 +36,7 @@ use super::checkbox::checkbox_appearance;
 use super::control_group::control_group_list_appearance;
 use super::context_menu::context_menu_appearance;
 use super::floating_menu::floating_menu_appearance;
+use super::list_view::{list_view_list_appearance, list_view_row_appearance};
 use super::navigation_sidebar::{
     navigation_sidebar_branch_appearance, navigation_sidebar_container_appearance, navigation_sidebar_item_appearance,
     navigation_sidebar_section_appearance,
@@ -445,6 +447,38 @@ pub fn listbox_theme(theme: Arc<RadixTheme>) -> Arc<dyn ListBoxTheme> {
 
 pub fn listbox_template(theme: Arc<RadixTheme>) -> ControlGroupTemplate<crate::controls::listbox::ListBoxItem> {
     listbox_template_with_theme(listbox_theme(theme))
+}
+
+struct RadixListViewTheme {
+    theme: RadixTheme,
+}
+
+impl ListViewTheme for RadixListViewTheme {
+    fn resolve_list(
+        &self,
+        enabled: bool,
+        focused: bool,
+        size: ControlSize,
+    ) -> crate::controls::list_view::ListViewListAppearance {
+        list_view_list_appearance(self.theme.mode_tokens(), enabled, focused, size)
+    }
+
+    fn resolve_row(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> crate::controls::list_view::ListViewRowAppearance {
+        list_view_row_appearance(self.theme.mode_tokens(), selected, state, size)
+    }
+}
+
+pub fn list_view_theme(theme: Arc<RadixTheme>) -> Arc<dyn ListViewTheme> {
+    Arc::new(RadixListViewTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn list_view_template(theme: Arc<RadixTheme>) -> Arc<dyn crate::controls::list_view::ListViewTemplate> {
+    list_view_template_with_theme(list_view_theme(theme))
 }
 
 pub fn radio_group_template<T>(

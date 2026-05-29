@@ -206,6 +206,10 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - selector-style static list panel with single/multiple selection
   - thin wrapper over `control_group` with listbox-specific templates and theme
   - exports `ListBox`, `ListBoxItem`, constructors, and re-exports `ControlGroupEvent`
+- `list_view/*`
+  - virtualized list control backed by `gpui::list` / `ListState`
+  - owns active-row navigation, selection state, fixed-header slot, and row virtualization
+  - exports `ListViewControl`, `ListViewItem`, `ListSelectionMode`, header/item-template helpers, and theme/template hooks
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `slider/*`

@@ -190,6 +190,17 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         ],
     },
     &ThemeUsage {
+        label: "ListView",
+        parts: &[
+            part("list background", "background", &["enabled"], &["ListViewListAppearance.background"]),
+            part("list border", "input", &["enabled"], &["ListViewListAppearance.border"]),
+            part("row hover", "accent", &["hovered"], &["ListViewRowAppearance.background"]),
+            part("selected row", "primary", &["selected"], &["ListViewRowAppearance.background"]),
+            part("selected label", "primary-foreground", &["selected"], &["ListViewRowAppearance.label_color"]),
+            part("focus ring", "ring", &["focused"], &["ListViewRowAppearance.adorner"]),
+        ],
+    },
+    &ThemeUsage {
         label: "Progress",
         parts: &[
             part("track", "muted", &["enabled"], &["ProgressAppearance.track_color"]),
