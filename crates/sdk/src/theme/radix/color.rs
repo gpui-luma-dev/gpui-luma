@@ -53,7 +53,7 @@ fn parse_hsl_channels(inner: &str, requires_alpha: bool) -> Result<ParsedColor> 
     }
 
     let alpha = match alpha {
-        Some(alpha) => alpha.parse::<f32>().context("invalid hsl alpha")?,
+        Some(alpha) => parse_alpha(alpha)?,
         None => 1.0,
     };
 
@@ -76,7 +76,7 @@ fn parse_oklch(inner: &str) -> Result<ParsedColor> {
     }
 
     let alpha = match alpha {
-        Some(alpha) => alpha.parse::<f32>().context("invalid oklch alpha")?,
+        Some(alpha) => parse_alpha(alpha)?,
         None => 1.0,
     };
 
@@ -137,4 +137,32 @@ where
         .ok_or_else(|| anyhow!("missing percent for {label}"))?
         .parse::<f32>()
         .with_context(|| format!("invalid {label}"))
+}
+
+fn parse_alpha(alpha: &str) -> Result<f32> {
+    let alpha = alpha.trim();
+    if let Some(percent) = alpha.strip_suffix('%') {
+        return percent
+            .parse::<f32>()
+            .context("invalid alpha percentage")
+            .map(|v| v / 100.0);
+    }
+    alpha.parse::<f32>().context("invalid alpha")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_css_color;
+
+    #[test]
+    fn oklch_alpha_accepts_percentage() {
+        let color = parse_css_color("oklch(0.633 0.000 263.283 / 73%)").expect("parse");
+        assert!((color.a - 0.73).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn oklch_alpha_accepts_decimal() {
+        let color = parse_css_color("oklch(1 0 0 / 0.15)").expect("parse");
+        assert!((color.a - 0.15).abs() < f32::EPSILON);
+    }
 }
