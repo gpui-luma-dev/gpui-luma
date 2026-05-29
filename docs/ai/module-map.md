@@ -209,7 +209,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `list_view/*`
   - virtualized list control backed by `gpui::list` / `ListState`
   - owns active-row navigation, selection state, fixed-header slot, and row virtualization
-  - exports `ListViewControl`, `ListViewItem`, `ListSelectionMode`, header/item-template helpers, and theme/template hooks
+  - supports plain typed item models via stored label/enabled adapters instead of a required item trait
+  - exports `ListViewControl`, `ListViewItem`, `ListSelectionMode`, `new` / `new_typed`, declarative `list_view!` / `column!` macros, grid-column helpers, and theme/template hooks
+  - roadmap and scope (not a data grid): `docs/ai/listview-vnext.md`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `slider/*`

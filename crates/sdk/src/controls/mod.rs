@@ -7,6 +7,7 @@ pub(crate) mod button_family_template;
 pub mod checkbox;
 pub mod control_group;
 pub mod presenter;
+pub mod rounded_shell;
 pub mod context_menu;
 pub mod floating_menu;
 pub mod icon;

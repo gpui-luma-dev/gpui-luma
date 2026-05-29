@@ -3,10 +3,8 @@
 use gpui::hsla;
 
 use crate::controls::list_view::{ListViewListAppearance, ListViewRowAppearance};
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
 
-use super::focus::focus_adorner;
 use super::mode::RadixModeTokens;
 use super::resolve::{resolve_color, resolve_color_layer};
 
@@ -54,14 +52,19 @@ fn list_view_list_from_palette(
             palette.disabled_background
         },
         border: palette.input_background,
+        header_background: if enabled {
+            palette.muted_background
+        } else {
+            palette.disabled_background
+        },
         header_label_color: if enabled {
-            palette.selected_foreground
+            palette.app_muted_foreground
         } else {
             palette.disabled_foreground
         },
-        header_typography: mode.typography.text.label,
+        header_typography: mode.typography.text.caption,
         radius: metrics.radius(size),
-        padding_x: metrics.padding_x(size) * 0.5,
+        padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
     }
 }
@@ -82,10 +85,11 @@ fn list_view_list_from_catalog(
             resolve_color(catalog, "muted")?
         },
         border: resolve_color(catalog, "input")?,
-        header_label_color: resolve_color(catalog, "primary-foreground")?,
-        header_typography: mode.typography.text.label,
+        header_background: resolve_color(catalog, "muted")?,
+        header_label_color: resolve_color(catalog, "muted-foreground")?,
+        header_typography: mode.typography.text.caption,
         radius: metrics.radius(size),
-        padding_x: metrics.padding_x(size) * 0.5,
+        padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
     })
 }
@@ -101,45 +105,35 @@ fn list_view_row_from_palette(
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
+    let row_highlight = palette.muted_background;
+
     let background = if state.disabled {
         transparent
     } else if selected {
-        palette.selected_background
+        row_highlight
     } else {
         match state.layer() {
             InteractionLayer::Disabled => transparent,
             InteractionLayer::Pressed => palette.secondary.pressed_background,
-            InteractionLayer::Hovered => palette.secondary.background,
-            InteractionLayer::Default if state.focused => palette.secondary.background,
+            InteractionLayer::Hovered => row_highlight,
+            InteractionLayer::Default if state.focused => row_highlight,
             InteractionLayer::Default => transparent,
         }
     };
 
     let label_color = if state.disabled {
         palette.disabled_foreground
-    } else if selected {
-        palette.selected_foreground
     } else {
         palette.app_foreground
-    };
-
-    let adorner = if state.focused {
-        Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-            color: palette.focus_ring,
-            placement: AdornerPlacement::Inset,
-            distance: metrics.border_width.default,
-            width: metrics.focus.width,
-        }))
-    } else {
-        None
     };
 
     ListViewRowAppearance {
         background,
         label_color,
-        adorner,
+        divider: palette.input_background,
+        adorner: None,
         label_typography: typography.text.label,
-        radius: metrics.radius(size) * 0.8,
+        radius: 0.0,
         padding_x: metrics.padding_x(size),
         padding_y: metrics.padding_y(size),
         min_height: metrics.control_height(size),
@@ -158,16 +152,18 @@ fn list_view_row_from_catalog(
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
 
+    let row_highlight = resolve_color(catalog, "muted")?;
+
     let background = if state.disabled {
         transparent
     } else if selected {
-        resolve_color(catalog, "primary")?
+        row_highlight
     } else {
         match layer {
             InteractionLayer::Pressed | InteractionLayer::Hovered => {
-                resolve_color_layer(catalog, "accent", layer, true)?
+                resolve_color_layer(catalog, "muted", layer, true)?
             }
-            InteractionLayer::Default if state.focused => resolve_color(catalog, "accent")?,
+            InteractionLayer::Default if state.focused => row_highlight,
             InteractionLayer::Default => transparent,
             InteractionLayer::Disabled => transparent,
         }
@@ -175,8 +171,6 @@ fn list_view_row_from_catalog(
 
     let label_color = if state.disabled {
         resolve_color(catalog, "muted-foreground")?
-    } else if selected {
-        resolve_color(catalog, "primary-foreground")?
     } else {
         resolve_color(catalog, "foreground")?
     };
@@ -184,13 +178,14 @@ fn list_view_row_from_catalog(
     Ok(ListViewRowAppearance {
         background,
         label_color,
-        adorner: focus_adorner(catalog, metrics, state.focused)?,
+        divider: resolve_color(catalog, "border")?,
+        adorner: None,
         label_typography: LumaTextStyle {
             size: typography.text.label.size,
             line_height: typography.text.label.line_height,
             weight: typography.text.label.weight,
         },
-        radius: metrics.radius(size) * 0.8,
+        radius: 0.0,
         padding_x: metrics.padding_x(size),
         padding_y: metrics.padding_y(size),
         min_height: metrics.control_height(size),

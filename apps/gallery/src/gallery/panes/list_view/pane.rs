@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, FontWeight, SharedString, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, ListViewItemLike};
+use gpui::{AnyElement, Context, SharedString, Subscription, div, prelude::*, px};
+use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent};
 use gpui_luma::theme::RadixTheme;
-use gpui_luma::theme::radix::prelude::*;
 
 use crate::gallery::control::GalleryApp;
 
@@ -19,12 +18,6 @@ struct DemoUser {
     status: SharedString,
 }
 
-impl ListViewItemLike for DemoUser {
-    fn label(&self) -> &SharedString {
-        &self.name
-    }
-}
-
 #[derive(Clone)]
 pub(in crate::gallery) struct ListViewPane {
     list: gpui_luma::controls::list_view::ListView<DemoUser>,
@@ -33,17 +26,24 @@ pub(in crate::gallery) struct ListViewPane {
 
 impl ListViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let list = radix_theme
-            .list_view("listview-users")
-            .items((0..DEMO_ROW_COUNT).map(make_demo_user))
-            .selection_mode(ListSelectionMode::Single)
-            .selected_index(2048)
-            .active_index(2048)
-            .with_header_template(render_demo_user_header)
-            .with_item_template(render_demo_user_row)
-            .spawn(cx);
+        let list = gpui_luma::list_view! {
+            radix = radix_theme;
+            id = "listview-users";
+            items = (0..DEMO_ROW_COUNT).map(make_demo_user);
+            selection = ListSelectionMode::Single;
+            selected_index = 4;
+            active_index = 4;
+            grid_view = {
+                column!("Name", width = 180 => |user| user.name.clone()),
+                column!("Email", width = 250 => |user| user.email.clone()),
+                column!("Role", width = 120 => |user| user.role.clone()),
+                column!("Status", width = 96 => |user| user.status.clone())
+            };
+        }
+        // .square_corners()
+        .spawn(cx);
 
-        Self { list, selected_indices: vec![2048] }
+        Self { list, selected_indices: vec![4] }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -106,60 +106,6 @@ impl ListViewPane {
             cx.notify();
         }
     }
-}
-
-fn render_demo_user_row(
-    model: &gpui_luma::controls::list_view::ListViewItemRenderModel<'_, DemoUser>,
-    _window: &mut Window,
-    _cx: &mut App,
-) -> gpui::AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .items_center()
-        .gap(px(12.0))
-        .child(div().w(px(180.0)).min_w(px(180.0)).truncate().child(model.item.name.clone()))
-        .child(
-            div()
-                .flex_1()
-                .min_w(px(0.0))
-                .truncate()
-                .opacity(if model.selected { 1.0 } else { 0.82 })
-                .child(model.item.email.clone()),
-        )
-        .child(div().w(px(120.0)).min_w(px(120.0)).truncate().child(model.item.role.clone()))
-        .child(
-            div().w(px(96.0)).min_w(px(96.0)).flex().justify_end().child(
-                div()
-                    .px(px(8.0))
-                    .py(px(2.0))
-                    .rounded(px(999.0))
-                    .text_size(px(11.0))
-                    .line_height(px(14.0))
-                    .child(model.item.status.clone()),
-            ),
-        )
-        .into_any_element()
-}
-
-fn render_demo_user_header(
-    _model: &gpui_luma::controls::list_view::ListViewRenderModel<'_>,
-    _window: &mut Window,
-    _cx: &mut App,
-) -> gpui::AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .items_center()
-        .gap(px(12.0))
-        .text_size(px(11.0))
-        .line_height(px(14.0))
-        .font_weight(FontWeight::SEMIBOLD)
-        .child(div().w(px(180.0)).min_w(px(180.0)).flex().justify_center().child("Name"))
-        .child(div().flex_1().min_w(px(0.0)).flex().justify_center().child("Email"))
-        .child(div().w(px(120.0)).min_w(px(120.0)).flex().justify_center().child("Role"))
-        .child(div().w(px(96.0)).min_w(px(96.0)).flex().justify_center().child("Status"))
-        .into_any_element()
 }
 
 fn make_demo_user(index: usize) -> DemoUser {

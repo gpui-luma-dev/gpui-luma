@@ -197,6 +197,24 @@ Shared pattern for **Floating Menu**, **ComboBox** panel, **Selector** panel, **
 
 ---
 
+## ListView
+
+| Part | CSS var |
+|------|---------|
+| List bg | `--background` |
+| List border | `--input` |
+| Header bg | `--muted` |
+| Header label | `--muted-foreground` |
+| Row hover / keyboard active | `--muted` |
+| Selected row | `--muted` |
+| Row divider | `--border` |
+
+Row hover uses `--muted` (not `--accent`) so table highlights stay neutral in tweakcn themes where accent is a chart/highlight color.
+
+**GPUI clipping:** `overflow_hidden` is rectangular only. The list shell uses `controls::rounded_shell::rounded_bordered_panel` (`rounded` + `bg` + `border` on one node). Header strips need `.rounded_tl` / `.rounded_tr` on the same node as `header_background`, or corners show square fills past the border.
+
+---
+
 ## Control group / toggle group
 
 | Part | CSS var |

@@ -4,17 +4,18 @@ use gpui::{
 };
 
 use super::model::{
-    ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewItemLike, ListViewItemRenderModel,
-    ListViewModel, ListViewRenderModel, make_list_view_header_template, make_list_view_item_template,
+    ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewItem, ListViewItemRenderModel, ListViewModel,
+    ListViewRenderModel, make_list_view_header_template, make_list_view_item_template,
 };
+use super::row_template::render_list_view_row;
 use super::template::ListViewTemplate;
-use super::theme::{ListViewRowAppearance, ListViewTheme};
+use super::theme::{ListViewListAppearance, ListViewTheme};
 use crate::controls::state::ControlFocusState;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
     SelectNextItem, SelectPreviousItem,
 };
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+use crate::theme::adorner::adorner_oversize_extent;
 use crate::theme::{ControlSize, InteractionState};
 
 #[derive(Clone, Debug)]
@@ -25,7 +26,7 @@ pub enum ListViewEvent {
 
 pub struct ListViewControl<T>
 where
-    T: ListViewItemLike + 'static,
+    T: 'static,
 {
     model: ListViewModel<T>,
     list_state: ListState,
@@ -34,15 +35,22 @@ where
     pressed_index: Option<usize>,
 }
 
-impl<T> EventEmitter<ListViewEvent> for ListViewControl<T> where T: ListViewItemLike + 'static {}
+impl<T> EventEmitter<ListViewEvent> for ListViewControl<T> where T: 'static {}
+
+impl ListViewControl<ListViewItem> {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(id: impl Into<SharedString>) -> ListViewBuilder<ListViewItem> {
+        ListViewBuilder::new(id)
+    }
+}
 
 impl<T> ListViewControl<T>
 where
-    T: ListViewItemLike + 'static,
+    T: 'static,
 {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(id: impl Into<SharedString>) -> ListViewBuilder<T> {
-        ListViewBuilder::new(id)
+    pub fn new_typed(id: impl Into<SharedString>) -> ListViewBuilder<T> {
+        ListViewBuilder::new_typed(id)
     }
 
     pub(crate) fn from_builder(mut builder: ListViewBuilder<T>, cx: &mut Context<Self>) -> Self {
@@ -186,9 +194,19 @@ where
         }
     }
 
+    fn resolve_list_appearance(&self, window: &Window) -> ListViewListAppearance {
+        let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
+        let mut list = self.model.theme.resolve_list(self.model.enabled, focus.focused, self.model.size);
+        if let Some(override_fn) = &self.model.list_appearance_override {
+            list = override_fn(list);
+        }
+        list
+    }
+
     fn render_model(&self, window: &Window) -> ListViewRenderModel<'_> {
         ListViewRenderModel {
             id: &self.model.id,
+            list: self.resolve_list_appearance(window),
             item_count: self.model.items.len(),
             selection_mode: self.model.selection_mode,
             enabled: self.model.enabled,
@@ -203,7 +221,7 @@ where
         };
 
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
-        let enabled = self.model.enabled && item.is_enabled();
+        let enabled = self.model.enabled && self.model.item_is_enabled(item);
         let selected = self.model.selected_indices.contains(&index);
         let active = self.model.active_index == Some(index);
         let hovered = enabled && self.hovered_index == Some(index);
@@ -240,24 +258,25 @@ where
                 cx,
             )
         } else {
-            div().flex_1().min_w(px(0.0)).truncate().child(item.label().clone()).into_any_element()
+            div().flex_1().min_w(px(0.0)).truncate().child(self.model.label_for_item(item)).into_any_element()
         };
 
-        let row = render_list_view_row_visual(format!("{}-row-{}", self.model.id, index), content, appearance, enabled)
-            .on_hover(cx.listener(move |this, hovered, _window, cx| {
-                this.handle_item_hover(index, *hovered, cx);
-            }))
-            .on_mouse_down(
-                MouseButton::Left,
-                cx.listener(move |this, event, window, cx| {
-                    this.handle_item_mouse_down(index, event, window, cx);
-                }),
-            )
-            .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
-            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
-            .on_click(cx.listener(move |this, event, _window, cx| {
-                this.handle_item_click(index, event, cx);
-            }));
+        let row =
+            render_list_view_row(format!("{}-row-{}", self.model.id, index), content, appearance, enabled, index > 0)
+                .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                    this.handle_item_hover(index, *hovered, cx);
+                }))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |this, event, window, cx| {
+                        this.handle_item_mouse_down(index, event, window, cx);
+                    }),
+                )
+                .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
+                .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
+                .on_click(cx.listener(move |this, event, _window, cx| {
+                    this.handle_item_click(index, event, cx);
+                }));
 
         if row_oversize_extent > 0.0 {
             div().relative().w_full().p(px(row_oversize_extent)).child(row).into_any_element()
@@ -267,7 +286,12 @@ where
     }
 
     fn set_active_index_internal(&mut self, active_index: Option<usize>, cx: &mut Context<Self>) -> bool {
-        let next = normalize_active_index(active_index, self.model.items.as_slice(), &self.model.selected_indices);
+        let next = normalize_active_index(
+            active_index,
+            self.model.items.as_slice(),
+            self.model.item_enabled.as_ref(),
+            &self.model.selected_indices,
+        );
         if self.model.active_index == next {
             return false;
         }
@@ -292,14 +316,15 @@ where
         }
 
         self.model.selected_indices = next.clone();
-        self.model.active_index = normalize_active_index(Some(index), self.model.items.as_slice(), &next);
+        self.model.active_index =
+            normalize_active_index(Some(index), self.model.items.as_slice(), self.model.item_enabled.as_ref(), &next);
         cx.emit(ListViewEvent::SelectionChanged { selected_indices: next });
         cx.notify();
         true
     }
 
     fn can_use_item(&self, index: usize) -> bool {
-        self.model.enabled && self.model.items.get(index).is_some_and(ListViewItemLike::is_enabled)
+        self.model.enabled && self.model.items.get(index).is_some_and(|item| self.model.item_is_enabled(item))
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
@@ -353,16 +378,21 @@ where
     }
 
     fn move_active(&mut self, direction: ListDirection, cx: &mut Context<Self>) {
-        if let Some(next_index) = next_enabled_index(self.model.items.as_slice(), self.model.active_index, direction) {
+        if let Some(next_index) = next_enabled_index(
+            self.model.items.as_slice(),
+            self.model.item_enabled.as_ref(),
+            self.model.active_index,
+            direction,
+        ) {
             self.set_active_index_internal(Some(next_index), cx);
         }
     }
 
     fn move_active_to_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
         let next_index = if first {
-            first_enabled_index(self.model.items.as_slice())
+            first_enabled_index(self.model.items.as_slice(), self.model.item_enabled.as_ref())
         } else {
-            last_enabled_index(self.model.items.as_slice())
+            last_enabled_index(self.model.items.as_slice(), self.model.item_enabled.as_ref())
         };
 
         self.set_active_index_internal(next_index, cx);
@@ -420,7 +450,7 @@ where
 
 impl<T> Focusable for ListViewControl<T>
 where
-    T: ListViewItemLike + 'static,
+    T: 'static,
 {
     fn focus_handle(&self, _cx: &App) -> gpui::FocusHandle {
         self.focus_handle.clone()
@@ -429,7 +459,7 @@ where
 
 impl<T> Render for ListViewControl<T>
 where
-    T: ListViewItemLike + 'static,
+    T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let render_model = self.render_model(window);
@@ -469,21 +499,28 @@ enum ListDirection {
 
 pub(crate) fn normalize_model<T>(model: &mut ListViewModel<T>)
 where
-    T: ListViewItemLike + 'static,
+    T: 'static,
 {
-    model.selected_indices =
-        normalize_selected_indices(model.selection_mode, model.items.as_slice(), &model.selected_indices);
-    model.active_index = normalize_active_index(model.active_index, model.items.as_slice(), &model.selected_indices);
+    model.selected_indices = normalize_selected_indices(
+        model.selection_mode,
+        model.items.as_slice(),
+        model.item_enabled.as_ref(),
+        &model.selected_indices,
+    );
+    model.active_index = normalize_active_index(
+        model.active_index,
+        model.items.as_slice(),
+        model.item_enabled.as_ref(),
+        &model.selected_indices,
+    );
 }
 
 pub(crate) fn normalize_selected_indices<T>(
     selection_mode: ListSelectionMode,
     items: &[T],
+    item_enabled: &dyn Fn(&T) -> bool,
     selected_indices: &[usize],
-) -> Vec<usize>
-where
-    T: ListViewItemLike + 'static,
-{
+) -> Vec<usize> {
     let mut normalized = Vec::new();
 
     if selection_mode == ListSelectionMode::None {
@@ -491,7 +528,7 @@ where
     }
 
     for index in selected_indices.iter().copied() {
-        if index >= items.len() || !items[index].is_enabled() || normalized.contains(&index) {
+        if index >= items.len() || !item_enabled(&items[index]) || normalized.contains(&index) {
             continue;
         }
 
@@ -507,45 +544,39 @@ where
 pub(crate) fn normalize_active_index<T>(
     active_index: Option<usize>,
     items: &[T],
+    item_enabled: &dyn Fn(&T) -> bool,
     selected_indices: &[usize],
-) -> Option<usize>
-where
-    T: ListViewItemLike + 'static,
-{
+) -> Option<usize> {
     if let Some(active_index) = active_index
         && active_index < items.len()
-        && items[active_index].is_enabled()
+        && item_enabled(&items[active_index])
     {
         return Some(active_index);
     }
 
     if let Some(selected_index) =
-        selected_indices.iter().copied().find(|index| *index < items.len() && items[*index].is_enabled())
+        selected_indices.iter().copied().find(|index| *index < items.len() && item_enabled(&items[*index]))
     {
         return Some(selected_index);
     }
 
-    items.iter().position(ListViewItemLike::is_enabled)
+    items.iter().position(item_enabled)
 }
 
-fn first_enabled_index<T>(items: &[T]) -> Option<usize>
-where
-    T: ListViewItemLike + 'static,
-{
-    items.iter().position(ListViewItemLike::is_enabled)
+fn first_enabled_index<T>(items: &[T], item_enabled: &dyn Fn(&T) -> bool) -> Option<usize> {
+    items.iter().position(item_enabled)
 }
 
-fn last_enabled_index<T>(items: &[T]) -> Option<usize>
-where
-    T: ListViewItemLike + 'static,
-{
-    items.iter().rposition(ListViewItemLike::is_enabled)
+fn last_enabled_index<T>(items: &[T], item_enabled: &dyn Fn(&T) -> bool) -> Option<usize> {
+    items.iter().rposition(item_enabled)
 }
 
-fn next_enabled_index<T>(items: &[T], current_index: Option<usize>, direction: ListDirection) -> Option<usize>
-where
-    T: ListViewItemLike + 'static,
-{
+fn next_enabled_index<T>(
+    items: &[T],
+    item_enabled: &dyn Fn(&T) -> bool,
+    current_index: Option<usize>,
+    direction: ListDirection,
+) -> Option<usize> {
     let len = items.len();
     if len == 0 {
         return None;
@@ -563,7 +594,7 @@ where
     };
 
     for _ in 0..len {
-        if items[index].is_enabled() {
+        if item_enabled(&items[index]) {
             return Some(index);
         }
         index = (index + step) % len;
@@ -593,68 +624,39 @@ fn compute_next_selected_indices(
     }
 }
 
-fn render_list_view_row_visual(
-    id: impl Into<gpui::ElementId>,
-    content: gpui::AnyElement,
-    appearance: ListViewRowAppearance,
-    enabled: bool,
-) -> gpui::Stateful<gpui::Div> {
-    let mut row = div()
-        .id(id)
-        .relative()
-        .w_full()
-        .min_h(px(appearance.min_height))
-        .flex()
-        .items_center()
-        .rounded(px(appearance.radius))
-        .px(px(appearance.padding_x))
-        .py(px(appearance.padding_y))
-        .bg(appearance.background)
-        .text_color(appearance.label_color)
-        .text_size(px(appearance.label_typography.size))
-        .line_height(px(appearance.label_typography.line_height))
-        .font_weight(appearance.label_typography.weight)
-        .child(div().flex_1().min_w(px(0.0)).child(content));
-
-    if enabled {
-        row = row.cursor_pointer();
-    } else {
-        row = row.opacity(0.56);
-    }
-
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {
-        row = row.child(adorner);
-    }
-
-    row
-}
-
 #[cfg(test)]
 mod tests {
     use gpui::SharedString;
 
     use super::{ListSelectionMode, compute_next_selected_indices, normalize_active_index, normalize_selected_indices};
-    use crate::controls::list_view::{ListViewItem, ListViewItemLike};
+    use crate::controls::list_view::ListViewItem;
+
+    fn item_enabled(item: &ListViewItem) -> bool {
+        item.enabled
+    }
 
     #[test]
     fn none_selection_mode_clears_selection() {
         let items = demo_items();
-        assert_eq!(normalize_selected_indices(ListSelectionMode::None, &items, &[0, 1, 2]), Vec::<usize>::new());
+        assert_eq!(
+            normalize_selected_indices(ListSelectionMode::None, &items, &item_enabled, &[0, 1, 2]),
+            Vec::<usize>::new()
+        );
     }
 
     #[test]
     fn single_selection_mode_keeps_first_enabled_item() {
         let items = vec![ListViewItem::new("one"), ListViewItem::new("two").enabled(false), ListViewItem::new("three")];
 
-        assert_eq!(normalize_selected_indices(ListSelectionMode::Single, &items, &[1, 2, 0]), vec![2]);
+        assert_eq!(normalize_selected_indices(ListSelectionMode::Single, &items, &item_enabled, &[1, 2, 0]), vec![2]);
     }
 
     #[test]
     fn active_index_falls_back_to_first_selected_then_first_enabled() {
         let items = vec![ListViewItem::new("one").enabled(false), ListViewItem::new("two"), ListViewItem::new("three")];
 
-        assert_eq!(normalize_active_index(Some(0), &items, &[2]), Some(2));
-        assert_eq!(normalize_active_index(None, &items, &[]), Some(1));
+        assert_eq!(normalize_active_index(Some(0), &items, &item_enabled, &[2]), Some(2));
+        assert_eq!(normalize_active_index(None, &items, &item_enabled, &[]), Some(1));
     }
 
     #[test]
@@ -674,6 +676,6 @@ mod tests {
     #[test]
     fn item_label_round_trips() {
         let item = ListViewItem::new("alpha");
-        assert_eq!(ListViewItemLike::label(&item), &SharedString::from("alpha"));
+        assert_eq!(item.label, SharedString::from("alpha"));
     }
 }
