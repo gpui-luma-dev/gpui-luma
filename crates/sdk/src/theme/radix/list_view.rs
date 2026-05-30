@@ -1,12 +1,22 @@
-//! List view token mapping for virtualized row lists.
+//! List view — input surface + accent whisper hover, muted selected rows.
+//!
+//! | Row state   | Token / effect        |
+//! |-------------|-----------------------|
+//! | Default     | transparent           |
+//! | Hover       | `accent` at 40% alpha |
+//! | Selected    | `muted`               |
+//! | Keyboard active | `muted`           |
 
 use gpui::hsla;
 
 use crate::controls::list_view::{ListViewAppearance, ListViewRowAppearance};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
 
+use super::color::{darken, with_alpha};
 use super::mode::RadixModeTokens;
-use super::resolve::{resolve_color, resolve_color_layer};
+use super::resolve::{resolve_accent_whisper, resolve_color};
+
+const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
 pub(crate) fn list_view_appearance(
     mode: &RadixModeTokens,
@@ -105,17 +115,18 @@ fn list_view_row_from_palette(
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
-    let row_highlight = palette.muted_background;
+    let selected_background = palette.muted_background;
+    let hover_background = with_alpha(palette.ghost.hover_background, ROW_HOVER_ACCENT_ALPHA);
 
     let background = if state.disabled && !state.focused {
         transparent
     } else if selected || state.focused {
-        row_highlight
+        selected_background
     } else {
         match state.layer() {
             InteractionLayer::Disabled => transparent,
-            InteractionLayer::Pressed => palette.secondary.pressed_background,
-            InteractionLayer::Hovered => row_highlight,
+            InteractionLayer::Pressed => darken(hover_background, 0.04),
+            InteractionLayer::Hovered => hover_background,
             InteractionLayer::Default => transparent,
         }
     };
@@ -151,17 +162,17 @@ fn list_view_row_from_catalog(
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
 
-    let row_highlight = resolve_color(catalog, "muted")?;
+    let selected_background = resolve_color(catalog, "muted")?;
+    let hover_background = resolve_accent_whisper(catalog, ROW_HOVER_ACCENT_ALPHA)?;
 
     let background = if state.disabled && !state.focused {
         transparent
     } else if selected || state.focused {
-        row_highlight
+        selected_background
     } else {
         match layer {
-            InteractionLayer::Pressed | InteractionLayer::Hovered => {
-                resolve_color_layer(catalog, "muted", layer, true)?
-            }
+            InteractionLayer::Pressed => darken(hover_background, 0.04),
+            InteractionLayer::Hovered => hover_background,
             InteractionLayer::Default | InteractionLayer::Disabled => transparent,
         }
     };
@@ -187,4 +198,58 @@ fn list_view_row_from_catalog(
         padding_y: metrics.padding_y(size),
         min_height: metrics.control_height(size),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use crate::theme::{ControlSize, InteractionState};
+
+    use super::super::catalog::CssTokenMap;
+    use super::super::color::with_alpha;
+    use super::super::mode::RadixModeTokens;
+    use super::super::resolve::resolve_color;
+    use super::{list_view_row_appearance, ROW_HOVER_ACCENT_ALPHA};
+
+    fn sample_catalog() -> CssTokenMap {
+        CssTokenMap::from_map(BTreeMap::from([
+            ("primary".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("primary-foreground".into(), "oklch(1 0 0)".into()),
+            ("secondary".into(), "oklch(0.6437 0.1019 187.3840)".into()),
+            ("secondary-foreground".into(), "oklch(1 0 0)".into()),
+            ("background".into(), "oklch(0.9735 0.0261 90.0953)".into()),
+            ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
+            ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
+            ("accent-foreground".into(), "oklch(1 0 0)".into()),
+            ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+        ]))
+    }
+
+    #[test]
+    fn list_view_row_hover_uses_accent_whisper_and_selected_uses_muted() {
+        let catalog = sample_catalog();
+        let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let hover = list_view_row_appearance(
+            &mode,
+            false,
+            InteractionState { hovered: true, ..Default::default() },
+            ControlSize::Md,
+        );
+        let selected = list_view_row_appearance(
+            &mode,
+            true,
+            InteractionState { hovered: true, ..Default::default() },
+            ControlSize::Md,
+        );
+
+        let accent = catalog.color("accent").expect("accent");
+        assert_eq!(hover.background, with_alpha(accent, ROW_HOVER_ACCENT_ALPHA));
+        assert_eq!(selected.background, resolve_color(&catalog, "muted").expect("muted"));
+    }
 }

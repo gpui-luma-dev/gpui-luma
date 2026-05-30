@@ -5,6 +5,8 @@ use gpui::Hsla;
 use crate::theme::adorner::AdornerSpec;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
+const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
+
 #[derive(Clone, Debug)]
 pub struct ListViewAppearance {
     pub background: Hsla,
@@ -95,17 +97,18 @@ impl ListViewTheme for DefaultListViewTheme {
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
         let layer = state.layer();
 
-        let row_highlight = palette.surface.subtle.background;
+        let selected_background = palette.surface.subtle.background;
+        let hover_background = Hsla { a: ROW_HOVER_ACCENT_ALPHA, ..palette.data.accent_1 };
 
         let background = if state.disabled && !state.focused {
             transparent
         } else if selected || state.focused {
-            row_highlight
+            selected_background
         } else {
             match layer {
                 InteractionLayer::Disabled => transparent,
                 InteractionLayer::Pressed => palette.state.pressed.background,
-                InteractionLayer::Hovered => row_highlight,
+                InteractionLayer::Hovered => hover_background,
                 InteractionLayer::Default => transparent,
             }
         };

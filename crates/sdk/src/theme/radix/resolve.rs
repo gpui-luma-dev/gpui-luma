@@ -4,7 +4,7 @@ use crate::theme::InteractionLayer;
 
 use super::RadixButtonStyle;
 use super::catalog::CssTokenMap;
-use super::color::darken;
+use super::color::{darken, with_alpha};
 
 pub(crate) fn resolve_color(catalog: &CssTokenMap, token: &str) -> anyhow::Result<Hsla> {
     catalog.color(token)
@@ -97,4 +97,9 @@ pub(crate) fn resolve_accent_hover_pair(catalog: &CssTokenMap) -> anyhow::Result
         catalog.color_first(&["accent", "muted"])?,
         catalog.color_first(&["accent-foreground", "foreground"])?,
     ))
+}
+
+/// Faint accent tint for list-style row hovers (`bg-accent/40`).
+pub(crate) fn resolve_accent_whisper(catalog: &CssTokenMap, alpha: f32) -> anyhow::Result<Hsla> {
+    Ok(with_alpha(catalog.color_first(&["accent", "muted"])?, alpha))
 }
