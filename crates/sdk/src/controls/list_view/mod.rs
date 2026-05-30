@@ -1,16 +1,21 @@
 mod control;
+mod column_template;
 mod macros;
 mod model;
-mod row_chrome;
+mod row;
 mod template;
 mod theme;
 
 pub use control::{ListViewControl, ListViewEvent};
+pub use column_template::{
+    ListViewColumnRenderModel, column_template_with_modifier, default_emphasis_column_template,
+    default_muted_column_template, default_numeric_column_template, default_text_column_template,
+};
 pub use model::{
-    ListSelectionMode, ListViewAppearanceOverride, ListViewBuilder, ListViewColumn, ListViewColumnWidth,
-    ListViewEnabledFn, ListViewHeaderTemplate, ListViewGridColumnsBuilder, ListViewLabel, ListViewLabelFn,
-    ListViewRenderModel, ListViewRowRenderModel, ListViewRowTemplate, make_list_view_header_template,
-    make_list_view_row_template,
+    IntoListViewColumnCellTemplate, ListSelectionMode, ListViewAppearanceOverride, ListViewBuilder, ListViewColumn,
+    ListViewColumnCellTemplate, ListViewColumnWidth, ListViewEnabledFn, ListViewHeaderTemplate,
+    ListViewGridColumnsBuilder, ListViewLabel, ListViewLabelFn, ListViewRenderModel, ListViewRowRenderModel,
+    ListViewRowTemplate, make_list_view_header_template, make_list_view_row_template,
 };
 pub use template::{
     DefaultListViewShellTemplate, ListViewTemplate, ListViewTemplateModifier, default_list_view_template,

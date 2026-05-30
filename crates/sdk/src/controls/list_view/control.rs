@@ -7,7 +7,7 @@ use super::model::{
     ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewLabel, ListViewModel, ListViewRenderModel,
     ListViewRowRenderModel, make_list_view_header_template, make_list_view_row_template,
 };
-use super::row_chrome::render_list_view_row_chrome;
+use super::row::render_list_view_row;
 use super::template::ListViewTemplate;
 use super::theme::{ListViewAppearance, ListViewTheme};
 use crate::controls::state::ControlFocusState;
@@ -178,7 +178,10 @@ where
 
     pub fn with_row_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
-        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, gpui::AnyElement, &mut Window, &mut App) -> E
+            + Send
+            + Sync
+            + 'static,
         E: IntoElement + 'static,
     {
         self.model.row_template = Some(make_list_view_row_template(template));
@@ -239,49 +242,56 @@ where
         let row_oversize_extent = adorner_oversize_extent(appearance.adorner)
             .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
-        let content = if let Some(row_template) = self.model.row_template.as_ref() {
-            row_template(
-                &ListViewRowRenderModel {
-                    list_id: &self.model.id,
-                    row: item,
-                    index,
-                    sibling_count: self.model.items.len(),
-                    selected,
-                    active,
-                    hovered,
-                    pressed,
-                    focused: focus.focused,
-                    focus_visible: focus.focus_visible,
-                    enabled,
-                },
-                window,
-                cx,
-            )
+        let row_model = ListViewRowRenderModel {
+            list_id: &self.model.id,
+            row: item,
+            index,
+            sibling_count: self.model.items.len(),
+            selected,
+            active,
+            hovered,
+            pressed,
+            focused: focus.focused,
+            focus_visible: focus.focus_visible,
+            enabled,
+            appearance: appearance.clone(),
+        };
+
+        let cells = if !self.model.columns.is_empty() {
+            super::model::render_grid_view_cells(&row_model, &self.model.columns, window, cx)
         } else {
             div().flex_1().min_w(px(0.0)).truncate().child(self.model.label_for_row(item)).into_any_element()
         };
 
-        let row = render_list_view_row_chrome(
+        let is_custom = self.model.row_template.is_some();
+        let content = if let Some(row_template) = self.model.row_template.as_ref() {
+            row_template(&row_model, cells, window, cx)
+        } else {
+            cells
+        };
+
+        let row = render_list_view_row(
             format!("{}-row-{}", self.model.id, index),
             content,
             appearance,
             enabled,
             index > 0,
+            is_custom,
         )
-        .on_hover(cx.listener(move |this, hovered, _window, cx| {
-            this.handle_item_hover(index, *hovered, cx);
-        }))
-        .on_mouse_down(
-            MouseButton::Left,
-            cx.listener(move |this, event, window, cx| {
-                this.handle_item_mouse_down(index, event, window, cx);
-            }),
-        )
-        .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
-        .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
-        .on_click(cx.listener(move |this, event, _window, cx| {
-            this.handle_item_click(index, event, cx);
-        }));
+                .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                    this.handle_item_hover(index, *hovered, cx);
+                }))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |this, event, window, cx| {
+                        this.handle_item_mouse_down(index, event, window, cx);
+                    }),
+                )
+                .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
+                .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_item_mouse_up))
+                .on_click(cx.listener(move |this, event, _window, cx| {
+                    this.handle_item_click(index, event, cx);
+                }));
 
         if row_oversize_extent > 0.0 {
             div().relative().w_full().p(px(row_oversize_extent)).child(row).into_any_element()

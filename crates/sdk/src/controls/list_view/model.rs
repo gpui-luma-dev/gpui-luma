@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, AppContext, Div, Entity, ListAlignment, SharedString
 
 use super::control::ListViewControl;
 use super::template::{ListViewTemplate, default_list_view_template, list_view_template_with_modifier};
-use super::theme::{ListViewAppearance, ListViewTheme, default_list_view_theme};
+use super::theme::{ListViewAppearance, ListViewRowAppearance, ListViewTheme, default_list_view_theme};
 use crate::controls::state::ControlFocusState;
 use crate::theme::ControlSize;
 
@@ -80,18 +80,23 @@ where
     pub focused: bool,
     pub focus_visible: bool,
     pub enabled: bool,
+    pub appearance: ListViewRowAppearance,
 }
 
-pub type ListViewRowTemplate<T> =
-    Arc<dyn for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
+pub type ListViewRowTemplate<T> = Arc<
+    dyn for<'a> Fn(&ListViewRowRenderModel<'a, T>, AnyElement, &mut Window, &mut App) -> AnyElement
+        + Send
+        + Sync
+        + 'static,
+>;
 
 pub fn make_list_view_row_template<T, F, E>(template: F) -> ListViewRowTemplate<T>
 where
     T: 'static,
-    F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+    F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, AnyElement, &mut Window, &mut App) -> E + Send + Sync + 'static,
     E: gpui::IntoElement + 'static,
 {
-    Arc::new(move |model, window, cx| template(model, window, cx).into_any_element())
+    Arc::new(move |model, cells, window, cx| template(model, cells, window, cx).into_any_element())
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -101,9 +106,33 @@ pub enum ListViewColumnWidth {
     Fill,
 }
 
-pub type ListViewColumnCellTemplate<T> = Arc<dyn Fn(&T) -> AnyElement + Send + Sync + 'static>;
+pub type ListViewColumnCellTemplate<T> =
+    Arc<dyn for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
 
-#[derive(Clone)]
+pub trait IntoListViewColumnCellTemplate<T> {
+    fn into_cell_template(self) -> ListViewColumnCellTemplate<T>;
+}
+
+impl<T> IntoListViewColumnCellTemplate<T> for ListViewColumnCellTemplate<T>
+where
+    T: 'static,
+{
+    fn into_cell_template(self) -> ListViewColumnCellTemplate<T> {
+        self
+    }
+}
+
+impl<T, F, E> IntoListViewColumnCellTemplate<T> for F
+where
+    T: 'static,
+    F: Fn(&T) -> E + Send + Sync + 'static,
+    E: gpui::IntoElement + 'static,
+{
+    fn into_cell_template(self) -> ListViewColumnCellTemplate<T> {
+        Arc::new(move |model, _window, _cx| (self)(model.row).into_any_element())
+    }
+}
+
 pub struct ListViewColumn<T>
 where
     T: 'static,
@@ -111,6 +140,15 @@ where
     header: SharedString,
     width: ListViewColumnWidth,
     cell_template: ListViewColumnCellTemplate<T>,
+}
+
+impl<T> Clone for ListViewColumn<T>
+where
+    T: 'static,
+{
+    fn clone(&self) -> Self {
+        Self { header: self.header.clone(), width: self.width, cell_template: self.cell_template.clone() }
+    }
 }
 
 impl<T> ListViewColumn<T>
@@ -125,27 +163,23 @@ where
         Self { header: header.into(), width, cell_template }
     }
 
-    pub fn fixed<F, E>(header: impl Into<SharedString>, width: f32, cell_template: F) -> Self
-    where
-        F: Fn(&T) -> E + Send + Sync + 'static,
-        E: gpui::IntoElement + 'static,
-    {
+    pub fn fixed(
+        header: impl Into<SharedString>,
+        width: f32,
+        cell_template: impl IntoListViewColumnCellTemplate<T>,
+    ) -> Self {
         Self {
             header: header.into(),
             width: ListViewColumnWidth::Fixed(width),
-            cell_template: Arc::new(move |item| cell_template(item).into_any_element()),
+            cell_template: cell_template.into_cell_template(),
         }
     }
 
-    pub fn fill<F, E>(header: impl Into<SharedString>, cell_template: F) -> Self
-    where
-        F: Fn(&T) -> E + Send + Sync + 'static,
-        E: gpui::IntoElement + 'static,
-    {
+    pub fn fill(header: impl Into<SharedString>, cell_template: impl IntoListViewColumnCellTemplate<T>) -> Self {
         Self {
             header: header.into(),
             width: ListViewColumnWidth::Fill,
-            cell_template: Arc::new(move |item| cell_template(item).into_any_element()),
+            cell_template: cell_template.into_cell_template(),
         }
     }
 
@@ -157,8 +191,8 @@ where
         self.width
     }
 
-    pub fn render_cell(&self, item: &T) -> AnyElement {
-        (self.cell_template)(item)
+    pub fn render_cell(&self, model: &ListViewRowRenderModel<'_, T>, window: &mut Window, cx: &mut App) -> AnyElement {
+        (self.cell_template)(model, window, cx)
     }
 }
 
@@ -183,6 +217,7 @@ where
     pub(crate) row_template: Option<ListViewRowTemplate<T>>,
     pub(crate) theme: Arc<dyn ListViewTheme>,
     pub(crate) appearance_override: Option<ListViewAppearanceOverride>,
+    pub(crate) columns: Vec<ListViewColumn<T>>,
 }
 
 impl<T> ListViewModel<T>
@@ -242,6 +277,7 @@ where
                 row_template: None,
                 theme: default_list_view_theme(),
                 appearance_override: None,
+                columns: Vec::new(),
             },
         }
     }
@@ -382,7 +418,7 @@ where
 
     pub fn with_row_template<F, E>(mut self, template: F) -> Self
     where
-        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, AnyElement, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: gpui::IntoElement + 'static,
     {
         self.model.row_template = Some(make_list_view_row_template(template));
@@ -390,16 +426,12 @@ where
     }
 
     pub fn grid_view(mut self, columns: impl IntoIterator<Item = ListViewColumn<T>>) -> Self {
-        let columns: Arc<[ListViewColumn<T>]> = columns.into_iter().collect::<Vec<_>>().into();
-        let header_columns = Arc::clone(&columns);
-        let row_columns = Arc::clone(&columns);
+        let columns: Vec<ListViewColumn<T>> = columns.into_iter().collect();
+        let header_columns = columns.clone();
+        self.model.columns = columns;
 
-        self.model.header_template = Some(make_list_view_header_template(move |_model, _window, _cx| {
-            render_grid_view_header(header_columns.as_ref())
-        }));
-        self.model.row_template = Some(make_list_view_row_template(move |model, _window, _cx| {
-            render_grid_view_cells(model.row, row_columns.as_ref())
-        }));
+        self.model.header_template =
+            Some(make_list_view_header_template(move |_model, _window, _cx| render_grid_view_header(&header_columns)));
         self
     }
 
@@ -453,14 +485,19 @@ where
     row.into_any_element()
 }
 
-fn render_grid_view_cells<T>(row: &T, columns: &[ListViewColumn<T>]) -> AnyElement
+pub(crate) fn render_grid_view_cells<T>(
+    model: &ListViewRowRenderModel<'_, T>,
+    columns: &[ListViewColumn<T>],
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement
 where
     T: 'static,
 {
     let mut cells = div().w_full().flex().items_center();
 
     for column in columns {
-        cells = cells.child(render_grid_view_column_slot(column.width(), column.render_cell(row)));
+        cells = cells.child(render_grid_view_column_slot(column.width(), column.render_cell(model, window, cx)));
     }
 
     cells.into_any_element()
