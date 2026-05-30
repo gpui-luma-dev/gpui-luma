@@ -16,25 +16,30 @@ pub trait ListViewTemplate: Send + Sync {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
+        footer: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 
-/// Paints list shell from resolved [`ListViewRenderModel::list`] only (no theme lookup).
+/// Paints list shell from resolved [`ListViewRenderModel`] only (no theme lookup).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DefaultListViewShellTemplate;
 
 impl DefaultListViewShellTemplate {
-    pub fn paint_shell(model: &ListViewRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
+    pub fn paint_shell(
+        model: &ListViewRenderModel<'_>,
+        header: Option<AnyElement>,
+        body: AnyElement,
+        footer: Option<AnyElement>,
+    ) -> Stateful<Div> {
         let list = &model.appearance;
         let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
 
-        let root = div()
+        let mut root = div()
             .id(model.id.clone())
             .relative()
             .w_full()
-            .h_full()
             .flex()
             .flex_col()
             .overflow_hidden()
@@ -42,8 +47,15 @@ impl DefaultListViewShellTemplate {
             .border_1()
             .border_color(list.border);
 
-        let mut column = div().w_full().h_full().flex().flex_col();
+        if let Some(height) = model.shell_height {
+            root = root.h(px(height));
+        } else {
+            root = root.h_full();
+        }
+
+        let mut column = div().w_full().flex_1().min_h(px(0.0)).flex().flex_col();
         let has_header = header.is_some();
+        let has_footer = footer.is_some();
 
         if let Some(header) = header {
             column = column.child(
@@ -66,16 +78,32 @@ impl DefaultListViewShellTemplate {
             );
         }
 
-        let mut body_slot = div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().bg(list.background);
-        if has_header {
-            body_slot = body_slot.rounded_bl(px(inner_radius)).rounded_br(px(inner_radius));
+        let mut body_slot = if let Some(body_rows_height) = model.body_rows_height {
+            div().w_full().flex_none().h(px(body_rows_height)).overflow_hidden().bg(list.background)
         } else {
+            div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().bg(list.background)
+        };
+        if has_header && !has_footer {
+            body_slot = body_slot.rounded_bl(px(inner_radius)).rounded_br(px(inner_radius));
+        } else if !has_header && !has_footer {
             body_slot = body_slot.rounded(px(inner_radius));
+        } else if !has_header {
+            body_slot = body_slot.rounded_tl(px(inner_radius)).rounded_tr(px(inner_radius));
         }
 
         column = column.child(body_slot.child(div().w_full().h_full().child(body)));
 
+        if let Some(footer) = footer {
+            column = column.child(
+                div().w_full().flex_none().rounded_bl(px(inner_radius)).rounded_br(px(inner_radius)).child(footer),
+            );
+        }
+
         root.child(column)
+    }
+
+    pub fn shell_height_for_model(model: &ListViewRenderModel<'_>) -> Option<f32> {
+        model.shell_height
     }
 }
 
@@ -85,10 +113,11 @@ impl ListViewTemplate for DefaultListViewShellTemplate {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
+        footer: Option<AnyElement>,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        Self::paint_shell(model, header, body)
+        Self::paint_shell(model, header, body, footer)
     }
 }
 
@@ -121,10 +150,11 @@ impl ListViewTemplate for ModifiedListViewTemplate {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
+        footer: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let root = self.base.render(model, header, body, window, cx);
+        let root = self.base.render(model, header, body, footer, window, cx);
         self.apply_modifiers(root, model)
     }
 }

@@ -107,16 +107,15 @@ fn list_view_row_from_palette(
 
     let row_highlight = palette.muted_background;
 
-    let background = if state.disabled {
+    let background = if state.disabled && !state.focused {
         transparent
-    } else if selected {
+    } else if selected || state.focused {
         row_highlight
     } else {
         match state.layer() {
             InteractionLayer::Disabled => transparent,
             InteractionLayer::Pressed => palette.secondary.pressed_background,
             InteractionLayer::Hovered => row_highlight,
-            InteractionLayer::Default if state.focused => row_highlight,
             InteractionLayer::Default => transparent,
         }
     };
@@ -154,18 +153,16 @@ fn list_view_row_from_catalog(
 
     let row_highlight = resolve_color(catalog, "muted")?;
 
-    let background = if state.disabled {
+    let background = if state.disabled && !state.focused {
         transparent
-    } else if selected {
+    } else if selected || state.focused {
         row_highlight
     } else {
         match layer {
             InteractionLayer::Pressed | InteractionLayer::Hovered => {
                 resolve_color_layer(catalog, "muted", layer, true)?
             }
-            InteractionLayer::Default if state.focused => row_highlight,
-            InteractionLayer::Default => transparent,
-            InteractionLayer::Disabled => transparent,
+            InteractionLayer::Default | InteractionLayer::Disabled => transparent,
         }
     };
 

@@ -97,16 +97,15 @@ impl ListViewTheme for DefaultListViewTheme {
 
         let row_highlight = palette.surface.subtle.background;
 
-        let background = if state.disabled {
+        let background = if state.disabled && !state.focused {
             transparent
-        } else if selected {
+        } else if selected || state.focused {
             row_highlight
         } else {
             match layer {
                 InteractionLayer::Disabled => transparent,
                 InteractionLayer::Pressed => palette.state.pressed.background,
                 InteractionLayer::Hovered => row_highlight,
-                InteractionLayer::Default if state.focused => row_highlight,
                 InteractionLayer::Default => transparent,
             }
         };

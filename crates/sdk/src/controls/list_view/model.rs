@@ -41,14 +41,68 @@ pub enum ListSelectionMode {
     Multiple,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ListScrollMode {
+    /// Smooth pixel-by-pixel scrolling (default).
+    #[default]
+    ScrollSmooth,
+    /// Smooth scrolling with snap-to-row boundaries on release.
+    ScrollSnap,
+    /// Paginated layout displaying N items at a time with page selectors.
+    Paged { page_size: usize },
+}
+
+impl ListScrollMode {
+    pub fn is_paged(self) -> bool {
+        matches!(self, Self::Paged { .. })
+    }
+}
+
 pub struct ListViewRenderModel<'a> {
     pub id: &'a SharedString,
     pub appearance: ListViewAppearance,
+    pub row_appearance: ListViewRowAppearance,
     pub row_count: usize,
     pub selection_mode: ListSelectionMode,
+    pub scroll_mode: ListScrollMode,
+    pub visible_rows: Option<usize>,
+    pub body_rows_height: Option<f32>,
+    pub shell_height: Option<f32>,
+    pub has_header: bool,
+    pub current_page: usize,
+    pub page_size: Option<usize>,
+    pub page_count: usize,
+    pub selected_count: usize,
     pub enabled: bool,
     pub size: ControlSize,
     pub focus: ControlFocusState,
+}
+
+/// Read-only paging metadata for custom paging toolbar templates.
+pub struct ListViewPagingContext<'a> {
+    pub id: &'a SharedString,
+    pub scroll_mode: ListScrollMode,
+    pub current_page: usize,
+    pub page_size: usize,
+    pub page_count: usize,
+    pub total_row_count: usize,
+    pub selected_count: usize,
+    pub enabled: bool,
+    pub size: ControlSize,
+    pub appearance: ListViewAppearance,
+}
+
+pub type ListViewPagingToolbarTemplate<T> = Arc<
+    dyn Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+>;
+
+pub fn make_list_view_paging_toolbar_template<T, F, E>(template: F) -> ListViewPagingToolbarTemplate<T>
+where
+    T: 'static,
+    F: Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+    E: gpui::IntoElement + 'static,
+{
+    Arc::new(move |context, model, window, cx| template(context, model, window, cx).into_any_element())
 }
 
 pub type ListViewAppearanceOverride = Arc<dyn Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static>;
@@ -218,6 +272,11 @@ where
     pub(crate) theme: Arc<dyn ListViewTheme>,
     pub(crate) appearance_override: Option<ListViewAppearanceOverride>,
     pub(crate) columns: Vec<ListViewColumn<T>>,
+    pub(crate) scroll_mode: ListScrollMode,
+    pub(crate) visible_rows: Option<usize>,
+    pub(crate) visible_row_height: Option<f32>,
+    pub(crate) page_size_options: Vec<usize>,
+    pub(crate) paging_toolbar_template: Option<ListViewPagingToolbarTemplate<T>>,
 }
 
 impl<T> ListViewModel<T>
@@ -278,6 +337,11 @@ where
                 theme: default_list_view_theme(),
                 appearance_override: None,
                 columns: Vec::new(),
+                scroll_mode: ListScrollMode::ScrollSmooth,
+                visible_rows: None,
+                visible_row_height: None,
+                page_size_options: super::layout::DEFAULT_PAGE_SIZE_OPTIONS.to_vec(),
+                paging_toolbar_template: None,
             },
         }
     }
@@ -344,6 +408,59 @@ where
 
     pub fn overdraw(mut self, overdraw: impl Into<f64>) -> Self {
         self.model.overdraw = overdraw.into().max(0.0) as f32;
+        self
+    }
+
+    pub fn scroll_mode(mut self, mode: ListScrollMode) -> Self {
+        self.model.scroll_mode = mode;
+        self
+    }
+
+    pub fn paged(self, page_size: usize) -> Self {
+        self.scroll_mode(ListScrollMode::Paged { page_size: page_size.max(1) })
+    }
+
+    pub fn scroll_snap(self, enabled: bool) -> Self {
+        if enabled {
+            self.scroll_mode(ListScrollMode::ScrollSnap)
+        } else {
+            self.scroll_mode(ListScrollMode::ScrollSmooth)
+        }
+    }
+
+    pub fn visible_rows(mut self, count: usize) -> Self {
+        self.model.visible_rows = Some(count.max(1));
+        self
+    }
+
+    /// Overrides the per-row height used for [`Self::visible_rows`] shell sizing.
+    ///
+    /// Use when a custom [`Self::row_template`] applies vertical padding that differs
+    /// from the default row chrome (`min_height + 2 * padding_y`).
+    pub fn visible_row_height(mut self, height: impl Into<f32>) -> Self {
+        self.model.visible_row_height = Some(height.into().max(1.0));
+        self
+    }
+
+    pub fn page_size_options(mut self, options: impl IntoIterator<Item = usize>) -> Self {
+        let options: Vec<usize> = options.into_iter().map(|size| size.max(1)).collect();
+        if !options.is_empty() {
+            self.model.page_size_options = options;
+        }
+        self
+    }
+
+    pub fn paging_toolbar_template(mut self, template: ListViewPagingToolbarTemplate<T>) -> Self {
+        self.model.paging_toolbar_template = Some(template);
+        self
+    }
+
+    pub fn with_paging_toolbar_template<F, E>(mut self, template: F) -> Self
+    where
+        F: Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
+        E: gpui::IntoElement + 'static,
+    {
+        self.model.paging_toolbar_template = Some(make_list_view_paging_toolbar_template(template));
         self
     }
 

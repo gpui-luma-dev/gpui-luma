@@ -43,6 +43,7 @@ impl ListViewPane {
             active_index = 1;
             row_label = |row| row.title.clone();
             row_enabled = |row| row.enabled;
+            visible_rows = 10;
 
             grid_view = {
                 column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
@@ -80,7 +81,7 @@ impl ListViewPane {
                     .flex()
                     .items_center()
                     .min_h(px(model.appearance.min_height))
-                    .py(px(4.0)) // min_height dominates this
+                    .py(px(model.appearance.padding_y))
                     .bg(model.appearance.background)
                     .text_color(model.appearance.label_color)
                     .text_size(px(model.appearance.label_typography.size))
@@ -135,7 +136,7 @@ impl ListViewPane {
                                 .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
                         ),
                 )
-                .child(div().w_full().h(px(420.0)).flex().child(self.list.clone()))
+                .child(div().w_full().flex().child(self.list.clone()))
                 .into_any_element(),
             radix_theme,
         )
