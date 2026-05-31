@@ -3,11 +3,15 @@ mod column_template;
 mod layout;
 mod macros;
 mod model;
+mod paging;
 mod row;
 mod template;
 mod theme;
+mod toolbar;
 
 pub use control::{ListViewControl, ListViewEvent};
+pub use paging::{PagingListView, PagingListViewControl, PagingListViewBuilder};
+pub use toolbar::{PagingToolbar, PagingToolbarEvent, PagingToolbarLayout, PagingToolbarTemplate};
 pub use column_template::{
     ListViewColumnRenderModel, column_template_with_modifier, default_emphasis_column_template,
     default_muted_column_template, default_numeric_column_template, default_text_column_template,
@@ -31,6 +35,8 @@ pub use theme::{DefaultListViewTheme, ListViewAppearance, ListViewRowAppearance,
 use gpui::{Entity, SharedString};
 
 pub type ListView<T> = Entity<ListViewControl<T>>;
+pub type ScrollingListView<T> = Entity<ListViewControl<T>>;
+pub type ScrollingListViewBuilder<T> = ListViewBuilder<T>;
 
 pub fn new(id: impl Into<SharedString>) -> ListViewBuilder<ListViewLabel> {
     ListViewBuilder::new(id)

@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, ClickEvent, Context, EventEmitter, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma::theme::RadixTheme;
+use gpui::{AnyElement, App, ClickEvent, Context, EventEmitter, Render, Window, div, prelude::*, px};
 use lucide_icons::Icon as LucideIcon;
+
+use crate::controls::icon::lucide_glyph;
+use crate::theme::RadixTheme;
 
 const PAGE_SIZE_OPTIONS: [usize; 2] = [10, 25];
 
-/// Layout props mirrored from ListView paging state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::gallery) struct PagingToolbarLayout {
+pub struct PagingToolbarLayout {
     pub selected_count: usize,
     pub total_rows: usize,
     pub current_page: usize,
@@ -28,7 +28,7 @@ impl PagingToolbarLayout {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::gallery) enum PagingToolbarEvent {
+pub enum PagingToolbarEvent {
     FirstPage,
     PrevPage,
     NextPage,
@@ -36,29 +36,62 @@ pub(in crate::gallery) enum PagingToolbarEvent {
     SetPageSize(usize),
 }
 
-pub(in crate::gallery) struct PagingToolbar {
+pub type PagingToolbarTemplate =
+    Arc<dyn Fn(&PagingToolbarLayout, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
+
+pub struct PagingToolbar {
     theme: Arc<RadixTheme>,
     layout: PagingToolbarLayout,
     page_size_open: bool,
+    custom_template: Option<PagingToolbarTemplate>,
 }
 
 impl EventEmitter<PagingToolbarEvent> for PagingToolbar {}
 
 impl PagingToolbar {
-    pub(in crate::gallery) fn new(theme: Arc<RadixTheme>, layout: PagingToolbarLayout) -> Self {
-        Self { theme, layout, page_size_open: false }
+    pub fn new(theme: Arc<RadixTheme>, layout: PagingToolbarLayout) -> Self {
+        Self { theme, layout, page_size_open: false, custom_template: None }
     }
 
-    pub(in crate::gallery) fn set_layout(&mut self, layout: PagingToolbarLayout, cx: &mut Context<Self>) {
+    pub fn with_custom_template(mut self, template: PagingToolbarTemplate) -> Self {
+        self.custom_template = Some(template);
+        self
+    }
+
+    pub fn set_layout(&mut self, layout: PagingToolbarLayout, cx: &mut Context<Self>) {
         if self.layout != layout {
             self.layout = layout;
+            cx.notify();
+        }
+    }
+
+    pub fn update_selection(&mut self, selected_count: usize, total_rows: usize, cx: &mut Context<Self>) {
+        if self.layout.selected_count != selected_count || self.layout.total_rows != total_rows {
+            self.layout.selected_count = selected_count;
+            self.layout.total_rows = total_rows;
+            cx.notify();
+        }
+    }
+
+    pub fn update_page(&mut self, current_page: usize, page_size: usize, page_count: usize, cx: &mut Context<Self>) {
+        if self.layout.current_page != current_page
+            || self.layout.page_size != page_size
+            || self.layout.page_count != page_count
+        {
+            self.layout.current_page = current_page;
+            self.layout.page_size = page_size;
+            self.layout.page_count = page_count;
             cx.notify();
         }
     }
 }
 
 impl Render for PagingToolbar {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if let Some(template) = &self.custom_template {
+            return template(&self.layout, window, cx);
+        }
+
         let chrome = self.theme.chrome();
         let layout = self.layout;
         let at_first = layout.current_page == 0;
@@ -112,6 +145,7 @@ impl Render for PagingToolbar {
                             .child(render_nav_button(cx, &self.theme, ">>", at_last, PagingToolbarEvent::LastPage)),
                     ),
             )
+            .into_any_element()
     }
 }
 
@@ -135,7 +169,7 @@ fn render_page_size_select(
         }))
         .child(
             div()
-                .id("gallery-paging-page-size-trigger")
+                .id("paging-page-size-trigger")
                 .w_full()
                 .h(px(28.0))
                 .flex()
@@ -180,7 +214,7 @@ fn render_page_size_select(
                     .children(PAGE_SIZE_OPTIONS.iter().copied().map(|option| {
                         let is_selected = option == page_size;
                         div()
-                            .id(format!("gallery-paging-page-size-{option}"))
+                            .id(format!("paging-page-size-{option}"))
                             .px(px(8.0))
                             .py(px(4.0))
                             .rounded(px(4.0))
@@ -210,7 +244,7 @@ fn render_nav_button(
     let chrome = theme.chrome();
 
     div()
-        .id(format!("gallery-paging-nav-{label}"))
+        .id(format!("paging-nav-{label}"))
         .flex_none()
         .size(px(28.0))
         .flex()
@@ -232,9 +266,4 @@ fn render_nav_button(
                 cx.emit(event);
             }))
         })
-}
-
-/// Render the paging toolbar entity.
-pub(in crate::gallery) fn render_paging_toolbar(toolbar: &gpui::Entity<PagingToolbar>) -> AnyElement {
-    toolbar.clone().into_any_element()
 }
