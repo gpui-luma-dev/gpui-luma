@@ -6,6 +6,8 @@ gallery:
 gallery-rel:
     cargo run -p gpui-luma-gallery --release
 
+gallery-dbg:
+    RUST_BACKTRACE=1 cargo run -p gpui-luma-gallery -- jarvis
 loc:
     tokei --types Rust
 

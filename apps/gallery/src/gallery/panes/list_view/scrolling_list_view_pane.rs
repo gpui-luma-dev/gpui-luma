@@ -11,7 +11,7 @@ use crate::gallery::control::GalleryApp;
 use super::super::shared::gallery_pane_with_usage_top_aligned;
 use super::common::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
 
-const DEFAULT_VISIBLE_ROWS: usize = 10;
+const DEFAULT_VISIBLE_ROWS: usize = 25;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollingListViewPane {
@@ -32,6 +32,7 @@ impl ScrollingListViewPane {
             row_label = |row| row.title.clone();
             row_enabled = |row| row.enabled;
             visible_rows = DEFAULT_VISIBLE_ROWS;
+            scroll_snap = true;
             grid_view = {
                 column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
                 column!("Title" => |row: &Task| {
@@ -108,7 +109,7 @@ impl ScrollingListViewPane {
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.muted_text)
-                                .child("Scrollable task grid with a fixed viewport and smooth scrolling."),
+                                .child("Scrollable task grid with a fixed viewport and row snap scrolling."),
                         )
                         .child(
                             div()

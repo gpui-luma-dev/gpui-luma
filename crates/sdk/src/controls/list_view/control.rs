@@ -79,7 +79,7 @@ where
             pressed_index: None,
             current_page: 0,
         };
-        control.configure_scroll_handler();
+        control.configure_scroll_handler(cx);
         control
     }
 
@@ -164,7 +164,7 @@ where
         self.model.scroll_mode = scroll_mode;
         self.current_page = clamp_page(self.current_page, self.model.items.len(), self.page_size().unwrap_or(1));
         self.sync_list_state();
-        self.configure_scroll_handler();
+        self.configure_scroll_handler(cx);
         cx.notify();
     }
 
@@ -427,25 +427,27 @@ where
         self.list_state.scroll_to(ListOffset { item_ix, offset_in_item: px(0.0) });
     }
 
-    fn configure_scroll_handler(&mut self) {
+    fn configure_scroll_handler(&mut self, cx: &Context<Self>) {
         if !self.is_scroll_snap() {
             self.list_state.set_scroll_handler(|_, _, _| {});
             return;
         }
 
-        let list_state = self.list_state.clone();
-        let row_height = self.row_scroll_increment(&self.resolve_row_appearance_for_metrics());
-        self.list_state.set_scroll_handler(move |event, _, _| {
+        let entity = cx.entity().downgrade();
+        self.list_state.set_scroll_handler(move |event, window, cx| {
             if !event.is_scrolled {
                 return;
             }
 
-            let offset = list_state.logical_scroll_top();
-            let mut item_ix = offset.item_ix;
-            if row_height > 0.0 && offset.offset_in_item >= px(row_height * 0.5) {
-                item_ix += 1;
-            }
-            list_state.scroll_to(ListOffset { item_ix, offset_in_item: px(0.0) });
+            // GPUI invokes scroll handlers while `ListState`'s inner RefCell is mutably
+            // borrowed. Defer snapping until after that borrow is released.
+            let entity = entity.clone();
+            window.defer(cx, move |_, cx| {
+                let _ = entity.update(cx, |this, cx| {
+                    this.snap_scroll_position();
+                    cx.notify();
+                });
+            });
         });
     }
 
@@ -823,7 +825,7 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.configure_scroll_handler();
+        self.configure_scroll_handler(cx);
 
         let render_model = self.render_model(window);
         let header = self
