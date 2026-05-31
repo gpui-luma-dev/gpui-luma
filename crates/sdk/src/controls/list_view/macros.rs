@@ -106,9 +106,9 @@ macro_rules! list_view {
             let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
         )?
         let builder = builder.grid_view(vec![$($col),*]);
-        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $win, $cx| {
+        let builder = builder.with_row_template(move |$model, $cells, $win, $cx| {
             $body
-        }));
+        });
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.paged($page_size); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
@@ -174,9 +174,9 @@ macro_rules! list_view {
         $(
             let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
         )?
-        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $win, $cx| {
+        let builder = builder.with_row_template(move |$model, $cells, $win, $cx| {
             $body
-        }));
+        });
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.paged($page_size); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
@@ -213,9 +213,9 @@ macro_rules! scrolling_list_view {
             let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
         )?
         let builder = builder.grid_view(vec![$($col),*]);
-        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $win, $cx| {
+        let builder = builder.with_row_template(move |$model, $cells, $win, $cx| {
             $body
-        }));
+        });
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
         builder
@@ -283,9 +283,9 @@ macro_rules! paging_list_view {
             let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
         )?
         let builder = builder.grid_view(vec![$($col),*]);
-        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $rwin, $rcx| {
+        let builder = builder.with_row_template(move |$model, $cells, $rwin, $rcx| {
             $body
-        }));
+        });
         $( let builder = builder.visible_rows($visible_rows); )?
 
         let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
