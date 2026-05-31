@@ -1,19 +1,20 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FontWeight, SharedString, Subscription, div, prelude::*, px, MouseButton};
+use gpui::{AnyElement, Context, Entity, FontWeight, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::{column, column_emphasis, list_view};
 use gpui_luma::controls::list_view::{
     ListSelectionMode, ListViewColumn, ListViewEvent, column_template_with_modifier, default_text_column_template,
 };
-use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use super::super::shared::gallery_pane_with_usage;
+use super::super::shared::gallery_pane_with_usage_top_aligned;
+use super::paging_toolbar::{PagingToolbar, PagingToolbarEvent, PagingToolbarLayout, render_paging_toolbar};
 
 const TASK_COUNT: usize = 100;
+const DEFAULT_PAGE_SIZE: usize = 10;
 
 #[derive(Clone)]
 struct Task {
@@ -28,14 +29,18 @@ struct Task {
 #[derive(Clone)]
 pub(in crate::gallery) struct ListViewPane {
     list: gpui_luma::controls::list_view::ListView<Task>,
+    toolbar: Entity<PagingToolbar>,
     selected_indices: Vec<usize>,
+    current_page: usize,
+    page_size: usize,
+    page_count: usize,
 }
 
 impl ListViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let tasks = build_task_rows();
         let list = list_view! {
-            radix = radix_theme;
+            radix = radix_theme.clone();
             id = "listview-tasks";
             items = tasks;
             selection = ListSelectionMode::Single;
@@ -43,7 +48,7 @@ impl ListViewPane {
             active_index = 1;
             row_label = |row| row.title.clone();
             row_enabled = |row| row.enabled;
-            visible_rows = 10;
+            page_size = DEFAULT_PAGE_SIZE;
 
             grid_view = {
                 column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
@@ -93,19 +98,34 @@ impl ListViewPane {
         }
         .spawn(cx);
 
-        Self { list, selected_indices: vec![1] }
+        let (current_page, page_size, page_count) = {
+            let list = list.read(cx);
+            (list.current_page(), list.page_size().unwrap_or(DEFAULT_PAGE_SIZE), list.page_count())
+        };
+
+        let toolbar = cx.new(|_| {
+            PagingToolbar::new(
+                radix_theme.clone(),
+                PagingToolbarLayout { selected_count: 1, total_rows: TASK_COUNT, current_page, page_size, page_count },
+            )
+        });
+
+        Self { list, toolbar, selected_indices: vec![1], current_page, page_size, page_count }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.list, |app, _, event: &ListViewEvent, cx| {
-            app.panes.list_view.handle_event(event, cx);
+            app.panes.list_view.handle_list_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.toolbar, |app, _, event: &PagingToolbarEvent, cx| {
+            app.panes.list_view.handle_toolbar_event(event, cx);
         }));
     }
 
     pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
         let chrome = radix_theme.chrome();
 
-        gallery_pane_with_usage(
+        gallery_pane_with_usage_top_aligned(
             "ListView",
             "ListView",
             div()
@@ -119,14 +139,14 @@ impl ListViewPane {
                         .flex_col()
                         .gap_1()
                         .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.muted_text).child(
-                            "Virtualized 100-row task grid. Shows built-in columns, modifiers, and row selection.",
+                            "Paged task grid with a separate gallery paging toolbar wired to ListView commands.",
                         ))
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(self.selected_summary(radix_theme)),
+                                .child(self.selected_summary()),
                         )
                         .child(
                             div()
@@ -136,24 +156,74 @@ impl ListViewPane {
                                 .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
                         ),
                 )
-                .child(div().w_full().flex().child(self.list.clone()))
+                .child(
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .child(div().w_full().child(self.list.clone()))
+                        .child(render_paging_toolbar(&self.toolbar)),
+                )
                 .into_any_element(),
             radix_theme,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.sync_toolbar_layout(cx);
         cx.notify();
     }
 
-    fn handle_event(&mut self, event: &ListViewEvent, cx: &mut Context<GalleryApp>) {
-        if let ListViewEvent::SelectionChanged { selected_indices } = event {
-            self.selected_indices = selected_indices.clone();
-            cx.notify();
+    fn toolbar_layout(&self) -> PagingToolbarLayout {
+        PagingToolbarLayout {
+            selected_count: self.selected_indices.len(),
+            total_rows: TASK_COUNT,
+            current_page: self.current_page,
+            page_count: self.page_count,
+            page_size: self.page_size,
         }
     }
 
-    fn selected_summary(&self, _radix_theme: &RadixTheme) -> String {
+    fn sync_toolbar_layout(&self, cx: &mut Context<GalleryApp>) {
+        let layout = self.toolbar_layout();
+        self.toolbar.update(cx, |toolbar, cx| toolbar.set_layout(layout, cx));
+    }
+
+    fn refresh_paging_state(&mut self, cx: &mut Context<GalleryApp>) {
+        let (current_page, page_size, page_count) = {
+            let list = self.list.read(cx);
+            (list.current_page(), list.page_size().unwrap_or(DEFAULT_PAGE_SIZE), list.page_count())
+        };
+        self.current_page = current_page;
+        self.page_size = page_size;
+        self.page_count = page_count;
+        self.sync_toolbar_layout(cx);
+    }
+
+    fn handle_toolbar_event(&mut self, event: &PagingToolbarEvent, cx: &mut Context<GalleryApp>) {
+        self.list.update(cx, |list, cx| match event {
+            PagingToolbarEvent::FirstPage => list.first_page(cx),
+            PagingToolbarEvent::PrevPage => list.prev_page(cx),
+            PagingToolbarEvent::NextPage => list.next_page(cx),
+            PagingToolbarEvent::LastPage => list.last_page(cx),
+            PagingToolbarEvent::SetPageSize(size) => list.set_page_size(*size, cx),
+        });
+    }
+
+    fn handle_list_event(&mut self, event: &ListViewEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ListViewEvent::SelectionChanged { selected_indices } => {
+                self.selected_indices = selected_indices.clone();
+            }
+            ListViewEvent::PageChanged { .. } | ListViewEvent::PageSizeChanged { .. } => {}
+            ListViewEvent::ActiveIndexChanged { .. } => {}
+        }
+
+        self.refresh_paging_state(cx);
+        cx.notify();
+    }
+
+    fn selected_summary(&self) -> String {
         if let Some(&index) = self.selected_indices.first() {
             format!("Selected row index: {index} (Task T-{index:04})")
         } else {

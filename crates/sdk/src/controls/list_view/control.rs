@@ -9,10 +9,8 @@ use super::layout::{
 };
 use super::model::{
     ListScrollMode, ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewLabel, ListViewModel,
-    ListViewPagingContext, ListViewRenderModel, ListViewRowRenderModel, make_list_view_header_template,
-    make_list_view_row_template,
+    ListViewRenderModel, ListViewRowRenderModel, make_list_view_header_template, make_list_view_row_template,
 };
-use super::paging_toolbar::render_default_paging_toolbar;
 use super::row::render_list_view_row;
 use super::template::ListViewTemplate;
 use super::theme::{ListViewAppearance, ListViewTheme};
@@ -473,21 +471,6 @@ where
         self.model.theme.resolve_row(false, InteractionState::default(), self.model.size)
     }
 
-    fn paging_context(&self, window: &Window) -> ListViewPagingContext<'_> {
-        ListViewPagingContext {
-            id: &self.model.id,
-            scroll_mode: self.model.scroll_mode,
-            current_page: self.current_page,
-            page_size: self.page_size().unwrap_or(1),
-            page_count: self.page_count(),
-            total_row_count: self.model.items.len(),
-            selected_count: self.model.selected_indices.len(),
-            enabled: self.model.enabled,
-            size: self.model.size,
-            appearance: self.resolve_appearance(window),
-        }
-    }
-
     fn render_model(&self, window: &Window) -> ListViewRenderModel<'_> {
         let appearance = self.resolve_appearance(window);
         let row_appearance = self.resolve_row_appearance(window);
@@ -495,9 +478,7 @@ where
         let visible_rows = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode);
         let row_height = visible_row_height(&row_appearance, self.model.visible_row_height);
         let body_rows_height = visible_rows.map(|count| super::layout::body_rows_height(count, row_height));
-        let shell_height = visible_rows.map(|count| {
-            compute_shell_height(count, row_height, &appearance, has_header, self.model.scroll_mode, &row_appearance)
-        });
+        let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &appearance, has_header));
 
         ListViewRenderModel {
             id: &self.model.id,
@@ -518,19 +499,6 @@ where
             size: self.model.size,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window),
         }
-    }
-
-    fn render_paging_footer(&self, window: &mut Window, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
-        if !self.is_paged() {
-            return None;
-        }
-
-        let context = self.paging_context(window);
-        Some(if let Some(template) = self.model.paging_toolbar_template.as_ref() {
-            template(&context, &self.model, window, cx)
-        } else {
-            render_default_paging_toolbar(&context, &self.model.page_size_options, window, cx)
-        })
     }
 
     fn render_row(&mut self, local_index: usize, window: &mut Window, cx: &mut Context<Self>) -> gpui::AnyElement {
@@ -863,7 +831,6 @@ where
             .header_template
             .as_ref()
             .map(|header_template| header_template(&render_model, window, cx));
-        let footer = self.render_paging_footer(window, cx);
         let mut list_element = list(self.list_state.clone(), cx.processor(Self::render_row));
         if let Some(body_rows_height) = render_model.body_rows_height {
             list_element = list_element.h(px(body_rows_height)).w_full();
@@ -875,7 +842,7 @@ where
         let mut shell = self
             .model
             .template
-            .render(&render_model, header, body, footer, window, cx)
+            .render(&render_model, header, body, window, cx)
             .track_focus(&self.focus_handle)
             .key_context(ControlKeyProfile::Selector.context())
             .on_action(cx.listener(Self::handle_select_previous_item))

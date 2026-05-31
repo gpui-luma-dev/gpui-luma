@@ -91,7 +91,6 @@ macro_rules! list_view {
         $( visible_rows = $visible_rows:expr; )?
         $( page_size = $page_size:expr; )?
         $( scroll_snap = $scroll_snap:expr; )?
-        $( paging_toolbar_template = $paging_toolbar_template:expr; )?
         grid_view = { $($col:expr),* $(,)? };
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
@@ -113,7 +112,6 @@ macro_rules! list_view {
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.paged($page_size); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
-        $( let builder = builder.paging_toolbar_template(std::sync::Arc::new($paging_toolbar_template)); )?
         builder
     }};
 
@@ -130,7 +128,6 @@ macro_rules! list_view {
         $( visible_rows = $visible_rows:expr; )?
         $( page_size = $page_size:expr; )?
         $( scroll_snap = $scroll_snap:expr; )?
-        $( paging_toolbar_template = $paging_toolbar_template:expr; )?
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
@@ -148,7 +145,6 @@ macro_rules! list_view {
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.paged($page_size); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
-        $( let builder = builder.paging_toolbar_template(std::sync::Arc::new($paging_toolbar_template)); )?
         builder
     }};
 
@@ -165,7 +161,6 @@ macro_rules! list_view {
         $( visible_rows = $visible_rows:expr; )?
         $( page_size = $page_size:expr; )?
         $( scroll_snap = $scroll_snap:expr; )?
-        $( paging_toolbar_template = $paging_toolbar_template:expr; )?
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
@@ -185,7 +180,6 @@ macro_rules! list_view {
         $( let builder = builder.visible_rows($visible_rows); )?
         $( let builder = builder.paged($page_size); )?
         $( let builder = builder.scroll_snap($scroll_snap); )?
-        $( let builder = builder.paging_toolbar_template(std::sync::Arc::new($paging_toolbar_template)); )?
         builder
     }};
 }

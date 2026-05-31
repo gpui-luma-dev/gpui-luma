@@ -2,9 +2,6 @@ use super::model::ListScrollMode;
 use super::template::SHELL_BORDER_WIDTH;
 use super::theme::{ListViewAppearance, ListViewRowAppearance};
 
-/// Default page-size choices for the built-in paging toolbar.
-pub const DEFAULT_PAGE_SIZE_OPTIONS: [usize; 4] = [10, 25, 50, 100];
-
 /// GPUI row elements use `min_h(min_height)` with `py(padding_y)` on the same node, so the
 /// laid-out row height is [`ListViewRowAppearance::min_height`], not min_height + padding.
 pub const ROW_DIVIDER_WIDTH: f32 = 1.0;
@@ -16,10 +13,6 @@ pub fn default_row_height(row_appearance: &ListViewRowAppearance) -> f32 {
 
 pub fn visible_row_height(row_appearance: &ListViewRowAppearance, override_height: Option<f32>) -> f32 {
     override_height.unwrap_or_else(|| default_row_height(row_appearance))
-}
-
-pub fn footer_height(row_appearance: &ListViewRowAppearance) -> f32 {
-    row_appearance.min_height
 }
 
 /// Matches [`DefaultListViewShellTemplate::paint_shell`] header slot padding.
@@ -39,17 +32,11 @@ pub fn compute_shell_height(
     row_height: f32,
     list_appearance: &ListViewAppearance,
     has_header: bool,
-    scroll_mode: ListScrollMode,
-    row_appearance: &ListViewRowAppearance,
 ) -> f32 {
     let mut total_height = body_rows_height(visible_rows, row_height);
 
     if has_header {
         total_height += header_height(list_appearance);
-    }
-
-    if matches!(scroll_mode, ListScrollMode::Paged { .. }) {
-        total_height += footer_height(row_appearance);
     }
 
     total_height + (2.0 * SHELL_BORDER_WIDTH)

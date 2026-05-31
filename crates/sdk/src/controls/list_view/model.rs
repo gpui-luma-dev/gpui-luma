@@ -78,33 +78,6 @@ pub struct ListViewRenderModel<'a> {
     pub focus: ControlFocusState,
 }
 
-/// Read-only paging metadata for custom paging toolbar templates.
-pub struct ListViewPagingContext<'a> {
-    pub id: &'a SharedString,
-    pub scroll_mode: ListScrollMode,
-    pub current_page: usize,
-    pub page_size: usize,
-    pub page_count: usize,
-    pub total_row_count: usize,
-    pub selected_count: usize,
-    pub enabled: bool,
-    pub size: ControlSize,
-    pub appearance: ListViewAppearance,
-}
-
-pub type ListViewPagingToolbarTemplate<T> = Arc<
-    dyn Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
->;
-
-pub fn make_list_view_paging_toolbar_template<T, F, E>(template: F) -> ListViewPagingToolbarTemplate<T>
-where
-    T: 'static,
-    F: Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
-    E: gpui::IntoElement + 'static,
-{
-    Arc::new(move |context, model, window, cx| template(context, model, window, cx).into_any_element())
-}
-
 pub type ListViewAppearanceOverride = Arc<dyn Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static>;
 
 pub type ListViewHeaderTemplate =
@@ -275,8 +248,6 @@ where
     pub(crate) scroll_mode: ListScrollMode,
     pub(crate) visible_rows: Option<usize>,
     pub(crate) visible_row_height: Option<f32>,
-    pub(crate) page_size_options: Vec<usize>,
-    pub(crate) paging_toolbar_template: Option<ListViewPagingToolbarTemplate<T>>,
 }
 
 impl<T> ListViewModel<T>
@@ -340,8 +311,6 @@ where
                 scroll_mode: ListScrollMode::ScrollSmooth,
                 visible_rows: None,
                 visible_row_height: None,
-                page_size_options: super::layout::DEFAULT_PAGE_SIZE_OPTIONS.to_vec(),
-                paging_toolbar_template: None,
             },
         }
     }
@@ -439,28 +408,6 @@ where
     /// from the default row chrome (`min_height + 2 * padding_y`).
     pub fn visible_row_height(mut self, height: impl Into<f32>) -> Self {
         self.model.visible_row_height = Some(height.into().max(1.0));
-        self
-    }
-
-    pub fn page_size_options(mut self, options: impl IntoIterator<Item = usize>) -> Self {
-        let options: Vec<usize> = options.into_iter().map(|size| size.max(1)).collect();
-        if !options.is_empty() {
-            self.model.page_size_options = options;
-        }
-        self
-    }
-
-    pub fn paging_toolbar_template(mut self, template: ListViewPagingToolbarTemplate<T>) -> Self {
-        self.model.paging_toolbar_template = Some(template);
-        self
-    }
-
-    pub fn with_paging_toolbar_template<F, E>(mut self, template: F) -> Self
-    where
-        F: Fn(&ListViewPagingContext<'_>, &ListViewModel<T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
-        E: gpui::IntoElement + 'static,
-    {
-        self.model.paging_toolbar_template = Some(make_list_view_paging_toolbar_template(template));
         self
     }
 

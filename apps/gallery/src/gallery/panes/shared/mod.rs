@@ -50,6 +50,15 @@ pub(super) fn gallery_pane_with_usage(
     gallery_pane_with_usage_description(title, None, usage_component, content, radix_theme)
 }
 
+pub(super) fn gallery_pane_with_usage_top_aligned(
+    title: &'static str,
+    usage_component: &'static str,
+    content: AnyElement,
+    radix_theme: &RadixTheme,
+) -> AnyElement {
+    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, radix_theme, true)
+}
+
 pub(super) fn gallery_pane_with_usage_description(
     title: &'static str,
     description: Option<&'static str>,
@@ -66,6 +75,17 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     usage_components: &[&'static str],
     content: AnyElement,
     radix_theme: &RadixTheme,
+) -> AnyElement {
+    render_gallery_pane_with_usage_descriptions(title, description, usage_components, content, radix_theme, false)
+}
+
+fn render_gallery_pane_with_usage_descriptions(
+    title: &'static str,
+    description: Option<&'static str>,
+    usage_components: &[&'static str],
+    content: AnyElement,
+    radix_theme: &RadixTheme,
+    top_aligned: bool,
 ) -> AnyElement {
     let chrome = radix_theme.chrome();
 
@@ -94,7 +114,8 @@ pub(super) fn gallery_pane_with_usage_descriptions(
                         .flex()
                         .flex_col()
                         .items_center()
-                        .justify_center()
+                        .when(!top_aligned, |column| column.justify_center())
+                        .when(top_aligned, |column| column.justify_start())
                         .gap_4()
                         .occlude()
                         .child(content),

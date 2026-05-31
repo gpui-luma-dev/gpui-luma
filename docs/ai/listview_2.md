@@ -3,7 +3,7 @@
 This document outlines the design and implementation specifications for the next version of `ListView<T>` in `gpui_luma`.
 
 The goal is to transition the list view control from a simple fixed-height scroll container to a highly flexible, desktop-grade grid component supporting:
-1. **Paging Mode**: Sliced item views with a standard pagination footer.
+1. **Paging Mode**: Sliced item views; paging UI lives outside the control shell.
 2. **Scroll Snapping**: Pixel-aligned snap-to-row physics.
 3. **Visible Rows Auto-Sizing**: Dynamic container height matching a target number of rows.
 
@@ -12,7 +12,7 @@ The goal is to transition the list view control from a simple fixed-height scrol
 | Feature | State | SDK location | Gallery |
 |---|---|---|---|
 | **`visible_rows` shell sizing** | **Done** | `layout.rs`, `template.rs`, `control.rs` | `visible_rows = 10` on scroll-mode demo |
-| **Paging mode + toolbar** | Done (UI differs from spec below) | `control.rs`, `paging_toolbar.rs`, `model.rs` | Not demoed yet |
+| **Paging mode** | Done | `control.rs`, `layout.rs`, `model.rs` | Gallery external toolbar |
 | **Scroll snapping** | Done (wheel + scroll handler) | `control.rs` | Not demoed yet |
 | **Builder / macro / public API** | Done | `model.rs`, `macros.rs`, `control.rs` | Partial (`visible_rows` only) |
 
@@ -47,7 +47,7 @@ impl<T> ListViewBuilder<T> {
 }
 ```
 
-Also implemented (not in original sketch): `set_scroll_mode` on the control, `page_size_options`, `visible_row_height` override, and `ListViewEvent::{PageChanged, PageSizeChanged}`.
+Also implemented (not in original sketch): `set_scroll_mode` on the control, `visible_row_height` override, and `ListViewEvent::{PageChanged, PageSizeChanged}`.
 
 ### Public Programmatic API Control Surface
 **Status: Done** on `ListViewControl<T>`:
@@ -70,12 +70,7 @@ When `scroll_mode` is `ListScrollMode::Paged { page_size }`:
 1. **State:** `current_page: usize` (default `0`), clamped on item/page-size changes.
 2. **Items subset:** The control keeps the full `items` vector but sets GPUI `ListState` item count to the current page slice and maps local indices via `local_to_global_index` (equivalent to slicing, without copying rows).
 3. **Body:** No scroll in paged mode; all rows on the page are visible within the fixed body height.
-4. **Default pagination toolbar** (`paging_toolbar.rs`):
-   - **Selection summary (left):** `N row(s) selected.` (does not include total row count).
-   - **Rows per page (center-right):** Clickable size chips (default 10 / 25 / 50 / 100), not a dropdown.
-   - **Page indicator (right):** `Page X of Y`.
-   - **Controls (far right):** `<<`, `<`, `>`, `>>` wired to `first_page` / `prev_page` / `next_page` / `last_page`.
-5. **Custom toolbar:** `paging_toolbar_template` receives `ListViewPagingContext` + `ListViewModel` (see `model.rs`), not `ListViewModel` alone.
+4. **No in-shell paging footer:** The list shell is header + body only. Host apps render paging controls as siblings (see gallery `paging_toolbar.rs`).
 
 ### B. Scroll Snapping
 
@@ -127,9 +122,7 @@ Logic lives in `layout.rs` (`body_rows_height`, `compute_shell_height`, `header_
 
 **Header height:** `header_typography.line_height + padding_y + (padding_y × 0.75)` — matches the shell header slot in `template.rs`.
 
-**Footer height (paged only):** one control row (`footer_height` ≈ `row_appearance.min_height`).
-
-**Shell:** `body + header? + footer? + 2 × SHELL_BORDER_WIDTH`; root gets `.h(px(shell_height))`, body slot gets fixed `.h(px(body_rows_height))` + `overflow_hidden`.
+**Shell:** `body + header? + 2 × SHELL_BORDER_WIDTH`; root gets `.h(px(shell_height))`, body slot gets fixed `.h(px(body_rows_height))` + `overflow_hidden`.
 
 **Scroll fix:** when `visible_rows` is set, `ListState` uses `measure_all()` so scroll range covers the full item list inside the fixed viewport.
 
@@ -139,7 +132,7 @@ Logic lives in `layout.rs` (`body_rows_height`, `compute_shell_height`, `header_
 list_view! {
     id = "tasks-paged";
     items = tasks;
-    page_size = 10;   // body sized for 10 rows + paging footer
+    page_size = 10;   // body sized for 10 rows
     /* ... */
 }
 ```
@@ -172,10 +165,6 @@ list_view! {
     page_size = 20;             // → .paged(20); also sizes shell if visible_rows omitted
     scroll_snap = true;         // → .scroll_snap(true)
 
-    paging_toolbar_template = |context, model, _window, _cx| {
-        div().child("Custom paging toolbar")
-    };
-
     grid_view = {
         column!("Title" => |row| row.title.clone()),
     };
@@ -189,7 +178,7 @@ list_view! {
 | Item | Notes |
 |---|---|
 | Gallery scroll + `visible_rows` | **Done** — `apps/gallery/src/gallery/panes/list_view/pane.rs` |
-| Gallery paged demo | Add `page_size = N` (or builder `.paged(N)`) |
+| Gallery paged demo | **Done** — `page_size = N` + external toolbar in `pane.rs` |
 | Gallery scroll-snap demo | Add `scroll_snap = true` or separate pane |
 | Toolbar spec alignment | Optional: dropdown for page size; `X of Y selected` copy |
 | `listview_2.md` | Updated with implementation status (this file) |

@@ -16,7 +16,6 @@ pub trait ListViewTemplate: Send + Sync {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
-        footer: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
@@ -27,12 +26,7 @@ pub trait ListViewTemplate: Send + Sync {
 pub struct DefaultListViewShellTemplate;
 
 impl DefaultListViewShellTemplate {
-    pub fn paint_shell(
-        model: &ListViewRenderModel<'_>,
-        header: Option<AnyElement>,
-        body: AnyElement,
-        footer: Option<AnyElement>,
-    ) -> Stateful<Div> {
+    pub fn paint_shell(model: &ListViewRenderModel<'_>, header: Option<AnyElement>, body: AnyElement) -> Stateful<Div> {
         let list = &model.appearance;
         let inner_radius = list.inner_radius(SHELL_BORDER_WIDTH);
 
@@ -55,7 +49,6 @@ impl DefaultListViewShellTemplate {
 
         let mut column = div().w_full().flex_1().min_h(px(0.0)).flex().flex_col();
         let has_header = header.is_some();
-        let has_footer = footer.is_some();
 
         if let Some(header) = header {
             column = column.child(
@@ -83,21 +76,13 @@ impl DefaultListViewShellTemplate {
         } else {
             div().w_full().flex_1().min_h(px(0.0)).overflow_hidden().bg(list.background)
         };
-        if has_header && !has_footer {
+        if has_header {
             body_slot = body_slot.rounded_bl(px(inner_radius)).rounded_br(px(inner_radius));
-        } else if !has_header && !has_footer {
+        } else {
             body_slot = body_slot.rounded(px(inner_radius));
-        } else if !has_header {
-            body_slot = body_slot.rounded_tl(px(inner_radius)).rounded_tr(px(inner_radius));
         }
 
         column = column.child(body_slot.child(div().w_full().h_full().child(body)));
-
-        if let Some(footer) = footer {
-            column = column.child(
-                div().w_full().flex_none().rounded_bl(px(inner_radius)).rounded_br(px(inner_radius)).child(footer),
-            );
-        }
 
         root.child(column)
     }
@@ -113,11 +98,10 @@ impl ListViewTemplate for DefaultListViewShellTemplate {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
-        footer: Option<AnyElement>,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        Self::paint_shell(model, header, body, footer)
+        Self::paint_shell(model, header, body)
     }
 }
 
@@ -150,11 +134,10 @@ impl ListViewTemplate for ModifiedListViewTemplate {
         model: &ListViewRenderModel<'_>,
         header: Option<AnyElement>,
         body: AnyElement,
-        footer: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let root = self.base.render(model, header, body, footer, window, cx);
+        let root = self.base.render(model, header, body, window, cx);
         self.apply_modifiers(root, model)
     }
 }
