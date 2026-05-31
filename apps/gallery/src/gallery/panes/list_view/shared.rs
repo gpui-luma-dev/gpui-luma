@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use gpui::{FontWeight, SharedString, div, prelude::*, px};
+use gpui::{Context, FontWeight, SharedString, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma::{column, column_emphasis};
 use gpui_luma::controls::list_view::{
-    ListSelectionMode, ListViewBuilder, ListViewColumn, column_template_with_modifier, default_text_column_template,
+    ListSelectionMode, ListViewColumn, PagingListView, ScrollingListView, column_template_with_modifier,
+    default_text_column_template,
 };
+use gpui_luma::{column, column_emphasis, paging_list_view, scrolling_list_view};
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
+
+use crate::gallery::control::GalleryApp;
 
 pub(super) const DEFAULT_VISIBLE_ROWS: usize = 10;
 pub(super) const DEFAULT_PAGE_SIZE: usize = 10;
@@ -22,21 +25,52 @@ pub(super) struct Task {
     pub enabled: bool,
 }
 
-pub(super) fn task_list_builder(
+pub(super) fn spawn_scrolling_task_list_view(
     id: impl Into<SharedString>,
     tasks: Vec<Task>,
     radix_theme: Arc<RadixTheme>,
-) -> ListViewBuilder<Task> {
-    gpui_luma::controls::list_view::new_typed(id)
-        .theme(radix_theme.list_view_theme())
-        .items(tasks)
-        .selection_mode(ListSelectionMode::Single)
-        .selected_index(1)
-        .active_index(1)
-        .row_label(|row| row.title.clone())
-        .row_enabled(|row| row.enabled)
-        .grid_view(task_grid_columns())
-        .with_row_template(|model, cells, _window, _cx| {
+    cx: &mut Context<GalleryApp>,
+) -> ScrollingListView<Task> {
+    scrolling_list_view! {
+        radix = radix_theme.clone();
+        id = id;
+        items = tasks;
+        selection = ListSelectionMode::Single;
+        selected_index = 1;
+        active_index = 1;
+        row_label = |row| row.title.clone();
+        row_enabled = |row| row.enabled;
+        visible_rows = DEFAULT_VISIBLE_ROWS;
+        grid_view = {
+            column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
+            column!("Title" => |row: &Task| {
+                div()
+                    .w_full()
+                    .min_w(px(0.0))
+                    .flex()
+                    .items_center()
+                    .gap(px(8.0))
+                    .child(tag_pill(row.tag))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w(px(0.0))
+                            .truncate()
+                            .child(row.title.clone()),
+                    )
+            }),
+            column!("Status", width = 132 => |row: &Task| status_cell(row.status)),
+            email_column(),
+            column!("", width = 44 => |_row: &Task| {
+                div()
+                    .w_full()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(lucide_glyph(LucideIcon::EllipsisVertical))
+            }),
+        };
+        row_template = |model, cells, _window, _cx| {
             div()
                 .w_full()
                 .flex()
@@ -49,39 +83,74 @@ pub(super) fn task_list_builder(
                 .line_height(px(model.appearance.label_typography.line_height))
                 .font_weight(model.appearance.label_typography.weight)
                 .child(cells)
-        })
+                .into_any_element()
+        };
+    }
+    .spawn(cx)
 }
 
-fn task_grid_columns() -> Vec<ListViewColumn<Task>> {
-    vec![
-        column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
-        column!("Title" => |row: &Task| {
+pub(super) fn spawn_paging_task_list_view(
+    id: impl Into<SharedString>,
+    tasks: Vec<Task>,
+    radix_theme: Arc<RadixTheme>,
+    cx: &mut Context<GalleryApp>,
+) -> PagingListView<Task> {
+    paging_list_view! {
+        radix = radix_theme.clone();
+        id = id;
+        items = tasks;
+        page_size = DEFAULT_PAGE_SIZE;
+        selection = ListSelectionMode::Single;
+        selected_index = 1;
+        active_index = 1;
+        row_label = |row| row.title.clone();
+        row_enabled = |row| row.enabled;
+        grid_view = {
+            column_emphasis!("Task", width = 108 => |row: &Task| row.id.clone()),
+            column!("Title" => |row: &Task| {
+                div()
+                    .w_full()
+                    .min_w(px(0.0))
+                    .flex()
+                    .items_center()
+                    .gap(px(8.0))
+                    .child(tag_pill(row.tag))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w(px(0.0))
+                            .truncate()
+                            .child(row.title.clone()),
+                    )
+            }),
+            column!("Status", width = 132 => |row: &Task| status_cell(row.status)),
+            email_column(),
+            column!("", width = 44 => |_row: &Task| {
+                div()
+                    .w_full()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(lucide_glyph(LucideIcon::EllipsisVertical))
+            }),
+        };
+        row_template = |model, cells, _window, _cx| {
             div()
                 .w_full()
-                .min_w(px(0.0))
                 .flex()
                 .items_center()
-                .gap(px(8.0))
-                .child(tag_pill(row.tag))
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w(px(0.0))
-                        .truncate()
-                        .child(row.title.clone()),
-                )
-        }),
-        column!("Status", width = 132 => |row: &Task| status_cell(row.status)),
-        email_column(),
-        column!("", width = 44 => |_row: &Task| {
-            div()
-                .w_full()
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(lucide_glyph(LucideIcon::EllipsisVertical))
-        }),
-    ]
+                .min_h(px(model.appearance.min_height))
+                .py(px(model.appearance.padding_y))
+                .bg(model.appearance.background)
+                .text_color(model.appearance.label_color)
+                .text_size(px(model.appearance.label_typography.size))
+                .line_height(px(model.appearance.label_typography.line_height))
+                .font_weight(model.appearance.label_typography.weight)
+                .child(cells)
+                .into_any_element()
+        };
+    }
+    .spawn(cx)
 }
 
 fn email_column() -> ListViewColumn<Task> {

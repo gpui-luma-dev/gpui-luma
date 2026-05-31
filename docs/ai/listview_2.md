@@ -14,7 +14,7 @@ The goal is to transition the list view control from a simple fixed-height scrol
 | **`visible_rows` shell sizing** | **Done** | `layout.rs`, `template.rs`, `control.rs` | `visible_rows = 10` on scroll-mode demo |
 | **Paging mode** | Done | `control.rs`, `layout.rs`, `model.rs`, `paging.rs`, `toolbar.rs` | Gallery **Paging List View** pane via `PagingListViewBuilder` |
 | **Scroll snapping** | Done (wheel + scroll handler) | `control.rs` | Not demoed yet |
-| **Builder / macro / public API** | Done | `model.rs`, `macros.rs`, `control.rs`, `paging.rs` | Gallery uses raw builders in `shared.rs` |
+| **Builder / macro / public API** | Done | `model.rs`, `macros.rs`, `control.rs`, `paging.rs` | Gallery uses `scrolling_list_view!` / `paging_list_view!` in `shared.rs` |
 
 **Remaining:** gallery coverage for paged + scroll-snap modes; optional spec polish (toolbar copy, page-size control widget); doc-only keyboard-nav behavior is outside this phase.
 

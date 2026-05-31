@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
-use gpui_luma::controls::list_view::{ListViewEvent, PagingListView, PagingListViewBuilder};
+use gpui_luma::controls::list_view::{ListViewEvent, PagingListView};
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use super::super::shared::gallery_pane_with_usage_top_aligned;
-use super::shared::{DEFAULT_PAGE_SIZE, Task, build_task_rows, task_list_builder};
+use super::shared::{Task, build_task_rows, spawn_paging_task_list_view};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct PagingListViewPane {
@@ -17,8 +17,7 @@ pub(in crate::gallery) struct PagingListViewPane {
 impl PagingListViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let tasks = build_task_rows();
-        let list_builder = task_list_builder("listview-tasks-paged", tasks, radix_theme.clone());
-        let list_view = PagingListViewBuilder::new(list_builder.paged(DEFAULT_PAGE_SIZE), radix_theme).spawn(cx);
+        let list_view = spawn_paging_task_list_view("listview-tasks-paged", tasks, radix_theme, cx);
 
         Self { list_view, selected_indices: vec![1] }
     }

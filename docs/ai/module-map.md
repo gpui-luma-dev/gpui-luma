@@ -212,7 +212,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - supports plain typed item models via stored label/enabled adapters instead of a required item trait
   - scroll modes: `ListScrollMode` (`ScrollSmooth`, `ScrollSnap`, `Paged { page_size }`), optional `visible_rows` shell sizing
   - paging facade: `PagingListViewControl` + `PagingListViewBuilder` compose `ListViewControl` with SDK `PagingToolbar` (selection/page sync under the hood)
-  - exports `ListViewControl`, `ScrollingListView`, `PagingListView`, builders, `PagingToolbar*`, `ListViewLabel`, `ListSelectionMode`, `ListScrollMode`, `new` / `new_typed`, declarative `list_view!` / `column!` macros, grid-column helpers, and theme/template hooks
+  - exports `ListViewControl`, `ScrollingListView`, `PagingListView`, builders, `PagingToolbar*`, `ListViewLabel`, `ListSelectionMode`, `ListScrollMode`, `new` / `new_typed`, declarative `list_view!` / `scrolling_list_view!` / `paging_list_view!` / `column!` macros, grid-column helpers, and theme/template hooks
   - roadmap and scope (not a data grid): `docs/ai/listview-vnext.md`; phase-2 paging/scroll/sizing: `docs/ai/listview_2.md`; facade re-unification: `docs/ai/listview_3.md`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`

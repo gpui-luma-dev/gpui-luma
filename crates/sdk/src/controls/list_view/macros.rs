@@ -183,3 +183,165 @@ macro_rules! list_view {
         builder
     }};
 }
+
+#[macro_export]
+macro_rules! scrolling_list_view {
+    // grid_view + row_template
+    (
+        radix = $radix:expr;
+        id = $id:expr;
+        items = $items:expr;
+        $( selection = $selection:expr; )?
+        $( selected_index = $selected_index:expr; )?
+        $( active_index = $active_index:expr; )?
+        $( row_label = |$label_row:ident| $label_body:expr; )?
+        $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
+        $( visible_rows = $visible_rows:expr; )?
+        $( scroll_snap = $scroll_snap:expr; )?
+        grid_view = { $($col:expr),* $(,)? };
+        row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
+    ) => {{
+        let builder = $crate::controls::list_view::new_typed($id).items($items);
+        let builder = builder.theme($radix.list_view_theme());
+        $( let builder = builder.selection_mode($selection); )?
+        $( let builder = builder.selected_index($selected_index); )?
+        $( let builder = builder.active_index($active_index); )?
+        $(
+            let builder = builder.row_label(move |$label_row: &_| $label_body);
+        )?
+        $(
+            let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
+        )?
+        let builder = builder.grid_view(vec![$($col),*]);
+        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $win, $cx| {
+            $body
+        }));
+        $( let builder = builder.visible_rows($visible_rows); )?
+        $( let builder = builder.scroll_snap($scroll_snap); )?
+        builder
+    }};
+
+    // grid_view only
+    (
+        radix = $radix:expr;
+        id = $id:expr;
+        items = $items:expr;
+        $( selection = $selection:expr; )?
+        $( selected_index = $selected_index:expr; )?
+        $( active_index = $active_index:expr; )?
+        $( row_label = |$label_row:ident| $label_body:expr; )?
+        $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
+        $( visible_rows = $visible_rows:expr; )?
+        $( scroll_snap = $scroll_snap:expr; )?
+        grid_view = { $($col:expr),* $(,)? } $(;)?
+    ) => {{
+        let builder = $crate::controls::list_view::new_typed($id).items($items);
+        let builder = builder.theme($radix.list_view_theme());
+        $( let builder = builder.selection_mode($selection); )?
+        $( let builder = builder.selected_index($selected_index); )?
+        $( let builder = builder.active_index($active_index); )?
+        $(
+            let builder = builder.row_label(move |$label_row: &_| $label_body);
+        )?
+        $(
+            let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
+        )?
+        let builder = builder.grid_view(vec![$($col),*]);
+        $( let builder = builder.visible_rows($visible_rows); )?
+        $( let builder = builder.scroll_snap($scroll_snap); )?
+        builder
+    }};
+}
+
+#[macro_export]
+macro_rules! paging_list_view {
+    // grid_view + row_template
+    (
+        radix = $radix:expr;
+        id = $id:expr;
+        items = $items:expr;
+        page_size = $page_size:expr;
+        $( selection = $selection:expr; )?
+        $( selected_index = $selected_index:expr; )?
+        $( active_index = $active_index:expr; )?
+        $( row_label = |$label_row:ident| $label_body:expr; )?
+        $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
+        $( visible_rows = $visible_rows:expr; )?
+        $( toolbar_template = |$layout:ident, $win:ident, $cx:ident| $toolbar_body:expr; )?
+        grid_view = { $($col:expr),* $(,)? };
+        row_template = |$model:ident, $cells:ident, $rwin:ident, $rcx:ident| $body:expr $(;)?
+    ) => {{
+        let builder = $crate::controls::list_view::new_typed($id).items($items);
+        let builder = builder.theme($radix.list_view_theme());
+        $( let builder = builder.selection_mode($selection); )?
+        $( let builder = builder.selected_index($selected_index); )?
+        $( let builder = builder.active_index($active_index); )?
+        $(
+            let builder = builder.row_label(move |$label_row: &_| $label_body);
+        )?
+        $(
+            let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
+        )?
+        let builder = builder.grid_view(vec![$($col),*]);
+        let builder = builder.row_template(std::sync::Arc::new(move |$model, $cells, $rwin, $rcx| {
+            $body
+        }));
+        $( let builder = builder.visible_rows($visible_rows); )?
+
+        let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
+            builder.paged($page_size),
+            $radix.clone(),
+        );
+
+        $(
+            let paging_builder = paging_builder.toolbar_template(std::sync::Arc::new(
+                move |$layout, $win, $cx| { $toolbar_body }
+            ));
+        )?
+
+        paging_builder
+    }};
+
+    // grid_view only
+    (
+        radix = $radix:expr;
+        id = $id:expr;
+        items = $items:expr;
+        page_size = $page_size:expr;
+        $( selection = $selection:expr; )?
+        $( selected_index = $selected_index:expr; )?
+        $( active_index = $active_index:expr; )?
+        $( row_label = |$label_row:ident| $label_body:expr; )?
+        $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
+        $( visible_rows = $visible_rows:expr; )?
+        $( toolbar_template = |$layout:ident, $win:ident, $cx:ident| $toolbar_body:expr; )?
+        grid_view = { $($col:expr),* $(,)? } $(;)?
+    ) => {{
+        let builder = $crate::controls::list_view::new_typed($id).items($items);
+        let builder = builder.theme($radix.list_view_theme());
+        $( let builder = builder.selection_mode($selection); )?
+        $( let builder = builder.selected_index($selected_index); )?
+        $( let builder = builder.active_index($active_index); )?
+        $(
+            let builder = builder.row_label(move |$label_row: &_| $label_body);
+        )?
+        $(
+            let builder = builder.row_enabled(move |$enabled_row: &_| $enabled_body);
+        )?
+        let builder = builder.grid_view(vec![$($col),*]);
+        $( let builder = builder.visible_rows($visible_rows); )?
+
+        let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
+            builder.paged($page_size),
+            $radix.clone(),
+        );
+
+        $(
+            let paging_builder = paging_builder.toolbar_template(std::sync::Arc::new(
+                move |$layout, $win, $cx| { $toolbar_body }
+            ));
+        )?
+
+        paging_builder
+    }};
+}

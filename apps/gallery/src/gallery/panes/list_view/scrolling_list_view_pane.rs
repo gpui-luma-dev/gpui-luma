@@ -6,7 +6,7 @@ use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use super::super::shared::gallery_pane_with_usage_top_aligned;
-use super::shared::{DEFAULT_VISIBLE_ROWS, Task, build_task_rows, task_list_builder};
+use super::shared::{Task, build_task_rows, spawn_scrolling_task_list_view};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollingListViewPane {
@@ -17,9 +17,7 @@ pub(in crate::gallery) struct ScrollingListViewPane {
 impl ScrollingListViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let tasks = build_task_rows();
-        let list_view = task_list_builder("listview-tasks-scroll", tasks, radix_theme)
-            .visible_rows(DEFAULT_VISIBLE_ROWS)
-            .spawn(cx);
+        let list_view = spawn_scrolling_task_list_view("listview-tasks-scroll", tasks, radix_theme, cx);
 
         Self { list_view, selected_indices: vec![1] }
     }

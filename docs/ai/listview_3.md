@@ -21,10 +21,14 @@ We first implement the type-safe primitives and composite control using standard
    - Shared task grid/data in [`shared.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/list_view/shared.rs)
 5. ✅ Compile and test — SDK unit tests pass; gallery paging pane no longer owns toolbar sync state.
 
-### Phase 2: Declarative Macro Rollout
+### Phase 2: Declarative Macro Rollout — **Done**
+
 Once the builder integration is fully verified and warning-free, we add the declarative syntactic sugar:
-1. Implement the `scrolling_list_view!` and `paging_list_view!` macros inside [`macros.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/macros.rs).
-2. Clean up the gallery pane's instantiation code to use the new macros instead of the raw builder methods.
+
+1. ✅ Implement the `scrolling_list_view!` and `paging_list_view!` macros inside [`macros.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/macros.rs).
+2. ✅ Gallery list panes use the new macros via spawn helpers in [`shared.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/list_view/shared.rs).
+
+`list_view!` remains as a lower-level macro for advanced/generic use; prefer `scrolling_list_view!` or `paging_list_view!` at call sites.
 
 ---
 
@@ -662,6 +666,4 @@ Gallery list view demos live in two panes under `apps/gallery/src/gallery/panes/
 - **`scrolling_list_view_pane.rs`** — `task_list_builder(...).visible_rows(N).spawn(cx)`
 - **`paging_list_view_pane.rs`** — `PagingListViewBuilder::new(task_list_builder(...).paged(N), theme).spawn(cx)`
 
-Shared task grid/data is in **`shared.rs`**. The paging pane renders `self.list_view.clone()` directly; the facade owns list + toolbar sync (no gallery-side toolbar entity or manual page-state subscriptions).
-
-Phase 2 will optionally migrate these to `scrolling_list_view!` / `paging_list_view!` macros.
+Shared task grid/data is in **`shared.rs`**, which calls `scrolling_list_view!` and `paging_list_view!` via `spawn_scrolling_task_list_view` / `spawn_paging_task_list_view`. The paging pane renders `self.list_view.clone()` directly; the facade owns list + toolbar sync (no gallery-side toolbar entity or manual page-state subscriptions).
