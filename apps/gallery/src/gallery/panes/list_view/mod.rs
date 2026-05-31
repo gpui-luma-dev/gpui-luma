@@ -1,3 +1,4 @@
+mod common;
 mod paging_list_view_pane;
 mod scrolling_list_view_pane;
 

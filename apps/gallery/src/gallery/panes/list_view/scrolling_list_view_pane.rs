@@ -1,29 +1,17 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FontWeight, SharedString, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma::controls::list_view::{
-    ListSelectionMode, ListViewColumn, ListViewEvent, ScrollingListView, column_template_with_modifier,
-    default_text_column_template,
-};
+use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, ScrollingListView};
 use gpui_luma::{column, column_emphasis, scrolling_list_view};
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 use super::super::shared::gallery_pane_with_usage_top_aligned;
+use super::common::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
 
 const DEFAULT_VISIBLE_ROWS: usize = 10;
-
-#[derive(Clone)]
-struct Task {
-    id: SharedString,
-    title: SharedString,
-    email: SharedString,
-    tag: &'static str,
-    status: &'static str,
-    enabled: bool,
-}
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollingListViewPane {
@@ -127,7 +115,7 @@ impl ScrollingListViewPane {
                                 .text_size(px(12.0))
                                 .line_height(px(16.0))
                                 .text_color(chrome.body_text)
-                                .child(self.selected_summary()),
+                                .child(selected_summary(&self.selected_indices)),
                         )
                         .child(
                             div()
@@ -153,81 +141,4 @@ impl ScrollingListViewPane {
             cx.notify();
         }
     }
-
-    fn selected_summary(&self) -> String {
-        if let Some(&index) = self.selected_indices.first() {
-            format!("Selected row index: {index} (Task T-{index:04})")
-        } else {
-            "No row selected".to_string()
-        }
-    }
-}
-
-fn build_task_rows() -> Vec<Task> {
-    const TASK_COUNT: usize = 100;
-    (0..TASK_COUNT).map(make_task).collect()
-}
-
-fn make_task(index: usize) -> Task {
-    const TAGS: &[&str] = &["UI", "API", "Docs", "Bug"];
-    const STATUSES: &[&str] = &["Open", "In progress", "Done", "Blocked"];
-
-    let tag = TAGS[index % TAGS.len()];
-    let status = STATUSES[index % STATUSES.len()];
-
-    Task {
-        id: format!("T-{index:04}").into(),
-        title: format!("Ship list view row {index}").into(),
-        email: format!("owner+{index}@luma.dev").into(),
-        tag,
-        status,
-        enabled: !index.is_multiple_of(17),
-    }
-}
-
-fn email_column() -> ListViewColumn<Task> {
-    ListViewColumn::fixed(
-        "Email",
-        200.0,
-        column_template_with_modifier(
-            default_text_column_template(|row: &Task| row.email.clone()),
-            |cell, model, _window, _cx| {
-                if model.selected {
-                    div().font_weight(FontWeight::SEMIBOLD).child(cell).into_any_element()
-                } else {
-                    cell
-                }
-            },
-        ),
-    )
-}
-
-fn tag_pill(tag: &'static str) -> impl IntoElement {
-    div()
-        .px(px(6.0))
-        .py(px(2.0))
-        .rounded(px(4.0))
-        .bg(gpui::hsla(0.12, 0.55, 0.92, 0.18))
-        .text_size(px(11.0))
-        .line_height(px(14.0))
-        .font_weight(FontWeight::MEDIUM)
-        .child(tag)
-}
-
-fn status_cell(status: &'static str) -> impl IntoElement {
-    let (icon, color) = match status {
-        "Done" => (LucideIcon::CircleCheck, gpui::hsla(0.35, 0.7, 0.45, 1.0)),
-        "Blocked" => (LucideIcon::CircleX, gpui::hsla(0.0, 0.7, 0.55, 1.0)),
-        "In progress" => (LucideIcon::LoaderCircle, gpui::hsla(0.58, 0.75, 0.5, 1.0)),
-        _ => (LucideIcon::Circle, gpui::hsla(0.0, 0.0, 0.55, 1.0)),
-    };
-
-    div()
-        .w_full()
-        .min_w(px(0.0))
-        .flex()
-        .items_center()
-        .gap(px(6.0))
-        .child(div().text_color(color).child(lucide_glyph(icon)))
-        .child(div().flex_1().min_w(px(0.0)).truncate().child(status))
 }
