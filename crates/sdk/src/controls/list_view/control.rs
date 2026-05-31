@@ -1,6 +1,6 @@
 use gpui::{
     App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, ListOffset, ListState, MouseButton, MouseDownEvent,
-    MouseUpEvent, Render, ScrollWheelEvent, SharedString, Window, div, list, prelude::*, px,
+    MouseUpEvent, Render, ScrollWheelEvent, SharedString, TouchPhase, Window, div, list, prelude::*, px,
 };
 
 use super::layout::{
@@ -71,7 +71,7 @@ where
             // collapses to zero when overdraw is small.
             list_state = list_state.measure_all();
         }
-        let mut control = Self {
+        let control = Self {
             list_state,
             focus_handle: cx.focus_handle().tab_stop(builder.model.enabled),
             model: builder.model,
@@ -79,7 +79,6 @@ where
             pressed_index: None,
             current_page: 0,
         };
-        control.configure_scroll_handler(cx);
         control
     }
 
@@ -164,7 +163,6 @@ where
         self.model.scroll_mode = scroll_mode;
         self.current_page = clamp_page(self.current_page, self.model.items.len(), self.page_size().unwrap_or(1));
         self.sync_list_state();
-        self.configure_scroll_handler(cx);
         cx.notify();
     }
 
@@ -425,30 +423,6 @@ where
             item_ix += 1;
         }
         self.list_state.scroll_to(ListOffset { item_ix, offset_in_item: px(0.0) });
-    }
-
-    fn configure_scroll_handler(&mut self, cx: &Context<Self>) {
-        if !self.is_scroll_snap() {
-            self.list_state.set_scroll_handler(|_, _, _| {});
-            return;
-        }
-
-        let entity = cx.entity().downgrade();
-        self.list_state.set_scroll_handler(move |event, window, cx| {
-            if !event.is_scrolled {
-                return;
-            }
-
-            // GPUI invokes scroll handlers while `ListState`'s inner RefCell is mutably
-            // borrowed. Defer snapping until after that borrow is released.
-            let entity = entity.clone();
-            window.defer(cx, move |_, cx| {
-                let _ = entity.update(cx, |this, cx| {
-                    this.snap_scroll_position();
-                    cx.notify();
-                });
-            });
-        });
     }
 
     fn resolve_appearance(&self, window: &Window) -> ListViewAppearance {
@@ -798,14 +772,24 @@ where
             return;
         }
 
+        if event.delta.precise() {
+            // Trackpad: let GPUI's list scroll smoothly during the gesture, then snap once
+            // when the gesture ends. Snapping on every delta fought partial scroll progress
+            // and felt erratic (especially with natural scrolling).
+            if matches!(event.touch_phase, TouchPhase::Ended) {
+                self.snap_scroll_position();
+                cx.notify();
+            }
+            return;
+        }
+
+        // Mouse wheel (line deltas): GPUI scrolls first in bubble order; align to the nearest row.
         let delta_y = event.delta.pixel_delta(px(20.0)).y;
         if delta_y == px(0.0) {
             return;
         }
 
-        let row_height = self.row_scroll_increment(&self.resolve_row_appearance_for_metrics());
-        let direction = if delta_y < px(0.0) { -1.0 } else { 1.0 };
-        self.list_state.scroll_by(px(direction * row_height));
+        self.snap_scroll_position();
         cx.stop_propagation();
         cx.notify();
     }
@@ -825,8 +809,6 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.configure_scroll_handler(cx);
-
         let render_model = self.render_model(window);
         let header = self
             .model
