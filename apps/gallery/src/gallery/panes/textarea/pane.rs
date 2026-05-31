@@ -12,6 +12,7 @@ use gpui_luma::controls::textarea::{
     TextAreaTemplate, TextAreaTemplateHandlers, Validator,
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
+use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 
@@ -410,7 +411,7 @@ fn textarea_line_metrics(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<TextAreaLineMetric> {
-    let appearance = theme.resolve(state, enabled);
+    let appearance = preview_textarea_appearance(&theme, state, enabled, window);
     let mut metrics = Vec::new();
     let mut start = 0usize;
     let mut current = String::new();
@@ -469,6 +470,16 @@ fn shape_metric(
         height: appearance.typography.line_height,
         character_offsets,
     }
+}
+
+fn preview_textarea_appearance(
+    theme: &Arc<dyn TextAreaTheme>,
+    state: TextAreaState,
+    enabled: bool,
+    window: &Window,
+) -> gpui_luma::controls::textarea::TextAreaAppearance {
+    let scale = StandardBoxScale::compute(ControlSize::Md, theme.metrics(), window.scale_factor());
+    theme.resolve_appearance(state, enabled, &scale)
 }
 
 fn textarea_preview_handlers() -> TextAreaTemplateHandlers {

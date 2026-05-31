@@ -30,7 +30,7 @@ use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
     TextFieldVariant,
 };
-use gpui_luma::theme::{ControlSize, InteractionState, RadixTheme};
+use gpui_luma::theme::{ControlSize, InteractionState, RadixTheme, StandardBoxScale};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -404,10 +404,13 @@ fn render_preview_textfield(
         window,
     );
 
-    let appearance =
-        preview
-            .textfield_theme
-            .resolve(TextFieldVariant::Standard, state.textfield_state, state.textfield_enabled);
+    let appearance = preview_textfield_appearance(
+        &preview.textfield_theme,
+        TextFieldVariant::Standard,
+        state.textfield_state,
+        state.textfield_enabled,
+        window,
+    );
     let text_model = TextFieldRenderModel {
         id,
         placeholder,
@@ -563,7 +566,13 @@ fn render_popup_preview(
             );
 
             let search_state = TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() };
-            let search_appearance = preview.textfield_theme.resolve(TextFieldVariant::Standard, search_state, true);
+            let search_appearance = preview_textfield_appearance(
+                &preview.textfield_theme,
+                TextFieldVariant::Standard,
+                search_state,
+                true,
+                window,
+            );
             let search_model = TextFieldRenderModel {
                 id: &search_id,
                 placeholder: &search_placeholder,
@@ -674,7 +683,7 @@ fn textfield_character_offsets(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = theme.resolve(variant, state, enabled);
+    let appearance = preview_textfield_appearance(&theme, variant, state, enabled, window);
     let value_shared = SharedString::from(value.to_string());
     let run = TextRun {
         len: value_shared.len(),
@@ -718,6 +727,17 @@ fn textfield_preview_handlers() -> TextFieldTemplateHandlers {
         click: Box::new(noop_click),
         key_down: Box::new(noop_key_down),
     }
+}
+
+fn preview_textfield_appearance(
+    theme: &Arc<dyn TextFieldTheme>,
+    variant: TextFieldVariant,
+    state: TextFieldState,
+    enabled: bool,
+    window: &Window,
+) -> gpui_luma::controls::textfield::TextFieldAppearance {
+    let scale = StandardBoxScale::compute(ControlSize::Md, theme.metrics(), window.scale_factor());
+    theme.resolve_appearance(variant, state, enabled, &scale)
 }
 
 fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}

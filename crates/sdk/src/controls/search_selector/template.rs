@@ -12,6 +12,7 @@ use crate::controls::selector_panel::{SelectorItemsPanelAppearance, SelectorPane
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
 use crate::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant};
+use crate::theme::{ControlSize, StandardBoxScale};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -92,7 +93,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         &self,
         model: SearchSelectorRenderModel,
         handlers: SearchSelectorTemplateHandlers,
-        _window: &mut Window,
+        window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorTemplateHandlers {
@@ -106,7 +107,12 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_appearance = model.trigger_theme.resolve(TextFieldVariant::Standard, model.trigger_state, true);
+        let trigger_appearance = model.trigger_theme.resolve_appearance(
+            TextFieldVariant::Standard,
+            model.trigger_state,
+            true,
+            &StandardBoxScale::compute(ControlSize::Md, model.trigger_theme.metrics(), window.scale_factor()),
+        );
 
         div()
             .id(format!("{}-root", model.id))

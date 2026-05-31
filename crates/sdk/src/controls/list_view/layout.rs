@@ -92,6 +92,7 @@ mod tests {
             padding_x: 8.0,
             padding_y: 8.0,
             min_height: 36.0,
+            label_baseline_shift: 1.0,
         }
     }
 

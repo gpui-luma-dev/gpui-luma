@@ -15,6 +15,7 @@ use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
@@ -898,11 +899,20 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
-        let input = self.input.read(cx);
-        let appearance = input.model.theme.resolve(input.state, input.model.enabled);
+        let (theme, state, enabled, rows) = {
+            let input = self.input.read(cx);
+            (input.model.theme.clone(), input.state, input.model.enabled, input.model.rows.max(1))
+        };
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        let appearance = theme.resolve_appearance(state, enabled, &scale);
         let mut style = Style::default();
         style.size.width = relative(1.0).into();
-        style.size.height = px(appearance.typography.line_height * input.model.rows.max(1) as f32).into();
+        style.size.height = px(appearance.typography.line_height * rows as f32).into();
         (window.request_layout(style, [], cx), ())
     }
 
@@ -915,8 +925,18 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
+        let (theme, state, enabled) = {
+            let input = self.input.read(cx);
+            (input.model.theme.clone(), input.state, input.model.enabled)
+        };
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
         let input = self.input.read(cx);
-        let appearance = input.model.theme.resolve(input.state, input.model.enabled);
+        let appearance = theme.resolve_appearance(state, enabled, &scale);
         let line_height = px(appearance.typography.line_height);
         let font_size = px(appearance.typography.size);
         let mut lines = Vec::new();
@@ -1108,7 +1128,13 @@ impl Render for TextArea {
         }
 
         self.sync_focus(window, cx);
-        let appearance = self.model.theme.resolve(self.state, self.model.enabled);
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.model.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        let appearance = self.model.theme.resolve_appearance(self.state, self.model.enabled, &scale);
         let show_scrollbar = self.is_scrollable();
         let scrollbar_width = px(12.0);
         let resize_handle = div()

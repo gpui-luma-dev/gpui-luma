@@ -14,7 +14,7 @@ pub enum ThemeMode {
     Dark,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum ControlSize {
     Sm,
     #[default]

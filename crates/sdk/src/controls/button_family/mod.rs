@@ -1,8 +1,10 @@
 mod theme;
 
 pub use theme::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme, default_button_family_theme,
+    ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, DefaultButtonFamilyTheme,
+    default_button_family_theme,
 };
+pub(crate) use theme::compose_button_family_appearance;
 
 use crate::theme::{ControlSize, InteractionState};
 

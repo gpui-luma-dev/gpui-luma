@@ -9,8 +9,8 @@
 
 use gpui::hsla;
 
-use crate::controls::list_view::{ListViewAppearance, ListViewRowAppearance};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
+use crate::controls::list_view::{ListViewAppearance, ListViewRowPalette};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use super::color::{darken, with_alpha};
 use super::mode::RadixModeTokens;
@@ -32,12 +32,12 @@ pub(crate) fn list_view_appearance(
     }
 }
 
-pub(crate) fn list_view_row_appearance(
+pub(crate) fn list_view_row_palette(
     mode: &RadixModeTokens,
     selected: bool,
     state: InteractionState,
     size: ControlSize,
-) -> ListViewRowAppearance {
+) -> ListViewRowPalette {
     if mode.catalog.tokens.is_empty() {
         list_view_row_from_palette(mode, selected, state, size)
     } else {
@@ -108,10 +108,9 @@ fn list_view_row_from_palette(
     mode: &RadixModeTokens,
     selected: bool,
     state: InteractionState,
-    size: ControlSize,
-) -> ListViewRowAppearance {
+    _size: ControlSize,
+) -> ListViewRowPalette {
     let palette = &mode.palette;
-    let metrics = &mode.metrics;
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
@@ -137,16 +136,12 @@ fn list_view_row_from_palette(
         palette.app_foreground
     };
 
-    ListViewRowAppearance {
+    ListViewRowPalette {
         background,
         label_color,
         divider: palette.input_background,
         adorner: None,
         label_typography: typography.text.label,
-        radius: 0.0,
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        min_height: metrics.control_height(size),
     }
 }
 
@@ -155,9 +150,8 @@ fn list_view_row_from_catalog(
     mode: &RadixModeTokens,
     selected: bool,
     state: InteractionState,
-    size: ControlSize,
-) -> anyhow::Result<ListViewRowAppearance> {
-    let metrics = &mode.metrics;
+    _size: ControlSize,
+) -> anyhow::Result<ListViewRowPalette> {
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
@@ -183,20 +177,12 @@ fn list_view_row_from_catalog(
         resolve_color(catalog, "foreground")?
     };
 
-    Ok(ListViewRowAppearance {
+    Ok(ListViewRowPalette {
         background,
         label_color,
         divider: resolve_color(catalog, "border")?,
         adorner: None,
-        label_typography: LumaTextStyle {
-            size: typography.text.label.size,
-            line_height: typography.text.label.line_height,
-            weight: typography.text.label.weight,
-        },
-        radius: 0.0,
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        min_height: metrics.control_height(size),
+        label_typography: typography.text.label,
     })
 }
 
@@ -210,7 +196,7 @@ mod tests {
     use super::super::color::with_alpha;
     use super::super::mode::RadixModeTokens;
     use super::super::resolve::resolve_color;
-    use super::{list_view_row_appearance, ROW_HOVER_ACCENT_ALPHA};
+    use super::{list_view_row_palette, ROW_HOVER_ACCENT_ALPHA};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -235,13 +221,13 @@ mod tests {
     fn list_view_row_hover_uses_accent_whisper_and_selected_uses_muted() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let hover = list_view_row_appearance(
+        let hover = list_view_row_palette(
             &mode,
             false,
             InteractionState { hovered: true, ..Default::default() },
             ControlSize::Md,
         );
-        let selected = list_view_row_appearance(
+        let selected = list_view_row_palette(
             &mode,
             true,
             InteractionState { hovered: true, ..Default::default() },

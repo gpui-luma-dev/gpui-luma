@@ -483,10 +483,12 @@ impl Render for SearchSelectorControl {
             .map(|item| item.label.to_string());
 
         let minimum_trigger_width = {
-            let textfield_appearance = crate::controls::textfield::default_textfield_theme().resolve(
+            let textfield_theme = crate::controls::textfield::default_textfield_theme();
+            let textfield_appearance = textfield_theme.resolve_appearance(
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
+                &crate::theme::StandardBoxScale::compute(crate::theme::ControlSize::Md, textfield_theme.metrics(), 1.0),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_appearance.typography.weight;

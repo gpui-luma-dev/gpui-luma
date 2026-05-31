@@ -2,8 +2,21 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
+use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textarea::TextAreaState;
+
+#[derive(Clone, Debug)]
+pub struct TextAreaPalette {
+    pub background: Hsla,
+    pub foreground: Hsla,
+    pub border: Hsla,
+    pub placeholder: Hsla,
+    pub selection_background: Hsla,
+    pub caret: Hsla,
+    pub focus_ring: Option<Hsla>,
+    pub typography: LumaTextStyle,
+    pub font_family: String,
+}
 
 #[derive(Clone, Debug)]
 pub struct TextAreaAppearance {
@@ -24,7 +37,13 @@ pub struct TextAreaAppearance {
 }
 
 pub trait TextAreaTheme: Send + Sync {
-    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaAppearance;
+    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaPalette;
+
+    fn metrics(&self) -> &MetricTokens;
+
+    fn resolve_appearance(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaAppearance {
+        compose_textarea_appearance(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -45,11 +64,9 @@ impl DefaultTextAreaTheme {
 }
 
 impl TextAreaTheme for DefaultTextAreaTheme {
-    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaAppearance {
+    fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
-        let size = ControlSize::Md;
 
         let (background, foreground, border, placeholder, selection_background, caret) = if enabled {
             let background = if state.focused {
@@ -84,7 +101,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             )
         };
 
-        TextAreaAppearance {
+        TextAreaPalette {
             background,
             foreground,
             border,
@@ -94,11 +111,33 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone(),
-            min_height: metrics.control_height(size),
-            padding_x: metrics.padding_x(size),
-            padding_y: metrics.padding_y(size),
-            radius: metrics.radius(size),
-            border_width: metrics.border_width.default,
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
+    }
+}
+
+pub(crate) fn compose_textarea_appearance(
+    palette: &TextAreaPalette,
+    scale: &StandardBoxScale,
+    border_width: f32,
+) -> TextAreaAppearance {
+    TextAreaAppearance {
+        background: palette.background,
+        foreground: palette.foreground,
+        border: palette.border,
+        placeholder: palette.placeholder,
+        selection_background: palette.selection_background,
+        caret: palette.caret,
+        focus_ring: palette.focus_ring,
+        typography: palette.typography,
+        font_family: palette.font_family.clone(),
+        min_height: scale.height,
+        padding_x: scale.padding_x,
+        padding_y: scale.padding_y,
+        radius: scale.radius,
+        border_width,
     }
 }

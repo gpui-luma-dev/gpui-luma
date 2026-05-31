@@ -1,18 +1,13 @@
 //! Text area — same input tokens as standard text field.
 
-use crate::controls::textarea::{TextAreaAppearance, TextAreaState};
+use crate::controls::textarea::{TextAreaPalette, TextAreaState};
 use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 
-use super::textfield::textfield_appearance;
+use super::textfield::textfield_palette;
 use super::mode::RadixModeTokens;
 
-pub(crate) fn textarea_appearance(mode: &RadixModeTokens, state: TextAreaState, enabled: bool) -> TextAreaAppearance {
-    textarea_from_textfield(textfield_appearance(
-        mode,
-        TextFieldVariant::Standard,
-        textfield_state_from(state),
-        enabled,
-    ))
+pub(crate) fn textarea_palette(mode: &RadixModeTokens, state: TextAreaState, enabled: bool) -> TextAreaPalette {
+    textarea_from_textfield(textfield_palette(mode, TextFieldVariant::Standard, textfield_state_from(state), enabled))
 }
 
 fn textfield_state_from(state: TextAreaState) -> TextFieldState {
@@ -27,8 +22,8 @@ fn textfield_state_from(state: TextAreaState) -> TextFieldState {
     }
 }
 
-fn textarea_from_textfield(textfield: crate::controls::textfield::TextFieldAppearance) -> TextAreaAppearance {
-    TextAreaAppearance {
+fn textarea_from_textfield(textfield: crate::controls::textfield::TextFieldPalette) -> TextAreaPalette {
+    TextAreaPalette {
         background: textfield.background,
         foreground: textfield.foreground,
         border: textfield.border,
@@ -38,11 +33,6 @@ fn textarea_from_textfield(textfield: crate::controls::textfield::TextFieldAppea
         focus_ring: textfield.focus_ring,
         typography: textfield.typography,
         font_family: textfield.font_family.to_string(),
-        min_height: textfield.min_height,
-        padding_x: textfield.padding_x,
-        padding_y: textfield.padding_y,
-        radius: textfield.radius,
-        border_width: textfield.border_width,
     }
 }
 
@@ -54,7 +44,7 @@ mod tests {
 
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
-    use super::super::textfield::textfield_appearance_from_catalog;
+    use super::super::textfield::textfield_palette_from_catalog;
     use super::textarea_from_textfield;
 
     fn sample_catalog() -> CssTokenMap {
@@ -79,7 +69,7 @@ mod tests {
     fn textarea_uses_same_input_tokens_as_textfield() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let textfield = textfield_appearance_from_catalog(
+        let textfield = textfield_palette_from_catalog(
             &catalog,
             &mode,
             crate::controls::textfield::TextFieldVariant::Standard,

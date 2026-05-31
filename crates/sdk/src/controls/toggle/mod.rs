@@ -26,8 +26,8 @@ pub fn default_toggle_template() -> Arc<dyn ButtonTemplate<bool>> {
             return element;
         }
 
-        let appearance =
+        let palette =
             button_family_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
-        element.bg(appearance.background).text_color(appearance.foreground).border_color(appearance.border)
+        element.bg(palette.background).text_color(palette.foreground).border_color(palette.border)
     }))
 }

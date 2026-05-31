@@ -27,7 +27,7 @@ pub(crate) fn render_list_view_row(
             .text_size(px(appearance.label_typography.size))
             .line_height(px(appearance.label_typography.line_height))
             .font_weight(appearance.label_typography.weight)
-            .child(div().flex_1().min_w(px(0.0)).child(content));
+            .child(div().flex_1().min_w(px(0.0)).mt(px(appearance.label_baseline_shift)).child(content));
     }
 
     if show_top_divider {

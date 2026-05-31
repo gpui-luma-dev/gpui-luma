@@ -331,9 +331,11 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = crate::controls::combobox::SelectionItem>,
     ) -> ComboBoxBuilder {
+        let theme = Arc::clone(self);
         combobox::new(id, items)
             .textfield_template(self.textfield_template())
             .scrollbar_template(self.scrollbar_template())
+            .popup_appearance_provider(Arc::new(move || theme.selector_items_panel_appearance(ControlSize::Md)))
     }
 
     fn search_selector(

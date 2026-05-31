@@ -8,6 +8,7 @@ use gpui::{
 use super::{TextAreaDrag, TextAreaRenderModel};
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTAREA_SELECTION_OPACITY: f32 = 0.28;
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
@@ -67,10 +68,16 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         &self,
         model: &TextAreaRenderModel<'_>,
         handlers: TextAreaTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
+        window: &mut Window,
+        cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = self.theme.resolve(model.state, model.enabled);
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        let appearance = self.theme.resolve_appearance(model.state, model.enabled, &scale);
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());

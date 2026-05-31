@@ -12,8 +12,7 @@
 
 use gpui::hsla;
 
-use crate::controls::textfield::{TextFieldAppearance, TextFieldState, TextFieldVariant};
-use crate::theme::ControlSize;
+use crate::controls::textfield::{TextFieldPalette, TextFieldState, TextFieldVariant};
 
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
@@ -21,30 +20,28 @@ use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
 use super::palette::RadixPalette;
 
-pub(crate) fn textfield_appearance(
+pub(crate) fn textfield_palette(
     mode: &RadixModeTokens,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
-) -> TextFieldAppearance {
+) -> TextFieldPalette {
     if mode.catalog.tokens.is_empty() {
-        textfield_appearance_from_palette(&mode.palette, mode, variant, state, enabled)
+        textfield_palette_from_palette(&mode.palette, mode, variant, state, enabled)
     } else {
-        textfield_appearance_from_catalog(&mode.catalog, mode, variant, state, enabled)
+        textfield_palette_from_catalog(&mode.catalog, mode, variant, state, enabled)
             .unwrap_or_else(|err| panic!("textfield properties: {err}"))
     }
 }
 
-fn textfield_appearance_from_palette(
+fn textfield_palette_from_palette(
     palette: &RadixPalette,
     mode: &RadixModeTokens,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
-) -> TextFieldAppearance {
-    let metrics = &mode.metrics;
+) -> TextFieldPalette {
     let typography = &mode.typography;
-    let size = ControlSize::Md;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
@@ -113,7 +110,7 @@ fn textfield_appearance_from_palette(
         ),
     };
 
-    TextFieldAppearance {
+    TextFieldPalette {
         background,
         foreground,
         border,
@@ -124,26 +121,17 @@ fn textfield_appearance_from_palette(
         focus_ring: (enabled && state.focus_visible).then_some(palette.focus_ring),
         typography: typography.text.body,
         font_family: typography.font.sans.family.clone().into(),
-        min_height: metrics.control_height(size),
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        gap: metrics.gap(size),
-        radius: metrics.radius(size),
-        border_width: metrics.border_width.default,
-        icon_size: typography.text.body.size + 2.0,
     }
 }
 
-pub(crate) fn textfield_appearance_from_catalog(
+pub(crate) fn textfield_palette_from_catalog(
     catalog: &CssTokenMap,
     mode: &RadixModeTokens,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
-) -> anyhow::Result<TextFieldAppearance> {
-    let metrics = &mode.metrics;
+) -> anyhow::Result<TextFieldPalette> {
     let typography = &mode.typography;
-    let size = ControlSize::Md;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
@@ -213,7 +201,7 @@ pub(crate) fn textfield_appearance_from_catalog(
         ),
     };
 
-    Ok(TextFieldAppearance {
+    Ok(TextFieldPalette {
         background,
         foreground,
         border,
@@ -224,13 +212,6 @@ pub(crate) fn textfield_appearance_from_catalog(
         focus_ring: (enabled && state.focus_visible).then(|| focus_ring_color(catalog)).transpose()?,
         typography: typography.text.body,
         font_family: typography.font.sans.family.clone().into(),
-        min_height: metrics.control_height(size),
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        gap: metrics.gap(size),
-        radius: metrics.radius(size),
-        border_width: metrics.border_width.default,
-        icon_size: typography.text.body.size + 2.0,
     })
 }
 
@@ -242,7 +223,7 @@ mod tests {
 
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
-    use super::textfield_appearance_from_catalog;
+    use super::textfield_palette_from_catalog;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -266,7 +247,7 @@ mod tests {
     fn standard_textfield_uses_input_border_and_background() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = textfield_appearance_from_catalog(
+        let appearance = textfield_palette_from_catalog(
             &catalog,
             &mode,
             TextFieldVariant::Standard,

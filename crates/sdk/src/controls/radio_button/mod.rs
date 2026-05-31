@@ -2,7 +2,9 @@ mod template;
 mod theme;
 
 pub use template::{ThemedRadioButtonTemplate, default_template as default_radio_button_template};
-pub use theme::{DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonTheme, default_radio_button_theme};
+pub use theme::{
+    DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonPalette, RadioButtonTheme, default_radio_button_theme,
+};
 
 pub use crate::theme::InteractionState as RadioButtonState;
 

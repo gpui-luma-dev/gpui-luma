@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, SharedString};
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
+use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -10,6 +10,20 @@ pub enum TextFieldVariant {
     #[default]
     Standard,
     Ghost,
+}
+
+#[derive(Clone, Debug)]
+pub struct TextFieldPalette {
+    pub background: Hsla,
+    pub foreground: Hsla,
+    pub border: Hsla,
+    pub placeholder: Hsla,
+    pub icon: Hsla,
+    pub selection_background: Hsla,
+    pub caret: Hsla,
+    pub focus_ring: Option<Hsla>,
+    pub typography: LumaTextStyle,
+    pub font_family: SharedString,
 }
 
 #[derive(Clone, Debug)]
@@ -34,7 +48,19 @@ pub struct TextFieldAppearance {
 }
 
 pub trait TextFieldTheme: Send + Sync {
-    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldAppearance;
+    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette;
+
+    fn metrics(&self) -> &MetricTokens;
+
+    fn resolve_appearance(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        scale: &StandardBoxScale,
+    ) -> TextFieldAppearance {
+        compose_textfield_appearance(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -55,11 +81,9 @@ impl DefaultTextFieldTheme {
 }
 
 impl TextFieldTheme for DefaultTextFieldTheme {
-    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldAppearance {
+    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
-        let size = ControlSize::Md;
 
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
 
@@ -129,7 +153,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             ),
         };
 
-        TextFieldAppearance {
+        TextFieldPalette {
             background,
             foreground,
             border,
@@ -140,13 +164,36 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone().into(),
-            min_height: metrics.control_height(size),
-            padding_x: metrics.padding_x(size),
-            padding_y: metrics.padding_y(size),
-            gap: metrics.gap(size),
-            radius: metrics.radius(size),
-            border_width: metrics.border_width.default,
-            icon_size: typography.text.body.size + 2.0,
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
+    }
+}
+
+pub(crate) fn compose_textfield_appearance(
+    palette: &TextFieldPalette,
+    scale: &StandardBoxScale,
+    border_width: f32,
+) -> TextFieldAppearance {
+    TextFieldAppearance {
+        background: palette.background,
+        foreground: palette.foreground,
+        border: palette.border,
+        placeholder: palette.placeholder,
+        icon: palette.icon,
+        selection_background: palette.selection_background,
+        caret: palette.caret,
+        focus_ring: palette.focus_ring,
+        typography: palette.typography,
+        font_family: palette.font_family.clone(),
+        min_height: scale.height,
+        padding_x: scale.padding_x,
+        padding_y: scale.padding_y,
+        gap: scale.gap,
+        radius: scale.radius,
+        border_width,
+        icon_size: palette.typography.size + 2.0,
     }
 }

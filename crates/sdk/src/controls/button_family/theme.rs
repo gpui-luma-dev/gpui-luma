@@ -3,7 +3,9 @@ use std::sync::{Arc, OnceLock};
 use gpui::{Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
+};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ButtonFamilyRole {
@@ -13,6 +15,16 @@ pub enum ButtonFamilyRole {
     Toggle {
         selected: bool,
     },
+}
+
+#[derive(Clone, Debug)]
+pub struct ButtonFamilyPalette {
+    pub background: Hsla,
+    pub foreground: Hsla,
+    pub border: Hsla,
+    pub adorner: Option<AdornerSpec>,
+    pub typography: LumaTextStyle,
+    pub font_family: SharedString,
 }
 
 #[derive(Clone, Debug)]
@@ -31,7 +43,8 @@ pub struct ButtonFamilyAppearance {
 }
 
 pub trait ButtonFamilyTheme: Send + Sync {
-    fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyAppearance;
+    fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette;
+    fn metrics(&self) -> &MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -52,17 +65,16 @@ impl DefaultButtonFamilyTheme {
 }
 
 impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
-    fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyAppearance {
-        native_button_appearance(&self.tokens, role, size, state)
+    fn resolve(&self, role: ButtonFamilyRole, _size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
+        native_button_palette(&self.tokens, role, state)
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
     }
 }
 
-fn native_button_appearance(
-    tokens: &ThemeTokens,
-    role: ButtonFamilyRole,
-    size: ControlSize,
-    state: InteractionState,
-) -> ButtonFamilyAppearance {
+fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: InteractionState) -> ButtonFamilyPalette {
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
@@ -93,27 +105,42 @@ fn native_button_appearance(
         None
     };
 
-    ButtonFamilyAppearance {
+    ButtonFamilyPalette {
         background,
         foreground,
         border: action.border,
         adorner,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
+    }
+}
+
+pub(crate) fn compose_button_family_appearance(
+    palette: &ButtonFamilyPalette,
+    role: ButtonFamilyRole,
+    scale: &StandardBoxScale,
+) -> ButtonFamilyAppearance {
+    ButtonFamilyAppearance {
+        background: palette.background,
+        foreground: palette.foreground,
+        border: palette.border,
+        adorner: palette.adorner,
+        typography: palette.typography,
+        font_family: palette.font_family.clone(),
         radius: match role {
-            ButtonFamilyRole::Icon => metrics.radius.pill,
-            _ => metrics.radius(size),
+            ButtonFamilyRole::Icon => scale.track_radius,
+            _ => scale.radius,
         },
         padding_x: match role {
             ButtonFamilyRole::Icon => 0.0,
-            _ => metrics.padding_x(size),
+            _ => scale.padding_x,
         },
         padding_y: match role {
             ButtonFamilyRole::Icon => 0.0,
-            _ => metrics.padding_y(size),
+            _ => scale.padding_y,
         },
-        gap: metrics.gap(size),
-        height: metrics.control_height(size),
+        gap: scale.gap,
+        height: scale.height,
     }
 }
 

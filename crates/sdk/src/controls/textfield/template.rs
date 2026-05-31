@@ -9,6 +9,7 @@ use super::{TextFieldAppearance, TextFieldRenderModel, TextFieldState, TextField
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTFIELD_SELECTION_OPACITY: f32 = 0.28;
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
@@ -40,7 +41,23 @@ pub trait TextFieldTemplate: Send + Sync {
         state: TextFieldState,
         enabled: bool,
     ) -> TextFieldAppearance {
-        default_textfield_theme().resolve(variant, state, enabled)
+        default_textfield_theme().resolve_appearance(
+            variant,
+            state,
+            enabled,
+            &StandardBoxScale::compute(ControlSize::Md, default_textfield_theme().metrics(), 1.0),
+        )
+    }
+
+    fn resolve_appearance_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        _scale_factor: f32,
+        _cx: &mut App,
+    ) -> TextFieldAppearance {
+        self.resolve_appearance(variant, state, enabled)
     }
 
     fn render(
@@ -75,7 +92,28 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         state: TextFieldState,
         enabled: bool,
     ) -> TextFieldAppearance {
-        self.theme.resolve(variant, state, enabled)
+        self.theme.resolve_appearance(
+            variant,
+            state,
+            enabled,
+            &StandardBoxScale::compute(ControlSize::Md, self.theme.metrics(), 1.0),
+        )
+    }
+
+    fn resolve_appearance_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        scale_factor: f32,
+        cx: &mut App,
+    ) -> TextFieldAppearance {
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        self.theme.resolve_appearance(variant, state, enabled, &scale)
     }
 
     fn render(

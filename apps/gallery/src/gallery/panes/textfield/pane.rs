@@ -12,6 +12,7 @@ use gpui_luma::controls::textfield::{
     TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldVariant, Validator,
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
+use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
@@ -470,7 +471,7 @@ fn render_state_sample(
     let id = SharedString::from(format!("textfield-preview-{}", sample.id));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview");
-    let appearance = theme.resolve(variant, sample.state, sample.enabled);
+    let appearance = preview_textfield_appearance(&theme, variant, sample.state, sample.enabled, window);
     let character_offsets =
         textfield_character_offsets(value.as_ref(), theme, variant, sample.state, sample.enabled, window);
     let model = TextFieldRenderModel {
@@ -507,7 +508,7 @@ fn textfield_character_offsets(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = theme.resolve(variant, state, enabled);
+    let appearance = preview_textfield_appearance(&theme, variant, state, enabled, window);
     let run = TextRun {
         len: value.len(),
         font: {
@@ -557,5 +558,16 @@ fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}
 fn noop_mouse_up(_: &gpui::MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &gpui::ClickEvent, _: &mut Window, _: &mut App) {}
+
+fn preview_textfield_appearance(
+    theme: &Arc<dyn TextFieldTheme>,
+    variant: TextFieldVariant,
+    state: TextFieldState,
+    enabled: bool,
+    window: &Window,
+) -> gpui_luma::controls::textfield::TextFieldAppearance {
+    let scale = StandardBoxScale::compute(ControlSize::Md, theme.metrics(), window.scale_factor());
+    theme.resolve_appearance(variant, state, enabled, &scale)
+}
 
 fn noop_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}

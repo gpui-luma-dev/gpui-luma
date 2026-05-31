@@ -3,7 +3,19 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::selector_panel::{SelectorItemsPanelAppearance, default_selector_items_panel_appearance};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
+};
+
+#[derive(Clone, Debug)]
+pub struct SelectorPalette {
+    pub trigger_background: Hsla,
+    pub trigger_foreground: Hsla,
+    pub trigger_border: Hsla,
+    pub focus_ring: Option<Hsla>,
+    pub trigger_typography: LumaTextStyle,
+    pub items_panel: SelectorItemsPanelAppearance,
+}
 
 #[derive(Clone, Debug)]
 pub struct SelectorAppearance {
@@ -23,7 +35,13 @@ pub struct SelectorAppearance {
 }
 
 pub trait SelectorTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> SelectorAppearance;
+    fn resolve(&self, state: InteractionState) -> SelectorPalette;
+
+    fn metrics(&self) -> &MetricTokens;
+
+    fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorAppearance {
+        compose_selector_appearance(&self.resolve(state), scale)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -44,9 +62,8 @@ impl DefaultSelectorTheme {
 }
 
 impl SelectorTheme for DefaultSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> SelectorAppearance {
+    fn resolve(&self, state: InteractionState) -> SelectorPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
 
@@ -62,20 +79,35 @@ impl SelectorTheme for DefaultSelectorTheme {
             palette.action.ghost.foreground
         };
 
-        SelectorAppearance {
+        SelectorPalette {
             trigger_background,
             trigger_foreground,
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            trigger_radius: metrics.radius(size),
-            trigger_padding_x: metrics.padding_x(size),
-            trigger_padding_y: metrics.padding_y(size),
-            trigger_gap: metrics.gap(size),
-            trigger_height: metrics.control_height(size),
-            trigger_icon_size: 12.0,
-            menu_offset_y: metrics.gap(size) * 0.5,
             items_panel: default_selector_items_panel_appearance(&self.tokens, size),
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
+    }
+}
+
+pub(crate) fn compose_selector_appearance(palette: &SelectorPalette, scale: &StandardBoxScale) -> SelectorAppearance {
+    SelectorAppearance {
+        trigger_background: palette.trigger_background,
+        trigger_foreground: palette.trigger_foreground,
+        trigger_border: palette.trigger_border,
+        focus_ring: palette.focus_ring,
+        trigger_typography: palette.trigger_typography,
+        trigger_radius: scale.radius,
+        trigger_padding_x: scale.padding_x,
+        trigger_padding_y: scale.padding_y,
+        trigger_gap: scale.gap,
+        trigger_height: scale.height,
+        trigger_icon_size: scale.height / 3.0,
+        menu_offset_y: scale.gap * 0.5,
+        items_panel: palette.items_panel.clone(),
     }
 }

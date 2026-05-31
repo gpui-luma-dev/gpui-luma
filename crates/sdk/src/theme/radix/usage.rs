@@ -7,13 +7,13 @@ pub fn all_radix_theme_usages() -> &'static [&'static ThemeUsage] {
 }
 
 const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
-    part("background", "background", &["standard default"], &["TextFieldAppearance.background"]),
-    part("border", "input", &["standard default"], &["TextFieldAppearance.border"]),
-    part("foreground", "foreground", &["standard default"], &["TextFieldAppearance.foreground"]),
-    part("placeholder", "muted-foreground", &["standard default"], &["TextFieldAppearance.placeholder"]),
-    part("selection", "primary", &["standard focused"], &["TextFieldAppearance.selection_background"]),
-    part("focus ring", "ring", &["standard focused"], &["TextFieldAppearance.focus_ring"]),
-    part("ghost hover", "accent", &["ghost hovered"], &["TextFieldAppearance.background"]),
+    part("background", "background", &["standard default"], &["TextFieldPalette.background"]),
+    part("border", "input", &["standard default"], &["TextFieldPalette.border"]),
+    part("foreground", "foreground", &["standard default"], &["TextFieldPalette.foreground"]),
+    part("placeholder", "muted-foreground", &["standard default"], &["TextFieldPalette.placeholder"]),
+    part("selection", "primary", &["standard focused"], &["TextFieldPalette.selection_background"]),
+    part("focus ring", "ring", &["standard focused"], &["TextFieldPalette.focus_ring"]),
+    part("ghost hover", "accent", &["ghost hovered"], &["TextFieldPalette.background"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[
@@ -44,43 +44,38 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Checkbox",
         parts: &[
-            part("checked fill", "primary", &["checked"], &["CheckboxAppearance.background"]),
-            part("checkmark", "primary-foreground", &["checked"], &["CheckboxAppearance.foreground"]),
-            part("border", "input", &["unchecked"], &["CheckboxAppearance.border"]),
-            part("focus ring", "ring", &["focused"], &["CheckboxAppearance.adorner"]),
+            part("checked fill", "primary", &["checked"], &["CheckboxPalette.indicator_background"]),
+            part("checkmark", "primary-foreground", &["checked"], &["CheckboxPalette.checkmark_color"]),
+            part("border", "input", &["unchecked"], &["CheckboxPalette.indicator_border"]),
+            part("focus ring", "ring", &["focused"], &["CheckboxPalette.adorner"]),
         ],
     },
     &ThemeUsage {
         label: "Radio Button",
         parts: &[
-            part("selected fill", "primary", &["selected"], &["RadioButtonAppearance.background"]),
-            part("dot", "primary-foreground", &["selected"], &["RadioButtonAppearance.foreground"]),
-            part("border", "input", &["unselected"], &["RadioButtonAppearance.border"]),
-            part("focus ring", "ring", &["focused"], &["RadioButtonAppearance.adorner"]),
+            part("selected fill", "primary", &["selected"], &["RadioButtonPalette.indicator_border"]),
+            part("dot", "primary-foreground", &["selected"], &["RadioButtonPalette.dot_color"]),
+            part("border", "input", &["unselected"], &["RadioButtonPalette.indicator_border"]),
+            part("focus ring", "ring", &["focused"], &["RadioButtonPalette.adorner"]),
         ],
     },
     &ThemeUsage {
         label: "Switch",
         parts: &[
-            part("off track", "input", &["off"], &["SwitchAppearance.track_background"]),
-            part("track border", "border", &["off", "disabled"], &["SwitchAppearance.track_border"]),
-            part(
-                "on track",
-                "primary",
-                &["on"],
-                &["SwitchAppearance.track_background", "SwitchAppearance.track_border"],
-            ),
-            part("off thumb", "background", &["off"], &["SwitchAppearance.thumb_background"]),
-            part("thumb border", "border", &["off"], &["SwitchAppearance.thumb_border"]),
+            part("off track", "input", &["off"], &["SwitchPalette.track_background"]),
+            part("track border", "border", &["off", "disabled"], &["SwitchPalette.track_border"]),
+            part("on track", "primary", &["on"], &["SwitchPalette.track_background", "SwitchPalette.track_border"]),
+            part("off thumb", "background", &["off"], &["SwitchPalette.thumb_background"]),
+            part("thumb border", "border", &["off"], &["SwitchPalette.thumb_border"]),
             part(
                 "on thumb",
                 "primary-foreground",
                 &["on"],
-                &["SwitchAppearance.thumb_background", "SwitchAppearance.thumb_border"],
+                &["SwitchPalette.thumb_background", "SwitchPalette.thumb_border"],
             ),
-            part("disabled thumb", "muted-foreground", &["disabled"], &["SwitchAppearance.thumb_background"]),
-            part("disabled thumb border", "muted", &["disabled"], &["SwitchAppearance.thumb_border"]),
-            part("focus ring", "ring", &["focused"], &["SwitchAppearance.adorner"]),
+            part("disabled thumb", "muted-foreground", &["disabled"], &["SwitchPalette.thumb_background"]),
+            part("disabled thumb border", "muted", &["disabled"], &["SwitchPalette.thumb_border"]),
+            part("focus ring", "ring", &["focused"], &["SwitchPalette.adorner"]),
         ],
     },
     &ThemeUsage {
@@ -136,15 +131,15 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Popup Menu",
         parts: &[
-            part("trigger hover", "accent", &["hovered"], &["PopupMenuAppearance.trigger_background"]),
+            part("trigger hover", "accent", &["hovered"], &["PopupMenuPalette.trigger_background"]),
             part("menu surface", "popover", &["open"], &["FloatingMenuAppearance.background"]),
         ],
     },
     &ThemeUsage {
         label: "Selector",
         parts: &[
-            part("trigger background", "background", &["default"], &["SelectorAppearance.background"]),
-            part("trigger border", "input", &["default"], &["SelectorAppearance.border"]),
+            part("trigger background", "background", &["default"], &["SelectorPalette.trigger_background"]),
+            part("trigger border", "input", &["default"], &["SelectorPalette.trigger_border"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
         ],
     },
@@ -185,7 +180,7 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         parts: &[
             part("list background", "background", &["enabled"], &["ListBoxListAppearance.background"]),
             part("list border", "input", &["enabled"], &["ListBoxListAppearance.border"]),
-            part("row hover", "accent", &["hovered"], &["ListBoxRowAppearance.background"]),
+            part("row hover", "accent", &["hovered"], &["ListBoxRowPalette.background"]),
             part("focus ring", "ring", &["focused"], &["ListBoxListAppearance.adorner"]),
         ],
     },
@@ -196,11 +191,11 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("list border", "input", &["enabled"], &["ListViewAppearance.border"]),
             part("header background", "muted", &["enabled"], &["ListViewAppearance.header_background"]),
             part("header label", "muted-foreground", &["enabled"], &["ListViewAppearance.header_label_color"]),
-            part("row hover", "accent", &["hovered"], &["ListViewRowAppearance.background"]),
-            part("row active", "muted", &["focused"], &["ListViewRowAppearance.background"]),
-            part("row divider", "border", &["enabled"], &["ListViewRowAppearance.divider"]),
-            part("selected row", "muted", &["selected"], &["ListViewRowAppearance.background"]),
-            part("selected label", "foreground", &["selected"], &["ListViewRowAppearance.label_color"]),
+            part("row hover", "accent", &["hovered"], &["ListViewRowPalette.background"]),
+            part("row active", "muted", &["focused"], &["ListViewRowPalette.background"]),
+            part("row divider", "border", &["enabled"], &["ListViewRowPalette.divider"]),
+            part("selected row", "muted", &["selected"], &["ListViewRowPalette.background"]),
+            part("selected label", "foreground", &["selected"], &["ListViewRowPalette.label_color"]),
         ],
     },
     &ThemeUsage {

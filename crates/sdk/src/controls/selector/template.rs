@@ -14,6 +14,7 @@ use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
 };
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 use super::theme::{SelectorAppearance, SelectorTheme, default_selector_theme};
 
@@ -118,7 +119,13 @@ where
             on_item_hover,
             on_item_click,
         } = handlers;
-        let appearance = self.theme.resolve(model.state);
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        let appearance = self.theme.resolve_appearance(model.state, &scale);
         let trigger_content = render_item_content(model, &appearance, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
@@ -311,10 +318,14 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
-    use crate::theme::InteractionState;
+    use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
     fn appearance() -> SelectorAppearance {
-        default_selector_theme().resolve(InteractionState::default())
+        let theme = default_selector_theme();
+        theme.resolve_appearance(
+            InteractionState::default(),
+            &StandardBoxScale::compute(ControlSize::Md, theme.metrics(), 1.0),
+        )
     }
 
     #[test]

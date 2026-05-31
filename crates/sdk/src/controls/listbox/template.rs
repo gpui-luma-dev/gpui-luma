@@ -8,7 +8,7 @@ use crate::controls::control_group::{
 };
 use crate::controls::listbox::{ListBoxRowAppearance, ListBoxTheme, default_listbox_theme};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
-use crate::theme::ControlSize;
+use crate::theme::{ControlSize, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 
 pub struct ThemedListBoxTemplate {
     theme: Arc<dyn ListBoxTheme>,
@@ -39,6 +39,12 @@ impl ThemedListBoxTemplate {
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
+        let scale_factor = window.scale_factor();
+        let row_scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: self.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| ListRowScale::compute(self.size, metrics, scale_factor),
+        );
 
         let list_appearance = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
         let focused_probe_list_appearance = if model.enabled {
@@ -97,11 +103,13 @@ impl ThemedListBoxTemplate {
                 break;
             };
 
-            let row_appearance = self.theme.resolve_row(item.selected, item.state.interaction_state(), self.size);
+            let row_appearance =
+                self.theme
+                    .resolve_row_appearance(item.selected, item.state.interaction_state(), self.size, &row_scale);
             let focused_probe_row_appearance = if any_item_enabled && !item.state.disabled {
                 let mut focused_state = item.state.interaction_state();
                 focused_state.focused = true;
-                Some(self.theme.resolve_row(item.selected, focused_state, self.size))
+                Some(self.theme.resolve_row_appearance(item.selected, focused_state, self.size, &row_scale))
             } else {
                 None
             };
@@ -193,7 +201,7 @@ fn render_listbox_row_visual(
         .text_size(px(appearance.label_typography.size))
         .line_height(px(appearance.label_typography.line_height))
         .font_weight(appearance.label_typography.weight)
-        .child(content);
+        .child(div().w_full().mt(px(appearance.label_baseline_shift)).child(content));
 
     if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {
         root = root.child(adorner);

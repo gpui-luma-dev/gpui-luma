@@ -6,8 +6,8 @@
 //! | Selected  | `{style}`  | `{style}-foreground`   |
 //! | Disabled  | `muted`    | `muted-foreground`     |
 
-use crate::controls::radio_button::RadioButtonAppearance;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::controls::radio_button::RadioButtonPalette;
+use crate::theme::{InteractionLayer, InteractionState};
 
 use super::focus::focus_adorner;
 use super::resolve::{
@@ -23,7 +23,7 @@ pub(crate) fn radio_button_appearance(
     style: RadixButtonStyle,
     selected: bool,
     state: InteractionState,
-) -> RadioButtonAppearance {
+) -> RadioButtonPalette {
     if mode.catalog.tokens.is_empty() {
         return radio_button_appearance_from_palette(
             &mode.palette,
@@ -46,8 +46,7 @@ fn radio_button_appearance_from_palette(
     style: RadixButtonStyle,
     selected: bool,
     state: InteractionState,
-) -> RadioButtonAppearance {
-    let size = ControlSize::Md;
+) -> RadioButtonPalette {
     let layer = state.layer();
     let checked_action = palette.action(style);
     let outline = palette.outline;
@@ -66,7 +65,7 @@ fn radio_button_appearance_from_palette(
         InteractionLayer::Default => checked_action.background,
     };
 
-    RadioButtonAppearance {
+    RadioButtonPalette {
         control_background: None,
         control_border: None,
         indicator_background,
@@ -90,13 +89,6 @@ fn radio_button_appearance_from_palette(
         adorner: super::focus::focus_adorner_from_palette(palette, metrics, state.focused),
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        control_radius: metrics.radius(size),
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
-        indicator_size: metrics.control_height(size) * 0.5,
-        dot_size: metrics.control_height(size) * 0.24,
-        gap: metrics.gap(size),
-        height: metrics.control_height(size),
     }
 }
 
@@ -107,8 +99,7 @@ pub(crate) fn radio_button_appearance_from_catalog(
     style: RadixButtonStyle,
     selected: bool,
     state: InteractionState,
-) -> anyhow::Result<RadioButtonAppearance> {
-    let size = ControlSize::Md;
+) -> anyhow::Result<RadioButtonPalette> {
     let layer = state.layer();
 
     let indicator_background = match layer {
@@ -127,7 +118,7 @@ pub(crate) fn radio_button_appearance_from_catalog(
         resolve_color(catalog, "border")?
     };
 
-    Ok(RadioButtonAppearance {
+    Ok(RadioButtonPalette {
         control_background: None,
         control_border: None,
         indicator_background,
@@ -137,13 +128,6 @@ pub(crate) fn radio_button_appearance_from_catalog(
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        control_radius: metrics.radius(size),
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
-        indicator_size: metrics.control_height(size) * 0.5,
-        dot_size: metrics.control_height(size) * 0.24,
-        gap: metrics.gap(size),
-        height: metrics.control_height(size),
     })
 }
 

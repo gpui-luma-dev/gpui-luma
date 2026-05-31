@@ -3,12 +3,9 @@ use gpui::{
     ScrollWheelEvent, SharedString, Subscription, TextRun, Window, font, px,
 };
 
-use crate::controls::selector_panel::{
-    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
-};
+use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::theme::ControlSize;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::item_template::ComboBoxItemTemplate;
@@ -441,7 +438,7 @@ impl Render for ComboBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
+        let appearance = (self.model.popup_appearance_provider)();
         let selected_label = self
             .behavior
             .state
@@ -450,10 +447,12 @@ impl Render for ComboBoxControl {
             .unwrap_or_else(|| "none".to_string());
 
         let minimum_trigger_width = {
-            let textfield_appearance = crate::controls::textfield::default_textfield_theme().resolve(
+            let textfield_theme = crate::controls::textfield::default_textfield_theme();
+            let textfield_appearance = textfield_theme.resolve_appearance(
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
+                &crate::theme::StandardBoxScale::compute(crate::theme::ControlSize::Md, textfield_theme.metrics(), 1.0),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_appearance.typography.weight;

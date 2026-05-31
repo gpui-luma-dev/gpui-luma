@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::controls::autocomplete::AutocompleteTextBoxTheme;
-use crate::controls::button_family::{ButtonFamilyRole, ButtonFamilyTheme};
+use crate::controls::button_family::{ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
 use crate::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use crate::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use crate::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
@@ -36,24 +36,20 @@ use super::checkbox::checkbox_appearance;
 use super::control_group::control_group_list_appearance;
 use super::context_menu::context_menu_appearance;
 use super::floating_menu::floating_menu_appearance;
-use super::list_view::{list_view_appearance, list_view_row_appearance};
+use super::list_view::{list_view_appearance, list_view_row_palette};
 use super::navigation_sidebar::{
     navigation_sidebar_branch_appearance, navigation_sidebar_container_appearance, navigation_sidebar_item_appearance,
     navigation_sidebar_section_appearance,
 };
-use super::listbox::{listbox_list_appearance, listbox_row_appearance};
-use super::popup_menu::popup_menu_appearance;
+use super::listbox::{listbox_list_appearance, listbox_row_palette};
 use super::progress::progress_appearance;
 use super::radio::radio_button_appearance;
 use super::scrollbar::scrollbar_appearance;
 use super::selection_panel::selection_panel_appearance;
-use super::selector::selector_appearance;
 use super::slider::slider_appearance;
 use super::switch::switch_appearance;
 use super::tabs_navigation::{tabs_navigation_item_appearance, tabs_navigation_list_appearance};
-use super::textarea::textarea_appearance;
-use super::textfield::textfield_appearance;
-use super::button::button_appearance;
+use super::button::button_palette;
 use super::{RadixButtonStyle, RadixTheme};
 
 struct RadixStyledButtonFamilyTheme {
@@ -62,13 +58,12 @@ struct RadixStyledButtonFamilyTheme {
 }
 
 impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
-    fn resolve(
-        &self,
-        role: ButtonFamilyRole,
-        size: ControlSize,
-        state: InteractionState,
-    ) -> crate::controls::button_family::ButtonFamilyAppearance {
-        button_appearance(self.theme.mode_tokens(), self.style, role, size, state)
+    fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
+        button_palette(self.theme.mode_tokens(), self.style, role, size, state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -90,8 +85,12 @@ struct RadixStyledSwitchTheme {
 }
 
 impl SwitchTheme for RadixStyledSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> crate::controls::switch::SwitchAppearance {
+    fn resolve(&self, on: bool, state: InteractionState) -> crate::controls::switch::SwitchPalette {
         switch_appearance(self.theme.mode_tokens(), self.theme.mode(), self.style, on, state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -101,8 +100,12 @@ struct RadixStyledCheckboxTheme {
 }
 
 impl CheckboxTheme for RadixStyledCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> crate::controls::checkbox::CheckboxAppearance {
+    fn resolve(&self, checked: bool, state: InteractionState) -> crate::controls::checkbox::CheckboxPalette {
         checkbox_appearance(self.theme.mode_tokens(), self.style, checked, state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -112,8 +115,12 @@ struct RadixStyledRadioButtonTheme {
 }
 
 impl RadioButtonTheme for RadixStyledRadioButtonTheme {
-    fn resolve(&self, selected: bool, state: InteractionState) -> crate::controls::radio_button::RadioButtonAppearance {
+    fn resolve(&self, selected: bool, state: InteractionState) -> crate::controls::radio_button::RadioButtonPalette {
         radio_button_appearance(self.theme.mode_tokens(), self.style, selected, state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -216,8 +223,12 @@ struct RadixPopupMenuTheme {
 }
 
 impl PopupMenuTheme for RadixPopupMenuTheme {
-    fn resolve(&self, state: InteractionState) -> crate::controls::popup_menu::PopupMenuAppearance {
-        popup_menu_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+    fn resolve(&self, state: InteractionState) -> crate::controls::popup_menu::PopupMenuPalette {
+        super::popup_menu::popup_menu_palette(self.theme.mode_tokens(), self.theme.mode(), state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -252,8 +263,12 @@ struct RadixSelectorTheme {
 }
 
 impl SelectorTheme for RadixSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> crate::controls::selector::SelectorAppearance {
-        selector_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+    fn resolve(&self, state: InteractionState) -> crate::controls::selector::SelectorPalette {
+        super::selector::selector_palette(self.theme.mode_tokens(), self.theme.mode(), state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -267,8 +282,12 @@ impl TextFieldTheme for RadixTextFieldTheme {
         variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
-    ) -> crate::controls::textfield::TextFieldAppearance {
-        textfield_appearance(self.theme.mode_tokens(), variant, state, enabled)
+    ) -> crate::controls::textfield::TextFieldPalette {
+        super::textfield::textfield_palette(self.theme.mode_tokens(), variant, state, enabled)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -306,8 +325,12 @@ impl TextAreaTheme for RadixTextAreaTheme {
         &self,
         state: crate::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> crate::controls::textarea::TextAreaAppearance {
-        textarea_appearance(self.theme.mode_tokens(), state, enabled)
+    ) -> crate::controls::textarea::TextAreaPalette {
+        super::textarea::textarea_palette(self.theme.mode_tokens(), state, enabled)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -436,8 +459,12 @@ impl ListBoxTheme for RadixListBoxTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> crate::controls::listbox::ListBoxRowAppearance {
-        listbox_row_appearance(self.theme.mode_tokens(), selected, state, size)
+    ) -> crate::controls::listbox::ListBoxRowPalette {
+        listbox_row_palette(self.theme.mode_tokens(), selected, state, size)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 
@@ -468,8 +495,12 @@ impl ListViewTheme for RadixListViewTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> crate::controls::list_view::ListViewRowAppearance {
-        list_view_row_appearance(self.theme.mode_tokens(), selected, state, size)
+    ) -> crate::controls::list_view::ListViewRowPalette {
+        list_view_row_palette(self.theme.mode_tokens(), selected, state, size)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
     }
 }
 

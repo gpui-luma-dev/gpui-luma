@@ -3,10 +3,10 @@ use std::sync::{Arc, OnceLock};
 use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct SwitchAppearance {
+pub struct SwitchPalette {
     pub track_background: Hsla,
     pub track_border: Hsla,
     pub thumb_background: Hsla,
@@ -16,16 +16,13 @@ pub struct SwitchAppearance {
     pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub label_font_family: SharedString,
-    pub width: f32,
-    pub height: f32,
-    pub thumb_size: f32,
-    pub padding: f32,
-    pub gap: f32,
-    pub radius: f32,
 }
 
+pub type SwitchAppearance = SwitchPalette;
+
 pub trait SwitchTheme: Send + Sync {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance;
+    fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette;
+    fn metrics(&self) -> &MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -46,12 +43,11 @@ impl DefaultSwitchTheme {
 }
 
 impl SwitchTheme for DefaultSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchAppearance {
+    fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
-        let size = ControlSize::Md;
         let on_action = palette.action.prominent;
 
         let track_background = if state.disabled {
@@ -88,7 +84,7 @@ impl SwitchTheme for DefaultSwitchTheme {
             (palette.app.background, palette.border.default)
         };
 
-        SwitchAppearance {
+        SwitchPalette {
             track_background,
             track_border,
             thumb_background,
@@ -102,12 +98,10 @@ impl SwitchTheme for DefaultSwitchTheme {
             adorner,
             label_typography: typography.text.label,
             label_font_family: typography.font.sans.family.clone().into(),
-            width: 42.0,
-            height: 22.0,
-            thumb_size: metrics.control_height(size) * 0.5,
-            padding: 2.0,
-            gap: metrics.gap(size),
-            radius: metrics.radius.pill,
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
     }
 }

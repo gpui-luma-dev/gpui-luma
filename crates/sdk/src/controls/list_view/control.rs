@@ -20,7 +20,7 @@ use crate::keyhandling::{
     SelectNextItem, SelectPreviousItem,
 };
 use crate::theme::adorner::adorner_oversize_extent;
-use crate::theme::{ControlSize, InteractionState};
+use crate::theme::{ControlSize, InteractionState, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 
 #[derive(Clone, Debug)]
 pub enum ListViewEvent {
@@ -71,15 +71,14 @@ where
             // collapses to zero when overdraw is small.
             list_state = list_state.measure_all();
         }
-        let control = Self {
+        Self {
             list_state,
             focus_handle: cx.focus_handle().tab_stop(builder.model.enabled),
             model: builder.model,
             hovered_index: None,
             pressed_index: None,
             current_page: 0,
-        };
-        control
+        }
     }
 
     pub fn items(&self) -> &[T] {
@@ -434,22 +433,30 @@ where
         appearance
     }
 
-    fn resolve_row_appearance(&self, window: &Window) -> super::theme::ListViewRowAppearance {
+    fn resolve_row_appearance(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowAppearance {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
-        self.model.theme.resolve_row(
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.model.theme.metrics(),
+            LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
+        );
+        self.model.theme.resolve_row_appearance(
             false,
             InteractionState { focused: focus.focused, ..Default::default() },
             self.model.size,
+            &scale,
         )
     }
 
     fn resolve_row_appearance_for_metrics(&self) -> super::theme::ListViewRowAppearance {
-        self.model.theme.resolve_row(false, InteractionState::default(), self.model.size)
+        let scale = ListRowScale::compute(self.model.size, self.model.theme.metrics(), 1.0);
+        self.model.theme.resolve_row_appearance(false, InteractionState::default(), self.model.size, &scale)
     }
 
-    fn render_model(&self, window: &Window) -> ListViewRenderModel<'_> {
+    fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> ListViewRenderModel<'_> {
         let appearance = self.resolve_appearance(window);
-        let row_appearance = self.resolve_row_appearance(window);
+        let row_appearance = self.resolve_row_appearance(window, cx);
         let has_header = self.model.header_template.is_some();
         let visible_rows = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode);
         let row_height = visible_row_height(&row_appearance, self.model.visible_row_height);
@@ -492,11 +499,17 @@ where
         let keyboard_active = active && focus.focused;
         let interaction =
             InteractionState { hovered, pressed, focused: keyboard_active, disabled: !enabled && !keyboard_active };
-        let appearance = self.model.theme.resolve_row(selected, interaction, self.model.size);
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.model.theme.metrics(),
+            LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
+        );
+        let appearance = self.model.theme.resolve_row_appearance(selected, interaction, self.model.size, &scale);
         let focused_probe_appearance = if enabled || active {
             let mut focused_probe_state = interaction;
             focused_probe_state.focused = true;
-            Some(self.model.theme.resolve_row(selected, focused_probe_state, self.model.size))
+            Some(self.model.theme.resolve_row_appearance(selected, focused_probe_state, self.model.size, &scale))
         } else {
             None
         };
@@ -809,7 +822,7 @@ where
     T: 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let render_model = self.render_model(window);
+        let render_model = self.render_model(window, cx);
         let header = self
             .model
             .header_template

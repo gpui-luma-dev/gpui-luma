@@ -1,8 +1,10 @@
 use gpui::Hsla;
 
-use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
+use crate::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_appearance,
+};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale};
 
 use super::mode::RadixModeTokens;
 use super::palette::RadixActionRole;
@@ -23,6 +25,18 @@ pub(crate) fn button_appearance(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonFamilyAppearance {
+    let palette = button_palette(mode, style, role, size, state);
+    let scale = StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    compose_button_family_appearance(&palette, role, &scale)
+}
+
+pub(crate) fn button_palette(
+    mode: &RadixModeTokens,
+    style: RadixButtonStyle,
+    role: ButtonFamilyRole,
+    _size: ControlSize,
+    state: InteractionState,
+) -> ButtonFamilyPalette {
     let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
         RadixButtonStyle::Outline
     } else {
@@ -46,8 +60,6 @@ pub(crate) fn button_appearance(
     };
 
     let background = button_background(style, action, palette, selected, state.layer());
-
-    let height = metrics.control_height(size);
     let border = action.border;
 
     let adorner = if state.focused {
@@ -66,27 +78,13 @@ pub(crate) fn button_appearance(
         None
     };
 
-    ButtonFamilyAppearance {
+    ButtonFamilyPalette {
         background,
         foreground,
         border,
         adorner,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
-        radius: match role {
-            ButtonFamilyRole::Icon => metrics.radius.pill,
-            _ => metrics.radius(size),
-        },
-        padding_x: match role {
-            ButtonFamilyRole::Icon => 0.0,
-            _ => metrics.padding_x(size),
-        },
-        padding_y: match role {
-            ButtonFamilyRole::Icon => 0.0,
-            _ => metrics.padding_y(size),
-        },
-        gap: metrics.gap(size),
-        height,
     }
 }
 

@@ -9,6 +9,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::floating_menu::render_floating_menu;
 use crate::controls::popup_menu::{PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -73,7 +74,13 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             item_hovers,
             item_clicks,
         } = handlers;
-        let appearance = self.theme.resolve(model.state);
+        let scale_factor = window.scale_factor();
+        let scale = _cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        let appearance = self.theme.resolve_appearance(model.state, &scale);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
@@ -247,10 +254,14 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
-    use crate::theme::InteractionState;
+    use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
     fn appearance() -> PopupMenuAppearance {
-        default_popup_menu_theme().resolve(InteractionState::default())
+        let theme = default_popup_menu_theme();
+        theme.resolve_appearance(
+            InteractionState::default(),
+            &StandardBoxScale::compute(ControlSize::Md, theme.metrics(), 1.0),
+        )
     }
 
     #[test]

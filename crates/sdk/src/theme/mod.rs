@@ -1,12 +1,16 @@
 pub mod adorner;
+pub mod cache;
 pub mod interaction;
+pub mod layout;
 pub mod pack;
 pub mod radix;
 pub mod registry;
 pub mod tokens;
 
 pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+pub use cache::{LayoutCacheKey, LumaLayoutCacheExt};
 pub use interaction::{InteractionLayer, InteractionState};
+pub use layout::{GlyphIndicatorScale, ListRowScale, StandardBoxScale, snap_to_pixel};
 pub use pack::LumaChrome;
 pub use radix::{
     CssTokenCatalog, CssTokenMap, RadixButtonStyle, RadixButtonStyleExt, RadixModeTokens, RadixTextFieldExt,

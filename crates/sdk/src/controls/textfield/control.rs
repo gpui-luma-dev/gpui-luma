@@ -155,8 +155,14 @@ impl TextFieldControl {
         cx.notify();
     }
 
-    fn resolved_appearance(&self) -> TextFieldAppearance {
-        let appearance = self.model.template.resolve_appearance(self.model.variant, self.state, self.model.enabled);
+    fn resolved_appearance(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldAppearance {
+        let appearance = self.model.template.resolve_appearance_with_scale(
+            self.model.variant,
+            self.state,
+            self.model.enabled,
+            window.scale_factor(),
+            cx,
+        );
         if let Some(override_fn) = &self.model.appearance_override {
             override_fn(appearance)
         } else {
@@ -185,8 +191,8 @@ impl TextFieldControl {
         }
     }
 
-    fn layout_preview(&self, window: &mut Window) -> TextFieldLayoutPreview {
-        let appearance = self.resolved_appearance();
+    fn layout_preview(&self, window: &mut Window, cx: &mut Context<Self>) -> TextFieldLayoutPreview {
+        let appearance = self.resolved_appearance(window, cx);
         let run = TextRun {
             len: self.model.value.len(),
             font: {
@@ -504,7 +510,7 @@ impl Render for TextFieldControl {
         }
 
         self.sync_focus(window, cx);
-        let layout_preview = self.layout_preview(window);
+        let layout_preview = self.layout_preview(window, cx);
         let entity = cx.entity();
         let input_focus_handle = self.focus_handle.clone();
         let value = self.model.value.clone();

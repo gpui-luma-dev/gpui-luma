@@ -3,25 +3,42 @@ use std::sync::Arc;
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
-use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyTheme, default_button_family_theme};
+use crate::controls::button_family::{
+    ButtonFamilyAppearance, ButtonFamilyTheme, compose_button_family_appearance, default_button_family_theme,
+};
 use crate::theme::InteractionState;
 
 const DISABLED_OPACITY: f32 = 0.56;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
-fn resolve_appearance<D>(theme: &Arc<dyn ButtonFamilyTheme>, model: &ButtonRenderModel<D>) -> ButtonFamilyAppearance {
+fn resolve_theme_appearance<D>(
+    theme: &Arc<dyn ButtonFamilyTheme>,
+    model: &ButtonRenderModel<D>,
+    scale: &StandardBoxScale,
+) -> ButtonFamilyAppearance {
+    let palette = theme.resolve(model.role, model.size, model.state);
+    compose_button_family_appearance(&palette, model.role, scale)
+}
+
+fn resolve_appearance<D>(
+    theme: &Arc<dyn ButtonFamilyTheme>,
+    model: &ButtonRenderModel<D>,
+    scale: &StandardBoxScale,
+) -> ButtonFamilyAppearance {
     if let Some(resolve) = &model.appearance {
         return resolve(model);
     }
 
-    theme.resolve(model.role, model.size, model.state)
+    resolve_theme_appearance(theme, model, scale)
 }
 
 fn resolve_focus_probe_appearance<D: Clone>(
     theme: &Arc<dyn ButtonFamilyTheme>,
     model: &ButtonRenderModel<D>,
+    scale: &StandardBoxScale,
 ) -> Option<ButtonFamilyAppearance> {
     if model.state.disabled {
         return None;
@@ -43,7 +60,9 @@ fn resolve_focus_probe_appearance<D: Clone>(
         return Some(resolve(&focused_model));
     }
 
-    Some(theme.resolve(model.role, model.size, InteractionState { focused: true, ..model.state }))
+    let focused_state = InteractionState { focused: true, ..model.state };
+    let palette = theme.resolve(model.role, model.size, focused_state);
+    Some(compose_button_family_appearance(&palette, model.role, scale))
 }
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
@@ -80,9 +99,15 @@ pub fn default_button_template<D: Clone + 'static>() -> Arc<dyn ButtonTemplate<D
 }
 
 impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
-    fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = resolve_appearance(&self.theme, model);
-        let focused_probe_appearance = resolve_focus_probe_appearance(&self.theme, model);
+    fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
+        );
+        let appearance = resolve_appearance(&self.theme, model, &scale);
+        let focused_probe_appearance = resolve_focus_probe_appearance(&self.theme, model, &scale);
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -152,7 +177,7 @@ mod tests {
     use gpui::Hsla;
 
     use super::*;
-    use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole, ButtonSize};
+    use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, ButtonSize};
     use crate::theme::{InteractionState, LumaTextStyle};
 
     fn lime_appearance() -> ButtonFamilyAppearance {
@@ -186,7 +211,52 @@ mod tests {
             appearance: Some(Arc::new(|_| lime_appearance())),
         };
 
-        let appearance = resolve_appearance(&template.theme, &model);
+        let scale = StandardBoxScale {
+            height: 32.0,
+            padding_x: 12.0,
+            padding_y: 6.0,
+            gap: 6.0,
+            radius: 8.0,
+            track_width: 32.0,
+            track_height: 20.0,
+            track_padding: 2.0,
+            thumb_size: 16.0,
+            track_radius: 999.0,
+            label_baseline_shift: 1.0,
+        };
+        let appearance = resolve_appearance(&template.theme, &model, &scale);
         assert_eq!(appearance.background, lime_appearance().background);
+    }
+
+    #[test]
+    fn compose_button_family_appearance_uses_box_scale_geometry() {
+        let palette = ButtonFamilyPalette {
+            background: Hsla::default(),
+            foreground: Hsla::default(),
+            border: Hsla::default(),
+            adorner: None,
+            typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
+            font_family: "test".into(),
+        };
+        let scale = StandardBoxScale {
+            height: 36.0,
+            padding_x: 14.0,
+            padding_y: 8.0,
+            gap: 8.0,
+            radius: 6.0,
+            track_width: 42.0,
+            track_height: 22.0,
+            track_padding: 2.0,
+            thumb_size: 18.0,
+            track_radius: 999.0,
+            label_baseline_shift: 1.0,
+        };
+
+        let appearance = compose_button_family_appearance(&palette, ButtonFamilyRole::Text, &scale);
+        assert_eq!(appearance.height, 36.0);
+        assert_eq!(appearance.padding_x, 14.0);
+        assert_eq!(appearance.padding_y, 8.0);
+        assert_eq!(appearance.gap, 8.0);
+        assert_eq!(appearance.radius, 6.0);
     }
 }

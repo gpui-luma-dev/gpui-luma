@@ -9,8 +9,8 @@
 //! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
 //! surface). Only `focused` adds a focus ring via the adorner.
 
-use crate::controls::switch::SwitchAppearance;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTheme, ThemeMode};
+use crate::controls::switch::SwitchPalette;
+use crate::theme::{InteractionLayer, InteractionState, LumaTheme, ThemeMode};
 
 use super::focus::focus_adorner;
 use super::resolve::{resolve_action_layer, resolve_color, resolve_label_color};
@@ -25,7 +25,7 @@ pub(crate) fn switch_appearance(
     style: RadixButtonStyle,
     on: bool,
     state: InteractionState,
-) -> SwitchAppearance {
+) -> SwitchPalette {
     if mode.catalog.tokens.is_empty() {
         return switch_appearance_from_palette(
             &mode.palette,
@@ -50,8 +50,7 @@ fn switch_appearance_from_palette(
     style: RadixButtonStyle,
     on: bool,
     state: InteractionState,
-) -> SwitchAppearance {
-    let size = ControlSize::Md;
+) -> SwitchPalette {
     let thumb_shadow = {
         let native = LumaTheme::native();
         native.mode(theme_mode).elevation.thumb.to_box_shadows()
@@ -74,7 +73,7 @@ fn switch_appearance_from_palette(
 
     let (thumb_background, thumb_border) = switch_thumb_surface_palette(palette, on_action, on, state.disabled);
 
-    SwitchAppearance {
+    SwitchPalette {
         track_background,
         track_border,
         thumb_background,
@@ -88,12 +87,6 @@ fn switch_appearance_from_palette(
         adorner: super::focus::focus_adorner_from_palette(palette, metrics, state.focused),
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        width: 42.0,
-        height: 22.0,
-        thumb_size: metrics.control_height(size) * 0.5,
-        padding: 2.0,
-        gap: metrics.gap(size),
-        radius: metrics.radius.pill,
     }
 }
 
@@ -105,8 +98,7 @@ pub(crate) fn switch_appearance_from_catalog(
     style: RadixButtonStyle,
     on: bool,
     state: InteractionState,
-) -> anyhow::Result<SwitchAppearance> {
-    let size = ControlSize::Md;
+) -> anyhow::Result<SwitchPalette> {
     let thumb_shadow = {
         let native = LumaTheme::native();
         native.mode(theme_mode).elevation.thumb.to_box_shadows()
@@ -128,7 +120,7 @@ pub(crate) fn switch_appearance_from_catalog(
 
     let (thumb_background, thumb_border) = switch_thumb_colors(catalog, style, on, state.disabled)?;
 
-    Ok(SwitchAppearance {
+    Ok(SwitchPalette {
         track_background,
         track_border,
         thumb_background,
@@ -138,12 +130,6 @@ pub(crate) fn switch_appearance_from_catalog(
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        width: 42.0,
-        height: 22.0,
-        thumb_size: metrics.control_height(size) * 0.5,
-        padding: 2.0,
-        gap: metrics.gap(size),
-        radius: metrics.radius.pill,
     })
 }
 

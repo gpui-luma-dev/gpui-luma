@@ -29,8 +29,8 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - custom title-bar rendering and platform-specific window control behavior
 
 - `theme/mod.rs`
-  - submodules: `adorner`, `interaction`, `pack`, `radix`, `tokens`, `registry`
-  - re-exports token APIs, `RadixTheme`, `set_active_radix_theme`, and `all_radix_theme_usages`
+  - submodules: `adorner`, `cache`, `interaction`, `layout`, `pack`, `radix`, `tokens`, `registry`
+  - re-exports token APIs, layout cache helpers, shared layout scales, `RadixTheme`, and `all_radix_theme_usages`
 
 - `controls/mod.rs`
   - exports control families and shared infra modules
@@ -151,10 +151,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - supports per-instance visual specialization via builder `.appearance_override(...)`
     - closure shape: `Fn(TextFieldAppearance) -> TextFieldAppearance + Send + Sync + 'static`
     - applied after theme/template appearance resolution and before template render + text layout/shaping usage
-  - theme resolution remains variant-aware (`TextFieldTheme::resolve(variant, state, enabled)`)
+  - theme resolution is variant-aware and palette-first (`TextFieldTheme::resolve(variant, state, enabled)`), while composed `TextFieldAppearance` is rebuilt from cached `StandardBoxScale`
   - exports builder/model/state/template/theme + `TextFieldEvent`
 - `textarea/*`
   - multiline text editor with scroll + drag behavior
+  - theme resolution is palette-first (`TextAreaTheme::resolve(state, enabled)`), while render/layout paths compose cached `StandardBoxScale`
   - exports builder/model/state/template/theme + `TextAreaEvent`
 - `text/*` (crate-private)
   - shared editing/state primitives used by textfield/textarea
@@ -179,6 +180,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `selector/*`
   - popup selector (typed or built-in item model)
   - two-template composition: control template (`SelectorTemplate`) + items template (`SelectorItemsTemplate` via `selector_panel`)
+  - trigger visuals resolve through `SelectorPalette`, with trigger geometry composed from cached `StandardBoxScale`
   - exports builder/model/template/theme + `SelectorEvent`
 - `selector_panel/*`
   - selector-native item model and popup row renderer shared by selector-family controls
@@ -190,6 +192,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - generic floating/nested menu state + themed rendering helpers
 - `popup_menu/*`
   - trigger + floating menu composition
+  - trigger visuals resolve through `PopupMenuPalette`, with trigger geometry composed from cached `StandardBoxScale`
   - exports builder/model/template/theme + `PopupMenuEvent`
 - `context_menu/*`
   - context-triggered menu composition
@@ -205,11 +208,13 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `listbox/*`
   - selector-style static list panel with single/multiple selection
   - thin wrapper over `control_group` with listbox-specific templates and theme
+  - row visuals resolve through `ListBoxRowPalette`, with row geometry composed from cached `ListRowScale`
   - exports `ListBox`, `ListBoxItem`, constructors, and re-exports `ControlGroupEvent`
 - `list_view/*`
   - virtualized list control backed by `gpui::list` / `ListState`
   - owns active-row navigation, selection state, fixed-header slot, and row virtualization
   - supports plain typed item models via stored label/enabled adapters instead of a required item trait
+  - row visuals resolve through `ListViewRowPalette`, with row geometry composed from cached `ListRowScale`
   - scroll modes: `ListScrollMode` (`ScrollSmooth`, `ScrollSnap`, `Paged { page_size }`), optional `visible_rows` shell sizing
   - paging facade: `PagingListViewControl` + `PagingListViewBuilder` compose `ListViewControl` with SDK `PagingToolbar` (selection/page sync under the hood)
   - exports `ListViewControl`, `ScrollingListView`, `PagingListView`, builders, `PagingToolbar*`, `ListViewLabel`, `ListSelectionMode`, `ListScrollMode`, `new` / `new_typed`, declarative `list_view!` / `scrolling_list_view!` / `paging_list_view!` / `column!` macros, grid-column helpers, and theme/template hooks
@@ -231,14 +236,21 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - mode support (`ThemeMode`, `ThemeModes`)
   - TOML parsing and conversion into typed theme model
 
+- `layout.rs`
+  - shared density/layout math utilities
+  - `snap_to_pixel`, `StandardBoxScale`, `GlyphIndicatorScale`, `ListRowScale`
+
+- `cache.rs`
+  - app-global layout cache keyed by control size, display scale, and metric signature
+  - `LayoutCacheKey`, `LumaLayoutCacheExt::use_cached_layout(...)`
+
 - `pack.rs`
   - `LumaChrome`: app/gallery shell chrome colors
 
 - `radix/mod.rs`
   - `RadixTheme`: CSS catalog + mode tokens + control resolvers/template factories
-  - `active.rs`: `set_active_radix_theme` / `active_radix_theme`
   - `usage.rs`: `all_radix_theme_usages()` — hand-maintained CSS token usage metadata
-  - `catalog/`, `properties/`, `appearance/`, `recipes/`: CSS parse + per-control Radix resolvers
+  - `catalog/` and per-control resolver modules: CSS parse + Radix appearance/template adapters
 
 - `registry.rs`
   - palette token introspection (`PaletteColorToken`)

@@ -3,7 +3,9 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::theme::adorner::AdornerSpec;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
+};
 
 const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
@@ -26,6 +28,15 @@ impl ListViewAppearance {
 }
 
 #[derive(Clone, Debug)]
+pub struct ListViewRowPalette {
+    pub background: Hsla,
+    pub label_color: Hsla,
+    pub divider: Hsla,
+    pub adorner: Option<AdornerSpec>,
+    pub label_typography: LumaTextStyle,
+}
+
+#[derive(Clone, Debug)]
 pub struct ListViewRowAppearance {
     pub background: Hsla,
     pub label_color: Hsla,
@@ -36,11 +47,23 @@ pub struct ListViewRowAppearance {
     pub padding_x: f32,
     pub padding_y: f32,
     pub min_height: f32,
+    pub label_baseline_shift: f32,
 }
 
 pub trait ListViewTheme: Send + Sync {
     fn resolve_appearance(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewAppearance;
-    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowAppearance;
+    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette;
+    fn metrics(&self) -> &MetricTokens;
+
+    fn resolve_row_appearance(
+        &self,
+        selected: bool,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &ListRowScale,
+    ) -> ListViewRowAppearance {
+        compose_list_view_row_appearance(&self.resolve_row(selected, state, size), scale)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -89,9 +112,8 @@ impl ListViewTheme for DefaultListViewTheme {
         }
     }
 
-    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowAppearance {
+    fn resolve_row(&self, selected: bool, state: InteractionState, _size: ControlSize) -> ListViewRowPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
 
         let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
@@ -121,16 +143,34 @@ impl ListViewTheme for DefaultListViewTheme {
             palette.app.foreground
         };
 
-        ListViewRowAppearance {
+        ListViewRowPalette {
             background,
             label_color,
             divider: palette.form.input.border,
             adorner: None,
             label_typography: typography.text.label,
-            radius: 0.0,
-            padding_x: metrics.padding_x(size),
-            padding_y: metrics.padding_y(size),
-            min_height: metrics.control_height(size),
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
+    }
+}
+
+pub(crate) fn compose_list_view_row_appearance(
+    palette: &ListViewRowPalette,
+    scale: &ListRowScale,
+) -> ListViewRowAppearance {
+    ListViewRowAppearance {
+        background: palette.background,
+        label_color: palette.label_color,
+        divider: palette.divider,
+        adorner: palette.adorner,
+        label_typography: palette.label_typography,
+        radius: 0.0,
+        padding_x: scale.padding_x,
+        padding_y: scale.padding_y,
+        min_height: scale.min_height,
+        label_baseline_shift: scale.label_baseline_shift,
     }
 }

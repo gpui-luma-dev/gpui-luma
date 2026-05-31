@@ -3,7 +3,19 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
+use crate::theme::{
+    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
+};
+
+#[derive(Clone, Debug)]
+pub struct PopupMenuPalette {
+    pub trigger_background: Hsla,
+    pub trigger_foreground: Hsla,
+    pub trigger_border: Hsla,
+    pub focus_ring: Option<Hsla>,
+    pub trigger_typography: LumaTextStyle,
+    pub floating_menu: FloatingMenuAppearance,
+}
 
 #[derive(Clone, Debug)]
 pub struct PopupMenuAppearance {
@@ -23,7 +35,13 @@ pub struct PopupMenuAppearance {
 }
 
 pub trait PopupMenuTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> PopupMenuAppearance;
+    fn resolve(&self, state: InteractionState) -> PopupMenuPalette;
+
+    fn metrics(&self) -> &MetricTokens;
+
+    fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuAppearance {
+        compose_popup_menu_appearance(&self.resolve(state), scale)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -44,9 +62,8 @@ impl DefaultPopupMenuTheme {
 }
 
 impl PopupMenuTheme for DefaultPopupMenuTheme {
-    fn resolve(&self, state: InteractionState) -> PopupMenuAppearance {
+    fn resolve(&self, state: InteractionState) -> PopupMenuPalette {
         let palette = &self.tokens.palette;
-        let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
 
@@ -62,20 +79,38 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
             palette.action.ghost.foreground
         };
 
-        PopupMenuAppearance {
+        PopupMenuPalette {
             trigger_background,
             trigger_foreground,
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            trigger_radius: metrics.radius(size),
-            trigger_padding_x: metrics.padding_x(size),
-            trigger_padding_y: metrics.padding_y(size),
-            trigger_gap: metrics.gap(size),
-            trigger_height: metrics.control_height(size),
-            trigger_icon_size: metrics.control_height(size) * 0.44,
-            menu_offset_y: metrics.gap(size) * 0.5,
             floating_menu: default_floating_menu_appearance(&self.tokens, size),
         }
+    }
+
+    fn metrics(&self) -> &MetricTokens {
+        &self.tokens.metrics
+    }
+}
+
+pub(crate) fn compose_popup_menu_appearance(
+    palette: &PopupMenuPalette,
+    scale: &StandardBoxScale,
+) -> PopupMenuAppearance {
+    PopupMenuAppearance {
+        trigger_background: palette.trigger_background,
+        trigger_foreground: palette.trigger_foreground,
+        trigger_border: palette.trigger_border,
+        focus_ring: palette.focus_ring,
+        trigger_typography: palette.trigger_typography,
+        trigger_radius: scale.radius,
+        trigger_padding_x: scale.padding_x,
+        trigger_padding_y: scale.padding_y,
+        trigger_gap: scale.gap,
+        trigger_height: scale.height,
+        trigger_icon_size: scale.height * 0.44,
+        menu_offset_y: scale.gap * 0.5,
+        floating_menu: palette.floating_menu.clone(),
     }
 }

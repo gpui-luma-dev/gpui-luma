@@ -2,9 +2,9 @@
 
 use gpui::hsla;
 
-use crate::controls::listbox::{ListBoxListAppearance, ListBoxRowAppearance};
+use crate::controls::listbox::{ListBoxListAppearance, ListBoxRowPalette};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState};
 
 use super::focus::focus_adorner;
 use super::resolve::{resolve_color, resolve_color_layer};
@@ -24,16 +24,16 @@ pub(crate) fn listbox_list_appearance(
     }
 }
 
-pub(crate) fn listbox_row_appearance(
+pub(crate) fn listbox_row_palette(
     mode: &RadixModeTokens,
     _selected: bool,
     state: InteractionState,
     size: ControlSize,
-) -> ListBoxRowAppearance {
+) -> ListBoxRowPalette {
     if mode.catalog.tokens.is_empty() {
         listbox_row_from_palette(mode, state, size)
     } else {
-        listbox_row_from_catalog(&mode.catalog, mode, state, size)
+        listbox_row_from_catalog(&mode.catalog, mode, state)
             .unwrap_or_else(|err| panic!("listbox row properties: {err}"))
     }
 }
@@ -99,13 +99,8 @@ fn listbox_list_from_catalog(
     })
 }
 
-fn listbox_row_from_palette(
-    mode: &RadixModeTokens,
-    state: InteractionState,
-    size: ControlSize,
-) -> ListBoxRowAppearance {
+fn listbox_row_from_palette(mode: &RadixModeTokens, state: InteractionState, _size: ControlSize) -> ListBoxRowPalette {
     let palette = &mode.palette;
-    let metrics = &mode.metrics;
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
@@ -123,25 +118,14 @@ fn listbox_row_from_palette(
         palette.app_foreground
     };
 
-    ListBoxRowAppearance {
-        background,
-        label_color,
-        adorner: None,
-        label_typography: typography.text.label,
-        radius: metrics.radius(size),
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        height: metrics.control_height(size),
-    }
+    ListBoxRowPalette { background, label_color, adorner: None, label_typography: typography.text.label }
 }
 
 fn listbox_row_from_catalog(
     catalog: &super::catalog::CssTokenMap,
     mode: &RadixModeTokens,
     state: InteractionState,
-    size: ControlSize,
-) -> anyhow::Result<ListBoxRowAppearance> {
-    let metrics = &mode.metrics;
+) -> anyhow::Result<ListBoxRowPalette> {
     let typography = &mode.typography;
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
@@ -165,20 +149,7 @@ fn listbox_row_from_catalog(
         resolve_color(catalog, "foreground")?
     };
 
-    Ok(ListBoxRowAppearance {
-        background,
-        label_color,
-        adorner: None,
-        label_typography: LumaTextStyle {
-            size: typography.text.label.size,
-            line_height: typography.text.label.line_height,
-            weight: typography.text.label.weight,
-        },
-        radius: metrics.radius(size),
-        padding_x: metrics.padding_x(size),
-        padding_y: metrics.padding_y(size),
-        height: metrics.control_height(size),
-    })
+    Ok(ListBoxRowPalette { background, label_color, adorner: None, label_typography: typography.text.label })
 }
 
 #[cfg(test)]
@@ -190,7 +161,7 @@ mod tests {
     use super::super::resolve::resolve_color_layer;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
-    use super::{listbox_list_appearance, listbox_row_appearance};
+    use super::{listbox_list_appearance, listbox_row_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -215,7 +186,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let list = listbox_list_appearance(&mode, true, false, ControlSize::Md);
-        let row = listbox_row_appearance(
+        let row = listbox_row_palette(
             &mode,
             false,
             crate::theme::InteractionState { hovered: true, ..Default::default() },

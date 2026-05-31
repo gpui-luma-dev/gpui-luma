@@ -12,7 +12,12 @@ pub use template::{
     TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldTemplate, TextFieldTemplateHandlers,
     ThemedTextFieldTemplate, default_textfield_template,
 };
-pub use theme::{DefaultTextFieldTheme, TextFieldAppearance, TextFieldTheme, TextFieldVariant, default_textfield_theme};
+pub use theme::{
+    DefaultTextFieldTheme, TextFieldAppearance, TextFieldPalette, TextFieldTheme, TextFieldVariant,
+    default_textfield_theme,
+};
+#[allow(unused_imports)]
+pub(crate) use theme::compose_textfield_appearance;
 
 use gpui::{Entity, SharedString};
 

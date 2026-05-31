@@ -6,8 +6,8 @@
 //! | Checked  | `{style}`       | `{style}-foreground`   |
 //! | Disabled | `muted`         | `muted-foreground`     |
 
-use crate::controls::checkbox::CheckboxAppearance;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::controls::checkbox::CheckboxPalette;
+use crate::theme::{InteractionLayer, InteractionState};
 
 use super::focus::focus_adorner;
 use super::resolve::{
@@ -23,7 +23,7 @@ pub(crate) fn checkbox_appearance(
     style: RadixButtonStyle,
     checked: bool,
     state: InteractionState,
-) -> CheckboxAppearance {
+) -> CheckboxPalette {
     if mode.catalog.tokens.is_empty() {
         return checkbox_appearance_from_palette(&mode.palette, &mode.metrics, &mode.typography, style, checked, state);
     }
@@ -39,8 +39,7 @@ fn checkbox_appearance_from_palette(
     style: RadixButtonStyle,
     checked: bool,
     state: InteractionState,
-) -> CheckboxAppearance {
-    let size = ControlSize::Md;
+) -> CheckboxPalette {
     let layer = state.layer();
     let checked_action = palette.action(style);
     let outline = palette.outline;
@@ -63,7 +62,7 @@ fn checkbox_appearance_from_palette(
         palette.app_foreground
     };
 
-    CheckboxAppearance {
+    CheckboxPalette {
         control_background: None,
         control_border: None,
         indicator_background,
@@ -81,14 +80,6 @@ fn checkbox_appearance_from_palette(
         adorner: super::focus::focus_adorner_from_palette(palette, metrics, state.focused),
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        control_radius: metrics.radius(size),
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
-        indicator_radius: metrics.radius.sm,
-        indicator_size: metrics.control_height(size) * 0.5,
-        checkmark_size: metrics.control_height(size) * 0.42,
-        gap: metrics.gap(size),
-        height: metrics.control_height(size),
     }
 }
 
@@ -99,8 +90,7 @@ pub(crate) fn checkbox_appearance_from_catalog(
     style: RadixButtonStyle,
     checked: bool,
     state: InteractionState,
-) -> anyhow::Result<CheckboxAppearance> {
-    let size = ControlSize::Md;
+) -> anyhow::Result<CheckboxPalette> {
     let layer = state.layer();
 
     let indicator_background = match (checked, layer) {
@@ -115,7 +105,7 @@ pub(crate) fn checkbox_appearance_from_catalog(
         resolve_color(catalog, "border")?
     };
 
-    Ok(CheckboxAppearance {
+    Ok(CheckboxPalette {
         control_background: None,
         control_border: None,
         indicator_background,
@@ -125,14 +115,6 @@ pub(crate) fn checkbox_appearance_from_catalog(
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        control_radius: metrics.radius(size),
-        control_padding_x: 0.0,
-        control_padding_y: 0.0,
-        indicator_radius: metrics.radius.sm,
-        indicator_size: metrics.control_height(size) * 0.5,
-        checkmark_size: metrics.control_height(size) * 0.42,
-        gap: metrics.gap(size),
-        height: metrics.control_height(size),
     })
 }
 
