@@ -18,11 +18,11 @@ pub struct PagingToolbarLayout {
 }
 
 impl PagingToolbarLayout {
-    fn selection_summary(&self) -> String {
+    pub fn selection_summary(&self) -> String {
         format!("{} of {} row(s) selected.", self.selected_count, self.total_rows)
     }
 
-    fn page_indicator(&self) -> String {
+    pub fn page_indicator(&self) -> String {
         format!("Page {} of {}", self.current_page + 1, self.page_count.max(1))
     }
 }
@@ -266,4 +266,33 @@ fn render_nav_button(
                 cx.emit(event);
             }))
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_selection_summary_formats_counts() {
+        let layout =
+            PagingToolbarLayout { selected_count: 1, total_rows: 100, current_page: 0, page_count: 10, page_size: 10 };
+
+        assert_eq!(layout.selection_summary(), "1 of 100 row(s) selected.");
+    }
+
+    #[test]
+    fn layout_page_indicator_is_one_based() {
+        let layout =
+            PagingToolbarLayout { selected_count: 0, total_rows: 25, current_page: 2, page_count: 3, page_size: 10 };
+
+        assert_eq!(layout.page_indicator(), "Page 3 of 3");
+    }
+
+    #[test]
+    fn layout_page_indicator_handles_empty_page_count() {
+        let layout =
+            PagingToolbarLayout { selected_count: 0, total_rows: 0, current_page: 0, page_count: 0, page_size: 10 };
+
+        assert_eq!(layout.page_indicator(), "Page 1 of 1");
+    }
 }

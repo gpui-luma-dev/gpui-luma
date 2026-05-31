@@ -8,13 +8,18 @@ The core goal is **minimal impact on the existing `ListViewControl` code**, whil
 
 To isolate compiler diagnostics and ensure logic correctness before introducing complex macro expansion rules, the refactoring will proceed in two distinct phases:
 
-### Phase 1: Core Builders & Facades Integration
-We will first implement the type-safe primitives and composite control using standard Rust structures:
-1. Move the paging toolbar from the gallery to the SDK as [`toolbar.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/toolbar.rs).
-2. Implement the composite facade `PagingListViewControl` and its builder `PagingListViewBuilder` in [`paging.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/paging.rs).
-3. Expose the new types in [`mod.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/mod.rs).
-4. Migrate the gallery pane (`apps/gallery/src/gallery/panes/list_view/pane.rs`) to instantiate the list using raw builder syntax (`PagingListViewBuilder::new(...)`).
-5. Compile and test to ensure all event orchestration, selection tracking, and page navigating work perfectly under the hood.
+### Phase 1: Core Builders & Facades Integration — **Done**
+
+We first implement the type-safe primitives and composite control using standard Rust structures:
+
+1. ✅ Move the paging toolbar from the gallery to the SDK as [`toolbar.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/toolbar.rs).
+2. ✅ Implement the composite facade `PagingListViewControl` and its builder `PagingListViewBuilder` in [`paging.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/paging.rs).
+3. ✅ Expose the new types in [`mod.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/list_view/mod.rs).
+4. ✅ Migrate the gallery panes to raw builder syntax:
+   - [`paging_list_view_pane.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/list_view/paging_list_view_pane.rs) — `PagingListViewBuilder::new(...).spawn(cx)`
+   - [`scrolling_list_view_pane.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/list_view/scrolling_list_view_pane.rs) — `ListViewBuilder::visible_rows(...).spawn(cx)`
+   - Shared task grid/data in [`shared.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/list_view/shared.rs)
+5. ✅ Compile and test — SDK unit tests pass; gallery paging pane no longer owns toolbar sync state.
 
 ### Phase 2: Declarative Macro Rollout
 Once the builder integration is fully verified and warning-free, we add the declarative syntactic sugar:
@@ -650,69 +655,13 @@ pub use control::{ListViewControl, ListViewEvent};
 
 ---
 
-## 6. Gallery Pane Re-wiring (`pane.rs`)
+## 6. Gallery Pane Re-wiring
 
-By migrating the gallery listview pane to `paging_list_view!`, we remove the custom local `toolbar`, subscription sync states, and manual render loops.
+Gallery list view demos live in two panes under `apps/gallery/src/gallery/panes/list_view/`:
 
-```diff
-// apps/gallery/src/gallery/panes/list_view/pane.rs
+- **`scrolling_list_view_pane.rs`** — `task_list_builder(...).visible_rows(N).spawn(cx)`
+- **`paging_list_view_pane.rs`** — `PagingListViewBuilder::new(task_list_builder(...).paged(N), theme).spawn(cx)`
 
--use super::paging_toolbar::{PagingToolbar, PagingToolbarEvent, PagingToolbarLayout, render_paging_toolbar};
-+use gpui_luma::controls::list_view::{PagingListView, PagingToolbarLayout};
+Shared task grid/data is in **`shared.rs`**. The paging pane renders `self.list_view.clone()` directly; the facade owns list + toolbar sync (no gallery-side toolbar entity or manual page-state subscriptions).
 
-#[derive(Clone)]
-pub(in crate::gallery) struct ListViewPane {
--   list: gpui_luma::controls::list_view::ListView<Task>,
--   toolbar: Entity<PagingToolbar>,
--   selected_indices: Vec<usize>,
--   current_page: usize,
--   page_size: usize,
--   page_count: usize,
-+   list_view: PagingListView<Task>,
-}
-
-impl ListViewPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let tasks = build_task_rows();
-        
--       let list = list_view! { ... }.spawn(cx);
--       // ... manual toolbar setup ...
-+       let list_view = paging_list_view! {
-+           radix = radix_theme.clone();
-+           id = "listview-tasks";
-+           items = tasks;
-+           selection = ListSelectionMode::Single;
-+           page_size = DEFAULT_PAGE_SIZE;
-+           grid_view = { ... };
-+           row_template = |model, cells, _window, _cx| { ... };
-+       }
-+       .spawn(cx);
-
--       Self { list, toolbar, ... }
-+       Self { list_view }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
--       subscriptions.push(cx.subscribe(&self.list, ...));
--       subscriptions.push(cx.subscribe(&self.toolbar, ...));
-+       subscriptions.push(cx.subscribe(&self.list_view, |app, _, event: &ListViewEvent, cx| {
-+           // Handle selection clicks or bubbled active states here
-+       }));
-    }
-
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        gallery_pane_with_usage_top_aligned(
-            "ListView",
-            "ListView",
-            div()
-                .w(px(760.0))
-                .flex()
-                .flex_col()
-                .gap_4()
-                .child(self.list_view.clone()) // <-- Render the unified paging list facade directly!
-                .into_any_element(),
-            radix_theme,
-        )
-    }
-}
-```
+Phase 2 will optionally migrate these to `scrolling_list_view!` / `paging_list_view!` macros.

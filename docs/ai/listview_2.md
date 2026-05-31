@@ -12,9 +12,9 @@ The goal is to transition the list view control from a simple fixed-height scrol
 | Feature | State | SDK location | Gallery |
 |---|---|---|---|
 | **`visible_rows` shell sizing** | **Done** | `layout.rs`, `template.rs`, `control.rs` | `visible_rows = 10` on scroll-mode demo |
-| **Paging mode** | Done | `control.rs`, `layout.rs`, `model.rs` | Gallery external toolbar |
+| **Paging mode** | Done | `control.rs`, `layout.rs`, `model.rs`, `paging.rs`, `toolbar.rs` | Gallery **Paging List View** pane via `PagingListViewBuilder` |
 | **Scroll snapping** | Done (wheel + scroll handler) | `control.rs` | Not demoed yet |
-| **Builder / macro / public API** | Done | `model.rs`, `macros.rs`, `control.rs` | Partial (`visible_rows` only) |
+| **Builder / macro / public API** | Done | `model.rs`, `macros.rs`, `control.rs`, `paging.rs` | Gallery uses raw builders in `shared.rs` |
 
 **Remaining:** gallery coverage for paged + scroll-snap modes; optional spec polish (toolbar copy, page-size control widget); doc-only keyboard-nav behavior is outside this phase.
 
@@ -70,7 +70,7 @@ When `scroll_mode` is `ListScrollMode::Paged { page_size }`:
 1. **State:** `current_page: usize` (default `0`), clamped on item/page-size changes.
 2. **Items subset:** The control keeps the full `items` vector but sets GPUI `ListState` item count to the current page slice and maps local indices via `local_to_global_index` (equivalent to slicing, without copying rows).
 3. **Body:** No scroll in paged mode; all rows on the page are visible within the fixed body height.
-4. **No in-shell paging footer:** The list shell is header + body only. Host apps render paging controls as siblings (see gallery `paging_toolbar.rs`).
+4. **No in-shell paging footer:** The list shell is header + body only. Paging UI is composed by `PagingListViewControl` via SDK [`toolbar.rs`](../../crates/sdk/src/controls/list_view/toolbar.rs).
 
 ### B. Scroll Snapping
 
@@ -177,8 +177,8 @@ list_view! {
 
 | Item | Notes |
 |---|---|
-| Gallery scroll + `visible_rows` | **Done** — `apps/gallery/src/gallery/panes/list_view/pane.rs` |
-| Gallery paged demo | **Done** — `page_size = N` + external toolbar in `pane.rs` |
+| Gallery scroll + `visible_rows` | **Done** — `scrolling_list_view_pane.rs` |
+| Gallery paged demo | **Done** — `paging_list_view_pane.rs` via `PagingListViewBuilder` |
 | Gallery scroll-snap demo | Add `scroll_snap = true` or separate pane |
 | Toolbar spec alignment | Optional: dropdown for page size; `X of Y selected` copy |
 | `listview_2.md` | Updated with implementation status (this file) |
