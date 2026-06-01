@@ -8,6 +8,7 @@ use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::{declare_form, vstack};
 use gpui_luma::theme::RadixTheme;
 
 use super::common::{card_container, card_title};

@@ -1,6 +1,4 @@
 mod control;
-#[macro_use]
-mod macros;
 mod panes;
 mod template;
 mod theme;

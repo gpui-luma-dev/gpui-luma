@@ -1,12 +1,12 @@
 # Luma Theme Studio layout — window size (px) and panel upper-right corners (right, top).
 
 [window]
-width = 1784.0
-height = 1324.0
+width = 1820.0
+height = 1516.0
 
-[create_account]
-right = 736.0
-top = 0.0
+[cookie_settings]
+right = 843.23828125
+top = 445.08203125
 
 [report_issue]
 right = 1326.015625
@@ -16,13 +16,9 @@ top = 705.55078125
 right = 797.75390625
 top = 779.42578125
 
-[chat]
-right = 1254.04296875
-top = 290.29296875
-
-[cookie_settings]
-right = 843.23828125
-top = 445.08203125
+[create_account]
+right = 736.0
+top = 0.0
 
 [upgrade_subscription]
 right = 380.0
@@ -31,3 +27,7 @@ top = 0.0
 [team_members]
 right = 1172.0
 top = 0.0
+
+[chat]
+right = 1254.04296875
+top = 290.29296875

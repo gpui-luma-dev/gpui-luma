@@ -135,6 +135,6 @@ cargo run -p gpui-luma-theme-studio -- astrovista
 
 Themes load from `apps/gallery/tweakcn/` (shared with the gallery). Exports write to `apps/gallery/tweakcn/exports/theme-studio-overrides.css`.
 
-Embedded fonts live under `apps/theme-studio/src/assets/fonts/` (Rajdhani for `jarvis`, via `include_bytes!` in the binary). Layout macros (`declare_form`, `vstack`, `hstack`, `flow`) are in `apps/theme-studio/src/studio/macros/`, copied from the gallery.
+Embedded fonts live under `apps/theme-studio/src/assets/fonts/` (Rajdhani for `jarvis`, via `include_bytes!` in the binary). Layout and form macros (`declare_form`, `vstack`, `hstack`, `wrappanel`, `flow`, `form_field`) live in `crates/sdk/src/macros.rs` and are imported via `gpui_luma::{…}`.
 
 Layout persists in `apps/theme-studio/panel-layout.toml`: **`[window]`** `width` / `height` (pixels) and each card’s **upper-right** corner (`right`, `top`) under panel keys. The file is created on first launch; resizing the window or dragging a card updates it.

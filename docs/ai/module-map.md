@@ -7,8 +7,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 ## `crates/sdk` (`gpui-luma`)
 
 - `lib.rs`
-  - exports: `controls`, `focus`, `init`, `keyhandling`, `shell`, `theme`
+  - exports: `controls`, `focus`, `init`, `keyhandling`, `macros`, `shell`, `theme`
   - re-export: `init`
+- `macros.rs`
+  - layout helpers: `vstack!`, `hstack!`, `wrappanel!`, `flow!`
+  - form helpers: `declare_form!`, `form_field!`
 
 - `init.rs`
   - `init(cx: &mut App) -> anyhow::Result<()>`

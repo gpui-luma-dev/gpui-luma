@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{
-    Context, DragMoveEvent, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size, Subscription, Window,
-    div, prelude::*, px,
+    Context, DragMoveEvent, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size, Subscription,
+    Window, div, prelude::*, px,
 };
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;

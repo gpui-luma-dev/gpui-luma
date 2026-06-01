@@ -1,5 +1,3 @@
-#[macro_use]
-mod macros;
 mod app;
 mod demo_controls;
 mod panel_layout;

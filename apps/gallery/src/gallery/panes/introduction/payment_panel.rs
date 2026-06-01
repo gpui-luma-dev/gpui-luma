@@ -7,6 +7,7 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::{declare_form, hstack, vstack};
 use gpui_luma::theme::RadixTheme;
 
 use super::common::{card_container, card_title};
