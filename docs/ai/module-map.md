@@ -11,7 +11,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - re-export: `init`
 - `macros.rs`
   - layout helpers: `vstack!`, `hstack!`, `wrappanel!`, `flow!`
-  - form helpers: `declare_form!`, `form_field!`
+  - form helpers: `declare_form!`, `form_field!` (uses `controls::label::field_label` internally)
+- `controls/label.rs`
+  - `field_label(text, color)` — standard form field label styling
 
 - `init.rs`
   - `init(cx: &mut App) -> anyhow::Result<()>`

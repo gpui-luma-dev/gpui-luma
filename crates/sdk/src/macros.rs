@@ -309,9 +309,7 @@ macro_rules! declare_form {
     };
 }
 
-/// Utility macro to easily wrap a control in a column with a text label and standard gap.
-///
-/// Requires `field_label` to be in scope at the call site (typically app-specific chrome helpers).
+/// Wraps a control in a labeled column with the standard 4px gap.
 #[macro_export]
 macro_rules! form_field {
     ($label:expr, $chrome:expr; $control:expr) => {
@@ -319,7 +317,7 @@ macro_rules! form_field {
             .flex()
             .flex_col()
             .gap(::gpui::px(4.0))
-            .child(field_label($label, $chrome.body_text))
+            .child($crate::controls::label::field_label($label, $chrome.body_text))
             .child($control)
     };
 }

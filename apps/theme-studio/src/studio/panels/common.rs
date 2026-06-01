@@ -68,14 +68,7 @@ pub fn card_header(title: &'static str, subtitle: &'static str, title_color: Hsl
         .into_any_element()
 }
 
-pub fn field_label(text: &'static str, color: Hsla) -> impl IntoElement {
-    div()
-        .text_size(px(11.0))
-        .line_height(px(14.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(color)
-        .child(text)
-}
+pub use gpui_luma::controls::label::field_label;
 
 pub fn or_divider(label: &'static str, border: Hsla, text: Hsla) -> impl IntoElement {
     div()

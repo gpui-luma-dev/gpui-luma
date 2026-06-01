@@ -11,6 +11,7 @@ pub mod rounded_shell;
 pub mod context_menu;
 pub mod floating_menu;
 pub mod icon;
+pub mod label;
 
 pub(crate) mod interaction;
 pub mod menu_item;
