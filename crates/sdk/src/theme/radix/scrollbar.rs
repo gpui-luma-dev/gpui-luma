@@ -11,11 +11,11 @@ use gpui::hsla;
 
 use crate::controls::scrollbar::ScrollbarAppearance;
 use crate::controls::scrollbar::ScrollbarOrientation;
-use crate::theme::{InteractionLayer, InteractionState};
+use crate::theme::{InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
 use super::resolve::resolve_color;
-use super::catalog::CssTokenMap;
 use super::color::darken;
 use super::mode::RadixModeTokens;
 
@@ -24,16 +24,17 @@ pub(crate) fn scrollbar_appearance(
     state: InteractionState,
     orientation: ScrollbarOrientation,
 ) -> ScrollbarAppearance {
-    scrollbar_appearance_from_catalog(&mode.catalog, &mode.metrics, state, orientation)
-        .unwrap_or_else(|err| panic!("scrollbar properties: {err}"))
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    scrollbar_appearance_from_catalog(&ctx, orientation).unwrap_or_else(|err| panic!("scrollbar properties: {err}"))
 }
 
 pub(crate) fn scrollbar_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    state: InteractionState,
+    ctx: &AppearanceContext,
     orientation: ScrollbarOrientation,
 ) -> anyhow::Result<ScrollbarAppearance> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
     let layer = state.layer();
     let thumb = resolve_color(catalog, "border")?;
 
@@ -74,6 +75,7 @@ mod tests {
     use crate::controls::scrollbar::ScrollbarOrientation;
     use crate::theme::InteractionState;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::scrollbar_appearance_from_catalog;
@@ -100,13 +102,8 @@ mod tests {
     fn default_scrollbar_uses_border_thumb() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = scrollbar_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            InteractionState::default(),
-            ScrollbarOrientation::Vertical,
-        )
-        .expect("scrollbar");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, InteractionState::default());
+        let appearance = scrollbar_appearance_from_catalog(&ctx, ScrollbarOrientation::Vertical).expect("scrollbar");
 
         assert_eq!(appearance.thumb_background, catalog.color("border").expect("border"));
         assert_eq!(appearance.track_background.a, 0.0);
@@ -119,16 +116,20 @@ mod tests {
         let border = catalog.color("border").expect("border");
 
         let hovered = scrollbar_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            InteractionState { hovered: true, ..InteractionState::default() },
+            &AppearanceContext::new(
+                &mode,
+                crate::theme::ThemeMode::Light,
+                InteractionState { hovered: true, ..InteractionState::default() },
+            ),
             ScrollbarOrientation::Vertical,
         )
         .expect("scrollbar");
         let focused = scrollbar_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            InteractionState { focused: true, ..InteractionState::default() },
+            &AppearanceContext::new(
+                &mode,
+                crate::theme::ThemeMode::Light,
+                InteractionState { focused: true, ..InteractionState::default() },
+            ),
             ScrollbarOrientation::Vertical,
         )
         .expect("scrollbar");

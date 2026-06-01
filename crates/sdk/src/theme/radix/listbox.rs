@@ -4,8 +4,9 @@ use gpui::hsla;
 
 use crate::controls::listbox::{ListBoxListAppearance, ListBoxRowPalette};
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_adorner;
 use super::resolve::{resolve_color, resolve_color_layer};
 use super::mode::RadixModeTokens;
@@ -16,10 +17,11 @@ pub(crate) fn listbox_list_appearance(
     focused: bool,
     size: ControlSize,
 ) -> ListBoxListAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        listbox_list_from_palette(mode, enabled, focused, size)
+        listbox_list_from_palette(&ctx, enabled, focused, size)
     } else {
-        listbox_list_from_catalog(&mode.catalog, mode, enabled, focused, size)
+        listbox_list_from_catalog(&ctx, enabled, focused, size)
             .unwrap_or_else(|err| panic!("listbox list properties: {err}"))
     }
 }
@@ -30,22 +32,22 @@ pub(crate) fn listbox_row_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> ListBoxRowPalette {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     if mode.catalog.tokens.is_empty() {
-        listbox_row_from_palette(mode, state, size)
+        listbox_row_from_palette(&ctx, size)
     } else {
-        listbox_row_from_catalog(&mode.catalog, mode, state)
-            .unwrap_or_else(|err| panic!("listbox row properties: {err}"))
+        listbox_row_from_catalog(&ctx).unwrap_or_else(|err| panic!("listbox row properties: {err}"))
     }
 }
 
 fn listbox_list_from_palette(
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
     focused: bool,
     size: ControlSize,
 ) -> ListBoxListAppearance {
-    let palette = &mode.palette;
-    let metrics = &mode.metrics;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
 
     let adorner = if focused {
         Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
@@ -75,13 +77,13 @@ fn listbox_list_from_palette(
 }
 
 fn listbox_list_from_catalog(
-    catalog: &super::catalog::CssTokenMap,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
     focused: bool,
     size: ControlSize,
 ) -> anyhow::Result<ListBoxListAppearance> {
-    let metrics = &mode.metrics;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
 
     Ok(ListBoxListAppearance {
         background: if enabled {
@@ -99,9 +101,10 @@ fn listbox_list_from_catalog(
     })
 }
 
-fn listbox_row_from_palette(mode: &RadixModeTokens, state: InteractionState, _size: ControlSize) -> ListBoxRowPalette {
-    let palette = &mode.palette;
-    let typography = &mode.typography;
+fn listbox_row_from_palette(ctx: &AppearanceContext, _size: ControlSize) -> ListBoxRowPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let background = match state.layer() {
@@ -121,12 +124,10 @@ fn listbox_row_from_palette(mode: &RadixModeTokens, state: InteractionState, _si
     ListBoxRowPalette { background, label_color, adorner: None, label_typography: typography.text.label }
 }
 
-fn listbox_row_from_catalog(
-    catalog: &super::catalog::CssTokenMap,
-    mode: &RadixModeTokens,
-    state: InteractionState,
-) -> anyhow::Result<ListBoxRowPalette> {
-    let typography = &mode.typography;
+fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRowPalette> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
 

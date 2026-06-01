@@ -12,6 +12,7 @@
 use crate::controls::switch::SwitchPalette;
 use crate::theme::{InteractionLayer, InteractionState, LumaTheme, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_adorner;
 use super::resolve::{resolve_action_layer, resolve_color, resolve_label_color};
 use super::RadixButtonStyle;
@@ -26,34 +27,22 @@ pub(crate) fn switch_appearance(
     on: bool,
     state: InteractionState,
 ) -> SwitchPalette {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
-        return switch_appearance_from_palette(
-            &mode.palette,
-            &mode.metrics,
-            &mode.typography,
-            theme_mode,
-            style,
-            on,
-            state,
-        );
+        return switch_appearance_from_palette(&ctx, style, on);
     }
 
-    switch_appearance_from_catalog(&mode.catalog, &mode.metrics, &mode.typography, theme_mode, style, on, state)
-        .unwrap_or_else(|err| panic!("switch properties: {err}"))
+    switch_appearance_from_catalog(&ctx, style, on).unwrap_or_else(|err| panic!("switch properties: {err}"))
 }
 
-fn switch_appearance_from_palette(
-    palette: &RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
-    theme_mode: ThemeMode,
-    style: RadixButtonStyle,
-    on: bool,
-    state: InteractionState,
-) -> SwitchPalette {
+fn switch_appearance_from_palette(ctx: &AppearanceContext, style: RadixButtonStyle, on: bool) -> SwitchPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let thumb_shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.thumb.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.thumb.to_box_shadows()
     };
     let on_action = palette.action(style);
 
@@ -91,17 +80,17 @@ fn switch_appearance_from_palette(
 }
 
 pub(crate) fn switch_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
-    theme_mode: ThemeMode,
+    ctx: &AppearanceContext,
     style: RadixButtonStyle,
     on: bool,
-    state: InteractionState,
 ) -> anyhow::Result<SwitchPalette> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let thumb_shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.thumb.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.thumb.to_box_shadows()
     };
 
     let track_background = if state.disabled {
@@ -179,6 +168,7 @@ mod tests {
 
     use crate::theme::{InteractionState, ThemeMode};
 
+    use super::super::context::AppearanceContext;
     use super::super::RadixButtonStyle;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
@@ -207,16 +197,8 @@ mod tests {
     fn off_switch_uses_input_track_and_background_thumb() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
-            RadixButtonStyle::Primary,
-            false,
-            InteractionState::default(),
-        )
-        .expect("switch");
+        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
+        let appearance = switch_appearance_from_catalog(&ctx, RadixButtonStyle::Primary, false).expect("switch");
 
         let input = catalog.color("input").expect("input");
         let border = catalog.color("border").expect("border");
@@ -231,16 +213,8 @@ mod tests {
     fn on_switch_uses_style_track_and_card_thumb() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
-            RadixButtonStyle::Primary,
-            true,
-            InteractionState::default(),
-        )
-        .expect("switch");
+        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
+        let appearance = switch_appearance_from_catalog(&ctx, RadixButtonStyle::Primary, true).expect("switch");
 
         let primary = catalog.color("primary").expect("primary");
         let primary_foreground = catalog.color("primary-foreground").expect("primary-foreground");
@@ -300,33 +274,29 @@ mod tests {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let default = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
+            &AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default()),
             RadixButtonStyle::Primary,
             false,
-            InteractionState::default(),
         )
         .expect("default");
         let hovered = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
+            &AppearanceContext::new(
+                &mode,
+                ThemeMode::Light,
+                InteractionState { hovered: true, ..InteractionState::default() },
+            ),
             RadixButtonStyle::Primary,
             false,
-            InteractionState { hovered: true, ..InteractionState::default() },
         )
         .expect("hovered");
         let pressed = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
+            &AppearanceContext::new(
+                &mode,
+                ThemeMode::Light,
+                InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+            ),
             RadixButtonStyle::Primary,
             false,
-            InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
         )
         .expect("pressed");
 
@@ -339,26 +309,9 @@ mod tests {
     fn primary_and_secondary_share_off_appearance() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let primary = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
-            RadixButtonStyle::Primary,
-            false,
-            InteractionState::default(),
-        )
-        .expect("primary");
-        let secondary = switch_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            ThemeMode::Light,
-            RadixButtonStyle::Secondary,
-            false,
-            InteractionState::default(),
-        )
-        .expect("secondary");
+        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
+        let primary = switch_appearance_from_catalog(&ctx, RadixButtonStyle::Primary, false).expect("primary");
+        let secondary = switch_appearance_from_catalog(&ctx, RadixButtonStyle::Secondary, false).expect("secondary");
 
         assert_eq!(primary.track_background, secondary.track_background);
         assert_eq!(primary.thumb_background, secondary.thumb_background);

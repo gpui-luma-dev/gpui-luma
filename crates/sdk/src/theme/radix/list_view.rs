@@ -10,9 +10,10 @@
 use gpui::hsla;
 
 use crate::controls::list_view::{ListViewAppearance, ListViewRowPalette};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::color::{darken, with_alpha};
+use super::context::AppearanceContext;
 use super::mode::RadixModeTokens;
 use super::resolve::{resolve_accent_whisper, resolve_color};
 
@@ -24,10 +25,11 @@ pub(crate) fn list_view_appearance(
     focused: bool,
     size: ControlSize,
 ) -> ListViewAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        list_view_appearance_from_palette(mode, enabled, focused, size)
+        list_view_appearance_from_palette(&ctx, enabled, focused, size)
     } else {
-        list_view_appearance_from_catalog(&mode.catalog, mode, enabled, focused, size)
+        list_view_appearance_from_catalog(&ctx, enabled, focused, size)
             .unwrap_or_else(|err| panic!("list view appearance properties: {err}"))
     }
 }
@@ -38,22 +40,22 @@ pub(crate) fn list_view_row_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> ListViewRowPalette {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     if mode.catalog.tokens.is_empty() {
-        list_view_row_from_palette(mode, selected, state, size)
+        list_view_row_from_palette(&ctx, selected, size)
     } else {
-        list_view_row_from_catalog(&mode.catalog, mode, selected, state, size)
-            .unwrap_or_else(|err| panic!("list view row properties: {err}"))
+        list_view_row_from_catalog(&ctx, selected, size).unwrap_or_else(|err| panic!("list view row properties: {err}"))
     }
 }
 
 fn list_view_appearance_from_palette(
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
     _focused: bool,
     size: ControlSize,
 ) -> ListViewAppearance {
-    let palette = &mode.palette;
-    let metrics = &mode.metrics;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
 
     ListViewAppearance {
         background: if enabled {
@@ -72,7 +74,7 @@ fn list_view_appearance_from_palette(
         } else {
             palette.disabled_foreground
         },
-        header_typography: mode.typography.text.caption,
+        header_typography: ctx.typography().text.caption,
         radius: metrics.radius(size),
         padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
@@ -80,13 +82,13 @@ fn list_view_appearance_from_palette(
 }
 
 fn list_view_appearance_from_catalog(
-    catalog: &super::catalog::CssTokenMap,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
     _focused: bool,
     size: ControlSize,
 ) -> anyhow::Result<ListViewAppearance> {
-    let metrics = &mode.metrics;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
 
     Ok(ListViewAppearance {
         background: if enabled {
@@ -97,21 +99,17 @@ fn list_view_appearance_from_catalog(
         border: resolve_color(catalog, "input")?,
         header_background: resolve_color(catalog, "muted")?,
         header_label_color: resolve_color(catalog, "muted-foreground")?,
-        header_typography: mode.typography.text.caption,
+        header_typography: ctx.typography().text.caption,
         radius: metrics.radius(size),
         padding_x: 0.0,
         padding_y: metrics.padding_y(size) * 0.5,
     })
 }
 
-fn list_view_row_from_palette(
-    mode: &RadixModeTokens,
-    selected: bool,
-    state: InteractionState,
-    _size: ControlSize,
-) -> ListViewRowPalette {
-    let palette = &mode.palette;
-    let typography = &mode.typography;
+fn list_view_row_from_palette(ctx: &AppearanceContext, selected: bool, _size: ControlSize) -> ListViewRowPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let selected_background = palette.muted_background;
@@ -146,13 +144,13 @@ fn list_view_row_from_palette(
 }
 
 fn list_view_row_from_catalog(
-    catalog: &super::catalog::CssTokenMap,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     selected: bool,
-    state: InteractionState,
     _size: ControlSize,
 ) -> anyhow::Result<ListViewRowPalette> {
-    let typography = &mode.typography;
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let layer = state.layer();
 

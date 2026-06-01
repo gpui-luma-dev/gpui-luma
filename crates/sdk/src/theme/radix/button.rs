@@ -4,8 +4,9 @@ use crate::controls::button_family::{
     ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_appearance,
 };
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::mode::RadixModeTokens;
 use super::palette::RadixActionRole;
 
@@ -25,27 +26,28 @@ pub(crate) fn button_appearance(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonFamilyAppearance {
-    let palette = button_palette(mode, style, role, size, state);
-    let scale = StandardBoxScale::compute(size, &mode.metrics, 1.0);
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let palette = button_palette(&ctx, style, role, size);
+    let scale = StandardBoxScale::compute(size, ctx.metrics(), 1.0);
     compose_button_family_appearance(&palette, role, &scale)
 }
 
 pub(crate) fn button_palette(
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     style: RadixButtonStyle,
     role: ButtonFamilyRole,
     _size: ControlSize,
-    state: InteractionState,
 ) -> ButtonFamilyPalette {
+    let state = ctx.state;
     let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
         RadixButtonStyle::Outline
     } else {
         style
     };
 
-    let palette = &mode.palette;
-    let metrics = &mode.metrics;
-    let typography = &mode.typography;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
     let action = palette.action(style);
 

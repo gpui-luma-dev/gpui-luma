@@ -3,34 +3,29 @@
 use crate::controls::selector::SelectorPalette;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
 use super::selector_items_panel::selector_items_panel_appearance;
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn selector_palette(
     mode: &RadixModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> SelectorPalette {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
-        selector_palette_from_palette(&mode.palette, mode, theme_mode, state)
+        selector_palette_from_palette(&ctx)
     } else {
-        selector_palette_from_catalog(&mode.catalog, mode, theme_mode, state)
-            .unwrap_or_else(|err| panic!("selector properties: {err}"))
+        selector_palette_from_catalog(&ctx).unwrap_or_else(|err| panic!("selector properties: {err}"))
     }
 }
 
-fn selector_palette_from_palette(
-    palette: &RadixPalette,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> SelectorPalette {
-    let typography = &mode.typography;
-    let size = ControlSize::Md;
+fn selector_palette_from_palette(ctx: &AppearanceContext) -> SelectorPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let typography = ctx.typography();
     let layer = state.layer();
     let ghost = palette.ghost;
 
@@ -51,17 +46,14 @@ fn selector_palette_from_palette(
         trigger_border: palette.border_default,
         focus_ring: state.focused.then_some(palette.focus_ring),
         trigger_typography: typography.text.label,
-        items_panel: selector_items_panel_appearance(mode, theme_mode, size),
+        items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     }
 }
 
-pub(crate) fn selector_palette_from_catalog(
-    catalog: &CssTokenMap,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> anyhow::Result<SelectorPalette> {
-    let typography = &mode.typography;
+pub(crate) fn selector_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<SelectorPalette> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let typography = ctx.typography();
     let layer = state.layer();
 
     Ok(SelectorPalette {
@@ -70,6 +62,6 @@ pub(crate) fn selector_palette_from_catalog(
         trigger_border: resolve_color(catalog, "border")?,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         trigger_typography: typography.text.label,
-        items_panel: selector_items_panel_appearance(mode, theme_mode, ControlSize::Md),
+        items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     })
 }

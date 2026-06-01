@@ -13,12 +13,12 @@
 use gpui::hsla;
 
 use crate::controls::textfield::{TextFieldPalette, TextFieldState, TextFieldVariant};
+use crate::theme::{InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn textfield_palette(
     mode: &RadixModeTokens,
@@ -26,22 +26,23 @@ pub(crate) fn textfield_palette(
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldPalette {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        textfield_palette_from_palette(&mode.palette, mode, variant, state, enabled)
+        textfield_palette_from_palette(&ctx, variant, state, enabled)
     } else {
-        textfield_palette_from_catalog(&mode.catalog, mode, variant, state, enabled)
+        textfield_palette_from_catalog(&ctx, variant, state, enabled)
             .unwrap_or_else(|err| panic!("textfield properties: {err}"))
     }
 }
 
 fn textfield_palette_from_palette(
-    palette: &RadixPalette,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldPalette {
-    let typography = &mode.typography;
+    let palette = ctx.palette();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
@@ -125,13 +126,13 @@ fn textfield_palette_from_palette(
 }
 
 pub(crate) fn textfield_palette_from_catalog(
-    catalog: &CssTokenMap,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
 ) -> anyhow::Result<TextFieldPalette> {
-    let typography = &mode.typography;
+    let catalog = ctx.catalog();
+    let typography = ctx.typography();
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
@@ -221,6 +222,7 @@ mod tests {
 
     use crate::controls::textfield::{TextFieldState, TextFieldVariant};
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::textfield_palette_from_catalog;
@@ -247,14 +249,10 @@ mod tests {
     fn standard_textfield_uses_input_border_and_background() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = textfield_palette_from_catalog(
-            &catalog,
-            &mode,
-            TextFieldVariant::Standard,
-            TextFieldState::default(),
-            true,
-        )
-        .expect("textfield");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());
+        let appearance =
+            textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
+                .expect("textfield");
 
         assert_eq!(appearance.background, catalog.color("background").expect("background"));
         assert_eq!(appearance.border, catalog.color("input").expect("input"));

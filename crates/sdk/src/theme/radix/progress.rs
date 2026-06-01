@@ -1,20 +1,23 @@
 //! Progress — muted track + primary fill.
 
 use crate::controls::progress::ProgressAppearance;
+use crate::theme::{InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::resolve::resolve_color;
 use super::mode::RadixModeTokens;
 
 pub(crate) fn progress_appearance(mode: &RadixModeTokens, enabled: bool) -> ProgressAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        progress_from_palette(mode, enabled)
+        progress_from_palette(&ctx, enabled)
     } else {
-        progress_from_catalog(&mode.catalog, enabled).unwrap_or_else(|err| panic!("progress properties: {err}"))
+        progress_from_catalog(&ctx, enabled).unwrap_or_else(|err| panic!("progress properties: {err}"))
     }
 }
 
-fn progress_from_palette(mode: &RadixModeTokens, enabled: bool) -> ProgressAppearance {
-    let palette = &mode.palette;
+fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> ProgressAppearance {
+    let palette = ctx.palette();
 
     ProgressAppearance {
         track_color: if enabled {
@@ -32,7 +35,8 @@ fn progress_from_palette(mode: &RadixModeTokens, enabled: bool) -> ProgressAppea
     }
 }
 
-fn progress_from_catalog(catalog: &super::catalog::CssTokenMap, enabled: bool) -> anyhow::Result<ProgressAppearance> {
+fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<ProgressAppearance> {
+    let catalog = ctx.catalog();
     Ok(ProgressAppearance {
         track_color: if enabled {
             resolve_color(catalog, "muted")?

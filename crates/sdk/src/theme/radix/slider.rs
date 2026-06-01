@@ -13,10 +13,10 @@
 use crate::controls::slider::SliderAppearance;
 use crate::theme::{InteractionLayer, InteractionState, LumaTheme, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_action_layer, resolve_color};
 use super::RadixButtonStyle;
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
 
 pub(crate) fn slider_appearance(
@@ -24,24 +24,22 @@ pub(crate) fn slider_appearance(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> SliderAppearance {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
-        slider_appearance_from_palette(&mode.palette, &mode.metrics, theme_mode, state)
+        slider_appearance_from_palette(&ctx)
     } else {
-        slider_appearance_from_catalog(&mode.catalog, &mode.metrics, theme_mode, state)
-            .unwrap_or_else(|err| panic!("slider properties: {err}"))
+        slider_appearance_from_catalog(&ctx).unwrap_or_else(|err| panic!("slider properties: {err}"))
     }
 }
 
-fn slider_appearance_from_palette(
-    palette: &super::palette::RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> SliderAppearance {
+fn slider_appearance_from_palette(ctx: &AppearanceContext) -> SliderAppearance {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
     let layer = state.layer();
     let thumb_shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.thumb.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.thumb.to_box_shadows()
     };
 
     let fill_background = match layer {
@@ -78,16 +76,14 @@ fn slider_appearance_from_palette(
     }
 }
 
-pub(crate) fn slider_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> anyhow::Result<SliderAppearance> {
+pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<SliderAppearance> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
     let layer = state.layer();
     let thumb_shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.thumb.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.thumb.to_box_shadows()
     };
 
     let fill_background = match layer {
@@ -132,6 +128,7 @@ mod tests {
 
     use crate::theme::InteractionState;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::slider_appearance_from_catalog;
@@ -176,13 +173,8 @@ mod tests {
     fn default_slider_uses_border_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = slider_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            crate::theme::ThemeMode::Light,
-            InteractionState::default(),
-        )
-        .expect("slider");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, InteractionState::default());
+        let appearance = slider_appearance_from_catalog(&ctx).expect("slider");
 
         assert_eq!(appearance.track_background, catalog.color("border").expect("border"));
         assert_eq!(appearance.fill_background, catalog.color("primary").expect("primary"));
@@ -194,13 +186,8 @@ mod tests {
     fn astrovista_light_track_is_border_not_white_muted() {
         let catalog = astrovista_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = slider_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            crate::theme::ThemeMode::Light,
-            InteractionState::default(),
-        )
-        .expect("slider");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, InteractionState::default());
+        let appearance = slider_appearance_from_catalog(&ctx).expect("slider");
 
         let border = catalog.color("border").expect("border");
         let muted = catalog.color("muted").expect("muted");

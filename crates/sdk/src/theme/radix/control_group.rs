@@ -1,23 +1,24 @@
 //! Control group list chrome — muted surface + border.
 
 use crate::controls::control_group::ControlGroupListAppearance;
-use crate::theme::ControlSize;
+use crate::theme::{ControlSize, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::resolve::resolve_color;
 use super::mode::RadixModeTokens;
 
 pub(crate) fn control_group_list_appearance(mode: &RadixModeTokens, enabled: bool) -> ControlGroupListAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        control_group_list_from_palette(mode, enabled)
+        control_group_list_from_palette(&ctx, enabled)
     } else {
-        control_group_list_from_catalog(&mode.catalog, mode, enabled)
-            .unwrap_or_else(|err| panic!("control group properties: {err}"))
+        control_group_list_from_catalog(&ctx, enabled).unwrap_or_else(|err| panic!("control group properties: {err}"))
     }
 }
 
-fn control_group_list_from_palette(mode: &RadixModeTokens, enabled: bool) -> ControlGroupListAppearance {
-    let palette = &mode.palette;
-    let metrics = &mode.metrics;
+fn control_group_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> ControlGroupListAppearance {
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
 
     ControlGroupListAppearance {
         background: if enabled {
@@ -34,11 +35,11 @@ fn control_group_list_from_palette(mode: &RadixModeTokens, enabled: bool) -> Con
 }
 
 fn control_group_list_from_catalog(
-    catalog: &super::catalog::CssTokenMap,
-    mode: &RadixModeTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
 ) -> anyhow::Result<ControlGroupListAppearance> {
-    let metrics = &mode.metrics;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
 
     Ok(ControlGroupListAppearance {
         background: if enabled {

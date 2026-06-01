@@ -50,6 +50,7 @@ use super::slider::slider_appearance;
 use super::switch::switch_appearance;
 use super::tabs_navigation::{tabs_navigation_item_appearance, tabs_navigation_list_appearance};
 use super::button::button_palette;
+use super::context::AppearanceContext;
 use super::{RadixButtonStyle, RadixTheme};
 
 struct RadixStyledButtonFamilyTheme {
@@ -59,7 +60,8 @@ struct RadixStyledButtonFamilyTheme {
 
 impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
-        button_palette(self.theme.mode_tokens(), self.style, role, size, state)
+        let ctx = AppearanceContext::new(self.theme.mode_tokens(), self.theme.mode(), state);
+        button_palette(&ctx, self.style, role, size)
     }
 
     fn metrics(&self) -> &crate::theme::MetricTokens {

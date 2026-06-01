@@ -42,6 +42,7 @@ mod tests {
 
     use crate::controls::textfield::TextFieldState;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::super::textfield::textfield_palette_from_catalog;
@@ -69,9 +70,9 @@ mod tests {
     fn textarea_uses_same_input_tokens_as_textfield() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());
         let textfield = textfield_palette_from_catalog(
-            &catalog,
-            &mode,
+            &ctx,
             crate::controls::textfield::TextFieldVariant::Standard,
             TextFieldState::default(),
             true,

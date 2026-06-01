@@ -9,19 +9,19 @@
 //! | Disabled list bg  | `muted`                       |
 
 use crate::controls::tabs_navigation::{TabsNavigationItemAppearance, TabsNavigationListAppearance};
-use crate::theme::{ControlSize, InteractionLayer, InteractionState};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_color_layer, resolve_label_color};
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn tabs_navigation_list_appearance(mode: &RadixModeTokens, enabled: bool) -> TabsNavigationListAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        tabs_navigation_list_from_palette(&mode.palette, &mode.metrics, enabled)
+        tabs_navigation_list_from_palette(&ctx, enabled)
     } else {
-        tabs_navigation_list_from_catalog(&mode.catalog, &mode.metrics, enabled)
+        tabs_navigation_list_from_catalog(&ctx, enabled)
             .unwrap_or_else(|err| panic!("tabs navigation list properties: {err}"))
     }
 }
@@ -31,19 +31,18 @@ pub(crate) fn tabs_navigation_item_appearance(
     active: bool,
     state: InteractionState,
 ) -> TabsNavigationItemAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     if mode.catalog.tokens.is_empty() {
-        tabs_navigation_item_from_palette(&mode.palette, &mode.metrics, &mode.typography, active, state)
+        tabs_navigation_item_from_palette(&ctx, active)
     } else {
-        tabs_navigation_item_from_catalog(&mode.catalog, &mode.metrics, &mode.typography, active, state)
+        tabs_navigation_item_from_catalog(&ctx, active)
             .unwrap_or_else(|err| panic!("tabs navigation item properties: {err}"))
     }
 }
 
-fn tabs_navigation_list_from_palette(
-    palette: &RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    enabled: bool,
-) -> TabsNavigationListAppearance {
+fn tabs_navigation_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> TabsNavigationListAppearance {
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
     let size = ControlSize::Md;
 
     TabsNavigationListAppearance {
@@ -55,13 +54,11 @@ fn tabs_navigation_list_from_palette(
     }
 }
 
-fn tabs_navigation_item_from_palette(
-    palette: &RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
-    active: bool,
-    state: InteractionState,
-) -> TabsNavigationItemAppearance {
+fn tabs_navigation_item_from_palette(ctx: &AppearanceContext, active: bool) -> TabsNavigationItemAppearance {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
     let primary = palette.primary;
@@ -93,10 +90,11 @@ fn tabs_navigation_item_from_palette(
 }
 
 pub(crate) fn tabs_navigation_list_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
+    ctx: &AppearanceContext,
     enabled: bool,
 ) -> anyhow::Result<TabsNavigationListAppearance> {
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
     let size = ControlSize::Md;
 
     Ok(TabsNavigationListAppearance {
@@ -113,12 +111,13 @@ pub(crate) fn tabs_navigation_list_from_catalog(
 }
 
 pub(crate) fn tabs_navigation_item_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
+    ctx: &AppearanceContext,
     active: bool,
-    state: InteractionState,
 ) -> anyhow::Result<TabsNavigationItemAppearance> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
 
@@ -156,6 +155,7 @@ mod tests {
 
     use crate::theme::InteractionState;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::tabs_navigation_item_from_catalog;
@@ -180,22 +180,9 @@ mod tests {
     fn active_tab_uses_primary_and_inactive_uses_foreground() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let active = tabs_navigation_item_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            true,
-            InteractionState::default(),
-        )
-        .expect("active tab");
-        let inactive = tabs_navigation_item_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            false,
-            InteractionState::default(),
-        )
-        .expect("inactive tab");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, InteractionState::default());
+        let active = tabs_navigation_item_from_catalog(&ctx, true).expect("active tab");
+        let inactive = tabs_navigation_item_from_catalog(&ctx, false).expect("inactive tab");
 
         assert_eq!(active.label_color, catalog.color("primary").expect("primary"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));

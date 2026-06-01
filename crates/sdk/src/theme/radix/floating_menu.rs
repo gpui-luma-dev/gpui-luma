@@ -10,36 +10,33 @@
 //! | Item disabled | `muted-foreground`               |
 
 use crate::controls::floating_menu::FloatingMenuAppearance;
-use crate::theme::{ControlSize, LumaTheme, ThemeMode};
+use crate::theme::{ControlSize, InteractionState, LumaTheme, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::resolve::{resolve_accent_hover_pair, resolve_color, resolve_popover_background, resolve_popover_foreground};
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn floating_menu_appearance(
     mode: &RadixModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
 ) -> FloatingMenuAppearance {
+    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
-        floating_menu_appearance_from_palette(&mode.palette, &mode.metrics, &mode.typography, theme_mode, size)
+        floating_menu_appearance_from_palette(&ctx, size)
     } else {
-        floating_menu_appearance_from_catalog(&mode.catalog, &mode.metrics, &mode.typography, theme_mode, size)
+        floating_menu_appearance_from_catalog(&ctx, size)
             .unwrap_or_else(|err| panic!("floating menu properties: {err}"))
     }
 }
 
-fn floating_menu_appearance_from_palette(
-    palette: &RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
-    theme_mode: ThemeMode,
-    size: ControlSize,
-) -> FloatingMenuAppearance {
+fn floating_menu_appearance_from_palette(ctx: &AppearanceContext, size: ControlSize) -> FloatingMenuAppearance {
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.menu.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.menu.to_box_shadows()
     };
 
     FloatingMenuAppearance {
@@ -64,15 +61,15 @@ fn floating_menu_appearance_from_palette(
 }
 
 pub(crate) fn floating_menu_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
-    theme_mode: ThemeMode,
+    ctx: &AppearanceContext,
     size: ControlSize,
 ) -> anyhow::Result<FloatingMenuAppearance> {
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let shadow = {
         let native = LumaTheme::native();
-        native.mode(theme_mode).elevation.menu.to_box_shadows()
+        native.mode(ctx.theme_mode).elevation.menu.to_box_shadows()
     };
 
     let (item_hover_background, item_hover_foreground) = resolve_accent_hover_pair(catalog)?;
@@ -104,6 +101,7 @@ mod tests {
 
     use crate::theme::ControlSize;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::floating_menu_appearance_from_catalog;
@@ -133,14 +131,8 @@ mod tests {
     fn floating_menu_uses_popover_surface_and_accent_hover() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = floating_menu_appearance_from_catalog(
-            &catalog,
-            &mode.metrics,
-            &mode.typography,
-            crate::theme::ThemeMode::Light,
-            ControlSize::Md,
-        )
-        .expect("floating menu");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());
+        let appearance = floating_menu_appearance_from_catalog(&ctx, ControlSize::Md).expect("floating menu");
 
         assert_eq!(appearance.background, catalog.color("popover").expect("popover"));
         assert_eq!(appearance.foreground, catalog.color("popover-foreground").expect("popover-foreground"));

@@ -3,6 +3,7 @@ mod autocomplete;
 mod button;
 mod catalog;
 mod checkbox;
+mod context;
 mod controls;
 mod color;
 mod context_menu;

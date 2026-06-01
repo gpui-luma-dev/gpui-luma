@@ -8,33 +8,29 @@
 use crate::controls::popup_menu::PopupMenuPalette;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::floating_menu::floating_menu_appearance;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn popup_menu_palette(
     mode: &RadixModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> PopupMenuPalette {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
-        popup_menu_palette_from_palette(&mode.palette, mode, theme_mode, state)
+        popup_menu_palette_from_palette(&ctx)
     } else {
-        popup_menu_palette_from_catalog(&mode.catalog, mode, theme_mode, state)
-            .unwrap_or_else(|err| panic!("popup menu properties: {err}"))
+        popup_menu_palette_from_catalog(&ctx).unwrap_or_else(|err| panic!("popup menu properties: {err}"))
     }
 }
 
-fn popup_menu_palette_from_palette(
-    palette: &RadixPalette,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> PopupMenuPalette {
-    let typography = &mode.typography;
+fn popup_menu_palette_from_palette(ctx: &AppearanceContext) -> PopupMenuPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
     let ghost = palette.ghost;
@@ -56,17 +52,14 @@ fn popup_menu_palette_from_palette(
         trigger_border: palette.border_default,
         focus_ring: state.focused.then_some(palette.focus_ring),
         trigger_typography: typography.text.label,
-        floating_menu: floating_menu_appearance(mode, theme_mode, size),
+        floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     }
 }
 
-pub(crate) fn popup_menu_palette_from_catalog(
-    catalog: &CssTokenMap,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> anyhow::Result<PopupMenuPalette> {
-    let typography = &mode.typography;
+pub(crate) fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<PopupMenuPalette> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let typography = ctx.typography();
     let layer = state.layer();
 
     let trigger_background = resolve_ghost_background(catalog, layer)?;
@@ -78,7 +71,7 @@ pub(crate) fn popup_menu_palette_from_catalog(
         trigger_border: resolve_color(catalog, "border")?,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         trigger_typography: typography.text.label,
-        floating_menu: floating_menu_appearance(mode, theme_mode, ControlSize::Md),
+        floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     })
 }
 
@@ -88,6 +81,7 @@ mod tests {
 
     use crate::theme::InteractionState;
 
+    use super::super::context::AppearanceContext;
     use super::super::catalog::CssTokenMap;
     use super::super::mode::RadixModeTokens;
     use super::popup_menu_palette_from_catalog;
@@ -117,13 +111,12 @@ mod tests {
     fn popup_menu_hovered_trigger_uses_accent_background() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let appearance = popup_menu_palette_from_catalog(
-            &catalog,
+        let ctx = AppearanceContext::new(
             &mode,
             crate::theme::ThemeMode::Light,
             InteractionState { hovered: true, ..InteractionState::default() },
-        )
-        .expect("popup menu");
+        );
+        let appearance = popup_menu_palette_from_catalog(&ctx).expect("popup menu");
 
         assert_eq!(appearance.trigger_background, catalog.color("accent").expect("accent"));
         assert_eq!(appearance.floating_menu.background, catalog.color("popover").expect("popover"));

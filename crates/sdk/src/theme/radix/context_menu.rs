@@ -8,34 +8,30 @@
 use crate::controls::context_menu::ContextMenuAppearance;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::floating_menu::floating_menu_appearance;
 use super::focus::focus_ring_color;
 use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
-use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn context_menu_appearance(
     mode: &RadixModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> ContextMenuAppearance {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
-        context_menu_appearance_from_palette(&mode.palette, mode, theme_mode, state)
+        context_menu_appearance_from_palette(&ctx)
     } else {
-        context_menu_appearance_from_catalog(&mode.catalog, mode, theme_mode, state)
-            .unwrap_or_else(|err| panic!("context menu properties: {err}"))
+        context_menu_appearance_from_catalog(&ctx).unwrap_or_else(|err| panic!("context menu properties: {err}"))
     }
 }
 
-fn context_menu_appearance_from_palette(
-    palette: &RadixPalette,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> ContextMenuAppearance {
-    let metrics = &mode.metrics;
-    let typography = &mode.typography;
+fn context_menu_appearance_from_palette(ctx: &AppearanceContext) -> ContextMenuAppearance {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
     let ghost = palette.ghost;
@@ -61,18 +57,15 @@ fn context_menu_appearance_from_palette(
         target_padding_x: metrics.padding_x(size),
         target_padding_y: metrics.padding_y(size),
         target_min_width: 200.0,
-        floating_menu: floating_menu_appearance(mode, theme_mode, size),
+        floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     }
 }
 
-pub(crate) fn context_menu_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    mode: &RadixModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> anyhow::Result<ContextMenuAppearance> {
-    let metrics = &mode.metrics;
-    let typography = &mode.typography;
+pub(crate) fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ContextMenuAppearance> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
 
@@ -86,6 +79,6 @@ pub(crate) fn context_menu_appearance_from_catalog(
         target_padding_x: metrics.padding_x(size),
         target_padding_y: metrics.padding_y(size),
         target_min_width: 200.0,
-        floating_menu: floating_menu_appearance(mode, theme_mode, size),
+        floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     })
 }

@@ -7,8 +7,9 @@
 //! | Disabled | `muted`         | `muted-foreground`     |
 
 use crate::controls::checkbox::CheckboxPalette;
-use crate::theme::{InteractionLayer, InteractionState};
+use crate::theme::{InteractionLayer, InteractionState, ThemeMode};
 
+use super::context::AppearanceContext;
 use super::focus::focus_adorner;
 use super::resolve::{
     resolve_action_foreground, resolve_action_layer, resolve_color, resolve_label_color, resolve_outline_layer,
@@ -16,7 +17,6 @@ use super::resolve::{
 use super::RadixButtonStyle;
 use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
-use super::palette::RadixPalette;
 
 pub(crate) fn checkbox_appearance(
     mode: &RadixModeTokens,
@@ -24,22 +24,23 @@ pub(crate) fn checkbox_appearance(
     checked: bool,
     state: InteractionState,
 ) -> CheckboxPalette {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     if mode.catalog.tokens.is_empty() {
-        return checkbox_appearance_from_palette(&mode.palette, &mode.metrics, &mode.typography, style, checked, state);
+        return checkbox_appearance_from_palette(&ctx, style, checked);
     }
 
-    checkbox_appearance_from_catalog(&mode.catalog, &mode.metrics, &mode.typography, style, checked, state)
-        .unwrap_or_else(|err| panic!("checkbox properties: {err}"))
+    checkbox_appearance_from_catalog(&ctx, style, checked).unwrap_or_else(|err| panic!("checkbox properties: {err}"))
 }
 
 fn checkbox_appearance_from_palette(
-    palette: &RadixPalette,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
+    ctx: &AppearanceContext,
     style: RadixButtonStyle,
     checked: bool,
-    state: InteractionState,
 ) -> CheckboxPalette {
+    let state = ctx.state;
+    let palette = ctx.palette();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let layer = state.layer();
     let checked_action = palette.action(style);
     let outline = palette.outline;
@@ -84,13 +85,14 @@ fn checkbox_appearance_from_palette(
 }
 
 pub(crate) fn checkbox_appearance_from_catalog(
-    catalog: &CssTokenMap,
-    metrics: &crate::theme::MetricTokens,
-    typography: &crate::theme::LumaTypography,
+    ctx: &AppearanceContext,
     style: RadixButtonStyle,
     checked: bool,
-    state: InteractionState,
 ) -> anyhow::Result<CheckboxPalette> {
+    let state = ctx.state;
+    let catalog = ctx.catalog();
+    let metrics = ctx.metrics();
+    let typography = ctx.typography();
     let layer = state.layer();
 
     let indicator_background = match (checked, layer) {
