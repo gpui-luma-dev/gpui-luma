@@ -2,11 +2,11 @@ use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude:
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use crate::controls::checkbox::{CheckboxTheme, default_checkbox_theme};
+use crate::controls::checkbox::{CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::theme::{GlyphIndicatorScale, InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
     ThemedCheckboxTemplate,
@@ -28,7 +28,7 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| GlyphIndicatorScale::compute(model.size, metrics, scale_factor),
+            |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
         );
 
         let indicator_visual = div()

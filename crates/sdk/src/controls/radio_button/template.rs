@@ -4,8 +4,8 @@ use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::controls::radio_button::{RadioButtonTheme, default_radio_button_theme};
-use crate::theme::{GlyphIndicatorScale, InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::controls::radio_button::{RadioButtonTheme, RadioScale, default_radio_button_theme};
+use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
     ThemedRadioButtonTemplate,
@@ -28,7 +28,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| GlyphIndicatorScale::compute(model.size, metrics, scale_factor),
+            |metrics| RadioScale::compute(model.size, metrics, scale_factor),
         );
 
         let indicator_radius = scale.indicator_size / 2.0;

@@ -3,7 +3,44 @@ use std::sync::{Arc, OnceLock};
 use gpui::{Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
+use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RadioScale {
+    pub control_radius: f32,
+    pub control_padding_x: f32,
+    pub control_padding_y: f32,
+    pub indicator_size: f32,
+    pub height: f32,
+    pub gap: f32,
+    pub label_baseline_shift: f32,
+    pub dot_size: f32,
+}
+
+impl RadioScale {
+    pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
+        let control_height = metrics.control_height(size);
+        let indicator_ratio = match size {
+            ControlSize::Sm => 0.45,
+            ControlSize::Md => 0.50,
+            ControlSize::Lg => 0.55,
+        };
+
+        let indicator_size = snap_to_pixel(control_height * indicator_ratio, scale_factor);
+
+        Self {
+            control_radius: metrics.radius(size),
+            control_padding_x: 0.0,
+            control_padding_y: 0.0,
+            indicator_size,
+            height: snap_to_pixel(control_height, scale_factor),
+            gap: snap_to_pixel(metrics.gap(size), scale_factor),
+            label_baseline_shift: label_baseline_shift(size),
+            dot_size: snap_to_pixel(control_height * 0.24, scale_factor),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct RadioButtonPalette {

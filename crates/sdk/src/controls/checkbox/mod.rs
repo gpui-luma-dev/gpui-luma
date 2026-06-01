@@ -3,7 +3,9 @@ mod theme;
 
 pub use template::{ThemedCheckboxTemplate, default_template as default_checkbox_template};
 
-pub use theme::{CheckboxAppearance, CheckboxPalette, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme};
+pub use theme::{
+    CheckboxAppearance, CheckboxPalette, CheckboxScale, CheckboxTheme, DefaultCheckboxTheme, default_checkbox_theme,
+};
 
 pub use crate::theme::InteractionState as CheckboxState;
 

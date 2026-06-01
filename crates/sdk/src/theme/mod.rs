@@ -10,7 +10,7 @@ pub mod tokens;
 pub use adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 pub use cache::{LayoutCacheKey, LumaLayoutCacheExt};
 pub use interaction::{InteractionLayer, InteractionState};
-pub use layout::{GlyphIndicatorScale, ListRowScale, StandardBoxScale, snap_to_pixel};
+pub use layout::{ListRowScale, StandardBoxScale, snap_to_pixel};
 pub use pack::LumaChrome;
 pub use radix::{
     CssTokenCatalog, CssTokenMap, RadixButtonStyle, RadixButtonStyleExt, RadixModeTokens, RadixTextFieldExt,

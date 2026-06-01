@@ -8,15 +8,17 @@ This repository is a Rust workspace for a GPUI-based component SDK and a gallery
 - Main crates:
   - `crates/sdk` → `gpui-luma` (library crate)
   - `apps/gallery` → `gpui-luma-gallery` (application crate)
+  - `apps/theme-studio` → `gpui-luma-theme-studio` (theme customizer / styleguide app)
 
 ## Workspace Structure
 
 - `Cargo.toml` (workspace)
-  - members: `crates/sdk`, `apps/gallery`
+  - members: `crates/sdk`, `apps/gallery`, `apps/theme-studio`
   - edition: Rust 2024
   - key shared deps: `gpui`, `gpui_platform`, `anyhow`, `lucide-icons`, `serde`, `tiny-skia`, `toml`
 - `justfile`
-  - `just gallery` / `just gallery-rel` to run the app
+  - `just gallery` / `just gallery-rel` to run the gallery app
+  - `just theme-studio` to run the Theme Studio customizer
 - `rust-toolchain.toml`
   - stable toolchain
   - includes `rustfmt`, `clippy`

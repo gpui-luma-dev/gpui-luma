@@ -20,7 +20,7 @@ fn resolve_theme_appearance<D>(
     scale: &StandardBoxScale,
 ) -> ButtonFamilyAppearance {
     let palette = theme.resolve(model.role, model.size, model.state);
-    compose_button_family_appearance(&palette, model.role, scale)
+    compose_button_family_appearance(&palette, model.role, scale, theme.metrics().radius.pill)
 }
 
 fn resolve_appearance<D>(
@@ -62,7 +62,7 @@ fn resolve_focus_probe_appearance<D: Clone>(
 
     let focused_state = InteractionState { focused: true, ..model.state };
     let palette = theme.resolve(model.role, model.size, focused_state);
-    Some(compose_button_family_appearance(&palette, model.role, scale))
+    Some(compose_button_family_appearance(&palette, model.role, scale, theme.metrics().radius.pill))
 }
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
@@ -211,19 +211,7 @@ mod tests {
             appearance: Some(Arc::new(|_| lime_appearance())),
         };
 
-        let scale = StandardBoxScale {
-            height: 32.0,
-            padding_x: 12.0,
-            padding_y: 6.0,
-            gap: 6.0,
-            radius: 8.0,
-            track_width: 32.0,
-            track_height: 20.0,
-            track_padding: 2.0,
-            thumb_size: 16.0,
-            track_radius: 999.0,
-            label_baseline_shift: 1.0,
-        };
+        let scale = StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0 };
         let appearance = resolve_appearance(&template.theme, &model, &scale);
         assert_eq!(appearance.background, lime_appearance().background);
     }
@@ -238,21 +226,9 @@ mod tests {
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
         };
-        let scale = StandardBoxScale {
-            height: 36.0,
-            padding_x: 14.0,
-            padding_y: 8.0,
-            gap: 8.0,
-            radius: 6.0,
-            track_width: 42.0,
-            track_height: 22.0,
-            track_padding: 2.0,
-            thumb_size: 18.0,
-            track_radius: 999.0,
-            label_baseline_shift: 1.0,
-        };
+        let scale = StandardBoxScale { height: 36.0, padding_x: 14.0, padding_y: 8.0, gap: 8.0, radius: 6.0 };
 
-        let appearance = compose_button_family_appearance(&palette, ButtonFamilyRole::Text, &scale);
+        let appearance = compose_button_family_appearance(&palette, ButtonFamilyRole::Text, &scale, 999.0);
         assert_eq!(appearance.height, 36.0);
         assert_eq!(appearance.padding_x, 14.0);
         assert_eq!(appearance.padding_y, 8.0);

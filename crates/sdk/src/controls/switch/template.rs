@@ -2,11 +2,11 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-use crate::controls::switch::{SwitchTheme, default_switch_theme};
+use crate::controls::switch::{SwitchScale, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, snap_to_pixel};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, snap_to_pixel};
 
 define_control_template!(
     ThemedSwitchTemplate,
@@ -28,7 +28,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
+            |metrics| SwitchScale::compute(model.size, metrics, scale_factor),
         );
 
         let thumb_left = if model.data {

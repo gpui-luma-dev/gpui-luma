@@ -29,7 +29,7 @@ pub(crate) fn button_appearance(
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     let palette = button_palette(&ctx, style, role, size);
     let scale = StandardBoxScale::compute(size, ctx.metrics(), 1.0);
-    compose_button_family_appearance(&palette, role, &scale)
+    compose_button_family_appearance(&palette, role, &scale, ctx.metrics().radius.pill)
 }
 
 pub(crate) fn button_palette(

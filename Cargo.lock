@@ -2364,6 +2364,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-theme-studio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+ "serde",
+ "toml 0.8.23",
+ "tracing",
+ "zed-font-kit",
+]
+
+[[package]]
 name = "gpui_linux"
 version = "0.1.0"
 source = "git+https://github.com/zed-industries/zed#3bb0b494d827e7322afd3c01d32b2cc448d44863"

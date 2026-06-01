@@ -3,7 +3,35 @@ use std::sync::{Arc, OnceLock};
 use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
-use crate::theme::{InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
+use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
+use crate::theme::{ControlSize, InteractionState, LumaTextStyle, MetricTokens, ThemeTokens};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SwitchScale {
+    pub track_width: f32,
+    pub track_height: f32,
+    pub track_padding: f32,
+    pub thumb_size: f32,
+    pub track_radius: f32,
+    pub gap: f32,
+    pub label_baseline_shift: f32,
+}
+
+impl SwitchScale {
+    pub fn compute(size: ControlSize, metrics: &MetricTokens, scale_factor: f32) -> Self {
+        let control_height = metrics.control_height(size);
+
+        Self {
+            track_width: snap_to_pixel(control_height * (42.0 / 36.0), scale_factor),
+            track_height: snap_to_pixel(control_height * (22.0 / 36.0), scale_factor),
+            track_padding: snap_to_pixel((control_height * (2.0 / 36.0)).max(1.0), scale_factor),
+            thumb_size: snap_to_pixel(control_height * 0.5, scale_factor),
+            track_radius: metrics.radius.pill,
+            gap: snap_to_pixel(metrics.gap(size), scale_factor),
+            label_baseline_shift: label_baseline_shift(size),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct SwitchPalette {

@@ -3,8 +3,9 @@ resolver = "2"
 members = [
   "crates/sdk",
   "apps/gallery",
+  "apps/theme-studio",
 ]
-default-members = ["crates/sdk", "apps/gallery"]
+default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio"]
 
 [workspace.package]
 edition = "2024"
@@ -35,6 +36,9 @@ split-debuginfo = "unpacked"
 opt-level = 2
 
 [profile.dev.package.gpui-luma-gallery]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-theme-studio]
 opt-level = 1
 
 [profile.dev.package.gpui]

@@ -1,6 +1,0 @@
-
-check indeterminate state
-think about labelling
- disabled state makes strike-thru
-look like a toggle check mark in toggle?
-options text on left or right

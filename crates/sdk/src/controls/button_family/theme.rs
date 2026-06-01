@@ -119,6 +119,7 @@ pub(crate) fn compose_button_family_appearance(
     palette: &ButtonFamilyPalette,
     role: ButtonFamilyRole,
     scale: &StandardBoxScale,
+    pill_radius: f32,
 ) -> ButtonFamilyAppearance {
     ButtonFamilyAppearance {
         background: palette.background,
@@ -128,7 +129,7 @@ pub(crate) fn compose_button_family_appearance(
         typography: palette.typography,
         font_family: palette.font_family.clone(),
         radius: match role {
-            ButtonFamilyRole::Icon => scale.track_radius,
+            ButtonFamilyRole::Icon => pill_radius,
             _ => scale.radius,
         },
         padding_x: match role {

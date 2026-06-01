@@ -36,6 +36,27 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - exports control families and shared infra modules
   - crate-private support modules: `button_family_template`, `interaction`, `menu_navigation`, `text`
 
+## `apps/theme-studio` (`gpui-luma-theme-studio`)
+
+- `main.rs`
+  - app bootstrap; initializes SDK and opens Theme Studio window
+- `app_shell.rs`
+  - `open(cx)` for window creation and root entity mount
+- `theme.rs`
+  - `StudioThemeChoice` (CLI `default` or tweakcn CSS stem under `apps/gallery/tweakcn/`)
+- `studio/app.rs`
+  - `ThemeStudioApp` — single-board dashboard, size/mode toolbar, inspector overlay
+- `studio/panels/*`
+  - six shadcn-style demo cards (upgrade, account, team, chat, cookies, report)
+- `studio/demo_controls.rs`
+  - spawns panel entities from active `RadixTheme`
+- `studio/inspector.rs`
+  - click-to-inspect settings sheet (scale metrics, token colors, export)
+- `studio/export.rs`
+  - writes override CSS to `apps/gallery/tweakcn/exports/`
+
+Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>`
+
 ## `apps/gallery` (`gpui-luma-gallery`)
 
 - `main.rs`
