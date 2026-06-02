@@ -38,6 +38,10 @@ pub struct TextAreaTemplateHandlers {
 }
 
 pub trait TextAreaTemplate: Send + Sync {
+    fn theme(&self) -> Option<Arc<dyn TextAreaTheme>> {
+        None
+    }
+
     fn render(
         &self,
         model: &TextAreaRenderModel<'_>,
@@ -64,6 +68,10 @@ pub fn default_textarea_template() -> Arc<dyn TextAreaTemplate> {
 }
 
 impl TextAreaTemplate for ThemedTextAreaTemplate {
+    fn theme(&self) -> Option<Arc<dyn TextAreaTheme>> {
+        Some(Arc::clone(&self.theme))
+    }
+
     fn render(
         &self,
         model: &TextAreaRenderModel<'_>,

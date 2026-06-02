@@ -391,7 +391,7 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
     }
 
     fn textarea(&self, id: impl Into<SharedString>) -> TextAreaBuilder {
-        textarea::TextArea::new(id).template(self.textarea_template())
+        textarea::TextArea::new(id).template(self.textarea_template()).theme(self.textarea_theme())
     }
 }
 

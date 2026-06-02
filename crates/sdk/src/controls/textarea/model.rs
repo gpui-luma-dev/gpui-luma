@@ -109,6 +109,9 @@ impl TextAreaBuilder {
     }
 
     pub fn template(mut self, template: Arc<dyn TextAreaTemplate>) -> Self {
+        if let Some(theme) = template.theme() {
+            self.model.theme = theme;
+        }
         self.model.template = template;
         self
     }

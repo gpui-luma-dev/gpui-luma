@@ -125,8 +125,9 @@ impl Render for NavigationSidebarPanel {
             .w(px(sidebar_width))
             .h(px(SIDEBAR_HEIGHT_PX))
             .overflow_hidden()
-            .rounded(px(8.0))
+            .rounded_b(px(8.0))
             .border_1()
+            .border_t_0()
             .border_color(chrome.border)
             .child(self.sidebar.clone())
     }
