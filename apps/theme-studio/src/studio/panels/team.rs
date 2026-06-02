@@ -4,28 +4,32 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
-use gpui_luma::{hstack, vstack};
+use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{avatar_circle, card, card_header};
 
 const TEAM_CARD_WIDTH: f32 = 380.0;
 
-pub struct TeamPanel {
-    radix_theme: Arc<RadixTheme>,
-    member_selectors: [Entity<Selector>; 3],
-}
-
-impl TeamPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>) -> Self {
-        let roles = role_items();
-        Self {
-            member_selectors: [
-                member_selector(cx, &radix_theme, "team-sofia", "Owner", &roles),
-                member_selector(cx, &radix_theme, "team-jackson", "Developer", &roles),
-                member_selector(cx, &radix_theme, "team-isabella", "Billing", &roles),
-            ],
-            radix_theme,
-        }
+declare_form! {
+    pub struct TeamPanel {
+        controls: {
+            sofia_selector: Entity<Selector> = radix_theme
+                .selector("team-sofia")
+                .label("Owner")
+                .items(role_items()),
+            jackson_selector: Entity<Selector> = radix_theme
+                .selector("team-jackson")
+                .label("Developer")
+                .items(role_items()),
+            isabella_selector: Entity<Selector> = radix_theme
+                .selector("team-isabella")
+                .label("Billing")
+                .items(role_items()),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+        },
+        fields: {}
     }
 }
 
@@ -46,9 +50,9 @@ impl Render for TeamPanel {
                     chrome.title_text,
                     chrome.muted_text,
                 ),
-                member_row("SD", "Sofia Davis", "m@example.com", &self.member_selectors[0], chrome, avatar_bg),
-                member_row("JL", "Jackson Lee", "m@example.com", &self.member_selectors[1], chrome, avatar_bg),
-                member_row("IN", "Isabella Nguyen", "m@example.com", &self.member_selectors[2], chrome, avatar_bg),
+                member_row("SD", "Sofia Davis", "m@example.com", &self.sofia_selector, chrome, avatar_bg),
+                member_row("JL", "Jackson Lee", "m@example.com", &self.jackson_selector, chrome, avatar_bg),
+                member_row("IN", "Isabella Nguyen", "m@example.com", &self.isabella_selector, chrome, avatar_bg),
             }
             .w_full()
             .overflow_hidden(),
@@ -98,14 +102,4 @@ fn role_items() -> Vec<SelectorItem> {
         SelectorItem::new("developer").label("Developer"),
         SelectorItem::new("billing").label("Billing"),
     ]
-}
-
-fn member_selector(
-    cx: &mut Context<TeamPanel>,
-    theme: &Arc<RadixTheme>,
-    id: &'static str,
-    default_role: &'static str,
-    items: &[SelectorItem],
-) -> Entity<Selector> {
-    theme.selector(id).label(default_role).items(items.to_vec()).spawn(cx)
 }

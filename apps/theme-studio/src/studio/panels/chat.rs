@@ -5,32 +5,28 @@ use gpui_luma::controls::command::button::{Button, ControlIcon};
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixButtonStyle, RadixTheme};
-use gpui_luma::{hstack, vstack};
+use gpui_luma::{declare_form, hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
 use super::common::{avatar_circle, card, message_bubble};
 
-pub struct ChatPanel {
-    radix_theme: Arc<RadixTheme>,
-    message_field: TextField,
-    send_button: Entity<Button>,
-}
-
-impl ChatPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
-        Self {
-            message_field: radix_theme
+declare_form! {
+    pub struct ChatPanel {
+        controls: {
+            message_field: TextField = radix_theme
                 .textfield("chat-message")
                 .placeholder("Type your message…")
-                .full_width(true)
-                .spawn(cx),
-            send_button: radix_theme
+                .full_width(true),
+            send_button: Entity<Button> = radix_theme
                 .primary_icon_button("chat-send", ControlIcon::Lucide(LucideIcon::ArrowUp))
                 .size(size)
-                .round(true)
-                .spawn(cx),
-            radix_theme,
-        }
+                .round(true),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            size: ControlSize,
+        },
+        fields: {}
     }
 }
 

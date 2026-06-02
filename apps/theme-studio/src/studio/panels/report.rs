@@ -1,47 +1,42 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, prelude::*};
-use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
-use gpui_luma::{form_field, hstack, vstack};
+use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header};
 
-pub struct ReportPanel {
-    radix_theme: Arc<RadixTheme>,
-    area_selector: Entity<Selector>,
-    security_selector: Entity<Selector>,
-    subject_field: TextField,
-    description_area: Entity<TextArea>,
-    cancel_button: Entity<Button>,
-    submit_button: Entity<Button>,
-}
-
-impl ReportPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
-        Self {
-            area_selector: radix_theme.selector("report-area").label("Billing").items(area_items()).spawn(cx),
-            security_selector: radix_theme
+declare_form! {
+    pub struct ReportPanel {
+        controls: {
+            area_selector: Entity<Selector> = radix_theme
+                .selector("report-area")
+                .label("Billing")
+                .items(area_items()),
+            security_selector: Entity<Selector> = radix_theme
                 .selector("report-security")
                 .label("Severity 2")
-                .items(security_items())
-                .spawn(cx),
-            subject_field: radix_theme.textfield("report-subject").placeholder("Subject").full_width(true).spawn(cx),
-            description_area: radix_theme
+                .items(security_items()),
+            subject_field: TextField = radix_theme.textfield("report-subject").placeholder("Subject").full_width(true),
+            description_area: Entity<TextArea> = radix_theme
                 .textarea("report-description")
                 .placeholder("Description")
                 .full_width(true)
-                .rows(4)
-                .spawn(cx),
-            cancel_button: radix_theme.ghost_button("report-cancel").label("Cancel").size(size).spawn(cx),
-            submit_button: radix_theme.primary_button("report-submit").label("Submit").size(size).spawn(cx),
-            radix_theme,
-        }
+                .rows(4),
+            cancel_button: Entity<Button> = radix_theme.ghost_button("report-cancel").label("Cancel").size(size),
+            submit_button: Entity<Button> = radix_theme.primary_button("report-submit").label("Submit").size(size),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            size: ControlSize,
+        },
+        fields: {}
     }
 }
 

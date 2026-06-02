@@ -1,80 +1,64 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
-use gpui_luma::{form_field, hstack, vstack};
+use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header};
 
-pub struct UpgradePanel {
-    radix_theme: Arc<RadixTheme>,
-    name_field: TextField,
-    email_field: TextField,
-    card_field: TextField,
-    expiry_field: TextField,
-    cvc_field: TextField,
-    plan_group: RadioGroup<RadioGroupItem>,
-    notes_area: Entity<TextArea>,
-    terms_checkbox: Checkbox,
-    email_checkbox: Checkbox,
-    cancel_button: Entity<Button>,
-    upgrade_button: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
-}
-
-impl UpgradePanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
-        let terms_checkbox = radix_theme
-            .primary_checkbox("upgrade-terms")
-            .with_data(true)
-            .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-            .spawn(cx);
-        let email_checkbox = radix_theme
-            .primary_checkbox("upgrade-email-opt")
-            .with_data(false)
-            .content(|_, _| div().child("Allow us to send you emails").into_any_element())
-            .spawn(cx);
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&terms_checkbox, |_, checkbox, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                checkbox.update(cx, |button, cx| button.set_data(!*button.data(), cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&email_checkbox, |_, checkbox, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                checkbox.update(cx, |button, cx| button.set_data(!*button.data(), cx));
-            }
-        }));
-
-        Self {
-            name_field: radix_theme.textfield("upgrade-name").placeholder("Name").full_width(true).spawn(cx),
-            email_field: radix_theme.textfield("upgrade-email").placeholder("Email").full_width(true).spawn(cx),
-            card_field: radix_theme.textfield("upgrade-card").placeholder("Card Number").full_width(true).spawn(cx),
-            expiry_field: radix_theme.textfield("upgrade-expiry").placeholder("MM/YY").spawn(cx),
-            cvc_field: radix_theme.textfield("upgrade-cvc").placeholder("CVC").spawn(cx),
-            plan_group: radix_theme
+declare_form! {
+    pub struct UpgradePanel {
+        controls: {
+            name_field: TextField = radix_theme.textfield("upgrade-name").placeholder("Name").full_width(true),
+            email_field: TextField = radix_theme.textfield("upgrade-email").placeholder("Email").full_width(true),
+            card_field: TextField = radix_theme.textfield("upgrade-card").placeholder("Card Number").full_width(true),
+            expiry_field: TextField = radix_theme.textfield("upgrade-expiry").placeholder("MM/YY"),
+            cvc_field: TextField = radix_theme.textfield("upgrade-cvc").placeholder("CVC"),
+            plan_group: RadioGroup<RadioGroupItem> = radix_theme
                 .radio_group("upgrade-plan")
                 .items([
                     RadioGroupItem::new("starter").label("Starter Plan"),
                     RadioGroupItem::new("pro").label("Pro Plan"),
                 ])
-                .selected("starter")
-                .spawn(cx),
-            notes_area: radix_theme.textarea("upgrade-notes").placeholder("Notes").full_width(true).rows(3).spawn(cx),
-            terms_checkbox,
-            email_checkbox,
-            cancel_button: radix_theme.secondary_button("upgrade-cancel").label("Cancel").size(size).spawn(cx),
-            upgrade_button: radix_theme.primary_button("upgrade-submit").label("Upgrade Plan").size(size).spawn(cx),
-            radix_theme,
-            _subscriptions: subscriptions,
+                .selected("starter"),
+            notes_area: Entity<TextArea> = radix_theme
+                .textarea("upgrade-notes")
+                .placeholder("Notes")
+                .full_width(true)
+                .rows(3),
+            terms_checkbox: Checkbox = radix_theme
+                .primary_checkbox("upgrade-terms")
+                .with_data(true)
+                .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.terms_accepted = !this.terms_accepted;
+                    this.terms_checkbox.update(cx, |button, cx| button.set_data(this.terms_accepted, cx));
+                },
+            email_checkbox: Checkbox = radix_theme
+                .primary_checkbox("upgrade-email-opt")
+                .with_data(false)
+                .content(|_, _| div().child("Allow us to send you emails").into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.email_opt_in = !this.email_opt_in;
+                    this.email_checkbox.update(cx, |button, cx| button.set_data(this.email_opt_in, cx));
+                },
+            cancel_button: Entity<Button> = radix_theme.secondary_button("upgrade-cancel").label("Cancel").size(size),
+            upgrade_button: Entity<Button> = radix_theme.primary_button("upgrade-submit").label("Upgrade Plan").size(size),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+            size: ControlSize,
+        },
+        fields: {
+            terms_accepted: bool = true,
+            email_opt_in: bool = false,
         }
     }
 }

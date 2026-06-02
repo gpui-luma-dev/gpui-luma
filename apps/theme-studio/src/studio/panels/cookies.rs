@@ -1,54 +1,42 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
-use gpui_luma::{hstack, vstack};
+use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{card, card_header};
 
-pub struct CookiesPanel {
-    radix_theme: Arc<RadixTheme>,
-    pub necessary_switch: Switch,
-    pub functional_switch: Switch,
-    save_button: Entity<Button>,
-    _subscriptions: Vec<Subscription>,
-}
-
-impl CookiesPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>) -> Self {
-        let necessary_switch = radix_theme
-            .primary_switch("cookies-necessary")
-            .with_data(true)
-            .content(|_, _| div().into_any_element())
-            .spawn(cx);
-        let functional_switch = radix_theme
-            .primary_switch("cookies-functional")
-            .with_data(false)
-            .content(|_, _| div().into_any_element())
-            .spawn(cx);
-
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&necessary_switch, |_, switch, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                switch.update(cx, |button, cx| button.set_data(!*button.data(), cx));
-            }
-        }));
-        subscriptions.push(cx.subscribe(&functional_switch, |_, switch, event, cx| {
-            if matches!(event, ButtonEvent::Click) {
-                switch.update(cx, |button, cx| button.set_data(!*button.data(), cx));
-            }
-        }));
-
-        Self {
-            necessary_switch,
-            functional_switch,
-            save_button: radix_theme.secondary_button("cookies-save").label("Save preferences").spawn(cx),
-            radix_theme,
-            _subscriptions: subscriptions,
+declare_form! {
+    pub struct CookiesPanel {
+        controls: {
+            necessary_switch: Switch = radix_theme
+                .primary_switch("cookies-necessary")
+                .with_data(true)
+                .content(|_, _| div().into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.necessary_enabled = !this.necessary_enabled;
+                    this.necessary_switch.update(cx, |button, cx| button.set_data(this.necessary_enabled, cx));
+                },
+            functional_switch: Switch = radix_theme
+                .primary_switch("cookies-functional")
+                .with_data(false)
+                .content(|_, _| div().into_any_element())
+                => ButtonEvent |this, _event, cx| {
+                    this.functional_enabled = !this.functional_enabled;
+                    this.functional_switch.update(cx, |button, cx| button.set_data(this.functional_enabled, cx));
+                },
+            save_button: Entity<Button> = radix_theme.secondary_button("cookies-save").label("Save preferences"),
+        },
+        args: {
+            radix_theme: Arc<RadixTheme>,
+        },
+        fields: {
+            necessary_enabled: bool = true,
+            functional_enabled: bool = false,
         }
     }
 }

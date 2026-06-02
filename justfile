@@ -10,7 +10,7 @@ gallery-dbg:
     RUST_BACKTRACE=1 cargo run -p gpui-luma-gallery -- jarvis
 
 theme-studio:
-    cargo run -p gpui-luma-theme-studio -- jarvis
+    cargo run -p gpui-luma-theme-studio -- retro-arcade
 
 theme-studio-rel:
     cargo run -p gpui-luma-theme-studio --release
