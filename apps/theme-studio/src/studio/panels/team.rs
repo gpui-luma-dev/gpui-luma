@@ -5,6 +5,7 @@ use gpui_luma::controls::selector::{Selector, SelectorItem, SelectorPalette, Sel
 use gpui_luma::controls::selector_panel::default_selector_items_template;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{InteractionState, MetricTokens, RadixTheme};
+use gpui_luma::{hstack, vstack};
 
 use super::common::{avatar_circle, card, card_header};
 
@@ -58,28 +59,20 @@ impl Render for TeamPanel {
             TEAM_CARD_WIDTH,
             chrome.border,
             chrome.panel_background,
-            div()
-                .w_full()
-                .overflow_hidden()
-                .flex()
-                .flex_col()
-                .gap(px(12.0))
-                .child(card_header(
+            vstack! {
+                gap=12;
+                card_header(
                     "Team Members",
                     "Invite your team members to collaborate.",
                     chrome.title_text,
                     chrome.muted_text,
-                ))
-                .child(member_row("SD", "Sofia Davis", "m@example.com", &self.member_selectors[0], chrome, avatar_bg))
-                .child(member_row("JL", "Jackson Lee", "m@example.com", &self.member_selectors[1], chrome, avatar_bg))
-                .child(member_row(
-                    "IN",
-                    "Isabella Nguyen",
-                    "m@example.com",
-                    &self.member_selectors[2],
-                    chrome,
-                    avatar_bg,
-                )),
+                ),
+                member_row("SD", "Sofia Davis", "m@example.com", &self.member_selectors[0], chrome, avatar_bg),
+                member_row("JL", "Jackson Lee", "m@example.com", &self.member_selectors[1], chrome, avatar_bg),
+                member_row("IN", "Isabella Nguyen", "m@example.com", &self.member_selectors[2], chrome, avatar_bg),
+            }
+            .w_full()
+            .overflow_hidden(),
         )
     }
 }
@@ -92,40 +85,32 @@ fn member_row(
     chrome: gpui_luma::theme::LumaChrome,
     avatar_bg: gpui::Hsla,
 ) -> impl IntoElement {
-    div()
-        .flex()
-        .items_center()
-        .gap(px(10.0))
-        .py(px(6.0))
-        .overflow_hidden()
-        .child(avatar_circle(initials, 32.0, avatar_bg, chrome.title_text))
-        .child(
+    hstack! {
+        gap=10 align=center;
+        avatar_circle(initials, 32.0, avatar_bg, chrome.title_text),
+        vstack! {
+            gap=2;
             div()
-                .flex_1()
-                .min_w_0()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .font_weight(gpui::FontWeight::MEDIUM)
+                .text_color(chrome.body_text)
                 .overflow_hidden()
-                .flex()
-                .flex_col()
-                .gap(px(2.0))
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .overflow_hidden()
-                        .child(name),
-                )
-                .child(
-                    div()
-                        .text_size(px(11.0))
-                        .line_height(px(14.0))
-                        .text_color(chrome.muted_text)
-                        .overflow_hidden()
-                        .child(email),
-                ),
-        )
-        .child(div().flex_none().w(px(ROLE_SELECTOR_WIDTH)).child(selector.clone()))
+                .child(name),
+            div()
+                .text_size(px(11.0))
+                .line_height(px(14.0))
+                .text_color(chrome.muted_text)
+                .overflow_hidden()
+                .child(email),
+        }
+        .flex_1()
+        .min_w_0()
+        .overflow_hidden(),
+        div().flex_none().w(px(ROLE_SELECTOR_WIDTH)).child(selector.clone()),
+    }
+    .py(px(6.0))
+    .overflow_hidden()
 }
 
 fn role_items() -> Vec<SelectorItem> {

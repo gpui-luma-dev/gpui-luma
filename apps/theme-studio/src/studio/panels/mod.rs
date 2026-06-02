@@ -4,6 +4,7 @@ mod common;
 
 pub(crate) use common::format_hsla;
 mod cookies;
+mod navigation_sidebar;
 mod payments;
 mod report;
 mod team;
@@ -12,6 +13,7 @@ mod upgrade;
 pub use account::AccountPanel;
 pub use chat::ChatPanel;
 pub use cookies::CookiesPanel;
+pub use navigation_sidebar::NavigationSidebarPanel;
 pub use payments::PaymentsPanel;
 pub use report::ReportPanel;
 pub use team::TeamPanel;
@@ -89,4 +91,5 @@ pub fn render_demo_board(
         .child(pick(InspectableId::CookieSettings, demos.cookies.clone().into_any_element()))
         .child(pick(InspectableId::ReportIssue, demos.report.clone().into_any_element()))
         .child(pick(InspectableId::Payments, demos.payments.clone().into_any_element()))
+        .child(pick(InspectableId::NavigationSidebar, demos.navigation_sidebar.clone().into_any_element()))
 }

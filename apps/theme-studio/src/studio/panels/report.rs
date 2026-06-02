@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Window, prelude::*};
 use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::selector::{Selector, SelectorItem};
@@ -8,8 +8,9 @@ use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::{form_field, hstack, vstack};
 
-use super::common::{card, card_header, field_label};
+use super::common::{card, card_header};
 
 pub struct ReportPanel {
     radix_theme: Arc<RadixTheme>,
@@ -52,63 +53,27 @@ impl Render for ReportPanel {
             380.0,
             chrome.border,
             chrome.panel_background,
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(12.0))
-                .child(card_header(
+            vstack! {
+                gap=12;
+                card_header(
                     "Report an issue",
                     "What area are you having problems with?",
                     chrome.title_text,
                     chrome.muted_text,
-                ))
-                .child(
-                    div()
-                        .flex()
-                        .gap(px(10.0))
-                        .child(
-                            div()
-                                .flex_1()
-                                .flex()
-                                .flex_col()
-                                .gap(px(4.0))
-                                .child(field_label("Area", chrome.body_text))
-                                .child(self.area_selector.clone()),
-                        )
-                        .child(
-                            div()
-                                .flex_1()
-                                .flex()
-                                .flex_col()
-                                .gap(px(4.0))
-                                .child(field_label("Security Level", chrome.body_text))
-                                .child(self.security_selector.clone()),
-                        ),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(4.0))
-                        .child(field_label("Subject", chrome.body_text))
-                        .child(self.subject_field.clone()),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(4.0))
-                        .child(field_label("Description", chrome.body_text))
-                        .child(self.description_area.clone()),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .justify_end()
-                        .gap(px(8.0))
-                        .child(self.cancel_button.clone())
-                        .child(self.submit_button.clone()),
                 ),
+                hstack! {
+                    gap=10;
+                    form_field!("Area", chrome; self.area_selector.clone()).flex_1(),
+                    form_field!("Security Level", chrome; self.security_selector.clone()).flex_1(),
+                },
+                form_field!("Subject", chrome; self.subject_field.clone()),
+                form_field!("Description", chrome; self.description_area.clone()),
+                hstack! {
+                    gap=8 justify=end;
+                    self.cancel_button.clone(),
+                    self.submit_button.clone(),
+                },
+            },
         )
     }
 }

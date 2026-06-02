@@ -9,8 +9,10 @@ use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::{form_field, hstack, vstack};
 
-use super::common::{card, card_header, field_label};
+use super::common::{card, card_header};
+
 pub struct UpgradePanel {
     radix_theme: Arc<RadixTheme>,
     name_field: TextField,
@@ -68,62 +70,37 @@ impl Render for UpgradePanel {
             380.0,
             chrome.border,
             chrome.panel_background,
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(12.0))
-                .child(card_header(
+            vstack! {
+                gap=12;
+                card_header(
                     "Upgrade your subscription",
                     "You are currently on the free plan. Upgrade to unlock all features.",
                     chrome.title_text,
                     chrome.muted_text,
-                ))
-                .child(
-                    div()
-                        .flex()
-                        .gap(px(10.0))
-                        .child(
-                            div()
-                                .flex_1()
-                                .flex()
-                                .flex_col()
-                                .gap(px(4.0))
-                                .child(field_label("Name", chrome.body_text))
-                                .child(self.name_field.clone()),
-                        )
-                        .child(
-                            div()
-                                .flex_1()
-                                .flex()
-                                .flex_col()
-                                .gap(px(4.0))
-                                .child(field_label("Email", chrome.body_text))
-                                .child(self.email_field.clone()),
-                        ),
-                )
-                .child(field_label("Card Number", chrome.body_text))
-                .child(
-                    div()
-                        .flex()
-                        .gap(px(8.0))
-                        .child(div().flex_1().child(self.card_field.clone()))
-                        .child(div().w(px(72.0)).child(self.expiry_field.clone()))
-                        .child(div().w(px(64.0)).child(self.cvc_field.clone())),
-                )
-                .child(field_label("Plan", chrome.body_text))
-                .child(self.plan_group.clone())
-                .child(field_label("Notes", chrome.body_text))
-                .child(self.notes_area.clone())
-                .child(self.terms_checkbox.clone())
-                .child(self.email_checkbox.clone())
-                .child(
-                    div()
-                        .flex()
-                        .justify_end()
-                        .gap(px(8.0))
-                        .child(self.cancel_button.clone())
-                        .child(self.upgrade_button.clone()),
                 ),
+                hstack! {
+                    gap=10;
+                    form_field!("Name", chrome; self.name_field.clone()).flex_1(),
+                    form_field!("Email", chrome; self.email_field.clone()).flex_1(),
+                },
+                form_field!("Card Number", chrome;
+                    hstack! {
+                        gap=8;
+                        div().flex_1().child(self.card_field.clone()),
+                        div().w(px(72.0)).child(self.expiry_field.clone()),
+                        div().w(px(64.0)).child(self.cvc_field.clone()),
+                    }
+                ),
+                form_field!("Plan", chrome; self.plan_group.clone()),
+                form_field!("Notes", chrome; self.notes_area.clone()),
+                self.terms_checkbox.clone(),
+                self.email_checkbox.clone(),
+                hstack! {
+                    gap=8 justify=end;
+                    self.cancel_button.clone(),
+                    self.upgrade_button.clone(),
+                },
+            },
         )
     }
 }

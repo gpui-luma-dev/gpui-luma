@@ -138,7 +138,62 @@ macro_rules! hstack {
         panel
     }};
 
-    // 6. Simple row wrap
+    // 6. Main-axis justification only
+    (
+        justify=$justify:ident;
+        $( $child:expr ),* $(,)?
+    ) => {{
+        let mut panel = ::gpui::div().flex();
+        panel = $crate::hstack!(@justify_content panel, $justify);
+        $( panel = panel.child($child); )*
+        panel
+    }};
+
+    // 7. Justification and cross-axis alignment
+    (
+        justify=$justify:ident align=$align:ident;
+        $( $child:expr ),* $(,)?
+    ) => {{
+        let mut panel = ::gpui::div().flex();
+        panel = $crate::hstack!(@align_items panel, $align);
+        panel = $crate::hstack!(@justify_content panel, $justify);
+        $( panel = panel.child($child); )*
+        panel
+    }};
+
+    (
+        align=$align:ident justify=$justify:ident;
+        $( $child:expr ),* $(,)?
+    ) => {
+        $crate::hstack! {
+            justify=$justify align=$align;
+            $( $child ),*
+        }
+    };
+
+    // 8. Justification, cross-axis alignment, and gap
+    (
+        justify=$justify:ident align=$align:ident gap=$gap:tt;
+        $( $child:expr ),* $(,)?
+    ) => {{
+        let mut panel = ::gpui::div().flex().gap(::gpui::px($gap as f32));
+        panel = $crate::hstack!(@align_items panel, $align);
+        panel = $crate::hstack!(@justify_content panel, $justify);
+        $( panel = panel.child($child); )*
+        panel
+    }};
+
+    (
+        align=$align:ident justify=$justify:ident gap=$gap:tt;
+        $( $child:expr ),* $(,)?
+    ) => {
+        $crate::hstack! {
+            justify=$justify align=$align gap=$gap;
+            $( $child ),*
+        }
+    };
+
+    // 9. Simple row wrap
     (
         $( $child:expr ),* $(,)?
     ) => {{

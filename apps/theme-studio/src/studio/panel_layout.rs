@@ -9,6 +9,7 @@ pub const TEAM_PANEL_WIDTH_PX: f32 = 380.0;
 pub const ACCOUNT_PANEL_WIDTH_PX: f32 = 340.0;
 pub const CHAT_PANEL_WIDTH_PX: f32 = 360.0;
 pub const PAYMENTS_PANEL_WIDTH_PX: f32 = 720.0;
+pub const NAVIGATION_SIDEBAR_PANEL_WIDTH_PX: f32 = 300.0;
 
 pub fn panel_width(id: InspectableId) -> f32 {
     match id {
@@ -16,6 +17,7 @@ pub fn panel_width(id: InspectableId) -> f32 {
         InspectableId::Chat => CHAT_PANEL_WIDTH_PX,
         InspectableId::TeamMembers => TEAM_PANEL_WIDTH_PX,
         InspectableId::Payments => PAYMENTS_PANEL_WIDTH_PX,
+        InspectableId::NavigationSidebar => NAVIGATION_SIDEBAR_PANEL_WIDTH_PX,
         _ => PANEL_WIDTH_PX,
     }
 }

@@ -4,7 +4,9 @@ use gpui::{AppContext, Context, Entity, Subscription};
 use gpui_luma::theme::{ControlSize, RadixTheme};
 
 use super::app::ThemeStudioApp;
-use super::panels::{AccountPanel, ChatPanel, CookiesPanel, PaymentsPanel, ReportPanel, TeamPanel, UpgradePanel};
+use super::panels::{
+    AccountPanel, ChatPanel, CookiesPanel, NavigationSidebarPanel, PaymentsPanel, ReportPanel, TeamPanel, UpgradePanel,
+};
 
 pub struct DemoControls {
     pub upgrade: Entity<UpgradePanel>,
@@ -14,6 +16,7 @@ pub struct DemoControls {
     pub cookies: Entity<CookiesPanel>,
     pub report: Entity<ReportPanel>,
     pub payments: Entity<PaymentsPanel>,
+    pub navigation_sidebar: Entity<NavigationSidebarPanel>,
 }
 
 impl DemoControls {
@@ -26,6 +29,7 @@ impl DemoControls {
             cookies: cx.new(|cx| CookiesPanel::new(cx, theme.clone())),
             report: cx.new(|cx| ReportPanel::new(cx, theme.clone(), size)),
             payments: cx.new(|cx| PaymentsPanel::new(cx, theme.clone(), size)),
+            navigation_sidebar: cx.new(|cx| NavigationSidebarPanel::new(cx, theme.clone())),
         }
     }
 

@@ -21,29 +21,24 @@ impl StudioOverrides {
         self.scale_overrides.get(&id)?.get(key).copied()
     }
 
-    pub fn set_color(&mut self, id: InspectableId, token: String, color: Hsla) {
-        self.color_overrides.entry(id).or_default().insert(token, color);
-    }
-
     pub fn set_scale(&mut self, id: InspectableId, key: String, value: f32) {
         self.scale_overrides.entry(id).or_default().insert(key, value);
     }
 
     pub fn effective_switch_scale(&self, base: SwitchScale) -> SwitchScale {
-        let Some(map) = self.scale_overrides.get(&InspectableId::CookieSettings) else {
-            return self.switch_scale.unwrap_or(base);
-        };
-
+        let id = InspectableId::CookieSettings;
         let mut scale = self.switch_scale.unwrap_or(base);
-        if let Some(v) = map.get("track_width") {
-            scale.track_width = *v;
+
+        if let Some(v) = self.scale_override(id, "track_width") {
+            scale.track_width = v;
         }
-        if let Some(v) = map.get("track_height") {
-            scale.track_height = *v;
+        if let Some(v) = self.scale_override(id, "track_height") {
+            scale.track_height = v;
         }
-        if let Some(v) = map.get("thumb_size") {
-            scale.thumb_size = *v;
+        if let Some(v) = self.scale_override(id, "thumb_size") {
+            scale.thumb_size = v;
         }
+
         scale
     }
 }

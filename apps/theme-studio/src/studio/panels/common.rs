@@ -1,5 +1,6 @@
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::LumaChrome;
+use gpui_luma::hstack;
 
 pub fn format_hsla(color: Hsla) -> String {
     format!(
@@ -68,8 +69,6 @@ pub fn card_header(title: &'static str, subtitle: &'static str, title_color: Hsl
         .into_any_element()
 }
 
-pub use gpui_luma::controls::label::field_label;
-
 pub fn or_divider(label: &'static str, border: Hsla, text: Hsla) -> impl IntoElement {
     div()
         .w_full()
@@ -108,7 +107,7 @@ pub fn message_bubble(text: &'static str, align_end: bool, bg: Hsla, fg: Hsla) -
         .child(text);
 
     if align_end {
-        div().flex().justify_end().child(bubble)
+        hstack! { justify=end; bubble }
     } else {
         div().child(bubble)
     }

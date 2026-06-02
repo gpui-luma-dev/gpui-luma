@@ -12,6 +12,7 @@ use gpui_luma::controls::list_view::{
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::{hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
 use super::common::{card, card_header};
@@ -76,54 +77,40 @@ impl Render for PaymentsPanel {
             PAYMENTS_CARD_WIDTH,
             chrome.border,
             chrome.panel_background,
-            div()
+            vstack! {
+                gap=12;
+                hstack! {
+                    justify=between align=start gap=12;
+                    card_header("Payments", "Manage your payments.", chrome.title_text, chrome.muted_text),
+                    self.add_button.clone(),
+                },
+                div()
+                    .w_full()
+                    .rounded(px(8.0))
+                    .border_1()
+                    .border_color(chrome.border)
+                    .overflow_hidden()
+                    .child(self.list_view.clone()),
+                hstack! {
+                    justify=between align=center gap=12;
+                    format!("{} of {total_rows} row(s) selected.", self.selected_count),
+                    hstack! {
+                        gap=8 align=center;
+                        pagination_button(cx, "payments-prev", "Previous", at_first, |panel, cx| {
+                            panel.list_view.update(cx, |list, cx| list.prev_page(cx));
+                        }),
+                        pagination_button(cx, "payments-next", "Next", at_last, |panel, cx| {
+                            panel.list_view.update(cx, |list, cx| list.next_page(cx));
+                        }),
+                    },
+                }
                 .w_full()
-                .overflow_hidden()
-                .flex()
-                .flex_col()
-                .gap(px(12.0))
-                .child(
-                    div()
-                        .flex()
-                        .items_start()
-                        .justify_between()
-                        .gap(px(12.0))
-                        .child(card_header("Payments", "Manage your payments.", chrome.title_text, chrome.muted_text))
-                        .child(self.add_button.clone()),
-                )
-                .child(
-                    div()
-                        .w_full()
-                        .rounded(px(8.0))
-                        .border_1()
-                        .border_color(chrome.border)
-                        .overflow_hidden()
-                        .child(self.list_view.clone()),
-                )
-                .child(
-                    div()
-                        .w_full()
-                        .flex()
-                        .items_center()
-                        .justify_between()
-                        .gap(px(12.0))
-                        .text_size(px(11.0))
-                        .line_height(px(14.0))
-                        .text_color(chrome.muted_text)
-                        .child(format!("{} of {total_rows} row(s) selected.", self.selected_count))
-                        .child(
-                            div()
-                                .flex()
-                                .items_center()
-                                .gap(px(8.0))
-                                .child(pagination_button(cx, "payments-prev", "Previous", at_first, |panel, cx| {
-                                    panel.list_view.update(cx, |list, cx| list.prev_page(cx));
-                                }))
-                                .child(pagination_button(cx, "payments-next", "Next", at_last, |panel, cx| {
-                                    panel.list_view.update(cx, |list, cx| list.next_page(cx));
-                                })),
-                        ),
-                ),
+                .text_size(px(11.0))
+                .line_height(px(14.0))
+                .text_color(chrome.muted_text),
+            }
+            .w_full()
+            .overflow_hidden(),
         )
     }
 }

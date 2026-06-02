@@ -6,8 +6,9 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
+use gpui_luma::{hstack, vstack};
 
-use super::common::card;
+use super::common::{card, card_header};
 
 pub struct CookiesPanel {
     radix_theme: Arc<RadixTheme>,
@@ -43,44 +44,28 @@ impl Render for CookiesPanel {
             380.0,
             chrome.border,
             chrome.panel_background,
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(14.0))
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_size(px(16.0))
-                                .line_height(px(22.0))
-                                .font_weight(gpui::FontWeight::SEMIBOLD)
-                                .text_color(chrome.title_text)
-                                .child("Cookie Settings"),
-                        )
-                        .child(
-                            div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
-                                .text_color(chrome.muted_text)
-                                .child("Manage your cookie preferences here."),
-                        ),
-                )
-                .child(cookie_row(
+            vstack! {
+                gap=14;
+                card_header(
+                    "Cookie Settings",
+                    "Manage your cookie preferences here.",
+                    chrome.title_text,
+                    chrome.muted_text,
+                ),
+                cookie_row(
                     "Strictly Necessary",
                     "These cookies are essential in order to use the website and use its features.",
                     &self.necessary_switch,
                     chrome,
-                ))
-                .child(cookie_row(
+                ),
+                cookie_row(
                     "Functional Cookies",
                     "These cookies allow the website to provide personalized functionality.",
                     &self.functional_switch,
                     chrome,
-                ))
-                .child(div().w_full().child(self.save_button.clone())),
+                ),
+                div().w_full().child(self.save_button.clone()),
+            },
         )
     }
 }
@@ -91,25 +76,22 @@ fn cookie_row(
     switch: &Switch,
     chrome: gpui_luma::theme::LumaChrome,
 ) -> impl IntoElement {
-    div()
-        .flex()
-        .items_start()
-        .justify_between()
-        .gap(px(12.0))
-        .child(
+    hstack! {
+        justify=between align=start gap=12;
+        vstack! {
+            gap=4;
             div()
-                .flex_1()
-                .flex()
-                .flex_col()
-                .gap(px(4.0))
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(title),
-                )
-                .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(chrome.muted_text).child(body)),
-        )
-        .child(switch.clone())
+                .text_size(px(12.0))
+                .font_weight(gpui::FontWeight::MEDIUM)
+                .text_color(chrome.body_text)
+                .child(title),
+            div()
+                .text_size(px(11.0))
+                .line_height(px(15.0))
+                .text_color(chrome.muted_text)
+                .child(body),
+        }
+        .flex_1(),
+        switch.clone(),
+    }
 }

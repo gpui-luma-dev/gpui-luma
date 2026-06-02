@@ -9,10 +9,11 @@ pub enum InspectableId {
     CookieSettings,
     ReportIssue,
     Payments,
+    NavigationSidebar,
 }
 
 impl InspectableId {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -20,6 +21,7 @@ impl InspectableId {
         Self::CookieSettings,
         Self::ReportIssue,
         Self::Payments,
+        Self::NavigationSidebar,
     ];
 
     pub fn all() -> &'static [Self] {
@@ -35,6 +37,7 @@ impl InspectableId {
             Self::CookieSettings => "cookie_settings",
             Self::ReportIssue => "report_issue",
             Self::Payments => "payments",
+            Self::NavigationSidebar => "navigation_sidebar",
         }
     }
 
@@ -47,6 +50,7 @@ impl InspectableId {
             Self::CookieSettings => "Switch",
             Self::ReportIssue => "TextField",
             Self::Payments => "ListView",
+            Self::NavigationSidebar => "Navigation Sidebar",
         }
     }
 
@@ -59,6 +63,7 @@ impl InspectableId {
             Self::CookieSettings => "Cookie Settings".to_string(),
             Self::ReportIssue => "Report an Issue".to_string(),
             Self::Payments => "Payments".to_string(),
+            Self::NavigationSidebar => "Navigation Sidebar".to_string(),
         }
     }
 
