@@ -56,7 +56,25 @@ pub(super) fn gallery_pane_with_usage_top_aligned(
     content: AnyElement,
     radix_theme: &RadixTheme,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, radix_theme, true)
+    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, radix_theme, true, false)
+}
+
+pub(super) fn gallery_pane_with_usage_description_scrollable(
+    title: &'static str,
+    description: Option<&'static str>,
+    usage_component: &'static str,
+    content: AnyElement,
+    radix_theme: &RadixTheme,
+) -> AnyElement {
+    render_gallery_pane_with_usage_descriptions(
+        title,
+        description,
+        &[usage_component],
+        content,
+        radix_theme,
+        true,
+        true,
+    )
 }
 
 pub(super) fn gallery_pane_with_usage_description(
@@ -76,7 +94,7 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     content: AnyElement,
     radix_theme: &RadixTheme,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, description, usage_components, content, radix_theme, false)
+    render_gallery_pane_with_usage_descriptions(title, description, usage_components, content, radix_theme, false, false)
 }
 
 fn render_gallery_pane_with_usage_descriptions(
@@ -86,6 +104,7 @@ fn render_gallery_pane_with_usage_descriptions(
     content: AnyElement,
     radix_theme: &RadixTheme,
     top_aligned: bool,
+    scrollable: bool,
 ) -> AnyElement {
     let chrome = radix_theme.chrome();
 
@@ -106,23 +125,42 @@ fn render_gallery_pane_with_usage_descriptions(
                 .items_stretch()
                 .justify_center()
                 .gap(px(28.0))
-                .child(
-                    div()
-                        .min_w(px(0.0))
-                        .h_full()
-                        .flex_1()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .when(!top_aligned, |column| column.justify_center())
-                        .when(top_aligned, |column| column.justify_start())
-                        .gap_4()
-                        .occlude()
-                        .child(content),
-                )
+                .child(render_gallery_pane_content_column(content, top_aligned, scrollable))
                 .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, radix_theme))),
         )
         .into_any_element()
+}
+
+fn render_gallery_pane_content_column(content: AnyElement, top_aligned: bool, scrollable: bool) -> AnyElement {
+    let mut column = div()
+        .min_w(px(0.0))
+        .min_h(px(0.0))
+        .h_full()
+        .flex_1()
+        .flex()
+        .flex_col()
+        .when(scrollable, |this| this.overflow_hidden().items_stretch())
+        .when(!scrollable, |this| this.items_center())
+        .when(!top_aligned && !scrollable, |column| column.justify_center())
+        .when(top_aligned || scrollable, |column| column.justify_start())
+        .gap_4()
+        .occlude();
+
+    if scrollable {
+        column = column.child(
+            div()
+                .id("gallery-pane-scroll")
+                .w_full()
+                .h_full()
+                .min_h(px(0.0))
+                .overflow_y_scroll()
+                .child(content),
+        );
+    } else {
+        column = column.child(content);
+    }
+
+    column.into_any_element()
 }
 
 fn render_pane_header(

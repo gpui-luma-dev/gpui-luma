@@ -31,6 +31,7 @@ pub mod radio_button;
 pub mod radio_group;
 pub mod scrollbar;
 pub mod scroll_container;
+pub mod resizable_panels;
 pub mod split_view;
 pub mod slider;
 pub mod state;

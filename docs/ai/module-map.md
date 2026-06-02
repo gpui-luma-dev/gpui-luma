@@ -247,6 +247,8 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - roadmap and scope (not a data grid): `docs/ai/listview-vnext.md`; phase-2 paging/scroll/sizing: `docs/ai/listview_2.md`; facade re-unification: `docs/ai/listview_3.md`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
+- `resizable_panels/*`
+  - generic percent-based multi-panel groups (horizontal/vertical, nested via composition) + `ResizablePanelsEvent`
 - `slider/*`
   - ranged value control + drag semantics + `SliderEvent`
 - `scrollbar/*`

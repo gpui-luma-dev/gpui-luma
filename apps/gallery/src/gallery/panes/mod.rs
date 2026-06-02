@@ -17,6 +17,7 @@ mod progress;
 mod prototypes;
 mod radio_button;
 mod radio_group;
+mod resizable_panels;
 pub(super) mod registry;
 mod scrollbar;
 mod search;

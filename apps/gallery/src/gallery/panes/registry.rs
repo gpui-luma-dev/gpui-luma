@@ -15,8 +15,9 @@ use crate::gallery::control::GalleryApp;
 use super::{
     autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu, icon_button,
     introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
-    radio_group, scrollbar, search, search_selector, selection_panel, selector, selector_controls_template, settings,
-    shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, selector,
+    selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield,
+    theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -63,6 +64,7 @@ enum GalleryPageKind {
     NavigationSidebar,
     TabsNavigation,
     Progress,
+    ResizablePanels,
     Settings,
 }
 
@@ -159,6 +161,12 @@ const POPUP_MENU_PAGE: GalleryPage =
     GalleryPage { id: "popup-menu", label: "Popup Menu", icon: None, kind: GalleryPageKind::PopupMenu };
 const CONTEXT_MENU_PAGE: GalleryPage =
     GalleryPage { id: "context-menu", label: "Context Menu", icon: None, kind: GalleryPageKind::ContextMenu };
+const RESIZABLE_PANELS_PAGE: GalleryPage = GalleryPage {
+    id: "resizable-panels",
+    label: "Resizable Panels",
+    icon: None,
+    kind: GalleryPageKind::ResizablePanels,
+};
 const NAVIGATION_SIDEBAR_PAGE: GalleryPage = GalleryPage {
     id: "navigation-sidebar",
     label: "Navigation Sidebar",
@@ -221,6 +229,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
 ];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
+const LAYOUT_PAGES: &[GalleryPage] = &[RESIZABLE_PANELS_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const SELECTION_PAGES: &[GalleryPage] = &[
@@ -255,6 +264,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
         pages: INPUT_PAGES,
     },
     GalleryNavGroup { id: "menu", label: "Menu", icon: LucideIcon::Menu, expanded: false, pages: MENU_PAGES },
+    GalleryNavGroup { id: "layout", label: "Layout", icon: LucideIcon::Columns2, expanded: false, pages: LAYOUT_PAGES },
     GalleryNavGroup {
         id: "navigation",
         label: "Navigation",
@@ -319,6 +329,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) navigation_sidebar: navigation_sidebar::NavigationSidebarPane,
     pub(super) tabs_navigation: tabs_navigation::TabsNavigationPane,
     pub(super) progress: progress::ProgressPane,
+    pub(super) resizable_panels: resizable_panels::ResizablePanelsPane,
 }
 
 impl GalleryPanes {
@@ -410,6 +421,7 @@ impl GalleryPanes {
             navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, radix_theme.clone()),
             tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, radix_theme.clone()),
             progress: progress::ProgressPane::new(cx, radix_theme.clone()),
+            resizable_panels: resizable_panels::ResizablePanelsPane::new(cx),
         }
     }
 
@@ -442,6 +454,7 @@ impl GalleryPanes {
         self.context_menu.subscribe(cx, subscriptions);
         self.navigation_sidebar.subscribe(cx, subscriptions);
         self.tabs_navigation.subscribe(cx, subscriptions);
+        self.resizable_panels.subscribe(cx, subscriptions);
     }
 
     #[allow(dead_code)]
@@ -477,6 +490,7 @@ impl GalleryPanes {
         self.navigation_sidebar.notify_controls(cx);
         self.tabs_navigation.notify_controls(cx);
         self.progress.notify_controls(cx);
+        self.resizable_panels.notify_controls(cx);
     }
 
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
@@ -520,6 +534,7 @@ impl GalleryPanes {
             GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.radix_theme),
             GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.radix_theme),
             GalleryPageKind::Progress => self.progress.render(&self.radix_theme),
+            GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.radix_theme),
             GalleryPageKind::Settings => settings::render(&self.radix_theme),
         }
     }
