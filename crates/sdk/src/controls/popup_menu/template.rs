@@ -90,7 +90,6 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .px(px(appearance.trigger_padding_x))
             .py(px(appearance.trigger_padding_y))
             .h(px(appearance.trigger_height))
-            .min_w(px(appearance.floating_menu.min_width))
             .bg(appearance.trigger_background)
             .text_color(appearance.trigger_foreground)
             .border_1()
@@ -184,10 +183,7 @@ fn resolve_popup_menu_placement(
     viewport_size: Size<Pixels>,
 ) -> ResolvedPopupMenuPlacement {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
-        Bounds::new(
-            point(px(0.0), px(0.0)),
-            Size { width: px(appearance.floating_menu.min_width), height: px(appearance.trigger_height) },
-        )
+        Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(appearance.trigger_height) })
     });
     let menu_size = estimated_menu_size(appearance, item_count, trigger_bounds.size.width);
     let offset_y = px(appearance.menu_offset_y);

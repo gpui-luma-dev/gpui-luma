@@ -1,35 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::selector::{Selector, SelectorItem, SelectorPalette, SelectorTheme, ThemedSelectorTemplate};
-use gpui_luma::controls::selector_panel::default_selector_items_template;
+use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{InteractionState, MetricTokens, RadixTheme};
+use gpui_luma::theme::RadixTheme;
 use gpui_luma::{hstack, vstack};
 
 use super::common::{avatar_circle, card, card_header};
 
-/// Compact role dropdowns (~half of default 180px menu/trigger min width).
-const ROLE_SELECTOR_MIN_WIDTH: f32 = 90.0;
-const ROLE_SELECTOR_WIDTH: f32 = ROLE_SELECTOR_MIN_WIDTH;
 const TEAM_CARD_WIDTH: f32 = 380.0;
-
-struct CompactSelectorTheme {
-    inner: Arc<dyn SelectorTheme>,
-    panel_min_width: f32,
-}
-
-impl SelectorTheme for CompactSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> SelectorPalette {
-        let mut palette = self.inner.resolve(state);
-        palette.items_panel.min_width = self.panel_min_width;
-        palette
-    }
-
-    fn metrics(&self) -> &MetricTokens {
-        self.inner.metrics()
-    }
-}
 
 pub struct TeamPanel {
     radix_theme: Arc<RadixTheme>,
@@ -107,7 +86,7 @@ fn member_row(
         .flex_1()
         .min_w_0()
         .overflow_hidden(),
-        div().flex_none().w(px(ROLE_SELECTOR_WIDTH)).child(selector.clone()),
+        div().flex_none().child(selector.clone()),
     }
     .py(px(6.0))
     .overflow_hidden()
@@ -128,9 +107,5 @@ fn member_selector(
     default_role: &'static str,
     items: &[SelectorItem],
 ) -> Entity<Selector> {
-    let template = Arc::new(ThemedSelectorTemplate::new(
-        Arc::new(CompactSelectorTheme { inner: theme.selector_theme(), panel_min_width: ROLE_SELECTOR_MIN_WIDTH }),
-        default_selector_items_template(),
-    ));
-    theme.selector(id).label(default_role).items(items.to_vec()).template(template).spawn(cx)
+    theme.selector(id).label(default_role).items(items.to_vec()).spawn(cx)
 }
