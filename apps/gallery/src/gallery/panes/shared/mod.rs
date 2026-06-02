@@ -94,7 +94,15 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     content: AnyElement,
     radix_theme: &RadixTheme,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, description, usage_components, content, radix_theme, false, false)
+    render_gallery_pane_with_usage_descriptions(
+        title,
+        description,
+        usage_components,
+        content,
+        radix_theme,
+        false,
+        false,
+    )
 }
 
 fn render_gallery_pane_with_usage_descriptions(
@@ -147,15 +155,8 @@ fn render_gallery_pane_content_column(content: AnyElement, top_aligned: bool, sc
         .occlude();
 
     if scrollable {
-        column = column.child(
-            div()
-                .id("gallery-pane-scroll")
-                .w_full()
-                .h_full()
-                .min_h(px(0.0))
-                .overflow_y_scroll()
-                .child(content),
-        );
+        column = column
+            .child(div().id("gallery-pane-scroll").w_full().h_full().min_h(px(0.0)).overflow_y_scroll().child(content));
     } else {
         column = column.child(content);
     }

@@ -13,9 +13,9 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu, icon_button,
-    introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes, radio_button,
-    radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, selector,
+    accordion, autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
+    icon_button, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes,
+    radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, selector,
     selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea, textfield,
     theme_usage, toggle, toggle_group,
 };
@@ -48,6 +48,7 @@ enum GalleryPageKind {
     ToggleGroup,
     Switch,
     Checkbox,
+    Accordion,
     RadioButton,
     RadioGroup,
     ChoiceTemplates,
@@ -123,6 +124,8 @@ const SWITCH_PAGE: GalleryPage =
     GalleryPage { id: "switch", label: "Switch", icon: None, kind: GalleryPageKind::Switch };
 const CHECKBOX_PAGE: GalleryPage =
     GalleryPage { id: "checkbox", label: "Checkbox", icon: None, kind: GalleryPageKind::Checkbox };
+const ACCORDION_PAGE: GalleryPage =
+    GalleryPage { id: "accordion", label: "Accordion", icon: None, kind: GalleryPageKind::Accordion };
 const RADIO_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "radio-button", label: "Radio Button", icon: None, kind: GalleryPageKind::RadioButton };
 const RADIO_GROUP_PAGE: GalleryPage =
@@ -219,6 +222,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     TOGGLE_PAGE,
     SWITCH_PAGE,
     CHECKBOX_PAGE,
+    ACCORDION_PAGE,
     RADIO_BUTTON_PAGE,
     RADIO_GROUP_PAGE,
     CHOICE_TEMPLATES_PAGE,
@@ -313,6 +317,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) toggle_group: toggle_group::ToggleGroupPane,
     pub(super) switch: switch::SwitchPane,
     pub(super) checkbox: checkbox::CheckboxPane,
+    pub(super) accordion: accordion::AccordionPane,
     pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
@@ -405,6 +410,7 @@ impl GalleryPanes {
             toggle_group: toggle_group::ToggleGroupPane::new(cx, radix_theme.clone()),
             switch: switch::SwitchPane::new(cx, radix_theme.clone()),
             checkbox: checkbox::CheckboxPane::new(cx, radix_theme.clone()),
+            accordion: accordion::AccordionPane::new(cx, radix_theme.clone()),
             radio_button: radio_button::RadioButtonPane::new(cx, radix_theme.clone()),
             radio_group: radio_group::RadioGroupPane::new(cx, radix_theme.clone()),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, radix_theme.clone()),
@@ -440,6 +446,7 @@ impl GalleryPanes {
         self.toggle_group.subscribe(cx, subscriptions);
         self.switch.subscribe(cx, subscriptions);
         self.checkbox.subscribe(cx, subscriptions);
+        self.accordion.subscribe(cx, subscriptions);
         self.radio_button.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
         self.listbox.subscribe(cx, subscriptions);
@@ -474,6 +481,7 @@ impl GalleryPanes {
         self.toggle_group.notify_controls(cx);
         self.switch.notify_controls(cx);
         self.checkbox.notify_controls(cx);
+        self.accordion.notify_controls(cx);
         self.radio_button.notify_controls(cx);
         self.radio_group.notify_controls(cx);
         self.choice_templates.notify_controls(cx);
@@ -518,6 +526,7 @@ impl GalleryPanes {
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.radix_theme),
             GalleryPageKind::Switch => self.switch.render(&self.radix_theme),
             GalleryPageKind::Checkbox => self.checkbox.render(&self.radix_theme),
+            GalleryPageKind::Accordion => self.accordion.render(&self.radix_theme),
             GalleryPageKind::RadioButton => self.radio_button.render(&self.radix_theme),
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.radix_theme),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.radix_theme),

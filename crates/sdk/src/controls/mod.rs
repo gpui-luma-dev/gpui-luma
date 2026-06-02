@@ -1,3 +1,4 @@
+pub mod accordion;
 pub mod autocomplete;
 pub mod combobox;
 pub mod command;

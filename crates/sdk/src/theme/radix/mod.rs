@@ -1,3 +1,4 @@
+mod accordion;
 mod action;
 mod autocomplete;
 mod button;
@@ -50,6 +51,7 @@ pub use mode::RadixModeTokens;
 pub use palette::{RadixActionRole, RadixPalette};
 
 use crate::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
+use gpui::SharedString;
 use crate::theme::pack::LumaChrome;
 use crate::theme::{ControlSize, InteractionState, LumaTheme, ThemeMode};
 
@@ -301,6 +303,18 @@ impl RadixTheme {
 
     pub fn tabs_navigation_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::tabs_navigation::TabsNavigationTheme> {
         templates::tabs_navigation_theme(Arc::clone(self))
+    }
+
+    pub fn accordion_template(self: &Arc<Self>) -> Arc<dyn crate::controls::accordion::AccordionTemplate> {
+        templates::accordion_template(Arc::clone(self))
+    }
+
+    pub fn accordion_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::accordion::AccordionTheme> {
+        templates::accordion_theme(Arc::clone(self))
+    }
+
+    pub fn accordion(self: &Arc<Self>, id: impl Into<SharedString>) -> crate::controls::accordion::AccordionBuilder {
+        crate::controls::accordion::new(id).template(self.accordion_template())
     }
 
     pub fn navigation_sidebar_template(

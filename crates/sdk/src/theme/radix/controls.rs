@@ -30,6 +30,7 @@ use crate::controls::selection_panel::{SelectionPanelControl, SelectionPanelItem
 use crate::controls::search_selector::{self, SearchSelectorBuilder};
 use crate::controls::slider::{self, SliderBuilder};
 use crate::controls::switch::{self, SwitchBuilder};
+use crate::controls::accordion::AccordionBuilder;
 use crate::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
 use crate::controls::textarea::{self, TextAreaBuilder};
 use crate::controls::textfield::{self, TextFieldBuilder};
@@ -93,6 +94,7 @@ pub trait RadixThemeControlExt {
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
     fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
+    fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder;
     fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder;
 
     fn autocomplete(
@@ -308,6 +310,10 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
 
     fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder {
         TabsNavigation::new(id).template(self.tabs_navigation_template())
+    }
+
+    fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder {
+        RadixTheme::accordion(self, id)
     }
 
     fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder {

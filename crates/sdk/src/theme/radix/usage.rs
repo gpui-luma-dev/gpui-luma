@@ -151,6 +151,17 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         ],
     },
     &ThemeUsage {
+        label: "Accordion",
+        parts: &[
+            part("trigger label", "foreground", &["default"], &["AccordionPalette.foreground"]),
+            part("trigger hover", "accent", &["hovered"], &["AccordionPalette.background"]),
+            part("disabled label", "muted-foreground", &["disabled"], &["AccordionPalette.foreground"]),
+            part("chevron", "muted-foreground", &["default"], &["AccordionPalette.chevron_color"]),
+            part("item border", "border", &["default"], &["AccordionPalette.border_color"]),
+            part("content label", "foreground", &["expanded"], &["AccordionContentPalette.foreground"]),
+        ],
+    },
+    &ThemeUsage {
         label: "Tabs Navigation",
         parts: &[
             part("inactive label", "foreground", &["inactive"], &["TabsNavigationItemAppearance.foreground"]),

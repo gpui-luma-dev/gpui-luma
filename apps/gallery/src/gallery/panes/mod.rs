@@ -1,3 +1,4 @@
+mod accordion;
 mod autocomplete;
 mod button;
 mod combobox;
