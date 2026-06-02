@@ -69,6 +69,11 @@ impl CommandCore {
             return false;
         }
 
+        if !enabled {
+            return false;
+        }
+
+        cx.stop_propagation();
         self.activate(enabled, cx)
     }
 
@@ -93,6 +98,11 @@ impl CommandCore {
         window: &mut Window,
         cx: &mut Context<T>,
     ) -> bool {
+        if !enabled {
+            return false;
+        }
+
+        cx.stop_propagation();
         self.interaction.handle_mouse_down(enabled, window, cx)
     }
 

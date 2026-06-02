@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::command::button::Button;
+use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::switch::Switch;
 use gpui_luma::theme::radix::prelude::*;
@@ -15,23 +15,40 @@ pub struct CookiesPanel {
     pub necessary_switch: Switch,
     pub functional_switch: Switch,
     save_button: Entity<Button>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl CookiesPanel {
     pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>) -> Self {
+        let necessary_switch = radix_theme
+            .primary_switch("cookies-necessary")
+            .with_data(true)
+            .content(|_, _| div().into_any_element())
+            .spawn(cx);
+        let functional_switch = radix_theme
+            .primary_switch("cookies-functional")
+            .with_data(false)
+            .content(|_, _| div().into_any_element())
+            .spawn(cx);
+
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&necessary_switch, |_, switch, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                switch.update(cx, |button, cx| button.set_data(!*button.data(), cx));
+            }
+        }));
+        subscriptions.push(cx.subscribe(&functional_switch, |_, switch, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                switch.update(cx, |button, cx| button.set_data(!*button.data(), cx));
+            }
+        }));
+
         Self {
-            necessary_switch: radix_theme
-                .primary_switch("cookies-necessary")
-                .with_data(true)
-                .content(|_, _| div().into_any_element())
-                .spawn(cx),
-            functional_switch: radix_theme
-                .primary_switch("cookies-functional")
-                .with_data(false)
-                .content(|_, _| div().into_any_element())
-                .spawn(cx),
+            necessary_switch,
+            functional_switch,
             save_button: radix_theme.secondary_button("cookies-save").label("Save preferences").spawn(cx),
             radix_theme,
+            _subscriptions: subscriptions,
         }
     }
 }
@@ -86,12 +103,15 @@ fn cookie_row(
                 .text_color(chrome.body_text)
                 .child(title),
             div()
+                .w_full()
                 .text_size(px(11.0))
                 .line_height(px(15.0))
                 .text_color(chrome.muted_text)
                 .child(body),
         }
-        .flex_1(),
-        switch.clone(),
+        .flex_1()
+        .min_w_0(),
+        div().flex_none().child(switch.clone()),
     }
+    .w_full()
 }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::command::button::Button;
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use gpui_luma::controls::textarea::TextArea;
@@ -26,10 +26,34 @@ pub struct UpgradePanel {
     email_checkbox: Checkbox,
     cancel_button: Entity<Button>,
     upgrade_button: Entity<Button>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl UpgradePanel {
     pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
+        let terms_checkbox = radix_theme
+            .primary_checkbox("upgrade-terms")
+            .with_data(true)
+            .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
+            .spawn(cx);
+        let email_checkbox = radix_theme
+            .primary_checkbox("upgrade-email-opt")
+            .with_data(false)
+            .content(|_, _| div().child("Allow us to send you emails").into_any_element())
+            .spawn(cx);
+
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&terms_checkbox, |_, checkbox, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                checkbox.update(cx, |button, cx| button.set_data(!*button.data(), cx));
+            }
+        }));
+        subscriptions.push(cx.subscribe(&email_checkbox, |_, checkbox, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                checkbox.update(cx, |button, cx| button.set_data(!*button.data(), cx));
+            }
+        }));
+
         Self {
             name_field: radix_theme.textfield("upgrade-name").placeholder("Name").full_width(true).spawn(cx),
             email_field: radix_theme.textfield("upgrade-email").placeholder("Email").full_width(true).spawn(cx),
@@ -45,19 +69,12 @@ impl UpgradePanel {
                 .selected("starter")
                 .spawn(cx),
             notes_area: radix_theme.textarea("upgrade-notes").placeholder("Notes").full_width(true).rows(3).spawn(cx),
-            terms_checkbox: radix_theme
-                .primary_checkbox("upgrade-terms")
-                .with_data(true)
-                .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
-                .spawn(cx),
-            email_checkbox: radix_theme
-                .primary_checkbox("upgrade-email-opt")
-                .with_data(false)
-                .content(|_, _| div().child("Allow us to send you emails").into_any_element())
-                .spawn(cx),
-            cancel_button: radix_theme.ghost_button("upgrade-cancel").label("Cancel").size(size).spawn(cx),
+            terms_checkbox,
+            email_checkbox,
+            cancel_button: radix_theme.secondary_button("upgrade-cancel").label("Cancel").size(size).spawn(cx),
             upgrade_button: radix_theme.primary_button("upgrade-submit").label("Upgrade Plan").size(size).spawn(cx),
             radix_theme,
+            _subscriptions: subscriptions,
         }
     }
 }
