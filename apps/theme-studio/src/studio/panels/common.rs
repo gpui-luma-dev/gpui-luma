@@ -2,6 +2,71 @@ use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::LumaChrome;
 use gpui_luma::hstack;
 
+pub fn format_hex_color(color: Hsla) -> String {
+    let (r, g, b) = hsla_to_rgb8(color);
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+fn hsla_to_rgb8(color: Hsla) -> (u8, u8, u8) {
+    let h = color.h.fract() * 6.0;
+    let s = color.s.clamp(0.0, 1.0);
+    let l = color.l.clamp(0.0, 1.0);
+
+    if s <= f32::EPSILON {
+        let gray = (l * 255.0).round() as u8;
+        return (gray, gray, gray);
+    }
+
+    let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
+    let p = 2.0 * l - q;
+    let r = hue_to_channel(p, q, h + 0.0);
+    let g = hue_to_channel(p, q, h + 2.0);
+    let b = hue_to_channel(p, q, h + 4.0);
+    ((r * 255.0).round() as u8, (g * 255.0).round() as u8, (b * 255.0).round() as u8)
+}
+
+fn rgb_hex(r: u8, g: u8, b: u8) -> u32 {
+    (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b)
+}
+
+fn hue_to_channel(p: f32, q: f32, t: f32) -> f32 {
+    let mut t = t;
+    if t < 0.0 {
+        t += 6.0;
+    }
+    if t >= 6.0 {
+        t -= 6.0;
+    }
+    if t < 1.0 {
+        p + (q - p) * t
+    } else if t < 3.0 {
+        q
+    } else if t < 4.0 {
+        p + (q - p) * (4.0 - t)
+    } else {
+        p
+    }
+}
+
+pub fn parse_hex_color(raw: &str) -> Option<Hsla> {
+    let hex = raw.trim().trim_start_matches('#');
+    match hex.len() {
+        3 => {
+            let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
+            Some(gpui::rgb(rgb_hex(r, g, b)).into())
+        }
+        6 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            Some(gpui::rgb(rgb_hex(r, g, b)).into())
+        }
+        _ => None,
+    }
+}
+
 pub fn format_hsla(color: Hsla) -> String {
     format!(
         "hsla({} {}% {}% / {})",

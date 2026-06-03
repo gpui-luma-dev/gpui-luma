@@ -2,7 +2,7 @@ mod account;
 mod chat;
 mod common;
 
-pub(crate) use common::format_hsla;
+pub(crate) use common::{format_hex_color, format_hsla, parse_hex_color};
 mod cookies;
 mod navigation_sidebar;
 mod payments;
@@ -25,19 +25,19 @@ use gpui::{Context, MouseButton, Point, Pixels, div, prelude::*, px};
 
 use gpui_luma::theme::LumaChrome;
 
-use super::app::ThemeStudioApp;
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::panel_layout::{DemoPanelDrag, PANEL_BOARD_MIN_HEIGHT_PX, default_panel_position};
+use super::studio_board::StudioBoardHost;
 
 use self::common::panel_drag_handle;
 
 pub fn render_demo_board(
     selected: Option<InspectableId>,
-    positions: &HashMap<InspectableId, Point<Pixels>>,
-    demos: &DemoControls,
+    positions: HashMap<InspectableId, Point<Pixels>>,
+    demos: DemoControls,
     chrome: LumaChrome,
-    cx: &mut Context<ThemeStudioApp>,
+    cx: &mut Context<StudioBoardHost>,
 ) -> impl IntoElement {
     let pick = |id: InspectableId, child: gpui::AnyElement| {
         let selected_panel = selected == Some(id);
@@ -58,10 +58,9 @@ pub fn render_demo_board(
             .child(
                 div()
                     .id(format!("panel-drag-{id:?}"))
-                    .on_mouse_down(
-                        MouseButton::Left,
-                        cx.listener(move |app, event, _, cx| app.begin_panel_drag(id, event, cx)),
-                    )
+                    .on_mouse_down(MouseButton::Left, {
+                        cx.listener(move |host, event, _, cx| host.begin_panel_drag(id, event, cx))
+                    })
                     .on_drag(drag, |drag, _, _, cx| {
                         cx.stop_propagation();
                         cx.new(|_| drag.clone())
@@ -70,7 +69,10 @@ pub fn render_demo_board(
             )
             .child(
                 div()
-                    .on_mouse_down(MouseButton::Left, cx.listener(move |app, _, _, cx| app.select_inspectable(id, cx)))
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |host, _, _, cx| host.select_inspectable(id, cx)),
+                    )
                     .child(child),
             )
             .into_any_element()
@@ -81,9 +83,9 @@ pub fn render_demo_board(
         .relative()
         .w_full()
         .min_h(px(PANEL_BOARD_MIN_HEIGHT_PX))
-        .on_drag_move(cx.listener(ThemeStudioApp::handle_panel_drag_move))
-        .on_mouse_up(MouseButton::Left, cx.listener(|app, _, window, cx| app.end_panel_drag(window, cx)))
-        .on_mouse_up_out(MouseButton::Left, cx.listener(|app, _, window, cx| app.end_panel_drag(window, cx)))
+        .on_drag_move(cx.listener(StudioBoardHost::handle_panel_drag_move))
+        .on_mouse_up(MouseButton::Left, cx.listener(StudioBoardHost::end_panel_drag))
+        .on_mouse_up_out(MouseButton::Left, cx.listener(StudioBoardHost::end_panel_drag))
         .child(pick(InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()))
         .child(pick(InspectableId::CreateAccount, demos.account.clone().into_any_element()))
         .child(pick(InspectableId::TeamMembers, demos.team.clone().into_any_element()))

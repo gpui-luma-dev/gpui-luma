@@ -78,6 +78,21 @@ impl StudioThemeChoice {
         matches!(self, Self::Named(stem) if stem == "jarvis")
     }
 
+    pub fn id(&self) -> String {
+        match self {
+            Self::Default => "default".to_string(),
+            Self::Named(stem) => stem.clone(),
+        }
+    }
+
+    pub fn from_id(theme_id: &str) -> Self {
+        if theme_id == "default" {
+            Self::Default
+        } else {
+            Self::Named(theme_id.to_string())
+        }
+    }
+
     pub fn radix_theme(self) -> Arc<RadixTheme> {
         match self {
             Self::Default => Arc::new(RadixTheme::native()),

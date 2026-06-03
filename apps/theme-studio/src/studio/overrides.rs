@@ -7,14 +7,23 @@ use super::inspectable::InspectableId;
 
 #[derive(Clone, Debug, Default)]
 pub struct StudioOverrides {
+    pub global_color_overrides: HashMap<String, Hsla>,
     pub color_overrides: HashMap<InspectableId, HashMap<String, Hsla>>,
     pub scale_overrides: HashMap<InspectableId, HashMap<String, f32>>,
     pub switch_scale: Option<SwitchScale>,
 }
 
 impl StudioOverrides {
+    pub fn global_color_override(&self, token: &str) -> Option<Hsla> {
+        self.global_color_overrides.get(token).copied()
+    }
+
+    pub fn set_global_color(&mut self, token: String, color: Hsla) {
+        self.global_color_overrides.insert(token, color);
+    }
+
     pub fn color_override(&self, id: InspectableId, token: &str) -> Option<Hsla> {
-        self.color_overrides.get(&id)?.get(token).copied()
+        self.global_color_override(token).or_else(|| self.color_overrides.get(&id)?.get(token).copied())
     }
 
     pub fn scale_override(&self, id: InspectableId, key: &str) -> Option<f32> {

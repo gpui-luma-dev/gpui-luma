@@ -8,6 +8,7 @@ use super::panels::{
     AccountPanel, ChatPanel, CookiesPanel, NavigationSidebarPanel, PaymentsPanel, ReportPanel, TeamPanel, UpgradePanel,
 };
 
+#[derive(Clone)]
 pub struct DemoControls {
     pub upgrade: Entity<UpgradePanel>,
     pub account: Entity<AccountPanel>,

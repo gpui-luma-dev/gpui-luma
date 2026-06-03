@@ -12,6 +12,13 @@ pub fn export_stylesheet(overrides: &StudioOverrides) -> anyhow::Result<PathBuf>
     let mut light = BTreeMap::new();
     let mut dark = BTreeMap::new();
 
+    for (token, color) in &overrides.global_color_overrides {
+        let css_name = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();
+        let value = format_hsla(*color);
+        light.insert(css_name.clone(), value.clone());
+        dark.insert(css_name, value);
+    }
+
     for (id, color_overrides) in &overrides.color_overrides {
         for (token, color) in color_overrides {
             let css_name = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();

@@ -41,6 +41,7 @@ pub use controls::{
 };
 pub use usage::all_radix_theme_usages;
 
+use std::collections::HashMap;
 use std::sync::{
     Arc,
     atomic::{AtomicU8, Ordering},
@@ -147,6 +148,32 @@ impl RadixTheme {
 
     pub fn token_color(&self, name: &str) -> anyhow::Result<gpui::Hsla> {
         self.mode_tokens().catalog.color(name)
+    }
+
+    /// Returns a copy of this theme with global color overrides applied to both mode catalogs.
+    pub fn with_color_overrides(&self, overrides: &HashMap<String, gpui::Hsla>) -> Self {
+        if overrides.is_empty() {
+            return self.clone();
+        }
+
+        let light_catalog = apply_color_overrides_to_catalog(self.state.light.catalog.clone(), overrides);
+        let dark_catalog = apply_color_overrides_to_catalog(self.state.dark.catalog.clone(), overrides);
+
+        let Ok(light) = RadixModeTokens::from_catalog(light_catalog) else {
+            return self.clone();
+        };
+        let Ok(dark) = RadixModeTokens::from_catalog(dark_catalog) else {
+            return self.clone();
+        };
+
+        Self {
+            state: Arc::new(RadixThemeState {
+                catalog: self.state.catalog.clone(),
+                light,
+                dark,
+                mode: AtomicU8::new(self.state.mode.load(Ordering::Relaxed)),
+            }),
+        }
     }
 
     pub fn chrome(&self) -> LumaChrome {
@@ -479,4 +506,16 @@ fn u8_to_mode(value: u8) -> ThemeMode {
         0 => ThemeMode::Light,
         _ => ThemeMode::Dark,
     }
+}
+
+fn apply_color_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashMap<String, gpui::Hsla>) -> CssTokenMap {
+    for (token, color) in overrides {
+        let key = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();
+        catalog.tokens.insert(key, hsla_to_css_value(*color));
+    }
+    catalog
+}
+
+fn hsla_to_css_value(color: gpui::Hsla) -> String {
+    format!("hsl({} {}% {}%)", (color.h * 360.0).round(), (color.s * 100.0).round(), (color.l * 100.0).round())
 }

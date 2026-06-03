@@ -7,5 +7,7 @@ mod inspectable;
 mod inspector;
 mod overrides;
 mod panels;
+mod studio_board;
+mod theme_sidebar;
 
 pub use app::ThemeStudioApp;

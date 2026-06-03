@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{
-    Context, DragMoveEvent, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size, Subscription,
-    Window, div, prelude::*, px,
+    Context, Div, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Overflow, Point, Pixels, Render,
+    Size, Subscription, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::resizable_panels::{ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation};
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
@@ -18,7 +19,8 @@ use super::inspector::{render_inspector, run_export};
 use super::overrides::StudioOverrides;
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
-use super::panels::render_demo_board;
+use super::studio_board::StudioBoardHost;
+use super::theme_sidebar::ThemeSidebar;
 
 struct PanelDragState {
     id: InspectableId,
@@ -37,18 +39,65 @@ pub struct ThemeStudioApp {
     pub(super) overrides: StudioOverrides,
     pub(super) export_status: String,
     last_window_size: Size<Pixels>,
+    active_theme_id: String,
+    theme_sidebar: Entity<ThemeSidebar>,
+    board_host: Entity<StudioBoardHost>,
+    main_split: Entity<ResizablePanels>,
+    /// Suppresses hex field `Change` handlers while programmatically syncing sidebar values.
+    syncing_sidebar_tokens: bool,
     _subscriptions: Vec<Subscription>,
 }
 
 impl ThemeStudioApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>, theme_choice: StudioThemeChoice) -> Self {
+        let app = cx.entity();
         let focus_scope = cx.focus_handle();
-        let radix_theme = theme_choice.radix_theme();
-        radix_theme.set_mode(ThemeMode::Dark);
+        let active_theme_id = theme_choice.id();
+        let mode = ThemeMode::Dark;
+        let radix_theme = Self::load_theme(&active_theme_id);
+        radix_theme.set_mode(mode);
         let control_size = ControlSize::Md;
         let demos = DemoControls::spawn(cx, radix_theme.clone(), control_size);
 
+        let overrides = StudioOverrides::default();
+        let panel_positions = load_panel_positions();
+        let theme_sidebar = cx.new(|cx| {
+            ThemeSidebar::new(app.clone(), radix_theme.clone(), active_theme_id.clone(), &overrides, cx)
+        });
+
+        let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
+        let board_host_for_split = board_host.clone();
+        let sidebar_entity = theme_sidebar.clone();
+
+        let main_split = radix_theme
+            .resizable_panels("theme-studio-main-split")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .show_handle(true)
+            .handle_size(px(8.0))
+            .handle_grip(true)
+            .show_border(false)
+            .panels([
+                ResizablePanelSpec::new_render(move || {
+                    div().size_full().min_h_0().overflow_hidden().child(sidebar_entity.clone()).into_any_element()
+                })
+                .default_size(28.0)
+                .min_size(18.0)
+                .max_size(45.0),
+                ResizablePanelSpec::new_render(move || {
+                    scrollable_panel()
+                        .items_center()
+                        .p(px(24.0))
+                        .child(board_host_for_split.clone())
+                        .into_any_element()
+                })
+                .default_size(72.0)
+                .min_size(55.0)
+                .max_size(82.0),
+            ])
+            .spawn(cx);
+
         let mut subscriptions = Vec::new();
+        ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
         demos.subscribe(cx, &mut subscriptions);
         subscriptions.push(cx.observe_window_bounds(window, |this, window, cx| {
             this.on_window_bounds_changed(window, cx);
@@ -61,14 +110,82 @@ impl ThemeStudioApp {
             radix_theme,
             control_size,
             demos,
-            panel_positions: load_panel_positions(),
+            panel_positions,
             panel_drag: None,
             selected: None,
-            overrides: StudioOverrides::default(),
+            overrides,
             export_status: String::new(),
             last_window_size,
+            active_theme_id,
+            theme_sidebar,
+            board_host,
+            main_split,
+            syncing_sidebar_tokens: false,
             _subscriptions: subscriptions,
         }
+    }
+
+    fn sync_sidebar(&mut self, sync_tokens: bool, cx: &mut Context<Self>) {
+        let theme = self.radix_theme.clone();
+        let overrides = self.overrides.clone();
+        let active_theme_id = self.active_theme_id.clone();
+
+        self.syncing_sidebar_tokens = sync_tokens;
+        self.theme_sidebar.update(cx, |sidebar, cx| {
+            if sync_tokens {
+                sidebar.apply_theme_snapshot(theme, &overrides, cx);
+            } else {
+                sidebar.sync_global_overrides(&overrides, cx);
+            }
+            sidebar.sync_theme_selector(active_theme_id, cx);
+        });
+        self.syncing_sidebar_tokens = false;
+    }
+
+    fn load_theme(theme_id: &str) -> Arc<RadixTheme> {
+        StudioThemeChoice::from_id(theme_id).radix_theme()
+    }
+
+    fn apply_theme_overrides(&mut self, cx: &mut Context<Self>) {
+        let base = Self::load_theme(&self.active_theme_id);
+        base.set_mode(self.radix_theme.mode());
+        self.radix_theme = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
+        self.refresh_demos(cx);
+    }
+
+    fn refresh_demos(&mut self, cx: &mut Context<Self>) {
+        self.demos = DemoControls::spawn(cx, self.radix_theme.clone(), self.control_size);
+        self.demos.subscribe(cx, &mut self._subscriptions);
+    }
+
+    pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
+        if self.active_theme_id == theme_id {
+            return;
+        }
+        self.active_theme_id = theme_id.to_string();
+        self.apply_theme_overrides(cx);
+        self.sync_sidebar(true, cx);
+        cx.notify();
+    }
+
+    pub fn set_global_color(&mut self, token: &str, color: gpui::Hsla, cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let css_name = token_css_name(token);
+        if self.overrides.global_color_override(&css_name) == Some(color) {
+            return;
+        }
+
+        self.overrides.set_global_color(css_name, color);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar
+            .update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
     }
 
     fn on_window_bounds_changed(&mut self, window: &Window, cx: &mut Context<Self>) {
@@ -138,9 +255,7 @@ impl ThemeStudioApp {
             return;
         }
         self.control_size = size;
-        self.demos = DemoControls::spawn(cx, self.radix_theme.clone(), self.control_size);
-        self._subscriptions.clear();
-        self.demos.subscribe(cx, &mut self._subscriptions);
+        self.refresh_demos(cx);
         cx.notify();
     }
 
@@ -181,6 +296,8 @@ impl ThemeStudioApp {
         cx.notify();
     }
 }
+
+use super::export::token_css_name;
 
 impl Render for ThemeStudioApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -236,7 +353,6 @@ impl Render for ThemeStudioApp {
 
         let scale_factor = window.scale_factor();
         let inspector = render_inspector(self, scale_factor, cx);
-        let board = render_demo_board(self.selected, &self.panel_positions, &self.demos, chrome, cx);
 
         let mut root = div()
             .luma_focus_scope(&self.focus_scope)
@@ -246,17 +362,7 @@ impl Render for ThemeStudioApp {
             .font_family(sans)
             .bg(chrome.app_background)
             .child(title_bar)
-            .child(
-                div()
-                    .id("theme-studio-scroll")
-                    .flex_1()
-                    .min_h_0()
-                    .overflow_y_scroll()
-                    .flex()
-                    .justify_center()
-                    .p(px(24.0))
-                    .child(board),
-            );
+            .child(div().id("theme-studio-body").flex_1().min_h_0().child(self.main_split.clone()));
 
         if let Some(panel) = inspector {
             root = root.child(panel);
@@ -264,6 +370,12 @@ impl Render for ThemeStudioApp {
 
         root
     }
+}
+
+fn scrollable_panel() -> Div {
+    let mut panel = div().size_full().flex().flex_col();
+    panel.style().overflow.y = Some(Overflow::Scroll);
+    panel
 }
 
 fn render_size_toggle(
