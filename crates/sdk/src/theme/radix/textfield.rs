@@ -8,7 +8,6 @@
 //! | Placeholder | `muted-foreground` |
 //! | Selection   | `primary`          |
 //! | Focus ring  | `ring`             |
-//! | Ghost hover | `accent`           |
 
 use gpui::hsla;
 
@@ -17,7 +16,7 @@ use crate::theme::{InteractionState, ThemeMode};
 
 use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
-use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
+use super::resolve::{resolve_color, resolve_label_color};
 use super::mode::RadixModeTokens;
 
 pub(crate) fn textfield_palette(
@@ -47,13 +46,7 @@ fn textfield_palette_from_palette(
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
         (TextFieldVariant::Standard, true) => {
-            let background = if state.focused {
-                palette.app_background
-            } else if state.hovered {
-                palette.muted_background
-            } else {
-                palette.app_background
-            };
+            let background = palette.app_background;
             let border = if state.invalid {
                 palette.focus_ring
             } else {
@@ -72,13 +65,7 @@ fn textfield_palette_from_palette(
         }
         (TextFieldVariant::Ghost, true) => {
             let ghost = palette.ghost;
-            let background = if state.focused {
-                ghost.background
-            } else if state.hovered {
-                ghost.hover_background
-            } else {
-                transparent
-            };
+            let background = if state.focused { ghost.background } else { transparent };
             let placeholder_color = ghost.foreground.opacity(0.65);
 
             (
@@ -137,13 +124,7 @@ pub(crate) fn textfield_palette_from_catalog(
 
     let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled) {
         (TextFieldVariant::Standard, true) => {
-            let background = if state.focused {
-                resolve_color(catalog, "background")?
-            } else if state.hovered {
-                resolve_color(catalog, "accent")?
-            } else {
-                resolve_color(catalog, "background")?
-            };
+            let background = resolve_color(catalog, "background")?;
             let border = if state.invalid {
                 focus_ring_color(catalog)?
             } else {
@@ -161,14 +142,7 @@ pub(crate) fn textfield_palette_from_catalog(
             )
         }
         (TextFieldVariant::Ghost, true) => {
-            let layer = if state.focused {
-                crate::theme::InteractionLayer::Default
-            } else if state.hovered {
-                crate::theme::InteractionLayer::Hovered
-            } else {
-                crate::theme::InteractionLayer::Default
-            };
-            let background = resolve_ghost_background(catalog, layer)?;
+            let background = transparent;
             let foreground = resolve_label_color(catalog, false)?;
             let placeholder_color = foreground.opacity(0.65);
 
@@ -257,5 +231,22 @@ mod tests {
         assert_eq!(appearance.background, catalog.color("background").expect("background"));
         assert_eq!(appearance.border, catalog.color("input").expect("input"));
         assert_eq!(appearance.foreground, catalog.color("foreground").expect("foreground"));
+    }
+
+    #[test]
+    fn standard_textfield_hover_does_not_change_background() {
+        let catalog = sample_catalog();
+        let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());
+        let default =
+            textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
+                .expect("textfield");
+        let mut hovered = TextFieldState::default();
+        hovered.hovered = true;
+        let appearance =
+            textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, hovered, true).expect("textfield");
+
+        assert_eq!(appearance.background, default.background);
+        assert_eq!(appearance.background, catalog.color("background").expect("background"));
     }
 }

@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, AppContext, Entity, IntoElement, SharedString};
+use gpui::{AnyElement, App, AppContext, Entity, IntoElement, SharedString, Window};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionControl, AccordionTemplate, default_accordion_template};
+
+pub type AccordionElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum AccordionSelectionMode {
@@ -19,7 +21,7 @@ pub enum AccordionSelectionMode {
 pub struct AccordionTrigger {
     pub(crate) label: Option<SharedString>,
     pub(crate) icon: Option<LucideIcon>,
-    pub(crate) custom_element: Option<Arc<dyn Fn() -> AnyElement + Send + Sync>>,
+    pub(crate) custom_element: Option<AccordionElementRenderer>,
 }
 
 impl AccordionTrigger {
@@ -32,7 +34,7 @@ impl AccordionTrigger {
         self
     }
 
-    pub fn custom(custom: impl Fn() -> AnyElement + Send + Sync + 'static) -> Self {
+    pub fn custom(custom: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static) -> Self {
         Self { label: None, icon: None, custom_element: Some(Arc::new(custom)) }
     }
 }
@@ -40,15 +42,15 @@ impl AccordionTrigger {
 /// Represents the collapsible panel content.
 #[derive(Clone)]
 pub struct AccordionContent {
-    pub(crate) element: Option<Arc<dyn Fn() -> AnyElement + Send + Sync>>,
+    pub(crate) element: Option<AccordionElementRenderer>,
 }
 
 impl AccordionContent {
     pub fn new(element: impl IntoElement + Clone + Send + Sync + 'static) -> Self {
-        Self { element: Some(Arc::new(move || element.clone().into_any_element())) }
+        Self { element: Some(Arc::new(move |_, _| element.clone().into_any_element())) }
     }
 
-    pub fn custom(custom: impl Fn() -> AnyElement + Send + Sync + 'static) -> Self {
+    pub fn custom(custom: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static) -> Self {
         Self { element: Some(Arc::new(custom)) }
     }
 }
@@ -86,6 +88,17 @@ pub struct AccordionModel {
     pub(crate) selection_mode: AccordionSelectionMode,
     pub(crate) collapsible: bool,
     pub(crate) enabled: bool,
+    pub(crate) item_dividers: bool,
+    /// When set, overrides themed vertical padding inside expanded item panels (both edges).
+    pub(crate) content_padding_y: Option<f32>,
+    /// When set, overrides top padding inside expanded item panels.
+    pub(crate) content_padding_top: Option<f32>,
+    /// When set, overrides bottom padding inside expanded item panels.
+    pub(crate) content_padding_bottom: Option<f32>,
+    /// When set, overrides themed minimum height of item triggers.
+    pub(crate) trigger_min_height: Option<f32>,
+    /// When set, overrides themed vertical padding on item triggers.
+    pub(crate) trigger_padding_y: Option<f32>,
     pub(crate) template: Arc<dyn AccordionTemplate>,
 }
 
@@ -104,6 +117,12 @@ pub struct AccordionRenderModel<'a> {
     pub selection_mode: AccordionSelectionMode,
     pub collapsible: bool,
     pub enabled: bool,
+    pub item_dividers: bool,
+    pub content_padding_y: Option<f32>,
+    pub content_padding_top: Option<f32>,
+    pub content_padding_bottom: Option<f32>,
+    pub trigger_min_height: Option<f32>,
+    pub trigger_padding_y: Option<f32>,
     pub focus: crate::controls::state::ControlFocusState,
 }
 
@@ -120,6 +139,12 @@ impl AccordionBuilder {
                 selection_mode: AccordionSelectionMode::Single,
                 collapsible: true,
                 enabled: true,
+                item_dividers: true,
+                content_padding_y: None,
+                content_padding_top: None,
+                content_padding_bottom: None,
+                trigger_min_height: None,
+                trigger_padding_y: None,
                 template: default_accordion_template(),
             },
         }
@@ -155,6 +180,36 @@ impl AccordionBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn item_dividers(mut self, item_dividers: bool) -> Self {
+        self.model.item_dividers = item_dividers;
+        self
+    }
+
+    pub fn content_padding_y(mut self, padding_y: f32) -> Self {
+        self.model.content_padding_y = Some(padding_y);
+        self
+    }
+
+    pub fn content_padding_top(mut self, padding_top: f32) -> Self {
+        self.model.content_padding_top = Some(padding_top);
+        self
+    }
+
+    pub fn content_padding_bottom(mut self, padding_bottom: f32) -> Self {
+        self.model.content_padding_bottom = Some(padding_bottom);
+        self
+    }
+
+    pub fn trigger_min_height(mut self, height: f32) -> Self {
+        self.model.trigger_min_height = Some(height);
+        self
+    }
+
+    pub fn trigger_padding_y(mut self, padding_y: f32) -> Self {
+        self.model.trigger_padding_y = Some(padding_y);
         self
     }
 

@@ -90,13 +90,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
         let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled)
         {
             (TextFieldVariant::Standard, true) => {
-                let background = if state.focused {
-                    palette.form.input.background
-                } else if state.hovered {
-                    palette.state.hover.background
-                } else {
-                    palette.form.input.background
-                };
+                let background = palette.form.input.background;
                 let border = if state.invalid {
                     palette.form.input.invalid_border
                 } else {
@@ -116,8 +110,6 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             (TextFieldVariant::Ghost, true) => {
                 let background = if state.focused {
                     palette.action.ghost.background
-                } else if state.hovered {
-                    palette.action.ghost.hover_background
                 } else {
                     transparent
                 };

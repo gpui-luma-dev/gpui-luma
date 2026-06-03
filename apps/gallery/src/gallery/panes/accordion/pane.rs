@@ -2,8 +2,10 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
+use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::theme::RadixTheme;
 use gpui_luma::theme::radix::prelude::*;
+use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -19,11 +21,40 @@ const ACCORDION_DESCRIPTION: &str = concat!(
 pub(in crate::gallery) struct AccordionPane {
     single: Entity<AccordionControl>,
     multiple: Entity<AccordionControl>,
+    interactive: Entity<AccordionControl>,
+    interactive_field: TextField,
     last_event: SharedString,
 }
 
 impl AccordionPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let interactive_field =
+            radix_theme.textfield("accordion-interactive-field").value("Edit me").full_width(true).spawn(cx);
+        let field_for_content = interactive_field.clone();
+        let interactive = radix_theme
+            .accordion("accordion-interactive")
+            .single()
+            .item(
+                AccordionItem::new(
+                    "interactive",
+                    AccordionTrigger::new("Interactive form"),
+                    AccordionContent::custom(move |_window, cx| {
+                        let value = field_for_content.read(cx).value();
+                        vstack! {
+                            gap=8;
+                            field_for_content.clone(),
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .child(format!("Live value: {value}")),
+                        }
+                        .into_any_element()
+                    }),
+                )
+                .expanded(true),
+            )
+            .spawn(cx);
+
         Self {
             single: radix_theme
                 .accordion("accordion-single")
@@ -57,6 +88,8 @@ impl AccordionPane {
                     ),
                 ])
                 .spawn(cx),
+            interactive,
+            interactive_field,
             last_event: "None".into(),
         }
     }
@@ -67,6 +100,11 @@ impl AccordionPane {
         }));
         subscriptions.push(cx.subscribe(&self.multiple, |app, _, event: &AccordionEvent, cx| {
             app.panes.accordion.handle_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.interactive_field, |app, _, event: &TextFieldEvent, cx| {
+            if matches!(event, TextFieldEvent::Change { .. }) {
+                notify_entity(&app.panes.accordion.interactive, cx);
+            }
         }));
     }
 
@@ -84,6 +122,7 @@ impl AccordionPane {
                 .gap_6()
                 .child(example_block("Single expansion", self.single.clone(), chrome.muted_text))
                 .child(example_block("Multiple expansion", self.multiple.clone(), chrome.muted_text))
+                .child(example_block("Context-aware content", self.interactive.clone(), chrome.muted_text))
                 .child(
                     div()
                         .text_size(px(12.0))
@@ -98,6 +137,7 @@ impl AccordionPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.single, cx);
         notify_entity(&self.multiple, cx);
+        notify_entity(&self.interactive, cx);
     }
 
     fn handle_event(&mut self, event: &AccordionEvent, cx: &mut Context<GalleryApp>) {
@@ -125,7 +165,7 @@ fn demo_item(id: &str, label: &str, icon: LucideIcon, body: &str) -> AccordionIt
     AccordionItem::new(
         id.to_string(),
         AccordionTrigger::new(label.to_string()).icon(icon),
-        AccordionContent::custom(move || {
+        AccordionContent::custom(move |_, _| {
             div().text_size(px(13.0)).line_height(px(18.0)).child(body.clone()).into_any_element()
         }),
     )

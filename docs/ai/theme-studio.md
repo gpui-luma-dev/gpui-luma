@@ -130,9 +130,11 @@ App crate: `apps/theme-studio` (`gpui-luma-theme-studio`).
 
 ```bash
 just theme-studio
-# or with a tweakcn theme:
+# Token accordion + swatches need a tweakcn CSS catalog (not the native "default" theme):
 cargo run -p gpui-luma-theme-studio -- astrovista
 ```
+
+The left **Theme Tokens** sidebar always shows the accordion; swatch colors resolve from the active theme catalog when a named tweakcn theme is selected (`has_css_catalog`). With **Default**, hex fields still edit overrides that apply when you switch to a CSS theme.
 
 Themes load from `apps/gallery/tweakcn/` (shared with the gallery). Exports write to `apps/gallery/tweakcn/exports/theme-studio-overrides.css`.
 

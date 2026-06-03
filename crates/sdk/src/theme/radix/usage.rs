@@ -13,7 +13,6 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
     part("placeholder", "muted-foreground", &["standard default"], &["TextFieldPalette.placeholder"]),
     part("selection", "primary", &["standard focused"], &["TextFieldPalette.selection_background"]),
     part("focus ring", "ring", &["standard focused"], &["TextFieldPalette.focus_ring"]),
-    part("ghost hover", "accent", &["ghost hovered"], &["TextFieldPalette.background"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[

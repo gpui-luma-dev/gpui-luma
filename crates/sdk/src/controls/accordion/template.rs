@@ -156,6 +156,8 @@ impl AccordionTemplate for ThemedAccordionTemplate {
 
             let trigger_palette = self.theme.resolve_trigger(item.state.interaction_state());
             let content_palette = self.theme.resolve_content(item.expanded);
+            let trigger_min_height = model.trigger_min_height.unwrap_or(scale.trigger_height);
+            let trigger_padding_y = model.trigger_padding_y.unwrap_or(scale.padding_y);
 
             let mut trigger = div()
                 .id(format!("{}-trigger", item.id))
@@ -163,9 +165,9 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 .items_center()
                 .justify_between()
                 .w_full()
-                .min_h(px(scale.trigger_height))
+                .min_h(px(trigger_min_height))
                 .px(px(scale.padding_x))
-                .py(px(scale.padding_y))
+                .py(px(trigger_padding_y))
                 .rounded(px(scale.radius))
                 .text_color(trigger_palette.foreground)
                 .text_size(px(trigger_palette.typography.size))
@@ -189,7 +191,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             }
 
             let trigger_content = match &item.trigger.custom_element {
-                Some(renderer) => renderer(),
+                Some(renderer) => renderer(window, cx),
                 None => {
                     let mut row = div().flex().items_center().gap(px(scale.inner_gap));
                     if let Some(icon) = item.trigger.icon {
@@ -209,12 +211,21 @@ impl AccordionTemplate for ThemedAccordionTemplate {
 
             let trigger_el = trigger.child(trigger_content).child(chevron);
 
+            let content_padding_y = model.content_padding_y.unwrap_or(scale.content_padding_y);
+            let content_padding_top = model
+                .content_padding_top
+                .unwrap_or(content_padding_y);
+            let content_padding_bottom = model
+                .content_padding_bottom
+                .unwrap_or(content_padding_y);
+
             let content_el = if item.expanded {
                 let mut content = div()
                     .id(format!("{}-content", item.id))
                     .w_full()
                     .px(px(scale.padding_x))
-                    .py(px(scale.content_padding_y))
+                    .pt(px(content_padding_top))
+                    .pb(px(content_padding_bottom))
                     .text_color(content_palette.foreground);
 
                 if let Some(background) = content_palette.background {
@@ -222,7 +233,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 }
 
                 if let Some(renderer) = &item.content.element {
-                    content = content.child(renderer());
+                    content = content.child(renderer(window, cx));
                 }
 
                 Some(content)
@@ -230,14 +241,12 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 None
             };
 
-            let mut item_container = div()
-                .id(format!("{}-item", item.id))
-                .flex()
-                .flex_col()
-                .w_full()
-                .border_b_1()
-                .border_color(trigger_palette.border_color)
-                .child(trigger_el);
+            let mut item_container = div().id(format!("{}-item", item.id)).flex().flex_col().w_full().child(trigger_el);
+
+            if model.item_dividers {
+                item_container =
+                    item_container.border_b_1().border_color(trigger_palette.border_color);
+            }
 
             if let Some(cel) = content_el {
                 item_container = item_container.child(cel);

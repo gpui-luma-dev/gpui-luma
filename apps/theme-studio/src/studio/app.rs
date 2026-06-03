@@ -351,6 +351,10 @@ impl Render for ThemeStudioApp {
                                     ThemeMode::Dark => ThemeMode::Light,
                                 };
                                 this.radix_theme.set_mode(mode);
+                                let theme = this.radix_theme.clone();
+                                this.theme_sidebar.update(cx, |sidebar, cx| {
+                                    sidebar.sync_control_templates(&theme, cx);
+                                });
                                 cx.notify();
                             }))
                             .child(char::from(toggle_icon).to_string()),

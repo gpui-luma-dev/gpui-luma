@@ -69,13 +69,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
         let typography = &self.tokens.typography;
 
         let (background, foreground, border, placeholder, selection_background, caret) = if enabled {
-            let background = if state.focused {
-                palette.form.input.background
-            } else if state.hovered {
-                palette.state.hover.background
-            } else {
-                palette.form.input.background
-            };
+            let background = palette.form.input.background;
             let border = if state.invalid {
                 palette.form.input.invalid_border
             } else {

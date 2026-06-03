@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::{ops::Range, time::Duration};
 
 use gpui::{
@@ -152,6 +153,32 @@ impl TextFieldControl {
     pub fn set_validator(&mut self, validator: Option<super::model::Validator>, cx: &mut Context<Self>) {
         self.model.validator = validator;
         self.recompute_invalid();
+        cx.notify();
+    }
+
+    pub fn set_template(&mut self, template: Arc<dyn super::TextFieldTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        self.layout_cache = None;
+        cx.notify();
+    }
+
+    pub fn set_font_family(&mut self, family: SharedString, cx: &mut Context<Self>) {
+        let family = family.clone();
+        self.model.appearance_override = Some(Arc::new(move |mut appearance| {
+            appearance.font_family = family.clone();
+            appearance
+        }));
+        self.layout_cache = None;
+        cx.notify();
+    }
+
+    pub fn set_appearance_override(
+        &mut self,
+        override_fn: Option<super::model::TextFieldAppearanceOverride>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.appearance_override = override_fn;
+        self.layout_cache = None;
         cx.notify();
     }
 

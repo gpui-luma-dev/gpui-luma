@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
+use super::token_color_row::token_color_row;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
-use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
+use gpui_luma::controls::textfield::{TextField, TextFieldAppearance, TextFieldAppearanceOverride, TextFieldEvent};
 use gpui_luma::theme::{RadixTheme, RadixThemeControlExt};
-use gpui_luma::{hstack, vstack};
+use gpui_luma::vstack;
 
 use gpui::Hsla;
 
@@ -18,16 +18,13 @@ use crate::theme::available_theme_names;
 
 const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ("BASE", &[("background", "Background"), ("foreground", "Foreground")]),
-    ("PRIMARY", &[("primary", "Primary"), ("primary-foreground", "Primary Foreground")]),
-    ("SECONDARY", &[("secondary", "Secondary"), ("secondary-foreground", "Secondary Foreground")]),
-    ("ACCENT", &[("accent", "Accent"), ("accent-foreground", "Accent Foreground")]),
-    ("CARD", &[("card", "Card"), ("card-foreground", "Card Foreground")]),
-    ("POPOVER", &[("popover", "Popover"), ("popover-foreground", "Popover Foreground")]),
-    ("MUTED", &[("muted", "Muted"), ("muted-foreground", "Muted Foreground")]),
-    (
-        "DESTRUCTIVE",
-        &[("destructive", "Destructive"), ("destructive-foreground", "Destructive Foreground")],
-    ),
+    ("PRIMARY", &[("primary", "Background"), ("primary-foreground", "Foreground")]),
+    ("SECONDARY", &[("secondary", "Background"), ("secondary-foreground", "Foreground")]),
+    ("ACCENT", &[("accent", "Background"), ("accent-foreground", "Foreground")]),
+    ("CARD", &[("card", "Background"), ("card-foreground", "Foreground")]),
+    ("POPOVER", &[("popover", "Background"), ("popover-foreground", "Foreground")]),
+    ("MUTED", &[("muted", "Background"), ("muted-foreground", "Foreground")]),
+    ("DESTRUCTIVE", &[("destructive", "Background"), ("destructive-foreground", "Foreground")]),
     ("BORDER & INPUT", &[("border", "Border"), ("input", "Input"), ("ring", "Ring")]),
     (
         "CHART",
@@ -42,38 +39,35 @@ const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     (
         "SIDEBAR",
         &[
-            ("sidebar", "Sidebar"),
-            ("sidebar-foreground", "Sidebar Foreground"),
-            ("sidebar-primary", "Sidebar Primary"),
-            ("sidebar-primary-foreground", "Sidebar Primary Foreground"),
-            ("sidebar-accent", "Sidebar Accent"),
-            ("sidebar-accent-foreground", "Sidebar Accent Foreground"),
-            ("sidebar-border", "Sidebar Border"),
-            ("sidebar-ring", "Sidebar Ring"),
+            ("sidebar", "Background"),
+            ("sidebar-foreground", "Foreground"),
+            ("sidebar-primary", "Primary"),
+            ("sidebar-primary-foreground", "Primary Foreground"),
+            ("sidebar-accent", "Accent"),
+            ("sidebar-accent-foreground", "Accent Foreground"),
+            ("sidebar-border", "Border"),
+            ("sidebar-ring", "Ring"),
         ],
     ),
 ];
 
-/// Shared state for accordion content closures (no `Context` in `AccordionContent::custom`).
-struct TokenAccordionState {
-    theme: Arc<RwLock<Arc<RadixTheme>>>,
-    overrides: Arc<RwLock<HashMap<String, Hsla>>>,
-    fields: HashMap<String, TextField>,
+/// Theme token editing state owned by the sidebar (selectors, fields, overrides).
+pub struct ThemeSidebarViewModel {
+    pub radix_theme: std::sync::Arc<RadixTheme>,
+    pub global_overrides: HashMap<String, Hsla>,
+    pub token_fields: HashMap<String, TextField>,
 }
 
 pub struct ThemeSidebar {
-    pub(crate) radix_theme: Arc<RadixTheme>,
-    global_overrides: HashMap<String, Hsla>,
+    vm: ThemeSidebarViewModel,
     theme_selector: Entity<Selector>,
-    token_fields: HashMap<String, TextField>,
     token_accordion: Entity<AccordionControl>,
-    accordion_state: Arc<TokenAccordionState>,
 }
 
 impl ThemeSidebar {
     pub fn new(
         _app: Entity<ThemeStudioApp>,
-        radix_theme: Arc<RadixTheme>,
+        radix_theme: std::sync::Arc<RadixTheme>,
         active_theme_id: impl Into<gpui::SharedString>,
         overrides: &StudioOverrides,
         cx: &mut Context<Self>,
@@ -94,42 +88,50 @@ impl ThemeSidebar {
             for (token, _) in *tokens {
                 let initial = token_hex_value(&radix_theme, &global_overrides, token);
 
-                let field = radix_theme.textfield(format!("theme-studio-token-{token}")).value(initial).spawn(cx);
+                let field = radix_theme
+                    .textfield(format!("theme-studio-token-{token}"))
+                    .value(initial)
+                    .full_width(true)
+                    .appearance_override(token_field_appearance_override())
+                    .spawn(cx);
 
                 token_fields.insert(token.to_string(), field);
             }
         }
 
-        let accordion_state = Arc::new(TokenAccordionState {
-            theme: Arc::new(RwLock::new(radix_theme.clone())),
-            overrides: Arc::new(RwLock::new(global_overrides.clone())),
-            fields: token_fields.clone(),
-        });
-
+        let sidebar_for_accordion = cx.entity();
         let mut accordion_builder = radix_theme
             .accordion("theme-studio-token-accordion")
             .multiple()
+            .item_dividers(false)
+            .trigger_min_height(28.0)
+            .trigger_padding_y(4.0)
+            .content_padding_top(0.0)
+            .content_padding_bottom(4.0)
             .template(radix_theme.accordion_template());
 
         for (category, tokens) in TOKEN_CATEGORIES {
-            let state = accordion_state.clone();
             let items = *tokens;
-            accordion_builder = accordion_builder.item(AccordionItem::new(
+            let sidebar = sidebar_for_accordion.clone();
+            let mut item = AccordionItem::new(
                 category_item_id(category),
                 AccordionTrigger::new(*category),
-                AccordionContent::custom(move || category_token_content(state.clone(), items).into_any_element()),
-            ));
+                AccordionContent::custom(move |_window, cx| {
+                    category_token_content(sidebar.read(cx), items).into_any_element()
+                }),
+            );
+            if *category == "BASE" {
+                item = item.expanded(true);
+            }
+            accordion_builder = accordion_builder.item(item);
         }
 
         let token_accordion = accordion_builder.spawn(cx);
 
         Self {
-            radix_theme,
-            global_overrides,
+            vm: ThemeSidebarViewModel { radix_theme, global_overrides, token_fields },
             theme_selector,
-            token_fields,
             token_accordion,
-            accordion_state,
         }
     }
 
@@ -150,7 +152,7 @@ impl ThemeSidebar {
 
         for (_, tokens) in TOKEN_CATEGORIES {
             for (token, _) in *tokens {
-                let field = sidebar.read(cx).token_fields.get(*token).expect("token field").clone();
+                let field = sidebar.read(cx).vm.token_fields.get(*token).expect("token field").clone();
                 let token_key = token.to_string();
                 subscriptions.push(cx.subscribe(&field, move |app, _, event: &TextFieldEvent, cx| {
                     if let TextFieldEvent::Change { value } = event {
@@ -166,23 +168,37 @@ impl ThemeSidebar {
 
     pub fn apply_theme_snapshot(
         &mut self,
-        radix_theme: Arc<RadixTheme>,
+        radix_theme: std::sync::Arc<RadixTheme>,
         overrides: &StudioOverrides,
         cx: &mut Context<Self>,
     ) {
-        self.radix_theme = radix_theme;
-        self.global_overrides = overrides.global_color_overrides.clone();
-        self.write_accordion_state();
-        let theme = self.radix_theme.clone();
-        self.sync_token_fields_from(&theme, overrides, cx);
+        self.vm.radix_theme = radix_theme;
+        self.vm.global_overrides = overrides.global_color_overrides.clone();
+        let theme = self.vm.radix_theme.clone();
+        self.sync_control_templates(&theme, cx);
+        self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.notify_token_accordion(cx);
     }
 
+    pub(crate) fn sync_control_templates(&self, theme: &std::sync::Arc<RadixTheme>, cx: &mut Context<Self>) {
+        self.theme_selector.update(cx, |selector, cx| {
+            selector.set_template(theme.selector_template(), cx);
+        });
+        self.token_accordion.update(cx, |accordion, cx| {
+            accordion.set_template(theme.accordion_template(), cx);
+        });
+        for field in self.vm.token_fields.values() {
+            field.update(cx, |field, cx| {
+                field.set_template(theme.textfield_template(), cx);
+                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+            });
+        }
+    }
+
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
-        self.global_overrides = overrides.global_color_overrides.clone();
-        self.write_accordion_state();
-        let theme = self.radix_theme.clone();
-        self.sync_token_fields_from(&theme, overrides, cx);
+        self.vm.global_overrides = overrides.global_color_overrides.clone();
+        let theme = self.vm.radix_theme.clone();
+        self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.notify_token_accordion(cx);
     }
 
@@ -201,7 +217,7 @@ impl ThemeSidebar {
     ) {
         for (_, tokens) in TOKEN_CATEGORIES {
             for (token, _) in *tokens {
-                let Some(field) = self.token_fields.get(*token) else {
+                let Some(field) = self.vm.token_fields.get(*token) else {
                     continue;
                 };
                 let value = token_hex_value(radix_theme, &overrides.global_color_overrides, token);
@@ -210,56 +226,77 @@ impl ThemeSidebar {
         }
     }
 
-    fn write_accordion_state(&self) {
-        *self.accordion_state.theme.write().expect("theme lock") = self.radix_theme.clone();
-        *self.accordion_state.overrides.write().expect("overrides lock") = self.global_overrides.clone();
-    }
-
     fn notify_token_accordion(&self, cx: &mut Context<Self>) {
         self.token_accordion.update(cx, |_, cx| cx.notify());
         cx.notify();
     }
 }
 
+/// System monospace face for hex values. Theme CSS `font-mono` families (e.g. Fira Code) are not
+/// registered with GPUI unless explicitly loaded, so token fields use a native face per platform.
+fn token_field_mono_font() -> gpui::SharedString {
+    #[cfg(target_os = "macos")]
+    {
+        return "Menlo".into();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return "Consolas".into();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return "DejaVu Sans Mono".into();
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        "monospace".into()
+    }
+}
+
+const TOKEN_FIELD_FONT_SIZE: f32 = 12.0;
+const TOKEN_FIELD_LINE_HEIGHT: f32 = 16.0;
+
+fn apply_token_field_appearance(mut appearance: TextFieldAppearance) -> TextFieldAppearance {
+    appearance.font_family = token_field_mono_font();
+    appearance.typography.size = TOKEN_FIELD_FONT_SIZE;
+    appearance.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
+    appearance
+}
+
+fn token_field_appearance_override() -> impl Fn(TextFieldAppearance) -> TextFieldAppearance + Send + Sync + 'static {
+    move |appearance| apply_token_field_appearance(appearance)
+}
+
+fn token_field_appearance_override_arc() -> TextFieldAppearanceOverride {
+    std::sync::Arc::new(apply_token_field_appearance)
+}
+
 fn category_item_id(category: &str) -> String {
     format!("token-{}", category.to_lowercase().replace(' ', "-").replace('&', "and"))
 }
 
-fn category_token_content(state: Arc<TokenAccordionState>, tokens: &[(&str, &str)]) -> impl IntoElement {
-    let theme = state.theme.read().expect("theme lock").clone();
-    let overrides = state.overrides.read().expect("overrides lock").clone();
+fn category_token_content(sidebar: &ThemeSidebar, tokens: &[(&str, &str)]) -> impl IntoElement {
+    let theme = &sidebar.vm.radix_theme;
+    let overrides = &sidebar.vm.global_overrides;
     let chrome = theme.chrome();
+    let row_label_typography = theme.mode_tokens().typography.text.label;
 
     let mut rows = vstack! {
-        gap=8 align=start;
+        gap=6;
     };
 
     for (token, label) in tokens {
-        let Some(field) = state.fields.get(*token) else {
+        let Some(field) = sidebar.vm.token_fields.get(*token) else {
             continue;
         };
-        let color = effective_token_color(&theme, &overrides, token);
+        let color = effective_token_color(theme, overrides, token);
         let label = label.to_string();
         let field = field.clone();
 
         rows = vstack! {
-            gap=8 align=start;
+            gap=6;
             rows,
-            vstack! {
-                gap=4 align=start;
-                div().text_size(px(11.0)).text_color(chrome.body_text).child(label),
-                hstack! {
-                    gap=8 align=center;
-                    div()
-                        .size(px(16.0))
-                        .flex_shrink_0()
-                        .rounded(px(4.0))
-                        .bg(color)
-                        .border_1()
-                        .border_color(chrome.border),
-                    div().flex_1().min_w(px(0.0)).child(field),
-                },
-            },
+            token_color_row(label, color, field, &chrome, &row_label_typography),
         };
     }
 
@@ -271,31 +308,53 @@ fn token_hex_value(radix_theme: &RadixTheme, global_overrides: &HashMap<String, 
 }
 
 fn effective_token_color(radix_theme: &RadixTheme, global_overrides: &HashMap<String, Hsla>, token: &str) -> Hsla {
+    token_color_with_fallback(radix_theme, global_overrides, token, gpui::hsla(0.0, 0.0, 0.5, 1.0))
+}
+
+/// Resolves a theme token when present; otherwise uses `fallback` (e.g. chrome defaults).
+fn token_color_with_fallback(
+    radix_theme: &RadixTheme,
+    global_overrides: &HashMap<String, Hsla>,
+    token: &str,
+    fallback: Hsla,
+) -> Hsla {
     let css_name = token_css_name(token);
     global_overrides
         .get(&css_name)
         .copied()
         .or_else(|| catalog_color_for_token(radix_theme, token))
-        .unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.5, 1.0))
+        .unwrap_or(fallback)
 }
 
 impl Render for ThemeSidebar {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
-        let has_catalog = self.radix_theme.has_css_catalog();
+        let chrome = self.vm.radix_theme.chrome();
+        let has_catalog = self.vm.radix_theme.has_css_catalog();
+        let sidebar_bg = token_color_with_fallback(
+            &self.vm.radix_theme,
+            &self.vm.global_overrides,
+            "sidebar",
+            chrome.panel_background,
+        );
+        let sidebar_border = token_color_with_fallback(
+            &self.vm.radix_theme,
+            &self.vm.global_overrides,
+            "sidebar-border",
+            chrome.border,
+        );
 
-        let mut body = div().flex().flex_col().gap(px(10.0)).child(self.theme_selector.clone());
+        let mut body = div().flex().flex_col().w_full().gap(px(10.0)).child(self.theme_selector.clone());
 
         if !has_catalog {
             body = body.child(
                 div()
                     .text_size(px(11.0))
                     .text_color(chrome.muted_text)
-                    .child("Load a named tweakcn theme to edit color tokens."),
+                    .child("Native default theme: pick a tweakcn theme above for catalog-backed swatches."),
             );
-        } else {
-            body = body.child(self.token_accordion.clone());
         }
+
+        body = body.child(div().w_full().child(self.token_accordion.clone()));
 
         div()
             .id("theme-studio-sidebar")
@@ -303,9 +362,9 @@ impl Render for ThemeSidebar {
             .min_h_0()
             .flex()
             .flex_col()
-            .bg(chrome.panel_background)
+            .bg(sidebar_bg)
             .border_r_1()
-            .border_color(chrome.border)
+            .border_color(sidebar_border)
             .p(px(12.0))
             .child(
                 div()

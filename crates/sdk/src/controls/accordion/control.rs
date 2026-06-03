@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use gpui::{App, Context, EventEmitter, Focusable, FocusHandle, IntoElement, Render, SharedString, Window, div, prelude::*};
 
@@ -61,6 +62,11 @@ impl AccordionControl {
         self.expanded_ids.contains(item_id)
     }
 
+    pub fn set_template(&mut self, template: Arc<dyn super::AccordionTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn toggle_item(&mut self, index: usize, cx: &mut Context<Self>) {
         if !self.model.enabled || index >= self.model.items.len() {
             return;
@@ -116,6 +122,12 @@ impl AccordionControl {
             selection_mode: self.model.selection_mode,
             collapsible: self.model.collapsible,
             enabled: self.model.enabled,
+            item_dividers: self.model.item_dividers,
+            content_padding_y: self.model.content_padding_y,
+            content_padding_top: self.model.content_padding_top,
+            content_padding_bottom: self.model.content_padding_bottom,
+            trigger_min_height: self.model.trigger_min_height,
+            trigger_padding_y: self.model.trigger_padding_y,
             focus,
         }
     }
@@ -333,18 +345,18 @@ mod tests {
             AccordionItem::new(
                 "one",
                 AccordionTrigger::new("One"),
-                AccordionContent::custom(|| div().child("Content one").into_any_element()),
+                AccordionContent::custom(|_, _| div().child("Content one").into_any_element()),
             ),
             AccordionItem::new(
                 "two",
                 AccordionTrigger::new("Two"),
-                AccordionContent::custom(|| div().child("Content two").into_any_element()),
+                AccordionContent::custom(|_, _| div().child("Content two").into_any_element()),
             )
             .enabled(false),
             AccordionItem::new(
                 "three",
                 AccordionTrigger::new("Three"),
-                AccordionContent::custom(|| div().child("Content three").into_any_element()),
+                AccordionContent::custom(|_, _| div().child("Content three").into_any_element()),
             ),
         ]
     }

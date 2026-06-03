@@ -138,9 +138,31 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .items_center()
                 .overflow_hidden()
                 .text_color(appearance.placeholder)
-                .child(div().h(px(caret_height)).flex().items_center().child(model.placeholder.clone()))
+                .text_size(px(appearance.typography.size))
+                .line_height(px(appearance.typography.line_height))
+                .font_family(appearance.font_family.clone())
+                .font_weight(appearance.typography.weight)
+                .child(
+                    div()
+                        .h(px(caret_height))
+                        .flex()
+                        .items_center()
+                        .text_size(px(appearance.typography.size))
+                        .line_height(px(appearance.typography.line_height))
+                        .font_family(appearance.font_family.clone())
+                        .font_weight(appearance.typography.weight)
+                        .child(model.placeholder.clone()),
+                )
         } else {
-            let mut row = div().min_w(px(0.0)).flex().items_center().text_color(appearance.foreground);
+            let mut row = div()
+                .min_w(px(0.0))
+                .flex()
+                .items_center()
+                .text_color(appearance.foreground)
+                .text_size(px(appearance.typography.size))
+                .line_height(px(appearance.typography.line_height))
+                .font_family(appearance.font_family.clone())
+                .font_weight(appearance.typography.weight);
 
             for caret_ix in 0..=chars.len() {
                 if let Some(ch) = chars.get(caret_ix) {

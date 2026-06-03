@@ -114,6 +114,11 @@ where
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: Arc<dyn super::SelectorTemplate<T>>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn selected_id(&self) -> Option<&SharedString> {
         self.selected_index.and_then(|index| self.model.items.get(index)).map(SelectorItemLike::id)
     }

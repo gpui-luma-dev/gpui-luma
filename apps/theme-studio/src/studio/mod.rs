@@ -9,5 +9,6 @@ mod overrides;
 mod panels;
 mod studio_board;
 mod theme_sidebar;
+mod token_color_row;
 
 pub use app::ThemeStudioApp;
