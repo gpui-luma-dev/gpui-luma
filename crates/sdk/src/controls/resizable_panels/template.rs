@@ -59,8 +59,12 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         };
 
         let total_main = match model.orientation {
-            ResizablePanelsOrientation::Horizontal => model.frame_width.unwrap_or(px(1.0)),
-            ResizablePanelsOrientation::Vertical => model.frame_height.unwrap_or(px(1.0)),
+            ResizablePanelsOrientation::Horizontal => {
+                model.frame_width.or(model.measured_size.map(|s| s.width)).unwrap_or(px(1.0))
+            }
+            ResizablePanelsOrientation::Vertical => {
+                model.frame_height.or(model.measured_size.map(|s| s.height)).unwrap_or(px(1.0))
+            }
         }
         .max(px(1.0));
 
@@ -72,6 +76,16 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         let content_main = (total_main - total_handle).max(px(1.0));
 
         let mut root = div()
+            .on_children_prepainted({
+                let entity = cx.entity().clone();
+                move |bounds, _window, cx| {
+                    if let Some(container_bounds) = bounds.first() {
+                        entity.update(cx, |this, cx| {
+                            this.set_measured_size(container_bounds.size, cx);
+                        });
+                    }
+                }
+            })
             .id(model.id.clone())
             .overflow_hidden()
             .on_drag_move(cx.listener(ResizablePanels::handle_drag_move))
@@ -114,7 +128,9 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
             }
         }
 
-        root.child(track)
+        let measure_child = div().id(format!("{}-measure-target", model.id)).absolute().size_full();
+
+        root.child(measure_child).child(track)
     }
 }
 

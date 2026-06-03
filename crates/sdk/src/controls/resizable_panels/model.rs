@@ -84,6 +84,7 @@ pub struct ResizablePanelsRenderModel<'a> {
     pub handle_grip: bool,
     pub sizes: &'a [f32],
     pub panels: &'a [ResizablePanelSpec],
+    pub measured_size: Option<gpui::Size<Pixels>>,
 }
 
 pub struct ResizablePanelsBuilder {

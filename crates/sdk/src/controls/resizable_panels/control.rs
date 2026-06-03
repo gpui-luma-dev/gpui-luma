@@ -35,6 +35,7 @@ pub struct ResizablePanels {
     dragging_handle: Option<usize>,
     drag_start_axis_px: f32,
     drag_start_sizes: Vec<f32>,
+    measured_size: Option<gpui::Size<Pixels>>,
 }
 
 impl EventEmitter<ResizablePanelsEvent> for ResizablePanels {}
@@ -60,7 +61,16 @@ impl ResizablePanels {
             dragging_handle: None,
             drag_start_axis_px: 0.0,
             drag_start_sizes: Vec::new(),
+            measured_size: None,
         }
+    }
+
+    pub fn set_measured_size(&mut self, size: gpui::Size<Pixels>, cx: &mut Context<Self>) {
+        if self.measured_size == Some(size) {
+            return;
+        }
+        self.measured_size = Some(size);
+        cx.notify();
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -143,7 +153,12 @@ impl ResizablePanels {
         let main_px = match (self.model.frame_width, self.model.frame_height, self.model.orientation) {
             (Some(width), _, ResizablePanelsOrientation::Horizontal) => width.as_f32(),
             (_, Some(height), ResizablePanelsOrientation::Vertical) => height.as_f32(),
-            _ => 1.0,
+            (None, _, ResizablePanelsOrientation::Horizontal) => {
+                self.measured_size.map(|s| s.width.as_f32()).unwrap_or(1.0)
+            }
+            (_, None, ResizablePanelsOrientation::Vertical) => {
+                self.measured_size.map(|s| s.height.as_f32()).unwrap_or(1.0)
+            }
         };
         let handle_size = self.model.handle_size.as_f32().max(1.0);
         content_axis_size(main_px, handle_size, panel_count)
@@ -279,6 +294,7 @@ impl ResizablePanels {
             handle_grip: self.model.handle_grip,
             sizes: &self.sizes,
             panels: &self.model.panels,
+            measured_size: self.measured_size,
         }
     }
 }
