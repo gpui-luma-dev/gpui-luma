@@ -6,7 +6,6 @@ use gpui::{
 use super::{
     math::{apply_pair_delta, content_axis_size, normalize_sizes, PanelSizeBounds},
     model::{ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation, ResizablePanelsRenderModel},
-    theme::default_resizable_panels_theme,
 };
 use crate::theme::InteractionState;
 
@@ -286,8 +285,8 @@ impl ResizablePanels {
 
 impl Render for ResizablePanels {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let appearance = default_resizable_panels_theme()
-            .resolve(InteractionState { disabled: !self.model.enabled, ..Default::default() });
+        let appearance =
+            self.model.theme.resolve(InteractionState { disabled: !self.model.enabled, ..Default::default() });
         let model = self.render_model();
         let template = self.model.template.clone();
 

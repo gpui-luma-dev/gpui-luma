@@ -180,6 +180,17 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         ],
     },
     &ThemeUsage {
+        label: "TreeView",
+        parts: &[
+            part("row label", "sidebar-foreground", &["default"], &["TreeViewPalette.foreground"]),
+            part("row hover", "sidebar-accent", &["hovered"], &["TreeViewPalette.background"]),
+            part("row pressed", "accent", &["pressed"], &["TreeViewPalette.background"]),
+            part("disabled label", "muted-foreground", &["disabled"], &["TreeViewPalette.foreground"]),
+            part("icon", "sidebar-foreground", &["default"], &["TreeViewPalette.icon_color"]),
+            part("chevron", "sidebar-foreground", &["default"], &["TreeViewPalette.chevron_color"]),
+        ],
+    },
+    &ThemeUsage {
         label: "Control Group",
         parts: &[
             part("list background", "muted", &["enabled"], &["ControlGroupListAppearance.background"]),
@@ -207,6 +218,16 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("row divider", "border", &["enabled"], &["ListViewRowPalette.divider"]),
             part("selected row", "muted", &["selected"], &["ListViewRowPalette.background"]),
             part("selected label", "foreground", &["selected"], &["ListViewRowPalette.label_color"]),
+        ],
+    },
+    &ThemeUsage {
+        label: "ResizablePanels",
+        parts: &[
+            part("panel border", "border", &["enabled"], &["ResizablePanelsAppearance.border"]),
+            part("divider line", "border", &["enabled"], &["ResizablePanelsAppearance.divider"]),
+            part("handle grip", "border", &["enabled"], &["ResizablePanelsAppearance.grip"]),
+            part("grip emphasis", "accent", &["enabled"], &["ResizablePanelsAppearance.grip_emphasis"]),
+            part("disabled divider", "muted-foreground", &["disabled"], &["ResizablePanelsAppearance.divider"]),
         ],
     },
     &ThemeUsage {

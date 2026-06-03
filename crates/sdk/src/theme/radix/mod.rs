@@ -1,4 +1,6 @@
 mod accordion;
+mod resizable_panels;
+mod tree_view;
 mod action;
 mod autocomplete;
 mod button;
@@ -315,6 +317,37 @@ impl RadixTheme {
 
     pub fn accordion(self: &Arc<Self>, id: impl Into<SharedString>) -> crate::controls::accordion::AccordionBuilder {
         crate::controls::accordion::new(id).template(self.accordion_template())
+    }
+
+    pub fn tree_view_template<T>(self: &Arc<Self>) -> Arc<dyn crate::controls::tree_view::TreeViewTemplate<T>>
+    where
+        T: Send + Sync + 'static,
+    {
+        templates::tree_view_template(Arc::clone(self))
+    }
+
+    pub fn tree_view_theme(self: &Arc<Self>) -> Arc<dyn crate::controls::tree_view::TreeViewTheme> {
+        templates::tree_view_theme(Arc::clone(self))
+    }
+
+    pub fn tree_view<T>(self: &Arc<Self>, id: impl Into<SharedString>) -> crate::controls::tree_view::TreeViewBuilder<T>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        crate::controls::tree_view::new(id).template(self.tree_view_template::<T>())
+    }
+
+    pub fn resizable_panels_theme(
+        self: &Arc<Self>,
+    ) -> Arc<dyn crate::controls::resizable_panels::ResizablePanelsTheme> {
+        templates::resizable_panels_theme(Arc::clone(self))
+    }
+
+    pub fn resizable_panels(
+        self: &Arc<Self>,
+        id: impl Into<SharedString>,
+    ) -> crate::controls::resizable_panels::ResizablePanelsBuilder {
+        crate::controls::resizable_panels::ResizablePanels::new(id).theme(self.resizable_panels_theme())
     }
 
     pub fn navigation_sidebar_template(

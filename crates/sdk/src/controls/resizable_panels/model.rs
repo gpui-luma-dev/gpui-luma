@@ -3,7 +3,10 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, AppContext, Entity, IntoElement, Pixels, SharedString, px};
 
-use super::{ResizablePanels, ResizablePanelsTemplate, default_resizable_panels_template};
+use super::{
+    ResizablePanels, ResizablePanelsTemplate, ResizablePanelsTheme, default_resizable_panels_template,
+    default_resizable_panels_theme,
+};
 
 pub type PanelRender = Rc<dyn Fn() -> AnyElement>;
 
@@ -66,6 +69,7 @@ pub struct ResizablePanelsModel {
     pub(crate) keyboard_shift_step: f32,
     pub(crate) panels: Vec<ResizablePanelSpec>,
     pub(crate) template: Arc<dyn ResizablePanelsTemplate>,
+    pub(crate) theme: Arc<dyn ResizablePanelsTheme>,
 }
 
 pub struct ResizablePanelsRenderModel<'a> {
@@ -103,6 +107,7 @@ impl ResizablePanelsBuilder {
                 keyboard_shift_step: 10.0,
                 panels: Vec::new(),
                 template: default_resizable_panels_template(),
+                theme: default_resizable_panels_theme(),
             },
         }
     }
@@ -169,6 +174,11 @@ impl ResizablePanelsBuilder {
 
     pub fn template(mut self, template: Arc<dyn ResizablePanelsTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn theme(mut self, theme: Arc<dyn ResizablePanelsTheme>) -> Self {
+        self.model.theme = theme;
         self
     }
 

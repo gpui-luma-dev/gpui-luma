@@ -1,4 +1,5 @@
 mod accordion;
+mod tree_view;
 mod autocomplete;
 mod button;
 mod combobox;

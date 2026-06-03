@@ -22,9 +22,11 @@ use crate::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use crate::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
 use crate::controls::selector_panel::default_selector_items_template;
 use crate::controls::selection_panel::SelectionPanelAppearanceProvider;
+use crate::controls::resizable_panels::ResizablePanelsTheme;
 use crate::controls::slider::{SliderTheme, ThemedSliderTemplate};
 use crate::controls::switch::{SwitchTheme, ThemedSwitchTemplate};
 use crate::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
+use crate::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
 use crate::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
 use crate::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use crate::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
@@ -50,6 +52,8 @@ use super::selection_panel::selection_panel_appearance;
 use super::slider::slider_appearance;
 use super::switch::switch_appearance;
 use super::accordion::{accordion_content_palette, accordion_trigger_palette};
+use super::resizable_panels::resizable_panels_appearance;
+use super::tree_view::tree_view_row_palette;
 use super::tabs_navigation::{tabs_navigation_item_appearance, tabs_navigation_list_appearance};
 use super::button::button_palette;
 use super::context::AppearanceContext;
@@ -168,6 +172,10 @@ pub fn slider_theme(theme: Arc<RadixTheme>) -> Arc<dyn SliderTheme> {
     Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })
 }
 
+pub fn resizable_panels_theme(theme: Arc<RadixTheme>) -> Arc<dyn ResizablePanelsTheme> {
+    Arc::new(RadixResizablePanelsTheme { theme: theme.as_ref().clone() })
+}
+
 pub fn scrollbar_theme(theme: Arc<RadixTheme>) -> Arc<dyn ScrollbarTheme> {
     Arc::new(RadixScrollbarTheme { theme: theme.as_ref().clone() })
 }
@@ -178,6 +186,16 @@ pub fn selector_theme(theme: Arc<RadixTheme>) -> Arc<dyn SelectorTheme> {
 
 pub fn popup_menu_theme(theme: Arc<RadixTheme>) -> Arc<dyn PopupMenuTheme> {
     Arc::new(RadixPopupMenuTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixResizablePanelsTheme {
+    theme: RadixTheme,
+}
+
+impl ResizablePanelsTheme for RadixResizablePanelsTheme {
+    fn resolve(&self, state: InteractionState) -> crate::controls::resizable_panels::ResizablePanelsAppearance {
+        resizable_panels_appearance(self.theme.mode_tokens(), state)
+    }
 }
 
 struct RadixSliderTheme {
@@ -354,6 +372,20 @@ pub fn selection_panel_appearance_provider(theme: Arc<RadixTheme>) -> SelectionP
     Arc::new(move |size| selection_panel_appearance(theme.mode_tokens(), theme.mode(), size))
 }
 
+struct RadixTreeViewTheme {
+    theme: RadixTheme,
+}
+
+impl TreeViewTheme for RadixTreeViewTheme {
+    fn resolve_row(&self, state: InteractionState, selected: bool) -> crate::controls::tree_view::TreeViewPalette {
+        tree_view_row_palette(self.theme.mode_tokens(), selected, state)
+    }
+
+    fn metrics(&self) -> &crate::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
+    }
+}
+
 struct RadixAccordionTheme {
     theme: RadixTheme,
 }
@@ -419,6 +451,17 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
     ) -> crate::controls::navigation_sidebar::NavigationSidebarItemAppearance {
         navigation_sidebar_item_appearance(self.theme.mode_tokens(), selected, state, size)
     }
+}
+
+pub fn tree_view_template<T>(theme: Arc<RadixTheme>) -> Arc<dyn TreeViewTemplate<T>>
+where
+    T: Send + Sync + 'static,
+{
+    Arc::new(ThemedTreeViewTemplate::new(tree_view_theme(Arc::clone(&theme))))
+}
+
+pub fn tree_view_theme(theme: Arc<RadixTheme>) -> Arc<dyn TreeViewTheme> {
+    Arc::new(RadixTreeViewTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn accordion_template(theme: Arc<RadixTheme>) -> Arc<dyn AccordionTemplate> {

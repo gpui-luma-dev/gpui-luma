@@ -22,6 +22,7 @@ use crate::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarBu
 use crate::controls::context_menu::ContextMenu;
 use crate::controls::popup_menu::PopupMenu;
 use crate::controls::progress::{self, ProgressBuilder};
+use crate::controls::resizable_panels::ResizablePanelsBuilder;
 use crate::controls::radio_button;
 use crate::controls::radio_group::{self, RadioGroupBuilder, RadioGroupLayout, radio_group_buttons_template};
 use crate::controls::scrollbar::{self, ScrollbarBuilder};
@@ -31,6 +32,7 @@ use crate::controls::search_selector::{self, SearchSelectorBuilder};
 use crate::controls::slider::{self, SliderBuilder};
 use crate::controls::switch::{self, SwitchBuilder};
 use crate::controls::accordion::AccordionBuilder;
+use crate::controls::tree_view::TreeViewBuilder;
 use crate::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
 use crate::controls::textarea::{self, TextAreaBuilder};
 use crate::controls::textfield::{self, TextFieldBuilder};
@@ -91,10 +93,14 @@ pub trait RadixThemeControlExt {
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
+    fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
     fn tabs_navigation(&self, id: impl Into<SharedString>) -> TabsNavigationBuilder;
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder;
+    fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
+    where
+        T: Clone + Send + Sync + 'static;
     fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder;
 
     fn autocomplete(
@@ -300,6 +306,10 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
         progress::new(id).template(self.progress_template())
     }
 
+    fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder {
+        RadixTheme::resizable_panels(self, id)
+    }
+
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder {
         scrollbar::Scrollbar::new(id).template(self.scrollbar_template())
     }
@@ -314,6 +324,13 @@ impl RadixThemeControlExt for Arc<RadixTheme> {
 
     fn accordion(&self, id: impl Into<SharedString>) -> AccordionBuilder {
         RadixTheme::accordion(self, id)
+    }
+
+    fn tree_view<T>(&self, id: impl Into<SharedString>) -> TreeViewBuilder<T>
+    where
+        T: Clone + Send + Sync + 'static,
+    {
+        RadixTheme::tree_view(self, id)
     }
 
     fn navigation_sidebar(&self, id: impl Into<SharedString>) -> NavigationSidebarBuilder {

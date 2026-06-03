@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, rc::Rc, sync::Arc};
 
 use gpui::{AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
@@ -37,8 +37,9 @@ pub(in crate::gallery) struct ResizablePanelsPane {
 }
 
 impl ResizablePanelsPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>) -> Self {
-        let horizontal = ResizablePanels::new("resizable-panels-horizontal")
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+        let horizontal = radix_theme
+            .resizable_panels("resizable-panels-horizontal")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .panels([
@@ -53,7 +54,8 @@ impl ResizablePanelsPane {
             ])
             .spawn(cx);
 
-        let vertical = ResizablePanels::new("resizable-panels-vertical")
+        let vertical = radix_theme
+            .resizable_panels("resizable-panels-vertical")
             .orientation(ResizablePanelsOrientation::Vertical)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .panels([
@@ -68,7 +70,8 @@ impl ResizablePanelsPane {
             ])
             .spawn(cx);
 
-        let with_handle = ResizablePanels::new("resizable-panels-with-handle")
+        let with_handle = radix_theme
+            .resizable_panels("resizable-panels-with-handle")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .show_handle(true)
@@ -86,7 +89,8 @@ impl ResizablePanelsPane {
             ])
             .spawn(cx);
 
-        let nested_inner = ResizablePanels::new("resizable-panels-nested-inner")
+        let nested_inner = radix_theme
+            .resizable_panels("resizable-panels-nested-inner")
             .orientation(ResizablePanelsOrientation::Vertical)
             .size(px((NESTED_OUTER_WIDTH - HIDDEN_DIVIDER_HIT_TARGET) * 0.5), px(NESTED_OUTER_HEIGHT))
             .show_border(false)
@@ -103,7 +107,8 @@ impl ResizablePanelsPane {
             .spawn(cx);
 
         let nested_inner_entity = nested_inner.clone();
-        let nested_outer = ResizablePanels::new("resizable-panels-nested-outer")
+        let nested_outer = radix_theme
+            .resizable_panels("resizable-panels-nested-outer")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(NESTED_OUTER_WIDTH), px(NESTED_OUTER_HEIGHT))
             .panels([
@@ -121,7 +126,8 @@ impl ResizablePanelsPane {
         let controlled_panel_sizes = Rc::new(Cell::new([30.0_f32, 70.0_f32]));
         let left_sizes = controlled_panel_sizes.clone();
         let right_sizes = controlled_panel_sizes.clone();
-        let controlled = ResizablePanels::new("resizable-panels-controlled")
+        let controlled = radix_theme
+            .resizable_panels("resizable-panels-controlled")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .show_handle(true)
