@@ -61,9 +61,8 @@ impl ThemeStudioApp {
 
         let overrides = StudioOverrides::default();
         let panel_positions = load_panel_positions();
-        let theme_sidebar = cx.new(|cx| {
-            ThemeSidebar::new(app.clone(), radix_theme.clone(), active_theme_id.clone(), &overrides, cx)
-        });
+        let theme_sidebar =
+            cx.new(|cx| ThemeSidebar::new(app.clone(), radix_theme.clone(), active_theme_id.clone(), &overrides, cx));
 
         let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
         let board_host_for_split = board_host.clone();
@@ -78,16 +77,25 @@ impl ThemeStudioApp {
             .show_border(false)
             .panels([
                 ResizablePanelSpec::new_render(move || {
-                    div().size_full().min_h_0().overflow_hidden().child(sidebar_entity.clone()).into_any_element()
+                    div()
+                        .size_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .overflow_hidden()
+                        .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
+                        .into_any_element()
                 })
                 .default_size(28.0)
                 .min_size(18.0)
                 .max_size(45.0),
                 ResizablePanelSpec::new_render(move || {
-                    scrollable_panel()
-                        .items_center()
-                        .p(px(24.0))
-                        .child(board_host_for_split.clone())
+                    div()
+                        .size_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .child(scrollable_panel().items_center().p(px(24.0)).child(board_host_for_split.clone()))
                         .into_any_element()
                 })
                 .default_size(72.0)
@@ -182,8 +190,7 @@ impl ThemeStudioApp {
         self.apply_theme_overrides(cx);
         self.syncing_sidebar_tokens = true;
         let overrides = self.overrides.clone();
-        self.theme_sidebar
-            .update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
         self.syncing_sidebar_tokens = false;
         cx.notify();
     }
@@ -362,7 +369,16 @@ impl Render for ThemeStudioApp {
             .font_family(sans)
             .bg(chrome.app_background)
             .child(title_bar)
-            .child(div().id("theme-studio-body").flex_1().min_h_0().child(self.main_split.clone()));
+            .child(
+                div()
+                    .id("theme-studio-body")
+                    .flex_1()
+                    .min_h_0()
+                    .flex()
+                    .flex_col()
+                    .overflow_hidden()
+                    .child(div().flex_1().min_h_0().size_full().child(self.main_split.clone())),
+            );
 
         if let Some(panel) = inspector {
             root = root.child(panel);

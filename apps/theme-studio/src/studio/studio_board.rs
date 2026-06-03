@@ -39,12 +39,6 @@ impl StudioBoardHost {
 impl Render for StudioBoardHost {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let app = self.app.read(cx);
-        render_demo_board(
-            app.selected,
-            app.panel_positions.clone(),
-            app.demos.clone(),
-            app.radix_theme.chrome(),
-            cx,
-        )
+        render_demo_board(app.selected, app.panel_positions.clone(), app.demos.clone(), app.radix_theme.chrome(), cx)
     }
 }
