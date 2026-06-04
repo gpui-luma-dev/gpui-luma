@@ -37,7 +37,7 @@ pub enum PanelSize {
 ```
 
 ### The Two-Pass Layout Solver
-The layout calculation in [`template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/resizable_panels/template.rs) is updated to a two-pass algorithm:
+The layout calculation in [template.rs](crates/sdk/src/controls/resizable_panels/template.rs) is updated to a two-pass algorithm:
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -59,15 +59,55 @@ The layout calculation in [`template.rs`](file:///Users/scg/Developer/GitHub/gpu
 
 ---
 
-## 3. Usage Surface: The Fluent Builder
+## 3. Runtime Layout State
+
+To ensure predictable behavior across window resizes, runtime state is stored in its declared mode:
+* **Absolute Panes:** Stored as exact pixels (`gpui::Pixels`). When the window resizes, they remain fixed at that pixel size.
+* **Weight Panes:** Stored as their weight coefficient (e.g., `1.0`). When the window resizes, they scale automatically based on the newly available remainder.
+
+On a layout change, the solver evaluates current sizes dynamically to distribute remaining pixels to the active weighted panes.
+
+---
+
+## 4. Interaction & Drag Model
+
+Dragging updates sizes in pixel space based on the sizing modes of the two adjacent panels sharing the handle:
+
+* **Absolute ↔ Weight:** 
+  The drag delta adjusts the `Absolute` pane's pixels directly. The `Weight` pane expands or contracts to absorb the remaining space.
+  * *Formula:* $NewAbsoluteSize = Clamped(StartSize + \Delta_{px})$
+* **Weight ↔ Weight:**
+  Translates the pixel drag delta into a relative weight shift based on the total remaining space.
+* **Absolute ↔ Absolute:**
+  Adjusts both pane dimensions in pixel space directly (clamped to their respective min/max bounds).
+
+### Keyboard Resizing
+* For **Absolute** panes, arrow key presses adjust the width by `keyboard_step` or `keyboard_shift_step` in exact pixel increments (e.g., `10px`).
+* For **Weight** panes, adjustments shift the weight coefficient directly.
+
+---
+
+## 5. Constraints & Clamping
+
+* **Absolute Panes:** Min/max constraints are defined and clamped strictly in pixels (e.g., `min: px(200.0)`).
+* **Weight Panes:** Min/max constraints are also defined in pixels. During the two-pass layout distribution, if a weighted pane's share of the remainder falls below its min pixel constraint, it is clamped to that minimum. The remaining weighted panes then redistribute the remaining space.
+
+---
+
+## 6. API Migration & Backwards Compatibility
+
+* **Migration adapter:** Existing specs using raw percentages are treated as `PanelSize::Weight` (e.g. mapping `default_size(28.0)` to `PanelSize::Weight(28.0)`). This ensures full backwards compatibility with existing consumers.
+* **Deprecation path:** The old `f32` specification API is marked deprecated. Consumers are encouraged to transition to the new fluent builder and `PanelSize` enum.
+
+---
+
+## 7. Usage Surface: The Fluent Builder
 
 The builder API is redesigned to allow defining sizing rules directly on the parent builder chain, eliminating the need to manually build separate `ResizablePanelSpec` vectors.
 
 ```rust
 // Proposed Fluent Builder API:
 let main_split = ResizablePanels::horizontal("theme-studio-main-split")
-    .orientation(ResizablePanelsOrientation::Horizontal)
-    
     // Panel 0: Left Sidebar (pixel-constrained)
     .pane(sidebar_view)
         .size(px(280.0))
@@ -85,7 +125,7 @@ let main_split = ResizablePanels::horizontal("theme-studio-main-split")
 
 ---
 
-## 4. Usage Surface: The Visual DSL Macro
+## 8. Usage Surface: The Visual DSL Macro
 
 To give developers a crystal-clear, schematic representation of the layout structure, we introduce a declarative `resizable_panels!` macro. This maps visual syntax to the underlying builder blocks.
 
@@ -135,12 +175,12 @@ resizable_panels! {
 
 ---
 
-## 5. Verification Plan & Test Strategy
+## 9. Verification Plan & Test Strategy
 
 To verify the mixed-sizing mathematical solver and visual macro correctness, we will port the layout pages from the Opal alpha as full-viewport integration testbeds inside the Luma gallery.
 
 ### Automated Tests
-* Implement unit tests in `math.rs` validating mixed `Absolute(px)` and `Weight(f32)` distribution under varying window sizes.
+* Implement unit tests in [math.rs](crates/sdk/src/controls/resizable_panels/math.rs) validating mixed `Absolute(px)` and `Weight(f32)` distribution under varying window sizes.
 * Add edge-case tests verifying that `min` and `max` constraints (both pixel and percentage-based) clamp correctly during split drag-move calculations.
 
 ### Manual Verification (App Shell Demos)

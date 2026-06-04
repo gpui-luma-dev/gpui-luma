@@ -2,6 +2,8 @@
 
 This map is intended as an onboarding index. It focuses on crate/module purpose, primary exports, and how modules relate.
 
+**Apps (`apps/*`):** see `project-overview.md` § Apps using the SDK — compose SDK controls only; do not home-brew interactive widgets in app crates.
+
 ## Crate Map
 
 ## `crates/sdk` (`gpui-luma`)

@@ -685,7 +685,10 @@ fn render_grid_view_header_column_slot(
             .w(px(width))
             .min_w(px(width))
             .max_w(px(width))
-            .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(grid_view_header_label_slot(content))
             .into_any_element(),
         (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Control) => div()
             .flex_1()
@@ -698,7 +701,14 @@ fn render_grid_view_header_column_slot(
         (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Text) => div()
             .flex_1()
             .min_w(px(0.0))
-            .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(grid_view_header_label_slot(content))
             .into_any_element(),
     }
+}
+
+fn grid_view_header_label_slot(content: AnyElement) -> impl IntoElement {
+    div().w_full().min_w(px(0.0)).px(px(12.0)).flex().items_center().justify_center().truncate().child(content)
 }

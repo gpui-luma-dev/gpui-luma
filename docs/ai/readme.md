@@ -6,5 +6,6 @@ Reference docs:
 - `docs/ai/module-map.md`
 - `docs/ai/listbox.md`
 
-Considerations: 
+Considerations:
   Tight responses are better than long verbose responses
+  Apps in `apps/` are SDK consumers: use toolkit controls and themed builders, not hand-rolled interactive UI (see `project-overview.md`).

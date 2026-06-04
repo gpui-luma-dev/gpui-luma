@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, MouseButton, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::column;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
@@ -42,7 +42,8 @@ pub struct PaymentsPanel {
     radix_theme: Arc<RadixTheme>,
     list_view: Entity<ListViewControl<PaymentRow>>,
     row_checkboxes: Arc<Vec<Checkbox>>,
-    add_button: Entity<Button>,
+    prev_button: Entity<Button>,
+    next_button: Entity<Button>,
     selected_count: usize,
     _subscriptions: Vec<Subscription>,
 }
@@ -65,11 +66,15 @@ impl PaymentsPanel {
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&list_view, |panel, _, event, cx| {
-            if let ListViewEvent::SelectionChanged { .. } = event {
-                panel.selected_count = panel.list_view.read(cx).selected_indices().len();
-                panel.sync_checkboxes_from_list(cx);
-                cx.notify();
+            match event {
+                ListViewEvent::SelectionChanged { .. } => {
+                    panel.selected_count = panel.list_view.read(cx).selected_indices().len();
+                    panel.sync_checkboxes_from_list(cx);
+                }
+                ListViewEvent::PageChanged { .. } => {}
+                _ => return,
             }
+            cx.notify();
         }));
 
         for (index, checkbox) in row_checkboxes.iter().enumerate() {
@@ -80,8 +85,23 @@ impl PaymentsPanel {
             }));
         }
 
+        let prev_button =
+            radix_theme.secondary_button("payments-prev").label("Previous").size(size).spawn(cx);
+        let next_button = radix_theme.secondary_button("payments-next").label("Next").size(size).spawn(cx);
+        subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                panel.list_view.update(cx, |list, cx| list.prev_page(cx));
+            }
+        }));
+        subscriptions.push(cx.subscribe(&next_button, |panel, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                panel.list_view.update(cx, |list, cx| list.next_page(cx));
+            }
+        }));
+
         Self {
-            add_button: radix_theme.primary_button("payments-add").label("Add Payment").size(size).spawn(cx),
+            prev_button,
+            next_button,
             list_view,
             row_checkboxes,
             radix_theme,
@@ -112,9 +132,12 @@ impl PaymentsPanel {
 impl Render for PaymentsPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.radix_theme.chrome();
-        let total_rows = PAYMENTS_PAGE_SIZE;
+        let total_rows = self.list_view.read(cx).items().len();
         let at_first = self.list_view.read(cx).current_page() == 0;
         let at_last = self.list_view.read(cx).current_page() + 1 >= self.list_view.read(cx).page_count().max(1);
+
+        self.prev_button.update(cx, |button, cx| button.set_enabled(!at_first, cx));
+        self.next_button.update(cx, |button, cx| button.set_enabled(!at_last, cx));
 
         card(
             PAYMENTS_CARD_WIDTH,
@@ -122,11 +145,7 @@ impl Render for PaymentsPanel {
             chrome.panel_background,
             vstack! {
                 gap=12;
-                hstack! {
-                    justify=between align=start gap=12;
-                    card_header("Payments", "Manage your payments.", chrome.title_text, chrome.muted_text),
-                    self.add_button.clone(),
-                },
+                card_header("Payments", "Manage your payments.", chrome.title_text, chrome.muted_text),
                 div()
                     .w_full()
                     .rounded(px(8.0))
@@ -139,12 +158,8 @@ impl Render for PaymentsPanel {
                     format!("{} of {total_rows} row(s) selected.", self.selected_count),
                     hstack! {
                         gap=8 align=center;
-                        pagination_button(cx, "payments-prev", "Previous", at_first, |panel, cx| {
-                            panel.list_view.update(cx, |list, cx| list.prev_page(cx));
-                        }),
-                        pagination_button(cx, "payments-next", "Next", at_last, |panel, cx| {
-                            panel.list_view.update(cx, |list, cx| list.next_page(cx));
-                        }),
+                        self.prev_button.clone(),
+                        self.next_button.clone(),
                     },
                 }
                 .w_full()
@@ -174,30 +189,6 @@ fn spawn_row_checkboxes(
                 .spawn(cx)
         })
         .collect()
-}
-
-fn pagination_button(
-    cx: &mut Context<PaymentsPanel>,
-    id: &'static str,
-    label: &'static str,
-    disabled: bool,
-    action: fn(&mut PaymentsPanel, &mut Context<PaymentsPanel>),
-) -> impl IntoElement {
-    div()
-        .id(id)
-        .px(px(12.0))
-        .py(px(6.0))
-        .rounded(px(6.0))
-        .border_1()
-        .border_color(gpui::hsla(0.0, 0.0, 1.0, 0.12))
-        .text_size(px(11.0))
-        .line_height(px(14.0))
-        .when(disabled, |slot| slot.opacity(0.45).cursor_default())
-        .when(!disabled, |slot| slot.cursor_pointer())
-        .child(label)
-        .when(!disabled, |slot| {
-            slot.on_mouse_down(MouseButton::Left, cx.listener(move |panel, _, _, cx| action(panel, cx)))
-        })
 }
 
 fn payment_columns(row_checkboxes: Arc<Vec<Checkbox>>) -> Vec<ListViewColumn<PaymentRow>> {
@@ -231,5 +222,7 @@ fn sample_payments() -> Vec<PaymentRow> {
         PaymentRow { status: "Failed", email: "so456@example.com".into(), amount: "$721.00".into() },
         PaymentRow { status: "Pending", email: "lee39@example.com".into(), amount: "$150.00".into() },
         PaymentRow { status: "Success", email: "ashain@example.com".into(), amount: "$410.00".into() },
+        PaymentRow { status: "Success", email: "noah12@example.com".into(), amount: "$529.00".into() },
+        PaymentRow { status: "Processing", email: "ava88@example.com".into(), amount: "$198.00".into() },
     ]
 }

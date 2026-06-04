@@ -5,13 +5,25 @@
 The project is structured around two complementary concerns:
 
 1. **SDK crate (`gpui-luma`)**: provide reusable, themeable GPUI controls with consistent keyboard/focus behavior.
-2. **Gallery app (`gpui-luma-gallery`)**: provide a living showcase and integration surface for SDK controls.
+2. **Apps under `apps/`**: product shells and showcases that **only compose** SDK controls—they do not define parallel button/checkbox/input implementations.
 
 ## Workspace Architecture
 
 - Workspace uses Cargo resolver v2 with shared dependency versions.
 - `crates/sdk` is the primary product surface.
-- `apps/gallery` is a consumer app that validates ergonomics and behavior.
+- `apps/*` are consumers; each app validates integration but shares the same control vocabulary.
+
+## Consumer apps (`apps/*`)
+
+Apps mount GPUI trees built from `gpui_luma::controls` and `gpui_luma::theme`, typically with a runtime `RadixTheme` (or native fallback).
+
+**Invariant:** interactive UI lives in the SDK. App code wires models, layout, and subscriptions—it does not home-brew themed controls (hand-styled `div` click targets, inline checkmarks, ad-hoc disabled states, etc.). Missing capability is a gap in `crates/sdk`, not a license to fork visuals in an app.
+
+**Allowed in apps:** page layout, static text, domain models, and thin glue (e.g. list column templates that *embed* `Entity<Checkbox>`, not reimplement checkbox paint).
+
+**Not allowed in apps:** duplicate control semantics or appearance that bypass `*Builder`, templates, and theme resolvers.
+
+Per-app structure (gallery registry, theme-studio panels, etc.) is documented in `module-map.md`; this rule applies to all current and future `apps/` members.
 
 ## SDK Architecture (`crates/sdk`)
 

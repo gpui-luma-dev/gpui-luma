@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository is a Rust workspace for a GPUI-based component SDK and a gallery app that exercises the SDK.
+This repository is a Rust workspace for a GPUI-based component SDK and apps under `apps/` that compose it (gallery, theme studio, and others).
 
 - Workspace root: `gpui-luma/`
 - Main crates:
@@ -38,9 +38,13 @@ Top-level modules:
 - `controls` – control library (buttons, inputs, menus, navigation, layout helpers)
 - `shell` – shared shell components (`TitleBar`)
 
-## `gpui-luma-gallery` (`apps/gallery`)
+## Apps (`apps/*`)
 
-Purpose: showcase/demo app for SDK controls and theming.
+Purpose: product shells and showcases that integrate the SDK. Each app owns routing, layout, and domain state; interactive controls come from `gpui-luma` (see **Apps using the SDK** above).
+
+### `gpui-luma-gallery` (`apps/gallery`)
+
+Showcase/demo app for controls and theming.
 
 High-level flow:
 
@@ -87,6 +91,14 @@ Frequently used controls:
 - list/select: `selector`, `autocomplete`, `combobox` (composite selection: `control_group`, `radio_group`, `button_group`)
 - menus: `popup_menu`, `context_menu`, `floating_menu`
 - navigation/layout: `navigation_sidebar`, `tabs_navigation`, `split_view`, `scrollbar`, `slider`, `progress`
+
+## Apps using the SDK
+
+Workspace members under `apps/` (gallery, theme studio, and future product shells) **consume** `gpui-luma`. They are not a second place to invent UI.
+
+- **Do** compose screens from SDK controls: themed builders (`primary_button`, `primary_checkbox`, `list_view`, …), `declare_form!`, and layout macros. Wire behavior with `cx.subscribe` and control events.
+- **Do not** home-brew interactive controls—no one-off `div` buttons, fake checkboxes, hardcoded `hsla` chrome, or copy-pasted pagination/menu markup. If the toolkit lacks a variant or layout hook, extend the SDK (or add a thin app-specific wrapper around an existing control), then use it everywhere.
+- **Shell-only exceptions:** static copy, spacing wrappers, and non-interactive layout are fine as plain GPUI elements. Anything focusable, clickable, or theme-token-driven should come from the SDK.
 
 ## Core Data Types and Conventions
 
