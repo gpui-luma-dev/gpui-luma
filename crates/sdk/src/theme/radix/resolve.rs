@@ -75,6 +75,7 @@ pub(crate) fn resolve_label_color(catalog: &CssTokenMap, disabled: bool) -> anyh
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn resolve_ghost_background(catalog: &CssTokenMap, layer: InteractionLayer) -> anyhow::Result<Hsla> {
     match layer {
         InteractionLayer::Disabled => resolve_color(catalog, "muted"),

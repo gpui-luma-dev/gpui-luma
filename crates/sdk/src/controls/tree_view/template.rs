@@ -144,16 +144,14 @@ where
 
         row = row.child(div().w(px(scale.inner_gap)));
 
-        let display_icon = node.icon.unwrap_or_else(|| {
-            if node.has_children {
-                if node.expanded {
-                    LucideIcon::FolderOpen
-                } else {
-                    LucideIcon::Folder
-                }
+        let display_icon = node.icon.unwrap_or(if node.has_children {
+            if node.expanded {
+                LucideIcon::FolderOpen
             } else {
-                LucideIcon::File
+                LucideIcon::Folder
             }
+        } else {
+            LucideIcon::File
         });
         row = row.child(render_icon(display_icon, palette.icon_color, icon_size));
         row = row.child(div().w(px(scale.inner_gap)));

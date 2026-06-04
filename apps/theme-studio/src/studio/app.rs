@@ -5,6 +5,7 @@ use gpui::{
     Context, Div, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Overflow, Point, Pixels, Render,
     Size, Subscription, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
@@ -70,8 +71,8 @@ impl ThemeStudioApp {
         let board_host_for_split = board_host.clone();
         let sidebar_entity = theme_sidebar.clone();
         let chrome = radix_theme.chrome();
-        let sidebar_panel_bg = chrome.panel_background;
-        let content_panel_bg = chrome.app_background;
+        let sidebar_panel_bg = radix_theme.navigation_sidebar_theme().resolve_container().background;
+        let content_panel_bg = radix_theme.token_color("background").unwrap_or(chrome.content_background);
 
         let main_split = radix_theme
             .resizable_panels("theme-studio-main-split")

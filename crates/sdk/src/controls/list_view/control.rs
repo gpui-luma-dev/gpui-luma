@@ -742,10 +742,10 @@ where
 
     fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
         self.clear_pointer_interaction(cx);
-        if self.model.select_on_row_click {
-            if let Some(index) = self.model.active_index {
-                self.commit_select_index(index, cx);
-            }
+        if self.model.select_on_row_click
+            && let Some(index) = self.model.active_index
+        {
+            self.commit_select_index(index, cx);
         }
     }
 

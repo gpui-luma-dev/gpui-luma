@@ -1,43 +1,49 @@
-# Design Spec: Resizable Panels Upgrade (Mixed Sizing & Visual DSL)
+# Resizable Panels: Mixed Sizing & Overlay Handles
 
-This document describes the current architectural limitations of the `ResizablePanels` control and outlines the design for upgrading it to support mixed sizing (pixels + proportional weights) and a clean, visual builder/macro usage surface.
+Design record and implementation status for [`crates/sdk/src/controls/resizable_panels/`](../../crates/sdk/src/controls/resizable_panels/).
+
+## Implementation status (June 2026)
+
+| Area | Status |
+|------|--------|
+| `PanelSize::{Absolute,Weight}` + two-pass solver | **Done** — [`math.rs`](../../crates/sdk/src/controls/resizable_panels/math.rs) |
+| Overlay handles (no layout width), pick'em geometry | **Done** — [`template.rs`](../../crates/sdk/src/controls/resizable_panels/template.rs) |
+| `ResizablePanelSpec::bg(Hsla)` for handle halves | **Done** |
+| `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` | **Done** — lane, hit target, grip scale together |
+| Theme Studio main split (280px sidebar + fill) | **Done** — [`apps/theme-studio/src/studio/app.rs`](../../apps/theme-studio/src/studio/app.rs) |
+| Gallery demos on weight + pixel constraints | **Done** — [`apps/gallery/.../resizable_panels/pane.rs`](../../apps/gallery/src/gallery/panes/resizable_panels/pane.rs) |
+| Fluent `.pane()` builder chain | **Not started** (§7 below) |
+| `resizable_panels!` macro | **Not started** (§8 below) |
+| Opal-style full-viewport gallery shells | **Not started** (§9 below) |
+
+Legacy percent APIs (`default_size`, `min_size`, `max_size`, `handle_size`) remain deprecated for existing callers; new code should use `size` / `weight` / `min` / `max` / `resize_handle`.
 
 ---
 
-## 1. Current Architectural Issues
+## 1. Problems this upgrade solved
 
-The current implementation of `ResizablePanels` under [`crates/sdk/src/controls/resizable_panels/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/resizable_panels/) has several design gaps that affect usability and layout predictability:
+The pre-upgrade control used percentage floats normalized to 100. That caused:
 
-1. **Purely Percentage-Based Sizing (`0.0..=100.0`)**:
-   Every panel is sized as a percentage float. The layout engine normalizes all panel sizes to sum to `100.0` (see [`math.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/resizable_panels/math.rs#L22-L24)). 
-2. **Unpredictable Window Resizing**:
-   For standard application shells (like the Theme Studio sidebar split), a fixed-pixel width is desired for the sidebar. Because `ResizablePanels` only supports percentages, resizing the main window causes the sidebar to scale proportionally, leading to unwanted stretching or squishing.
-3. **High Sizing Drift & Boilerplate**:
-   Developers must manually ensure that all sibling panels' sizes add up to exactly 100.0. If one panel's default size is updated, all adjacent panel declarations must be edited in tandem to prevent the normalization engine from distorting the intended widths.
-4. **Opaque constraints**:
-   Defining minimum and maximum boundaries as percentages (e.g., `.min_size(18.0)`) is highly unintuitive compared to expressing constraints in pixels (e.g., `min: px(200.0)`).
+- Sidebars that should stay fixed in pixels to stretch when the window resized.
+- Boilerplate keeping sibling percentages in sync.
+- Unintuitive min/max as percentages.
+
+Those issues are addressed by mixed sizing and overlay handles below.
 
 ---
 
-## 2. Target Design: Mixed Sizing & Proportional Weights
+## 2. Mixed sizing & proportional weights
 
-To combine the layout power of React's `react-resizable-panels` with the readability of WPF's Grid systems, Luma's resizable layout engine should support **mixed sizing modes** concurrently in the same pane strip.
-
-### Sizing Primitives
-Replace raw `f32` size properties with a strongly typed enum:
+### Sizing primitives
 
 ```rust
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PanelSize {
-    /// Exact width or height in pixels
     Absolute(gpui::Pixels),
-    /// Proportional "star" weight (shares remaining space after absolute panes)
     Weight(f32),
 }
 ```
 
-### The Two-Pass Layout Solver
-The layout calculation in [template.rs](crates/sdk/src/controls/resizable_panels/template.rs) is updated to a two-pass algorithm:
+### Two-pass layout
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -48,183 +54,94 @@ The layout calculation in [template.rs](crates/sdk/src/controls/resizable_panels
 └───────────────────────────────┴────────────────────────┘
                                ▲
                        [Overlay Handle]
-                  (Centered over split line)
 ```
 
-1. **Pass 1 (Absolute allocation)**: 
-   Read total available width/height. Subtract the widths of all `PanelSize::Absolute(px)` panels. The interactive handles do not take up layout space (they are overlays), so they are not subtracted from the total container width.
-2. **Pass 2 (Weighted distribution)**:
-   Sum all `PanelSize::Weight` tokens in the pane list. Allocate the remaining pixels proportionally to each weighted panel.
+1. **Pass 1:** Subtract all `Absolute` panel sizes from the content axis. Handles do **not** consume layout width.
+2. **Pass 2:** Distribute the remainder by `Weight` coefficients.
 
-### Overlay Handle Alignment & "Pick'em" Snapping
+### Overlay handle alignment & pick'em snapping
 
-Instead of occupying space within the layout tree (which forces the panels apart and creates gaps showing the parent track background), the panels touch directly at the split boundary line. The resize handle is positioned as an absolute-positioned overlay centered directly over the boundary.
+Panels meet at the split line. The handle is an absolute overlay centered on the boundary.
 
-Let $X_{\text{split}}$ be the coordinate of the split boundary (equal to the total width of all panels to the left of the split).
+For handle width $W$ and split $X_{\text{split}}$:
 
-For a handle of width $W$:
-* **Odd Width (e.g., $W = 9\text{px}$ or $W = 1\text{px}$)**:
-  Centering is straightforward because there is a single center pixel line.
-  * The center of the handle is placed exactly at $X_{\text{split}}$.
-  * Left offset: $X_{\text{split}} - \lfloor W / 2 \rfloor$
-  * Right offset: $X_{\text{split}} + \lfloor W / 2 \rfloor$
-  * The 1px divider line aligns exactly on $X_{\text{split}}$.
-* **Even Width (e.g., $W = 8\text{px}$)**:
-  An even-width handle has no exact center pixel line. Centering requires a consistent **"pick'em" rounding strategy** (floor or ceil snapping) to align the visual divider line cleanly with the physical pixel boundary of the split.
-  * Let $k = W / 2$.
-  * To snap the visual divider to the exact split boundary, we offset the handle bounds:
-    * Left Offset: $X_{\text{split}} - k$
-    * Right Offset: $X_{\text{split}} + k$ (meaning the handle spans $[X_{\text{split}} - k, X_{\text{split}} + k]$).
-    * The visual 1px divider is drawn offset by $k$ (i.e. at local offset $k$ inside the handle element) so it lines up perfectly on $X_{\text{split}}$, preventing subpixel bleeding or visual gaps.
+- **Odd $W$:** center on $X_{\text{split}}$; 1px divider on the split.
+- **Even $W$:** pick'em rounding so the 1px divider at local offset $W/2$ aligns with $X_{\text{split}}$.
 
-### Panel Background Colors at Construction
+### Panel backgrounds
 
-To prevent background bleed under the overlay handle and ensure correct rendering of hover/active overlay states:
-* We require background colors for all adjacent panels to be passed when constructing the `ResizablePanels` control (via the fluent builder `.bg()` methods or spec arguments).
-* The overlay handle uses these background colors to paint its left and right halves (or top/bottom halves for vertical splits) matching the corresponding panels. For example, the portion of the handle extending over the left panel is filled with the left panel's background color, and the portion extending over the right panel is filled with the right panel's background color.
-* This ensures that when the handle is hovered or active, its interactive visual feedback (which may include opacity or rounded glow highlights) blends seamlessly with the panels on either side, without exposing any underlying window background.
+Adjacent panels should pass `.bg(Hsla)` on `ResizablePanelSpec`. Handle left/right (or top/bottom) halves use those colors so hover/grip feedback does not show parent track bleed.
+
+### Resize handle presets
+
+Use `.resize_handle(ResizeHandleSize::Sm | Md | Lg)` instead of raw pixel lane width. Each preset bundles visual lane, hit target, and grip dimensions.
 
 ---
 
-## 3. Runtime Layout State
+## 3. Runtime layout state
 
-To ensure predictable behavior across window resizes, runtime state is stored in its declared mode:
-* **Absolute Panes:** Stored as exact pixels (`gpui::Pixels`). When the window resizes, they remain fixed at that pixel size.
-* **Weight Panes:** Stored as their weight coefficient (e.g., `1.0`). When the window resizes, they scale automatically based on the newly available remainder.
-
-On a layout change, the solver evaluates current sizes dynamically to distribute remaining pixels to the active weighted panes.
+- **Absolute:** stored as pixels; fixed across window resize.
+- **Weight:** stored as coefficient; shares remainder after absolutes.
 
 ---
 
-## 4. Interaction & Drag Model
+## 4. Interaction & drag
 
-Dragging updates sizes in pixel space based on the sizing modes of the two adjacent panels sharing the handle:
+Dragging updates pixel space according to adjacent panel modes:
 
-* **Absolute ↔ Weight:** 
-  The drag delta adjusts the `Absolute` pane's pixels directly. The `Weight` pane expands or contracts to absorb the remaining space.
-  * *Formula:* $NewAbsoluteSize = Clamped(StartSize + \Delta_{px})$
-* **Weight ↔ Weight:**
-  Translates the pixel drag delta into a relative weight shift based on the total remaining space.
-* **Absolute ↔ Absolute:**
-  Adjusts both pane dimensions in pixel space directly (clamped to their respective min/max bounds).
+- **Absolute ↔ Weight:** delta adjusts absolute px; weight pane absorbs remainder.
+- **Weight ↔ Weight:** delta shifts weight ratio in the pair.
+- **Absolute ↔ Absolute:** both adjust in px (clamped).
 
-### Keyboard Resizing
-* For **Absolute** panes, arrow key presses adjust the width by `keyboard_step` or `keyboard_shift_step` in exact pixel increments (e.g., `10px`).
-* For **Weight** panes, adjustments shift the weight coefficient directly.
+Keyboard: absolute panes use `keyboard_step` / `keyboard_shift_step` in px; weight panes adjust coefficients.
 
 ---
 
-## 5. Constraints & Clamping
+## 5. Constraints
 
-* **Absolute Panes:** Min/max constraints are defined and clamped strictly in pixels (e.g., `min: px(200.0)`).
-* **Weight Panes:** Min/max constraints are also defined in pixels. During the two-pass layout distribution, if a weighted pane's share of the remainder falls below its min pixel constraint, it is clamped to that minimum. The remaining weighted panes then redistribute the remaining space.
-
----
-
-## 6. API Migration & Backwards Compatibility
-
-* **Migration adapter:** Existing specs using raw percentages are treated as `PanelSize::Weight` (e.g. mapping `default_size(28.0)` to `PanelSize::Weight(28.0)`). This ensures full backwards compatibility with existing consumers.
-* **Deprecation path:** The old `f32` specification API is marked deprecated. Consumers are encouraged to transition to the new fluent builder and `PanelSize` enum.
+- **Absolute:** `min` / `max` in pixels.
+- **Weight:** `min` / `max` in pixels applied during distribution (legacy percent min/max still supported on weight-only specs).
 
 ---
 
-## 7. Usage Surface: The Fluent Builder
+## 6. Backwards compatibility
 
-The builder API is redesigned to allow defining sizing rules directly on the parent builder chain, eliminating the need to manually build separate `ResizablePanelSpec` vectors.
+- `default_size(f32)` → `PanelSize::Weight`
+- `handle_size(Pixels)` → nearest `ResizeHandleSize` preset
+- `sizes()` / `set_sizes()` on weight-only strips still report legacy 0–100 percents for telemetry
+
+---
+
+## 7. Future: fluent builder (not implemented)
 
 ```rust
-// Proposed Fluent Builder API:
 let main_split = ResizablePanels::horizontal("theme-studio-main-split")
-    // Panel 0: Left Sidebar (pixel-constrained)
     .pane(sidebar_view)
         .size(px(280.0))
         .min(px(200.0))
         .max(px(400.0))
-        .bg(theme.colors().sidebar_background) // Background color for left panel
-        
-    .split_handle() // Draggable divider separating the adjacent panels (absolute overlay, no layout width)
-    
-    // Panel 1: Main Content (fills all remaining space)
+        .bg(theme.colors().sidebar_background)
+    .split_handle()
     .pane(board_view)
         .weight(1.0)
-        .bg(theme.colors().content_background) // Background color for right panel
-        
+        .bg(theme.colors().content_background)
     .spawn(cx);
 ```
 
----
-
-## 8. Usage Surface: The Visual DSL Macro
-
-To give developers a crystal-clear, schematic representation of the layout structure, we introduce a declarative `resizable_panels!` macro. This maps visual syntax to the underlying builder blocks.
-
-### The Macro Syntax
-```rust
-resizable_panels! {
-    cx,
-    id: "theme-studio-main-split",
-    layout: Horizontal,
-    panes: [
-        // Format: View => Size, [Constraints], [Background]
-        sidebar_view => px(280.0), min: px(200.0), max: px(400.0), bg: theme.colors().sidebar_background,
-        
-        | // Draggable separator handle (absolute overlay, no layout width)
-        
-        board_view => weight(1.0), bg: theme.colors().content_background
-    ]
-}
-```
-
-### Composing Nested Split Layouts:
-Nesting horizontal and vertical resizable splits becomes highly readable and matches the physical structure of the interface:
-
-```rust
-resizable_panels! {
-    cx,
-    id: "main-split",
-    layout: Horizontal,
-    panes: [
-        // Left Column: Navigation Sidebar
-        sidebar_view => px(250.0), min: px(180.0), max: px(350.0), bg: theme.colors().sidebar_background,
-        |
-        // Right Column: Split editor/terminal workspace
-        resizable_panels! {
-            cx,
-            id: "workspace-split",
-            layout: Vertical,
-            panes: [
-                editor_pane => weight(2.0), bg: theme.colors().editor_background,
-                |
-                terminal_pane => weight(1.0), bg: theme.colors().terminal_background
-            ]
-        } => weight(1.0), bg: theme.colors().workspace_background
-    ]
-}
-```
+Today, use `ResizablePanelsBuilder::panels([...])` with `ResizablePanelSpec` as in Theme Studio.
 
 ---
 
-## 9. Verification Plan & Test Strategy
+## 8. Future: `resizable_panels!` macro (not implemented)
 
-To verify the mixed-sizing mathematical solver and visual macro correctness, we will port the layout pages from the Opal alpha as full-viewport integration testbeds inside the Luma gallery.
+Declarative `|` separators and nested splits — see original sketch in git history if needed.
 
-### Automated Tests
-* Implement unit tests in [math.rs](crates/sdk/src/controls/resizable_panels/math.rs) validating mixed `Absolute(px)` and `Weight(f32)` distribution under varying window sizes.
-* Add edge-case tests verifying that `min` and `max` constraints (both pixel and percentage-based) clamp correctly during split drag-move calculations.
+---
 
-### Manual Verification (App Shell Demos)
-Port the following Opal gallery layouts to `apps/gallery/src/gallery/panes/resizable_panels/` as full-size workspace templates:
+## 9. Future: verification & Opal gallery shells (not implemented)
 
-1. **Layered Inset Shell**:
-   * Uses an `Absolute(px)` nav pane split and an inset rounded content canvas.
-   * **Target**: Verify that margins and frame widths remain stable during window scaling.
-2. **Detached / Floating Shell**:
-   * Separates the sidebar and content pane with a visible visual gap.
-   * **Target**: Verify that drag handles align correctly in the gap and maintain target spacing.
-3. **Icon Rail Collapse**:
-   * A collapsible split pane that collapses to an `Absolute(px(56.0))` icon rail rather than hiding.
-   * **Target**: Verify that the sidebar content renders correctly at narrow icon-rail widths.
-4. **Nested Workspace (IDE Shell)**:
-   * Uses the visual `resizable_panels!` macro to define a 3-pane layout (file explorer sidebar, center editor, bottom terminal).
-   * **Target**: Verify nested horizontal/vertical propagation and handle alignment.
+Additional unit tests (constraint edge cases under mixed drag) and full-viewport Opal layouts (layered inset, detached gap, icon rail, nested IDE) remain optional follow-on work.
 
+**Current tests:** `cargo test -p gpui-luma resizable_panels`
+
+**Manual:** Theme Studio main split; gallery pane “Resizable Panels”.

@@ -212,10 +212,10 @@ where
 
         self.flat_cache = flat;
 
-        if let Some(active_id) = active_before {
-            if self.flat_index_for_id(&active_id).is_none() {
-                self.active_node_id = None;
-            }
+        if let Some(active_id) = active_before
+            && self.flat_index_for_id(&active_id).is_none()
+        {
+            self.active_node_id = None;
         }
 
         self.sync_list_state_after_flat_change(old_count, splice_anchor);
@@ -267,10 +267,8 @@ where
 
     fn set_active_index(&mut self, index: Option<usize>, scroll: bool) {
         self.active_node_id = index.and_then(|idx| self.flat_cache.get(idx).map(|node| node.id.clone()));
-        if scroll {
-            if let Some(idx) = index {
-                self.list_state.scroll_to_reveal_item(idx);
-            }
+        if scroll && let Some(idx) = index {
+            self.list_state.scroll_to_reveal_item(idx);
         }
     }
 
