@@ -7,7 +7,8 @@
 //! | Container border  | `sidebar-border`                   |
 //! | Section label     | `muted-foreground`                 |
 //! | Item fg           | `sidebar-foreground`               |
-//! | Item hover bg     | `sidebar-accent`                   |
+//! | Item hover bg     | `accent`                           |
+//! | Item hover fg     | `accent-foreground`                |
 //! | Selected bg       | `sidebar-primary`                  |
 //! | Selected fg       | `sidebar-primary-foreground`       |
 //! | Focus ring        | `sidebar-ring`                     |
@@ -18,7 +19,7 @@ use crate::controls::navigation_sidebar::{
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::context::AppearanceContext;
-use super::resolve::{resolve_color, resolve_color_layer};
+use super::resolve::{resolve_accent_hover_pair, resolve_color, resolve_color_layer};
 use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
 
@@ -125,9 +126,13 @@ fn navigation_sidebar_branch_from_palette(
 
     appearance.background = match state.layer() {
         InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered => Some(palette.muted_background),
-        InteractionLayer::Pressed => Some(palette.ghost.pressed_background),
+        InteractionLayer::Hovered | InteractionLayer::Pressed => Some(palette.ghost.hover_background),
     };
+
+    if matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) && !state.disabled {
+        appearance.foreground = palette.primary.foreground;
+        appearance.icon_color = palette.primary.foreground;
+    }
 
     appearance
 }
@@ -147,10 +152,14 @@ fn navigation_sidebar_item_from_palette(
         (true, InteractionLayer::Pressed) => Some(primary.pressed_background),
         (true, InteractionLayer::Hovered) => Some(primary.hover_background),
         (true, InteractionLayer::Default) => Some(primary.background),
-        (false, InteractionLayer::Pressed) => Some(palette.ghost.pressed_background),
-        (false, InteractionLayer::Hovered) => Some(palette.muted_background),
+        (false, InteractionLayer::Pressed | InteractionLayer::Hovered) => Some(palette.ghost.hover_background),
         (false, InteractionLayer::Default) => None,
     };
+
+    if !selected && !state.disabled && matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) {
+        appearance.foreground = palette.primary.foreground;
+        appearance.icon_color = palette.primary.foreground;
+    }
 
     if selected && !state.disabled {
         appearance.foreground = primary.foreground;
@@ -170,10 +179,6 @@ fn resolve_sidebar_foreground(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsl
 
 fn resolve_sidebar_border(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
     catalog.color_first(&["sidebar-border", "border"])
-}
-
-fn resolve_sidebar_accent(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-accent", "accent", "muted"])
 }
 
 fn resolve_sidebar_primary(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
@@ -246,13 +251,17 @@ pub(crate) fn navigation_sidebar_branch_from_catalog(
     let state = ctx.state;
     let catalog = ctx.catalog();
     let mut appearance = base_item_from_catalog(ctx, size)?;
-    let accent = resolve_sidebar_accent(catalog)?;
+    let (hover_background, hover_foreground) = resolve_accent_hover_pair(catalog)?;
 
     appearance.background = match state.layer() {
         InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered => Some(accent),
-        InteractionLayer::Pressed => Some(resolve_color(catalog, "muted")?),
+        InteractionLayer::Hovered | InteractionLayer::Pressed => Some(hover_background),
     };
+
+    if matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) && !state.disabled {
+        appearance.foreground = hover_foreground;
+        appearance.icon_color = hover_foreground;
+    }
 
     Ok(appearance)
 }
@@ -274,7 +283,7 @@ pub(crate) fn navigation_sidebar_item_from_catalog(
     let catalog = ctx.catalog();
     let mut appearance = base_item_from_catalog(ctx, size)?;
     let layer = state.layer();
-    let accent = resolve_sidebar_accent(catalog)?;
+    let (hover_background, hover_foreground) = resolve_accent_hover_pair(catalog)?;
 
     appearance.background = match (selected, layer) {
         (_, InteractionLayer::Disabled) => None,
@@ -282,10 +291,14 @@ pub(crate) fn navigation_sidebar_item_from_catalog(
             Some(resolve_sidebar_primary_layer(catalog, layer)?)
         }
         (true, InteractionLayer::Default) => Some(resolve_sidebar_primary(catalog)?),
-        (false, InteractionLayer::Pressed) => Some(resolve_color(catalog, "muted")?),
-        (false, InteractionLayer::Hovered) => Some(accent),
+        (false, InteractionLayer::Pressed | InteractionLayer::Hovered) => Some(hover_background),
         (false, InteractionLayer::Default) => None,
     };
+
+    if !selected && !state.disabled && matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+        appearance.foreground = hover_foreground;
+        appearance.icon_color = hover_foreground;
+    }
 
     if selected && !state.disabled {
         let selected_foreground = resolve_sidebar_primary_foreground(catalog)?;

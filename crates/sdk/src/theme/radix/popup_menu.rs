@@ -1,9 +1,9 @@
 //! Popup menu property mappings:
 //!
-//! | Part    | Token                    |
-//! |---------|--------------------------|
-//! | Trigger | ghost (`accent` on hover) |
-//! | Menu    | floating menu surface    |
+//! | Part    | Token                              |
+//! |---------|------------------------------------|
+//! | Trigger | ghost (accent-foreground on hover) |
+//! | Menu    | floating menu surface              |
 
 use crate::controls::popup_menu::PopupMenuPalette;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
@@ -11,7 +11,7 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 use super::context::AppearanceContext;
 use super::floating_menu::floating_menu_appearance;
 use super::focus::focus_ring_color;
-use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
+use super::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use super::mode::RadixModeTokens;
 
 pub(crate) fn popup_menu_palette(
@@ -37,15 +37,15 @@ fn popup_menu_palette_from_palette(ctx: &AppearanceContext) -> PopupMenuPalette 
 
     let trigger_background = match layer {
         InteractionLayer::Disabled => palette.disabled_background,
-        InteractionLayer::Pressed => ghost.pressed_background,
-        InteractionLayer::Hovered => ghost.hover_background,
-        InteractionLayer::Default => ghost.background,
+        InteractionLayer::Pressed | InteractionLayer::Hovered | InteractionLayer::Default => ghost.background,
     };
 
     PopupMenuPalette {
         trigger_background,
         trigger_foreground: if state.disabled {
             palette.disabled_foreground
+        } else if state.hovered || state.pressed {
+            palette.primary.foreground
         } else {
             ghost.foreground
         },
@@ -62,12 +62,9 @@ pub(crate) fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow
     let typography = ctx.typography();
     let layer = state.layer();
 
-    let trigger_background = resolve_ghost_background(catalog, layer)?;
-    let trigger_foreground = resolve_label_color(catalog, state.disabled)?;
-
     Ok(PopupMenuPalette {
-        trigger_background,
-        trigger_foreground,
+        trigger_background: resolve_ghost_trigger_background(catalog, layer)?,
+        trigger_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)?,
         trigger_border: resolve_color(catalog, "border")?,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         trigger_typography: typography.text.label,
@@ -108,17 +105,20 @@ mod tests {
     }
 
     #[test]
-    fn popup_menu_hovered_trigger_uses_accent_background() {
+    fn popup_menu_hovered_trigger_uses_accent_foreground_without_background_fill() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
-        let ctx = AppearanceContext::new(
+        let default_ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, InteractionState::default());
+        let hovered_ctx = AppearanceContext::new(
             &mode,
             crate::theme::ThemeMode::Light,
             InteractionState { hovered: true, ..InteractionState::default() },
         );
-        let appearance = popup_menu_palette_from_catalog(&ctx).expect("popup menu");
+        let default = popup_menu_palette_from_catalog(&default_ctx).expect("popup menu");
+        let hovered = popup_menu_palette_from_catalog(&hovered_ctx).expect("popup menu");
 
-        assert_eq!(appearance.trigger_background, catalog.color("accent").expect("accent"));
-        assert_eq!(appearance.floating_menu.background, catalog.color("popover").expect("popover"));
+        assert_eq!(hovered.trigger_background, default.trigger_background);
+        assert_eq!(hovered.trigger_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+        assert_eq!(hovered.floating_menu.item_hover_background, catalog.color("accent").expect("accent"));
     }
 }

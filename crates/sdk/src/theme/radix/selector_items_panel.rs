@@ -1,4 +1,4 @@
-//! Selector / combobox dropdown panel — same surface as floating menu (`popover` + `accent` hover).
+//! Selector / combobox dropdown panel — same surface as floating menu (`popover` + accent item hover).
 
 use crate::controls::selector_panel::SelectorItemsPanelAppearance;
 use crate::theme::{ControlSize, ThemeMode};
@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn selector_items_panel_uses_popover_surface_and_accent_hover() {
+    fn selector_items_panel_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let appearance = selector_items_panel_appearance(&mode, crate::theme::ThemeMode::Light, ControlSize::Md);

@@ -336,13 +336,6 @@ impl Render for ThemeSidebar {
             "sidebar",
             chrome.panel_background,
         );
-        let sidebar_border = token_color_with_fallback(
-            &self.vm.radix_theme,
-            &self.vm.global_overrides,
-            "sidebar-border",
-            chrome.border,
-        );
-
         let mut body = div().flex().flex_col().w_full().gap(px(10.0)).child(self.theme_selector.clone());
 
         if !has_catalog {
@@ -363,8 +356,6 @@ impl Render for ThemeSidebar {
             .flex()
             .flex_col()
             .bg(sidebar_bg)
-            .border_r_1()
-            .border_color(sidebar_border)
             .p(px(12.0))
             .child(
                 div()

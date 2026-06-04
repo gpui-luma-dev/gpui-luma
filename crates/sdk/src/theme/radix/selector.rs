@@ -1,11 +1,11 @@
-//! Selector property mappings — ghost trigger (popup menu) + selector items panel.
+//! Selector property mappings — ghost trigger (foreground-only hover) + accent item panel.
 
 use crate::controls::selector::SelectorPalette;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use super::context::AppearanceContext;
 use super::focus::focus_ring_color;
-use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
+use super::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use super::selector_items_panel::selector_items_panel_appearance;
 use super::mode::RadixModeTokens;
 
@@ -31,15 +31,15 @@ fn selector_palette_from_palette(ctx: &AppearanceContext) -> SelectorPalette {
 
     let trigger_background = match layer {
         InteractionLayer::Disabled => palette.disabled_background,
-        InteractionLayer::Pressed => ghost.pressed_background,
-        InteractionLayer::Hovered => ghost.hover_background,
-        InteractionLayer::Default => ghost.background,
+        InteractionLayer::Pressed | InteractionLayer::Hovered | InteractionLayer::Default => ghost.background,
     };
 
     SelectorPalette {
         trigger_background,
         trigger_foreground: if state.disabled {
             palette.disabled_foreground
+        } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+            palette.primary.foreground
         } else {
             ghost.foreground
         },
@@ -57,8 +57,8 @@ pub(crate) fn selector_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::
     let layer = state.layer();
 
     Ok(SelectorPalette {
-        trigger_background: resolve_ghost_background(catalog, layer)?,
-        trigger_foreground: resolve_label_color(catalog, state.disabled)?,
+        trigger_background: resolve_ghost_trigger_background(catalog, layer)?,
+        trigger_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)?,
         trigger_border: resolve_color(catalog, "border")?,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         trigger_typography: typography.text.label,

@@ -5,7 +5,7 @@
 //! | Surface       | `popover` (fallback `card`)        |
 //! | Foreground    | `popover-foreground`               |
 //! | Border        | `border`                           |
-//! | Item hover bg | `accent` (fallback `muted`)        |
+//! | Item hover bg | `accent`                           |
 //! | Item hover fg | `accent-foreground`                |
 //! | Item disabled | `muted-foreground`               |
 
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn floating_menu_uses_popover_surface_and_accent_hover() {
+    fn floating_menu_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());

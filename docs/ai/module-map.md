@@ -247,11 +247,12 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - scroll modes: `ListScrollMode` (`ScrollSmooth`, `ScrollSnap`, `Paged { page_size }`), optional `visible_rows` shell sizing
   - paging facade: `PagingListViewControl` + `PagingListViewBuilder` compose `ListViewControl` with SDK `PagingToolbar` (selection/page sync under the hood)
   - exports `ListViewControl`, `ScrollingListView`, `PagingListView`, builders, `PagingToolbar*`, `ListViewLabel`, `ListSelectionMode`, `ListScrollMode`, `new` / `new_typed`, declarative `list_view!` / `scrolling_list_view!` / `paging_list_view!` / `column!` macros, grid-column helpers, and theme/template hooks
-  - roadmap and scope (not a data grid): `docs/ai/listview-vnext.md`; phase-2 paging/scroll/sizing: `docs/ai/listview_2.md`; facade re-unification: `docs/ai/listview_3.md`
+  - roadmap and scope (not a data grid): `docs/retired/listview-vnext.md`; phase-2 paging/scroll/sizing: `docs/retired/listview_2.md`; facade re-unification: `docs/retired/listview_3.md`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `resizable_panels/*`
   - generic percent-based multi-panel groups (horizontal/vertical, nested via composition) + `ResizablePanelsEvent`
+  - design spec and upgrade plan: `docs/ai/fix-resize-panel.md`
 - `slider/*`
   - ranged value control + drag semantics + `SliderEvent`
 - `scrollbar/*`

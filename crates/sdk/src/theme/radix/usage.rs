@@ -100,7 +100,13 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         parts: &[
             part("textbox", "background", &["default"], &["TextFieldAppearance.background"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
-            part("item hover", "accent", &["hovered"], &["SelectorItemsPanelAppearance.item_hover_background"]),
+            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelAppearance.item_hover_background"]),
+            part(
+                "item hover fg",
+                "accent-foreground",
+                &["hovered"],
+                &["SelectorItemsPanelAppearance.item_hover_foreground"],
+            ),
         ],
     },
     &ThemeUsage {
@@ -123,14 +129,21 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         parts: &[
             part("surface", "popover", &["default"], &["FloatingMenuAppearance.background"]),
             part("foreground", "popover-foreground", &["default"], &["FloatingMenuAppearance.foreground"]),
-            part("item hover", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
+            part(
+                "item hover fg",
+                "accent-foreground",
+                &["hovered"],
+                &["FloatingMenuAppearance.item_hover_foreground"],
+            ),
             part("border", "border", &["default"], &["FloatingMenuAppearance.border"]),
         ],
     },
     &ThemeUsage {
         label: "Popup Menu",
         parts: &[
-            part("trigger hover", "accent", &["hovered"], &["PopupMenuPalette.trigger_background"]),
+            part("trigger hover fg", "accent-foreground", &["hovered"], &["PopupMenuPalette.trigger_foreground"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
             part("menu surface", "popover", &["open"], &["FloatingMenuAppearance.background"]),
         ],
     },
@@ -138,22 +151,24 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         label: "Selector",
         parts: &[
             part("trigger background", "background", &["default"], &["SelectorPalette.trigger_background"]),
+            part("trigger hover fg", "accent-foreground", &["hovered"], &["SelectorPalette.trigger_foreground"]),
             part("trigger border", "input", &["default"], &["SelectorPalette.trigger_border"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
+            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelAppearance.item_hover_background"]),
         ],
     },
     &ThemeUsage {
         label: "Context Menu",
         parts: &[
-            part("surface", "popover", &["default"], &["ContextMenuAppearance.background"]),
-            part("item hover", "accent", &["hovered"], &["ContextMenuAppearance.item_hover_background"]),
+            part("target hover fg", "accent-foreground", &["hovered"], &["ContextMenuAppearance.target_foreground"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
         ],
     },
     &ThemeUsage {
         label: "Accordion",
         parts: &[
             part("trigger label", "foreground", &["default"], &["AccordionPalette.foreground"]),
-            part("trigger hover", "accent", &["hovered"], &["AccordionPalette.background"]),
+            part("trigger hover fg", "accent-foreground", &["hovered"], &["AccordionPalette.foreground"]),
             part("disabled label", "muted-foreground", &["disabled"], &["AccordionPalette.foreground"]),
             part("chevron", "muted-foreground", &["default"], &["AccordionPalette.chevron_color"]),
             part("item border", "border", &["default"], &["AccordionPalette.border_color"]),
@@ -174,7 +189,8 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("surface", "sidebar", &["default"], &["NavigationSidebarContainerAppearance.background"]),
             part("foreground", "sidebar-foreground", &["default"], &["NavigationSidebarItemAppearance.foreground"]),
             part("active", "sidebar-primary", &["selected"], &["NavigationSidebarItemAppearance.foreground"]),
-            part("hover", "sidebar-accent", &["hovered"], &["NavigationSidebarItemAppearance.background"]),
+            part("hover bg", "accent", &["hovered"], &["NavigationSidebarItemAppearance.background"]),
+            part("hover fg", "accent-foreground", &["hovered"], &["NavigationSidebarItemAppearance.foreground"]),
             part("border", "sidebar-border", &["default"], &["NavigationSidebarContainerAppearance.border"]),
         ],
     },

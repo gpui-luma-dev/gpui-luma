@@ -9,6 +9,8 @@ use super::{
 };
 
 pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = 12.0;
+const HANDLE_GRIP_MAIN_AXIS_PX: f32 = 40.0;
+const HANDLE_GRIP_CROSS_AXIS_PX: f32 = 4.0;
 
 pub trait ResizablePanelsTemplate: Send + Sync {
     fn render(
@@ -79,15 +81,22 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
             .on_children_prepainted({
                 let entity = cx.entity().clone();
                 move |bounds, _window, cx| {
-                    if let Some(container_bounds) = bounds.first() {
-                        entity.update(cx, |this, cx| {
-                            this.set_measured_size(container_bounds.size, cx);
-                        });
-                    }
+                    let Some(size) = bounds.iter().map(|b| b.size).reduce(|acc, next| gpui::Size {
+                        width: acc.width.max(next.width),
+                        height: acc.height.max(next.height),
+                    }) else {
+                        return;
+                    };
+                    entity.update(cx, |this, cx| {
+                        this.set_measured_size(size, cx);
+                    });
                 }
             })
             .id(model.id.clone())
+            .relative()
             .overflow_hidden()
+            .flex()
+            .flex_col()
             .on_drag_move(cx.listener(ResizablePanels::handle_drag_move))
             .on_mouse_up(gpui::MouseButton::Left, cx.listener(ResizablePanels::finish_drag))
             .on_mouse_up_out(gpui::MouseButton::Left, cx.listener(ResizablePanels::finish_drag));
@@ -103,7 +112,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
             root = root.border_1().border_color(appearance.border);
         }
 
-        let mut track = div().size_full().flex();
+        let mut track = div().flex_1().min_h_0().min_w_0().w_full().flex().items_stretch();
         if model.orientation == ResizablePanelsOrientation::Vertical {
             track = track.flex_col();
         }
@@ -128,9 +137,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
             }
         }
 
-        let measure_child = div().id(format!("{}-measure-target", model.id)).absolute().size_full();
-
-        root.child(measure_child).child(track)
+        root.child(track)
     }
 }
 
@@ -165,9 +172,6 @@ fn render_handle_divider(
         .tab_index(if enabled { 0 } else { -1 })
         .relative()
         .flex_none()
-        .flex()
-        .items_center()
-        .justify_center()
         .when(!enabled, |this| this.opacity(appearance.disabled_opacity))
         .when(enabled && orientation == ResizablePanelsOrientation::Horizontal, |this| this.cursor_col_resize())
         .on_key_down(cx.listener(move |this, event, window, cx| {
@@ -208,30 +212,51 @@ fn render_handle_divider(
             divider.top(px(center_y)).left(px(0.0)).right(px(0.0)).h(px(1.0))
         };
 
-        let grip = if orientation == ResizablePanelsOrientation::Horizontal {
-            div().rounded(px(8.0)).bg(grip_color).w(px(4.0)).h(px(40.0))
+        let grip_lane = if orientation == ResizablePanelsOrientation::Horizontal {
+            let grip_left = (handle_interaction_size.as_f32() - HANDLE_GRIP_CROSS_AXIS_PX) * 0.5;
+            div()
+                .absolute()
+                .left(px(grip_left))
+                .top(px(0.0))
+                .bottom(px(0.0))
+                .w(px(HANDLE_GRIP_CROSS_AXIS_PX))
+                .flex()
+                .items_center()
+                .child(
+                    div()
+                        .rounded(px(8.0))
+                        .bg(grip_color)
+                        .w(px(HANDLE_GRIP_CROSS_AXIS_PX))
+                        .h(px(HANDLE_GRIP_MAIN_AXIS_PX)),
+                )
         } else {
-            div().rounded(px(8.0)).bg(grip_color).w(px(40.0)).h(px(4.0))
+            let grip_top = (handle_interaction_size.as_f32() - HANDLE_GRIP_CROSS_AXIS_PX) * 0.5;
+            div()
+                .absolute()
+                .top(px(grip_top))
+                .left(px(0.0))
+                .right(px(0.0))
+                .h(px(HANDLE_GRIP_CROSS_AXIS_PX))
+                .flex()
+                .justify_center()
+                .child(
+                    div()
+                        .rounded(px(8.0))
+                        .bg(grip_color)
+                        .w(px(HANDLE_GRIP_MAIN_AXIS_PX))
+                        .h(px(HANDLE_GRIP_CROSS_AXIS_PX)),
+                )
         };
 
-        handle
-            .child(div().relative().size_full().flex().items_center().justify_center().child(divider).child(grip))
-            .child(interaction_layer)
-            .into_any_element()
+        handle.child(divider).child(grip_lane).child(interaction_layer).into_any_element()
     } else {
         let visual = if orientation == ResizablePanelsOrientation::Horizontal {
-            div().w(handle_visual_size.min(px(1.0))).h_full().bg(appearance.divider)
+            div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(handle_visual_size.min(px(1.0))).bg(appearance.divider)
         } else {
-            div().h(handle_visual_size.min(px(1.0))).w_full().bg(appearance.divider)
+            div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(handle_visual_size.min(px(1.0))).bg(appearance.divider)
         };
 
-        let anchor = if orientation == ResizablePanelsOrientation::Horizontal {
-            div().size_full().flex().items_stretch().justify_end().child(visual)
-        } else {
-            div().size_full().flex().flex_col().items_stretch().justify_end().child(visual)
-        };
-
-        handle.child(anchor).child(interaction_layer).into_any_element()
+        handle.child(visual).child(interaction_layer).into_any_element()
     }
 }
 

@@ -1,6 +1,6 @@
 use gpui::{
     Context, DragMoveEvent, EventEmitter, FocusHandle, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
-    MouseUpEvent, ParentElement, Pixels, Render, SharedString, Window, div, px,
+    MouseUpEvent, ParentElement, Pixels, Render, SharedString, Window, div, prelude::*, px,
 };
 
 use super::{
@@ -306,6 +306,6 @@ impl Render for ResizablePanels {
         let model = self.render_model();
         let template = self.model.template.clone();
 
-        div().child(template.render(&model, &appearance, &self.handle_focuses, window, cx))
+        div().size_full().child(template.render(&model, &appearance, &self.handle_focuses, window, cx))
     }
 }

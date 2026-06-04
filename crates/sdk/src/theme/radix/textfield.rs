@@ -238,9 +238,8 @@ mod tests {
         let catalog = sample_catalog();
         let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let ctx = AppearanceContext::new(&mode, crate::theme::ThemeMode::Light, Default::default());
-        let default =
-            textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
-                .expect("textfield");
+        let default = textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
+            .expect("textfield");
         let mut hovered = TextFieldState::default();
         hovered.hovered = true;
         let appearance =

@@ -212,12 +212,8 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let trigger_el = trigger.child(trigger_content).child(chevron);
 
             let content_padding_y = model.content_padding_y.unwrap_or(scale.content_padding_y);
-            let content_padding_top = model
-                .content_padding_top
-                .unwrap_or(content_padding_y);
-            let content_padding_bottom = model
-                .content_padding_bottom
-                .unwrap_or(content_padding_y);
+            let content_padding_top = model.content_padding_top.unwrap_or(content_padding_y);
+            let content_padding_bottom = model.content_padding_bottom.unwrap_or(content_padding_y);
 
             let content_el = if item.expanded {
                 let mut content = div()
@@ -244,8 +240,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
             let mut item_container = div().id(format!("{}-item", item.id)).flex().flex_col().w_full().child(trigger_el);
 
             if model.item_dividers {
-                item_container =
-                    item_container.border_b_1().border_color(trigger_palette.border_color);
+                item_container = item_container.border_b_1().border_color(trigger_palette.border_color);
             }
 
             if let Some(cel) = content_el {

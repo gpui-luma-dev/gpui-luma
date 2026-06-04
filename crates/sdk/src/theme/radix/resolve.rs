@@ -92,11 +92,37 @@ pub(crate) fn resolve_popover_foreground(catalog: &CssTokenMap) -> anyhow::Resul
     catalog.color_first(&["popover-foreground", "foreground"])
 }
 
+pub(crate) fn resolve_accent_foreground(catalog: &CssTokenMap) -> anyhow::Result<Hsla> {
+    catalog.color_first(&["accent-foreground", "foreground"])
+}
+
+/// List/menu row hover: `accent` background and `accent-foreground` label.
 pub(crate) fn resolve_accent_hover_pair(catalog: &CssTokenMap) -> anyhow::Result<(Hsla, Hsla)> {
-    Ok((
-        catalog.color_first(&["accent", "muted"])?,
-        catalog.color_first(&["accent-foreground", "foreground"])?,
-    ))
+    Ok((catalog.color_first(&["accent", "muted"])?, resolve_accent_foreground(catalog)?))
+}
+
+/// Ghost-style trigger (selector, popup, context menu): hover keeps transparent background.
+pub(crate) fn resolve_ghost_trigger_background(catalog: &CssTokenMap, layer: InteractionLayer) -> anyhow::Result<Hsla> {
+    match layer {
+        InteractionLayer::Disabled => resolve_color(catalog, "muted"),
+        InteractionLayer::Pressed | InteractionLayer::Hovered | InteractionLayer::Default => {
+            Ok(hsla(0.0, 0.0, 0.0, 0.0))
+        }
+    }
+}
+
+pub(crate) fn resolve_ghost_trigger_foreground(
+    catalog: &CssTokenMap,
+    layer: InteractionLayer,
+    disabled: bool,
+) -> anyhow::Result<Hsla> {
+    if disabled {
+        resolve_color(catalog, "muted-foreground")
+    } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+        resolve_accent_foreground(catalog)
+    } else {
+        resolve_label_color(catalog, false)
+    }
 }
 
 /// Faint accent tint for list-style row hovers (`bg-accent/40`).

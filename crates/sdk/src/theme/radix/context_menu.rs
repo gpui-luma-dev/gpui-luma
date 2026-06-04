@@ -1,9 +1,9 @@
 //! Context menu property mappings:
 //!
-//! | Part   | Token                    |
-//! |--------|--------------------------|
-//! | Target | ghost (`accent` on hover) |
-//! | Menu   | floating menu surface    |
+//! | Part   | Token                              |
+//! |--------|------------------------------------|
+//! | Target | ghost (accent-foreground on hover) |
+//! | Menu   | floating menu surface              |
 
 use crate::controls::context_menu::ContextMenuAppearance;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
@@ -11,7 +11,7 @@ use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 use super::context::AppearanceContext;
 use super::floating_menu::floating_menu_appearance;
 use super::focus::focus_ring_color;
-use super::resolve::{resolve_color, resolve_ghost_background, resolve_label_color};
+use super::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use super::mode::RadixModeTokens;
 
 pub(crate) fn context_menu_appearance(
@@ -38,15 +38,15 @@ fn context_menu_appearance_from_palette(ctx: &AppearanceContext) -> ContextMenuA
 
     let target_background = match layer {
         InteractionLayer::Disabled => palette.disabled_background,
-        InteractionLayer::Pressed => ghost.pressed_background,
-        InteractionLayer::Hovered => ghost.hover_background,
-        InteractionLayer::Default => ghost.background,
+        InteractionLayer::Pressed | InteractionLayer::Hovered | InteractionLayer::Default => ghost.background,
     };
 
     ContextMenuAppearance {
         target_background,
         target_foreground: if state.disabled {
             palette.disabled_foreground
+        } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+            palette.primary.foreground
         } else {
             ghost.foreground
         },
@@ -70,8 +70,8 @@ pub(crate) fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> a
     let layer = state.layer();
 
     Ok(ContextMenuAppearance {
-        target_background: resolve_ghost_background(catalog, layer)?,
-        target_foreground: resolve_label_color(catalog, state.disabled)?,
+        target_background: resolve_ghost_trigger_background(catalog, layer)?,
+        target_foreground: resolve_ghost_trigger_foreground(catalog, layer, state.disabled)?,
         target_border: resolve_color(catalog, "border")?,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         target_typography: typography.text.label,

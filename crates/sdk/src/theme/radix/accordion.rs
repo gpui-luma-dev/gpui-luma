@@ -3,8 +3,7 @@
 //! | Part            | Token              |
 //! |-----------------|--------------------|
 //! | Trigger label   | `foreground`       |
-//! | Trigger hover   | `accent`           |
-//! | Trigger pressed | `accent` (pressed) |
+//! | Trigger hover fg | `accent-foreground` (no bg change) |
 //! | Disabled label  | `muted-foreground` |
 //! | Chevron         | `muted-foreground` |
 //! | Item border     | `border`           |
@@ -16,7 +15,7 @@ use crate::controls::accordion::{AccordionContentPalette, AccordionPalette};
 use crate::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use super::context::AppearanceContext;
-use super::resolve::{resolve_color, resolve_color_layer, resolve_label_color};
+use super::resolve::{resolve_accent_foreground, resolve_color, resolve_label_color};
 use super::mode::RadixModeTokens;
 
 pub(crate) fn accordion_trigger_palette(
@@ -53,13 +52,16 @@ fn accordion_trigger_from_palette(ctx: &AppearanceContext) -> AccordionPalette {
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let background = match layer {
-        InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered => Some(palette.secondary.background),
-        InteractionLayer::Pressed => Some(palette.secondary.pressed_background),
+        InteractionLayer::Disabled
+        | InteractionLayer::Default
+        | InteractionLayer::Hovered
+        | InteractionLayer::Pressed => None,
     };
 
     let foreground = if state.disabled {
         palette.disabled_foreground
+    } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+        palette.primary.foreground
     } else {
         palette.app_foreground
     };
@@ -90,13 +92,19 @@ fn accordion_trigger_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<Acc
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let background = match layer {
-        InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered | InteractionLayer::Pressed => {
-            Some(resolve_color_layer(catalog, "accent", layer, true)?)
-        }
+        InteractionLayer::Disabled
+        | InteractionLayer::Default
+        | InteractionLayer::Hovered
+        | InteractionLayer::Pressed => None,
     };
 
-    let foreground = resolve_label_color(catalog, state.disabled)?;
+    let foreground = if state.disabled {
+        resolve_color(catalog, "muted-foreground")?
+    } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
+        resolve_accent_foreground(catalog)?
+    } else {
+        resolve_label_color(catalog, false)?
+    };
 
     Ok(AccordionPalette {
         background: background.filter(|color| *color != transparent),
@@ -143,8 +151,9 @@ mod tests {
     }
 
     #[test]
-    fn trigger_uses_foreground_and_accent_hover() {
-        let mode = RadixModeTokens::from_catalog(sample_catalog()).expect("catalog");
+    fn trigger_uses_accent_foreground_on_hover_without_background() {
+        let catalog = sample_catalog();
+        let mode = RadixModeTokens::from_catalog(catalog.clone()).expect("catalog");
         let default = accordion_trigger_palette(&mode, ThemeMode::Light, InteractionState::default());
         let hovered = accordion_trigger_palette(
             &mode,
@@ -152,9 +161,10 @@ mod tests {
             InteractionState { hovered: true, ..InteractionState::default() },
         );
 
-        assert_eq!(default.foreground, mode.catalog.color("foreground").expect("foreground"));
-        assert_eq!(default.chevron_color, mode.catalog.color("muted-foreground").expect("muted"));
+        assert_eq!(default.foreground, catalog.color("foreground").expect("foreground"));
+        assert_eq!(default.chevron_color, catalog.color("muted-foreground").expect("muted"));
         assert!(default.background.is_none());
-        assert!(hovered.background.is_some());
+        assert!(hovered.background.is_none());
+        assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
 }
