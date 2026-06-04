@@ -85,8 +85,7 @@ impl PaymentsPanel {
             }));
         }
 
-        let prev_button =
-            radix_theme.secondary_button("payments-prev").label("Previous").size(size).spawn(cx);
+        let prev_button = radix_theme.secondary_button("payments-prev").label("Previous").size(size).spawn(cx);
         let next_button = radix_theme.secondary_button("payments-next").label("Next").size(size).spawn(cx);
         subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {

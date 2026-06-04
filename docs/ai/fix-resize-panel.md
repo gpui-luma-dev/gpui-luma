@@ -42,20 +42,47 @@ The layout calculation in [template.rs](crates/sdk/src/controls/resizable_panels
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      Total Width                       │
-├───────────────┬───┬────────────────────────────────────┤
-│   Sidebar     │ ║ │            Workspace               │
-│   (280 px)    │ ║ │             (Fill)                 │
-└───────┬───────┴─┬─┴──────────────────┬─────────────────┘
-        │         │                    │
-        ▼         ▼                    ▼
-     Pass 1    Pass 1                Pass 2
-   (Subtract) (Subtract)     (Allocates remaining)
+├───────────────────────────────┬────────────────────────┤
+│            Sidebar            │       Workspace        │
+│           (280 px)            │        (Fill)          │
+└───────────────────────────────┴────────────────────────┘
+                               ▲
+                       [Overlay Handle]
+                  (Centered over split line)
 ```
 
-1. **Pass 1 (Absolute & Spacer allocation)**: 
-   Read total available width/height. Subtract the widths of all `PanelSize::Absolute(px)` panels and all interactive handles (`handle_size`).
+1. **Pass 1 (Absolute allocation)**: 
+   Read total available width/height. Subtract the widths of all `PanelSize::Absolute(px)` panels. The interactive handles do not take up layout space (they are overlays), so they are not subtracted from the total container width.
 2. **Pass 2 (Weighted distribution)**:
    Sum all `PanelSize::Weight` tokens in the pane list. Allocate the remaining pixels proportionally to each weighted panel.
+
+### Overlay Handle Alignment & "Pick'em" Snapping
+
+Instead of occupying space within the layout tree (which forces the panels apart and creates gaps showing the parent track background), the panels touch directly at the split boundary line. The resize handle is positioned as an absolute-positioned overlay centered directly over the boundary.
+
+Let $X_{\text{split}}$ be the coordinate of the split boundary (equal to the total width of all panels to the left of the split).
+
+For a handle of width $W$:
+* **Odd Width (e.g., $W = 9\text{px}$ or $W = 1\text{px}$)**:
+  Centering is straightforward because there is a single center pixel line.
+  * The center of the handle is placed exactly at $X_{\text{split}}$.
+  * Left offset: $X_{\text{split}} - \lfloor W / 2 \rfloor$
+  * Right offset: $X_{\text{split}} + \lfloor W / 2 \rfloor$
+  * The 1px divider line aligns exactly on $X_{\text{split}}$.
+* **Even Width (e.g., $W = 8\text{px}$)**:
+  An even-width handle has no exact center pixel line. Centering requires a consistent **"pick'em" rounding strategy** (floor or ceil snapping) to align the visual divider line cleanly with the physical pixel boundary of the split.
+  * Let $k = W / 2$.
+  * To snap the visual divider to the exact split boundary, we offset the handle bounds:
+    * Left Offset: $X_{\text{split}} - k$
+    * Right Offset: $X_{\text{split}} + k$ (meaning the handle spans $[X_{\text{split}} - k, X_{\text{split}} + k]$).
+    * The visual 1px divider is drawn offset by $k$ (i.e. at local offset $k$ inside the handle element) so it lines up perfectly on $X_{\text{split}}$, preventing subpixel bleeding or visual gaps.
+
+### Panel Background Colors at Construction
+
+To prevent background bleed under the overlay handle and ensure correct rendering of hover/active overlay states:
+* We require background colors for all adjacent panels to be passed when constructing the `ResizablePanels` control (via the fluent builder `.bg()` methods or spec arguments).
+* The overlay handle uses these background colors to paint its left and right halves (or top/bottom halves for vertical splits) matching the corresponding panels. For example, the portion of the handle extending over the left panel is filled with the left panel's background color, and the portion extending over the right panel is filled with the right panel's background color.
+* This ensures that when the handle is hovered or active, its interactive visual feedback (which may include opacity or rounded glow highlights) blends seamlessly with the panels on either side, without exposing any underlying window background.
 
 ---
 
@@ -113,12 +140,14 @@ let main_split = ResizablePanels::horizontal("theme-studio-main-split")
         .size(px(280.0))
         .min(px(200.0))
         .max(px(400.0))
+        .bg(theme.colors().sidebar_background) // Background color for left panel
         
-    .split_handle() // Draggable divider separating the adjacent panels
+    .split_handle() // Draggable divider separating the adjacent panels (absolute overlay, no layout width)
     
     // Panel 1: Main Content (fills all remaining space)
     .pane(board_view)
         .weight(1.0)
+        .bg(theme.colors().content_background) // Background color for right panel
         
     .spawn(cx);
 ```
@@ -136,12 +165,12 @@ resizable_panels! {
     id: "theme-studio-main-split",
     layout: Horizontal,
     panes: [
-        // Format: View => Size, [Constraints]
-        sidebar_view => px(280.0), min: px(200.0), max: px(400.0),
+        // Format: View => Size, [Constraints], [Background]
+        sidebar_view => px(280.0), min: px(200.0), max: px(400.0), bg: theme.colors().sidebar_background,
         
-        | // Draggable separator handle
+        | // Draggable separator handle (absolute overlay, no layout width)
         
-        board_view => weight(1.0)
+        board_view => weight(1.0), bg: theme.colors().content_background
     ]
 }
 ```
@@ -156,7 +185,7 @@ resizable_panels! {
     layout: Horizontal,
     panes: [
         // Left Column: Navigation Sidebar
-        sidebar_view => px(250.0), min: px(180.0), max: px(350.0),
+        sidebar_view => px(250.0), min: px(180.0), max: px(350.0), bg: theme.colors().sidebar_background,
         |
         // Right Column: Split editor/terminal workspace
         resizable_panels! {
@@ -164,11 +193,11 @@ resizable_panels! {
             id: "workspace-split",
             layout: Vertical,
             panes: [
-                editor_pane => weight(2.0),
+                editor_pane => weight(2.0), bg: theme.colors().editor_background,
                 |
-                terminal_pane => weight(1.0)
+                terminal_pane => weight(1.0), bg: theme.colors().terminal_background
             ]
-        } => weight(1.0)
+        } => weight(1.0), bg: theme.colors().workspace_background
     ]
 }
 ```

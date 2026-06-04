@@ -1,16 +1,16 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{AnyElement, Context, Div, FocusHandle, Pixels, Stateful, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Div, FocusHandle, Hsla, Pixels, Stateful, Window, div, prelude::*, px};
 
 use super::{
     control::{ResizablePanels, ResizablePanelsHandleDrag},
-    model::{ResizablePanelSpec, ResizablePanelsOrientation, ResizablePanelsRenderModel},
+    math::{handle_hit_target_main_axis_px, handle_overlay_geometry, split_positions_px},
+    model::{ResizeHandleMetrics, ResizablePanelSpec, ResizablePanelsOrientation, ResizablePanelsRenderModel},
     theme::ResizablePanelsAppearance,
 };
 
-pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = 12.0;
-const HANDLE_GRIP_MAIN_AXIS_PX: f32 = 40.0;
-const HANDLE_GRIP_CROSS_AXIS_PX: f32 = 4.0;
+/// Back-compat alias for [`super::math::MIN_HANDLE_LANE_PX`].
+pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = super::math::MIN_HANDLE_LANE_PX;
 
 pub trait ResizablePanelsTemplate: Send + Sync {
     fn render(
@@ -53,29 +53,8 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         cx: &mut Context<ResizablePanels>,
     ) -> Stateful<Div> {
         let panel_count = model.panels.len();
-        let effective_handle_visual_size = model.handle_size.max(px(1.0));
-        let effective_handle_interaction_size = if model.show_handle {
-            effective_handle_visual_size
-        } else {
-            effective_handle_visual_size.max(px(MIN_HIDDEN_HANDLE_HIT_TARGET_PX))
-        };
-
-        let total_main = match model.orientation {
-            ResizablePanelsOrientation::Horizontal => {
-                model.frame_width.or(model.measured_size.map(|s| s.width)).unwrap_or(px(1.0))
-            }
-            ResizablePanelsOrientation::Vertical => {
-                model.frame_height.or(model.measured_size.map(|s| s.height)).unwrap_or(px(1.0))
-            }
-        }
-        .max(px(1.0));
-
-        let total_handle = if panel_count > 1 {
-            effective_handle_visual_size * ((panel_count - 1) as f32)
-        } else {
-            px(0.0)
-        };
-        let content_main = (total_main - total_handle).max(px(1.0));
+        let handle_metrics = model.resize_handle.metrics();
+        let split_positions = split_positions_px(model.panel_sizes_px);
 
         let mut root = div()
             .on_children_prepainted({
@@ -112,152 +91,286 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
             root = root.border_1().border_color(appearance.border);
         }
 
-        let mut track = div().flex_1().min_h_0().min_w_0().w_full().flex().items_stretch();
+        let mut track = div().relative().flex_1().min_h_0().min_w_0().w_full();
+        let mut panels_row = div().w_full().h_full().flex().items_stretch();
         if model.orientation == ResizablePanelsOrientation::Vertical {
-            track = track.flex_col();
+            panels_row = panels_row.flex_col();
         }
 
         for (index, panel) in model.panels.iter().enumerate() {
-            let size = model.sizes.get(index).unwrap_or(&0.0);
-            let clamped = size.clamp(panel.min_size, panel.max_size);
-            let main_size = content_main * (clamped / 100.0);
+            let main_axis_px = model.panel_sizes_px.get(index).copied().unwrap_or(0.0);
+            let main_size = px(main_axis_px.max(0.0));
+            panels_row = panels_row.child(render_panel(model.orientation, panel, main_size, appearance));
+        }
 
-            track = track.child(render_panel(model.orientation, panel, main_size));
+        track = track.child(panels_row);
 
-            if index + 1 < panel_count {
-                track = track.child(render_handle_divider(
+        if model.show_handle {
+            for (index, &split_px) in split_positions.iter().enumerate() {
+                let left_panel = &model.panels[index];
+                let right_panel = &model.panels[index + 1];
+                track = track.child(render_overlay_handle(
                     index,
                     model,
                     appearance,
                     &handle_focuses[index],
-                    effective_handle_visual_size,
-                    effective_handle_interaction_size,
+                    &handle_metrics,
+                    split_px,
+                    panel_background(left_panel, appearance),
+                    panel_background(right_panel, appearance),
+                    cx,
+                ));
+            }
+        } else {
+            for (index, &split_px) in split_positions.iter().enumerate() {
+                track = track.child(render_overlay_handle_hidden(
+                    index,
+                    model,
+                    appearance,
+                    &handle_focuses[index],
+                    &handle_metrics,
+                    split_px,
+                    panel_background(&model.panels[index], appearance),
+                    panel_background(&model.panels[index + 1], appearance),
                     cx,
                 ));
             }
         }
 
+        let _panel_count = panel_count;
         root.child(track)
     }
+}
+
+fn panel_background(panel: &ResizablePanelSpec, appearance: &ResizablePanelsAppearance) -> Hsla {
+    panel.background.unwrap_or(appearance.border)
 }
 
 fn render_panel(
     orientation: ResizablePanelsOrientation,
     panel: &ResizablePanelSpec,
     main_size: Pixels,
+    appearance: &ResizablePanelsAppearance,
 ) -> impl IntoElement {
-    let panel_node = div().overflow_hidden().child((panel.render.clone())());
+    let mut panel_node = div().overflow_hidden().child((panel.render.clone())());
+    if let Some(background) = panel.background {
+        panel_node = panel_node.bg(background);
+    } else {
+        panel_node = panel_node.bg(appearance.border);
+    }
     match orientation {
-        ResizablePanelsOrientation::Horizontal => panel_node.w(main_size).h_full(),
-        ResizablePanelsOrientation::Vertical => panel_node.h(main_size).w_full(),
+        ResizablePanelsOrientation::Horizontal => panel_node.w(main_size).h_full().flex_shrink_0(),
+        ResizablePanelsOrientation::Vertical => panel_node.h(main_size).w_full().flex_shrink_0(),
     }
 }
 
-fn render_handle_divider(
+#[allow(clippy::too_many_arguments)]
+fn render_overlay_handle(
     index: usize,
     model: &ResizablePanelsRenderModel<'_>,
     appearance: &ResizablePanelsAppearance,
     focus: &FocusHandle,
-    handle_visual_size: Pixels,
-    handle_interaction_size: Pixels,
+    handle_metrics: &ResizeHandleMetrics,
+    split_px: f32,
+    left_background: Hsla,
+    right_background: Hsla,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
     let enabled = model.enabled;
     let orientation = model.orientation;
     let handle_id = format!("{}-handle-{index}", model.id);
+    let lane_px = handle_metrics.lane_px.max(1.0);
+    let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, lane_px);
+    let half_lane = lane_px * 0.5;
 
     let mut handle = div()
         .id(handle_id)
         .track_focus(focus)
         .tab_index(if enabled { 0 } else { -1 })
-        .relative()
-        .flex_none()
+        .absolute()
         .when(!enabled, |this| this.opacity(appearance.disabled_opacity))
         .when(enabled && orientation == ResizablePanelsOrientation::Horizontal, |this| this.cursor_col_resize())
         .on_key_down(cx.listener(move |this, event, window, cx| {
             this.handle_handle_key_down(index, event, window, cx);
         }));
 
-    if orientation == ResizablePanelsOrientation::Horizontal {
-        handle = handle.w(handle_visual_size).h_full();
+    handle = match orientation {
+        ResizablePanelsOrientation::Horizontal => {
+            handle.left(px(origin_px)).top(px(0.0)).bottom(px(0.0)).w(px(lane_px))
+        }
+        ResizablePanelsOrientation::Vertical => handle
+            .top(px(origin_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(lane_px))
+            .when(enabled, |this| this.cursor_row_resize()),
+    };
+
+    let drag_payload = ResizablePanelsHandleDrag { id: model.id.clone(), handle_index: index };
+    let handle_hit_px = handle_hit_target_main_axis_px(handle_metrics);
+    let interaction_layer = render_handle_interaction_layer(
+        index,
+        model.id.clone(),
+        orientation,
+        px(handle_hit_px),
+        split_px,
+        origin_px,
+        enabled,
+        drag_payload,
+        cx,
+    );
+
+    let grip_color = if model.handle_grip {
+        appearance.grip_emphasis
     } else {
-        handle = handle.h(handle_visual_size).w_full().when(enabled, |this| this.cursor_row_resize());
-    }
+        appearance.grip
+    };
+
+    let (left_half, right_half, divider, grip) = match orientation {
+        ResizablePanelsOrientation::Horizontal => {
+            let left_half =
+                div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(left_background);
+            let right_half =
+                div().absolute().right(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(right_background);
+            let divider = div()
+                .absolute()
+                .left(px(divider_local_px))
+                .top(px(0.0))
+                .bottom(px(0.0))
+                .w(px(1.0))
+                .bg(appearance.divider);
+            let grip = render_handle_grip(orientation, grip_color, handle_metrics);
+            (left_half, right_half, divider, grip)
+        }
+        ResizablePanelsOrientation::Vertical => {
+            let left_half =
+                div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(left_background);
+            let right_half =
+                div().absolute().bottom(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(right_background);
+            let divider = div()
+                .absolute()
+                .top(px(divider_local_px))
+                .left(px(0.0))
+                .right(px(0.0))
+                .h(px(1.0))
+                .bg(appearance.divider);
+            let grip = render_handle_grip(orientation, grip_color, handle_metrics);
+            (left_half, right_half, divider, grip)
+        }
+    };
+
+    handle
+        .child(left_half)
+        .child(right_half)
+        .child(divider)
+        .child(grip)
+        .child(interaction_layer)
+        .into_any_element()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_overlay_handle_hidden(
+    index: usize,
+    model: &ResizablePanelsRenderModel<'_>,
+    appearance: &ResizablePanelsAppearance,
+    focus: &FocusHandle,
+    handle_metrics: &ResizeHandleMetrics,
+    split_px: f32,
+    left_background: Hsla,
+    right_background: Hsla,
+    cx: &mut Context<ResizablePanels>,
+) -> AnyElement {
+    let enabled = model.enabled;
+    let orientation = model.orientation;
+    let handle_id = format!("{}-handle-{index}", model.id);
+    let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, 1.0);
+    let half_lane = lane_px * 0.5;
+
+    let mut handle = div()
+        .id(handle_id)
+        .track_focus(focus)
+        .tab_index(if enabled { 0 } else { -1 })
+        .absolute()
+        .when(!enabled, |this| this.opacity(appearance.disabled_opacity));
+
+    handle = match orientation {
+        ResizablePanelsOrientation::Horizontal => handle
+            .left(px(origin_px))
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .w(px(lane_px))
+            .when(enabled, |this| this.cursor_col_resize()),
+        ResizablePanelsOrientation::Vertical => handle
+            .top(px(origin_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(lane_px))
+            .when(enabled, |this| this.cursor_row_resize()),
+    };
 
     let drag_payload = ResizablePanelsHandleDrag { id: model.id.clone(), handle_index: index };
     let interaction_layer = render_handle_interaction_layer(
         index,
         model.id.clone(),
         orientation,
-        handle_visual_size,
-        handle_interaction_size,
+        px(handle_hit_target_main_axis_px(handle_metrics)),
+        split_px,
+        origin_px,
         enabled,
         drag_payload,
         cx,
     );
 
-    if model.show_handle {
-        let grip_color = if model.handle_grip {
-            appearance.grip_emphasis
-        } else {
-            appearance.grip
-        };
-
-        let mut divider = div().absolute().bg(appearance.divider);
-        divider = if orientation == ResizablePanelsOrientation::Horizontal {
-            let center_x = (handle_interaction_size.as_f32() - 1.0) * 0.5;
-            divider.left(px(center_x)).top(px(0.0)).bottom(px(0.0)).w(px(1.0))
-        } else {
-            let center_y = (handle_interaction_size.as_f32() - 1.0) * 0.5;
-            divider.top(px(center_y)).left(px(0.0)).right(px(0.0)).h(px(1.0))
-        };
-
-        let grip_lane = if orientation == ResizablePanelsOrientation::Horizontal {
-            let grip_left = (handle_interaction_size.as_f32() - HANDLE_GRIP_CROSS_AXIS_PX) * 0.5;
+    let (left_half, right_half, divider) = match orientation {
+        ResizablePanelsOrientation::Horizontal => (
+            div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(left_background),
+            div().absolute().right(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(right_background),
             div()
                 .absolute()
-                .left(px(grip_left))
+                .left(px(divider_local_px))
                 .top(px(0.0))
                 .bottom(px(0.0))
-                .w(px(HANDLE_GRIP_CROSS_AXIS_PX))
-                .flex()
-                .items_center()
-                .child(
-                    div()
-                        .rounded(px(8.0))
-                        .bg(grip_color)
-                        .w(px(HANDLE_GRIP_CROSS_AXIS_PX))
-                        .h(px(HANDLE_GRIP_MAIN_AXIS_PX)),
-                )
-        } else {
-            let grip_top = (handle_interaction_size.as_f32() - HANDLE_GRIP_CROSS_AXIS_PX) * 0.5;
+                .w(px(1.0))
+                .bg(appearance.divider),
+        ),
+        ResizablePanelsOrientation::Vertical => (
+            div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(left_background),
+            div().absolute().bottom(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(right_background),
             div()
                 .absolute()
-                .top(px(grip_top))
+                .top(px(divider_local_px))
                 .left(px(0.0))
                 .right(px(0.0))
-                .h(px(HANDLE_GRIP_CROSS_AXIS_PX))
-                .flex()
-                .justify_center()
-                .child(
-                    div()
-                        .rounded(px(8.0))
-                        .bg(grip_color)
-                        .w(px(HANDLE_GRIP_MAIN_AXIS_PX))
-                        .h(px(HANDLE_GRIP_CROSS_AXIS_PX)),
-                )
-        };
+                .h(px(1.0))
+                .bg(appearance.divider),
+        ),
+    };
 
-        handle.child(divider).child(grip_lane).child(interaction_layer).into_any_element()
-    } else {
-        let visual = if orientation == ResizablePanelsOrientation::Horizontal {
-            div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(handle_visual_size.min(px(1.0))).bg(appearance.divider)
-        } else {
-            div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(handle_visual_size.min(px(1.0))).bg(appearance.divider)
-        };
+    handle.child(left_half).child(right_half).child(divider).child(interaction_layer).into_any_element()
+}
 
-        handle.child(visual).child(interaction_layer).into_any_element()
-    }
+fn render_handle_grip(orientation: ResizablePanelsOrientation, grip_color: Hsla, metrics: &ResizeHandleMetrics) -> Div {
+    let cross = metrics.grip_cross_axis_px;
+    let main = metrics.grip_main_axis_px;
+    div()
+        .absolute()
+        .left(px(0.0))
+        .right(px(0.0))
+        .top(px(0.0))
+        .bottom(px(0.0))
+        .when(orientation == ResizablePanelsOrientation::Horizontal, |this| {
+            this.flex().justify_center().items_center()
+        })
+        .when(orientation == ResizablePanelsOrientation::Vertical, |this| {
+            this.flex().flex_col().justify_center().items_center()
+        })
+        .child(
+            div()
+                .rounded(px(8.0))
+                .bg(grip_color)
+                .when(orientation == ResizablePanelsOrientation::Horizontal, |this| this.w(px(cross)).h(px(main)))
+                .when(orientation == ResizablePanelsOrientation::Vertical, |this| this.w(px(main)).h(px(cross))),
+        )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -265,23 +378,26 @@ fn render_handle_interaction_layer(
     index: usize,
     id: gpui::SharedString,
     orientation: ResizablePanelsOrientation,
-    handle_visual_size: Pixels,
-    handle_interaction_size: Pixels,
+    handle_hit: Pixels,
+    split_px: f32,
+    handle_origin_px: f32,
     enabled: bool,
     drag_payload: ResizablePanelsHandleDrag,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
     let hit_id = format!("{id}-handle-hit-{index}");
+    let hit_px = handle_hit.as_f32();
+    let split_local = split_px - handle_origin_px;
+    let hit_inset = split_local - hit_px * 0.5;
 
     if orientation == ResizablePanelsOrientation::Horizontal {
-        let left = (handle_visual_size.as_f32() - handle_interaction_size.as_f32()) * 0.5;
         div()
             .id(hit_id)
             .absolute()
-            .left(px(left))
+            .left(px(hit_inset))
             .top(px(0.0))
             .bottom(px(0.0))
-            .w(handle_interaction_size)
+            .w(handle_hit)
             .when(enabled, |this| this.cursor_col_resize())
             .on_mouse_down(
                 gpui::MouseButton::Left,
@@ -298,14 +414,13 @@ fn render_handle_interaction_layer(
             })
             .into_any_element()
     } else {
-        let top = (handle_visual_size.as_f32() - handle_interaction_size.as_f32()) * 0.5;
         div()
             .id(hit_id)
             .absolute()
-            .top(px(top))
+            .top(px(hit_inset))
             .left(px(0.0))
             .right(px(0.0))
-            .h(handle_interaction_size)
+            .h(handle_hit)
             .when(enabled, |this| this.cursor_row_resize())
             .on_mouse_down(
                 gpui::MouseButton::Left,

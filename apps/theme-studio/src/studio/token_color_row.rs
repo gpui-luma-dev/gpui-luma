@@ -43,12 +43,5 @@ pub(crate) fn token_color_row(
                 .text_color(chrome.muted_text)
                 .child(label),
         )
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .flex_1()
-                .min_w(px(0.0))
-                .child(control),
-        )
+        .child(div().flex().items_center().flex_1().min_w(px(0.0)).child(control))
 }

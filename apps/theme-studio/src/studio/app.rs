@@ -5,7 +5,9 @@ use gpui::{
     Context, Div, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Overflow, Point, Pixels, Render,
     Size, Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::resizable_panels::{ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation};
+use gpui_luma::controls::resizable_panels::{
+    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
+};
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
@@ -67,12 +69,15 @@ impl ThemeStudioApp {
         let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
         let board_host_for_split = board_host.clone();
         let sidebar_entity = theme_sidebar.clone();
+        let chrome = radix_theme.chrome();
+        let sidebar_panel_bg = chrome.panel_background;
+        let content_panel_bg = chrome.app_background;
 
         let main_split = radix_theme
             .resizable_panels("theme-studio-main-split")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .show_handle(true)
-            .handle_size(px(8.0))
+            .resize_handle(ResizeHandleSize::Sm)
             .handle_grip(true)
             .show_border(false)
             .panels([
@@ -86,9 +91,10 @@ impl ThemeStudioApp {
                         .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
                         .into_any_element()
                 })
-                .default_size(28.0)
-                .min_size(18.0)
-                .max_size(45.0),
+                .size(px(280.0))
+                .min(px(200.0))
+                .max(px(400.0))
+                .bg(sidebar_panel_bg),
                 ResizablePanelSpec::new_render(move || {
                     div()
                         .size_full()
@@ -98,9 +104,8 @@ impl ThemeStudioApp {
                         .child(scrollable_panel().items_center().p(px(24.0)).child(board_host_for_split.clone()))
                         .into_any_element()
                 })
-                .default_size(72.0)
-                .min_size(55.0)
-                .max_size(82.0),
+                .weight(1.0)
+                .bg(content_panel_bg),
             ])
             .spawn(cx);
 

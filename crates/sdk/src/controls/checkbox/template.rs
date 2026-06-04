@@ -45,12 +45,8 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
 
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         // Reserve space for the focus ring even when unfocused so layout (e.g. list rows) does not jump.
-        let oversize_extent = adorner_oversize_extent(palette.adorner).max(
-            focused_probe_appearance
-                .as_ref()
-                .map(|probe| adorner_oversize_extent(probe.adorner))
-                .unwrap_or(0.0),
-        );
+        let oversize_extent = adorner_oversize_extent(palette.adorner)
+            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.indicator_radius) {

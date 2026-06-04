@@ -3,7 +3,7 @@ use std::{cell::Cell, rc::Rc, sync::Arc};
 use gpui::{AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::resizable_panels::{
-    ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
+    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
 };
 use gpui_luma::theme::RadixTheme;
 
@@ -75,7 +75,7 @@ impl ResizablePanelsPane {
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .show_handle(true)
-            .handle_size(px(18.0))
+            .resize_handle(ResizeHandleSize::Lg)
             .handle_grip(true)
             .panels([
                 ResizablePanelSpec::new_render(|| demo_label("Sidebar"))
@@ -131,7 +131,7 @@ impl ResizablePanelsPane {
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
             .show_handle(true)
-            .handle_size(px(18.0))
+            .resize_handle(ResizeHandleSize::Lg)
             .handle_grip(true)
             .panels([
                 ResizablePanelSpec::new_render(move || {

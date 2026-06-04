@@ -253,8 +253,10 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
 - `resizable_panels/*`
-  - generic percent-based multi-panel groups (horizontal/vertical, nested via composition) + `ResizablePanelsEvent`
-  - design spec and upgrade plan: `docs/ai/fix-resize-panel.md`
+  - multi-panel groups (horizontal/vertical, nested via composition) with mixed `PanelSize::{Absolute,Weight}` sizing + `ResizablePanelsEvent`
+  - overlay resize handles (no layout width); `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` (lane, grip, hit scale together); `ResizablePanelSpec::bg(Hsla)` supplies panel/handle-half colors
+  - runtime state: `PanelLayoutState` (px for absolute, weight coefficient for fill panes); legacy weight-only specs still supported via deprecated percent APIs
+  - design spec: `docs/ai/fix-resize-panel.md`
 - `slider/*`
   - ranged value control + drag semantics + `SliderEvent`
 - `scrollbar/*`

@@ -203,12 +203,7 @@ where
         width: ListViewColumnWidth,
         cell_template: ListViewColumnCellTemplate<T>,
     ) -> Self {
-        Self {
-            header: header.into(),
-            width,
-            cell_layout: ListViewColumnCellLayout::Text,
-            cell_template,
-        }
+        Self { header: header.into(), width, cell_layout: ListViewColumnCellLayout::Text, cell_template }
     }
 
     pub fn fixed(
@@ -596,12 +591,11 @@ where
     let mut row = div().w_full().flex().items_center();
 
     for column in columns {
-        row =
-            row.child(render_grid_view_header_column_slot(
-                column.width(),
-                column.cell_layout(),
-                column.header().clone().into_any_element(),
-            ));
+        row = row.child(render_grid_view_header_column_slot(
+            column.width(),
+            column.cell_layout(),
+            column.header().clone().into_any_element(),
+        ));
     }
 
     row.into_any_element()
@@ -710,5 +704,13 @@ fn render_grid_view_header_column_slot(
 }
 
 fn grid_view_header_label_slot(content: AnyElement) -> impl IntoElement {
-    div().w_full().min_w(px(0.0)).px(px(12.0)).flex().items_center().justify_center().truncate().child(content)
+    div()
+        .w_full()
+        .min_w(px(0.0))
+        .px(px(12.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .truncate()
+        .child(content)
 }
