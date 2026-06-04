@@ -135,9 +135,19 @@ where
     }
 
     pub fn set_selected_indices(&mut self, selected_indices: impl IntoIterator<Item = usize>, cx: &mut Context<Self>) {
+        let previous = self.model.selected_indices.clone();
         self.model.selected_indices = selected_indices.into_iter().collect();
         normalize_model(&mut self.model);
+        let next = self.model.selected_indices.clone();
+        if next != previous {
+            cx.emit(ListViewEvent::SelectionChanged { selected_indices: next });
+        }
         cx.notify();
+    }
+
+    /// Toggles selection for `index` using the same rules as a row click.
+    pub fn toggle_selected_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+        self.commit_select_index(index, cx)
     }
 
     pub fn set_active_index(&mut self, active_index: Option<usize>, cx: &mut Context<Self>) {
@@ -686,7 +696,9 @@ where
         }
 
         self.set_active_index_internal(Some(index), None, cx);
-        self.commit_select_index(index, cx);
+        if self.model.select_on_row_click {
+            self.commit_select_index(index, cx);
+        }
     }
 
     fn move_active(&mut self, direction: ListDirection, cx: &mut Context<Self>) {
@@ -730,8 +742,10 @@ where
 
     fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
         self.clear_pointer_interaction(cx);
-        if let Some(index) = self.model.active_index {
-            self.commit_select_index(index, cx);
+        if self.model.select_on_row_click {
+            if let Some(index) = self.model.active_index {
+                self.commit_select_index(index, cx);
+            }
         }
     }
 

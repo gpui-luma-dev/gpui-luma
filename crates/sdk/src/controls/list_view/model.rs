@@ -133,6 +133,16 @@ pub enum ListViewColumnWidth {
     Fill,
 }
 
+/// Horizontal padding and overflow behavior for a grid column cell.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ListViewColumnCellLayout {
+    /// Text columns: horizontal inset and ellipsis overflow.
+    #[default]
+    Text,
+    /// Embedded controls (checkbox, icon button): centered, no truncate.
+    Control,
+}
+
 pub type ListViewColumnCellTemplate<T> =
     Arc<dyn for<'a> Fn(&ListViewRowRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
 
@@ -166,6 +176,7 @@ where
 {
     header: SharedString,
     width: ListViewColumnWidth,
+    cell_layout: ListViewColumnCellLayout,
     cell_template: ListViewColumnCellTemplate<T>,
 }
 
@@ -174,7 +185,12 @@ where
     T: 'static,
 {
     fn clone(&self) -> Self {
-        Self { header: self.header.clone(), width: self.width, cell_template: self.cell_template.clone() }
+        Self {
+            header: self.header.clone(),
+            width: self.width,
+            cell_layout: self.cell_layout,
+            cell_template: self.cell_template.clone(),
+        }
     }
 }
 
@@ -187,7 +203,12 @@ where
         width: ListViewColumnWidth,
         cell_template: ListViewColumnCellTemplate<T>,
     ) -> Self {
-        Self { header: header.into(), width, cell_template }
+        Self {
+            header: header.into(),
+            width,
+            cell_layout: ListViewColumnCellLayout::Text,
+            cell_template,
+        }
     }
 
     pub fn fixed(
@@ -195,9 +216,28 @@ where
         width: f32,
         cell_template: impl IntoListViewColumnCellTemplate<T>,
     ) -> Self {
+        Self::fixed_with_layout(header, width, ListViewColumnCellLayout::Text, cell_template)
+    }
+
+    /// Fixed-width column for embedded controls (checkboxes, icon buttons).
+    pub fn fixed_control(
+        header: impl Into<SharedString>,
+        width: f32,
+        cell_template: impl IntoListViewColumnCellTemplate<T>,
+    ) -> Self {
+        Self::fixed_with_layout(header, width, ListViewColumnCellLayout::Control, cell_template)
+    }
+
+    pub fn fixed_with_layout(
+        header: impl Into<SharedString>,
+        width: f32,
+        cell_layout: ListViewColumnCellLayout,
+        cell_template: impl IntoListViewColumnCellTemplate<T>,
+    ) -> Self {
         Self {
             header: header.into(),
             width: ListViewColumnWidth::Fixed(width),
+            cell_layout,
             cell_template: cell_template.into_cell_template(),
         }
     }
@@ -206,8 +246,13 @@ where
         Self {
             header: header.into(),
             width: ListViewColumnWidth::Fill,
+            cell_layout: ListViewColumnCellLayout::Text,
             cell_template: cell_template.into_cell_template(),
         }
+    }
+
+    pub fn cell_layout(&self) -> ListViewColumnCellLayout {
+        self.cell_layout
     }
 
     pub fn header(&self) -> &SharedString {
@@ -233,6 +278,8 @@ where
     pub(crate) selected_indices: Vec<usize>,
     pub(crate) active_index: Option<usize>,
     pub(crate) selection_mode: ListSelectionMode,
+    /// When `false`, row clicks update the active row only; selection changes via [`ListViewControl::set_selected_indices`] / [`ListViewControl::toggle_selected_index`].
+    pub(crate) select_on_row_click: bool,
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
     pub(crate) alignment: ListAlignment,
@@ -296,6 +343,7 @@ where
                 selected_indices: Vec::new(),
                 active_index: None,
                 selection_mode: ListSelectionMode::Single,
+                select_on_row_click: true,
                 enabled: true,
                 size: ControlSize::Md,
                 alignment: ListAlignment::Top,
@@ -342,6 +390,12 @@ where
 
     pub fn no_selection(mut self) -> Self {
         self.model.selection_mode = ListSelectionMode::None;
+        self
+    }
+
+    /// Data-table style: keep [`ListSelectionMode::Multiple`] but toggle selection only from embedded controls (e.g. row checkboxes).
+    pub fn select_on_row_click(mut self, select_on_row_click: bool) -> Self {
+        self.model.select_on_row_click = select_on_row_click;
         self
     }
 
@@ -543,7 +597,11 @@ where
 
     for column in columns {
         row =
-            row.child(render_grid_view_header_column_slot(column.width(), column.header().clone().into_any_element()));
+            row.child(render_grid_view_header_column_slot(
+                column.width(),
+                column.cell_layout(),
+                column.header().clone().into_any_element(),
+            ));
     }
 
     row.into_any_element()
@@ -561,21 +619,46 @@ where
     let mut cells = div().w_full().flex().items_center();
 
     for column in columns {
-        cells = cells.child(render_grid_view_column_slot(column.width(), column.render_cell(model, window, cx)));
+        cells = cells.child(render_grid_view_column_slot(
+            column.width(),
+            column.cell_layout(),
+            column.render_cell(model, window, cx),
+        ));
     }
 
     cells.into_any_element()
 }
 
-fn render_grid_view_column_slot(width: ListViewColumnWidth, content: AnyElement) -> AnyElement {
-    match width {
-        ListViewColumnWidth::Fixed(width) => div()
+fn render_grid_view_column_slot(
+    width: ListViewColumnWidth,
+    cell_layout: ListViewColumnCellLayout,
+    content: AnyElement,
+) -> AnyElement {
+    match (width, cell_layout) {
+        (ListViewColumnWidth::Fixed(width), ListViewColumnCellLayout::Control) => div()
+            .w(px(width))
+            .min_w(px(width))
+            .max_w(px(width))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(content)
+            .into_any_element(),
+        (ListViewColumnWidth::Fixed(width), ListViewColumnCellLayout::Text) => div()
             .w(px(width))
             .min_w(px(width))
             .max_w(px(width))
             .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
             .into_any_element(),
-        ListViewColumnWidth::Fill => div()
+        (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Control) => div()
+            .flex_1()
+            .min_w(px(0.0))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(content)
+            .into_any_element(),
+        (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Text) => div()
             .flex_1()
             .min_w(px(0.0))
             .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
@@ -583,15 +666,36 @@ fn render_grid_view_column_slot(width: ListViewColumnWidth, content: AnyElement)
     }
 }
 
-fn render_grid_view_header_column_slot(width: ListViewColumnWidth, content: AnyElement) -> AnyElement {
-    match width {
-        ListViewColumnWidth::Fixed(width) => div()
+fn render_grid_view_header_column_slot(
+    width: ListViewColumnWidth,
+    cell_layout: ListViewColumnCellLayout,
+    content: AnyElement,
+) -> AnyElement {
+    match (width, cell_layout) {
+        (ListViewColumnWidth::Fixed(width), ListViewColumnCellLayout::Control) => div()
+            .w(px(width))
+            .min_w(px(width))
+            .max_w(px(width))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(content)
+            .into_any_element(),
+        (ListViewColumnWidth::Fixed(width), ListViewColumnCellLayout::Text) => div()
             .w(px(width))
             .min_w(px(width))
             .max_w(px(width))
             .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))
             .into_any_element(),
-        ListViewColumnWidth::Fill => div()
+        (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Control) => div()
+            .flex_1()
+            .min_w(px(0.0))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(content)
+            .into_any_element(),
+        (ListViewColumnWidth::Fill, ListViewColumnCellLayout::Text) => div()
             .flex_1()
             .min_w(px(0.0))
             .child(div().w_full().min_w(px(0.0)).px(px(12.0)).truncate().child(content))

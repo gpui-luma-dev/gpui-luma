@@ -22,7 +22,8 @@ pub use layout::{
 };
 pub use model::{
     IntoListViewColumnCellTemplate, ListScrollMode, ListSelectionMode, ListViewAppearanceOverride, ListViewBuilder,
-    ListViewColumn, ListViewColumnCellTemplate, ListViewColumnWidth, ListViewEnabledFn, ListViewHeaderTemplate,
+    ListViewColumn, ListViewColumnCellLayout, ListViewColumnCellTemplate, ListViewColumnWidth, ListViewEnabledFn,
+    ListViewHeaderTemplate,
     ListViewGridColumnsBuilder, ListViewLabel, ListViewLabelFn, ListViewRenderModel, ListViewRowRenderModel,
     ListViewRowTemplate, make_list_view_header_template, make_list_view_row_template,
 };

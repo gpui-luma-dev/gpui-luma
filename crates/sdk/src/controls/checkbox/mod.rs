@@ -13,8 +13,10 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, SharedString};
 
+use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{Button, ButtonBuilder, ButtonRenderModel, ButtonTemplate};
 use crate::controls::presenter::{ControlPresenter, HasPresenter};
+use crate::theme::ControlSize;
 
 pub type Checkbox = Entity<Button<bool>>;
 
@@ -33,6 +35,15 @@ impl CheckboxBuilder {
 
     pub fn tab_stop(self, tab_stop: bool) -> Self {
         Self(self.0.tab_stop(tab_stop))
+    }
+
+    pub fn size(self, size: ControlSize) -> Self {
+        Self(self.0.size(size))
+    }
+
+    /// Renders only the checkbox indicator (no label slot). Use in tables and list rows.
+    pub fn indicator_only(self) -> Self {
+        Self(self.0.role(ButtonFamilyRole::Icon))
     }
 
     pub fn template(self, template: Arc<dyn ButtonTemplate<bool>>) -> Self {

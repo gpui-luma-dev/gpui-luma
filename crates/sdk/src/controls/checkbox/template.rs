@@ -1,6 +1,7 @@
 use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude::*};
 use lucide_icons::Icon as LucideIcon;
 
+use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::checkbox::{CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;
@@ -42,8 +43,14 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             .rounded(px(scale.indicator_radius))
             .child(render_checkmark(model.data, scale.glyph_size, palette.checkmark_color));
 
-        let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+        let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
+        // Reserve space for the focus ring even when unfocused so layout (e.g. list rows) does not jump.
+        let oversize_extent = adorner_oversize_extent(palette.adorner).max(
+            focused_probe_appearance
+                .as_ref()
+                .map(|probe| adorner_oversize_extent(probe.adorner))
+                .unwrap_or(0.0),
+        );
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.indicator_radius) {
@@ -63,26 +70,31 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             indicator.into_any_element()
         };
 
-        let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
-
         let mut root = div()
             .id(model.id.clone())
             .relative()
             .flex()
             .items_center()
-            .gap(px(scale.gap))
-            .min_h(px(scale.height))
-            .px(px(scale.control_padding_x))
-            .py(px(scale.control_padding_y))
             .text_color(palette.label_color)
             .text_size(px(palette.label_typography.size))
             .line_height(px(palette.label_typography.line_height))
             .font_family(palette.label_font_family.clone())
             .font_weight(palette.label_typography.weight)
             .rounded(px(scale.control_radius))
-            .cursor_pointer()
-            .child(indicator)
-            .child(label);
+            .cursor_pointer();
+
+        if indicator_only {
+            root = root.child(indicator);
+        } else {
+            let label = div().mt(px(scale.label_baseline_shift)).child((model.content)(model, cx));
+            root = root
+                .gap(px(scale.gap))
+                .min_h(px(scale.height))
+                .px(px(scale.control_padding_x))
+                .py(px(scale.control_padding_y))
+                .child(indicator)
+                .child(label);
+        }
 
         if let Some(background) = palette.control_background {
             root = root.bg(background);

@@ -4,7 +4,8 @@ use gpui::{Context, Entity, MouseButton, Render, SharedString, Subscription, Win
 use gpui_luma::column;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
-use gpui_luma::controls::command::button::Button;
+use gpui_luma::controls::checkbox::Checkbox;
+use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{
     ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
@@ -21,6 +22,15 @@ const PAYMENTS_CARD_WIDTH: f32 = 720.0;
 const PAYMENTS_PAGE_SIZE: usize = 6;
 const PAYMENTS_VISIBLE_ROWS: usize = 6;
 
+/// Data-table row height: fits text rows without reserving full [`ControlSize`] command height.
+fn payments_row_height(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 28.0,
+        ControlSize::Md => 32.0,
+        ControlSize::Lg => 36.0,
+    }
+}
+
 #[derive(Clone)]
 struct PaymentRow {
     status: &'static str,
@@ -31,6 +41,7 @@ struct PaymentRow {
 pub struct PaymentsPanel {
     radix_theme: Arc<RadixTheme>,
     list_view: Entity<ListViewControl<PaymentRow>>,
+    row_checkboxes: Arc<Vec<Checkbox>>,
     add_button: Entity<Button>,
     selected_count: usize,
     _subscriptions: Vec<Subscription>,
@@ -38,30 +49,62 @@ pub struct PaymentsPanel {
 
 impl PaymentsPanel {
     pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
+        let row_checkboxes = Arc::new(spawn_row_checkboxes(radix_theme.clone(), sample_payments().len(), cx));
         let list_view = radix_theme
             .list_view("studio-payments")
             .items(sample_payments())
             .multiple()
+            .select_on_row_click(false)
+            .size(size)
             .visible_rows(PAYMENTS_VISIBLE_ROWS)
+            .visible_row_height(payments_row_height(size))
             .paged(PAYMENTS_PAGE_SIZE)
             .row_label(|row| row.email.clone())
-            .grid_view(payment_columns())
+            .grid_view(payment_columns(Arc::clone(&row_checkboxes)))
             .spawn(cx);
 
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&list_view, |panel, _, event, cx| {
-            if let ListViewEvent::SelectionChanged { selected_indices } = event {
-                panel.selected_count = selected_indices.len();
+            if let ListViewEvent::SelectionChanged { .. } = event {
+                panel.selected_count = panel.list_view.read(cx).selected_indices().len();
+                panel.sync_checkboxes_from_list(cx);
                 cx.notify();
             }
         }));
 
+        for (index, checkbox) in row_checkboxes.iter().enumerate() {
+            subscriptions.push(cx.subscribe(checkbox, move |panel, _, event, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    panel.toggle_row_selection(index, cx);
+                }
+            }));
+        }
+
         Self {
             add_button: radix_theme.primary_button("payments-add").label("Add Payment").size(size).spawn(cx),
             list_view,
+            row_checkboxes,
             radix_theme,
             selected_count: 0,
             _subscriptions: subscriptions,
+        }
+    }
+
+    fn toggle_row_selection(&mut self, index: usize, cx: &mut Context<Self>) {
+        self.list_view.update(cx, |list, cx| {
+            list.toggle_selected_index(index, cx);
+        });
+    }
+
+    fn sync_checkboxes_from_list(&self, cx: &mut Context<Self>) {
+        let selected: Vec<_> = self.list_view.read(cx).selected_indices().to_vec();
+        for (index, checkbox) in self.row_checkboxes.iter().enumerate() {
+            let checked = selected.contains(&index);
+            checkbox.update(cx, |button, cx| {
+                if *button.data() != checked {
+                    button.set_data(checked, cx);
+                }
+            });
         }
     }
 }
@@ -115,6 +158,24 @@ impl Render for PaymentsPanel {
     }
 }
 
+fn spawn_row_checkboxes(
+    radix_theme: Arc<RadixTheme>,
+    row_count: usize,
+    cx: &mut Context<PaymentsPanel>,
+) -> Vec<Checkbox> {
+    (0..row_count)
+        .map(|index| {
+            radix_theme
+                .primary_checkbox(format!("studio-payments-row-{index}"))
+                .with_data(false)
+                .size(ControlSize::Sm)
+                .indicator_only()
+                .tab_stop(false)
+                .spawn(cx)
+        })
+        .collect()
+}
+
 fn pagination_button(
     cx: &mut Context<PaymentsPanel>,
     id: &'static str,
@@ -139,9 +200,9 @@ fn pagination_button(
         })
 }
 
-fn payment_columns() -> Vec<ListViewColumn<PaymentRow>> {
+fn payment_columns(row_checkboxes: Arc<Vec<Checkbox>>) -> Vec<ListViewColumn<PaymentRow>> {
     vec![
-        ListViewColumn::fixed("", 36.0, selection_checkbox_column()),
+        ListViewColumn::fixed_control("", 48.0, selection_checkbox_column(row_checkboxes)),
         column_text!("Status", width = 108 => |row: &PaymentRow| row.status),
         column_text!("Email" => |row: &PaymentRow| row.email.clone()),
         column_numeric!("Amount", width = 96 => |row: &PaymentRow| row.amount.clone()),
@@ -156,28 +217,10 @@ fn payment_columns() -> Vec<ListViewColumn<PaymentRow>> {
     ]
 }
 
-fn selection_checkbox_column() -> ListViewColumnCellTemplate<PaymentRow> {
-    Arc::new(|model: &ListViewRowRenderModel<'_, PaymentRow>, _, _| {
-        selection_checkbox(model.selected).into_any_element()
+fn selection_checkbox_column(row_checkboxes: Arc<Vec<Checkbox>>) -> ListViewColumnCellTemplate<PaymentRow> {
+    Arc::new(move |model: &ListViewRowRenderModel<'_, PaymentRow>, _, _| {
+        row_checkboxes[model.index].clone().into_any_element()
     })
-}
-
-fn selection_checkbox(selected: bool) -> impl IntoElement {
-    div()
-        .size(px(16.0))
-        .rounded(px(4.0))
-        .border_1()
-        .border_color(gpui::hsla(0.0, 0.0, 1.0, 0.25))
-        .flex()
-        .items_center()
-        .justify_center()
-        .when(selected, |slot| {
-            slot.bg(gpui::hsla(0.55, 0.45, 0.45, 1.0))
-                .border_color(gpui::hsla(0.55, 0.45, 0.45, 1.0))
-                .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
-                .text_size(px(10.0))
-                .child("✓")
-        })
 }
 
 fn sample_payments() -> Vec<PaymentRow> {
