@@ -124,6 +124,17 @@ fn ghost_role(catalog: &CssTokenMap) -> Result<ShadcnActionRole> {
     })
 }
 
+impl ShadcnPalette {
+    pub fn action(&self, style: crate::controls::ShadcnButtonStyle) -> ShadcnActionRole {
+        match style {
+            crate::controls::ShadcnButtonStyle::Primary => self.primary,
+            crate::controls::ShadcnButtonStyle::Secondary => self.secondary,
+            crate::controls::ShadcnButtonStyle::Outline => self.outline,
+            crate::controls::ShadcnButtonStyle::Ghost => self.ghost,
+        }
+    }
+}
+
 fn action_role_from(role: &ActionRolePalette) -> ShadcnActionRole {
     ShadcnActionRole {
         background: role.background,

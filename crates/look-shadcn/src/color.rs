@@ -11,6 +11,10 @@ pub(crate) fn darken(color: Hsla, delta: f32) -> Hsla {
     hsla(color.h, color.s, (color.l - delta).max(0.0), color.a)
 }
 
+pub(crate) fn with_alpha(color: Hsla, alpha: f32) -> Hsla {
+    Hsla { a: alpha, ..color }
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ParsedColor {
     hue: f32,

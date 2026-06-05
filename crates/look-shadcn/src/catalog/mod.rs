@@ -1,3 +1,4 @@
+mod metrics;
 mod parse;
 
 use std::collections::BTreeMap;
@@ -56,3 +57,5 @@ impl CssTokenCatalog {
         CssTokenMap::from_map(self.dark.clone())
     }
 }
+
+pub(crate) use metrics::{metrics_from_catalog, typography_from_catalog};

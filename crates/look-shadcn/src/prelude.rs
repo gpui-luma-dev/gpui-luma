@@ -1,8 +1,9 @@
-//! Convenient imports for shadcn look styling.
+//! Convenient imports for shadcn look styling and control construction.
 //!
 //! ```ignore
 //! use gpui_luma_look_shadcn::prelude::*;
 //!
+//! let submit = look.primary_button("submit").label("Submit").spawn(cx);
 //! with_look(&look, || {
 //!     div()
 //!         .bg_cn(ShadcnToken::Background)
@@ -11,6 +12,10 @@
 //! ```
 
 pub use crate::context::with_look;
+pub use crate::controls::{
+    ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
+};
 pub use crate::ext::ShadcnElementExt;
 pub use crate::look::ShadcnLook;
 pub use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
+pub use crate::controls::ShadcnButtonStyle;
