@@ -107,8 +107,6 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
 
         if model.show_handle {
             for (index, &split_px) in split_positions.iter().enumerate() {
-                let left_panel = &model.panels[index];
-                let right_panel = &model.panels[index + 1];
                 track = track.child(render_overlay_handle(
                     index,
                     model,
@@ -116,8 +114,6 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
                     &handle_focuses[index],
                     &handle_metrics,
                     split_px,
-                    panel_background(left_panel, appearance),
-                    panel_background(right_panel, appearance),
                     cx,
                 ));
             }
@@ -130,8 +126,6 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
                     &handle_focuses[index],
                     &handle_metrics,
                     split_px,
-                    panel_background(&model.panels[index], appearance),
-                    panel_background(&model.panels[index + 1], appearance),
                     cx,
                 ));
             }
@@ -140,10 +134,6 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         let _panel_count = panel_count;
         root.child(track)
     }
-}
-
-fn panel_background(panel: &ResizablePanelSpec, appearance: &ResizablePanelsAppearance) -> Hsla {
-    panel.background.unwrap_or(appearance.border)
 }
 
 fn render_panel(
@@ -172,8 +162,6 @@ fn render_overlay_handle(
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
-    left_background: Hsla,
-    right_background: Hsla,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
     let enabled = model.enabled;
@@ -181,7 +169,6 @@ fn render_overlay_handle(
     let handle_id = format!("{}-handle-{index}", model.id);
     let lane_px = handle_metrics.lane_px.max(1.0);
     let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, lane_px);
-    let half_lane = lane_px * 0.5;
 
     let mut handle = div()
         .id(handle_id)
@@ -226,12 +213,8 @@ fn render_overlay_handle(
         appearance.grip
     };
 
-    let (left_half, right_half, divider, grip) = match orientation {
+    let (divider, grip) = match orientation {
         ResizablePanelsOrientation::Horizontal => {
-            let left_half =
-                div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(left_background);
-            let right_half =
-                div().absolute().right(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(right_background);
             let divider = div()
                 .absolute()
                 .left(px(divider_local_px))
@@ -240,13 +223,9 @@ fn render_overlay_handle(
                 .w(px(1.0))
                 .bg(appearance.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
-            (left_half, right_half, divider, grip)
+            (divider, grip)
         }
         ResizablePanelsOrientation::Vertical => {
-            let left_half =
-                div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(left_background);
-            let right_half =
-                div().absolute().bottom(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(right_background);
             let divider = div()
                 .absolute()
                 .top(px(divider_local_px))
@@ -255,17 +234,11 @@ fn render_overlay_handle(
                 .h(px(1.0))
                 .bg(appearance.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
-            (left_half, right_half, divider, grip)
+            (divider, grip)
         }
     };
 
-    handle
-        .child(left_half)
-        .child(right_half)
-        .child(divider)
-        .child(grip)
-        .child(interaction_layer)
-        .into_any_element()
+    handle.child(divider).child(grip).child(interaction_layer).into_any_element()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -276,15 +249,12 @@ fn render_overlay_handle_hidden(
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
-    left_background: Hsla,
-    right_background: Hsla,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
     let enabled = model.enabled;
     let orientation = model.orientation;
     let handle_id = format!("{}-handle-{index}", model.id);
     let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, 1.0);
-    let half_lane = lane_px * 0.5;
 
     let mut handle = div()
         .id(handle_id)
@@ -321,32 +291,24 @@ fn render_overlay_handle_hidden(
         cx,
     );
 
-    let (left_half, right_half, divider) = match orientation {
-        ResizablePanelsOrientation::Horizontal => (
-            div().absolute().left(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(left_background),
-            div().absolute().right(px(0.0)).top(px(0.0)).bottom(px(0.0)).w(px(half_lane)).bg(right_background),
-            div()
-                .absolute()
-                .left(px(divider_local_px))
-                .top(px(0.0))
-                .bottom(px(0.0))
-                .w(px(1.0))
-                .bg(appearance.divider),
-        ),
-        ResizablePanelsOrientation::Vertical => (
-            div().absolute().top(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(left_background),
-            div().absolute().bottom(px(0.0)).left(px(0.0)).right(px(0.0)).h(px(half_lane)).bg(right_background),
-            div()
-                .absolute()
-                .top(px(divider_local_px))
-                .left(px(0.0))
-                .right(px(0.0))
-                .h(px(1.0))
-                .bg(appearance.divider),
-        ),
+    let divider = match orientation {
+        ResizablePanelsOrientation::Horizontal => div()
+            .absolute()
+            .left(px(divider_local_px))
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .w(px(1.0))
+            .bg(appearance.divider),
+        ResizablePanelsOrientation::Vertical => div()
+            .absolute()
+            .top(px(divider_local_px))
+            .left(px(0.0))
+            .right(px(0.0))
+            .h(px(1.0))
+            .bg(appearance.divider),
     };
 
-    handle.child(left_half).child(right_half).child(divider).child(interaction_layer).into_any_element()
+    handle.child(divider).child(interaction_layer).into_any_element()
 }
 
 fn render_handle_grip(orientation: ResizablePanelsOrientation, grip_color: Hsla, metrics: &ResizeHandleMetrics) -> Div {

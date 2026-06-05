@@ -73,10 +73,6 @@ impl ThemeStudioApp {
         let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
         let board_host_for_split = board_host.clone();
         let sidebar_entity = theme_sidebar.clone();
-        let chrome = radix_theme.chrome();
-        let sidebar_panel_bg = radix_theme.navigation_sidebar_theme().resolve_container().background;
-        let content_panel_bg = radix_theme.token_color("background").unwrap_or(chrome.content_background);
-
         let main_split = resizable_panels! {
             cx,
             radix = radix_theme,
@@ -96,7 +92,7 @@ impl ThemeStudioApp {
                         .overflow_hidden()
                         .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
                         .into_any_element()
-                } => px(280.0), min: px(260.0), max: px(400.0), bg: sidebar_panel_bg;
+                } => px(280.0), min: px(260.0), max: px(400.0);
                 |
                 move || {
                     div()
@@ -106,7 +102,7 @@ impl ThemeStudioApp {
                         .flex_col()
                         .child(scrollable_panel().child(board_host_for_split.clone()))
                         .into_any_element()
-                } => weight(1.0), bg: content_panel_bg;
+                } => weight(1.0);
             ]
         };
 
@@ -167,6 +163,12 @@ impl ThemeStudioApp {
         base.set_mode(self.radix_theme.mode());
         self.radix_theme = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
         self.refresh_demos(cx);
+        self.sync_main_split_theme(cx);
+    }
+
+    fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
+        let theme = self.radix_theme.resizable_panels_theme();
+        self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
     }
 
     fn refresh_demos(&mut self, cx: &mut Context<Self>) {
@@ -374,6 +376,7 @@ impl Render for ThemeStudioApp {
                                 this.theme_sidebar.update(cx, |sidebar, cx| {
                                     sidebar.sync_control_templates(&theme, cx);
                                 });
+                                this.sync_main_split_theme(cx);
                                 cx.notify();
                             }))
                             .child(char::from(toggle_icon).to_string()),

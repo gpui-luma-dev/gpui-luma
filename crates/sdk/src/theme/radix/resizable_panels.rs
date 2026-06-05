@@ -17,9 +17,10 @@ use super::mode::RadixModeTokens;
 
 pub(crate) fn resizable_panels_appearance(
     mode: &RadixModeTokens,
+    theme_mode: ThemeMode,
     state: InteractionState,
 ) -> ResizablePanelsAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
         resizable_panels_from_palette(&ctx)
     } else {

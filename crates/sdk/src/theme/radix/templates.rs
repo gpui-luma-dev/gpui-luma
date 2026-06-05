@@ -194,7 +194,7 @@ struct RadixResizablePanelsTheme {
 
 impl ResizablePanelsTheme for RadixResizablePanelsTheme {
     fn resolve(&self, state: InteractionState) -> crate::controls::resizable_panels::ResizablePanelsAppearance {
-        resizable_panels_appearance(self.theme.mode_tokens(), state)
+        resizable_panels_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
     }
 }
 
