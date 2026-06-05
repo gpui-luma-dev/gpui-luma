@@ -35,6 +35,8 @@ pub struct ThemeStudioApp {
     pub(super) control_size: ControlSize,
     pub(super) demos: DemoControls,
     pub(super) panel_positions: HashMap<InspectableId, Point<Pixels>>,
+    pub(super) panel_z_order: HashMap<InspectableId, u32>,
+    next_panel_z: u32,
     panel_drag: Option<PanelDragState>,
     pub(super) selected: Option<InspectableId>,
     pub(super) overrides: StudioOverrides,
@@ -62,6 +64,9 @@ impl ThemeStudioApp {
 
         let overrides = StudioOverrides::default();
         let panel_positions = load_panel_positions();
+        let panel_z_order: HashMap<InspectableId, u32> =
+            InspectableId::all().iter().enumerate().map(|(index, &id)| (id, index as u32)).collect();
+        let next_panel_z = InspectableId::all().len() as u32;
         let theme_sidebar =
             cx.new(|cx| ThemeSidebar::new(app.clone(), radix_theme.clone(), active_theme_id.clone(), &overrides, cx));
 
@@ -99,12 +104,7 @@ impl ThemeStudioApp {
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .child(
-                            scrollable_panel()
-                                .items_center()
-                                .p(px(24.0))
-                                .child(board_host_for_split.clone()),
-                        )
+                        .child(scrollable_panel().child(board_host_for_split.clone()))
                         .into_any_element()
                 } => weight(1.0), bg: content_panel_bg;
             ]
@@ -125,6 +125,8 @@ impl ThemeStudioApp {
             control_size,
             demos,
             panel_positions,
+            panel_z_order,
+            next_panel_z,
             panel_drag: None,
             selected: None,
             overrides,
@@ -221,9 +223,20 @@ impl ThemeStudioApp {
         self.panel_positions.get(&id).copied().unwrap_or_else(|| default_panel_position(id))
     }
 
-    pub fn begin_panel_drag(&mut self, id: InspectableId, event: &MouseDownEvent, _cx: &mut Context<Self>) {
+    pub fn begin_panel_drag(&mut self, id: InspectableId, event: &MouseDownEvent, cx: &mut Context<Self>) {
+        if self.selected != Some(id) {
+            self.selected = Some(id);
+        }
+        self.bring_panel_to_front(id);
         self.panel_drag =
             Some(PanelDragState { id, mouse_origin: event.position, panel_origin: self.panel_position(id) });
+        cx.notify();
+    }
+
+    fn bring_panel_to_front(&mut self, id: InspectableId) {
+        let z = self.next_panel_z;
+        self.next_panel_z += 1;
+        self.panel_z_order.insert(id, z);
     }
 
     pub fn handle_panel_drag_move(

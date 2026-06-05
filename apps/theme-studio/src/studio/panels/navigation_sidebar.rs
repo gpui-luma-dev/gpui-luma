@@ -6,7 +6,10 @@ use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::theme::radix::prelude::*;
 use gpui_luma::theme::RadixTheme;
+use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
+
+use super::common::{card, card_header};
 
 const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";
 const SIDEBAR_HEIGHT_PX: f32 = 500.0;
@@ -120,16 +123,28 @@ impl Render for NavigationSidebarPanel {
         } else {
             SIDEBAR_WIDTH_EXPANDED_PX
         };
-        div()
-            .flex_none()
-            .w(px(sidebar_width))
-            .h(px(SIDEBAR_HEIGHT_PX))
-            .overflow_hidden()
-            .rounded_b(px(8.0))
-            .border_1()
-            .border_t_0()
-            .border_color(chrome.border)
-            .child(self.sidebar.clone())
+        card(
+            sidebar_width,
+            chrome.border,
+            chrome.panel_background,
+            vstack! {
+                gap=12;
+                card_header(
+                    "Navigation Sidebar",
+                    "Properties panel for inspecting components.",
+                    chrome.title_text,
+                    chrome.muted_text,
+                ),
+                div()
+                    .w_full()
+                    .h(px(SIDEBAR_HEIGHT_PX))
+                    .rounded(px(8.0))
+                    .border_1()
+                    .border_color(chrome.border)
+                    .overflow_hidden()
+                    .child(self.sidebar.clone()),
+            },
+        )
     }
 }
 

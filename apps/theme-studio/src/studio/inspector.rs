@@ -5,7 +5,7 @@ use gpui_luma::theme::LumaChrome;
 use super::app::ThemeStudioApp;
 use super::export::{catalog_color_for_token, export_stylesheet, token_css_name};
 use super::inspectable::{InspectableId, parts_for};
-use super::panels::format_hsla;
+use super::panels::{format_hsla, panel_box_shadow};
 
 pub fn render_inspector(
     this: &ThemeStudioApp,
@@ -47,12 +47,7 @@ fn inspector_panel(chrome: LumaChrome) -> Div {
         .border_1()
         .border_color(chrome.border)
         .bg(chrome.panel_background)
-        .shadow(vec![gpui::BoxShadow {
-            color: hsla(0.0, 0.0, 0.0, 0.35),
-            offset: gpui::point(px(0.0), px(8.0)),
-            blur_radius: px(24.0),
-            spread_radius: px(0.0),
-        }])
+        .shadow(panel_box_shadow())
 }
 
 fn header_row(title: &str, chrome: LumaChrome, cx: &mut Context<ThemeStudioApp>) -> impl IntoElement {

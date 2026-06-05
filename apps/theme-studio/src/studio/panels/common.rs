@@ -1,5 +1,4 @@
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::LumaChrome;
 use gpui_luma::hstack;
 
 pub fn format_hex_color(color: Hsla) -> String {
@@ -89,19 +88,13 @@ fn compact_alpha(alpha: f32) -> String {
     }
 }
 
-pub fn panel_drag_handle(chrome: LumaChrome) -> gpui::Div {
-    div()
-        .w_full()
-        .h(px(22.0))
-        .flex()
-        .items_center()
-        .justify_center()
-        .rounded_t(px(10.0))
-        .bg(gpui::hsla(0.0, 0.0, 1.0, 0.05))
-        .text_size(px(11.0))
-        .text_color(chrome.muted_text)
-        .cursor_pointer()
-        .child("⋮⋮")
+pub fn panel_box_shadow() -> Vec<gpui::BoxShadow> {
+    vec![gpui::BoxShadow {
+        color: gpui::hsla(0.0, 0.0, 0.0, 0.35),
+        offset: gpui::point(px(0.0), px(8.0)),
+        blur_radius: px(24.0),
+        spread_radius: px(0.0),
+    }]
 }
 
 pub fn card(width: f32, border: Hsla, background: Hsla, content: impl IntoElement) -> gpui::Div {
@@ -110,10 +103,10 @@ pub fn card(width: f32, border: Hsla, background: Hsla, content: impl IntoElemen
         .max_w_full()
         .overflow_hidden()
         .border_1()
-        .border_t_0()
         .border_color(border)
-        .rounded_b(px(12.0))
+        .rounded(px(12.0))
         .bg(background)
+        .shadow(panel_box_shadow())
         .p(px(16.0))
         .child(content)
 }

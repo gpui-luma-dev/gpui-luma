@@ -1,8 +1,8 @@
-use gpui::{Context, DragMoveEvent, Entity, MouseDownEvent, MouseUpEvent, Render, Window};
+use gpui::{Context, DragMoveEvent, Entity, MouseDownEvent, MouseUpEvent, Render, Window, div, prelude::*, px};
 
 use super::app::ThemeStudioApp;
 use super::inspectable::InspectableId;
-use super::panel_layout::DemoPanelDrag;
+use super::panel_layout::{DemoPanelDrag, PANEL_BOARD_MIN_HEIGHT_PX};
 use super::panels::render_demo_board;
 
 pub struct StudioBoardHost {
@@ -39,6 +39,21 @@ impl StudioBoardHost {
 impl Render for StudioBoardHost {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let app = self.app.read(cx);
-        render_demo_board(app.selected, app.panel_positions.clone(), app.demos.clone(), app.radix_theme.chrome(), cx)
+        let chrome = app.radix_theme.chrome();
+        let board_bg = app.radix_theme.token_color("background").unwrap_or(chrome.app_background);
+
+        div()
+            .size_full()
+            .min_h(px(PANEL_BOARD_MIN_HEIGHT_PX))
+            .bg(board_bg)
+            .p(px(24.0))
+            .child(render_demo_board(
+                app.selected,
+                app.panel_positions.clone(),
+                app.panel_z_order.clone(),
+                app.demos.clone(),
+                chrome,
+                cx,
+            ))
     }
 }
