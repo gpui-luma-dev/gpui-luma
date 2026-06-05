@@ -4,12 +4,9 @@ use gpui::{
 };
 
 use super::{
-    math::{
-        all_panels_use_weight, apply_pair_delta, apply_pair_delta_px, content_axis_size,
-        layout_states_to_legacy_percents, normalize_weights, solve_layout_px, PanelSizeBounds,
-    },
+    math::{apply_pair_delta_px, content_axis_size, solve_layout_px},
     model::{
-        PanelLayoutState, ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation,
+        PanelLayoutState, PanelSize, ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation,
         ResizablePanelsRenderModel,
     },
 };
@@ -30,13 +27,8 @@ impl Render for ResizablePanelsHandleDrag {
 #[derive(Clone, Debug)]
 pub enum ResizablePanelsEvent {
     ResizeStart,
-    /// Legacy percent-of-content values (100 total for weight-only strips).
-    SizesChanged {
-        sizes: Vec<f32>,
-    },
-    ResizeEnd {
-        sizes: Vec<f32>,
-    },
+    SizesChanged { sizes_px: Vec<f32> },
+    ResizeEnd { sizes_px: Vec<f32> },
 }
 
 pub struct ResizablePanels {
@@ -47,6 +39,8 @@ pub struct ResizablePanels {
     dragging_handle: Option<usize>,
     drag_start_axis_px: f32,
     drag_start_states: Vec<PanelLayoutState>,
+    /// Content-axis size at drag start; stabilizes weight panes during handle moves.
+    drag_content_axis_px: Option<f32>,
     measured_size: Option<gpui::Size<Pixels>>,
 }
 
@@ -67,26 +61,14 @@ impl ResizablePanels {
     }
 
     pub(crate) fn from_builder(builder: ResizablePanelsBuilder, cx: &mut Context<Self>) -> Self {
-        let mut layout_states: Vec<PanelLayoutState> =
+        let layout_states: Vec<PanelLayoutState> =
             builder.model.panels.iter().map(PanelLayoutState::from_spec).collect();
 
-        if all_panels_use_weight(&builder.model.panels) {
-            let mut weights: Vec<f32> = layout_states
-                .iter()
-                .map(|state| match state {
-                    PanelLayoutState::Weight(weight) => *weight,
-                    PanelLayoutState::Absolute(px) => *px,
-                })
-                .collect();
-            normalize_weights(&mut weights);
-            for (state, weight) in layout_states.iter_mut().zip(weights) {
-                *state = PanelLayoutState::Weight(weight);
-            }
-        }
-
-        if layout_states.len() != builder.model.panels.len() {
-            layout_states = vec![PanelLayoutState::Weight(100.0)];
-        }
+        let layout_states = if layout_states.len() == builder.model.panels.len() {
+            layout_states
+        } else {
+            vec![PanelLayoutState::Weight(1.0)]
+        };
 
         let handle_focuses = (0..builder.model.panels.len().saturating_sub(1)).map(|_| cx.focus_handle()).collect();
 
@@ -100,11 +82,23 @@ impl ResizablePanels {
             dragging_handle: None,
             drag_start_axis_px: 0.0,
             drag_start_states: Vec::new(),
+            drag_content_axis_px: None,
             measured_size: None,
         }
     }
 
+    /// True when the main layout axis uses an explicit frame size instead of prepaint measurement.
+    fn main_axis_frame_pinned(&self) -> bool {
+        match self.model.orientation {
+            ResizablePanelsOrientation::Horizontal => self.model.frame_width.is_some(),
+            ResizablePanelsOrientation::Vertical => self.model.frame_height.is_some(),
+        }
+    }
+
     pub fn set_measured_size(&mut self, size: gpui::Size<Pixels>, cx: &mut Context<Self>) {
+        if self.main_axis_frame_pinned() {
+            return;
+        }
         if self.measured_size == Some(size) {
             return;
         }
@@ -119,6 +113,7 @@ impl ResizablePanels {
         self.model.enabled = enabled;
         if !enabled {
             self.dragging_handle = None;
+            self.drag_content_axis_px = None;
         }
         cx.notify();
     }
@@ -139,12 +134,6 @@ impl ResizablePanels {
         cx.notify();
     }
 
-    /// Legacy API; maps the pixel width to the nearest [`ResizeHandleSize`] preset.
-    #[deprecated(note = "use set_resize_handle(ResizeHandleSize::Sm | Md | Lg)")]
-    pub fn set_handle_size(&mut self, lane_width: Pixels, cx: &mut Context<Self>) {
-        self.set_resize_handle(super::model::ResizeHandleSize::from_lane_px(lane_width.as_f32()), cx);
-    }
-
     pub fn set_frame_size(&mut self, width: Pixels, height: Pixels, cx: &mut Context<Self>) {
         if self.model.frame_width == Some(width) && self.model.frame_height == Some(height) {
             return;
@@ -154,35 +143,35 @@ impl ResizablePanels {
         cx.notify();
     }
 
-    /// Updates layout state. For weight-only strips, values are normalized weight percents (legacy).
-    pub fn set_sizes(&mut self, mut sizes: Vec<f32>, cx: &mut Context<Self>) {
-        if sizes.len() != self.model.panels.len() || sizes.is_empty() {
+    /// Sets weight coefficients for weight-only panel strips.
+    pub fn set_weights(&mut self, weights: Vec<f32>, cx: &mut Context<Self>) {
+        if weights.len() != self.model.panels.len() || weights.is_empty() {
+            return;
+        }
+        if !self.model.panels.iter().all(|spec| matches!(spec.size, PanelSize::Weight(_))) {
             return;
         }
 
-        if all_panels_use_weight(&self.model.panels) {
-            normalize_weights(&mut sizes);
-            let changed = self.layout_states.iter().zip(sizes.iter()).any(|(current, next)| match current {
-                PanelLayoutState::Weight(weight) => (weight - next).abs() >= f32::EPSILON,
-                PanelLayoutState::Absolute(px) => (px - next).abs() >= f32::EPSILON,
-            });
-            if !changed {
-                return;
-            }
-            for (state, weight) in self.layout_states.iter_mut().zip(sizes.iter()) {
-                *state = PanelLayoutState::Weight(*weight);
-            }
-        } else {
+        let changed = self.layout_states.iter().zip(weights.iter()).any(|(current, next)| match current {
+            PanelLayoutState::Weight(weight) => (weight - next).abs() >= f32::EPSILON,
+            PanelLayoutState::Absolute(px) => (px - next).abs() >= f32::EPSILON,
+        });
+        if !changed {
             return;
         }
 
-        cx.emit(ResizablePanelsEvent::SizesChanged { sizes });
+        for (state, weight) in self.layout_states.iter_mut().zip(weights.iter()) {
+            *state = PanelLayoutState::Weight(weight.max(0.0));
+        }
+
+        self.refresh_panel_sizes_px();
+        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: self.panel_sizes_px.clone() });
         cx.notify();
     }
 
-    /// Legacy percent-of-content snapshot (100 total for weight-only strips).
-    pub fn sizes(&self) -> Vec<f32> {
-        self.legacy_sizes()
+    /// Main-axis pixel size of each panel after the current layout solve.
+    pub fn panel_sizes_px(&self) -> Vec<f32> {
+        self.panel_sizes_px.clone()
     }
 
     pub fn layout_states(&self) -> Vec<PanelLayoutState> {
@@ -226,8 +215,8 @@ impl ResizablePanels {
         content_axis_size(self.main_axis_px(), 0.0, panel_count)
     }
 
-    fn legacy_sizes(&self) -> Vec<f32> {
-        layout_states_to_legacy_percents(&self.model.panels, &self.layout_states, self.content_axis_size_px())
+    fn drag_content_axis_size_px(&self) -> f32 {
+        self.drag_content_axis_px.unwrap_or_else(|| self.content_axis_size_px())
     }
 
     fn apply_pair_delta(&mut self, index: usize, delta_px: f32) -> bool {
@@ -235,50 +224,15 @@ impl ResizablePanels {
             return false;
         }
 
-        if all_panels_use_weight(&self.model.panels) {
-            let mut legacy: Vec<f32> = self
-                .layout_states
-                .iter()
-                .map(|state| match state {
-                    PanelLayoutState::Weight(weight) => *weight,
-                    PanelLayoutState::Absolute(px) => *px,
-                })
-                .collect();
-            let delta_percent = (delta_px / self.content_axis_size_px()) * 100.0;
-            let left = PanelSizeBounds {
-                min_size: self.model.panels[index].min_size,
-                max_size: self.model.panels[index].max_size,
-            };
-            let right = PanelSizeBounds {
-                min_size: self.model.panels[index + 1].min_size,
-                max_size: self.model.panels[index + 1].max_size,
-            };
-            if !apply_pair_delta(&mut legacy, index, delta_percent, left, right) {
-                return false;
-            }
-            for (state, weight) in self.layout_states.iter_mut().zip(legacy.iter()) {
-                *state = PanelLayoutState::Weight(*weight);
-            }
-            return true;
-        }
-
-        let content_main_px = self.content_axis_size_px();
+        let content_main_px = self.drag_content_axis_size_px();
         apply_pair_delta_px(&self.model.panels, &mut self.layout_states, index, delta_px, content_main_px)
-    }
-
-    fn keyboard_delta_px(&self, signed_step_px: f32) -> f32 {
-        if all_panels_use_weight(&self.model.panels) {
-            (signed_step_px / 100.0) * self.content_axis_size_px()
-        } else {
-            signed_step_px
-        }
     }
 
     fn emit_sizes_changed_if_needed(&mut self, changed: bool, cx: &mut Context<Self>) {
         if !changed {
             return;
         }
-        cx.emit(ResizablePanelsEvent::SizesChanged { sizes: self.legacy_sizes() });
+        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: self.panel_sizes_px.clone() });
         cx.notify();
     }
 
@@ -297,6 +251,7 @@ impl ResizablePanels {
         self.dragging_handle = Some(index);
         self.drag_start_axis_px = self.axis_position(event.position);
         self.drag_start_states = self.layout_states.clone();
+        self.drag_content_axis_px = Some(self.content_axis_size_px());
         cx.emit(ResizablePanelsEvent::ResizeStart);
         cx.notify();
     }
@@ -338,7 +293,8 @@ impl ResizablePanels {
         if self.dragging_handle.take().is_none() {
             return;
         }
-        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes: self.legacy_sizes() });
+        self.drag_content_axis_px = None;
+        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px: self.panel_sizes_px.clone() });
         cx.notify();
     }
 
@@ -359,7 +315,7 @@ impl ResizablePanels {
             self.model.keyboard_step
         };
 
-        let delta = match (self.model.orientation, event.keystroke.key.as_str()) {
+        let delta_px = match (self.model.orientation, event.keystroke.key.as_str()) {
             (ResizablePanelsOrientation::Horizontal, "left") => -step_px,
             (ResizablePanelsOrientation::Horizontal, "right") => step_px,
             (ResizablePanelsOrientation::Vertical, "up") => -step_px,
@@ -368,12 +324,11 @@ impl ResizablePanels {
         };
 
         self.handle_focuses[index].focus(window, cx);
-        let delta_px = self.keyboard_delta_px(delta);
         if self.apply_pair_delta(index, delta_px) {
             self.refresh_panel_sizes_px();
-            let sizes = self.legacy_sizes();
-            cx.emit(ResizablePanelsEvent::SizesChanged { sizes: sizes.clone() });
-            cx.emit(ResizablePanelsEvent::ResizeEnd { sizes });
+            let sizes_px = self.panel_sizes_px.clone();
+            cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+            cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
             window.prevent_default();
             cx.stop_propagation();
             cx.notify();

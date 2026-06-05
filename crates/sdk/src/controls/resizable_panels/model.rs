@@ -64,7 +64,7 @@ impl ResizeHandleSize {
         px(self.metrics().lane_px)
     }
 
-    /// Maps a legacy pixel width to the nearest preset.
+    /// Maps a pixel lane width to the nearest preset.
     pub fn from_lane_px(lane_px: f32) -> Self {
         if lane_px >= 16.0 {
             Self::Lg
@@ -109,10 +109,6 @@ impl PanelLayoutState {
 #[derive(Clone)]
 pub struct ResizablePanelSpec {
     pub size: PanelSize,
-    /// Legacy percent min (0–100) when [`min_px`] is unset on weight panes.
-    pub min_size: f32,
-    /// Legacy percent max (0–100) when [`max_px`] is unset on weight panes.
-    pub max_size: f32,
     pub min_px: Option<f32>,
     pub max_px: Option<f32>,
     /// Panel background used by the shell and the overlay handle halves on this edge.
@@ -127,9 +123,7 @@ impl ResizablePanelSpec {
         F: Fn() -> E + 'static,
     {
         Self {
-            size: PanelSize::Weight(50.0),
-            min_size: 10.0,
-            max_size: 90.0,
+            size: PanelSize::Weight(1.0),
             min_px: None,
             max_px: None,
             background: None,
@@ -164,27 +158,6 @@ impl ResizablePanelSpec {
     /// Maximum main-axis size in pixels.
     pub fn max(mut self, max: Pixels) -> Self {
         self.max_px = Some(max.as_f32());
-        self
-    }
-
-    /// Legacy default; treated as [`PanelSize::Weight`].
-    #[deprecated(note = "use weight() for proportional panes or size() for pixel panes")]
-    pub fn default_size(mut self, percent: f32) -> Self {
-        self.size = PanelSize::Weight(percent.max(0.0));
-        self
-    }
-
-    /// Legacy percent min (weight panes only when [`min`] is not used).
-    #[deprecated(note = "use min(px(...)) for pixel constraints")]
-    pub fn min_size(mut self, percent: f32) -> Self {
-        self.min_size = percent;
-        self
-    }
-
-    /// Legacy percent max (weight panes only when [`max`] is not used).
-    #[deprecated(note = "use max(px(...)) for pixel constraints")]
-    pub fn max_size(mut self, percent: f32) -> Self {
-        self.max_size = percent;
         self
     }
 }
@@ -272,6 +245,18 @@ impl ResizablePanelsBuilder {
         self
     }
 
+    /// Pins horizontal main-axis layout; cross-axis fills the parent when height is unset.
+    pub fn width(mut self, width: Pixels) -> Self {
+        self.model.frame_width = Some(width);
+        self
+    }
+
+    /// Pins vertical main-axis layout; cross-axis fills the parent when width is unset.
+    pub fn height(mut self, height: Pixels) -> Self {
+        self.model.frame_height = Some(height);
+        self
+    }
+
     pub fn show_border(mut self, show_border: bool) -> Self {
         self.model.show_border = show_border;
         self
@@ -289,13 +274,6 @@ impl ResizablePanelsBuilder {
 
     pub fn resize_handle(mut self, size: ResizeHandleSize) -> Self {
         self.model.resize_handle = size;
-        self
-    }
-
-    /// Legacy API; maps the pixel width to the nearest [`ResizeHandleSize`] preset.
-    #[deprecated(note = "use resize_handle(ResizeHandleSize::Sm | Md | Lg)")]
-    pub fn handle_size(mut self, lane_width: Pixels) -> Self {
-        self.model.resize_handle = ResizeHandleSize::from_lane_px(lane_width.as_f32());
         self
     }
 
@@ -365,7 +343,7 @@ mod resize_handle_tests {
     }
 
     #[test]
-    fn from_lane_px_maps_legacy_widths() {
+    fn from_lane_px_maps_widths_to_presets() {
         assert_eq!(ResizeHandleSize::from_lane_px(18.0), ResizeHandleSize::Lg);
         assert_eq!(ResizeHandleSize::from_lane_px(10.0), ResizeHandleSize::Md);
         assert_eq!(ResizeHandleSize::from_lane_px(8.0), ResizeHandleSize::Sm);

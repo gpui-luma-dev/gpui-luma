@@ -1,6 +1,6 @@
 # Resizable Panels
 
-`ResizablePanels` is a Luma SDK control for arbitrary 2+ pane layouts sized in percents. It complements
+`ResizablePanels` is a Luma SDK control for arbitrary 2+ pane layouts with mixed pixel and weight sizing. It complements
 `SplitView`, which targets navigation/content application shells with pixel sidebar width and collapse.
 
 ## Module
@@ -12,34 +12,38 @@ crates/sdk/src/controls/resizable_panels/
   control.rs
   template.rs
   theme.rs
+  macros.rs
   mod.rs
 ```
 
 ## Public API
 
 ```rust
-let panels = ResizablePanels::new("demo")
-    .orientation(ResizablePanelsOrientation::Horizontal)
-    .size(px(540.0), px(220.0)) // optional; omit to fill parent
-    .panel(
-        ResizablePanelSpec::new_render(|| sidebar_content)
-            .default_size(30.0)
-            .min_size(20.0)
-            .max_size(70.0),
-    )
-    .panel(ResizablePanelSpec::new_render(|| content))
-    .spawn(cx);
+use gpui_luma::resizable_panels;
+
+let panels = resizable_panels! {
+    cx,
+    radix = theme,
+    id: "demo",
+    layout: Horizontal,
+    size: (px(540.0), px(220.0)),
+    panels: [
+        move || sidebar => px(280.0), min: px(200.0), max: px(400.0), bg: sidebar_bg;
+        |
+        move || content => weight(1.0), bg: content_bg;
+    ]
+};
 ```
 
 ## Events
 
 - `ResizeStart`
-- `SizesChanged { sizes }`
-- `ResizeEnd { sizes }`
+- `SizesChanged { sizes_px }` — main-axis pixel width/height per panel
+- `ResizeEnd { sizes_px }`
 
 ## Gallery
 
-See **Layout → Resizable Panels** in `gpui-luma-gallery` (ported from Opal `resizable` demos).
+See **Layout → Resizable Panels** in `gpui-luma-gallery`.
 
 ## Prior art
 

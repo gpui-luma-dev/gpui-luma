@@ -5,10 +5,8 @@ use gpui::{
     Context, Div, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Overflow, Point, Pixels, Render,
     Size, Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
-use gpui_luma::controls::resizable_panels::{
-    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
-};
+use gpui_luma::controls::resizable_panels::ResizablePanels;
+use gpui_luma::resizable_panels;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
@@ -74,15 +72,17 @@ impl ThemeStudioApp {
         let sidebar_panel_bg = radix_theme.navigation_sidebar_theme().resolve_container().background;
         let content_panel_bg = radix_theme.token_color("background").unwrap_or(chrome.content_background);
 
-        let main_split = radix_theme
-            .resizable_panels("theme-studio-main-split")
-            .orientation(ResizablePanelsOrientation::Horizontal)
-            .show_handle(true)
-            .resize_handle(ResizeHandleSize::Sm)
-            .handle_grip(true)
-            .show_border(false)
-            .panels([
-                ResizablePanelSpec::new_render(move || {
+        let main_split = resizable_panels! {
+            cx,
+            radix = radix_theme,
+            id: "theme-studio-main-split",
+            layout: Horizontal,
+            show_handle: true,
+            resize_handle: Sm,
+            handle_grip: true,
+            show_border: false,
+            panels: [
+                move || {
                     div()
                         .size_full()
                         .min_h_0()
@@ -91,24 +91,24 @@ impl ThemeStudioApp {
                         .overflow_hidden()
                         .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
                         .into_any_element()
-                })
-                .size(px(280.0))
-                .min(px(200.0))
-                .max(px(400.0))
-                .bg(sidebar_panel_bg),
-                ResizablePanelSpec::new_render(move || {
+                } => px(280.0), min: px(260.0), max: px(400.0), bg: sidebar_panel_bg;
+                |
+                move || {
                     div()
                         .size_full()
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .child(scrollable_panel().items_center().p(px(24.0)).child(board_host_for_split.clone()))
+                        .child(
+                            scrollable_panel()
+                                .items_center()
+                                .p(px(24.0))
+                                .child(board_host_for_split.clone()),
+                        )
                         .into_any_element()
-                })
-                .weight(1.0)
-                .bg(content_panel_bg),
-            ])
-            .spawn(cx);
+                } => weight(1.0), bg: content_panel_bg;
+            ]
+        };
 
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);

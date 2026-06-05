@@ -8,6 +8,7 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
 };
+use gpui_luma::resizable_panels;
 use gpui_luma::theme::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
@@ -29,14 +30,12 @@ pub(in crate::gallery) struct ResizablePanelsPane {
     horizontal: Entity<ResizablePanels>,
     vertical: Entity<ResizablePanels>,
     nested_outer: Entity<ResizablePanels>,
-    nested_inner: Entity<ResizablePanels>,
     controlled: Entity<ResizablePanels>,
     controlled_panel_sizes: Rc<Cell<[f32; 2]>>,
     reset_controlled_button: Entity<Button<()>>,
     horizontal_sizes: SharedString,
     vertical_sizes: SharedString,
     nested_outer_sizes: SharedString,
-    nested_inner_sizes: SharedString,
     controlled_sizes: SharedString,
     controlled_last_event: SharedString,
 }
@@ -49,94 +48,94 @@ impl ResizablePanelsPane {
             .resizable_panels("resizable-panels-horizontal")
             .orientation(ResizablePanelsOrientation::Horizontal)
             .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .show_handle(true)
+            .resize_handle(ResizeHandleSize::Md)
+            .handle_grip(true)
             .panels([
                 ResizablePanelSpec::new_render({
                     let theme = demo_theme.clone();
                     move || demo_label("Sidebar", &theme)
                 })
-                    .weight(3.0)
-                    .bg(PANEL_BG_TRANSPARENT),
+                .weight(3.0)
+                .bg(PANEL_BG_TRANSPARENT),
                 ResizablePanelSpec::new_render({
                     let theme = demo_theme.clone();
                     move || demo_label("Content", &theme)
                 })
-                    .weight(7.0)
-                    .bg(PANEL_BG_TRANSPARENT),
+                .weight(7.0)
+                .bg(PANEL_BG_TRANSPARENT),
             ])
             .spawn(cx);
 
-        let vertical = radix_theme
-            .resizable_panels("resizable-panels-vertical")
-            .orientation(ResizablePanelsOrientation::Vertical)
-            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
-            .panels([
-                ResizablePanelSpec::new_render({
+        let vertical = resizable_panels! {
+            cx,
+            radix = radix_theme,
+            id: "resizable-panels-vertical",
+            layout: Vertical,
+            size: (px(DEMO_WIDTH), px(DEMO_HEIGHT)),
+            panels: [
+                {
                     let theme = demo_theme.clone();
                     move || demo_label("Header", &theme)
-                })
-                    .weight(3.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-                ResizablePanelSpec::new_render({
+                } => weight(3.0), bg: PANEL_BG_TRANSPARENT;
+                |
+                {
                     let theme = demo_theme.clone();
                     move || demo_label("Content", &theme)
-                })
-                    .weight(7.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-            ])
-            .spawn(cx);
+                } => weight(7.0), bg: PANEL_BG_TRANSPARENT;
+            ]
+        };
 
-        let nested_inner = radix_theme
-            .resizable_panels("resizable-panels-nested-inner")
-            .orientation(ResizablePanelsOrientation::Vertical)
-            .size(px(NESTED_OUTER_WIDTH * 0.5), px(NESTED_OUTER_HEIGHT))
-            .show_border(false)
-            .panels([
-                ResizablePanelSpec::new_render({
-                    let theme = demo_theme.clone();
-                    move || demo_label("Two", &theme)
-                })
-                    .weight(2.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-                ResizablePanelSpec::new_render({
-                    let theme = demo_theme.clone();
-                    move || demo_label("Three", &theme)
-                })
-                    .weight(3.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-            ])
-            .spawn(cx);
-
-        let nested_inner_entity = nested_inner.clone();
-        let nested_outer = radix_theme
-            .resizable_panels("resizable-panels-nested-outer")
-            .orientation(ResizablePanelsOrientation::Horizontal)
-            .size(px(NESTED_OUTER_WIDTH), px(NESTED_OUTER_HEIGHT))
-            .panels([
-                ResizablePanelSpec::new_render({
+        let nested_outer = resizable_panels! {
+            cx,
+            radix = radix_theme,
+            id: "resizable-panels-nested-outer",
+            layout: Horizontal,
+            size: (px(NESTED_OUTER_WIDTH), px(NESTED_OUTER_HEIGHT)),
+            panels: [
+                {
                     let theme = demo_theme.clone();
                     move || demo_label("One", &theme)
-                })
-                    .weight(1.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-                ResizablePanelSpec::new_render(move || nested_inner_entity.clone())
-                    .weight(1.0)
-                    .bg(PANEL_BG_TRANSPARENT),
-            ])
-            .spawn(cx);
+                } => weight(1.0), bg: PANEL_BG_TRANSPARENT;
+                |
+                resizable_panels! {
+                    cx,
+                    radix = radix_theme,
+                    id: "resizable-panels-nested-inner",
+                    layout: Vertical,
+                    show_border: false,
+                    height: px(NESTED_OUTER_HEIGHT),
+                    panels: [
+                        {
+                            let theme = demo_theme.clone();
+                            move || demo_label("Two", &theme)
+                        } => weight(2.0), bg: PANEL_BG_TRANSPARENT;
+                        |
+                        {
+                            let theme = demo_theme.clone();
+                            move || demo_label("Three", &theme)
+                        } => weight(3.0), bg: PANEL_BG_TRANSPARENT;
+                    ]
+                } => weight(1.0), bg: PANEL_BG_TRANSPARENT;
+            ]
+        };
 
         let controlled_panel_sizes = Rc::new(Cell::new([30.0_f32, 70.0_f32]));
         let left_sizes = controlled_panel_sizes.clone();
         let right_sizes = controlled_panel_sizes.clone();
-        let controlled = radix_theme
-            .resizable_panels("resizable-panels-controlled")
-            .orientation(ResizablePanelsOrientation::Horizontal)
-            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
-            .show_handle(true)
-            .resize_handle(ResizeHandleSize::Lg)
-            .handle_grip(true)
-            .panels([
-                ResizablePanelSpec::new_render({
+        let controlled = resizable_panels! {
+            cx,
+            radix = radix_theme,
+            id: "resizable-panels-controlled",
+            layout: Horizontal,
+            show_handle: true,
+            resize_handle: Lg,
+            handle_grip: true,
+            size: (px(DEMO_WIDTH), px(DEMO_HEIGHT)),
+            panels: [
+                {
                     let theme = demo_theme.clone();
+                    let left_sizes = left_sizes.clone();
                     move || {
                         let sizes = left_sizes.get();
                         div()
@@ -146,16 +145,17 @@ impl ResizablePanelsPane {
                             .justify_center()
                             .text_sm()
                             .text_color(label_foreground(&theme))
-                            .child(format!("{:.0}%", sizes[0]))
+                            .child(format!("{:.0}%", percent_of_content(sizes[0])))
                             .into_any_element()
                     }
-                })
-                .weight(3.0)
-                .min(px(CONTROLLED_MIN_LEFT_PX))
-                .max(px(CONTROLLED_MAX_LEFT_PX))
-                .bg(PANEL_BG_TRANSPARENT),
-                ResizablePanelSpec::new_render({
+                } => weight(3.0),
+                    min: px(CONTROLLED_MIN_LEFT_PX),
+                    max: px(CONTROLLED_MAX_LEFT_PX),
+                    bg: PANEL_BG_TRANSPARENT;
+                |
+                {
                     let theme = demo_theme.clone();
+                    let right_sizes = right_sizes.clone();
                     move || {
                         let sizes = right_sizes.get();
                         div()
@@ -165,36 +165,32 @@ impl ResizablePanelsPane {
                             .justify_center()
                             .text_sm()
                             .text_color(label_foreground(&theme))
-                            .child(format!("{:.0}%", sizes[1]))
+                            .child(format!("{:.0}%", percent_of_content(sizes[1])))
                             .into_any_element()
                     }
-                })
-                .weight(7.0)
-                .min(px(CONTROLLED_MIN_RIGHT_PX))
-                .max(px(CONTROLLED_MAX_RIGHT_PX))
-                .bg(PANEL_BG_TRANSPARENT),
-            ])
-            .spawn(cx);
+                } => weight(7.0),
+                    min: px(CONTROLLED_MIN_RIGHT_PX),
+                    max: px(CONTROLLED_MAX_RIGHT_PX),
+                    bg: PANEL_BG_TRANSPARENT;
+            ]
+        };
 
         let reset_controlled_button =
             Button::new("resizable-panels-controlled-reset").label("Reset Controlled (30 / 70)").spawn(cx);
 
-        let mut this = Self {
+        let this = Self {
             horizontal,
             vertical,
             nested_outer,
-            nested_inner,
             controlled,
             controlled_panel_sizes,
             reset_controlled_button,
-            horizontal_sizes: "30% / 70%".into(),
-            vertical_sizes: "30% / 70%".into(),
-            nested_outer_sizes: "50% / 50%".into(),
-            nested_inner_sizes: "40% / 60%".into(),
-            controlled_sizes: "30% / 70%".into(),
+            horizontal_sizes: "162px / 378px".into(),
+            vertical_sizes: "66px / 154px".into(),
+            nested_outer_sizes: "270px / 270px".into(),
+            controlled_sizes: "162px / 378px".into(),
             controlled_last_event: "None".into(),
         };
-        this.sync_nested_inner_size(cx);
         this
     }
 
@@ -213,11 +209,6 @@ impl ResizablePanelsPane {
         }));
         subscriptions.push(cx.subscribe(&self.vertical, |app, _, event: &ResizablePanelsEvent, cx| {
             app.panes.resizable_panels.apply_sizes_event(event, |pane, label| pane.vertical_sizes = label, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.nested_inner, |app, _, event: &ResizablePanelsEvent, cx| {
-            app.panes
-                .resizable_panels
-                .apply_sizes_event(event, |pane, label| pane.nested_inner_sizes = label, cx);
         }));
     }
 
@@ -260,7 +251,6 @@ impl ResizablePanelsPane {
                     &self.horizontal_sizes,
                     &self.vertical_sizes,
                     &self.nested_outer_sizes,
-                    &self.nested_inner_sizes,
                     &self.controlled_sizes,
                 ))
                 .into_any_element(),
@@ -272,17 +262,16 @@ impl ResizablePanelsPane {
         notify_entity(&self.horizontal, cx);
         notify_entity(&self.vertical, cx);
         notify_entity(&self.nested_outer, cx);
-        notify_entity(&self.nested_inner, cx);
         notify_entity(&self.controlled, cx);
         notify_entity(&self.reset_controlled_button, cx);
     }
 
     fn reset_controlled(&mut self, cx: &mut Context<GalleryApp>) {
-        self.controlled_panel_sizes.set([30.0, 70.0]);
+        self.controlled_panel_sizes.set([162.0, 378.0]);
         self.controlled.update(cx, |panels, cx| {
-            panels.set_sizes(vec![30.0, 70.0], cx);
+            panels.set_weights(vec![3.0, 7.0], cx);
         });
-        self.controlled_sizes = "30% / 70%".into();
+        self.controlled_sizes = "162px / 378px".into();
         self.controlled_last_event = "Reset".into();
         cx.notify();
     }
@@ -290,19 +279,19 @@ impl ResizablePanelsPane {
     fn handle_controlled_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<GalleryApp>) {
         self.controlled_last_event = match event {
             ResizablePanelsEvent::ResizeStart => "ResizeStart".into(),
-            ResizablePanelsEvent::SizesChanged { sizes } => {
-                if sizes.len() >= 2 {
-                    self.controlled_panel_sizes.set([sizes[0], sizes[1]]);
+            ResizablePanelsEvent::SizesChanged { sizes_px } => {
+                if sizes_px.len() >= 2 {
+                    self.controlled_panel_sizes.set([sizes_px[0], sizes_px[1]]);
                 }
-                self.controlled_sizes = format_sizes(sizes).into();
-                format!("SizesChanged: {}", format_sizes(sizes)).into()
+                self.controlled_sizes = format_sizes_px(sizes_px).into();
+                format!("SizesChanged: {}", format_sizes_px(sizes_px)).into()
             }
-            ResizablePanelsEvent::ResizeEnd { sizes } => {
-                if sizes.len() >= 2 {
-                    self.controlled_panel_sizes.set([sizes[0], sizes[1]]);
+            ResizablePanelsEvent::ResizeEnd { sizes_px } => {
+                if sizes_px.len() >= 2 {
+                    self.controlled_panel_sizes.set([sizes_px[0], sizes_px[1]]);
                 }
-                self.controlled_sizes = format_sizes(sizes).into();
-                format!("ResizeEnd: {}", format_sizes(sizes)).into()
+                self.controlled_sizes = format_sizes_px(sizes_px).into();
+                format!("ResizeEnd: {}", format_sizes_px(sizes_px)).into()
             }
         };
         notify_entity(&self.controlled, cx);
@@ -311,9 +300,8 @@ impl ResizablePanelsPane {
 
     fn handle_nested_outer_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            ResizablePanelsEvent::SizesChanged { sizes } | ResizablePanelsEvent::ResizeEnd { sizes } => {
-                self.nested_outer_sizes = format_sizes(sizes).into();
-                self.sync_nested_inner_size(cx);
+            ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => {
+                self.nested_outer_sizes = format_sizes_px(sizes_px).into();
                 cx.notify();
             }
             ResizablePanelsEvent::ResizeStart => {}
@@ -327,21 +315,11 @@ impl ResizablePanelsPane {
         cx: &mut Context<GalleryApp>,
     ) {
         let sizes = match event {
-            ResizablePanelsEvent::SizesChanged { sizes } | ResizablePanelsEvent::ResizeEnd { sizes } => sizes,
+            ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => sizes_px,
             ResizablePanelsEvent::ResizeStart => return,
         };
-        assign(self, format_sizes(sizes).into());
+        assign(self, format_sizes_px(sizes).into());
         cx.notify();
-    }
-
-    fn sync_nested_inner_size(&mut self, cx: &mut Context<GalleryApp>) {
-        let outer_sizes = self.nested_outer.read(cx).sizes();
-        let right_percent = outer_sizes.get(1).copied().unwrap_or(50.0).clamp(0.0, 100.0) / 100.0;
-        let content_width = NESTED_OUTER_WIDTH.max(1.0);
-        let inner_width = (content_width * right_percent).max(1.0);
-        self.nested_inner.update(cx, |nested, cx| {
-            nested.set_frame_size(px(inner_width), px(NESTED_OUTER_HEIGHT), cx);
-        });
     }
 }
 
@@ -365,7 +343,6 @@ fn telemetry_block(
     horizontal_sizes: &str,
     vertical_sizes: &str,
     nested_outer_sizes: &str,
-    nested_inner_sizes: &str,
     controlled_sizes: &str,
 ) -> impl IntoElement {
     div()
@@ -375,8 +352,7 @@ fn telemetry_block(
         .child(div().text_sm().text_color(title_color).child("Telemetry"))
         .child(telemetry_row(label_color, "Horizontal sizes", horizontal_sizes))
         .child(telemetry_row(label_color, "Vertical sizes", vertical_sizes))
-        .child(telemetry_row(label_color, "Nested outer sizes", nested_outer_sizes))
-        .child(telemetry_row(label_color, "Nested inner sizes", nested_inner_sizes))
+        .child(telemetry_row(label_color, "Nested sizes", nested_outer_sizes))
         .child(telemetry_row(label_color, "Controlled sizes", controlled_sizes))
 }
 
@@ -384,8 +360,12 @@ fn telemetry_row(color: gpui::Hsla, label: &str, sizes: &str) -> impl IntoElemen
     div().text_size(px(12.0)).text_color(color).child(format!("{label}: {sizes}"))
 }
 
-fn format_sizes(sizes: &[f32]) -> String {
-    sizes.iter().map(|size| format!("{size:.0}%")).collect::<Vec<_>>().join(" / ")
+fn format_sizes_px(sizes_px: &[f32]) -> String {
+    sizes_px.iter().map(|size| format!("{size:.0}px")).collect::<Vec<_>>().join(" / ")
+}
+
+fn percent_of_content(size_px: f32) -> f32 {
+    size_px / DEMO_WIDTH.max(1.0) * 100.0
 }
 
 fn label_foreground(theme: &RadixTheme) -> gpui::Hsla {

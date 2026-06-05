@@ -18,32 +18,6 @@ pub fn effective_handle_lane_px(metrics: &ResizeHandleMetrics) -> f32 {
     handle_hit_target_main_axis_px(metrics)
 }
 
-/// Percent sizes for `n` weight-only panels (legacy); scales to sum to 100.
-pub fn normalize_weights(weights: &mut [f32]) {
-    if weights.is_empty() {
-        return;
-    }
-
-    for weight in weights.iter_mut() {
-        if !weight.is_finite() || *weight < 0.0 {
-            *weight = 0.0;
-        }
-    }
-
-    let sum: f32 = weights.iter().sum();
-    if sum <= f32::EPSILON {
-        let even = 100.0 / weights.len() as f32;
-        for weight in weights.iter_mut() {
-            *weight = even;
-        }
-        return;
-    }
-
-    for weight in weights.iter_mut() {
-        *weight = (*weight / sum) * 100.0;
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PanelPxBounds {
     pub min_px: f32,
@@ -60,16 +34,9 @@ pub fn resolve_panel_px_bounds(spec: &ResizablePanelSpec, content_main_px: f32) 
             PanelPxBounds { min_px, max_px: max_px.max(min_px) }
         }
         PanelSize::Weight(_) => {
-            if spec.min_px.is_some() || spec.max_px.is_some() {
-                let min_px = spec.min_px.unwrap_or(0.0);
-                let max_px = spec.max_px.unwrap_or(content_main_px);
-                PanelPxBounds { min_px, max_px: max_px.max(min_px) }
-            } else {
-                PanelPxBounds {
-                    min_px: content_main_px * (spec.min_size / 100.0),
-                    max_px: content_main_px * (spec.max_size / 100.0),
-                }
-            }
+            let min_px = spec.min_px.unwrap_or(0.0);
+            let max_px = spec.max_px.unwrap_or(content_main_px);
+            PanelPxBounds { min_px, max_px: max_px.max(min_px) }
         }
     }
 }
@@ -286,45 +253,6 @@ pub fn apply_pair_delta_px(
     }
 }
 
-/// Legacy percent pair adjustment for weight-only strips.
-pub struct PanelSizeBounds {
-    pub min_size: f32,
-    pub max_size: f32,
-}
-
-pub fn apply_pair_delta(
-    sizes: &mut [f32],
-    index: usize,
-    delta_percent: f32,
-    left_bounds: PanelSizeBounds,
-    right_bounds: PanelSizeBounds,
-) -> bool {
-    if index + 1 >= sizes.len() {
-        return false;
-    }
-
-    let left = sizes[index];
-    let right = sizes[index + 1];
-    let pair_total = left + right;
-
-    let min_left = left_bounds.min_size.max(pair_total - right_bounds.max_size);
-    let max_left = left_bounds.max_size.min(pair_total - right_bounds.min_size);
-    if min_left > max_left {
-        return false;
-    }
-
-    let new_left = (left + delta_percent).clamp(min_left, max_left);
-    let new_right = pair_total - new_left;
-
-    if (new_left - left).abs() < f32::EPSILON && (new_right - right).abs() < f32::EPSILON {
-        return false;
-    }
-
-    sizes[index] = new_left;
-    sizes[index + 1] = new_right;
-    true
-}
-
 /// Main-axis pixels available to panels. Overlay handles do not consume layout space.
 pub fn content_axis_size(main_axis_px: f32, _handle_size_px: f32, _panel_count: usize) -> f32 {
     main_axis_px.max(1.0)
@@ -352,25 +280,11 @@ pub fn split_positions_px(panel_sizes_px: &[f32]) -> Vec<f32> {
     positions
 }
 
-pub fn layout_states_to_legacy_percents(
-    specs: &[ResizablePanelSpec],
-    states: &[PanelLayoutState],
-    content_main_px: f32,
-) -> Vec<f32> {
-    let sizes_px = solve_layout_px(specs, states, content_main_px);
-    let content_main_px = content_main_px.max(1.0);
-    sizes_px.iter().map(|size| (size / content_main_px) * 100.0).collect()
-}
-
-pub fn all_panels_use_weight(specs: &[ResizablePanelSpec]) -> bool {
-    specs.iter().all(|spec| matches!(spec.size, PanelSize::Weight(_)))
-}
-
 #[cfg(test)]
 mod tests {
     use super::{
-        PanelLayoutState, apply_pair_delta_px, content_axis_size, handle_overlay_geometry, normalize_weights,
-        resolve_panel_px_bounds, solve_layout_px,
+        PanelLayoutState, apply_pair_delta_px, content_axis_size, handle_overlay_geometry, resolve_panel_px_bounds,
+        solve_layout_px,
     };
     use crate::controls::resizable_panels::model::ResizablePanelSpec;
 
@@ -380,13 +294,6 @@ mod tests {
 
     fn absolute_spec(width_px: f32) -> ResizablePanelSpec {
         ResizablePanelSpec::new_render(|| gpui::Empty).size(gpui::px(width_px))
-    }
-
-    #[test]
-    fn normalize_weights_scales_to_hundred() {
-        let mut weights = [30.0, 70.0];
-        normalize_weights(&mut weights);
-        assert!((weights.iter().sum::<f32>() - 100.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -443,11 +350,8 @@ mod tests {
     }
 
     #[test]
-    fn resolve_weight_pixel_bounds_from_legacy_percent() {
-        let spec = {
-            #[allow(deprecated)]
-            weight_spec(1.0).min_size(20.0).max_size(80.0)
-        };
+    fn resolve_weight_pixel_bounds_from_min_max_px() {
+        let spec = weight_spec(1.0).min(gpui::px(200.0)).max(gpui::px(800.0));
         let bounds = resolve_panel_px_bounds(&spec, 1000.0);
         assert!((bounds.min_px - 200.0).abs() < f32::EPSILON);
         assert!((bounds.max_px - 800.0).abs() < f32::EPSILON);

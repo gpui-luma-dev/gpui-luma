@@ -10,13 +10,13 @@ Design record and implementation status for [`crates/sdk/src/controls/resizable_
 | Overlay handles (no layout width), pick'em geometry | **Done** — [`template.rs`](../../crates/sdk/src/controls/resizable_panels/template.rs) |
 | `ResizablePanelSpec::bg(Hsla)` for handle halves | **Done** |
 | `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` | **Done** — lane, hit target, grip scale together |
-| Theme Studio main split (280px sidebar + fill) | **Done** — [`apps/theme-studio/src/studio/app.rs`](../../apps/theme-studio/src/studio/app.rs) |
+| Theme Studio main split (280px sidebar + fill) | **Done** — macro in [`apps/theme-studio/src/studio/app.rs`](../../apps/theme-studio/src/studio/app.rs) |
 | Gallery demos on weight + pixel constraints | **Done** — [`apps/gallery/.../resizable_panels/pane.rs`](../../apps/gallery/src/gallery/panes/resizable_panels/pane.rs) |
 | Fluent `.pane()` builder chain | **Not started** (§7 below) |
-| `resizable_panels!` macro | **Not started** (§8 below) |
+| `resizable_panels!` macro | **Done** — [`macros.rs`](../../crates/sdk/src/controls/resizable_panels/macros.rs) |
 | Opal-style full-viewport gallery shells | **Not started** (§9 below) |
 
-Legacy percent APIs (`default_size`, `min_size`, `max_size`, `handle_size`) remain deprecated for existing callers; new code should use `size` / `weight` / `min` / `max` / `resize_handle`.
+Use `size` / `weight` / `min` / `max` / `resize_handle` on specs. Events report `sizes_px` (main-axis pixels per panel). Weight-only strips can be reset via `set_weights`.
 
 ---
 
@@ -106,9 +106,7 @@ Keyboard: absolute panes use `keyboard_step` / `keyboard_shift_step` in px; weig
 
 ## 6. Backwards compatibility
 
-- `default_size(f32)` → `PanelSize::Weight`
-- `handle_size(Pixels)` → nearest `ResizeHandleSize` preset
-- `sizes()` / `set_sizes()` on weight-only strips still report legacy 0–100 percents for telemetry
+- Removed: percent sizing on specs, `sizes()` / `set_sizes()`, `handle_size(Pixels)` (use `resize_handle(ResizeHandleSize::Sm | Md | Lg)`)
 
 ---
 
@@ -128,13 +126,54 @@ let main_split = ResizablePanels::horizontal("theme-studio-main-split")
     .spawn(cx);
 ```
 
-Today, use `ResizablePanelsBuilder::panels([...])` with `ResizablePanelSpec` as in Theme Studio.
+Today, prefer `resizable_panels!` (Theme Studio) or `ResizablePanelsBuilder::panels([...])` with `ResizablePanelSpec`.
 
 ---
 
-## 8. Future: `resizable_panels!` macro (not implemented)
+## 8. `resizable_panels!` macro
 
-Declarative `|` separators and nested splits — see original sketch in git history if needed.
+Declarative `|` separators and nested splits. Expands to `ResizablePanelsBuilder` + `ResizablePanelSpec` (see [`macros.rs`](../../crates/sdk/src/controls/resizable_panels/macros.rs)). End each panel arm with `;` before `|` or the next panel.
+
+```rust
+use gpui_luma::resizable_panels;
+
+let split = resizable_panels! {
+    cx,
+    radix = radix_theme,
+    id: "theme-studio-main-split",
+    layout: Horizontal,
+    show_handle: true,
+    resize_handle: Sm,
+    handle_grip: true,
+    show_border: false,
+    panels: [
+        move || sidebar_entity.clone() => px(280.0), min: px(200.0), max: px(400.0), bg: sidebar_bg;
+        |
+        move || board_host.clone() => weight(1.0), bg: content_bg;
+    ]
+};
+
+// Nested inner group (inline spawn) as a weighted pane:
+resizable_panels! {
+    cx,
+    radix = radix_theme,
+    id: "workspace-split",
+    layout: Vertical,
+    panels: [
+        editor => weight(2.0), bg: editor_bg;
+        |
+        resizable_panels! {
+            cx,
+            radix = radix_theme,
+            id: "terminal-stack",
+            layout: Horizontal,
+            panels: [ terminal => weight(1.0), bg: terminal_bg; ]
+        } => weight(1.0), bg: workspace_bg;
+    ]
+};
+```
+
+Gallery reference: nested inner/outer demos in [`pane.rs`](../../apps/gallery/src/gallery/panes/resizable_panels/pane.rs).
 
 ---
 
