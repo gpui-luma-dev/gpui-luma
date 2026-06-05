@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::autocomplete::{AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};

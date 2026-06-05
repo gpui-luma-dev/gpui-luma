@@ -2,8 +2,9 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{RadixTheme, ThemeMode};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ThemeMode};
+use gpui_luma_theme_radix::RadixTheme;
 use std::sync::Arc;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};

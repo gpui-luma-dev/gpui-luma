@@ -4,7 +4,7 @@ use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Win
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::controls::tree_view::TreeViewControl;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 /// Gallery-only wrapper that clips the tree in a bounded viewport with a Radix scrollbar.
 pub(in crate::gallery) struct TreeViewScrollShell {

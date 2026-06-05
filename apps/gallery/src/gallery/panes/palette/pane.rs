@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{RadixModeTokens, RadixTheme};
+use gpui_luma_theme_radix::{RadixModeTokens, RadixTheme};
 
 use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::panes::shared::render_sparse_catalog_callout;

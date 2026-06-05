@@ -115,7 +115,7 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
     }
 }
 
-pub(crate) fn compose_button_family_appearance(
+pub fn compose_button_family_appearance(
     palette: &ButtonFamilyPalette,
     role: ButtonFamilyRole,
     scale: &StandardBoxScale,

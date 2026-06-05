@@ -10,7 +10,7 @@ use gpui_luma::controls::floating_menu::{
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::state::MenuPath;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

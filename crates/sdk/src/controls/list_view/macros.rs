@@ -80,7 +80,7 @@ macro_rules! column_numeric {
 macro_rules! list_view {
     // Branch 1: grid_view + row_template together
     (
-        $( radix = $radix:expr; )?
+        $( list_view_theme = $list_view_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -95,7 +95,7 @@ macro_rules! list_view {
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($radix.list_view_theme()); )?
+        $( let builder = builder.theme($list_view_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -117,7 +117,7 @@ macro_rules! list_view {
 
     // Branch 2: grid_view only (uses internal default row template)
     (
-        $( radix = $radix:expr; )?
+        $( list_view_theme = $list_view_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -131,7 +131,7 @@ macro_rules! list_view {
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($radix.list_view_theme()); )?
+        $( let builder = builder.theme($list_view_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -150,7 +150,7 @@ macro_rules! list_view {
 
     // Branch 3: row_template only
     (
-        $( radix = $radix:expr; )?
+        $( list_view_theme = $list_view_theme:expr; )?
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -164,7 +164,7 @@ macro_rules! list_view {
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        $( let builder = builder.theme($radix.list_view_theme()); )?
+        $( let builder = builder.theme($list_view_theme); )?
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -188,7 +188,7 @@ macro_rules! list_view {
 macro_rules! scrolling_list_view {
     // grid_view + row_template
     (
-        radix = $radix:expr;
+        list_view_theme = $list_view_theme:expr;
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -202,7 +202,7 @@ macro_rules! scrolling_list_view {
         row_template = |$model:ident, $cells:ident, $win:ident, $cx:ident| $body:expr $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($radix.list_view_theme());
+        let builder = builder.theme($list_view_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -223,7 +223,7 @@ macro_rules! scrolling_list_view {
 
     // grid_view only
     (
-        radix = $radix:expr;
+        list_view_theme = $list_view_theme:expr;
         id = $id:expr;
         items = $items:expr;
         $( selection = $selection:expr; )?
@@ -236,7 +236,7 @@ macro_rules! scrolling_list_view {
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($radix.list_view_theme());
+        let builder = builder.theme($list_view_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -257,7 +257,8 @@ macro_rules! scrolling_list_view {
 macro_rules! paging_list_view {
     // grid_view + row_template
     (
-        radix = $radix:expr;
+        list_view_theme = $list_view_theme:expr;
+        toolbar_chrome = $toolbar_chrome:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
@@ -272,7 +273,7 @@ macro_rules! paging_list_view {
         row_template = |$model:ident, $cells:ident, $rwin:ident, $rcx:ident| $body:expr $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($radix.list_view_theme());
+        let builder = builder.theme($list_view_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -290,7 +291,7 @@ macro_rules! paging_list_view {
 
         let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
             builder.paged($page_size),
-            $radix.clone(),
+            $toolbar_chrome,
         );
 
         $(
@@ -304,7 +305,8 @@ macro_rules! paging_list_view {
 
     // grid_view only
     (
-        radix = $radix:expr;
+        list_view_theme = $list_view_theme:expr;
+        toolbar_chrome = $toolbar_chrome:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
@@ -318,7 +320,7 @@ macro_rules! paging_list_view {
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
-        let builder = builder.theme($radix.list_view_theme());
+        let builder = builder.theme($list_view_theme);
         $( let builder = builder.selection_mode($selection); )?
         $( let builder = builder.selected_index($selected_index); )?
         $( let builder = builder.active_index($active_index); )?
@@ -333,7 +335,7 @@ macro_rules! paging_list_view {
 
         let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
             builder.paged($page_size),
-            $radix.clone(),
+            $toolbar_chrome,
         );
 
         $(

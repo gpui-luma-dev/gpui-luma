@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::theme::RadixTheme;
-use gpui_luma::theme::radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
 use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 

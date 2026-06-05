@@ -15,7 +15,7 @@ The project is structured around two complementary concerns:
 
 ## Consumer apps (`apps/*`)
 
-Apps mount GPUI trees built from `gpui_luma::controls` and `gpui_luma::theme`, typically with a runtime `RadixTheme` (or native fallback).
+Apps mount GPUI trees built from `gpui_luma::controls` and `gpui_luma::theme`, typically with a runtime `gpui_luma_theme_radix::RadixTheme` (or native fallback via `RadixTheme::from_theme(LumaTheme::native())`).
 
 **Invariant:** interactive UI lives in the SDK. App code wires models, layout, and subscriptions—it does not home-brew themed controls (hand-styled `div` click targets, inline checkmarks, ad-hoc disabled states, etc.). Missing capability is a gap in `crates/sdk`, not a license to fork visuals in an app.
 
@@ -34,15 +34,18 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
   - `focus.rs`: focus traversal actions/context
   - `keyhandling.rs`: control key profiles + default key bindings
 
-- **Theming subsystem**
+- **Theming subsystem (`gpui-luma`)**
   - `theme/tokens.rs`: native theme schema + parsing + defaults + mode selection (`LumaTheme::native()` fallback)
-  - `theme/radix/*`: CSS-first product theming — `RadixTheme`, CSS catalog parse, control appearance resolvers, template factories
-  - `theme/radix/active.rs`: global active theme registration (`set_active_radix_theme` / `active_radix_theme`)
-  - `theme/radix/usage.rs`: hand-maintained usage metadata (`all_radix_theme_usages`)
   - `theme/pack.rs`: `LumaChrome` shell colors only (historical module name)
   - `theme/registry.rs`: palette token metadata/introspection API
   - `theme/interaction.rs`: generic interaction-state layer precedence
   - `theme/adorner.rs`: adorner/focus-ring descriptors (current policy: one optional adorner per appearance)
+
+- **Radix look crate (`gpui-luma-theme-radix`, `crates/theme-radix`)**
+  - CSS-first product theming — `RadixTheme`, CSS catalog parse, control appearance resolvers, template factories
+  - `usage.rs`: hand-maintained usage metadata (`all_radix_theme_usages`)
+  - extension traits: `RadixThemeControlExt`, `RadixButtonStyleExt`, etc.
+  - depends on `gpui-luma`; apps depend on both crates
 
 - **Controls subsystem** (`controls/`)
   - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `presenter`)

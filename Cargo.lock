@@ -2356,11 +2356,25 @@ dependencies = [
  "anyhow",
  "gpui",
  "gpui-luma",
+ "gpui-luma-theme-radix",
  "gpui_platform",
  "gtk",
  "lucide-icons",
  "tracing",
  "zed-font-kit",
+]
+
+[[package]]
+name = "gpui-luma-theme-radix"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "lucide-icons",
+ "palette",
+ "serde",
+ "toml 0.8.23",
 ]
 
 [[package]]
@@ -2370,6 +2384,7 @@ dependencies = [
  "anyhow",
  "gpui",
  "gpui-luma",
+ "gpui-luma-theme-radix",
  "gpui_platform",
  "gtk",
  "lucide-icons",

@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/sdk",
+  "crates/theme-radix",
   "apps/gallery",
   "apps/theme-studio",
 ]

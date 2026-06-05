@@ -8,7 +8,8 @@ pub(in crate::gallery) use template_pipeline::{
 };
 
 use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{RadixTheme, ThemePartUsage, all_radix_theme_usages};
+use gpui_luma::theme::{ThemePartUsage};
+use gpui_luma_theme_radix::{RadixTheme, all_radix_theme_usages};
 
 use crate::gallery::control::GalleryApp;
 

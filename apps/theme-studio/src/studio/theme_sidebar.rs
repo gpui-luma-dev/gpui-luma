@@ -5,7 +5,7 @@ use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, Accordi
 use super::token_color_row::token_color_row;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::textfield::{TextField, TextFieldAppearance, TextFieldAppearanceOverride, TextFieldEvent};
-use gpui_luma::theme::{RadixTheme, RadixThemeControlExt};
+use gpui_luma_theme_radix::{RadixTheme, RadixThemeControlExt};
 use gpui_luma::vstack;
 
 use gpui::Hsla;

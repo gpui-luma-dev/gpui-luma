@@ -11,8 +11,9 @@ use gpui_luma::controls::list_view::{
     ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
 };
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::RadixTheme;
 use gpui_luma::{hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 

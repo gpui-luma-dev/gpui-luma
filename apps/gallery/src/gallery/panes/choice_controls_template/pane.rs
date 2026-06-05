@@ -3,7 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

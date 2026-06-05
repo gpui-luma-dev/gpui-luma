@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, EventEmitter, FontWeight, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::{flow, hstack, vstack};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

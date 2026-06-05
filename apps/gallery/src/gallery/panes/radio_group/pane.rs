@@ -6,8 +6,8 @@ use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupTemplate,
     RadioGroupTemplateHandlers, SelectionMode, render_radio_button_rows,
 };
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
 
 use crate::gallery::control::GalleryApp;
 

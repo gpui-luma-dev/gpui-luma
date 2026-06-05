@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, ClickEvent, Context, EventEmitter, Render, Window, d
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_glyph;
-use crate::theme::RadixTheme;
+use crate::theme::LumaChrome;
 
 const PAGE_SIZE_OPTIONS: [usize; 2] = [10, 25];
 
@@ -40,7 +40,7 @@ pub type PagingToolbarTemplate =
     Arc<dyn Fn(&PagingToolbarLayout, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
 
 pub struct PagingToolbar {
-    theme: Arc<RadixTheme>,
+    chrome: super::paging::PagingToolbarChrome,
     layout: PagingToolbarLayout,
     page_size_open: bool,
     custom_template: Option<PagingToolbarTemplate>,
@@ -49,8 +49,8 @@ pub struct PagingToolbar {
 impl EventEmitter<PagingToolbarEvent> for PagingToolbar {}
 
 impl PagingToolbar {
-    pub fn new(theme: Arc<RadixTheme>, layout: PagingToolbarLayout) -> Self {
-        Self { theme, layout, page_size_open: false, custom_template: None }
+    pub fn new(chrome: super::paging::PagingToolbarChrome, layout: PagingToolbarLayout) -> Self {
+        Self { chrome, layout, page_size_open: false, custom_template: None }
     }
 
     pub fn with_custom_template(mut self, template: PagingToolbarTemplate) -> Self {
@@ -92,7 +92,7 @@ impl Render for PagingToolbar {
             return template(&self.layout, window, cx);
         }
 
-        let chrome = self.theme.chrome();
+        let chrome = (self.chrome)();
         let layout = self.layout;
         let at_first = layout.current_page == 0;
         let at_last = layout.current_page + 1 >= layout.page_count.max(1);
@@ -122,7 +122,7 @@ impl Render for PagingToolbar {
                             .items_center()
                             .gap(px(8.0))
                             .child(div().flex_none().child("Rows per page"))
-                            .child(render_page_size_select(cx, &self.theme, layout.page_size, self.page_size_open)),
+                            .child(render_page_size_select(cx, &chrome, layout.page_size, self.page_size_open)),
                     )
                     .child(
                         div()
@@ -139,10 +139,10 @@ impl Render for PagingToolbar {
                             .flex()
                             .items_center()
                             .gap(px(2.0))
-                            .child(render_nav_button(cx, &self.theme, "<<", at_first, PagingToolbarEvent::FirstPage))
-                            .child(render_nav_button(cx, &self.theme, "<", at_first, PagingToolbarEvent::PrevPage))
-                            .child(render_nav_button(cx, &self.theme, ">", at_last, PagingToolbarEvent::NextPage))
-                            .child(render_nav_button(cx, &self.theme, ">>", at_last, PagingToolbarEvent::LastPage)),
+                            .child(render_nav_button(cx, &chrome, "<<", at_first, PagingToolbarEvent::FirstPage))
+                            .child(render_nav_button(cx, &chrome, "<", at_first, PagingToolbarEvent::PrevPage))
+                            .child(render_nav_button(cx, &chrome, ">", at_last, PagingToolbarEvent::NextPage))
+                            .child(render_nav_button(cx, &chrome, ">>", at_last, PagingToolbarEvent::LastPage)),
                     ),
             )
             .into_any_element()
@@ -151,12 +151,10 @@ impl Render for PagingToolbar {
 
 fn render_page_size_select(
     cx: &mut Context<PagingToolbar>,
-    theme: &RadixTheme,
+    chrome: &LumaChrome,
     page_size: usize,
     open: bool,
 ) -> impl IntoElement {
-    let chrome = theme.chrome();
-
     div()
         .relative()
         .flex_none()
@@ -236,13 +234,11 @@ fn render_page_size_select(
 
 fn render_nav_button(
     cx: &mut Context<PagingToolbar>,
-    theme: &RadixTheme,
+    chrome: &LumaChrome,
     label: &'static str,
     disabled: bool,
     event: PagingToolbarEvent,
 ) -> impl IntoElement {
-    let chrome = theme.chrome();
-
     div()
         .id(format!("paging-nav-{label}"))
         .flex_none()

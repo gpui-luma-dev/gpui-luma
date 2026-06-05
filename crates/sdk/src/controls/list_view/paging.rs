@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Context, Entity, EventEmitter, Render, Window, div, prelude::*};
 
-use crate::theme::RadixTheme;
+use crate::theme::LumaChrome;
 
 use super::control::{ListViewControl, ListViewEvent};
 use super::model::ListViewBuilder;
 use super::toolbar::{PagingToolbar, PagingToolbarEvent, PagingToolbarLayout, PagingToolbarTemplate};
+
+pub type PagingToolbarChrome = Arc<dyn Fn() -> LumaChrome + Send + Sync>;
 
 pub type PagingListView<T> = Entity<PagingListViewControl<T>>;
 
@@ -82,13 +84,13 @@ impl<T: 'static> Render for PagingListViewControl<T> {
 
 pub struct PagingListViewBuilder<T: 'static> {
     list_builder: ListViewBuilder<T>,
-    theme: Arc<RadixTheme>,
+    chrome: PagingToolbarChrome,
     toolbar_template: Option<PagingToolbarTemplate>,
 }
 
 impl<T: 'static> PagingListViewBuilder<T> {
-    pub fn new(list_builder: ListViewBuilder<T>, theme: Arc<RadixTheme>) -> Self {
-        Self { list_builder, theme, toolbar_template: None }
+    pub fn new(list_builder: ListViewBuilder<T>, chrome: PagingToolbarChrome) -> Self {
+        Self { list_builder, chrome, toolbar_template: None }
     }
 
     pub fn toolbar_template(mut self, template: PagingToolbarTemplate) -> Self {
@@ -107,7 +109,7 @@ impl<T: 'static> PagingListViewBuilder<T> {
             page_size: list.page_size().unwrap_or(10),
         });
 
-        let mut toolbar = PagingToolbar::new(self.theme.clone(), initial_layout);
+        let mut toolbar = PagingToolbar::new(self.chrome.clone(), initial_layout);
         if let Some(template) = self.toolbar_template {
             toolbar = toolbar.with_custom_template(template);
         }

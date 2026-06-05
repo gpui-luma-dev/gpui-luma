@@ -13,8 +13,8 @@ use gpui_luma::controls::textarea::{
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

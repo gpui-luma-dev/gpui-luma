@@ -9,7 +9,8 @@ use gpui_luma::controls::resizable_panels::ResizablePanels;
 use gpui_luma::resizable_panels;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
+use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::StudioThemeChoice;
@@ -75,7 +76,7 @@ impl ThemeStudioApp {
         let sidebar_entity = theme_sidebar.clone();
         let main_split = resizable_panels! {
             cx,
-            radix = radix_theme,
+            theme = radix_theme.resizable_panels_theme(),
             id: "theme-studio-main-split",
             layout: Horizontal,
             show_handle: true,

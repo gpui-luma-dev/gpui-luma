@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use std::sync::Arc;
 
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 pub(in crate::gallery) use gpui_luma::theme::{LumaChrome as GalleryChrome};
 
@@ -110,7 +110,7 @@ impl GalleryThemeChoice {
 
 #[cfg(test)]
 mod tests {
-    use gpui_luma::theme::RadixTheme;
+    use gpui_luma_theme_radix::RadixTheme;
 
     use super::{available_theme_names, theme_css_path, tweakcn_dir};
 

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

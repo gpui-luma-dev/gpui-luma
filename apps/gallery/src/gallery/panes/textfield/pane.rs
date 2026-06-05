@@ -13,8 +13,8 @@ use gpui_luma::controls::textfield::{
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

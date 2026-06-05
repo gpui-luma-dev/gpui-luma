@@ -6,8 +6,9 @@ use gpui::{
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{InteractionState, RadixButtonStyle, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{AppContext, Context, Entity, Subscription};
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::RadixTheme;
 
 use super::app::ThemeStudioApp;
 use super::panels::{

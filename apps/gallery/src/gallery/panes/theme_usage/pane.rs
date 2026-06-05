@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::{RadixTheme, ThemePartUsage, ThemeUsage, all_radix_theme_usages};
+use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
+use gpui_luma_theme_radix::{RadixTheme, all_radix_theme_usages};
 
 use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::panes::shared::render_sparse_catalog_callout;

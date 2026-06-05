@@ -30,7 +30,8 @@ use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTemplateHandlers, TextFieldTheme,
     TextFieldVariant,
 };
-use gpui_luma::theme::{ControlSize, InteractionState, RadixTheme, StandardBoxScale};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

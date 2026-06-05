@@ -9,8 +9,9 @@ use gpui_luma::controls::slider::{
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{InteractionState, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

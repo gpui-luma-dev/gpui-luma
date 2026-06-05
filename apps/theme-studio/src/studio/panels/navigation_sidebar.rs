@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 

@@ -1,5 +1,5 @@
 use gpui::{AnyElement, IntoElement, div, prelude::*};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 use super::super::shared::gallery_pane;
 

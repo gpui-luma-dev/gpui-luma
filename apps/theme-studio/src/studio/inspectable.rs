@@ -1,4 +1,5 @@
-use gpui_luma::theme::{ThemePartUsage, ThemeUsage, all_radix_theme_usages};
+use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
+use gpui_luma_theme_radix::all_radix_theme_usages;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum InspectableId {

@@ -3,8 +3,8 @@ use std::{cell::Cell, rc::Rc};
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

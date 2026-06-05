@@ -9,7 +9,7 @@ use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
 };
 use gpui_luma::resizable_panels;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 
@@ -69,7 +69,7 @@ impl ResizablePanelsPane {
 
         let vertical = resizable_panels! {
             cx,
-            radix = radix_theme,
+            theme = radix_theme.resizable_panels_theme(),
             id: "resizable-panels-vertical",
             layout: Vertical,
             size: (px(DEMO_WIDTH), px(DEMO_HEIGHT)),
@@ -88,7 +88,7 @@ impl ResizablePanelsPane {
 
         let nested_outer = resizable_panels! {
             cx,
-            radix = radix_theme,
+            theme = radix_theme.resizable_panels_theme(),
             id: "resizable-panels-nested-outer",
             layout: Horizontal,
             size: (px(NESTED_OUTER_WIDTH), px(NESTED_OUTER_HEIGHT)),
@@ -100,7 +100,7 @@ impl ResizablePanelsPane {
                 |
                 resizable_panels! {
                     cx,
-                    radix = radix_theme,
+                    theme = radix_theme.resizable_panels_theme(),
                     id: "resizable-panels-nested-inner",
                     layout: Vertical,
                     show_border: false,
@@ -125,7 +125,7 @@ impl ResizablePanelsPane {
         let right_sizes = controlled_panel_sizes.clone();
         let controlled = resizable_panels! {
             cx,
-            radix = radix_theme,
+            theme = radix_theme.resizable_panels_theme(),
             id: "resizable-panels-controlled",
             layout: Horizontal,
             show_handle: true,

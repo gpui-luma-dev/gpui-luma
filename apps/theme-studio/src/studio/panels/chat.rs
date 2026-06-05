@@ -3,8 +3,9 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ControlIcon};
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{ControlSize, RadixButtonStyle, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
 use gpui_luma::{declare_form, hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 

@@ -4,8 +4,8 @@ use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{RadixButtonStyle, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

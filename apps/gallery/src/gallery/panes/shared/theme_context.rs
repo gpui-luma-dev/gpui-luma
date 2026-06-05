@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::theme::GalleryThemeChoice;
 

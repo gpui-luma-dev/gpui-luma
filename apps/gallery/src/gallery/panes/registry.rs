@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, entity_presenter};
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

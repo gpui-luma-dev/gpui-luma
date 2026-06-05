@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorItem};
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{avatar_circle, card, card_header};

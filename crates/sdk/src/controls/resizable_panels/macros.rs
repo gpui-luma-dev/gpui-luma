@@ -7,7 +7,7 @@
 macro_rules! resizable_panels {
     (
         $cx:expr,
-        radix = $radix:expr,
+        theme = $theme:expr,
         id: $id:expr,
         layout: $layout:ident,
         $( show_handle: $show_handle:expr, )?
@@ -22,7 +22,8 @@ macro_rules! resizable_panels {
         ]
     ) => {{
         let panels = $crate::resizable_panels!(@collect_specs []; $($panel_items)*);
-        let mut builder = $radix.resizable_panels($id);
+        let mut builder = $crate::controls::resizable_panels::ResizablePanels::new($id)
+            .theme($theme);
         $crate::resizable_panels!(@finish_builder builder, $cx, $layout, panels
             $(, show_handle = $show_handle)*
             $(, resize_handle = $resize_handle)*

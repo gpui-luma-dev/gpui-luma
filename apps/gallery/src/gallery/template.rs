@@ -2,7 +2,8 @@ use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, Render, W
 use gpui_luma::controls::split_view::render_pane;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{RadixTheme, ThemeMode};
+use gpui_luma::theme::{ThemeMode};
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use super::control::GalleryApp;

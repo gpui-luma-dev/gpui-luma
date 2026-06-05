@@ -4,8 +4,8 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::switch::Switch;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{card, card_header};

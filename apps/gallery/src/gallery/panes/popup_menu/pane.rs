@@ -9,8 +9,9 @@ use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers,
 };
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{InteractionState, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

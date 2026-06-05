@@ -10,8 +10,9 @@ use gpui_luma::controls::tabs_navigation::{
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     ThemedTabsNavigationTemplate, TabsNavigationTheme,
 };
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{InteractionState, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

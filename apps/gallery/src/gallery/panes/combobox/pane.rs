@@ -5,8 +5,9 @@ use gpui_luma::controls::combobox::{
     ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, SelectionItem, TypingPolicy,
 };
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};

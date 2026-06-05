@@ -36,8 +36,16 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - custom title-bar rendering and platform-specific window control behavior
 
 - `theme/mod.rs`
-  - submodules: `adorner`, `cache`, `interaction`, `layout`, `pack`, `radix`, `tokens`, `registry`
-  - re-exports token APIs, layout cache helpers, shared layout scales, `RadixTheme`, and `all_radix_theme_usages`
+  - submodules: `adorner`, `cache`, `interaction`, `layout`, `pack`, `tokens`, `registry`
+  - re-exports token APIs, layout cache helpers, shared layout scales (no Radix symbols)
+
+## `crates/theme-radix` (`gpui-luma-theme-radix`)
+
+- `lib.rs`
+  - `RadixTheme`, `RadixButtonStyle`, `RadixModeTokens`, CSS catalog types
+  - `RadixThemeControlExt` and builder style helpers (`RadixButtonStyleExt`, …)
+  - `all_radix_theme_usages`, per-control resolvers and template factories
+- depends on `gpui-luma`; consumed by gallery and theme-studio alongside the SDK
 
 - `controls/mod.rs`
   - exports control families and shared infra modules
@@ -339,5 +347,5 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
 - `theme/tokens.rs`: parsing schema drift and default-theme invariant
 - `controls/textarea/control.rs`, `controls/textfield/control.rs`: complex interaction state + async cursor/selection tasks
 - `controls/navigation_sidebar/control.rs`: large state transitions and nested nav behavior
-- `theme/radix/usage.rs`: manual Radix usage registration maintenance
+- `crates/theme-radix/src/usage.rs`: manual Radix usage registration maintenance
 - `apps/gallery/src/gallery/panes/registry.rs`: string-ID routing and broad wiring surface

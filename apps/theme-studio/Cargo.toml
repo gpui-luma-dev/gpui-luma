@@ -9,6 +9,7 @@ publish = false
 anyhow = { workspace = true }
 gpui = { workspace = true }
 gpui-luma = { path = "../../crates/sdk" }
+gpui-luma-theme-radix = { path = "../../crates/theme-radix" }
 gpui_platform = { workspace = true }
 lucide-icons = { workspace = true }
 serde = { workspace = true }

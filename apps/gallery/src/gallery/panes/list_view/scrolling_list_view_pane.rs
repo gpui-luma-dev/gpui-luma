@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, ScrollingListView};
 use gpui_luma::{column, column_emphasis, scrolling_list_view};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -23,7 +23,7 @@ impl ScrollingListViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
         let tasks = build_task_rows();
         let list_view = scrolling_list_view! {
-            radix = radix_theme.clone();
+            list_view_theme = radix_theme.list_view_theme();
             id = "listview-tasks-scroll";
             items = tasks;
             selection = ListSelectionMode::Single;

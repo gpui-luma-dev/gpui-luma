@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::progress::{Progress, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 
 use crate::gallery::control::GalleryApp;
 

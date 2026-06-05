@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::tree_view::{TreeNode, TreeViewEvent, TreeViewSelectionMode};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

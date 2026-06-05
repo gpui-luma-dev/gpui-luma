@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, div, hsla, prelude::*, px};
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 pub(super) const PAGE_SPEC: PageSpec = PageSpec {
     title: "Selection Panel",

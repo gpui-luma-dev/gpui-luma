@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;

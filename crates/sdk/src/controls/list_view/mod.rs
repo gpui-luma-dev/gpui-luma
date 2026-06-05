@@ -10,7 +10,7 @@ mod theme;
 mod toolbar;
 
 pub use control::{ListViewControl, ListViewEvent};
-pub use paging::{PagingListView, PagingListViewControl, PagingListViewBuilder};
+pub use paging::{PagingListView, PagingListViewControl, PagingListViewBuilder, PagingToolbarChrome};
 pub use toolbar::{PagingToolbar, PagingToolbarEvent, PagingToolbarLayout, PagingToolbarTemplate};
 pub use column_template::{
     ListViewColumnRenderModel, column_template_with_modifier, default_emphasis_column_template,

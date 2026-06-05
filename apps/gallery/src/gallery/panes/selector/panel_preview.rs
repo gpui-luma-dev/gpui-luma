@@ -8,7 +8,8 @@ use gpui_luma::controls::selector_panel::{
     SelectorItem, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPath, default_selector_items_template,
 };
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::RadixTheme;
 
 #[derive(Clone)]
 pub(super) struct SelectorPanelPreview {

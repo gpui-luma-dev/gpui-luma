@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use gpui_luma::theme::RadixTheme;
+use gpui_luma_theme_radix::RadixTheme;
 
 /// `apps/gallery/tweakcn/` — shared Radix product themes with the gallery app.
 pub fn tweakcn_dir() -> PathBuf {

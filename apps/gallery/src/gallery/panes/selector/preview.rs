@@ -4,7 +4,8 @@ use gpui::{AnyElement, App, Context, IntoElement, Render, SharedString, Window, 
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
 };
-use gpui_luma::theme::{InteractionState, RadixTheme};
+use gpui_luma::theme::{InteractionState};
+use gpui_luma_theme_radix::RadixTheme;
 
 use super::pane::selector_items;
 

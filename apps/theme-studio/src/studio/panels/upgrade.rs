@@ -7,8 +7,9 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{ControlSize, RadixTheme};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ControlSize};
+use gpui_luma_theme_radix::RadixTheme;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header};

@@ -12,8 +12,9 @@ use gpui_luma::controls::selection_panel::{
     render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
-use gpui_luma::theme::radix::prelude::*;
-use gpui_luma::theme::{ControlSize, RadixTheme, ThemeMode};
+use gpui_luma_theme_radix::prelude::*;
+use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma_theme_radix::RadixTheme;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
