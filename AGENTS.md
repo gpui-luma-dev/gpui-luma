@@ -3,7 +3,7 @@
 Before making changes:
 - Read docs/ai/project-overview.md and docs/ai/architecture.md.
 - Inspect relevant Rust modules directly; do not rely only on summaries.
-- In apps under `apps/`, use SDK controls and theme factories (`RadixTheme`, `*Builder`, `.spawn(cx)`). Do not home-brew buttons, checkboxes, inputs, or other interactive chrome with raw `div` styling.
+- In apps under `apps/`, use SDK controls and theme factories (`ShadcnLook`, `*Builder`, `.spawn(cx)`). Do not home-brew buttons, checkboxes, inputs, or other interactive chrome with raw `div` styling.
 - Prefer small, reviewable diffs.
 - Run `cargo fmt`, `cargo clippy`, and relevant tests before finalizing when possible.
 

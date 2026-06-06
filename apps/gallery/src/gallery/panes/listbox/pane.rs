@@ -20,11 +20,7 @@ pub(in crate::gallery) struct ListBoxPane {
 
 impl ListBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let single = look
-            .listbox("listbox-density-single")
-            .items(density_items())
-            .selected("comfortable")
-            .spawn(cx);
+        let single = look.listbox("listbox-density-single").items(density_items()).selected("comfortable").spawn(cx);
 
         let multiple = look
             .listbox_multiple("listbox-density-multiple")

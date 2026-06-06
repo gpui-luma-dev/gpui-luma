@@ -15,7 +15,7 @@ The project is structured around two complementary concerns:
 
 ## Consumer apps (`apps/*`)
 
-Apps mount GPUI trees built from `gpui_luma::controls` and `gpui_luma::theme`, typically with a runtime `gpui_luma_theme_radix::RadixTheme` (or native fallback via `RadixTheme::from_theme(LumaTheme::native())`).
+Apps mount GPUI trees built from `gpui_luma::controls` and `gpui_luma::theme`, typically with a runtime `gpui_luma_look_shadcn::ShadcnLook` (or native fallback via `ShadcnLook::native()`).
 
 **Invariant:** interactive UI lives in the SDK. App code wires models, layout, and subscriptions—it does not home-brew themed controls (hand-styled `div` click targets, inline checkmarks, ad-hoc disabled states, etc.). Missing capability is a gap in `crates/sdk`, not a license to fork visuals in an app.
 
@@ -41,10 +41,10 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
   - `theme/interaction.rs`: generic interaction-state layer precedence
   - `theme/adorner.rs`: adorner/focus-ring descriptors (current policy: one optional adorner per appearance)
 
-- **Radix look crate (`gpui-luma-theme-radix`, `crates/theme-radix`)**
-  - CSS-first product theming — `RadixTheme`, CSS catalog parse, control appearance resolvers, template factories
-  - `usage.rs`: hand-maintained usage metadata (`all_radix_theme_usages`)
-  - extension traits: `RadixThemeControlExt`, `RadixButtonStyleExt`, etc.
+- **Shadcn look crate (`gpui-luma-look-shadcn`, `crates/look-shadcn`)**
+  - CSS-first product theming — `ShadcnLook`, CSS catalog parse, control appearance resolvers, template factories
+  - `usage.rs`: hand-maintained usage metadata (`all_shadcn_theme_usages`)
+  - extension traits: `ShadcnLookControlExt`, `ShadcnButtonStyleExt`, etc.
   - depends on `gpui-luma`; apps depend on both crates
 
 - **Controls subsystem** (`controls/`)
@@ -84,11 +84,11 @@ This pattern improves consistency and makes style/theming separable from behavio
 - `ControlTemplate<T, M>` plus modifier pipelines provide composability.
 - Phase-5 density refactoring is now active on `switch`, `checkbox`, `button_family`, `radio_button`, `textfield`, `textarea`, `selector`, `popup_menu`, `list_view`, and `listbox`: those theme traits now resolve palette-only structs for control visuals, while templates or control layout paths compose cached shared layout scales from `MetricTokens` + `window.scale_factor()`.
 - TextField supports per-instance appearance specialization (`.appearance_override(...)`) without adding global variants/tokens; overrides are applied after appearance resolution and used consistently by both template rendering and text layout/shaping.
-- `RadixTheme` serves as the product runtime theme:
-  - loads tweakcn/shadcn CSS catalogs (`RadixTheme::from_css_path`) or native fallback (`RadixTheme::native()`)
+- `ShadcnLook` serves as the product runtime theme:
+  - loads tweakcn/shadcn CSS catalogs (`ShadcnLook::from_css_path`) or native fallback (`ShadcnLook::native()`)
   - stores active light/dark mode and exposes control template/theme factories
-  - gallery keeps one `Arc<RadixTheme>` in app state and passes it explicitly into control/theme factory helpers
-  - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into Radix-specific template/theme factories
+  - apps keep one `Arc<ShadcnLook>` in app state and pass it explicitly into control/theme factory helpers
+  - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into look-shadcn template/theme factories
 - `control_group` provides optional themed list chrome via `ControlGroupTheme` + `ThemedControlGroupTemplate` (`ControlTemplate` + modifiers from `controls/template.rs`):
   - group border/background/radius/padding from `border.default` and `surface.subtle.background`
   - item visuals still come from `ControlGroupItemTemplate` (e.g. `button_item_template` + `ButtonTemplate`)
@@ -118,11 +118,11 @@ apps/gallery/tweakcn/<stem>.css
         ↓
 GalleryThemeChoice (CLI: default or CSS stem)
         ↓
-RadixTheme::from_css_path / RadixTheme::native()
+ShadcnLook::from_css_path / ShadcnLook::native()
         ↓
-set_active_radix_theme (GalleryApp startup)
+GalleryApp state (Arc<ShadcnLook>)
         ↓
-GalleryPanes + per-pane render(&RadixTheme)
+GalleryPanes + per-pane render(&ShadcnLook)
 ```
 
 ## Main components
@@ -145,7 +145,7 @@ GalleryPanes + per-pane render(&RadixTheme)
 
 - `SplitView` and `NavigationSidebar` are synchronized bidirectionally (collapsed state + width updates).
 - Pane entities subscribe to events in centralized `GalleryPanes::subscribe`.
-- Theme mode toggle in title bar updates `RadixTheme` mode and triggers notify.
+- Theme mode toggle in title bar updates `ShadcnLook` mode and triggers notify.
 
 ## Public API Surface (Most Important)
 

@@ -347,10 +347,7 @@ impl GalleryPanes {
         INTRODUCTION_PAGE.id
     }
 
-    pub(in crate::gallery) fn navigation(
-        cx: &mut Context<GalleryApp>,
-        look: Arc<ShadcnLook>,
-    ) -> GalleryNavigation {
+    pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> GalleryNavigation {
         let sidebar_theme = look.navigation_sidebar_theme();
         let mut route_buttons = Vec::new();
         let mut branch_buttons = Vec::new();

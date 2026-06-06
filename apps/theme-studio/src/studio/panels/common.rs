@@ -9,7 +9,6 @@ pub enum AvatarSize {
     Lg,
 }
 
-
 pub fn format_hex_color(color: Hsla) -> String {
     let (r, g, b) = hsla_to_rgb8(color);
     format!("#{r:02x}{g:02x}{b:02x}")
@@ -168,7 +167,6 @@ pub fn avatar(initials: &'static str, size: AvatarSize) -> impl IntoElement {
         .text_size(px(size_px * 0.38))
         .child(initials)
 }
-
 
 pub fn message_bubble(text: &'static str, align_end: bool, bg: Hsla, fg: Hsla) -> impl IntoElement {
     let bubble = div()

@@ -14,11 +14,7 @@ pub(in crate::gallery) struct TreeViewScrollShell {
 }
 
 impl TreeViewScrollShell {
-    pub fn new(
-        look: Arc<ShadcnLook>,
-        tree: Entity<TreeViewControl<SharedString>>,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    pub fn new(look: Arc<ShadcnLook>, tree: Entity<TreeViewControl<SharedString>>, cx: &mut Context<Self>) -> Self {
         let scroll = ScrollContainer::new("gallery-tree-scroll", look.scrollbar_template(), cx);
         let scrollbar = scroll.scrollbar();
         let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {

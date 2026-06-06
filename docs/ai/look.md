@@ -4,9 +4,9 @@
 > **Core Architectural Philosophy**
 > We are not proving that “the SDK supports many themes.” We are proving that **“the SDK supports multiple appearance systems, each with their own theme sources and specializations.”**
 > 
-> The parallel `shadcn` styling system is a proof-of-concept for this capability. It introduces a new **Look** (the runtime appearance system) called `ShadcnLook` that parses theme data files (such as `CssTokenCatalog`) and applies a Tailwind/shadcn utility-based layout system to elements, alongside the legacy `RadixTheme` system.
+> The `shadcn` styling system introduces a **Look** (the runtime appearance system) called `ShadcnLook` that parses theme data files (such as `CssTokenCatalog`) and applies a Tailwind/shadcn utility-based layout system to elements. The legacy `RadixTheme` / `gpui-luma-theme-radix` crate has been removed; `ShadcnLook` is the sole downstream look crate.
 > 
-> **Important Constraint**: The legacy radix styling system has been extracted into its own downstream workspace crate (`gpui-luma-theme-radix`). We are introducing `ShadcnLook` as a parallel downstream crate (`gpui-luma-look-shadcn`) to keep the core SDK (`crates/sdk`) completely look-agnostic.
+> **Important Constraint**: `ShadcnLook` lives in the downstream crate `gpui-luma-look-shadcn` to keep the core SDK (`crates/sdk`) completely look-agnostic.
 
 ---
 

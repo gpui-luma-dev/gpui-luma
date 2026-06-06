@@ -78,12 +78,11 @@ To maintain a strict separation of concerns and avoid namespace pollution in the
                            │   crates/sdk (Core)     │
                            └───────────┬─────────────┘
                                        │
-                      ┌────────────────┴────────────────┐
-                      ▼                                 ▼
-         ┌─────────────────────────┐       ┌─────────────────────────┐
-         │   crates/theme-radix    │       │   crates/look-shadcn    │
-         │  (gpui-luma-theme-radix)│       │ (gpui-luma-look-shadcn) │
-         └─────────────────────────┘       └─────────────────────────┘
+                                       ▼
+                          ┌─────────────────────────┐
+                          │   crates/look-shadcn    │
+                          │ (gpui-luma-look-shadcn) │
+                          └─────────────────────────┘
 
 ### 1. Crate Partitioning [COMPLETED]
 The new downstream look crate `crates/look-shadcn` has been successfully created with a library structure and declared in `Cargo.toml`. 
@@ -150,7 +149,7 @@ For each layout panel in `apps/theme-studio/src/studio/panels/` (e.g., [team.rs]
 >   look.button("cancel").radix_style(&look, ShadcnButtonStyle::Outline)
 >   ```
 
-### 3. Phase B: Migrate Gallery App
+### 3. Phase B: Migrate Gallery App [COMPLETED]
 
 Migrate the gallery app layout and views to consume `ShadcnLook` and compile-time styling macros instead of legacy radix configurations.
 
@@ -191,10 +190,18 @@ For each individual pane and view inside [apps/gallery/src/gallery/panes/](file:
 * Replace explicit radix-style modifier calls with their look-shadcn counterparts (e.g. `bg_cn`, `text_cn`, `border_cn`).
 * Wrap the top-level rendering of panes inside `with_look(&self.look, || { ... })` so thread-local dynamic color and spacing variables resolve correctly.
 
-#### Step 5: Clean Up Dependencies
-Once all gallery components build successfully under `ShadcnLook`, remove the `gpui-luma-theme-radix` dependency from `apps/gallery/Cargo.toml`.
+#### Step 5: Clean Up Dependencies [COMPLETED]
+`gpui-luma-theme-radix` has been removed from `apps/gallery/Cargo.toml`.
 
 
-### 5. Phase D: SDK Migration and Deprecation
+### 4. Phase C: Remove `theme-radix` Crate [COMPLETED]
 
-Refactor the remaining core controls inside `crates/sdk/src/controls/` to consume `ShadcnLook` and compile-time tokens. Once all control templates compile on the new model, we can safely deprecate and remove the legacy `gpui-luma-theme-radix` crate from the workspace.
+The legacy `crates/theme-radix` crate has been deleted from the workspace. Both apps now depend exclusively on `gpui-luma-look-shadcn`.
+
+### 5. Phase D: SDK Stays Lookless [COMPLETED]
+
+The SDK (`crates/sdk`) does not depend on any look crate. Apps pass `Arc<ShadcnLook>` into template factories and builder extensions from `gpui-luma-look-shadcn`. No further SDK migration is required.
+
+### 6. Follow-up: Rename Legacy API Names (optional)
+
+`crates/look-shadcn/src/controls/ext.rs` still exposes `.radix_style(...)` and `.radix_theme(...)` method names copied from the old crate. Rename to `.look_style(...)` / `.with_look(...)` when convenient.

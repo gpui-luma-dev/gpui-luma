@@ -231,10 +231,7 @@ fn render_shared_values(
                                 .text_color(chrome.title_text)
                                 .child(token_label(token)),
                         )
-                        .child(render_status_badge(
-                            token_status(by_token.contains_key(token.token.as_str())),
-                            look,
-                        ))
+                        .child(render_status_badge(token_status(by_token.contains_key(token.token.as_str())), look))
                 }))
         })))
         .into_any_element()

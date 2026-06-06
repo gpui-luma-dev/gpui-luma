@@ -388,11 +388,7 @@ fn render_variant_row(
         .flex()
         .items_center()
         .gap(px(8.0))
-        .children(
-            samples
-                .iter()
-                .map(|sample| render_state_sample(template, look, style, variant, sample, window, cx)),
-        )
+        .children(samples.iter().map(|sample| render_state_sample(template, look, style, variant, sample, window, cx)))
         .into_any_element()
 }
 

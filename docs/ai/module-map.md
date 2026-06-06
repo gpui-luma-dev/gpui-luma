@@ -39,17 +39,15 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - submodules: `adorner`, `cache`, `interaction`, `layout`, `pack`, `tokens`, `registry`
   - re-exports token APIs, layout cache helpers, shared layout scales (no Radix symbols)
 
-## `crates/theme-radix` (`gpui-luma-theme-radix`)
+## `crates/look-shadcn` (`gpui-luma-look-shadcn`)
 
 - `lib.rs`
-  - `RadixTheme`, `RadixButtonStyle`, `RadixModeTokens`, CSS catalog types
-  - `RadixThemeControlExt` and builder style helpers (`RadixButtonStyleExt`, …)
-  - `all_radix_theme_usages`, per-control resolvers and template factories
+  - `ShadcnLook`, `ShadcnButtonStyle`, `ShadcnModeTokens`, CSS catalog types
+  - `ShadcnLookControlExt` and builder style helpers (`ShadcnButtonStyleExt`, …)
+  - `all_shadcn_theme_usages`, per-control resolvers and template factories
+- `ext.rs` — layout utility extensions (`bg_cn`, `text_cn`, `gap_cn`, …)
+- `context.rs` — `with_look` thread-local scope for token resolution
 - depends on `gpui-luma`; consumed by gallery and theme-studio alongside the SDK
-
-- `controls/mod.rs`
-  - exports control families and shared infra modules
-  - crate-private support modules: `button_family_template`, `interaction`, `menu_navigation`, `text`
 
 ## `apps/theme-studio` (`gpui-luma-theme-studio`)
 
@@ -64,7 +62,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `studio/panels/*`
   - six shadcn-style demo cards (upgrade, account, team, chat, cookies, report)
 - `studio/demo_controls.rs`
-  - spawns panel entities from active `RadixTheme`
+  - spawns panel entities from active `ShadcnLook`
 - `studio/inspector.rs`
   - click-to-inspect settings sheet (scale metrics, token colors, export)
 - `studio/export.rs`
@@ -88,7 +86,7 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - render implementation for root gallery shell
 - `gallery/theme.rs`
   - `GalleryThemeChoice` (CLI `default` or tweakcn CSS stem)
-  - `tweakcn_dir()`, `available_theme_names()`, `radix_theme()` loader
+  - `tweakcn_dir()`, `available_theme_names()`, `shadcn_look()` loader
   - re-exports `LumaChrome` as `GalleryChrome`
 - `gallery/panes/registry.rs`
   - page registry, nav model, pane constructor/subscription/dispatch
@@ -291,11 +289,6 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
 - `pack.rs`
   - `LumaChrome`: app/gallery shell chrome colors
 
-- `radix/mod.rs`
-  - `RadixTheme`: CSS catalog + mode tokens + control resolvers/template factories
-  - `usage.rs`: `all_radix_theme_usages()` — hand-maintained CSS token usage metadata
-  - `catalog/` and per-control resolver modules: CSS parse + Radix appearance/template adapters
-
 - `registry.rs`
   - palette token introspection (`PaletteColorToken`)
   - lookup helper `resolve_palette_color`
@@ -347,5 +340,5 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
 - `theme/tokens.rs`: parsing schema drift and default-theme invariant
 - `controls/textarea/control.rs`, `controls/textfield/control.rs`: complex interaction state + async cursor/selection tasks
 - `controls/navigation_sidebar/control.rs`: large state transitions and nested nav behavior
-- `crates/theme-radix/src/usage.rs`: manual Radix usage registration maintenance
+- `crates/look-shadcn/src/usage.rs`: manual Shadcn usage registration maintenance
 - `apps/gallery/src/gallery/panes/registry.rs`: string-ID routing and broad wiring surface

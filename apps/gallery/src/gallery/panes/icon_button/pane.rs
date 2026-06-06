@@ -29,13 +29,9 @@ impl IconButtonPane {
             secondary_icon_button: look
                 .secondary_icon_button("icon-button-secondary-example", LucideIcon::Plus)
                 .spawn(cx),
-            outline_icon_button: look
-                .outline_icon_button("icon-button-outline-example", LucideIcon::Plus)
-                .spawn(cx),
+            outline_icon_button: look.outline_icon_button("icon-button-outline-example", LucideIcon::Plus).spawn(cx),
             ghost_icon_button: look.ghost_icon_button("icon-button-ghost-example", LucideIcon::Plus).spawn(cx),
-            primary_icon_button: look
-                .primary_icon_button("icon-button-primary-example", LucideIcon::Plus)
-                .spawn(cx),
+            primary_icon_button: look.primary_icon_button("icon-button-primary-example", LucideIcon::Plus).spawn(cx),
             secondary_icon_clicks: 0,
             outline_icon_clicks: 0,
             ghost_icon_clicks: 0,

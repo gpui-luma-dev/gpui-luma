@@ -67,15 +67,7 @@ pub(super) fn gallery_pane_with_usage_description_scrollable(
     content: AnyElement,
     look: &ShadcnLook,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(
-        title,
-        description,
-        &[usage_component],
-        content,
-        look,
-        true,
-        true,
-    )
+    render_gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, look, true, true)
 }
 
 pub(super) fn gallery_pane_with_usage_description(
@@ -95,15 +87,7 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     content: AnyElement,
     look: &ShadcnLook,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(
-        title,
-        description,
-        usage_components,
-        content,
-        look,
-        false,
-        false,
-    )
+    render_gallery_pane_with_usage_descriptions(title, description, usage_components, content, look, false, false)
 }
 
 fn render_gallery_pane_with_usage_descriptions(

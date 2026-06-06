@@ -7,14 +7,14 @@ This repository is a Rust workspace for a GPUI-based component SDK and apps unde
 - Workspace root: `gpui-luma/`
 - Main crates:
   - `crates/sdk` → `gpui-luma` (styling-agnostic component SDK)
-  - `crates/theme-radix` → `gpui-luma-theme-radix` (Radix/CSS look crate)
+  - `crates/look-shadcn` → `gpui-luma-look-shadcn` (Shadcn/CSS look crate)
   - `apps/gallery` → `gpui-luma-gallery` (application crate)
   - `apps/theme-studio` → `gpui-luma-theme-studio` (theme customizer / styleguide app)
 
 ## Workspace Structure
 
 - `Cargo.toml` (workspace)
-  - members: `crates/sdk`, `crates/theme-radix`, `apps/gallery`, `apps/theme-studio`
+  - members: `crates/sdk`, `crates/look-shadcn`, `apps/gallery`, `apps/theme-studio`
   - edition: Rust 2024
   - key shared deps: `gpui`, `gpui_platform`, `anyhow`, `lucide-icons`, `serde`, `tiny-skia`, `toml`
 - `justfile`
@@ -70,8 +70,8 @@ High-level flow:
 ## Theme APIs
 
 - `theme::LumaTheme`, `theme::ThemeTokens`, `theme::ThemeMode` — native fallback schema
-- `gpui_luma_theme_radix::RadixTheme`, `RadixThemeControlExt` — CSS-first product runtime theme (downstream look crate)
-- `gpui_luma_theme_radix::all_radix_theme_usages` — CSS token usage metadata for gallery introspection
+- `gpui_luma_look_shadcn::ShadcnLook`, `ShadcnLookControlExt` — CSS-first product runtime theme (downstream look crate)
+- `gpui_luma_look_shadcn::all_shadcn_theme_usages` — CSS token usage metadata for gallery introspection
 - `theme::LumaChrome` — shell chrome colors
 - `theme::ThemeUsage`, `theme::ThemePartUsage`
 - `theme::palette_color_tokens(...)`, `theme::resolve_palette_color(...)`

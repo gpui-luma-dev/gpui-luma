@@ -2377,19 +2377,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui-luma-theme-radix"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "gpui",
- "gpui-luma",
- "lucide-icons",
- "palette",
- "serde",
- "toml 0.8.23",
-]
-
-[[package]]
 name = "gpui-luma-theme-studio"
 version = "0.1.0"
 dependencies = [
