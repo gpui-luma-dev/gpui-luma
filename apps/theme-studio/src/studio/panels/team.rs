@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 
-use super::common::{avatar_circle, card, card_header};
+use super::common::{avatar, AvatarSize, card, card_header};
 
 const TEAM_CARD_WIDTH: f32 = 380.0;
 
@@ -35,28 +35,29 @@ declare_form! {
 
 impl Render for TeamPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.look.chrome();
-        let avatar_bg = gpui::hsla(0.55, 0.12, 0.35, 1.0);
+        with_look(&self.look, || {
+            let chrome = self.look.chrome();
 
-        card(
-            TEAM_CARD_WIDTH,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "Team Members",
-                    "Invite your team members to collaborate.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                member_row("SD", "Sofia Davis", "m@example.com", &self.sofia_selector, chrome, avatar_bg),
-                member_row("JL", "Jackson Lee", "m@example.com", &self.jackson_selector, chrome, avatar_bg),
-                member_row("IN", "Isabella Nguyen", "m@example.com", &self.isabella_selector, chrome, avatar_bg),
-            }
-            .w_full()
-            .overflow_hidden(),
-        )
+            card(
+                TEAM_CARD_WIDTH,
+                chrome.border,
+                chrome.panel_background,
+                vstack! {
+                    gap=12;
+                    card_header(
+                        "Team Members",
+                        "Invite your team members to collaborate.",
+                        chrome.title_text,
+                        chrome.muted_text,
+                    ),
+                    member_row("SD", "Sofia Davis", "m@example.com", &self.sofia_selector, chrome),
+                    member_row("JL", "Jackson Lee", "m@example.com", &self.jackson_selector, chrome),
+                    member_row("IN", "Isabella Nguyen", "m@example.com", &self.isabella_selector, chrome),
+                }
+                .w_full()
+                .overflow_hidden(),
+            )
+        })
     }
 }
 
@@ -66,11 +67,10 @@ fn member_row(
     email: &'static str,
     selector: &Entity<Selector>,
     chrome: gpui_luma::theme::LumaChrome,
-    avatar_bg: gpui::Hsla,
 ) -> impl IntoElement {
     hstack! {
         gap=10 align=center;
-        avatar_circle(initials, 32.0, avatar_bg, chrome.title_text),
+        avatar(initials, AvatarSize::Sm),
         vstack! {
             gap=2;
             div()

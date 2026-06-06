@@ -1,5 +1,14 @@
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::hstack;
+use gpui_luma_look_shadcn::prelude::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AvatarSize {
+    Sm,
+    Md,
+    Lg,
+}
+
 
 pub fn format_hex_color(color: Hsla) -> String {
     let (r, g, b) = hsla_to_rgb8(color);
@@ -139,19 +148,27 @@ pub fn or_divider(label: &'static str, border: Hsla, text: Hsla) -> impl IntoEle
         .child(div().flex_1().h(px(1.0)).bg(border))
 }
 
-pub fn avatar_circle(initials: &'static str, size: f32, bg: Hsla, fg: Hsla) -> impl IntoElement {
+pub fn avatar(initials: &'static str, size: AvatarSize) -> impl IntoElement {
+    let size_px = match size {
+        AvatarSize::Sm => 32.0,
+        AvatarSize::Md => 36.0,
+        AvatarSize::Lg => 40.0,
+    };
+
     div()
-        .size(px(size))
+        .size(px(size_px))
         .flex()
         .items_center()
         .justify_center()
-        .rounded_full()
-        .bg(bg)
-        .text_size(px(size * 0.38))
         .font_weight(FontWeight::SEMIBOLD)
-        .text_color(fg)
+        .bg_cn(ShadcnToken::Muted)
+        .text_cn(ShadcnToken::MutedForeground)
+        .font_cn(ShadcnFont::Sans)
+        .rounded_full()
+        .text_size(px(size_px * 0.38))
         .child(initials)
 }
+
 
 pub fn message_bubble(text: &'static str, align_end: bool, bg: Hsla, fg: Hsla) -> impl IntoElement {
     let bubble = div()

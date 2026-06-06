@@ -23,20 +23,24 @@ pub(crate) fn metrics_from_catalog(catalog: &CssTokenMap, mut scaffold: MetricTo
     let Some(base_px) = parse_length_px(radius_raw) else {
         return scaffold;
     };
-
     let scale = base_px / scaffold.radius.md;
     scaffold.radius.sm *= scale;
     scaffold.radius.md = base_px;
     scaffold.radius.lg *= scale;
     scaffold.radius.xl *= scale;
-
-    scale_control_metrics(&mut scaffold.sm, scale, base_px);
-    scale_control_metrics(&mut scaffold.md, scale, base_px);
-    scale_control_metrics(&mut scaffold.lg, scale, base_px);
-    scale_control_metrics(&mut scaffold.control.sm, scale, base_px);
-    scale_control_metrics(&mut scaffold.control.md, scale, base_px);
-    scale_control_metrics(&mut scaffold.control.lg, scale, base_px);
-
+    // Apply the standard Shadcn/Tailwind offsets:
+    // Sm gets rounded-sm (radius - 4px)
+    // Md gets rounded-md (radius - 2px)
+    // Lg gets rounded-lg (radius)
+    let sm_radius = (base_px - 4.0).max(0.0);
+    let md_radius = (base_px - 2.0).max(0.0);
+    let lg_radius = base_px;
+    scale_control_metrics(&mut scaffold.sm, scale, sm_radius);
+    scale_control_metrics(&mut scaffold.md, scale, md_radius);
+    scale_control_metrics(&mut scaffold.lg, scale, lg_radius);
+    scale_control_metrics(&mut scaffold.control.sm, scale, sm_radius);
+    scale_control_metrics(&mut scaffold.control.md, scale, md_radius);
+    scale_control_metrics(&mut scaffold.control.lg, scale, lg_radius);
     scaffold
 }
 
