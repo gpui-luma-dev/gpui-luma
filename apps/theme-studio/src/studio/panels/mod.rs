@@ -43,6 +43,12 @@ pub fn render_demo_board(
         let position = positions.get(&id).copied().unwrap_or_else(|| default_panel_position(id));
         let drag = DemoPanelDrag::new(id);
 
+        let border_color = if selected_panel {
+            chrome.title_text
+        } else {
+            gpui::hsla(0.0, 0.0, 0.0, 0.0)
+        };
+
         div()
             .absolute()
             .left(position.x)
@@ -51,10 +57,9 @@ pub fn render_demo_board(
             .flex_col()
             .occlude()
             .rounded(px(12.0))
-            .when(selected_panel, |panel| {
-                panel.border_2().border_color(chrome.title_text).bg(gpui::hsla(0.0, 0.0, 1.0, 0.05))
-            })
-            .when(!selected_panel, |panel| panel.border_1().border_color(gpui::hsla(0.0, 0.0, 0.0, 0.0)))
+            .border_2()
+            .border_color(border_color)
+            .when(selected_panel, |panel| panel.bg(gpui::hsla(0.0, 0.0, 1.0, 0.05)))
             .child(
                 div()
                     .id(format!("panel-{id:?}"))
