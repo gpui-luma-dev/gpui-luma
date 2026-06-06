@@ -1,9 +1,9 @@
-//! Theme factories and builder style helpers for Radix-themed controls.
+//! Theme factories and builder style helpers for shadcn look controls.
 //!
 //! [`ShadcnLookControlExt`] constructs controls with templates pre-bound from an
 //! [`Arc<ShadcnLook>`]. Builder style helpers ([`ShadcnButtonStyleExt`],
 //! [`ShadcnCheckboxStyleExt`], [`ShadcnSwitchStyleExt`], [`ShadcnTextFieldExt`]) apply
-//! Radix styles to existing builders.
+//! look styles to existing builders.
 
 use std::sync::Arc;
 
@@ -42,7 +42,7 @@ use gpui_luma::theme::ControlSize;
 use super::button::ShadcnButtonStyle;
 use crate::look::ShadcnLook;
 
-/// Constructs SDK controls from a shared [`ShadcnLook`], with Radix templates applied.
+/// Constructs SDK controls from a shared [`ShadcnLook`], with look templates applied.
 pub trait ShadcnLookControlExt {
     fn button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
     fn primary_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
@@ -419,9 +419,9 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     }
 }
 
-/// Applies a Radix button style to a [`ButtonBuilder`].
+/// Applies a shadcn button style to a [`ButtonBuilder`].
 pub trait ShadcnButtonStyleExt {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> ButtonBuilder<()>;
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> ButtonBuilder<()>;
     fn primary(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()>;
     fn secondary(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()>;
     fn outline(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()>;
@@ -429,41 +429,41 @@ pub trait ShadcnButtonStyleExt {
 }
 
 impl ShadcnButtonStyleExt for ButtonBuilder<()> {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> ButtonBuilder<()> {
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> ButtonBuilder<()> {
         self.template(theme.button_template(style))
     }
 
     fn primary(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()> {
-        self.radix_style(theme, ShadcnButtonStyle::Primary)
+        self.look_style(theme, ShadcnButtonStyle::Primary)
     }
 
     fn secondary(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()> {
-        self.radix_style(theme, ShadcnButtonStyle::Secondary)
+        self.look_style(theme, ShadcnButtonStyle::Secondary)
     }
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()> {
-        self.radix_style(theme, ShadcnButtonStyle::Outline)
+        self.look_style(theme, ShadcnButtonStyle::Outline)
     }
 
     fn ghost(self, theme: &Arc<ShadcnLook>) -> ButtonBuilder<()> {
-        self.radix_style(theme, ShadcnButtonStyle::Ghost)
+        self.look_style(theme, ShadcnButtonStyle::Ghost)
     }
 }
 
-/// Binds a Radix text field template on a [`TextFieldBuilder`].
+/// Binds a shadcn text field template on a [`TextFieldBuilder`].
 pub trait ShadcnTextFieldExt {
-    fn radix_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
+    fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
 }
 
 impl ShadcnTextFieldExt for TextFieldBuilder {
-    fn radix_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
+    fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
         self.template(theme.textfield_template())
     }
 }
 
-/// Applies a Radix checkbox style to a [`CheckboxBuilder`].
+/// Applies a shadcn checkbox style to a [`CheckboxBuilder`].
 pub trait ShadcnCheckboxStyleExt {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> CheckboxBuilder;
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> CheckboxBuilder;
     fn primary(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder;
     fn secondary(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder;
     fn outline(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder;
@@ -471,30 +471,30 @@ pub trait ShadcnCheckboxStyleExt {
 }
 
 impl ShadcnCheckboxStyleExt for CheckboxBuilder {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> CheckboxBuilder {
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> CheckboxBuilder {
         self.template(theme.checkbox_template(style))
     }
 
     fn primary(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Primary)
+        self.look_style(theme, ShadcnButtonStyle::Primary)
     }
 
     fn secondary(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Secondary)
+        self.look_style(theme, ShadcnButtonStyle::Secondary)
     }
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Outline)
+        self.look_style(theme, ShadcnButtonStyle::Outline)
     }
 
     fn ghost(self, theme: &Arc<ShadcnLook>) -> CheckboxBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Ghost)
+        self.look_style(theme, ShadcnButtonStyle::Ghost)
     }
 }
 
-/// Applies a Radix switch style to a [`SwitchBuilder`].
+/// Applies a shadcn switch style to a [`SwitchBuilder`].
 pub trait ShadcnSwitchStyleExt {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder;
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder;
     fn primary(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder;
     fn secondary(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder;
     fn outline(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder;
@@ -502,23 +502,23 @@ pub trait ShadcnSwitchStyleExt {
 }
 
 impl ShadcnSwitchStyleExt for SwitchBuilder {
-    fn radix_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder {
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder {
         self.template(theme.switch_template(style))
     }
 
     fn primary(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Primary)
+        self.look_style(theme, ShadcnButtonStyle::Primary)
     }
 
     fn secondary(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Secondary)
+        self.look_style(theme, ShadcnButtonStyle::Secondary)
     }
 
     fn outline(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Outline)
+        self.look_style(theme, ShadcnButtonStyle::Outline)
     }
 
     fn ghost(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder {
-        self.radix_style(theme, ShadcnButtonStyle::Ghost)
+        self.look_style(theme, ShadcnButtonStyle::Ghost)
     }
 }
