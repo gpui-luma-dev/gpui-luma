@@ -5,6 +5,7 @@ mod common;
 pub(crate) use common::{format_hex_color, parse_hex_color};
 mod cookies;
 mod navigation_sidebar;
+pub(crate) mod palette;
 mod payments;
 mod report;
 mod team;
@@ -14,6 +15,7 @@ pub use account::AccountPanel;
 pub use chat::ChatPanel;
 pub use cookies::CookiesPanel;
 pub use navigation_sidebar::NavigationSidebarPanel;
+pub use palette::PalettePanel;
 pub use payments::PaymentsPanel;
 pub use report::ReportPanel;
 pub use team::TeamPanel;
@@ -28,7 +30,7 @@ use gpui_luma::theme::LumaChrome;
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::panel_layout::{DemoPanelDrag, PANEL_BOARD_MIN_HEIGHT_PX, default_panel_position};
-use super::studio_board::StudioBoardHost;
+use super::content_pane::ContentPaneHost;
 
 pub fn render_demo_board(
     selected: Option<InspectableId>,
@@ -36,7 +38,8 @@ pub fn render_demo_board(
     panel_z_order: HashMap<InspectableId, u32>,
     demos: DemoControls,
     chrome: LumaChrome,
-    cx: &mut Context<StudioBoardHost>,
+    filter: Option<&'static [InspectableId]>,
+    cx: &mut Context<ContentPaneHost>,
 ) -> impl IntoElement {
     let pick = |id: InspectableId, child: gpui::AnyElement| {
         let selected_panel = selected == Some(id);
@@ -76,48 +79,22 @@ pub fn render_demo_board(
             .into_any_element()
     };
 
-    let mut panels = vec![
-        (
-            InspectableId::UpgradeSubscription,
-            panel_z_order.get(&InspectableId::UpgradeSubscription).copied().unwrap_or(0),
-            pick(InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()),
-        ),
-        (
-            InspectableId::CreateAccount,
-            panel_z_order.get(&InspectableId::CreateAccount).copied().unwrap_or(0),
-            pick(InspectableId::CreateAccount, demos.account.clone().into_any_element()),
-        ),
-        (
-            InspectableId::TeamMembers,
-            panel_z_order.get(&InspectableId::TeamMembers).copied().unwrap_or(0),
-            pick(InspectableId::TeamMembers, demos.team.clone().into_any_element()),
-        ),
-        (
-            InspectableId::Chat,
-            panel_z_order.get(&InspectableId::Chat).copied().unwrap_or(0),
-            pick(InspectableId::Chat, demos.chat.clone().into_any_element()),
-        ),
-        (
-            InspectableId::CookieSettings,
-            panel_z_order.get(&InspectableId::CookieSettings).copied().unwrap_or(0),
-            pick(InspectableId::CookieSettings, demos.cookies.clone().into_any_element()),
-        ),
-        (
-            InspectableId::ReportIssue,
-            panel_z_order.get(&InspectableId::ReportIssue).copied().unwrap_or(0),
-            pick(InspectableId::ReportIssue, demos.report.clone().into_any_element()),
-        ),
-        (
-            InspectableId::Payments,
-            panel_z_order.get(&InspectableId::Payments).copied().unwrap_or(0),
-            pick(InspectableId::Payments, demos.payments.clone().into_any_element()),
-        ),
-        (
-            InspectableId::NavigationSidebar,
-            panel_z_order.get(&InspectableId::NavigationSidebar).copied().unwrap_or(0),
-            pick(InspectableId::NavigationSidebar, demos.navigation_sidebar.clone().into_any_element()),
-        ),
+    let all_panels: [(InspectableId, gpui::AnyElement); 8] = [
+        (InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()),
+        (InspectableId::CreateAccount, demos.account.clone().into_any_element()),
+        (InspectableId::TeamMembers, demos.team.clone().into_any_element()),
+        (InspectableId::Chat, demos.chat.clone().into_any_element()),
+        (InspectableId::CookieSettings, demos.cookies.clone().into_any_element()),
+        (InspectableId::ReportIssue, demos.report.clone().into_any_element()),
+        (InspectableId::Payments, demos.payments.clone().into_any_element()),
+        (InspectableId::NavigationSidebar, demos.navigation_sidebar.clone().into_any_element()),
     ];
+
+    let mut panels: Vec<_> = all_panels
+        .into_iter()
+        .filter(|(id, _)| filter.is_none_or(|allowed| allowed.contains(id)))
+        .map(|(id, child)| (id, panel_z_order.get(&id).copied().unwrap_or(0), pick(id, child)))
+        .collect();
     panels.sort_by_key(|(_, z, _)| *z);
 
     let mut board = div()
@@ -125,9 +102,9 @@ pub fn render_demo_board(
         .relative()
         .w_full()
         .min_h(px(PANEL_BOARD_MIN_HEIGHT_PX))
-        .on_drag_move(cx.listener(StudioBoardHost::handle_panel_drag_move))
-        .on_mouse_up(MouseButton::Left, cx.listener(StudioBoardHost::end_panel_drag))
-        .on_mouse_up_out(MouseButton::Left, cx.listener(StudioBoardHost::end_panel_drag));
+        .on_drag_move(cx.listener(ContentPaneHost::handle_panel_drag_move))
+        .on_mouse_up(MouseButton::Left, cx.listener(ContentPaneHost::end_panel_drag))
+        .on_mouse_up_out(MouseButton::Left, cx.listener(ContentPaneHost::end_panel_drag));
 
     for (_, _, panel) in panels {
         board = board.child(panel);

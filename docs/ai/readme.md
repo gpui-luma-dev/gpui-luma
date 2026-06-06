@@ -4,6 +4,7 @@ Reference docs:
 - `docs/ai/project-overview.md`
 - `docs/ai/architecture.md`
 - `docs/ai/module-map.md`
+- `docs/ai/reentrant-warning.md`
 - `docs/ai/listbox.md`
 
 Considerations:

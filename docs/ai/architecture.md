@@ -75,6 +75,7 @@ This pattern improves consistency and makes style/theming separable from behavio
   - control events are emitted via `EventEmitter`
   - consumers subscribe using `cx.subscribe(...)`
 - Re-rendering is explicit with `cx.notify()`.
+- Parent/child entity trees in apps must avoid reading or updating a leased entity from a nested render or subscription; see `docs/ai/reentrant-warning.md` (theme-studio `BoardSnapshot` pattern).
 - Shared state abstractions (`ControlFocusState`, `CompositeItemState`, `InteractionState`) normalize interaction semantics across controls.
 
 ## Template and Theme Composition

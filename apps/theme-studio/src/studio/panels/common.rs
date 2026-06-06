@@ -6,7 +6,6 @@ use gpui_luma_look_shadcn::prelude::*;
 pub enum AvatarSize {
     Sm,
     Md,
-    Lg,
 }
 
 pub fn format_hex_color(color: Hsla) -> String {
@@ -74,28 +73,6 @@ pub fn parse_hex_color(raw: &str) -> Option<Hsla> {
     }
 }
 
-pub fn format_hsla(color: Hsla) -> String {
-    format!(
-        "hsla({} {}% {}% / {})",
-        rounded_channel(color.h * 360.0),
-        rounded_channel(color.s * 100.0),
-        rounded_channel(color.l * 100.0),
-        compact_alpha(color.a)
-    )
-}
-
-fn rounded_channel(value: f32) -> i32 {
-    value.round() as i32
-}
-
-fn compact_alpha(alpha: f32) -> String {
-    if (alpha - 1.0).abs() < 0.001 {
-        "1".to_string()
-    } else {
-        format!("{alpha:.2}")
-    }
-}
-
 pub fn panel_box_shadow() -> Vec<gpui::BoxShadow> {
     vec![gpui::BoxShadow {
         color: gpui::hsla(0.0, 0.0, 0.0, 0.35),
@@ -151,7 +128,6 @@ pub fn avatar(initials: &'static str, size: AvatarSize) -> impl IntoElement {
     let size_px = match size {
         AvatarSize::Sm => 32.0,
         AvatarSize::Md => 36.0,
-        AvatarSize::Lg => 40.0,
     };
 
     div()

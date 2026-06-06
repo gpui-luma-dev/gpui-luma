@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{
-    Context, Div, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Overflow, Point, Pixels, Render,
-    Size, Subscription, Window, div, prelude::*, px,
+    Context, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size,
+    Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::resizable_panels::ResizablePanels;
 use gpui_luma::resizable_panels;
@@ -20,7 +20,7 @@ use super::inspectable::InspectableId;
 use super::overrides::StudioOverrides;
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
-use super::studio_board::StudioBoardHost;
+use super::content_pane::{BoardSnapshot, ContentPaneHost};
 use super::theme_sidebar::ThemeSidebar;
 
 struct PanelDragState {
@@ -43,7 +43,7 @@ pub struct ThemeStudioApp {
     last_window_size: Size<Pixels>,
     active_theme_id: String,
     theme_sidebar: Entity<ThemeSidebar>,
-    board_host: Entity<StudioBoardHost>,
+    content_pane: Entity<ContentPaneHost>,
     main_split: Entity<ResizablePanels>,
     /// Suppresses hex field `Change` handlers while programmatically syncing sidebar values.
     syncing_sidebar_tokens: bool,
@@ -69,8 +69,16 @@ impl ThemeStudioApp {
         let theme_sidebar =
             cx.new(|cx| ThemeSidebar::new(app.clone(), look.clone(), active_theme_id.clone(), &overrides, cx));
 
-        let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
-        let board_host_for_split = board_host.clone();
+        let board_snapshot = BoardSnapshot {
+            selected: None,
+            panel_positions: panel_positions.clone(),
+            panel_z_order: panel_z_order.clone(),
+            demos: demos.clone(),
+            look: look.clone(),
+            overrides: overrides.clone(),
+        };
+        let content_pane = cx.new(|cx| ContentPaneHost::new(app.clone(), board_snapshot, cx));
+        let content_pane_for_split = content_pane.clone();
         let sidebar_entity = theme_sidebar.clone();
         let main_split = resizable_panels! {
             cx,
@@ -99,7 +107,7 @@ impl ThemeStudioApp {
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .child(scrollable_panel().child(board_host_for_split.clone()))
+                        .child(content_pane_for_split.clone())
                         .into_any_element()
                 } => weight(1.0);
             ]
@@ -128,7 +136,7 @@ impl ThemeStudioApp {
             last_window_size,
             active_theme_id,
             theme_sidebar,
-            board_host,
+            content_pane,
             main_split,
             syncing_sidebar_tokens: false,
             _subscriptions: subscriptions,
@@ -162,6 +170,26 @@ impl ThemeStudioApp {
         self.look = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
         self.refresh_demos(cx);
         self.sync_main_split_theme(cx);
+        self.refresh_content_pane(cx);
+    }
+
+    fn board_snapshot(&self) -> BoardSnapshot {
+        BoardSnapshot {
+            selected: self.selected,
+            panel_positions: self.panel_positions.clone(),
+            panel_z_order: self.panel_z_order.clone(),
+            demos: self.demos.clone(),
+            look: self.look.clone(),
+            overrides: self.overrides.clone(),
+        }
+    }
+
+    fn refresh_content_pane(&self, cx: &mut Context<Self>) {
+        let board = self.board_snapshot();
+        self.content_pane.update(cx, |pane, cx| {
+            pane.sync_board_snapshot(board, cx);
+            pane.notify_tabs(cx);
+        });
     }
 
     fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
@@ -272,6 +300,7 @@ impl ThemeStudioApp {
         }
         self.control_size = size;
         self.refresh_demos(cx);
+        self.refresh_content_pane(cx);
         cx.notify();
     }
 }
@@ -328,6 +357,7 @@ impl Render for ThemeStudioApp {
                                     sidebar.sync_control_templates(&theme, cx);
                                 });
                                 this.sync_main_split_theme(cx);
+                                this.refresh_content_pane(cx);
                                 cx.notify();
                             }))
                             .child(char::from(toggle_icon).to_string()),
@@ -354,12 +384,6 @@ impl Render for ThemeStudioApp {
                     .child(div().flex_1().min_h_0().size_full().child(self.main_split.clone())),
             )
     }
-}
-
-fn scrollable_panel() -> Div {
-    let mut panel = div().size_full().flex().flex_col();
-    panel.style().overflow.y = Some(Overflow::Scroll);
-    panel
 }
 
 fn render_size_toggle(
