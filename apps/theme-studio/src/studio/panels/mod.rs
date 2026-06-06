@@ -2,7 +2,7 @@ mod account;
 mod chat;
 mod common;
 
-pub(crate) use common::{format_hex_color, format_hsla, panel_box_shadow, parse_hex_color};
+pub(crate) use common::{format_hex_color, parse_hex_color};
 mod cookies;
 mod navigation_sidebar;
 mod payments;

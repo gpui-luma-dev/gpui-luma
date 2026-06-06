@@ -17,7 +17,6 @@ use crate::theme::StudioThemeChoice;
 
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
-use super::inspector::{render_inspector, run_export};
 use super::overrides::StudioOverrides;
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
@@ -41,7 +40,6 @@ pub struct ThemeStudioApp {
     panel_drag: Option<PanelDragState>,
     pub(super) selected: Option<InspectableId>,
     pub(super) overrides: StudioOverrides,
-    pub(super) export_status: String,
     last_window_size: Size<Pixels>,
     active_theme_id: String,
     theme_sidebar: Entity<ThemeSidebar>,
@@ -127,7 +125,6 @@ impl ThemeStudioApp {
             panel_drag: None,
             selected: None,
             overrides,
-            export_status: String::new(),
             last_window_size,
             active_theme_id,
             theme_sidebar,
@@ -269,16 +266,6 @@ impl ThemeStudioApp {
         }
     }
 
-    pub fn select_inspectable(&mut self, id: InspectableId, cx: &mut Context<Self>) {
-        self.selected = Some(id);
-        cx.notify();
-    }
-
-    pub fn close_inspector(&mut self, cx: &mut Context<Self>) {
-        self.selected = None;
-        cx.notify();
-    }
-
     pub fn set_control_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
         if self.control_size == size {
             return;
@@ -287,49 +274,12 @@ impl ThemeStudioApp {
         self.refresh_demos(cx);
         cx.notify();
     }
-
-    pub fn adjust_scale(&mut self, id: InspectableId, key: &str, delta: f32, cx: &mut Context<Self>) {
-        if !matches!(id, InspectableId::CookieSettings) {
-            return;
-        }
-        let metrics = &self.look.mode_tokens().metrics;
-        let base = gpui_luma::controls::switch::SwitchScale::compute(self.control_size, metrics, 1.0);
-        let current = self.overrides.effective_switch_scale(base);
-        let value = match key {
-            "track_width" => current.track_width + delta,
-            "track_height" => current.track_height + delta,
-            "thumb_size" => current.thumb_size + delta,
-            _ => return,
-        };
-        self.overrides.set_scale(id, key.to_string(), value.max(8.0));
-        self.demos.cookies.update(cx, |_, cx| cx.notify());
-        cx.notify();
-    }
-
-    pub fn apply_overrides(&mut self, cx: &mut Context<Self>) {
-        self.export_status = "Adjustments saved in session.".to_string();
-        cx.notify();
-    }
-
-    pub fn export_theme(&mut self, cx: &mut Context<Self>) {
-        match run_export(self) {
-            Ok(path) => {
-                self.export_status = format!("Exported to {}", path.display());
-                tracing::info!("theme studio export: {}", path.display());
-            }
-            Err(err) => {
-                self.export_status = format!("Export failed: {err}");
-                tracing::error!("theme studio export failed: {err:?}");
-            }
-        }
-        cx.notify();
-    }
 }
 
 use super::export::token_css_name;
 
 impl Render for ThemeStudioApp {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let sans = self.look.mode_tokens().typography.font.sans.family.clone();
         let active_mode = self.look.mode();
@@ -385,10 +335,7 @@ impl Render for ThemeStudioApp {
                 ),
         );
 
-        let scale_factor = window.scale_factor();
-        let inspector = render_inspector(self, scale_factor, cx);
-
-        let mut root = div()
+        div()
             .luma_focus_scope(&self.focus_scope)
             .size_full()
             .flex()
@@ -405,13 +352,7 @@ impl Render for ThemeStudioApp {
                     .flex_col()
                     .overflow_hidden()
                     .child(div().flex_1().min_h_0().size_full().child(self.main_split.clone())),
-            );
-
-        if let Some(panel) = inspector {
-            root = root.child(panel);
-        }
-
-        root
+            )
     }
 }
 

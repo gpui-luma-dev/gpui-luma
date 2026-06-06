@@ -18,10 +18,6 @@ impl StudioBoardHost {
         self.app.update(cx, |app, cx| app.begin_panel_drag(id, event, cx));
     }
 
-    pub fn select_inspectable(&mut self, id: InspectableId, cx: &mut Context<Self>) {
-        self.app.update(cx, |app, cx| app.select_inspectable(id, cx));
-    }
-
     pub fn handle_panel_drag_move(
         &mut self,
         event: &DragMoveEvent<DemoPanelDrag>,
