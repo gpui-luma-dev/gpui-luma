@@ -93,6 +93,7 @@ pub(crate) fn floating_menu_appearance_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::ControlSize;
 
@@ -125,7 +126,7 @@ mod tests {
     #[test]
     fn floating_menu_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let appearance = floating_menu_appearance_from_catalog(&ctx, ControlSize::Md).expect("floating menu");
 

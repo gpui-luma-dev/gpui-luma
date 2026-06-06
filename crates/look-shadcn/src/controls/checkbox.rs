@@ -97,8 +97,8 @@ pub(crate) fn checkbox_appearance_from_catalog(
 
     let indicator_background = match (checked, layer) {
         (_, InteractionLayer::Disabled) => resolve_color(catalog, "muted")?,
-        (true, _) => resolve_action_layer(catalog, style, layer)?,
-        (false, _) => resolve_outline_layer(catalog, layer)?,
+        (true, _) => resolve_action_layer(catalog, style, layer, ctx.theme_mode)?,
+        (false, _) => resolve_outline_layer(catalog, layer, ctx.theme_mode)?,
     };
 
     let indicator_border = if checked && !state.disabled {

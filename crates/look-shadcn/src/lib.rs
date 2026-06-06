@@ -12,6 +12,7 @@ mod mode;
 mod palette;
 mod resolve;
 mod shadow;
+mod state_color;
 mod tokens;
 mod usage;
 

@@ -193,6 +193,7 @@ pub(crate) fn textfield_palette_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::controls::textfield::{TextFieldState, TextFieldVariant};
 
@@ -222,7 +223,7 @@ mod tests {
     #[test]
     fn standard_textfield_uses_input_border_and_background() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let appearance =
             textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
@@ -236,7 +237,7 @@ mod tests {
     #[test]
     fn standard_textfield_hover_does_not_change_background() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let default = textfield_palette_from_catalog(&ctx, TextFieldVariant::Standard, TextFieldState::default(), true)
             .expect("textfield");

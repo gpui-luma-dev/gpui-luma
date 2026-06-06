@@ -17,6 +17,7 @@ use crate::appearance_context::AppearanceContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_ring_color;
 use crate::resolve::{resolve_action_layer, resolve_color};
+use crate::tokens::ShadcnToken;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
 
@@ -42,9 +43,7 @@ fn slider_appearance_from_palette(ctx: &AppearanceContext) -> SliderAppearance {
 
     let fill_background = match layer {
         InteractionLayer::Disabled => palette.disabled_foreground,
-        InteractionLayer::Pressed => palette.primary.pressed_background,
-        InteractionLayer::Hovered => palette.primary.hover_background,
-        InteractionLayer::Default => palette.primary.background,
+        layer => ctx.resolve_color_state(ShadcnToken::Primary, layer),
     };
 
     let track_background = if state.disabled {
@@ -83,7 +82,7 @@ pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow:
 
     let fill_background = match layer {
         InteractionLayer::Disabled => resolve_color(catalog, "muted-foreground")?,
-        _ => resolve_action_layer(catalog, ShadcnButtonStyle::Primary, layer)?,
+        _ => resolve_action_layer(catalog, ShadcnButtonStyle::Primary, layer, ctx.theme_mode)?,
     };
 
     let track_background = if state.disabled {
@@ -98,7 +97,8 @@ pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow:
         (thumb, border)
     } else {
         let thumb = catalog.color_first(&["background", "card"])?;
-        let border = resolve_action_layer(catalog, ShadcnButtonStyle::Primary, InteractionLayer::Default)?;
+        let border =
+            resolve_action_layer(catalog, ShadcnButtonStyle::Primary, InteractionLayer::Default, ctx.theme_mode)?;
         (thumb, border)
     };
 
@@ -120,6 +120,7 @@ pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow:
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::InteractionState;
 
@@ -167,7 +168,7 @@ mod tests {
     #[test]
     fn default_slider_uses_border_track_and_primary_fill() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let appearance = slider_appearance_from_catalog(&ctx).expect("slider");
 
@@ -180,7 +181,7 @@ mod tests {
     #[test]
     fn astrovista_light_track_is_border_not_white_muted() {
         let catalog = astrovista_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let appearance = slider_appearance_from_catalog(&ctx).expect("slider");
 

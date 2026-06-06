@@ -8,7 +8,16 @@ pub(crate) fn parse_css_color(raw: &str) -> Result<Hsla> {
 }
 
 pub(crate) fn darken(color: Hsla, delta: f32) -> Hsla {
-    hsla(color.h, color.s, (color.l - delta).max(0.0), color.a)
+    adjust_lightness(color, -delta)
+}
+
+/// Adjusts perceived lightness in Oklch space, preserving hue and chroma.
+pub(crate) fn adjust_lightness(color: Hsla, delta: f32) -> Hsla {
+    let hsl = Hsl::new(color.h * 360.0, color.s, color.l);
+    let mut oklch = Oklch::from_color(Srgb::from_color(hsl));
+    oklch.l = (oklch.l + delta).clamp(0.0, 1.0);
+    let adjusted: Hsl = Hsl::from_color(Srgb::from_color(oklch));
+    hsla(adjusted.hue.into_positive_degrees() / 360.0, adjusted.saturation, adjusted.lightness, color.a)
 }
 
 pub(crate) fn with_alpha(color: Hsla, alpha: f32) -> Hsla {

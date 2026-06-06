@@ -61,13 +61,10 @@ fn tabs_navigation_item_from_palette(ctx: &AppearanceContext, active: bool) -> T
     let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
-    let primary = palette.primary;
 
     let active_color = match layer {
         InteractionLayer::Disabled => palette.disabled_foreground,
-        InteractionLayer::Pressed => primary.pressed_background,
-        InteractionLayer::Hovered => primary.hover_background,
-        InteractionLayer::Default => primary.background,
+        layer => ctx.resolve_color_state(crate::tokens::ShadcnToken::Primary, layer),
     };
 
     TabsNavigationItemAppearance {
@@ -121,7 +118,7 @@ pub(crate) fn tabs_navigation_item_from_catalog(
     let size = ControlSize::Md;
     let layer = state.layer();
 
-    let active_color = resolve_color_layer(catalog, "primary", layer, true)?;
+    let active_color = resolve_color_layer(catalog, "primary", layer, true, ctx.theme_mode)?;
     let inactive_color = resolve_label_color(catalog, state.disabled)?;
 
     Ok(TabsNavigationItemAppearance {
@@ -153,7 +150,7 @@ pub(crate) fn tabs_navigation_item_from_catalog(
 mod tests {
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::InteractionState;
+    use gpui_luma::theme::{InteractionState, ThemeMode};
 
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
@@ -179,7 +176,7 @@ mod tests {
     #[test]
     fn active_tab_uses_primary_and_inactive_uses_foreground() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let active = tabs_navigation_item_from_catalog(&ctx, true).expect("active tab");
         let inactive = tabs_navigation_item_from_catalog(&ctx, false).expect("inactive tab");

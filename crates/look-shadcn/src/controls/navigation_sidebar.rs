@@ -266,11 +266,15 @@ pub(crate) fn navigation_sidebar_branch_from_catalog(
     Ok(appearance)
 }
 
-fn resolve_sidebar_primary_layer(catalog: &CssTokenMap, layer: InteractionLayer) -> anyhow::Result<gpui::Hsla> {
+fn resolve_sidebar_primary_layer(
+    catalog: &CssTokenMap,
+    layer: InteractionLayer,
+    theme_mode: ThemeMode,
+) -> anyhow::Result<gpui::Hsla> {
     if catalog.get("sidebar-primary").is_some() {
-        resolve_color_layer(catalog, "sidebar-primary", layer, true)
+        resolve_color_layer(catalog, "sidebar-primary", layer, true, theme_mode)
     } else {
-        resolve_color_layer(catalog, "primary", layer, true)
+        resolve_color_layer(catalog, "primary", layer, true, theme_mode)
     }
 }
 
@@ -288,7 +292,7 @@ pub(crate) fn navigation_sidebar_item_from_catalog(
     appearance.background = match (selected, layer) {
         (_, InteractionLayer::Disabled) => None,
         (true, InteractionLayer::Pressed | InteractionLayer::Hovered) => {
-            Some(resolve_sidebar_primary_layer(catalog, layer)?)
+            Some(resolve_sidebar_primary_layer(catalog, layer, ctx.theme_mode)?)
         }
         (true, InteractionLayer::Default) => Some(resolve_sidebar_primary(catalog)?),
         (false, InteractionLayer::Pressed | InteractionLayer::Hovered) => Some(hover_background),
@@ -312,6 +316,7 @@ pub(crate) fn navigation_sidebar_item_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -353,7 +358,7 @@ mod tests {
     #[test]
     fn navigation_sidebar_uses_sidebar_tokens() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let container = navigation_sidebar_container_from_catalog(&ctx).expect("container");
         let section = navigation_sidebar_section_from_catalog(&ctx).expect("section");

@@ -39,6 +39,7 @@ fn textarea_from_textfield(textfield: gpui_luma::controls::textfield::TextFieldP
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::controls::textfield::TextFieldState;
 
@@ -69,7 +70,7 @@ mod tests {
     #[test]
     fn textarea_uses_same_input_tokens_as_textfield() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let textfield = textfield_palette_from_catalog(
             &ctx,

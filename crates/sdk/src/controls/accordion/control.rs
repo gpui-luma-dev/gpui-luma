@@ -133,8 +133,20 @@ impl AccordionControl {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
-        if self.model.enabled && self.model.items.get(index).is_some_and(|item| item.enabled) {
-            self.hovered_item_index = hovered.then_some(index);
+        if !self.model.enabled || !self.model.items.get(index).is_some_and(|item| item.enabled) {
+            return;
+        }
+
+        if hovered {
+            if self.hovered_item_index != Some(index) {
+                self.hovered_item_index = Some(index);
+                cx.notify();
+            }
+        } else if self.hovered_item_index == Some(index) {
+            self.hovered_item_index = None;
+            if self.pressed_item_index == Some(index) {
+                self.pressed_item_index = None;
+            }
             cx.notify();
         }
     }
@@ -161,10 +173,12 @@ impl AccordionControl {
                 })
                 .collect(),
             trigger_mouse_ups: (0..self.model.items.len())
-                .map(|_| {
+                .map(|idx| {
                     Box::new(cx.listener(move |this, _, _, cx| {
-                        this.pressed_item_index = None;
-                        cx.notify();
+                        if this.pressed_item_index == Some(idx) {
+                            this.pressed_item_index = None;
+                            cx.notify();
+                        }
                     })) as _
                 })
                 .collect(),
@@ -410,5 +424,30 @@ mod tests {
         assert_eq!(expanded.len(), 2);
         assert_eq!(events.len(), 1);
         assert!(matches!(events[0], super::AccordionEvent::ExpandedChanged { expanded: true, .. }));
+    }
+
+    #[test]
+    fn hover_false_only_clears_matching_index() {
+        let mut hovered = Some(1usize);
+
+        super::apply_accordion_item_hover(&mut hovered, 0, false);
+        assert_eq!(hovered, Some(1));
+
+        super::apply_accordion_item_hover(&mut hovered, 1, false);
+        assert_eq!(hovered, None);
+
+        super::apply_accordion_item_hover(&mut hovered, 2, true);
+        assert_eq!(hovered, Some(2));
+    }
+}
+
+/// Mirrors [`AccordionControl::handle_item_hover`] index bookkeeping for unit tests.
+fn apply_accordion_item_hover(hovered_item_index: &mut Option<usize>, index: usize, hovered: bool) {
+    if hovered {
+        if *hovered_item_index != Some(index) {
+            *hovered_item_index = Some(index);
+        }
+    } else if *hovered_item_index == Some(index) {
+        *hovered_item_index = None;
     }
 }

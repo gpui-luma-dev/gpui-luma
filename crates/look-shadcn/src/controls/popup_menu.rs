@@ -75,6 +75,7 @@ pub(crate) fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::InteractionState;
 
@@ -107,7 +108,7 @@ mod tests {
     #[test]
     fn popup_menu_hovered_trigger_uses_accent_foreground_without_background_fill() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default_ctx =
             AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let hovered_ctx = AppearanceContext::new(

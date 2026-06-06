@@ -91,7 +91,7 @@ pub(crate) fn switch_appearance_from_catalog(
     let track_background = if state.disabled {
         resolve_color(catalog, "muted")?
     } else if on {
-        resolve_action_layer(catalog, style, InteractionLayer::Default)?
+        resolve_action_layer(catalog, style, InteractionLayer::Default, ctx.theme_mode)?
     } else {
         resolve_color(catalog, "input")?
     };
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn off_switch_uses_input_track_and_background_thumb() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
         let appearance = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, false).expect("switch");
 
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn on_switch_uses_style_track_and_card_thumb() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
         let appearance = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, true).expect("switch");
 
@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn hover_and_pressed_match_default_track_for_off_switch() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default = switch_appearance_from_catalog(
             &AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default()),
             ShadcnButtonStyle::Primary,
@@ -303,7 +303,7 @@ mod tests {
     #[test]
     fn primary_and_secondary_share_off_appearance() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
         let primary = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, false).expect("primary");
         let secondary = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Secondary, false).expect("secondary");

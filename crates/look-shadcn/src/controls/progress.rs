@@ -56,6 +56,7 @@ fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Resu
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -81,7 +82,7 @@ mod tests {
     #[test]
     fn progress_uses_muted_track_and_primary_fill() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let appearance = progress_appearance(&mode, true);
 
         assert_eq!(appearance.track_color, catalog.color("muted").expect("muted"));

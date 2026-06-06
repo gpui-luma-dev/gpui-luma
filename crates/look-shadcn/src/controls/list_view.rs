@@ -12,10 +12,10 @@ use gpui::hsla;
 use gpui_luma::controls::list_view::{ListViewAppearance, ListViewRowPalette};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use crate::color::{darken, with_alpha};
+use crate::color::with_alpha;
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
-use crate::resolve::{resolve_accent_whisper, resolve_color};
+use crate::resolve::{resolve_accent_whisper, resolve_color, resolve_whisper_pressed};
 
 const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
@@ -113,7 +113,7 @@ fn list_view_row_from_palette(ctx: &AppearanceContext, selected: bool, _size: Co
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
     let selected_background = palette.muted_background;
-    let hover_background = with_alpha(palette.ghost.hover_background, ROW_HOVER_ACCENT_ALPHA);
+    let hover_background = with_alpha(palette.accent_background, ROW_HOVER_ACCENT_ALPHA);
 
     let background = if state.disabled && !state.focused {
         transparent
@@ -122,7 +122,7 @@ fn list_view_row_from_palette(ctx: &AppearanceContext, selected: bool, _size: Co
     } else {
         match state.layer() {
             InteractionLayer::Disabled => transparent,
-            InteractionLayer::Pressed => darken(hover_background, 0.04),
+            InteractionLayer::Pressed => resolve_whisper_pressed(hover_background, ctx.theme_mode),
             InteractionLayer::Hovered => hover_background,
             InteractionLayer::Default => transparent,
         }
@@ -163,7 +163,7 @@ fn list_view_row_from_catalog(
         selected_background
     } else {
         match layer {
-            InteractionLayer::Pressed => darken(hover_background, 0.04),
+            InteractionLayer::Pressed => resolve_whisper_pressed(hover_background, ctx.theme_mode),
             InteractionLayer::Hovered => hover_background,
             InteractionLayer::Default | InteractionLayer::Disabled => transparent,
         }
@@ -187,6 +187,7 @@ fn list_view_row_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -218,7 +219,7 @@ mod tests {
     #[test]
     fn list_view_row_hover_uses_accent_whisper_and_selected_uses_muted() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let hover = list_view_row_palette(
             &mode,
             false,

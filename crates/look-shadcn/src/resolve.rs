@@ -1,10 +1,11 @@
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::InteractionLayer;
+use gpui_luma::theme::{InteractionLayer, ThemeMode};
 
 use super::ShadcnButtonStyle;
 use super::catalog::CssTokenMap;
-use super::color::{darken, with_alpha};
+use super::color::with_alpha;
+use super::state_color::{algorithmic_state_color, catalog_state_color};
 
 pub(crate) fn resolve_color(catalog: &CssTokenMap, token: &str) -> anyhow::Result<Hsla> {
     catalog.color(token)
@@ -15,16 +16,13 @@ pub(crate) fn resolve_color_layer(
     token: &str,
     layer: InteractionLayer,
     filled: bool,
+    theme_mode: ThemeMode,
 ) -> anyhow::Result<Hsla> {
+    if let Some(color) = catalog_state_color(catalog, token, layer) {
+        return Ok(color);
+    }
     let base = resolve_color(catalog, token)?;
-    Ok(match layer {
-        InteractionLayer::Disabled => base,
-        InteractionLayer::Pressed if filled => darken(base, 0.12),
-        InteractionLayer::Hovered if filled => darken(base, 0.06),
-        InteractionLayer::Pressed => darken(base, 0.08),
-        InteractionLayer::Hovered => darken(base, 0.04),
-        InteractionLayer::Default => base,
-    })
+    Ok(algorithmic_state_color(base, layer, theme_mode, filled))
 }
 
 pub(crate) fn resolve_color_first_layer(
@@ -32,25 +30,23 @@ pub(crate) fn resolve_color_first_layer(
     tokens: &[&str],
     layer: InteractionLayer,
     filled: bool,
+    theme_mode: ThemeMode,
 ) -> anyhow::Result<Hsla> {
     let base = catalog.color_first(tokens)?;
-    Ok(match layer {
-        InteractionLayer::Disabled => base,
-        InteractionLayer::Pressed if filled => darken(base, 0.12),
-        InteractionLayer::Hovered if filled => darken(base, 0.06),
-        InteractionLayer::Pressed => darken(base, 0.08),
-        InteractionLayer::Hovered => darken(base, 0.04),
-        InteractionLayer::Default => base,
-    })
+    if let Some(color) = tokens.iter().find_map(|token| catalog_state_color(catalog, token, layer)) {
+        return Ok(color);
+    }
+    Ok(algorithmic_state_color(base, layer, theme_mode, filled))
 }
 
 pub(crate) fn resolve_action_layer(
     catalog: &CssTokenMap,
     style: ShadcnButtonStyle,
     layer: InteractionLayer,
+    theme_mode: ThemeMode,
 ) -> anyhow::Result<Hsla> {
     let (background, _) = super::action::style_token_pair(style);
-    resolve_color_layer(catalog, background, layer, true)
+    resolve_color_layer(catalog, background, layer, true, theme_mode)
 }
 
 pub(crate) fn resolve_action_foreground(catalog: &CssTokenMap, style: ShadcnButtonStyle) -> anyhow::Result<Hsla> {
@@ -58,12 +54,18 @@ pub(crate) fn resolve_action_foreground(catalog: &CssTokenMap, style: ShadcnButt
     resolve_color(catalog, foreground)
 }
 
-pub(crate) fn resolve_outline_layer(catalog: &CssTokenMap, layer: InteractionLayer) -> anyhow::Result<Hsla> {
+pub(crate) fn resolve_outline_layer(
+    catalog: &CssTokenMap,
+    layer: InteractionLayer,
+    theme_mode: ThemeMode,
+) -> anyhow::Result<Hsla> {
     match layer {
         InteractionLayer::Disabled => resolve_color(catalog, "muted"),
         InteractionLayer::Pressed => resolve_color(catalog, "muted"),
-        InteractionLayer::Hovered => resolve_color_first_layer(catalog, &["accent", "muted"], layer, false),
-        InteractionLayer::Default => resolve_color_first_layer(catalog, &["card", "background"], layer, false),
+        InteractionLayer::Hovered => resolve_color_first_layer(catalog, &["accent", "muted"], layer, false, theme_mode),
+        InteractionLayer::Default => {
+            resolve_color_first_layer(catalog, &["card", "background"], layer, false, theme_mode)
+        }
     }
 }
 
@@ -129,4 +131,9 @@ pub(crate) fn resolve_ghost_trigger_foreground(
 /// Faint accent tint for list-style row hovers (`bg-accent/40`).
 pub(crate) fn resolve_accent_whisper(catalog: &CssTokenMap, alpha: f32) -> anyhow::Result<Hsla> {
     Ok(with_alpha(catalog.color_first(&["accent", "muted"])?, alpha))
+}
+
+/// Pressed state derived from a hover tint without component-local color math.
+pub(crate) fn resolve_whisper_pressed(hover: Hsla, theme_mode: ThemeMode) -> Hsla {
+    algorithmic_state_color(hover, InteractionLayer::Pressed, theme_mode, false)
 }

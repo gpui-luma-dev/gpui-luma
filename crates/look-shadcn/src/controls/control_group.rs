@@ -58,6 +58,7 @@ fn control_group_list_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -83,7 +84,7 @@ mod tests {
     #[test]
     fn control_group_uses_muted_surface_and_border() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let appearance = control_group_list_appearance(&mode, true);
 
         assert_eq!(appearance.background, catalog.color("muted").expect("muted"));

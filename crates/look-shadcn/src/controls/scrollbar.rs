@@ -71,6 +71,7 @@ pub(crate) fn scrollbar_appearance_from_catalog(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::controls::scrollbar::ScrollbarOrientation;
     use gpui_luma::theme::InteractionState;
@@ -101,7 +102,7 @@ mod tests {
     #[test]
     fn default_scrollbar_uses_border_thumb() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
         let appearance = scrollbar_appearance_from_catalog(&ctx, ScrollbarOrientation::Vertical).expect("scrollbar");
 
@@ -112,7 +113,7 @@ mod tests {
     #[test]
     fn hovered_and_focused_scrollbar_thumb_stay_border() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let border = catalog.color("border").expect("border");
 
         let hovered = scrollbar_appearance_from_catalog(

@@ -41,6 +41,7 @@ pub(crate) fn selector_items_panel_from_floating_menu(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::theme::ControlSize;
 
@@ -72,7 +73,7 @@ mod tests {
     #[test]
     fn selector_items_panel_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let appearance = selector_items_panel_appearance(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
 
         assert_eq!(appearance.background, catalog.color("popover").expect("popover"));

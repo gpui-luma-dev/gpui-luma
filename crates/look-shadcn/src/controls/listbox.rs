@@ -136,7 +136,7 @@ fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRo
     } else {
         match layer {
             InteractionLayer::Pressed | InteractionLayer::Hovered => {
-                resolve_color_layer(catalog, "accent", layer, true)?
+                resolve_color_layer(catalog, "accent", layer, true, ctx.theme_mode)?
             }
             InteractionLayer::Default if state.focused => resolve_color(catalog, "accent")?,
             InteractionLayer::Default => transparent,
@@ -157,7 +157,7 @@ fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRo
 mod tests {
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, InteractionLayer};
+    use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
     use crate::resolve::resolve_color_layer;
     use crate::catalog::CssTokenMap;
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn listbox_uses_input_border_and_accent_hover() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let list = listbox_list_appearance(&mode, true, false, ControlSize::Md);
         let row = listbox_row_palette(
             &mode,
@@ -195,8 +195,8 @@ mod tests {
         );
 
         assert_eq!(list.border, catalog.color("input").expect("input"));
-        let expected_hover =
-            resolve_color_layer(&catalog, "accent", InteractionLayer::Hovered, true).expect("accent hover");
+        let expected_hover = resolve_color_layer(&catalog, "accent", InteractionLayer::Hovered, true, ThemeMode::Light)
+            .expect("accent hover");
         assert_eq!(row.background, expected_hover);
     }
 }

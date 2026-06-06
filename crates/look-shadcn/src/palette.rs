@@ -1,9 +1,12 @@
 use anyhow::{Context as _, Result};
 use gpui::{Hsla, hsla};
 
+use gpui_luma::theme::{ActionRolePalette, ThemeMode, ThemeTokens};
+
 use crate::catalog::CssTokenMap;
-use crate::color::darken;
-use gpui_luma::theme::{ActionRolePalette, ThemeTokens};
+use crate::state_color::{algorithmic_state_color, catalog_state_color, token_base_from_palette};
+use crate::tokens::ShadcnToken;
+use gpui_luma::theme::InteractionLayer;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ShadcnActionRole {
@@ -33,14 +36,23 @@ pub struct ShadcnPalette {
     pub muted_background: Hsla,
     pub panel_background: Hsla,
     pub body_text: Hsla,
+    pub accent_background: Hsla,
+    pub accent_foreground: Hsla,
+    pub destructive_background: Hsla,
+    pub destructive_foreground: Hsla,
 }
 
 impl ShadcnPalette {
-    pub fn from_catalog(catalog: &CssTokenMap) -> Result<Self> {
-        let primary = filled_role(catalog, "primary", "primary-foreground")?;
-        let secondary = filled_role(catalog, "secondary", "secondary-foreground")?;
+    pub fn from_catalog(catalog: &CssTokenMap, theme_mode: ThemeMode) -> Result<Self> {
+        let primary = filled_role(catalog, "primary", "primary-foreground", theme_mode)?;
+        let secondary = filled_role(catalog, "secondary", "secondary-foreground", theme_mode)?;
         let outline = outline_role(catalog)?;
         let ghost = ghost_role(catalog)?;
+        let accent_background = catalog.optional_color(&["accent"])?.unwrap_or(catalog.color("muted")?);
+        let accent_foreground = catalog.optional_color(&["accent-foreground"])?.unwrap_or(catalog.color("foreground")?);
+        let destructive_background = catalog.optional_color(&["destructive"])?.unwrap_or(catalog.color("muted")?);
+        let destructive_foreground =
+            catalog.optional_color(&["destructive-foreground"])?.unwrap_or(catalog.color("muted-foreground")?);
 
         Ok(Self {
             primary,
@@ -60,6 +72,10 @@ impl ShadcnPalette {
             muted_background: catalog.color("muted")?,
             panel_background: catalog.optional_color(&["card", "background"])?.context("card or background")?,
             body_text: catalog.color("foreground")?,
+            accent_background,
+            accent_foreground,
+            destructive_background,
+            destructive_foreground,
         })
     }
 
@@ -85,20 +101,27 @@ impl ShadcnPalette {
             muted_background: palette.state.hover.background,
             panel_background: palette.surface.panel.background,
             body_text: palette.surface.subtle.foreground,
+            accent_background: palette.action.ghost.hover_background,
+            accent_foreground: palette.action.ghost.foreground,
+            destructive_background: palette.state.disabled.background,
+            destructive_foreground: palette.state.disabled.foreground,
         }
     }
 }
 
-fn filled_role(catalog: &CssTokenMap, background_key: &str, foreground_key: &str) -> Result<ShadcnActionRole> {
+fn filled_role(
+    catalog: &CssTokenMap,
+    background_key: &str,
+    foreground_key: &str,
+    theme_mode: ThemeMode,
+) -> Result<ShadcnActionRole> {
     let background = catalog.color(background_key)?;
     let foreground = catalog.color(foreground_key)?;
-    Ok(ShadcnActionRole {
-        background,
-        foreground,
-        hover_background: darken(background, 0.06),
-        pressed_background: darken(background, 0.12),
-        border: background,
-    })
+    let hover_background = catalog_state_color(catalog, background_key, InteractionLayer::Hovered)
+        .unwrap_or_else(|| algorithmic_state_color(background, InteractionLayer::Hovered, theme_mode, true));
+    let pressed_background = catalog_state_color(catalog, background_key, InteractionLayer::Pressed)
+        .unwrap_or_else(|| algorithmic_state_color(background, InteractionLayer::Pressed, theme_mode, true));
+    Ok(ShadcnActionRole { background, foreground, hover_background, pressed_background, border: background })
 }
 
 fn outline_role(catalog: &CssTokenMap) -> Result<ShadcnActionRole> {
@@ -133,6 +156,10 @@ impl ShadcnPalette {
             crate::controls::ShadcnButtonStyle::Ghost => self.ghost,
         }
     }
+
+    pub fn token_color(&self, token: ShadcnToken) -> Hsla {
+        token_base_from_palette(self, token)
+    }
 }
 
 fn action_role_from(role: &ActionRolePalette) -> ShadcnActionRole {
@@ -148,6 +175,8 @@ fn action_role_from(role: &ActionRolePalette) -> ShadcnActionRole {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
 
@@ -165,6 +194,8 @@ mod tests {
             ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
             ("accent-foreground".into(), "oklch(1 0 0)".into()),
+            ("destructive".into(), "oklch(0.55 0.22 25)".into()),
+            ("destructive-foreground".into(), "oklch(1 0 0)".into()),
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
@@ -174,8 +205,14 @@ mod tests {
 
     #[test]
     fn from_catalog_builds_distinct_action_roles() {
-        let palette = ShadcnPalette::from_catalog(&sample_catalog()).expect("tokens should parse");
+        let palette = ShadcnPalette::from_catalog(&sample_catalog(), ThemeMode::Light).expect("tokens should parse");
         assert_ne!(palette.primary.background, palette.outline.background);
         assert_ne!(palette.primary.hover_background, palette.primary.background);
+    }
+
+    #[test]
+    fn dark_primary_hover_lightens() {
+        let palette = ShadcnPalette::from_catalog(&sample_catalog(), ThemeMode::Dark).expect("tokens should parse");
+        assert!(palette.primary.hover_background.l > palette.primary.background.l);
     }
 }

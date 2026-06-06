@@ -99,12 +99,12 @@ pub(crate) fn radio_button_appearance_from_catalog(
 
     let indicator_background = match layer {
         InteractionLayer::Disabled => resolve_color(catalog, "muted")?,
-        _ => resolve_outline_layer(catalog, layer)?,
+        _ => resolve_outline_layer(catalog, layer, ctx.theme_mode)?,
     };
 
     let selected_color = match layer {
         InteractionLayer::Disabled => resolve_color(catalog, "muted-foreground")?,
-        _ => resolve_action_layer(catalog, style, layer)?,
+        _ => resolve_action_layer(catalog, style, layer, ctx.theme_mode)?,
     };
 
     let indicator_border = if selected && !state.disabled {

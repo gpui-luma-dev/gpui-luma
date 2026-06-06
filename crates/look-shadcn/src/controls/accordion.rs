@@ -1,22 +1,23 @@
 //! Accordion property mappings:
 //!
-//! | Part            | Token              |
-//! |-----------------|--------------------|
-//! | Trigger label   | `foreground`       |
-//! | Trigger hover fg | `accent-foreground` (no bg change) |
-//! | Disabled label  | `muted-foreground` |
-//! | Chevron         | `muted-foreground` |
-//! | Item border     | `border`           |
-//! | Content label   | `foreground`       |
+//! | Part              | Token                              |
+//! |-------------------|------------------------------------|
+//! | Trigger label     | `foreground`                       |
+//! | Trigger hover bg  | `accent`                           |
+//! | Trigger hover fg  | `accent-foreground` (paired)       |
+//! | Disabled label    | `muted-foreground`                 |
+//! | Chevron           | `muted-foreground` / hover fg      |
+//! | Item border       | `border`                           |
+//! | Content label     | `foreground`                       |
 
-use gpui::hsla;
+use gpui::Hsla;
 
 use gpui_luma::controls::accordion::{AccordionContentPalette, AccordionPalette};
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::resolve::{resolve_accent_foreground, resolve_color, resolve_label_color};
 use crate::mode::ShadcnModeTokens;
+use crate::resolve::{resolve_accent_hover_pair, resolve_color, resolve_label_color};
 
 pub(crate) fn accordion_trigger_palette(
     mode: &ShadcnModeTokens,
@@ -48,30 +49,23 @@ fn accordion_trigger_from_palette(ctx: &AppearanceContext) -> AccordionPalette {
     let state = ctx.state;
     let palette = ctx.palette();
     let typography = ctx.typography();
-    let layer = state.layer();
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
 
-    let background = match layer {
-        InteractionLayer::Disabled
-        | InteractionLayer::Default
-        | InteractionLayer::Hovered
-        | InteractionLayer::Pressed => None,
-    };
-
-    let foreground = if state.disabled {
-        palette.disabled_foreground
-    } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
-        palette.primary.foreground
-    } else {
-        palette.app_foreground
-    };
+    let (background, foreground, icon_color, chevron_color) = accordion_trigger_colors(
+        state.disabled,
+        state.layer(),
+        palette.app_foreground,
+        palette.app_muted_foreground,
+        palette.disabled_foreground,
+        palette.accent_background,
+        palette.accent_foreground,
+    );
 
     AccordionPalette {
-        background: background.filter(|color| *color != transparent),
+        background,
         foreground,
         border_color: palette.border_default,
-        icon_color: foreground,
-        chevron_color: palette.app_muted_foreground,
+        icon_color,
+        chevron_color,
         adorner: None,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
@@ -88,34 +82,51 @@ fn accordion_trigger_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<Acc
     let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
-    let layer = state.layer();
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
+    let (accent_background, accent_foreground) = resolve_accent_hover_pair(catalog)?;
 
-    let background = match layer {
-        InteractionLayer::Disabled
-        | InteractionLayer::Default
-        | InteractionLayer::Hovered
-        | InteractionLayer::Pressed => None,
-    };
-
-    let foreground = if state.disabled {
-        resolve_color(catalog, "muted-foreground")?
-    } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
-        resolve_accent_foreground(catalog)?
-    } else {
-        resolve_label_color(catalog, false)?
-    };
+    let (background, foreground, icon_color, chevron_color) = accordion_trigger_colors(
+        state.disabled,
+        state.layer(),
+        resolve_label_color(catalog, false)?,
+        resolve_color(catalog, "muted-foreground")?,
+        resolve_color(catalog, "muted-foreground")?,
+        accent_background,
+        accent_foreground,
+    );
 
     Ok(AccordionPalette {
-        background: background.filter(|color| *color != transparent),
+        background,
         foreground,
         border_color: resolve_color(catalog, "border")?,
-        icon_color: foreground,
-        chevron_color: resolve_color(catalog, "muted-foreground")?,
+        icon_color,
+        chevron_color,
         adorner: None,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
     })
+}
+
+fn accordion_trigger_colors(
+    disabled: bool,
+    layer: InteractionLayer,
+    default_foreground: Hsla,
+    default_chevron: Hsla,
+    disabled_foreground: Hsla,
+    accent_background: Hsla,
+    accent_foreground: Hsla,
+) -> (Option<Hsla>, Hsla, Hsla, Hsla) {
+    if disabled {
+        return (None, disabled_foreground, disabled_foreground, disabled_foreground);
+    }
+
+    match layer {
+        InteractionLayer::Disabled | InteractionLayer::Default => {
+            (None, default_foreground, default_foreground, default_chevron)
+        }
+        InteractionLayer::Hovered | InteractionLayer::Pressed => {
+            (Some(accent_background), accent_foreground, accent_foreground, accent_foreground)
+        }
+    }
 }
 
 fn accordion_content_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<AccordionContentPalette> {
@@ -151,9 +162,9 @@ mod tests {
     }
 
     #[test]
-    fn trigger_uses_accent_foreground_on_hover_without_background() {
+    fn trigger_uses_paired_accent_hover_like_navigation_sidebar() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone()).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default = accordion_trigger_palette(&mode, ThemeMode::Light, InteractionState::default());
         let hovered = accordion_trigger_palette(
             &mode,
@@ -164,7 +175,9 @@ mod tests {
         assert_eq!(default.foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(default.chevron_color, catalog.color("muted-foreground").expect("muted"));
         assert!(default.background.is_none());
-        assert!(hovered.background.is_none());
+        assert_eq!(hovered.background, Some(catalog.color("accent").expect("accent")));
         assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+        assert_eq!(hovered.icon_color, hovered.foreground);
+        assert_eq!(hovered.chevron_color, hovered.foreground);
     }
 }

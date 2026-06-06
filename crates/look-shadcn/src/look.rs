@@ -7,7 +7,7 @@ use std::sync::{
 use gpui::{BoxShadow, Hsla, SharedString};
 use gpui_luma::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
 use gpui_luma::theme::pack::LumaChrome;
-use gpui_luma::theme::{ControlSize, InteractionState, LumaTheme, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTheme, ThemeMode};
 
 use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
@@ -59,8 +59,8 @@ impl ShadcnLook {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
             state: Arc::new(ShadcnLookState {
-                light: ShadcnModeTokens::from_catalog(catalog.light_map())?,
-                dark: ShadcnModeTokens::from_catalog(catalog.dark_map())?,
+                light: ShadcnModeTokens::from_catalog(catalog.light_map(), ThemeMode::Light)?,
+                dark: ShadcnModeTokens::from_catalog(catalog.dark_map(), ThemeMode::Dark)?,
                 catalog,
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
@@ -77,8 +77,8 @@ impl ShadcnLook {
         Self {
             state: Arc::new(ShadcnLookState {
                 catalog: CssTokenCatalog { light: Default::default(), dark: Default::default() },
-                light: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Light)),
-                dark: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Dark)),
+                light: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Light), ThemeMode::Light),
+                dark: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Dark), ThemeMode::Dark),
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
         }
@@ -114,28 +114,15 @@ impl ShadcnLook {
 
     /// Resolves colors directly from the loaded palette.
     pub fn color(&self, token: ShadcnToken) -> Hsla {
-        let palette = &self.mode_tokens().palette;
-        match token {
-            ShadcnToken::Background => palette.app_background,
-            ShadcnToken::Foreground => palette.app_foreground,
-            ShadcnToken::Card => palette.panel_background,
-            ShadcnToken::CardForeground => palette.body_text,
-            ShadcnToken::Popover => palette.panel_background,
-            ShadcnToken::PopoverForeground => palette.body_text,
-            ShadcnToken::Primary => palette.primary.background,
-            ShadcnToken::PrimaryForeground => palette.primary.foreground,
-            ShadcnToken::Secondary => palette.secondary.background,
-            ShadcnToken::SecondaryForeground => palette.secondary.foreground,
-            ShadcnToken::Muted => palette.muted_background,
-            ShadcnToken::MutedForeground => palette.app_muted_foreground,
-            ShadcnToken::Accent => palette.ghost.hover_background,
-            ShadcnToken::AccentForeground => palette.ghost.foreground,
-            ShadcnToken::Destructive => palette.disabled_background,
-            ShadcnToken::DestructiveForeground => palette.disabled_foreground,
-            ShadcnToken::Border => palette.border_default,
-            ShadcnToken::Input => palette.input_background,
-            ShadcnToken::Ring => palette.focus_ring,
-        }
+        self.mode_tokens().palette.token_color(token)
+    }
+
+    /// Dynamically resolves a token color for a specific interaction state.
+    ///
+    /// Explicit CSS overrides (e.g. `--primary-hover`) take precedence; otherwise
+    /// mode-aware Oklch lightness shifts are applied.
+    pub fn resolve_color_state(&self, token: ShadcnToken, layer: InteractionLayer) -> Hsla {
+        self.mode_tokens().resolve_color_state(token, layer)
     }
 
     /// Resolves fonts to their loaded families.
@@ -210,10 +197,10 @@ impl ShadcnLook {
         let light_catalog = apply_color_overrides_to_catalog(self.state.light.catalog.clone(), overrides);
         let dark_catalog = apply_color_overrides_to_catalog(self.state.dark.catalog.clone(), overrides);
 
-        let Ok(light) = ShadcnModeTokens::from_catalog(light_catalog) else {
+        let Ok(light) = ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light) else {
             return self.clone();
         };
-        let Ok(dark) = ShadcnModeTokens::from_catalog(dark_catalog) else {
+        let Ok(dark) = ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark) else {
             return self.clone();
         };
 

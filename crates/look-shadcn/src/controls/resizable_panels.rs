@@ -47,7 +47,7 @@ fn resizable_panels_from_palette(ctx: &AppearanceContext) -> ResizablePanelsAppe
         grip_emphasis: if disabled {
             palette.disabled_foreground
         } else {
-            palette.ghost.hover_background
+            palette.accent_background
         },
         disabled_opacity: if disabled { 0.45 } else { 1.0 },
     }
@@ -72,7 +72,7 @@ fn resizable_panels_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<Resi
     let grip_emphasis = if state.disabled {
         resolve_color(catalog, "muted-foreground")?
     } else {
-        resolve_color_layer(catalog, "accent", layer, false)?
+        resolve_color_layer(catalog, "accent", layer, false, ctx.theme_mode)?
     };
 
     Ok(ResizablePanelsAppearance {

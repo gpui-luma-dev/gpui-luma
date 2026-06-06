@@ -30,6 +30,91 @@ pub struct ShadcnStyle {
 }
 
 impl ShadcnToken {
+    pub const ALL: [Self; 19] = [
+        Self::Background,
+        Self::Foreground,
+        Self::Card,
+        Self::CardForeground,
+        Self::Popover,
+        Self::PopoverForeground,
+        Self::Primary,
+        Self::PrimaryForeground,
+        Self::Secondary,
+        Self::SecondaryForeground,
+        Self::Muted,
+        Self::MutedForeground,
+        Self::Accent,
+        Self::AccentForeground,
+        Self::Destructive,
+        Self::DestructiveForeground,
+        Self::Border,
+        Self::Input,
+        Self::Ring,
+    ];
+
+    /// CSS custom-property stem (without the `--` prefix).
+    pub fn css_name(self) -> &'static str {
+        match self {
+            Self::Background => "background",
+            Self::Foreground => "foreground",
+            Self::Card => "card",
+            Self::CardForeground => "card-foreground",
+            Self::Popover => "popover",
+            Self::PopoverForeground => "popover-foreground",
+            Self::Primary => "primary",
+            Self::PrimaryForeground => "primary-foreground",
+            Self::Secondary => "secondary",
+            Self::SecondaryForeground => "secondary-foreground",
+            Self::Muted => "muted",
+            Self::MutedForeground => "muted-foreground",
+            Self::Accent => "accent",
+            Self::AccentForeground => "accent-foreground",
+            Self::Destructive => "destructive",
+            Self::DestructiveForeground => "destructive-foreground",
+            Self::Border => "border",
+            Self::Input => "input",
+            Self::Ring => "ring",
+        }
+    }
+
+    pub(crate) fn index(self) -> usize {
+        match self {
+            Self::Background => 0,
+            Self::Foreground => 1,
+            Self::Card => 2,
+            Self::CardForeground => 3,
+            Self::Popover => 4,
+            Self::PopoverForeground => 5,
+            Self::Primary => 6,
+            Self::PrimaryForeground => 7,
+            Self::Secondary => 8,
+            Self::SecondaryForeground => 9,
+            Self::Muted => 10,
+            Self::MutedForeground => 11,
+            Self::Accent => 12,
+            Self::AccentForeground => 13,
+            Self::Destructive => 14,
+            Self::DestructiveForeground => 15,
+            Self::Border => 16,
+            Self::Input => 17,
+            Self::Ring => 18,
+        }
+    }
+
+    pub(crate) fn is_foreground(self) -> bool {
+        matches!(
+            self,
+            Self::Foreground
+                | Self::CardForeground
+                | Self::PopoverForeground
+                | Self::PrimaryForeground
+                | Self::SecondaryForeground
+                | Self::MutedForeground
+                | Self::AccentForeground
+                | Self::DestructiveForeground
+        )
+    }
+
     /// Chainable opacity modifier matching the `/opacity` Tailwind suffix.
     pub fn opacity(self, alpha: f32) -> ShadcnStyle {
         ShadcnStyle { token: self, opacity: Some(alpha) }
