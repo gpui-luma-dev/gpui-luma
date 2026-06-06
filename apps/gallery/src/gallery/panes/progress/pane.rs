@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::progress::{Progress, ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -17,14 +17,14 @@ pub(in crate::gallery) struct ProgressPane {
 }
 
 impl ProgressPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            progress: radix_theme.progress("progress-example").range(1..100).value(41).spawn(cx),
-            state_preview: cx.new(|_| ProgressStatePreview::new(radix_theme)),
+            progress: look.progress("progress-example").range(1..100).value(41).spawn(cx),
+            state_preview: cx.new(|_| ProgressStatePreview::new(look)),
         }
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage(
             "Progress",
             "Progress",
@@ -36,7 +36,7 @@ impl ProgressPane {
                 .child(self.progress.clone())
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -48,7 +48,7 @@ impl ProgressPane {
 
 #[derive(Clone)]
 struct ProgressStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn ProgressTemplate>,
 }
 
@@ -60,14 +60,14 @@ struct ProgressStateSample {
 }
 
 impl ProgressStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { template: radix_theme.progress_template(), radix_theme }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { template: look.progress_template(), look }
     }
 }
 
 impl Render for ProgressStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             ProgressStateSample { id: "empty", label: "Empty", value: 0.0, enabled: true },
             ProgressStateSample { id: "quarter", label: "25%", value: 25.0, enabled: true },

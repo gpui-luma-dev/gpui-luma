@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, EventEmitter, FontWeight, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::{flow, hstack, vstack};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -97,10 +97,10 @@ struct CompletionInputs<'a> {
 impl IntroductionPane {
     // ===== Construction =====
 
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let event_bus = cx.new(|_| EventBus);
-        let payment_panel = cx.new(|cx| PaymentPanel::new(cx, radix_theme.clone(), event_bus.clone()));
-        let workspace_panel = cx.new(|cx| WorkspacePanel::new(cx, radix_theme.clone(), event_bus.clone()));
+        let payment_panel = cx.new(|cx| PaymentPanel::new(cx, look.clone(), event_bus.clone()));
+        let workspace_panel = cx.new(|cx| WorkspacePanel::new(cx, look.clone(), event_bus.clone()));
 
         let name_value = SharedString::default();
         let email_value = SharedString::default();
@@ -127,7 +127,7 @@ impl IntroductionPane {
             workspace_density: &workspace_density,
             budget,
         });
-        let system_panel = cx.new(|cx| SystemPanel::new(cx, radix_theme.clone(), event_bus.clone(), completion));
+        let system_panel = cx.new(|cx| SystemPanel::new(cx, look.clone(), event_bus.clone(), completion));
 
         Self {
             event_bus,
@@ -169,8 +169,8 @@ impl IntroductionPane {
 
     // ===== Render =====
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_description(
             "Introduction",
@@ -193,7 +193,7 @@ impl IntroductionPane {
             .pt(px(32.0))
             .justify_center()
             .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

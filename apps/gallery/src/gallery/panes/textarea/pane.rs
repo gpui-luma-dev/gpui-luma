@@ -13,8 +13,8 @@ use gpui_luma::controls::textarea::{
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -41,9 +41,9 @@ pub(in crate::gallery) struct TextAreaPane {
 }
 
 impl TextAreaPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            text_area: radix_theme
+            text_area: look
                 .textarea("gallery-textarea")
                 .placeholder("Write a multiline message")
                 .full_width(true)
@@ -51,20 +51,20 @@ impl TextAreaPane {
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
                 .spawn(cx),
-            state_preview: cx.new(|_| TextAreaStatePreview::new(radix_theme.clone())),
-            set_sample_button: action_button("textarea-set-sample", "Set Sample", &radix_theme, cx),
-            clear_button: action_button("textarea-clear", "Clear", &radix_theme, cx),
-            enabled_checkbox: radix_theme
+            state_preview: cx.new(|_| TextAreaStatePreview::new(look.clone())),
+            set_sample_button: action_button("textarea-set-sample", "Set Sample", &look, cx),
+            clear_button: action_button("textarea-clear", "Clear", &look, cx),
+            enabled_checkbox: look
                 .checkbox("textarea-enabled")
                 .with_data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
                 .spawn(cx),
-            clean_on_escape_checkbox: radix_theme
+            clean_on_escape_checkbox: look
                 .checkbox("textarea-clean-on-escape")
                 .with_data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
                 .spawn(cx),
-            validation_checkbox: radix_theme
+            validation_checkbox: look
                 .checkbox("textarea-validation")
                 .with_data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
@@ -102,8 +102,8 @@ impl TextAreaPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
         let value = self.value.as_ref();
         let line_count = if value.is_empty() { 0 } else { value.lines().count() };
 
@@ -153,7 +153,7 @@ impl TextAreaPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -259,10 +259,10 @@ enum TextAreaOption {
 fn action_button(
     id: &'static str,
     label: &'static str,
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     cx: &mut Context<GalleryApp>,
 ) -> Entity<Button> {
-    radix_theme.secondary_button(id).label(label).spawn(cx)
+    look.secondary_button(id).label(label).spawn(cx)
 }
 
 fn render_telemetry(
@@ -295,7 +295,7 @@ fn render_telemetry(
 
 #[derive(Clone)]
 struct TextAreaStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn TextAreaTemplate>,
 }
 
@@ -308,15 +308,15 @@ struct TextAreaStateSample {
 }
 
 impl TextAreaStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.textarea_template() }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look: look.clone(), template: look.textarea_template() }
     }
 }
 
 impl Render for TextAreaStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
-        let textarea_theme = self.radix_theme.textarea_theme();
+        let chrome = self.look.chrome();
+        let textarea_theme = self.look.textarea_theme();
         let samples = [
             TextAreaStateSample { id: "default", label: "Standard", state: TextAreaState::default(), enabled: true },
             TextAreaStateSample {

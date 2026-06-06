@@ -9,11 +9,11 @@ use gpui_luma::controls::selector_panel::{
     SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPath, default_selector_items_template,
 };
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 #[derive(Clone)]
 pub(super) struct SelectorPanelPreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
 }
 
@@ -26,15 +26,15 @@ struct SelectorPanelSample {
 }
 
 impl SelectorPanelPreview {
-    pub(super) fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme, template: default_selector_items_template() }
+    pub(super) fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look, template: default_selector_items_template() }
     }
 }
 
 impl Render for SelectorPanelPreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
-        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+        let chrome = self.look.chrome();
+        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
 
         let samples = vec![
             SelectorPanelSample {

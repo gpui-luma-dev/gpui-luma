@@ -2,9 +2,9 @@ use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ThemeMode};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use std::sync::Arc;
 
 use super::panes::registry::{GalleryPanes, GalleryRouteButton};
@@ -13,7 +13,7 @@ use super::theme::GalleryThemeChoice;
 pub struct GalleryApp {
     pub(super) focus_scope: FocusHandle,
     pub(super) pane_focus: FocusHandle,
-    pub(super) radix_theme: Arc<RadixTheme>,
+    pub(super) look: Arc<ShadcnLook>,
     pub(super) split_view: Entity<SplitView>,
     pub(super) navigation_sidebar: Entity<NavigationSidebar>,
     pub(super) panes: GalleryPanes,
@@ -30,9 +30,9 @@ impl GalleryApp {
         let focus_scope = cx.focus_handle();
         let pane_focus = cx.focus_handle().tab_stop(true);
         window.focus(&focus_scope, cx);
-        let radix_theme = theme_choice.radix_theme();
-        radix_theme.set_mode(ThemeMode::Dark);
-        let chrome = radix_theme.chrome();
+        let look = theme_choice.shadcn_look();
+        look.set_mode(ThemeMode::Dark);
+        let chrome = look.chrome();
 
         let split_view = SplitView::new("gallery-shell")
             .sidebar_width(px(280.0))
@@ -45,10 +45,10 @@ impl GalleryApp {
             .separator_hover_color(chrome.border)
             .spawn(cx);
         let initial_selection = GalleryPanes::initial_selection();
-        let navigation = GalleryPanes::navigation(cx, radix_theme.clone());
+        let navigation = GalleryPanes::navigation(cx, look.clone());
         let route_buttons = navigation.route_buttons.clone();
         let branch_buttons = navigation.branch_buttons.clone();
-        let navigation_sidebar = radix_theme
+        let navigation_sidebar = look
             .navigation_sidebar("gallery-nav")
             .title("GPUI-Luma")
             .subtitle("Control gallery")
@@ -56,7 +56,7 @@ impl GalleryApp {
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
             .spawn(cx);
-        let panes = GalleryPanes::new(cx, radix_theme.clone());
+        let panes = GalleryPanes::new(cx, look.clone());
 
         let mut subscriptions = vec![
             cx.subscribe(&split_view, |this, _, event: &SplitViewEvent, cx| {
@@ -85,7 +85,7 @@ impl GalleryApp {
         Self {
             focus_scope,
             pane_focus,
-            radix_theme,
+            look,
             split_view,
             navigation_sidebar,
             panes,

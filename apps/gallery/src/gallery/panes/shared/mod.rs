@@ -9,21 +9,21 @@ pub(in crate::gallery) use template_pipeline::{
 
 use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{ThemePartUsage};
-use gpui_luma_theme_radix::{RadixTheme, all_radix_theme_usages};
+use gpui_luma_look_shadcn::{ShadcnLook, all_shadcn_theme_usages};
 
 use crate::gallery::control::GalleryApp;
 
-pub(super) fn gallery_pane(title: &'static str, content: AnyElement, radix_theme: &RadixTheme) -> AnyElement {
-    gallery_pane_with_description(title, None, content, radix_theme)
+pub(super) fn gallery_pane(title: &'static str, content: AnyElement, look: &ShadcnLook) -> AnyElement {
+    gallery_pane_with_description(title, None, content, look)
 }
 
 pub(super) fn gallery_pane_with_description(
     title: &'static str,
     description: Option<&'static str>,
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
-    let chrome = radix_theme.chrome();
+    let chrome = look.chrome();
 
     div()
         .size_full()
@@ -46,18 +46,18 @@ pub(super) fn gallery_pane_with_usage(
     title: &'static str,
     usage_component: &'static str,
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
-    gallery_pane_with_usage_description(title, None, usage_component, content, radix_theme)
+    gallery_pane_with_usage_description(title, None, usage_component, content, look)
 }
 
 pub(super) fn gallery_pane_with_usage_top_aligned(
     title: &'static str,
     usage_component: &'static str,
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, radix_theme, true, false)
+    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, look, true, false)
 }
 
 pub(super) fn gallery_pane_with_usage_description_scrollable(
@@ -65,14 +65,14 @@ pub(super) fn gallery_pane_with_usage_description_scrollable(
     description: Option<&'static str>,
     usage_component: &'static str,
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
     render_gallery_pane_with_usage_descriptions(
         title,
         description,
         &[usage_component],
         content,
-        radix_theme,
+        look,
         true,
         true,
     )
@@ -83,9 +83,9 @@ pub(super) fn gallery_pane_with_usage_description(
     description: Option<&'static str>,
     usage_component: &'static str,
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
-    gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, radix_theme)
+    gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, look)
 }
 
 pub(super) fn gallery_pane_with_usage_descriptions(
@@ -93,14 +93,14 @@ pub(super) fn gallery_pane_with_usage_descriptions(
     description: Option<&'static str>,
     usage_components: &[&'static str],
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
     render_gallery_pane_with_usage_descriptions(
         title,
         description,
         usage_components,
         content,
-        radix_theme,
+        look,
         false,
         false,
     )
@@ -111,11 +111,11 @@ fn render_gallery_pane_with_usage_descriptions(
     description: Option<&'static str>,
     usage_components: &[&'static str],
     content: AnyElement,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
     top_aligned: bool,
     scrollable: bool,
 ) -> AnyElement {
-    let chrome = radix_theme.chrome();
+    let chrome = look.chrome();
 
     div()
         .size_full()
@@ -135,7 +135,7 @@ fn render_gallery_pane_with_usage_descriptions(
                 .justify_center()
                 .gap(px(28.0))
                 .child(render_gallery_pane_content_column(content, top_aligned, scrollable))
-                .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, radix_theme))),
+                .child(div().h_full().flex().items_stretch().child(render_usage_panels(usage_components, look))),
         )
         .into_any_element()
 }
@@ -201,8 +201,8 @@ pub(super) fn notify_entity<T: 'static>(entity: &Entity<T>, cx: &mut Context<Gal
     entity.update(cx, |_, cx| cx.notify());
 }
 
-fn render_usage_panels(components: &[&'static str], radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_usage_panels(components: &[&'static str], look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     let panel = div()
         .id("theme-usage")
@@ -228,13 +228,13 @@ fn render_usage_panels(components: &[&'static str], radix_theme: &RadixTheme) ->
         );
 
     panel
-        .children(components.iter().copied().map(|component| render_usage_component_section(component, radix_theme)))
+        .children(components.iter().copied().map(|component| render_usage_component_section(component, look)))
         .into_any_element()
 }
 
-fn render_usage_component_section(component: &'static str, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
-    let usage = all_radix_theme_usages().iter().copied().find(|usage| usage.label == component);
+fn render_usage_component_section(component: &'static str, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
+    let usage = all_shadcn_theme_usages().iter().copied().find(|usage| usage.label == component);
     let parts = usage.map(|usage| usage.parts).unwrap_or(&[]);
 
     div()
@@ -250,22 +250,22 @@ fn render_usage_component_section(component: &'static str, radix_theme: &RadixTh
                 .text_color(chrome.title_text)
                 .child(component),
         )
-        .children(parts.iter().map(|part| render_usage_part(part, radix_theme)))
+        .children(parts.iter().map(|part| render_usage_part(part, look)))
         .when(usage.is_none(), |section| {
             section.child(
                 div()
                     .text_size(px(12.0))
                     .line_height(px(17.0))
                     .text_color(chrome.muted_text)
-                    .child("No Radix theme usage metadata registered."),
+                    .child("No Shadcn theme usage metadata registered."),
             )
         })
         .into_any_element()
 }
 
-fn render_usage_part(part: &ThemePartUsage, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
-    let color = resolve_radix_token_color(radix_theme, part.token);
+fn render_usage_part(part: &ThemePartUsage, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
+    let color = resolve_shadcn_token_color(look, part.token);
 
     div()
         .flex()
@@ -328,8 +328,8 @@ fn render_usage_part(part: &ThemePartUsage, radix_theme: &RadixTheme) -> AnyElem
         .into_any_element()
 }
 
-fn resolve_radix_token_color(radix_theme: &RadixTheme, token: &str) -> Option<Hsla> {
-    radix_theme.token_color(token).ok()
+fn resolve_shadcn_token_color(look: &ShadcnLook, token: &str) -> Option<Hsla> {
+    look.token_color(token).ok()
 }
 
 pub(in crate::gallery::panes) fn format_compact_hsla(color: Hsla) -> String {

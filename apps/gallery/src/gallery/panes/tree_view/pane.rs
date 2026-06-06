@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::tree_view::{TreeNode, TreeViewEvent, TreeViewSelectionMode};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -26,14 +26,14 @@ pub(in crate::gallery) struct TreeViewPane {
 }
 
 impl TreeViewPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let tree = radix_theme
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = look
             .tree_view("gallery-tree-view")
             .selection_mode(TreeViewSelectionMode::Single)
             .items(mock_file_tree())
             .spawn(cx);
 
-        let shell = cx.new(|cx| TreeViewScrollShell::new(radix_theme, tree, cx));
+        let shell = cx.new(|cx| TreeViewScrollShell::new(look, tree, cx));
 
         Self { shell, last_event: "None".into() }
     }
@@ -47,8 +47,8 @@ impl TreeViewPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_description(
             "Tree View",
@@ -84,7 +84,7 @@ impl TreeViewPane {
                         .child(format!("Last event: {}", self.last_event)),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

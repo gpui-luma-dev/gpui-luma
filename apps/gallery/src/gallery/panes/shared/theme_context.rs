@@ -1,14 +1,14 @@
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::theme::GalleryThemeChoice;
 
-pub(in crate::gallery) fn render_sparse_catalog_callout(radix_theme: &RadixTheme) -> Option<AnyElement> {
-    if radix_theme.has_css_catalog() {
+pub(in crate::gallery) fn render_sparse_catalog_callout(look: &ShadcnLook) -> Option<AnyElement> {
+    if look.has_css_catalog() {
         return None;
     }
 
-    let chrome = radix_theme.chrome();
+    let chrome = look.chrome();
     let cli = GalleryThemeChoice::cli_usage_line();
     let title = "Native default theme — sparse CSS catalog";
     let body = format!(

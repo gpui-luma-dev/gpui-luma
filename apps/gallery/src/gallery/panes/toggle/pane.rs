@@ -6,9 +6,9 @@ use gpui::{
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -30,31 +30,31 @@ pub(in crate::gallery) struct TogglePane {
 }
 
 impl TogglePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            secondary_toggle: radix_theme
+            secondary_toggle: look
                 .secondary_toggle("toggle-secondary-example")
                 .with_data(true)
                 .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            primary_toggle: radix_theme
+            primary_toggle: look
                 .primary_toggle("toggle-primary-example")
                 .with_data(false)
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            secondary_round_icon_toggle: radix_theme
+            secondary_round_icon_toggle: look
                 .secondary_toggle("toggle-secondary-round-icon-example")
                 .with_data(false)
                 .round(true)
                 .content(|_, _| round_icon_glyph(false).into_any_element())
                 .spawn(cx),
-            primary_round_icon_toggle: radix_theme
+            primary_round_icon_toggle: look
                 .primary_toggle("toggle-primary-round-icon-example")
                 .with_data(true)
                 .round(true)
                 .content(|_, _| round_icon_glyph(true).into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| ToggleStatePreview::new(radix_theme)),
+            state_preview: cx.new(|_| ToggleStatePreview::new(look)),
             secondary_selected: true,
             primary_selected: false,
             secondary_round_icon_selected: false,
@@ -77,8 +77,8 @@ impl TogglePane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Toggle",
@@ -138,7 +138,7 @@ impl TogglePane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -199,7 +199,7 @@ impl TogglePane {
 
 #[derive(Clone)]
 struct ToggleStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn ButtonTemplate<bool>>,
 }
 
@@ -248,14 +248,14 @@ impl ToggleTemplateVariant {
 }
 
 impl ToggleStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.toggle_template(RadixButtonStyle::Secondary) }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look: look.clone(), template: look.toggle_template(ShadcnButtonStyle::Secondary) }
     }
 }
 
 impl Render for ToggleStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             ToggleStateSample { id: "default", header: "default", state: InteractionState::default() },
             ToggleStateSample {
@@ -301,9 +301,9 @@ impl Render for ToggleStatePreview {
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
                     &self.template,
-                    &self.radix_theme,
+                    &self.look,
                     "Primary",
-                    RadixButtonStyle::Primary,
+                    ShadcnButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -312,9 +312,9 @@ impl Render for ToggleStatePreview {
                 ),
                 render_section(
                     &self.template,
-                    &self.radix_theme,
+                    &self.look,
                     "Secondary",
-                    RadixButtonStyle::Secondary,
+                    ShadcnButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -327,9 +327,9 @@ impl Render for ToggleStatePreview {
 
 fn render_section(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     section_label: &'static str,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variants: &[ToggleTemplateVariant],
     samples: &[ToggleStateSample],
     label_color: gpui::Hsla,
@@ -351,7 +351,7 @@ fn render_section(
                 .children(
                     variants
                         .iter()
-                        .map(|variant| render_variant_row(template, radix_theme, style, *variant, samples, window, cx)),
+                        .map(|variant| render_variant_row(template, look, style, *variant, samples, window, cx)),
                 ),
         )
         .into_any_element()
@@ -377,8 +377,8 @@ fn render_header_row(samples: &[ToggleStateSample], label_color: gpui::Hsla) -> 
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    radix_theme: &Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    look: &Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
     variant: ToggleTemplateVariant,
     samples: &[ToggleStateSample],
     window: &mut Window,
@@ -391,23 +391,23 @@ fn render_variant_row(
         .children(
             samples
                 .iter()
-                .map(|sample| render_state_sample(template, radix_theme, style, variant, sample, window, cx)),
+                .map(|sample| render_state_sample(template, look, style, variant, sample, window, cx)),
         )
         .into_any_element()
 }
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    radix_theme: &Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    look: &Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
     variant: ToggleTemplateVariant,
     sample: &ToggleStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let selected = variant.selected();
-    let id = SharedString::from(format!("toggle-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
-    let appearance = appearance_for_style(radix_theme.clone(), style);
+    let id = SharedString::from(format!("toggle-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
+    let appearance = appearance_for_style(look.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: selected,
@@ -430,26 +430,26 @@ fn render_state_sample(
 }
 
 fn appearance_for_style(
-    theme: Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
 ) -> gpui_luma::controls::command::button::ButtonAppearanceSource<bool> {
     Arc::new(move |model| {
         let role = ButtonFamilyRole::Toggle { selected: model.data };
         match style {
-            RadixButtonStyle::Primary => theme.as_ref().resolve_primary_button(role, model.size, model.state),
-            RadixButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(role, model.size, model.state),
-            RadixButtonStyle::Outline => theme.as_ref().resolve_outline_button(role, model.size, model.state),
-            RadixButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(role, model.size, model.state),
+            ShadcnButtonStyle::Primary => theme.as_ref().resolve_primary_button(role, model.size, model.state),
+            ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(role, model.size, model.state),
+            ShadcnButtonStyle::Outline => theme.as_ref().resolve_outline_button(role, model.size, model.state),
+            ShadcnButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(role, model.size, model.state),
         }
     })
 }
 
-fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
     match style {
-        RadixButtonStyle::Primary => "primary",
-        RadixButtonStyle::Secondary => "secondary",
-        RadixButtonStyle::Outline => "outline",
-        RadixButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
     }
 }
 

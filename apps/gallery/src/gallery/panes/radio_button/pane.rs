@@ -7,9 +7,9 @@ use gpui::{
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::radio_button::RadioButton;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
@@ -26,19 +26,19 @@ pub(in crate::gallery) struct RadioButtonPane {
 }
 
 impl RadioButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            secondary_radio: radix_theme
+            secondary_radio: look
                 .secondary_radio("radio-button-secondary-example")
                 .with_data(true)
                 .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            primary_radio: radix_theme
+            primary_radio: look
                 .primary_radio("radio-button-primary-example")
                 .with_data(false)
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| RadioButtonStatePreview::new(radix_theme)),
+            state_preview: cx.new(|_| RadioButtonStatePreview::new(look)),
             secondary_selected: true,
             primary_selected: false,
         }
@@ -53,8 +53,8 @@ impl RadioButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Radio Button",
@@ -90,7 +90,7 @@ impl RadioButtonPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -125,7 +125,7 @@ impl RadioButtonPane {
 
 #[derive(Clone)]
 struct RadioButtonStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
 }
 
 struct RadioButtonStateSample {
@@ -168,14 +168,14 @@ impl RadioButtonTemplateVariant {
 }
 
 impl RadioButtonStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look }
     }
 }
 
 impl Render for RadioButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             RadioButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
             RadioButtonStateSample {
@@ -220,9 +220,9 @@ impl Render for RadioButtonStatePreview {
             )
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
-                    &self.radix_theme,
+                    &self.look,
                     "Primary",
-                    RadixButtonStyle::Primary,
+                    ShadcnButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -230,9 +230,9 @@ impl Render for RadioButtonStatePreview {
                     cx,
                 ),
                 render_section(
-                    &self.radix_theme,
+                    &self.look,
                     "Secondary",
-                    RadixButtonStyle::Secondary,
+                    ShadcnButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -244,16 +244,16 @@ impl Render for RadioButtonStatePreview {
 }
 
 fn render_section(
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     section_label: &'static str,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variants: &[RadioButtonTemplateVariant],
     samples: &[RadioButtonStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let template = radix_theme.radio_button_template(style);
+    let template = look.radio_button_template(style);
     div()
         .flex()
         .items_start()
@@ -293,7 +293,7 @@ fn render_header_row(samples: &[RadioButtonStateSample], label_color: gpui::Hsla
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variant: RadioButtonTemplateVariant,
     samples: &[RadioButtonStateSample],
     window: &mut Window,
@@ -309,7 +309,7 @@ fn render_variant_row(
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variant: RadioButtonTemplateVariant,
     sample: &RadioButtonStateSample,
     window: &mut Window,
@@ -317,7 +317,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let selected = variant.selected();
     let id =
-        SharedString::from(format!("radio-button-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
+        SharedString::from(format!("radio-button-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: selected,
@@ -339,11 +339,11 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
     match style {
-        RadixButtonStyle::Primary => "primary",
-        RadixButtonStyle::Secondary => "secondary",
-        RadixButtonStyle::Outline => "outline",
-        RadixButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
     }
 }

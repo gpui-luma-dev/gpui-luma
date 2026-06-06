@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma_theme_radix::RadixTheme;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 
@@ -27,11 +27,11 @@ pub(in crate::gallery) struct AccordionPane {
 }
 
 impl AccordionPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let interactive_field =
-            radix_theme.textfield("accordion-interactive-field").value("Edit me").full_width(true).spawn(cx);
+            look.textfield("accordion-interactive-field").value("Edit me").full_width(true).spawn(cx);
         let field_for_content = interactive_field.clone();
-        let interactive = radix_theme
+        let interactive = look
             .accordion("accordion-interactive")
             .single()
             .item(
@@ -56,7 +56,7 @@ impl AccordionPane {
             .spawn(cx);
 
         Self {
-            single: radix_theme
+            single: look
                 .accordion("accordion-single")
                 .single()
                 .item(demo_item("general", "General", LucideIcon::Settings, "General settings content."))
@@ -64,7 +64,7 @@ impl AccordionPane {
                 .item(demo_item("team", "Team", LucideIcon::Users, "Team member management.").expanded(true))
                 .item(demo_item("legacy", "Legacy", LucideIcon::Archive, "Legacy configuration.").enabled(false))
                 .spawn(cx),
-            multiple: radix_theme
+            multiple: look
                 .accordion("accordion-multiple")
                 .multiple()
                 .items([
@@ -78,7 +78,7 @@ impl AccordionPane {
                         "faq-2",
                         "How do I theme controls?",
                         LucideIcon::Palette,
-                        "Use RadixTheme helpers and custom templates.",
+                        "Use ShadcnLook helpers and custom templates.",
                     ),
                     demo_item(
                         "faq-3",
@@ -108,8 +108,8 @@ impl AccordionPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_description(
             "Accordion",
@@ -130,7 +130,7 @@ impl AccordionPane {
                         .child(format!("Last event: {}", self.last_event)),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

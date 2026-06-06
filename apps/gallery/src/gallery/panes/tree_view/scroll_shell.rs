@@ -4,9 +4,9 @@ use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Win
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::controls::tree_view::TreeViewControl;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
-/// Gallery-only wrapper that clips the tree in a bounded viewport with a Radix scrollbar.
+/// Gallery-only wrapper that clips the tree in a bounded viewport with a themed scrollbar.
 pub(in crate::gallery) struct TreeViewScrollShell {
     scroll: ScrollContainer,
     tree: Entity<TreeViewControl<SharedString>>,
@@ -15,11 +15,11 @@ pub(in crate::gallery) struct TreeViewScrollShell {
 
 impl TreeViewScrollShell {
     pub fn new(
-        radix_theme: Arc<RadixTheme>,
+        look: Arc<ShadcnLook>,
         tree: Entity<TreeViewControl<SharedString>>,
         cx: &mut Context<Self>,
     ) -> Self {
-        let scroll = ScrollContainer::new("gallery-tree-scroll", radix_theme.scrollbar_template(), cx);
+        let scroll = ScrollContainer::new("gallery-tree-scroll", look.scrollbar_template(), cx);
         let scrollbar = scroll.scrollbar();
         let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
             ScrollbarEvent::Change { value } => {

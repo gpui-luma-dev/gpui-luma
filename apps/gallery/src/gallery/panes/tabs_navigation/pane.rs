@@ -10,9 +10,9 @@ use gpui_luma::controls::tabs_navigation::{
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     ThemedTabsNavigationTemplate, TabsNavigationTheme,
 };
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -28,15 +28,15 @@ pub(in crate::gallery) struct TabsNavigationPane {
 }
 
 impl TabsNavigationPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            tabs: radix_theme.tabs_navigation("project-tabs").items(project_tabs()).active("activity").spawn(cx),
+            tabs: look.tabs_navigation("project-tabs").items(project_tabs()).active("activity").spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
                 .items(project_tabs())
                 .active("activity")
-                .template(local_tabs_navigation_template(radix_theme.clone()))
+                .template(local_tabs_navigation_template(look.clone()))
                 .spawn(cx),
-            state_preview: cx.new(|_| TabsNavigationStatePreview::new(radix_theme.clone())),
+            state_preview: cx.new(|_| TabsNavigationStatePreview::new(look.clone())),
             active_label: "Activity".to_string(),
             local_theme_active_label: "Activity".to_string(),
         }
@@ -51,7 +51,7 @@ impl TabsNavigationPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage(
             "Tabs Navigation",
             "Tabs Navigation",
@@ -67,7 +67,7 @@ impl TabsNavigationPane {
                         .items_center()
                         .gap_3()
                         .child(self.tabs.clone())
-                        .child(render_tab_content(&self.active_label, radix_theme)),
+                        .child(render_tab_content(&self.active_label, look)),
                 )
                 .child(self.state_preview.clone())
                 .child(
@@ -77,12 +77,12 @@ impl TabsNavigationPane {
                         .items_center()
                         .gap_3()
                         .mt(px(10.0))
-                        .child(render_example_label("Local theme customization", radix_theme))
+                        .child(render_example_label("Local theme customization", look))
                         .child(self.local_theme_tabs.clone())
-                        .child(render_tab_content(&self.local_theme_active_label, radix_theme)),
+                        .child(render_tab_content(&self.local_theme_active_label, look)),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -129,14 +129,14 @@ impl TabsNavigationTheme for LocalTabsNavigationTheme {
     }
 }
 
-fn local_tabs_navigation_template(radix_theme: Arc<RadixTheme>) -> Arc<dyn TabsNavigationTemplate> {
-    let inner = radix_theme.tabs_navigation_theme();
+fn local_tabs_navigation_template(look: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTemplate> {
+    let inner = look.tabs_navigation_theme();
     Arc::new(ThemedTabsNavigationTemplate::new(Arc::new(LocalTabsNavigationTheme { inner })))
 }
 
 #[derive(Clone)]
 struct TabsNavigationStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn TabsNavigationTemplate>,
 }
 
@@ -150,14 +150,14 @@ struct TabsNavigationStateSample {
 }
 
 impl TabsNavigationStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.tabs_navigation_template() }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look: look.clone(), template: look.tabs_navigation_template() }
     }
 }
 
 impl Render for TabsNavigationStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             TabsNavigationStateSample {
                 id: "inactive",
@@ -346,8 +346,8 @@ fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}
 
-fn render_example_label(label: &'static str, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_example_label(label: &'static str, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .text_size(px(12.0))
@@ -358,8 +358,8 @@ fn render_example_label(label: &'static str, radix_theme: &RadixTheme) -> AnyEle
         .into_any_element()
 }
 
-fn render_tab_content(active_label: &str, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_tab_content(active_label: &str, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .w(px(360.0))

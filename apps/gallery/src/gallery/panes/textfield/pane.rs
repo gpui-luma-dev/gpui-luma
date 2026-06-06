@@ -13,8 +13,8 @@ use gpui_luma::controls::textfield::{
 };
 use gpui_luma::controls::textfield::TextFieldTheme;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -45,9 +45,9 @@ pub(in crate::gallery) struct TextFieldPane {
 }
 
 impl TextFieldPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            text_field: radix_theme
+            text_field: look
                 .textfield("gallery-textfield")
                 .placeholder("Type and press Enter")
                 .prefix_icon(LucideIcon::Search)
@@ -56,7 +56,7 @@ impl TextFieldPane {
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
                 .spawn(cx),
-            plain_text_field: radix_theme
+            plain_text_field: look
                 .textfield("gallery-textfield-plain")
                 .placeholder("Text field without icon")
                 .prefix_icon(LucideIcon::Search)
@@ -65,7 +65,7 @@ impl TextFieldPane {
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
                 .spawn(cx),
-            compact_plain_text_field: radix_theme
+            compact_plain_text_field: look
                 .textfield("gallery-textfield-compact")
                 .placeholder("Compact ghost (appearance override)")
                 .prefix_icon(LucideIcon::Search)
@@ -81,20 +81,20 @@ impl TextFieldPane {
                     appearance
                 })
                 .spawn(cx),
-            state_preview: cx.new(|_| TextFieldStatePreview::new(radix_theme.clone())),
-            set_sample_button: action_button("textfield-set-sample", "Set Sample", &radix_theme, cx),
-            clear_button: action_button("textfield-clear", "Clear", &radix_theme, cx),
-            enabled_checkbox: radix_theme
+            state_preview: cx.new(|_| TextFieldStatePreview::new(look.clone())),
+            set_sample_button: action_button("textfield-set-sample", "Set Sample", &look, cx),
+            clear_button: action_button("textfield-clear", "Clear", &look, cx),
+            enabled_checkbox: look
                 .checkbox("textfield-enabled")
                 .with_data(true)
                 .content(|_, _| div().child("Enabled").into_any_element())
                 .spawn(cx),
-            clean_on_escape_checkbox: radix_theme
+            clean_on_escape_checkbox: look
                 .checkbox("textfield-clean-on-escape")
                 .with_data(true)
                 .content(|_, _| div().child("Escape clears").into_any_element())
                 .spawn(cx),
-            validation_checkbox: radix_theme
+            validation_checkbox: look
                 .checkbox("textfield-validation")
                 .with_data(false)
                 .content(|_, _| div().child("Strict validation").into_any_element())
@@ -139,8 +139,8 @@ impl TextFieldPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_description(
             "TextField",
@@ -191,7 +191,7 @@ impl TextFieldPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -316,10 +316,10 @@ enum TextFieldOption {
 fn action_button(
     id: &'static str,
     label: &'static str,
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     cx: &mut Context<GalleryApp>,
 ) -> Entity<Button> {
-    radix_theme.secondary_button(id).label(label).spawn(cx)
+    look.secondary_button(id).label(label).spawn(cx)
 }
 
 fn render_telemetry(
@@ -352,7 +352,7 @@ fn render_telemetry(
 
 #[derive(Clone)]
 struct TextFieldStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn TextFieldTemplate>,
 }
 
@@ -365,15 +365,15 @@ struct TextFieldStateSample {
 }
 
 impl TextFieldStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.textfield_template() }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look: look.clone(), template: look.textfield_template() }
     }
 }
 
 impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
-        let textfield_theme = self.radix_theme.textfield_theme();
+        let chrome = self.look.chrome();
+        let textfield_theme = self.look.textfield_theme();
         let samples = [
             TextFieldStateSample { id: "default", label: "Standard", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {

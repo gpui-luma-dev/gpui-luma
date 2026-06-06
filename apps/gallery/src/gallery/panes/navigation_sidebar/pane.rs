@@ -3,8 +3,8 @@ use std::{cell::Cell, rc::Rc};
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -86,8 +86,8 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 ];
 
 impl NavigationSidebarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let sidebar = radix_theme
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let sidebar = look
             .navigation_sidebar("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Prominent card")
@@ -110,8 +110,8 @@ impl NavigationSidebarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
         let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
 
         gallery_pane_with_usage(
@@ -127,7 +127,7 @@ impl NavigationSidebarPane {
                 .border_color(chrome.border)
                 .child(self.sidebar.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

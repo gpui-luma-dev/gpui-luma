@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -24,16 +24,16 @@ pub(in crate::gallery) struct IconButtonPane {
 }
 
 impl IconButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            secondary_icon_button: radix_theme
+            secondary_icon_button: look
                 .secondary_icon_button("icon-button-secondary-example", LucideIcon::Plus)
                 .spawn(cx),
-            outline_icon_button: radix_theme
+            outline_icon_button: look
                 .outline_icon_button("icon-button-outline-example", LucideIcon::Plus)
                 .spawn(cx),
-            ghost_icon_button: radix_theme.ghost_icon_button("icon-button-ghost-example", LucideIcon::Plus).spawn(cx),
-            primary_icon_button: radix_theme
+            ghost_icon_button: look.ghost_icon_button("icon-button-ghost-example", LucideIcon::Plus).spawn(cx),
+            primary_icon_button: look
                 .primary_icon_button("icon-button-primary-example", LucideIcon::Plus)
                 .spawn(cx),
             secondary_icon_clicks: 0,
@@ -58,7 +58,7 @@ impl IconButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage(
             "Command (Icon)",
             "Icon Button",
@@ -78,7 +78,7 @@ impl IconButtonPane {
                         .child(self.ghost_icon_button.clone()),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

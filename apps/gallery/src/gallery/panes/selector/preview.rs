@@ -5,13 +5,13 @@ use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
 };
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::pane::selector_items;
 
 #[derive(Clone)]
 pub(super) struct SelectorStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn SelectorTemplate>,
 }
 
@@ -23,14 +23,14 @@ struct SelectorStateSample {
 }
 
 impl SelectorStatePreview {
-    pub(super) fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme: radix_theme.clone(), template: radix_theme.selector_template() }
+    pub(super) fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look: look.clone(), template: look.selector_template() }
     }
 }
 
 impl Render for SelectorStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             SelectorStateSample {
                 id: "default",

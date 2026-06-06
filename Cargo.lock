@@ -2356,7 +2356,7 @@ dependencies = [
  "anyhow",
  "gpui",
  "gpui-luma",
- "gpui-luma-theme-radix",
+ "gpui-luma-look-shadcn",
  "gpui_platform",
  "gtk",
  "lucide-icons",

@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, div, hsla, prelude::*, px};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 pub(super) const PAGE_SPEC: PageSpec = PageSpec {
     title: "Selection Panel",
@@ -57,8 +57,8 @@ pub(super) struct Section {
     description: &'static str,
 }
 
-pub(super) fn render_page_header(header: HeaderSpec, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+pub(super) fn render_page_header(header: HeaderSpec, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .flex()
@@ -96,13 +96,13 @@ pub(super) fn render_page_header(header: HeaderSpec, radix_theme: &RadixTheme) -
                 .flex()
                 .items_center()
                 .gap(px(8.0))
-                .children(header.metrics.iter().copied().map(|metric| render_metric_chip(metric, radix_theme))),
+                .children(header.metrics.iter().copied().map(|metric| render_metric_chip(metric, look))),
         )
         .into_any_element()
 }
 
-pub(super) fn render_section(section: Section, content: AnyElement, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+pub(super) fn render_section(section: Section, content: AnyElement, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .w_full()
@@ -114,7 +114,7 @@ pub(super) fn render_section(section: Section, content: AnyElement, radix_theme:
         .border_color(chrome.border)
         .bg(chrome.panel_background)
         .p(px(14.0))
-        .child(render_section_header(section, radix_theme))
+        .child(render_section_header(section, look))
         .child(content)
         .into_any_element()
 }
@@ -147,8 +147,8 @@ pub(super) fn render_live_panel_sample(
         .into_any_element()
 }
 
-fn render_section_header(section: Section, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_section_header(section: Section, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .flex()
@@ -173,8 +173,8 @@ fn render_section_header(section: Section, radix_theme: &RadixTheme) -> AnyEleme
         .into_any_element()
 }
 
-fn render_metric_chip(metric: MetricSpec, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_metric_chip(metric: MetricSpec, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     div()
         .px(px(8.0))

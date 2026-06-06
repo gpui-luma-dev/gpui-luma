@@ -90,7 +90,8 @@ The new downstream look crate `crates/look-shadcn` has been successfully created
 
 All 31 control appearance templates, shadow resolvers, and base styling extension methods have been ported from the legacy radix code and successfully compiled and tested under the `gpui-luma-look-shadcn` package.
 
-### 2. Phase A: Migrate Theme Studio Panels
+### 2. Phase A: Migrate Theme Studio Panels [COMPLETED]
+
 Migrate the isolated view pages under `apps/theme-studio/src/studio/panels/` (`team.rs`, `chat.rs`, etc.) and the application shell to consume `ShadcnLook` and its builder extension APIs.
 
 #### Step 1: Update Cargo Dependencies
@@ -149,12 +150,51 @@ For each layout panel in `apps/theme-studio/src/studio/panels/` (e.g., [team.rs]
 >   look.button("cancel").radix_style(&look, ShadcnButtonStyle::Outline)
 >   ```
 
-### 3. Phase B: Dynamic Resolution Mapping
-Implement state/interaction math and fallback chains within the `ShadcnLook` resolver layer rather than the views. Components query state layers via:
-```rust
-look.resolve_color_state(ShadcnToken::Primary, InteractionLayer::Hovered)
-```
-This preserves theme-resilience for missing custom properties in raw CSS imports while keeping client view code clean.
+### 3. Phase B: Migrate Gallery App
 
-### 4. Phase C: SDK Migration and Deprecation
-Refactor the remaining core controls inside `crates/sdk/src/controls/` to consume `ShadcnLook` and compile-time tokens. Once all control templates and the gallery app compile on the new model, we can safely deprecate and remove the legacy `gpui-luma-theme-radix` crate from the workspace.
+Migrate the gallery app layout and views to consume `ShadcnLook` and compile-time styling macros instead of legacy radix configurations.
+
+#### Step 1: Update Cargo Dependencies
+If not already done, ensure `gpui-luma-look-shadcn` is added to the dependencies of `apps/gallery/Cargo.toml`:
+```toml
+gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
+```
+
+#### Step 2: Implement theme loading in `theme.rs`
+Update [apps/gallery/src/gallery/theme.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/theme.rs) to resolve and return `Arc<ShadcnLook>` instead of `RadixTheme`:
+```rust
+use gpui_luma_look_shadcn::ShadcnLook;
+
+impl GalleryThemeChoice {
+    pub fn shadcn_look(self) -> Arc<ShadcnLook> {
+        match self {
+            Self::Default => Arc::new(ShadcnLook::native()),
+            Self::Named(stem) => {
+                let path = theme_css_path(&stem);
+                Arc::new(
+                    ShadcnLook::from_css_path(&path)
+                        .unwrap_or_else(|err| panic!("parse shadcn theme {}: {err}", path.display())),
+                )
+            }
+        }
+    }
+}
+```
+
+#### Step 3: Transition Gallery Application State to `ShadcnLook`
+Update the application entry point and application shell ([apps/gallery/src/main.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/main.rs) and [apps/gallery/src/app_shell.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/app_shell.rs)) to store and distribute the `ShadcnLook` reference.
+
+#### Step 4: Migrate Gallery Panes and Layout Components
+For each individual pane and view inside [apps/gallery/src/gallery/panes/](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/):
+* Replace imports from `use gpui_luma_theme_radix::prelude::*;` with `use gpui_luma_look_shadcn::prelude::*;`.
+* Replace `Arc<RadixTheme>` in signatures and structs with `Arc<ShadcnLook>`.
+* Replace explicit radix-style modifier calls with their look-shadcn counterparts (e.g. `bg_cn`, `text_cn`, `border_cn`).
+* Wrap the top-level rendering of panes inside `with_look(&self.look, || { ... })` so thread-local dynamic color and spacing variables resolve correctly.
+
+#### Step 5: Clean Up Dependencies
+Once all gallery components build successfully under `ShadcnLook`, remove the `gpui-luma-theme-radix` dependency from `apps/gallery/Cargo.toml`.
+
+
+### 5. Phase D: SDK Migration and Deprecation
+
+Refactor the remaining core controls inside `crates/sdk/src/controls/` to consume `ShadcnLook` and compile-time tokens. Once all control templates compile on the new model, we can safely deprecate and remove the legacy `gpui-luma-theme-radix` crate from the workspace.

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::context_menu::{ContextMenu, ContextMenuEvent};
 use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -27,8 +27,8 @@ enum ContextMenuPresentation {
 }
 
 impl ContextMenuPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let context_menu_theme = radix_theme.context_menu_theme();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let context_menu_theme = look.context_menu_theme();
         Self {
             default_context_menu: ContextMenu::new("context-menu-default-example")
                 .label("Right-click me: Default")
@@ -54,8 +54,8 @@ impl ContextMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Context Menu",
@@ -91,7 +91,7 @@ impl ContextMenuPane {
                     )),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

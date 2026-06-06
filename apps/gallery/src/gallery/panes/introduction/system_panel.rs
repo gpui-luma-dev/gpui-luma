@@ -7,9 +7,9 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::progress::Progress;
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::switch::Switch;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::{declare_form, vstack};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -17,41 +17,41 @@ use super::pane::{AppEvent, EventBus};
 declare_form! {
     pub(super) struct SystemPanel {
         controls: {
-            terms_checkbox: Checkbox = radix_theme
+            terms_checkbox: Checkbox = look
                 .primary_checkbox("intro-terms")
                 .with_data(false)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
                 => ButtonEvent |this, _event, cx| {
                     this.handle_terms_event(cx);
                 },
-            social_checkbox: Checkbox = radix_theme
+            social_checkbox: Checkbox = look
                 .primary_checkbox("intro-social-source")
                 .with_data(true)
                 .content(|_, _| div().child("Social").into_any_element())
                 => ButtonEvent |this, _event, cx| {
                     this.handle_social_event(cx);
                 },
-            referral_checkbox: Checkbox = radix_theme
+            referral_checkbox: Checkbox = look
                 .primary_checkbox("intro-referral-source")
                 .with_data(false)
                 .content(|_, _| div().child("Referral").into_any_element())
                 => ButtonEvent |this, _event, cx| {
                     this.handle_referral_event(cx);
                 },
-            two_factor_switch: Switch = radix_theme
+            two_factor_switch: Switch = look
                 .primary_switch("intro-two-factor")
                 .content(|_, _| div().child("Two-factor authentication").into_any_element())
                 => ButtonEvent |this, event, cx| {
                     this.handle_two_factor_event(event, cx);
                 },
-            budget_slider: Slider = radix_theme.slider("intro-budget").range(0..100).step(5).value(40)
+            budget_slider: Slider = look.slider("intro-budget").range(0..100).step(5).value(40)
                 => SliderEvent |this, event, cx| {
                     this.handle_budget_event(event, cx);
                 },
-            completion_progress: Progress = radix_theme.progress("intro-completion").range(0..100).value(initial_completion as i32),
+            completion_progress: Progress = look.progress("intro-completion").range(0..100).value(initial_completion as i32),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             event_bus: Entity<EventBus>,
             initial_completion: f32,
         },
@@ -137,7 +137,7 @@ impl SystemPanel {
 
 impl Render for SystemPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card_container(
             chrome.border,

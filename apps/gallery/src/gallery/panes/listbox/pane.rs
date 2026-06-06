@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -19,14 +19,14 @@ pub(in crate::gallery) struct ListBoxPane {
 }
 
 impl ListBoxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let single = radix_theme
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let single = look
             .listbox("listbox-density-single")
             .items(density_items())
             .selected("comfortable")
             .spawn(cx);
 
-        let multiple = radix_theme
+        let multiple = look
             .listbox_multiple("listbox-density-multiple")
             .items(density_items())
             .selected_ids(["compact", "expanded"])
@@ -50,8 +50,8 @@ impl ListBoxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "ListBox",
@@ -92,7 +92,7 @@ impl ListBoxPane {
                         ),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

@@ -7,9 +7,9 @@ use gpui::{
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
@@ -26,19 +26,19 @@ pub(in crate::gallery) struct CheckboxPane {
 }
 
 impl CheckboxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            secondary_checkbox: radix_theme
+            secondary_checkbox: look
                 .secondary_checkbox("checkbox-secondary-example")
                 .with_data(true)
                 .content(|_, _| div().child("Secondary").into_any_element())
                 .spawn(cx),
-            primary_checkbox: radix_theme
+            primary_checkbox: look
                 .primary_checkbox("checkbox-primary-example")
                 .with_data(false)
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
-            state_preview: cx.new(|_| CheckboxStatePreview::new(radix_theme)),
+            state_preview: cx.new(|_| CheckboxStatePreview::new(look)),
             secondary_checked: true,
             primary_checked: false,
         }
@@ -53,8 +53,8 @@ impl CheckboxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Checkbox",
@@ -90,7 +90,7 @@ impl CheckboxPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -125,7 +125,7 @@ impl CheckboxPane {
 
 #[derive(Clone)]
 struct CheckboxStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
 }
 
 struct CheckboxStateSample {
@@ -168,14 +168,14 @@ impl CheckboxTemplateVariant {
 }
 
 impl CheckboxStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look }
     }
 }
 
 impl Render for CheckboxStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             CheckboxStateSample { id: "default", header: "default", state: InteractionState::default() },
             CheckboxStateSample {
@@ -220,9 +220,9 @@ impl Render for CheckboxStatePreview {
             )
             .child(div().flex().flex_col().items_start().gap(px(20.0)).children([
                 render_section(
-                    &self.radix_theme,
+                    &self.look,
                     "Primary",
-                    RadixButtonStyle::Primary,
+                    ShadcnButtonStyle::Primary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -230,9 +230,9 @@ impl Render for CheckboxStatePreview {
                     cx,
                 ),
                 render_section(
-                    &self.radix_theme,
+                    &self.look,
                     "Secondary",
-                    RadixButtonStyle::Secondary,
+                    ShadcnButtonStyle::Secondary,
                     &variants,
                     &samples,
                     chrome.muted_text,
@@ -244,16 +244,16 @@ impl Render for CheckboxStatePreview {
 }
 
 fn render_section(
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     section_label: &'static str,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variants: &[CheckboxTemplateVariant],
     samples: &[CheckboxStateSample],
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let template = radix_theme.checkbox_template(style);
+    let template = look.checkbox_template(style);
     div()
         .flex()
         .items_start()
@@ -293,7 +293,7 @@ fn render_header_row(samples: &[CheckboxStateSample], label_color: gpui::Hsla) -
 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variant: CheckboxTemplateVariant,
     samples: &[CheckboxStateSample],
     window: &mut Window,
@@ -309,14 +309,14 @@ fn render_variant_row(
 
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variant: CheckboxTemplateVariant,
     sample: &CheckboxStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let checked = variant.checked();
-    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
+    let id = SharedString::from(format!("checkbox-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
     let model = ButtonRenderModel {
         id,
         data: checked,
@@ -338,11 +338,11 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
     match style {
-        RadixButtonStyle::Primary => "primary",
-        RadixButtonStyle::Secondary => "secondary",
-        RadixButtonStyle::Outline => "outline",
-        RadixButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
     }
 }

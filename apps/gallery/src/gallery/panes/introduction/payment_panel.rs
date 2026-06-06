@@ -6,9 +6,9 @@ use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, Typi
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::{declare_form, hstack, vstack};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
@@ -22,19 +22,19 @@ enum PaymentField {
 declare_form! {
     pub(super) struct PaymentPanel {
         controls: {
-            submit_button: Entity<Button> = radix_theme.primary_button("intro-submit").label("Submit")
+            submit_button: Entity<Button> = look.primary_button("intro-submit").label("Submit")
                 => ButtonEvent |this, _event, cx| {
                     this.event_bus.update(cx, |_bus, cx| {
                         cx.emit(AppEvent::PaymentSubmit);
                     });
                 },
-            cancel_button: Entity<Button> = radix_theme.secondary_button("intro-cancel").label("Cancel")
+            cancel_button: Entity<Button> = look.secondary_button("intro-cancel").label("Cancel")
                 => ButtonEvent |this, _event, cx| {
                     this.event_bus.update(cx, |_bus, cx| {
                         cx.emit(AppEvent::PaymentCancel);
                     });
                 },
-            name_field: TextField = radix_theme
+            name_field: TextField = look
                 .textfield("intro-name")
                 .placeholder("Name on card")
                 .full_width(true)
@@ -42,7 +42,7 @@ declare_form! {
                 => TextFieldEvent |this, event, cx| {
                     this.handle_textfield_event(PaymentField::Name, event, cx);
                 },
-            email_field: TextField = radix_theme
+            email_field: TextField = look
                 .textfield("intro-email")
                 .placeholder("Email address")
                 .full_width(true)
@@ -50,7 +50,7 @@ declare_form! {
                 => TextFieldEvent |this, event, cx| {
                     this.handle_textfield_event(PaymentField::Email, event, cx);
                 },
-            payment_combobox: ComboBox = radix_theme
+            payment_combobox: ComboBox = look
                 .combobox("intro-payment-combobox", payment_method_items())
                 .placeholder("Select payment method…")
                 .full_width(true)
@@ -61,7 +61,7 @@ declare_form! {
                 => ComboBoxEvent |this, event, cx| {
                     this.handle_payment_combobox_event(event, cx);
                 },
-            same_as_shipping_checkbox: Checkbox = radix_theme
+            same_as_shipping_checkbox: Checkbox = look
                 .primary_checkbox("intro-same-as-shipping")
                 .with_data(true)
                 .content(|_, _| div().child("Same as shipping address").into_any_element())
@@ -71,7 +71,7 @@ declare_form! {
                     this.emit_change("Checkbox::SameAsShipping", cx);
                     cx.notify();
                 },
-            default_payment_method_checkbox: Checkbox = radix_theme
+            default_payment_method_checkbox: Checkbox = look
                 .secondary_checkbox("intro-default-payment-method")
                 .with_data(true)
                 .content(|_, _| div().child("Use this as default payment method").into_any_element())
@@ -84,7 +84,7 @@ declare_form! {
                 },
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             event_bus: Entity<EventBus>,
         },
         fields: {
@@ -150,7 +150,7 @@ impl PaymentPanel {
 
 impl Render for PaymentPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card_container(
             chrome.border,

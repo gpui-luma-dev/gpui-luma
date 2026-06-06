@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::navigation_sidebar::{NavHostedContent, NavNode, NavNodeState, entity_presenter};
 use gpui_luma::controls::command::button::{Button, ButtonRenderModel, ButtonTemplate, HasPresenter};
 use gpui_luma::controls::navigation_sidebar::NavigationSidebarTheme;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -305,7 +305,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
-    pub(in crate::gallery) radix_theme: Arc<RadixTheme>,
+    pub(in crate::gallery) look: Arc<ShadcnLook>,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
@@ -349,9 +349,9 @@ impl GalleryPanes {
 
     pub(in crate::gallery) fn navigation(
         cx: &mut Context<GalleryApp>,
-        radix_theme: Arc<RadixTheme>,
+        look: Arc<ShadcnLook>,
     ) -> GalleryNavigation {
-        let sidebar_theme = radix_theme.navigation_sidebar_theme();
+        let sidebar_theme = look.navigation_sidebar_theme();
         let mut route_buttons = Vec::new();
         let mut branch_buttons = Vec::new();
         let mut nodes: Vec<NavNode> = PRIMARY_PAGES
@@ -397,43 +397,43 @@ impl GalleryPanes {
         GalleryNavigation { nodes, footer_nodes, route_buttons, branch_buttons }
     }
 
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            radix_theme: radix_theme.clone(),
-            introduction: introduction::IntroductionPane::new(cx, radix_theme.clone()),
-            decorated_button: prototypes::ButtonPane::new(cx, radix_theme.clone()),
-            autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, radix_theme.clone()),
-            combobox: combobox::ComboBoxPane::new(cx, radix_theme.clone()),
-            search_selector: search_selector::SearchSelectorPane::new(cx, radix_theme.clone()),
-            selector: selector::SelectorPane::new(cx, radix_theme.clone()),
-            selection_panel: selection_panel::SelectionPanelPane::new(cx, radix_theme.clone()),
-            selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, radix_theme.clone()),
-            custom_button: prototypes::ModButtonPane::new(cx, radix_theme.clone()),
-            button: button::ButtonPane::new(cx, radix_theme.clone()),
-            icon_button: icon_button::IconButtonPane::new(cx, radix_theme.clone()),
-            toggle: toggle::TogglePane::new(cx, radix_theme.clone()),
-            toggle_group: toggle_group::ToggleGroupPane::new(cx, radix_theme.clone()),
-            switch: switch::SwitchPane::new(cx, radix_theme.clone()),
-            checkbox: checkbox::CheckboxPane::new(cx, radix_theme.clone()),
-            accordion: accordion::AccordionPane::new(cx, radix_theme.clone()),
-            tree_view: tree_view::TreeViewPane::new(cx, radix_theme.clone()),
-            radio_button: radio_button::RadioButtonPane::new(cx, radix_theme.clone()),
-            radio_group: radio_group::RadioGroupPane::new(cx, radix_theme.clone()),
-            choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, radix_theme.clone()),
-            listbox: listbox::ListBoxPane::new(cx, radix_theme.clone()),
-            scrolling_list_view: list_view::ScrollingListViewPane::new(cx, radix_theme.clone()),
-            paging_list_view: list_view::PagingListViewPane::new(cx, radix_theme.clone()),
-            slider: slider::SliderPane::new(cx, radix_theme.clone()),
-            scrollbar: scrollbar::ScrollbarPane::new(cx, radix_theme.clone()),
-            textarea: textarea::TextAreaPane::new(cx, radix_theme.clone()),
-            textfield: textfield::TextFieldPane::new(cx, radix_theme.clone()),
-            floating_menu: floating_menu::FloatingMenuPane::new(cx, radix_theme.clone()),
-            popup_menu: popup_menu::PopupMenuPane::new(cx, radix_theme.clone()),
-            context_menu: context_menu::ContextMenuPane::new(cx, radix_theme.clone()),
-            navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, radix_theme.clone()),
-            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, radix_theme.clone()),
-            progress: progress::ProgressPane::new(cx, radix_theme.clone()),
-            resizable_panels: resizable_panels::ResizablePanelsPane::new(cx, radix_theme.clone()),
+            look: look.clone(),
+            introduction: introduction::IntroductionPane::new(cx, look.clone()),
+            decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
+            autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, look.clone()),
+            combobox: combobox::ComboBoxPane::new(cx, look.clone()),
+            search_selector: search_selector::SearchSelectorPane::new(cx, look.clone()),
+            selector: selector::SelectorPane::new(cx, look.clone()),
+            selection_panel: selection_panel::SelectionPanelPane::new(cx, look.clone()),
+            selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, look.clone()),
+            custom_button: prototypes::ModButtonPane::new(cx, look.clone()),
+            button: button::ButtonPane::new(cx, look.clone()),
+            icon_button: icon_button::IconButtonPane::new(cx, look.clone()),
+            toggle: toggle::TogglePane::new(cx, look.clone()),
+            toggle_group: toggle_group::ToggleGroupPane::new(cx, look.clone()),
+            switch: switch::SwitchPane::new(cx, look.clone()),
+            checkbox: checkbox::CheckboxPane::new(cx, look.clone()),
+            accordion: accordion::AccordionPane::new(cx, look.clone()),
+            tree_view: tree_view::TreeViewPane::new(cx, look.clone()),
+            radio_button: radio_button::RadioButtonPane::new(cx, look.clone()),
+            radio_group: radio_group::RadioGroupPane::new(cx, look.clone()),
+            choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, look.clone()),
+            listbox: listbox::ListBoxPane::new(cx, look.clone()),
+            scrolling_list_view: list_view::ScrollingListViewPane::new(cx, look.clone()),
+            paging_list_view: list_view::PagingListViewPane::new(cx, look.clone()),
+            slider: slider::SliderPane::new(cx, look.clone()),
+            scrollbar: scrollbar::ScrollbarPane::new(cx, look.clone()),
+            textarea: textarea::TextAreaPane::new(cx, look.clone()),
+            textfield: textfield::TextFieldPane::new(cx, look.clone()),
+            floating_menu: floating_menu::FloatingMenuPane::new(cx, look.clone()),
+            popup_menu: popup_menu::PopupMenuPane::new(cx, look.clone()),
+            context_menu: context_menu::ContextMenuPane::new(cx, look.clone()),
+            navigation_sidebar: navigation_sidebar::NavigationSidebarPane::new(cx, look.clone()),
+            tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, look.clone()),
+            progress: progress::ProgressPane::new(cx, look.clone()),
+            resizable_panels: resizable_panels::ResizablePanelsPane::new(cx, look.clone()),
         }
     }
 
@@ -512,48 +512,48 @@ impl GalleryPanes {
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
         let Some(page) = page_for_id(selection) else {
             debug_assert!(false, "unknown gallery page id: {selection}");
-            return render_unknown_page(selection, &self.radix_theme);
+            return render_unknown_page(selection, &self.look);
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => self.introduction.render(&self.radix_theme),
-            GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.radix_theme),
-            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.radix_theme),
-            GalleryPageKind::ComboBox => self.combobox.render(&self.radix_theme),
-            GalleryPageKind::SearchSelector => self.search_selector.render(&self.radix_theme),
-            GalleryPageKind::Selector => self.selector.render(&self.radix_theme),
-            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.radix_theme),
-            GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.radix_theme),
-            GalleryPageKind::Search => search::render(&self.radix_theme),
-            GalleryPageKind::Palette => palette::render(&self.radix_theme),
-            GalleryPageKind::ThemeUsage => theme_usage::render(&self.radix_theme),
-            GalleryPageKind::Button => self.button.render(&self.radix_theme),
-            GalleryPageKind::CustomButton => self.custom_button.render(&self.radix_theme),
-            GalleryPageKind::IconButton => self.icon_button.render(&self.radix_theme),
-            GalleryPageKind::Toggle => self.toggle.render(&self.radix_theme),
-            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.radix_theme),
-            GalleryPageKind::Switch => self.switch.render(&self.radix_theme),
-            GalleryPageKind::Checkbox => self.checkbox.render(&self.radix_theme),
-            GalleryPageKind::Accordion => self.accordion.render(&self.radix_theme),
-            GalleryPageKind::TreeView => self.tree_view.render(&self.radix_theme),
-            GalleryPageKind::RadioButton => self.radio_button.render(&self.radix_theme),
-            GalleryPageKind::RadioGroup => self.radio_group.render(&self.radix_theme),
-            GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.radix_theme),
-            GalleryPageKind::ListBox => self.listbox.render(&self.radix_theme),
-            GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.radix_theme),
-            GalleryPageKind::PagingListView => self.paging_list_view.render(&self.radix_theme),
-            GalleryPageKind::Slider => self.slider.render(&self.radix_theme),
-            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.radix_theme),
-            GalleryPageKind::TextArea => self.textarea.render(&self.radix_theme),
-            GalleryPageKind::TextField => self.textfield.render(&self.radix_theme),
-            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.radix_theme),
-            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.radix_theme),
-            GalleryPageKind::ContextMenu => self.context_menu.render(&self.radix_theme),
-            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.radix_theme),
-            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.radix_theme),
-            GalleryPageKind::Progress => self.progress.render(&self.radix_theme),
-            GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.radix_theme),
-            GalleryPageKind::Settings => settings::render(&self.radix_theme),
+            GalleryPageKind::Introduction => self.introduction.render(&self.look),
+            GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
+            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.look),
+            GalleryPageKind::ComboBox => self.combobox.render(&self.look),
+            GalleryPageKind::SearchSelector => self.search_selector.render(&self.look),
+            GalleryPageKind::Selector => self.selector.render(&self.look),
+            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.look),
+            GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.look),
+            GalleryPageKind::Search => search::render(&self.look),
+            GalleryPageKind::Palette => palette::render(&self.look),
+            GalleryPageKind::ThemeUsage => theme_usage::render(&self.look),
+            GalleryPageKind::Button => self.button.render(&self.look),
+            GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
+            GalleryPageKind::IconButton => self.icon_button.render(&self.look),
+            GalleryPageKind::Toggle => self.toggle.render(&self.look),
+            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.look),
+            GalleryPageKind::Switch => self.switch.render(&self.look),
+            GalleryPageKind::Checkbox => self.checkbox.render(&self.look),
+            GalleryPageKind::Accordion => self.accordion.render(&self.look),
+            GalleryPageKind::TreeView => self.tree_view.render(&self.look),
+            GalleryPageKind::RadioButton => self.radio_button.render(&self.look),
+            GalleryPageKind::RadioGroup => self.radio_group.render(&self.look),
+            GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.look),
+            GalleryPageKind::ListBox => self.listbox.render(&self.look),
+            GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.look),
+            GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look),
+            GalleryPageKind::Slider => self.slider.render(&self.look),
+            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.look),
+            GalleryPageKind::TextArea => self.textarea.render(&self.look),
+            GalleryPageKind::TextField => self.textfield.render(&self.look),
+            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.look),
+            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.look),
+            GalleryPageKind::ContextMenu => self.context_menu.render(&self.look),
+            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.look),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.look),
+            GalleryPageKind::Progress => self.progress.render(&self.look),
+            GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.look),
+            GalleryPageKind::Settings => settings::render(&self.look),
         }
     }
 }
@@ -754,8 +754,8 @@ fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElem
         .into_any_element()
 }
 
-fn render_unknown_page(selection: &str, radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
+fn render_unknown_page(selection: &str, look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
 
     gallery_pane(
         "Unknown Page",
@@ -763,6 +763,6 @@ fn render_unknown_page(selection: &str, radix_theme: &RadixTheme) -> AnyElement 
             .text_color(chrome.body_text)
             .child(format!("No gallery pane is registered for `{selection}`."))
             .into_any_element(),
-        radix_theme,
+        look,
     )
 }

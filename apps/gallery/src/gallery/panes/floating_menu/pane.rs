@@ -10,7 +10,7 @@ use gpui_luma::controls::floating_menu::{
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::state::MenuPath;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -23,14 +23,14 @@ pub(in crate::gallery) struct FloatingMenuPane {
 }
 
 impl FloatingMenuPane {
-    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        Self { menu_theme: radix_theme.floating_menu_theme() }
+    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        Self { menu_theme: look.floating_menu_theme() }
     }
 
     pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
         let appearance = self.menu_theme.resolve();
 
         gallery_pane_with_usage(
@@ -79,7 +79,7 @@ impl FloatingMenuPane {
                         .child(floating_menu_state_machine_snapshot()),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

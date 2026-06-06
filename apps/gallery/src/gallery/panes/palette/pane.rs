@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma_theme_radix::{RadixModeTokens, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens};
 
 use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::panes::shared::render_sparse_catalog_callout;
@@ -23,9 +23,9 @@ struct ModePalette {
     sections: Vec<CatalogSection>,
 }
 
-pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
-    let chrome = radix_theme.chrome();
-    let palettes = [mode_palette(radix_theme.light_tokens(), "Light"), mode_palette(radix_theme.dark_tokens(), "Dark")];
+pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
+    let chrome = look.chrome();
+    let palettes = [mode_palette(look.light_tokens(), "Light"), mode_palette(look.dark_tokens(), "Dark")];
 
     div()
         .size_full()
@@ -55,20 +55,20 @@ pub(in crate::gallery) fn render(radix_theme: &RadixTheme) -> AnyElement {
                                 .child("Palette"),
                         )
                         .child(div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.muted_text).child(
-                            if radix_theme.has_css_catalog() {
+                            if look.has_css_catalog() {
                                 "CSS custom properties from the active tweakcn theme"
                             } else {
                                 "No tweakcn CSS loaded — native default uses the embedded SDK palette only"
                             },
                         )),
                 )
-                .when_some(render_sparse_catalog_callout(radix_theme), |panel, callout| panel.child(callout))
+                .when_some(render_sparse_catalog_callout(look), |panel, callout| panel.child(callout))
                 .child(div().flex().flex_col().gap(px(24.0)).children(palettes.into_iter().map(render_mode_palette))),
         )
         .into_any_element()
 }
 
-fn mode_palette(tokens: &RadixModeTokens, label: &'static str) -> ModePalette {
+fn mode_palette(tokens: &ShadcnModeTokens, label: &'static str) -> ModePalette {
     let palette = tokens.palette;
 
     ModePalette {
@@ -81,7 +81,7 @@ fn mode_palette(tokens: &RadixModeTokens, label: &'static str) -> ModePalette {
     }
 }
 
-fn catalog_sections(tokens: &RadixModeTokens) -> Vec<CatalogSection> {
+fn catalog_sections(tokens: &ShadcnModeTokens) -> Vec<CatalogSection> {
     let catalog = &tokens.catalog;
     let mut core = Vec::new();
     let mut sidebar = Vec::new();

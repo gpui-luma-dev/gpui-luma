@@ -11,7 +11,7 @@ gpui = { workspace = true }
 gpui-luma = { path = "../../crates/sdk" }
 gpui_platform = { workspace = true }
 lucide-icons = { workspace = true }
-gpui-luma-theme-radix = { path = "../../crates/theme-radix" }
+gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
 tracing = "0.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]

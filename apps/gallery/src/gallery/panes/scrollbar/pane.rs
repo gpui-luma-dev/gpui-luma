@@ -10,9 +10,9 @@ use gpui_luma::controls::scrollbar::{
     ScrollbarScrollWheelHandler, ScrollbarTemplate, ScrollbarTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
@@ -34,10 +34,10 @@ enum ScrollbarPresentation {
 }
 
 impl ScrollbarPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let scrollbar_template = radix_theme.scrollbar_template();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let scrollbar_template = look.scrollbar_template();
         Self {
-            horizontal_scrollbar: radix_theme
+            horizontal_scrollbar: look
                 .scrollbar("scrollbar-horizontal-example")
                 .horizontal()
                 .range(0..220)
@@ -46,7 +46,7 @@ impl ScrollbarPane {
                 .value(40)
                 .thumb_fraction(0.54)
                 .spawn(cx),
-            vertical_scrollbar: radix_theme
+            vertical_scrollbar: look
                 .scrollbar("scrollbar-vertical-example")
                 .vertical()
                 .range(0..240)
@@ -55,7 +55,7 @@ impl ScrollbarPane {
                 .value(80)
                 .thumb_fraction(0.45)
                 .spawn(cx),
-            state_preview: cx.new(|_| ScrollbarStatePreview::new(radix_theme.clone(), scrollbar_template)),
+            state_preview: cx.new(|_| ScrollbarStatePreview::new(look.clone(), scrollbar_template)),
             horizontal_value: 40.0,
             vertical_value: 80.0,
         }
@@ -70,7 +70,7 @@ impl ScrollbarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage(
             "Scrollbar",
             "Scrollbar",
@@ -79,10 +79,10 @@ impl ScrollbarPane {
                 .flex_col()
                 .items_center()
                 .gap_4()
-                .child(self.scrollbar_example(radix_theme))
+                .child(self.scrollbar_example(look))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -113,20 +113,20 @@ impl ScrollbarPane {
         }
     }
 
-    fn scrollbar_example(&self, radix_theme: &RadixTheme) -> AnyElement {
+    fn scrollbar_example(&self, look: &ShadcnLook) -> AnyElement {
         scrollbar_pair(
             self.horizontal_value,
             self.vertical_value,
             self.horizontal_scrollbar.clone(),
             self.vertical_scrollbar.clone(),
-            radix_theme,
+            look,
         )
     }
 }
 
 #[derive(Clone)]
 struct ScrollbarStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn ScrollbarTemplate>,
 }
 
@@ -137,14 +137,14 @@ struct ScrollbarStateSample {
 }
 
 impl ScrollbarStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>, template: Arc<dyn ScrollbarTemplate>) -> Self {
-        Self { radix_theme, template }
+    fn new(look: Arc<ShadcnLook>, template: Arc<dyn ScrollbarTemplate>) -> Self {
+        Self { look, template }
     }
 }
 
 impl Render for ScrollbarStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             ScrollbarStateSample { id: "default", label: "Standard", state: InteractionState::default() },
             ScrollbarStateSample {
@@ -297,9 +297,9 @@ fn scrollbar_pair(
     vertical_value: f32,
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
-    radix_theme: &RadixTheme,
+    look: &ShadcnLook,
 ) -> AnyElement {
-    let chrome = radix_theme.chrome();
+    let chrome = look.chrome();
     let mut demo_content = div()
         .absolute()
         .left(px(-horizontal_value))

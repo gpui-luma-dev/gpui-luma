@@ -4,8 +4,8 @@ use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::icon::lucide_glyph;
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -21,10 +21,10 @@ pub(in crate::gallery) struct ToggleGroupPane {
 }
 
 impl ToggleGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let toggle_template = radix_theme.toggle_template(RadixButtonStyle::Ghost);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let toggle_template = look.toggle_template(ShadcnButtonStyle::Ghost);
 
-        let single_group = radix_theme
+        let single_group = look
             .button_group("placement-toggle-group")
             .horizontal()
             .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
@@ -33,7 +33,7 @@ impl ToggleGroupPane {
             .item_template(toggle_button_item_template(toggle_template.clone(), true, placement_icon_content))
             .spawn(cx);
 
-        let multiple_group = radix_theme
+        let multiple_group = look
             .button_group("edge-toggle-group")
             .horizontal()
             .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
@@ -60,8 +60,8 @@ impl ToggleGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_descriptions(
             "Toggle Group",
@@ -85,7 +85,7 @@ impl ToggleGroupPane {
                     div().text_color(chrome.body_text).child(format!("Multiple: {}", self.visible_edges.join(", "))),
                 ))
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

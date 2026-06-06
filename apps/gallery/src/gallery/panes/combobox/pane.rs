@@ -5,9 +5,9 @@ use gpui_luma::controls::combobox::{
     ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, SelectionItem, TypingPolicy,
 };
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
@@ -18,11 +18,11 @@ pub(in crate::gallery) struct ComboBoxPane {
 }
 
 impl ComboBoxPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let strict_combobox = radix_theme
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let strict_combobox = look
             .combobox("gallery-combobox-strict", combobox_demo_items())
-            .items_template(Arc::new(GalleryComboboxItemsTemplate::new(radix_theme.clone())))
-            .panel_template(Arc::new(GalleryComboboxPanelTemplate::new(radix_theme.clone())))
+            .items_template(Arc::new(GalleryComboboxItemsTemplate::new(look.clone())))
+            .panel_template(Arc::new(GalleryComboboxPanelTemplate::new(look.clone())))
             .placeholder("Strict mode (exact match only)…")
             .full_width(true)
             .clean_on_escape(true)
@@ -40,7 +40,7 @@ impl ComboBoxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage_descriptions(
             "ComboBox",
             Some("Select-oriented input with dropdown trigger, open/close toggle, and strict typing policy."),
@@ -55,12 +55,12 @@ impl ComboBoxPane {
                     div()
                         .text_size(px(11.0))
                         .line_height(px(15.0))
-                        .text_color(radix_theme.chrome().muted_text)
+                        .text_color(look.chrome().muted_text)
                         .child("Strict typing policy + down arrow"),
                 )
                 .child(self.strict_combobox.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -71,12 +71,12 @@ impl ComboBoxPane {
 
 #[derive(Clone)]
 struct GalleryComboboxItemsTemplate {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
 }
 
 impl GalleryComboboxItemsTemplate {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look }
     }
 }
 
@@ -87,7 +87,7 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
         handlers: ComboBoxItemsTemplateHandlers,
         cx: &mut App,
     ) -> gpui::Stateful<gpui::Div> {
-        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
         let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
 
         let mut root = div()
@@ -161,18 +161,18 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
 
 #[derive(Clone)]
 struct GalleryComboboxPanelTemplate {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
 }
 
 impl GalleryComboboxPanelTemplate {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
-        Self { radix_theme }
+    fn new(look: Arc<ShadcnLook>) -> Self {
+        Self { look }
     }
 }
 
 impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
     fn render(&self, model: ComboBoxPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
-        let appearance = self.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
 
         if let Some(bounds) = model.popup_bounds {
             return deferred(

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, SelectionItem};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
@@ -14,8 +14,8 @@ pub(in crate::gallery) struct SearchSelectorPane {
 }
 
 impl SearchSelectorPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let selector = radix_theme
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let selector = look
             .search_selector("gallery-search-selector", search_selector_demo_items())
             .placeholder("Choose a state…")
             .search_placeholder("Selection search")
@@ -32,7 +32,7 @@ impl SearchSelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage_descriptions(
             "SearchSelector",
             Some(
@@ -49,12 +49,12 @@ impl SearchSelectorPane {
                     div()
                         .text_size(px(11.0))
                         .line_height(px(15.0))
-                        .text_color(radix_theme.chrome().muted_text)
+                        .text_color(look.chrome().muted_text)
                         .child("Read-only trigger + popup search input"),
                 )
                 .child(self.selector.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

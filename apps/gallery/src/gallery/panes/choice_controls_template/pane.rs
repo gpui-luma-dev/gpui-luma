@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Sh
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, ControlPresenter};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -23,11 +23,11 @@ pub(in crate::gallery) struct ChoiceControlsTemplatePane {
 }
 
 impl ChoiceControlsTemplatePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        Self { state_preview: cx.new(|_| ChoiceControlsTemplatePreview::new(radix_theme)) }
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        Self { state_preview: cx.new(|_| ChoiceControlsTemplatePreview::new(look)) }
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_description(
             "Choice Templates",
             Some(CHOICE_TEMPLATES_DESCRIPTION),
@@ -38,7 +38,7 @@ impl ChoiceControlsTemplatePane {
                 .gap(px(16.0))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -49,7 +49,7 @@ impl ChoiceControlsTemplatePane {
 
 #[derive(Clone)]
 struct ChoiceControlsTemplatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     radio_template: Arc<dyn ButtonTemplate<bool>>,
     checkbox_template: Arc<dyn ButtonTemplate<bool>>,
     switch_template: Arc<dyn ButtonTemplate<bool>>,
@@ -128,20 +128,20 @@ impl ChoiceTemplateControl {
 }
 
 impl ChoiceControlsTemplatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+    fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
-            radio_template: radix_theme.radio_button_template(RadixButtonStyle::Primary),
-            checkbox_template: radix_theme.checkbox_template(RadixButtonStyle::Primary),
-            switch_template: radix_theme.switch_template(RadixButtonStyle::Primary),
-            toggle_template: radix_theme.toggle_template(RadixButtonStyle::Secondary),
-            radix_theme,
+            radio_template: look.radio_button_template(ShadcnButtonStyle::Primary),
+            checkbox_template: look.checkbox_template(ShadcnButtonStyle::Primary),
+            switch_template: look.switch_template(ShadcnButtonStyle::Primary),
+            toggle_template: look.toggle_template(ShadcnButtonStyle::Secondary),
+            look,
         }
     }
 }
 
 impl Render for ChoiceControlsTemplatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let states = [
             ChoiceTemplateStateSample { id: "default", label: "Default", state: InteractionState::default() },
             ChoiceTemplateStateSample {

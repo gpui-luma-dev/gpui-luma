@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, ScrollingListView};
 use gpui_luma::{column, column_emphasis, scrolling_list_view};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -20,10 +20,10 @@ pub(in crate::gallery) struct ScrollingListViewPane {
 }
 
 impl ScrollingListViewPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let tasks = build_task_rows();
         let list_view = scrolling_list_view! {
-            list_view_theme = radix_theme.list_view_theme();
+            list_view_theme = look.list_view_theme();
             id = "listview-tasks-scroll";
             items = tasks;
             selection = ListSelectionMode::Single;
@@ -88,8 +88,8 @@ impl ScrollingListViewPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_top_aligned(
             "Scrolling List View",
@@ -128,7 +128,7 @@ impl ScrollingListViewPane {
                 )
                 .child(self.list_view.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, hsla, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorPlacement, SelectorItem};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -26,36 +26,36 @@ pub(in crate::gallery) struct SelectorPane {
 }
 
 impl SelectorPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let initial_swatch_id = selected_swatch_id();
         let initial_swatch_label = selected_swatch_label();
 
         Self {
-            selector_smart: radix_theme
+            selector_smart: look
                 .selector("popup-selector-smart-example")
                 .label("Select status")
                 .items(selector_items())
                 .placement(SelectorPlacement::Smart)
                 .spawn(cx),
-            selector_below: radix_theme
+            selector_below: look
                 .selector("popup-selector-below-example")
                 .label("Below selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::BelowStart)
                 .spawn(cx),
-            selector_above: radix_theme
+            selector_above: look
                 .selector("popup-selector-above-example")
                 .label("Above selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::AboveStart)
                 .spawn(cx),
-            selector_overlay: radix_theme
+            selector_overlay: look
                 .selector("popup-selector-overlay-example")
                 .label("Overlay selector")
                 .items(selector_items())
                 .placement(SelectorPlacement::OverlayOnTrigger)
                 .spawn(cx),
-            selector_swatch: radix_theme
+            selector_swatch: look
                 .selector("popup-selector-swatch-example")
                 .label("Choose color")
                 .items(swatch_items())
@@ -97,8 +97,8 @@ impl SelectorPane {
                         )
                 })
                 .spawn(cx),
-            state_preview: cx.new(|_| SelectorStatePreview::new(radix_theme.clone())),
-            panel_preview: cx.new(|_| SelectorPanelPreview::new(radix_theme.clone())),
+            state_preview: cx.new(|_| SelectorStatePreview::new(look.clone())),
+            panel_preview: cx.new(|_| SelectorPanelPreview::new(look.clone())),
             selection: initial_swatch_label.to_string(),
             selected_swatch_id: initial_swatch_id.to_string(),
         }
@@ -110,8 +110,8 @@ impl SelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Selector",
@@ -147,7 +147,7 @@ impl SelectorPane {
                 )
                 .child(self.selector_smart.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

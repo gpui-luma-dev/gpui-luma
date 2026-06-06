@@ -6,8 +6,8 @@ use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupTemplate,
     RadioGroupTemplateHandlers, SelectionMode, render_radio_button_rows,
 };
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
@@ -61,19 +61,19 @@ pub(in crate::gallery) struct RadioGroupPane {
 }
 
 impl RadioGroupPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let secondary_vertical = radix_theme.radio_group_template(RadixButtonStyle::Secondary);
-        let secondary_horizontal = radix_theme.radio_group_horizontal_template(RadixButtonStyle::Secondary);
-        let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Secondary);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let secondary_vertical = look.radio_group_template(ShadcnButtonStyle::Secondary);
+        let secondary_horizontal = look.radio_group_horizontal_template(ShadcnButtonStyle::Secondary);
+        let radio_template = look.radio_button_template(ShadcnButtonStyle::Secondary);
 
-        let vertical_group = radix_theme
+        let vertical_group = look
             .radio_group("radio-group-density-vertical")
             .template(secondary_vertical)
             .items(density_items())
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
-        let horizontal_group = radix_theme
+        let horizontal_group = look
             .radio_group_horizontal("radio-group-density-horizontal")
             .template(secondary_horizontal)
             .items(density_items())
@@ -88,7 +88,7 @@ impl RadioGroupPane {
 
         let delivery_group = sdk_radio_group::horizontal("radio-group-delivery-window")
             .items(delivery_window_items())
-            .template(delivery_window_template(radix_theme.clone()))
+            .template(delivery_window_template(look.clone()))
             .selected(DeliveryWindow::Today.id())
             .selection_mode(SelectionMode::SingleAllowNone)
             .spawn(cx);
@@ -120,8 +120,8 @@ impl RadioGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage_description(
             "Radio Group",
@@ -164,7 +164,7 @@ impl RadioGroupPane {
                     chrome.body_text,
                 ))
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -407,15 +407,15 @@ fn radio_button_indented_template(
     })
 }
 
-fn delivery_window_template(radix_theme: Arc<RadixTheme>) -> RadioGroupTemplate<DeliveryWindowItem> {
-    let chrome = radix_theme.chrome();
+fn delivery_window_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<DeliveryWindowItem> {
+    let chrome = look.chrome();
     let spec = Arc::new(DeliveryWindowTemplateSpec {
-        selected_background: radix_theme.token_color("accent").unwrap_or(chrome.panel_background),
-        selected_foreground: radix_theme.token_color("accent-foreground").unwrap_or(chrome.title_text),
+        selected_background: look.token_color("accent").unwrap_or(chrome.panel_background),
+        selected_foreground: look.token_color("accent-foreground").unwrap_or(chrome.title_text),
         background: chrome.panel_background,
         foreground: chrome.body_text,
         muted_foreground: chrome.muted_text,
-        focus_ring: radix_theme.token_color("ring").unwrap_or(chrome.border),
+        focus_ring: look.token_color("ring").unwrap_or(chrome.border),
     });
 
     Arc::new(move |model, handlers, _window, _cx| {

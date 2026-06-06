@@ -9,9 +9,9 @@ use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
     default_button_template,
 };
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -33,13 +33,13 @@ pub(in crate::gallery) struct ButtonPane {
 }
 
 impl ButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
-            secondary_button: radix_theme.secondary_button("button-secondary-example").label("Secondary").spawn(cx),
-            outline_button: radix_theme.outline_button("button-outline-example").label("Outline").spawn(cx),
-            ghost_button: radix_theme.ghost_button("button-ghost-example").label("Ghost").spawn(cx),
-            primary_button: radix_theme.primary_button("button-primary-example").label("Primary").spawn(cx),
-            state_preview: cx.new(|_| ButtonStatePreview::new(radix_theme)),
+            secondary_button: look.secondary_button("button-secondary-example").label("Secondary").spawn(cx),
+            outline_button: look.outline_button("button-outline-example").label("Outline").spawn(cx),
+            ghost_button: look.ghost_button("button-ghost-example").label("Ghost").spawn(cx),
+            primary_button: look.primary_button("button-primary-example").label("Primary").spawn(cx),
+            state_preview: cx.new(|_| ButtonStatePreview::new(look)),
             secondary_clicks: 0,
             outline_clicks: 0,
             ghost_clicks: 0,
@@ -62,7 +62,7 @@ impl ButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_usage(
             "Command (Text)",
             "Button",
@@ -83,7 +83,7 @@ impl ButtonPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -146,7 +146,7 @@ impl ButtonPane {
 
 #[derive(Clone)]
 struct ButtonStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn ButtonTemplate<()>>,
     uniform_template: Arc<dyn ButtonTemplate<()>>,
     use_uniform_sizing: bool,
@@ -208,9 +208,9 @@ impl ButtonTemplateVariant {
 }
 
 impl ButtonStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+    fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
-            radix_theme,
+            look,
             template: default_button_template(),
             uniform_template: Arc::new(
                 DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(|element, _| element.w_full()),
@@ -222,7 +222,7 @@ impl ButtonStatePreview {
 
 impl Render for ButtonStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
             ButtonStateSample {
@@ -269,9 +269,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    &self.radix_theme,
+                    &self.look,
                     "Primary",
-                    RadixButtonStyle::Primary,
+                    ShadcnButtonStyle::Primary,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -282,9 +282,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    &self.radix_theme,
+                    &self.look,
                     "Secondary",
-                    RadixButtonStyle::Secondary,
+                    ShadcnButtonStyle::Secondary,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -295,9 +295,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    &self.radix_theme,
+                    &self.look,
                     "Outline",
-                    RadixButtonStyle::Outline,
+                    ShadcnButtonStyle::Outline,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -308,9 +308,9 @@ impl Render for ButtonStatePreview {
                 render_section(
                     &self.template,
                     &self.uniform_template,
-                    &self.radix_theme,
+                    &self.look,
                     "Ghost",
-                    RadixButtonStyle::Ghost,
+                    ShadcnButtonStyle::Ghost,
                     &variants,
                     &samples,
                     self.use_uniform_sizing,
@@ -325,9 +325,9 @@ impl Render for ButtonStatePreview {
 fn render_section(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
-    radix_theme: &Arc<RadixTheme>,
+    look: &Arc<ShadcnLook>,
     section_label: &'static str,
-    style: RadixButtonStyle,
+    style: ShadcnButtonStyle,
     variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
     use_uniform_sizing: bool,
@@ -351,7 +351,7 @@ fn render_section(
                     render_variant_row(
                         template,
                         uniform_template,
-                        radix_theme,
+                        look,
                         style,
                         *variant,
                         samples,
@@ -385,8 +385,8 @@ fn render_header_row(samples: &[ButtonStateSample], label_color: gpui::Hsla) -> 
 fn render_variant_row(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
-    radix_theme: &Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    look: &Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
     variant: ButtonTemplateVariant,
     samples: &[ButtonStateSample],
     use_uniform_sizing: bool,
@@ -401,7 +401,7 @@ fn render_variant_row(
             render_state_sample(
                 template,
                 uniform_template,
-                radix_theme,
+                look,
                 style,
                 variant,
                 sample,
@@ -416,16 +416,16 @@ fn render_variant_row(
 fn render_state_sample(
     template: &Arc<dyn ButtonTemplate<()>>,
     uniform_template: &Arc<dyn ButtonTemplate<()>>,
-    radix_theme: &Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    look: &Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
     variant: ButtonTemplateVariant,
     sample: &ButtonStateSample,
     use_uniform_sizing: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("button-preview-{}-{}-{}", radix_style_id(style), variant.id(), sample.id));
-    let appearance = appearance_for_style(radix_theme.clone(), style);
+    let id = SharedString::from(format!("button-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
+    let appearance = appearance_for_style(look.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: (),
@@ -459,23 +459,23 @@ fn render_state_sample(
 }
 
 fn appearance_for_style(
-    theme: Arc<RadixTheme>,
-    style: RadixButtonStyle,
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
 ) -> gpui_luma::controls::command::button::ButtonAppearanceSource<()> {
     Arc::new(move |model| match style {
-        RadixButtonStyle::Primary => theme.as_ref().resolve_primary_button(model.role, model.size, model.state),
-        RadixButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),
-        RadixButtonStyle::Outline => theme.as_ref().resolve_outline_button(model.role, model.size, model.state),
-        RadixButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::Primary => theme.as_ref().resolve_primary_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::Outline => theme.as_ref().resolve_outline_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(model.role, model.size, model.state),
     })
 }
 
-fn radix_style_id(style: RadixButtonStyle) -> &'static str {
+fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
     match style {
-        RadixButtonStyle::Primary => "primary",
-        RadixButtonStyle::Secondary => "secondary",
-        RadixButtonStyle::Outline => "outline",
-        RadixButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
     }
 }
 

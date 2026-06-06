@@ -12,9 +12,9 @@ use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent, PopupMenuPlacement};
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::{declare_form, hstack, vstack};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma::controls::radio_group::{
     self as radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupRenderModel,
     RadioGroupTemplate, RadioGroupTemplateHandlers,
@@ -53,7 +53,7 @@ impl WorkspaceDensity {
 declare_form! {
     pub(super) struct WorkspacePanel {
         controls: {
-            popup_menu: Entity<PopupMenu> = radix_theme
+            popup_menu: Entity<PopupMenu> = look
                 .popup_menu("intro-workspace-popup")
                 .label("Workspace Menu")
                 .items(menu_items())
@@ -62,9 +62,9 @@ declare_form! {
                     this.handle_popup_menu_event(event, cx);
                 },
             layout_icon_group: IconGroup<IconGroupItem> = {
-                let toggle_primary = radix_theme.toggle_template(RadixButtonStyle::Primary);
+                let toggle_primary = look.toggle_template(ShadcnButtonStyle::Primary);
 
-                radix_theme
+                look
                     .button_group("intro-workspace-layout")
                     .horizontal()
                     .with_template_modifier(|element, _| element.bg(transparent_black()))
@@ -85,9 +85,9 @@ declare_form! {
                     this.handle_layout_event(event, cx);
                 },
             icon_demo_icon_group: IconGroup<IconGroupItem> = {
-                let toggle_secondary = radix_theme.toggle_template(RadixButtonStyle::Secondary);
+                let toggle_secondary = look.toggle_template(ShadcnButtonStyle::Secondary);
 
-                radix_theme
+                look
                     .button_group("intro-workspace-icon-demo")
                     .horizontal()
                     .managed_selected("left")
@@ -107,7 +107,7 @@ declare_form! {
                     this.handle_icon_demo_event(event, cx);
                 },
             density_radio_group: RadioGroup<RadioGroupItem> = {
-                let radio_template = radix_theme.radio_button_template(RadixButtonStyle::Primary);
+                let radio_template = look.radio_button_template(ShadcnButtonStyle::Primary);
 
                 radio_group::horizontal("intro-workspace-density")
                     .items(density_items())
@@ -119,7 +119,7 @@ declare_form! {
                 },
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             event_bus: Entity<EventBus>,
         },
         fields: {
@@ -219,7 +219,7 @@ impl WorkspacePanel {
 
 impl Render for WorkspacePanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card_container(
             chrome.border,

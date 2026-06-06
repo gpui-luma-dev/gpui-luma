@@ -9,9 +9,9 @@ use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers,
 };
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -29,34 +29,34 @@ pub(in crate::gallery) struct PopupMenuPane {
 }
 
 impl PopupMenuPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let popup_template = radix_theme.popup_menu_template();
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let popup_template = look.popup_menu_template();
         Self {
-            popup_smart: radix_theme
+            popup_smart: look
                 .popup_menu("popup-menu-smart-example")
                 .label("Smart popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::Smart)
                 .spawn(cx),
-            popup_below: radix_theme
+            popup_below: look
                 .popup_menu("popup-menu-below-example")
                 .label("Below popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::BelowStart)
                 .spawn(cx),
-            popup_above: radix_theme
+            popup_above: look
                 .popup_menu("popup-menu-above-example")
                 .label("Above popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::AboveStart)
                 .spawn(cx),
-            popup_centered: radix_theme
+            popup_centered: look
                 .popup_menu("popup-menu-centered-example")
                 .label("Centered popup")
                 .items(menu_items())
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
                 .spawn(cx),
-            state_preview: cx.new(|_| PopupMenuStatePreview::new(radix_theme.clone(), popup_template)),
+            state_preview: cx.new(|_| PopupMenuStatePreview::new(look.clone(), popup_template)),
             selection: "none".to_string(),
         }
     }
@@ -76,8 +76,8 @@ impl PopupMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_usage(
             "Popup Menu",
@@ -111,7 +111,7 @@ impl PopupMenuPane {
                 )
                 .child(self.popup_smart.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -139,7 +139,7 @@ impl PopupMenuPane {
 
 #[derive(Clone)]
 struct PopupMenuStatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     template: Arc<dyn PopupMenuTemplate>,
 }
 
@@ -151,14 +151,14 @@ struct PopupMenuStateSample {
 }
 
 impl PopupMenuStatePreview {
-    fn new(radix_theme: Arc<RadixTheme>, template: Arc<dyn PopupMenuTemplate>) -> Self {
-        Self { radix_theme, template }
+    fn new(look: Arc<ShadcnLook>, template: Arc<dyn PopupMenuTemplate>) -> Self {
+        Self { look, template }
     }
 }
 
 impl Render for PopupMenuStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let samples = [
             PopupMenuStateSample {
                 id: "default",

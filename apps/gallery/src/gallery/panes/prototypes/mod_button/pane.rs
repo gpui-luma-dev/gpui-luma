@@ -3,8 +3,8 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px, rgb};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonTemplate, DefaultButtonTemplate, HasPresenter};
 use gpui_luma::controls::button_family::default_button_family_theme;
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use crate::gallery::theme::GalleryChrome;
@@ -37,8 +37,8 @@ pub(in crate::gallery) struct ModButtonPane {
 }
 
 impl ModButtonPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        let basic_button = radix_theme.primary_button("Button").spawn(cx);
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let basic_button = look.primary_button("Button").spawn(cx);
 
         let modified_button = Button::new("Modified Button").template(modified_button_template::<()>()).spawn(cx);
 
@@ -85,32 +85,32 @@ impl ModButtonPane {
             .template(modified_button_template::<CounterState>())
             .spawn(cx);
 
-        let standard_icon_only = radix_theme.secondary_icon_button("std-icon-only", LucideIcon::Smile).spawn(cx);
+        let standard_icon_only = look.secondary_icon_button("std-icon-only", LucideIcon::Smile).spawn(cx);
 
-        let standard_text_icon = radix_theme
+        let standard_text_icon = look
             .secondary_button("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
             .spawn(cx);
 
-        let standard_icon_text = radix_theme
+        let standard_icon_text = look
             .secondary_button("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
             })
             .spawn(cx);
 
-        let prominent_icon_only = radix_theme.primary_icon_button("prom-icon-only", LucideIcon::Smile).spawn(cx);
+        let prominent_icon_only = look.primary_icon_button("prom-icon-only", LucideIcon::Smile).spawn(cx);
 
-        let prominent_text_icon = radix_theme
+        let prominent_text_icon = look
             .primary_button("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child("Label").child(render_lucide_icon(LucideIcon::Smile))
             })
             .spawn(cx);
 
-        let prominent_icon_text = radix_theme
+        let prominent_icon_text = look
             .primary_button("Label")
             .content(|_, _| {
                 div().flex().items_center().gap_2().child(render_lucide_icon(LucideIcon::Smile)).child("Label")
@@ -152,8 +152,8 @@ impl ModButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
-        let chrome = radix_theme.chrome();
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+        let chrome = look.chrome();
 
         gallery_pane_with_description(
             "Command (Customized)",
@@ -238,7 +238,7 @@ impl ModButtonPane {
                         ),
                 )
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 

@@ -31,7 +31,7 @@ use gpui_luma::controls::textfield::{
     TextFieldVariant,
 };
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -52,11 +52,11 @@ pub(in crate::gallery) struct SelectorControlsTemplatePane {
 }
 
 impl SelectorControlsTemplatePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, radix_theme: Arc<RadixTheme>) -> Self {
-        Self { state_preview: cx.new(|_| SelectorControlsTemplatePreview::new(radix_theme)) }
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        Self { state_preview: cx.new(|_| SelectorControlsTemplatePreview::new(look)) }
     }
 
-    pub(in crate::gallery) fn render(&self, radix_theme: &RadixTheme) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         gallery_pane_with_description(
             "Selector Templates",
             Some(SELECTOR_TEMPLATES_DESCRIPTION),
@@ -67,7 +67,7 @@ impl SelectorControlsTemplatePane {
                 .gap(px(16.0))
                 .child(self.state_preview.clone())
                 .into_any_element(),
-            radix_theme,
+            look,
         )
     }
 
@@ -78,7 +78,7 @@ impl SelectorControlsTemplatePane {
 
 #[derive(Clone)]
 struct SelectorControlsTemplatePreview {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     textfield_template: Arc<dyn TextFieldTemplate>,
     textfield_theme: Arc<dyn TextFieldTheme>,
     autocomplete_template: Arc<dyn AutocompleteTextBoxTemplate>,
@@ -124,28 +124,28 @@ impl SelectorTemplateControl {
 }
 
 impl SelectorControlsTemplatePreview {
-    fn new(radix_theme: Arc<RadixTheme>) -> Self {
+    fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
-            textfield_template: radix_theme.textfield_template(),
-            textfield_theme: radix_theme.textfield_theme(),
+            textfield_template: look.textfield_template(),
+            textfield_theme: look.textfield_theme(),
             autocomplete_template: default_autocomplete_textbox_template(),
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),
             combobox_items_template: default_combobox_items_template(),
             combobox_panel_template: default_combobox_panel_template(),
-            selector_template: radix_theme.selector_template(),
+            selector_template: look.selector_template(),
             selector_items_template: default_selector_items_template(),
             search_selector_template: default_search_selector_template(),
             search_selector_items_template: default_search_selector_items_template(),
             search_selector_panel_template: default_search_selector_panel_template(),
-            radix_theme,
+            look,
         }
     }
 }
 
 impl Render for SelectorControlsTemplatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let states = [
             SelectorTemplateStateSample {
                 id: "default",
@@ -323,8 +323,8 @@ fn render_autocomplete_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = preview.radix_theme.autocomplete_textbox_theme().resolve();
-    let popup_appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+    let status_theme = preview.look.autocomplete_textbox_theme().resolve();
+    let popup_appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
         textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
@@ -359,8 +359,8 @@ fn render_combobox_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = preview.radix_theme.autocomplete_textbox_theme().resolve();
-    let popup_appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+    let status_theme = preview.look.autocomplete_textbox_theme().resolve();
+    let popup_appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
 
     let popup_bounds = (state.id == "pressed")
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
@@ -451,8 +451,8 @@ fn render_search_selector_trigger(
         minimum_trigger_width: px(168.0),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
-        status_color: preview.radix_theme.chrome().muted_text,
-        muted_text_color: preview.radix_theme.chrome().muted_text,
+        status_color: preview.look.chrome().muted_text,
+        muted_text_color: preview.look.chrome().muted_text,
         popup_content: None,
     };
 
@@ -505,7 +505,7 @@ fn render_popup_preview(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let appearance = preview.radix_theme.selector_items_panel_appearance(ControlSize::Md);
+    let appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = popup_items_for_control(control);
     let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect::<Vec<_>>();
