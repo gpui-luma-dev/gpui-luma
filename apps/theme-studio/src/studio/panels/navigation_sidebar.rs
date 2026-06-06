@@ -1,20 +1,7 @@
-use std::cell::Cell;
-use std::rc::Rc;
-use std::sync::Arc;
-
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma::vstack;
+use gpui_luma::controls::navigation_sidebar::NavNode;
 use lucide_icons::Icon as LucideIcon;
 
-use super::common::{card, card_header};
-
-const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";
-const SIDEBAR_HEIGHT_PX: f32 = 500.0;
-const SIDEBAR_WIDTH_EXPANDED_PX: f32 = 300.0;
-const SIDEBAR_WIDTH_COLLAPSED_PX: f32 = 56.0;
+pub(crate) const INITIAL_PROPERTY_SELECTION_ID: &str = "dimensions";
 
 #[derive(Clone, Copy)]
 struct PropertyLeaf {
@@ -82,73 +69,11 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "reset-overrides", label: "Reset Overrides", icon: Some(LucideIcon::RotateCcw), enabled: false },
 ];
 
-pub struct NavigationSidebarPanel {
-    look: Arc<ShadcnLook>,
-    sidebar: Entity<NavigationSidebar>,
-    collapsed: Rc<Cell<bool>>,
-    _subscriptions: Vec<Subscription>,
+pub(crate) fn property_navigation_footer_nodes() -> Vec<NavNode> {
+    FOOTER_PROPERTIES.iter().map(property_leaf_node).collect()
 }
 
-impl NavigationSidebarPanel {
-    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let sidebar = look
-            .navigation_sidebar("properties-navigation-sidebar")
-            .title("Properties")
-            .subtitle("Rectangle / Prominent card")
-            .collapsible(true)
-            .selected_id(INITIAL_PROPERTY_SELECTION_ID)
-            .items(property_nodes())
-            .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
-            .spawn(cx);
-
-        let collapsed = Rc::new(Cell::new(false));
-        let collapsed_for_sub = collapsed.clone();
-        let mut subscriptions = Vec::new();
-        subscriptions.push(cx.subscribe(&sidebar, move |_, _, event: &NavigationSidebarEvent, cx| {
-            if let NavigationSidebarEvent::CollapsedChanged { collapsed: next_collapsed } = event {
-                collapsed_for_sub.set(*next_collapsed);
-                cx.notify();
-            }
-        }));
-
-        Self { look, sidebar, collapsed, _subscriptions: subscriptions }
-    }
-}
-
-impl Render for NavigationSidebarPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.look.chrome();
-        let sidebar_width = if self.collapsed.get() {
-            SIDEBAR_WIDTH_COLLAPSED_PX
-        } else {
-            SIDEBAR_WIDTH_EXPANDED_PX
-        };
-        card(
-            sidebar_width,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "Navigation Sidebar",
-                    "Properties panel for inspecting components.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                div()
-                    .w_full()
-                    .h(px(SIDEBAR_HEIGHT_PX))
-                    .rounded(px(8.0))
-                    .border_1()
-                    .border_color(chrome.border)
-                    .overflow_hidden()
-                    .child(self.sidebar.clone()),
-            },
-        )
-    }
-}
-
-fn property_nodes() -> Vec<NavNode> {
+pub(crate) fn property_navigation_nodes() -> Vec<NavNode> {
     let mut nodes = Vec::new();
 
     nodes.push(NavNode::section("pinned-label", "Pinned"));

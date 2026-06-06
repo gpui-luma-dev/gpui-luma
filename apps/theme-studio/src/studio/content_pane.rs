@@ -91,18 +91,9 @@ impl ContentPaneHost {
             }
         }));
 
-        let palette_panel = cx.new(|cx| {
-            PalettePanel::new(cx, board.look.clone(), board.overrides.clone())
-        });
+        let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
 
-        Self {
-            app,
-            tabs,
-            palette_panel,
-            board,
-            active_tab: ContentTab::Cards,
-            _subscriptions: subscriptions,
-        }
+        Self { app, tabs, palette_panel, board, active_tab: ContentTab::Cards, _subscriptions: subscriptions }
     }
 
     pub fn set_active_tab(&mut self, tab: ContentTab, cx: &mut Context<Self>) {
@@ -195,17 +186,16 @@ impl Render for ContentPaneHost {
                     .child(self.tabs.clone()),
             )
             .child(match active_tab {
-                ContentTab::Cards | ContentTab::Dashboard => {
-                    scrollable_body().child(div().p(px(24.0)).child(render_demo_board(
-                        board.selected,
-                        board.panel_positions.clone(),
-                        board.panel_z_order.clone(),
-                        board.demos.clone(),
-                        chrome,
-                        active_tab.panels(),
-                        cx,
-                    )))
-                }
+                ContentTab::Cards => scrollable_body().child(div().p(px(24.0)).child(render_demo_board(
+                    board.selected,
+                    board.panel_positions.clone(),
+                    board.panel_z_order.clone(),
+                    board.demos.clone(),
+                    chrome,
+                    active_tab.panels(),
+                    cx,
+                ))),
+                ContentTab::Dashboard => dashboard_viewport().child(board.demos.dashboard.clone()),
                 ContentTab::Palette => palette_viewport().child(self.palette_panel.clone()),
             })
     }
@@ -215,6 +205,10 @@ fn scrollable_body() -> gpui::Div {
     let mut panel = div().flex_1().min_h_0().size_full().flex().flex_col();
     panel.style().overflow.y = Some(Overflow::Scroll);
     panel
+}
+
+fn dashboard_viewport() -> gpui::Div {
+    div().flex_1().min_h_0().size_full().overflow_hidden()
 }
 
 fn palette_viewport() -> gpui::Div {

@@ -26,16 +26,17 @@ impl InspectableId {
         &Self::ALL
     }
 
-    pub const CARDS: [Self; 6] = [
+    pub const CARDS: [Self; 7] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
         Self::Chat,
         Self::CookieSettings,
         Self::ReportIssue,
+        Self::Payments,
     ];
 
-    pub const DASHBOARD: [Self; 2] = [Self::Payments, Self::NavigationSidebar];
+    pub const DASHBOARD: [Self; 0] = [];
 
     pub fn config_key(self) -> &'static str {
         match self {

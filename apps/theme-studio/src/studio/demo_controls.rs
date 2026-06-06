@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
 use super::panels::{
-    AccountPanel, ChatPanel, CookiesPanel, NavigationSidebarPanel, PaymentsPanel, ReportPanel, TeamPanel, UpgradePanel,
+    AccountPanel, ChatPanel, CookiesPanel, DashboardPanel, PaymentsPanel, ReportPanel, TeamPanel, UpgradePanel,
 };
 
 #[derive(Clone)]
@@ -18,7 +18,7 @@ pub struct DemoControls {
     pub cookies: Entity<CookiesPanel>,
     pub report: Entity<ReportPanel>,
     pub payments: Entity<PaymentsPanel>,
-    pub navigation_sidebar: Entity<NavigationSidebarPanel>,
+    pub dashboard: Entity<DashboardPanel>,
 }
 
 impl DemoControls {
@@ -31,7 +31,7 @@ impl DemoControls {
             cookies: cx.new(|cx| CookiesPanel::new(cx, look.clone())),
             report: cx.new(|cx| ReportPanel::new(cx, look.clone(), size)),
             payments: cx.new(|cx| PaymentsPanel::new(cx, look.clone(), size)),
-            navigation_sidebar: cx.new(|cx| NavigationSidebarPanel::new(cx, look.clone())),
+            dashboard: cx.new(|cx| DashboardPanel::new(cx, look.clone())),
         }
     }
 

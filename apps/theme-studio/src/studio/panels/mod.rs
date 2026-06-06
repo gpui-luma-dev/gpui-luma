@@ -4,9 +4,11 @@ mod common;
 
 pub(crate) use common::{format_hex_color, parse_hex_color};
 mod cookies;
+mod dashboard;
 mod navigation_sidebar;
 pub(crate) mod palette;
 mod payments;
+mod task_list;
 mod report;
 mod team;
 mod upgrade;
@@ -14,7 +16,7 @@ mod upgrade;
 pub use account::AccountPanel;
 pub use chat::ChatPanel;
 pub use cookies::CookiesPanel;
-pub use navigation_sidebar::NavigationSidebarPanel;
+pub use dashboard::DashboardPanel;
 pub use palette::PalettePanel;
 pub use payments::PaymentsPanel;
 pub use report::ReportPanel;
@@ -79,7 +81,7 @@ pub fn render_demo_board(
             .into_any_element()
     };
 
-    let all_panels: [(InspectableId, gpui::AnyElement); 8] = [
+    let all_panels: [(InspectableId, gpui::AnyElement); 7] = [
         (InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()),
         (InspectableId::CreateAccount, demos.account.clone().into_any_element()),
         (InspectableId::TeamMembers, demos.team.clone().into_any_element()),
@@ -87,7 +89,6 @@ pub fn render_demo_board(
         (InspectableId::CookieSettings, demos.cookies.clone().into_any_element()),
         (InspectableId::ReportIssue, demos.report.clone().into_any_element()),
         (InspectableId::Payments, demos.payments.clone().into_any_element()),
-        (InspectableId::NavigationSidebar, demos.navigation_sidebar.clone().into_any_element()),
     ];
 
     let mut panels: Vec<_> = all_panels
