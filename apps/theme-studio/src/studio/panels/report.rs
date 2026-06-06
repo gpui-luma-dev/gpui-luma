@@ -6,9 +6,9 @@ use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header};
@@ -16,25 +16,25 @@ use super::common::{card, card_header};
 declare_form! {
     pub struct ReportPanel {
         controls: {
-            area_selector: Entity<Selector> = radix_theme
+            area_selector: Entity<Selector> = look
                 .selector("report-area")
                 .label("Billing")
                 .items(area_items()),
-            security_selector: Entity<Selector> = radix_theme
+            security_selector: Entity<Selector> = look
                 .selector("report-security")
                 .label("Severity 2")
                 .items(security_items()),
-            subject_field: TextField = radix_theme.textfield("report-subject").placeholder("Subject").full_width(true),
-            description_area: Entity<TextArea> = radix_theme
+            subject_field: TextField = look.textfield("report-subject").placeholder("Subject").full_width(true),
+            description_area: Entity<TextArea> = look
                 .textarea("report-description")
                 .placeholder("Description")
                 .full_width(true)
                 .rows(4),
-            cancel_button: Entity<Button> = radix_theme.ghost_button("report-cancel").label("Cancel").size(size),
-            submit_button: Entity<Button> = radix_theme.primary_button("report-submit").label("Submit").size(size),
+            cancel_button: Entity<Button> = look.ghost_button("report-cancel").label("Cancel").size(size),
+            submit_button: Entity<Button> = look.primary_button("report-submit").label("Submit").size(size),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             size: ControlSize,
         },
         fields: {}
@@ -43,7 +43,7 @@ declare_form! {
 
 impl Render for ReportPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card(
             380.0,

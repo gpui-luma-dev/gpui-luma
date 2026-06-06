@@ -39,8 +39,8 @@ impl StudioBoardHost {
 impl Render for StudioBoardHost {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let app = self.app.read(cx);
-        let chrome = app.radix_theme.chrome();
-        let board_bg = app.radix_theme.token_color("background").unwrap_or(chrome.app_background);
+        let chrome = app.look.chrome();
+        let board_bg = app.look.token_color("background").unwrap_or(chrome.app_background);
 
         div()
             .size_full()

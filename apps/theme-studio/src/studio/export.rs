@@ -50,8 +50,8 @@ fn render_css(light: &BTreeMap<String, String>, dark: &BTreeMap<String, String>)
     out
 }
 
-pub fn catalog_color_for_token(radix_theme: &gpui_luma_theme_radix::RadixTheme, token: &str) -> Option<Hsla> {
-    radix_theme.token_color(token).ok()
+pub fn catalog_color_for_token(look: &gpui_luma_look_shadcn::ShadcnLook, token: &str) -> Option<Hsla> {
+    look.token_color(token).ok()
 }
 
 pub fn token_css_name(token: &str) -> String {

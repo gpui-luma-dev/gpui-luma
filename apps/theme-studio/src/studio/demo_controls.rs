@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Context, Entity, Subscription};
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
 use super::panels::{
@@ -22,16 +22,16 @@ pub struct DemoControls {
 }
 
 impl DemoControls {
-    pub fn spawn(cx: &mut Context<ThemeStudioApp>, theme: Arc<RadixTheme>, size: ControlSize) -> Self {
+    pub fn spawn(cx: &mut Context<ThemeStudioApp>, look: Arc<ShadcnLook>, size: ControlSize) -> Self {
         Self {
-            upgrade: cx.new(|cx| UpgradePanel::new(cx, theme.clone(), size)),
-            account: cx.new(|cx| AccountPanel::new(cx, theme.clone(), size)),
-            team: cx.new(|cx| TeamPanel::new(cx, theme.clone())),
-            chat: cx.new(|cx| ChatPanel::new(cx, theme.clone(), size)),
-            cookies: cx.new(|cx| CookiesPanel::new(cx, theme.clone())),
-            report: cx.new(|cx| ReportPanel::new(cx, theme.clone(), size)),
-            payments: cx.new(|cx| PaymentsPanel::new(cx, theme.clone(), size)),
-            navigation_sidebar: cx.new(|cx| NavigationSidebarPanel::new(cx, theme.clone())),
+            upgrade: cx.new(|cx| UpgradePanel::new(cx, look.clone(), size)),
+            account: cx.new(|cx| AccountPanel::new(cx, look.clone(), size)),
+            team: cx.new(|cx| TeamPanel::new(cx, look.clone())),
+            chat: cx.new(|cx| ChatPanel::new(cx, look.clone(), size)),
+            cookies: cx.new(|cx| CookiesPanel::new(cx, look.clone())),
+            report: cx.new(|cx| ReportPanel::new(cx, look.clone(), size)),
+            payments: cx.new(|cx| PaymentsPanel::new(cx, look.clone(), size)),
+            navigation_sidebar: cx.new(|cx| NavigationSidebarPanel::new(cx, look.clone())),
         }
     }
 

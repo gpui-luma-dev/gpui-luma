@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorItem};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{avatar_circle, card, card_header};
@@ -13,21 +13,21 @@ const TEAM_CARD_WIDTH: f32 = 380.0;
 declare_form! {
     pub struct TeamPanel {
         controls: {
-            sofia_selector: Entity<Selector> = radix_theme
+            sofia_selector: Entity<Selector> = look
                 .selector("team-sofia")
                 .label("Owner")
                 .items(role_items()),
-            jackson_selector: Entity<Selector> = radix_theme
+            jackson_selector: Entity<Selector> = look
                 .selector("team-jackson")
                 .label("Developer")
                 .items(role_items()),
-            isabella_selector: Entity<Selector> = radix_theme
+            isabella_selector: Entity<Selector> = look
                 .selector("team-isabella")
                 .label("Billing")
                 .items(role_items()),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
         },
         fields: {}
     }
@@ -35,7 +35,7 @@ declare_form! {
 
 impl Render for TeamPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let avatar_bg = gpui::hsla(0.55, 0.12, 0.35, 1.0);
 
         card(

@@ -4,8 +4,8 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::switch::Switch;
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{card, card_header};
@@ -13,7 +13,7 @@ use super::common::{card, card_header};
 declare_form! {
     pub struct CookiesPanel {
         controls: {
-            necessary_switch: Switch = radix_theme
+            necessary_switch: Switch = look
                 .primary_switch("cookies-necessary")
                 .with_data(true)
                 .content(|_, _| div().into_any_element())
@@ -21,7 +21,7 @@ declare_form! {
                     this.necessary_enabled = !this.necessary_enabled;
                     this.necessary_switch.update(cx, |button, cx| button.set_data(this.necessary_enabled, cx));
                 },
-            functional_switch: Switch = radix_theme
+            functional_switch: Switch = look
                 .primary_switch("cookies-functional")
                 .with_data(false)
                 .content(|_, _| div().into_any_element())
@@ -29,10 +29,10 @@ declare_form! {
                     this.functional_enabled = !this.functional_enabled;
                     this.functional_switch.update(cx, |button, cx| button.set_data(this.functional_enabled, cx));
                 },
-            save_button: Entity<Button> = radix_theme.secondary_button("cookies-save").label("Save preferences"),
+            save_button: Entity<Button> = look.secondary_button("cookies-save").label("Save preferences"),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
         },
         fields: {
             necessary_enabled: bool = true,
@@ -43,7 +43,7 @@ declare_form! {
 
 impl Render for CookiesPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card(
             380.0,

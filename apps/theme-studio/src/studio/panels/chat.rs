@@ -3,9 +3,9 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ControlIcon};
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::{RadixButtonStyle, RadixTheme};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma::{declare_form, hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -14,17 +14,17 @@ use super::common::{avatar_circle, card, message_bubble};
 declare_form! {
     pub struct ChatPanel {
         controls: {
-            message_field: TextField = radix_theme
+            message_field: TextField = look
                 .textfield("chat-message")
                 .placeholder("Type your message…")
                 .full_width(true),
-            send_button: Entity<Button> = radix_theme
+            send_button: Entity<Button> = look
                 .primary_icon_button("chat-send", ControlIcon::Lucide(LucideIcon::ArrowUp))
                 .size(size)
                 .round(true),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             size: ControlSize,
         },
         fields: {}
@@ -33,9 +33,9 @@ declare_form! {
 
 impl Render for ChatPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let incoming_bg = chrome.panel_background;
-        let primary = self.radix_theme.mode_tokens().palette.action(RadixButtonStyle::Primary);
+        let primary = self.look.mode_tokens().palette.action(ShadcnButtonStyle::Primary);
         let outgoing_bg = primary.background;
         let outgoing_fg = primary.foreground;
         let avatar_bg = gpui::hsla(0.55, 0.12, 0.35, 1.0);

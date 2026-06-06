@@ -2,9 +2,9 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 
-/// `apps/gallery/tweakcn/` — shared Radix product themes with the gallery app.
+/// `apps/gallery/tweakcn/` — shared shadcn product themes with the gallery app.
 pub fn tweakcn_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../gallery/tweakcn")
 }
@@ -93,14 +93,14 @@ impl StudioThemeChoice {
         }
     }
 
-    pub fn radix_theme(self) -> Arc<RadixTheme> {
+    pub fn shadcn_look(self) -> Arc<ShadcnLook> {
         match self {
-            Self::Default => Arc::new(RadixTheme::native()),
+            Self::Default => Arc::new(ShadcnLook::native()),
             Self::Named(stem) => {
                 let path = theme_css_path(&stem);
                 Arc::new(
-                    RadixTheme::from_css_path(&path)
-                        .unwrap_or_else(|err| panic!("parse radix theme {}: {err}", path.display())),
+                    ShadcnLook::from_css_path(&path)
+                        .unwrap_or_else(|err| panic!("parse shadcn theme {}: {err}", path.display())),
                 )
             }
         }

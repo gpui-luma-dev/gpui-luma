@@ -1,5 +1,5 @@
 use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
-use gpui_luma_theme_radix::all_radix_theme_usages;
+use gpui_luma_look_shadcn::all_shadcn_theme_usages;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum InspectableId {
@@ -70,7 +70,7 @@ impl InspectableId {
 
     pub fn theme_usage(self) -> Option<&'static ThemeUsage> {
         let label = self.label();
-        all_radix_theme_usages().iter().copied().find(|usage| usage.label == label)
+        all_shadcn_theme_usages().iter().copied().find(|usage| usage.label == label)
     }
 
     pub fn scale_fields(self) -> &'static [ScaleField] {

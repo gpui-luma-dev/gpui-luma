@@ -13,8 +13,8 @@ pub fn render_inspector(
     cx: &mut Context<ThemeStudioApp>,
 ) -> Option<impl IntoElement + use<>> {
     let id = this.selected?;
-    let chrome = this.radix_theme.chrome();
-    let sans = this.radix_theme.mode_tokens().typography.font.sans.family.clone();
+    let chrome = this.look.chrome();
+    let sans = this.look.mode_tokens().typography.font.sans.family.clone();
 
     let panel = inspector_panel(chrome)
         .font_family(sans)
@@ -84,7 +84,7 @@ fn scale_rows(
         return None;
     }
 
-    let metrics = &this.radix_theme.mode_tokens().metrics;
+    let metrics = &this.look.mode_tokens().metrics;
     let base = SwitchScale::compute(this.control_size, metrics, scale_factor);
     let scale = this.overrides.effective_switch_scale(base);
 
@@ -178,7 +178,7 @@ fn token_rows(this: &ThemeStudioApp, id: InspectableId, chrome: LumaChrome) -> i
         )
         .children(parts.iter().map(|part| {
             let token_name = token_css_name(part.token);
-            let catalog = catalog_color_for_token(&this.radix_theme, part.token);
+            let catalog = catalog_color_for_token(&this.look, part.token);
             let effective = this
                 .overrides
                 .color_override(id, &token_name)

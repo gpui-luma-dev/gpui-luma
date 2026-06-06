@@ -10,7 +10,7 @@ use gpui_luma::resizable_panels;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, ThemeMode};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::StudioThemeChoice;
@@ -32,7 +32,7 @@ struct PanelDragState {
 
 pub struct ThemeStudioApp {
     focus_scope: FocusHandle,
-    pub(super) radix_theme: Arc<RadixTheme>,
+    pub(super) look: Arc<ShadcnLook>,
     pub(super) control_size: ControlSize,
     pub(super) demos: DemoControls,
     pub(super) panel_positions: HashMap<InspectableId, Point<Pixels>>,
@@ -58,10 +58,10 @@ impl ThemeStudioApp {
         let focus_scope = cx.focus_handle();
         let active_theme_id = theme_choice.id();
         let mode = ThemeMode::Dark;
-        let radix_theme = Self::load_theme(&active_theme_id);
-        radix_theme.set_mode(mode);
+        let look = Self::load_theme(&active_theme_id);
+        look.set_mode(mode);
         let control_size = ControlSize::Md;
-        let demos = DemoControls::spawn(cx, radix_theme.clone(), control_size);
+        let demos = DemoControls::spawn(cx, look.clone(), control_size);
 
         let overrides = StudioOverrides::default();
         let panel_positions = load_panel_positions();
@@ -69,14 +69,14 @@ impl ThemeStudioApp {
             InspectableId::all().iter().enumerate().map(|(index, &id)| (id, index as u32)).collect();
         let next_panel_z = InspectableId::all().len() as u32;
         let theme_sidebar =
-            cx.new(|cx| ThemeSidebar::new(app.clone(), radix_theme.clone(), active_theme_id.clone(), &overrides, cx));
+            cx.new(|cx| ThemeSidebar::new(app.clone(), look.clone(), active_theme_id.clone(), &overrides, cx));
 
         let board_host = cx.new(|_| StudioBoardHost::new(app.clone()));
         let board_host_for_split = board_host.clone();
         let sidebar_entity = theme_sidebar.clone();
         let main_split = resizable_panels! {
             cx,
-            theme = radix_theme.resizable_panels_theme(),
+            theme = look.resizable_panels_theme(),
             id: "theme-studio-main-split",
             layout: Horizontal,
             show_handle: true,
@@ -118,7 +118,7 @@ impl ThemeStudioApp {
 
         Self {
             focus_scope,
-            radix_theme,
+            look,
             control_size,
             demos,
             panel_positions,
@@ -139,7 +139,7 @@ impl ThemeStudioApp {
     }
 
     fn sync_sidebar(&mut self, sync_tokens: bool, cx: &mut Context<Self>) {
-        let theme = self.radix_theme.clone();
+        let theme = self.look.clone();
         let overrides = self.overrides.clone();
         let active_theme_id = self.active_theme_id.clone();
 
@@ -155,25 +155,25 @@ impl ThemeStudioApp {
         self.syncing_sidebar_tokens = false;
     }
 
-    fn load_theme(theme_id: &str) -> Arc<RadixTheme> {
-        StudioThemeChoice::from_id(theme_id).radix_theme()
+    fn load_theme(theme_id: &str) -> Arc<ShadcnLook> {
+        StudioThemeChoice::from_id(theme_id).shadcn_look()
     }
 
     fn apply_theme_overrides(&mut self, cx: &mut Context<Self>) {
         let base = Self::load_theme(&self.active_theme_id);
-        base.set_mode(self.radix_theme.mode());
-        self.radix_theme = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
+        base.set_mode(self.look.mode());
+        self.look = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
         self.refresh_demos(cx);
         self.sync_main_split_theme(cx);
     }
 
     fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
-        let theme = self.radix_theme.resizable_panels_theme();
+        let theme = self.look.resizable_panels_theme();
         self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
     }
 
     fn refresh_demos(&mut self, cx: &mut Context<Self>) {
-        self.demos = DemoControls::spawn(cx, self.radix_theme.clone(), self.control_size);
+        self.demos = DemoControls::spawn(cx, self.look.clone(), self.control_size);
         self.demos.subscribe(cx, &mut self._subscriptions);
     }
 
@@ -292,7 +292,7 @@ impl ThemeStudioApp {
         if !matches!(id, InspectableId::CookieSettings) {
             return;
         }
-        let metrics = &self.radix_theme.mode_tokens().metrics;
+        let metrics = &self.look.mode_tokens().metrics;
         let base = gpui_luma::controls::switch::SwitchScale::compute(self.control_size, metrics, 1.0);
         let current = self.overrides.effective_switch_scale(base);
         let value = match key {
@@ -330,9 +330,9 @@ use super::export::token_css_name;
 
 impl Render for ThemeStudioApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
-        let sans = self.radix_theme.mode_tokens().typography.font.sans.family.clone();
-        let active_mode = self.radix_theme.mode();
+        let chrome = self.look.chrome();
+        let sans = self.look.mode_tokens().typography.font.sans.family.clone();
+        let active_mode = self.look.mode();
         let toggle_icon = match active_mode {
             ThemeMode::Light => LucideIcon::Moon,
             ThemeMode::Dark => LucideIcon::Sun,
@@ -368,12 +368,12 @@ impl Render for ThemeStudioApp {
                             .cursor_pointer()
                             .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
                             .on_click(cx.listener(|this, _, _, cx| {
-                                let mode = match this.radix_theme.mode() {
+                                let mode = match this.look.mode() {
                                     ThemeMode::Light => ThemeMode::Dark,
                                     ThemeMode::Dark => ThemeMode::Light,
                                 };
-                                this.radix_theme.set_mode(mode);
-                                let theme = this.radix_theme.clone();
+                                this.look.set_mode(mode);
+                                let theme = this.look.clone();
                                 this.theme_sidebar.update(cx, |sidebar, cx| {
                                     sidebar.sync_control_templates(&theme, cx);
                                 });

@@ -7,9 +7,9 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header};
@@ -17,24 +17,24 @@ use super::common::{card, card_header};
 declare_form! {
     pub struct UpgradePanel {
         controls: {
-            name_field: TextField = radix_theme.textfield("upgrade-name").placeholder("Name").full_width(true),
-            email_field: TextField = radix_theme.textfield("upgrade-email").placeholder("Email").full_width(true),
-            card_field: TextField = radix_theme.textfield("upgrade-card").placeholder("Card Number").full_width(true),
-            expiry_field: TextField = radix_theme.textfield("upgrade-expiry").placeholder("MM/YY"),
-            cvc_field: TextField = radix_theme.textfield("upgrade-cvc").placeholder("CVC"),
-            plan_group: RadioGroup<RadioGroupItem> = radix_theme
+            name_field: TextField = look.textfield("upgrade-name").placeholder("Name").full_width(true),
+            email_field: TextField = look.textfield("upgrade-email").placeholder("Email").full_width(true),
+            card_field: TextField = look.textfield("upgrade-card").placeholder("Card Number").full_width(true),
+            expiry_field: TextField = look.textfield("upgrade-expiry").placeholder("MM/YY"),
+            cvc_field: TextField = look.textfield("upgrade-cvc").placeholder("CVC"),
+            plan_group: RadioGroup<RadioGroupItem> = look
                 .radio_group("upgrade-plan")
                 .items([
                     RadioGroupItem::new("starter").label("Starter Plan"),
                     RadioGroupItem::new("pro").label("Pro Plan"),
                 ])
                 .selected("starter"),
-            notes_area: Entity<TextArea> = radix_theme
+            notes_area: Entity<TextArea> = look
                 .textarea("upgrade-notes")
                 .placeholder("Notes")
                 .full_width(true)
                 .rows(3),
-            terms_checkbox: Checkbox = radix_theme
+            terms_checkbox: Checkbox = look
                 .primary_checkbox("upgrade-terms")
                 .with_data(true)
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
@@ -42,7 +42,7 @@ declare_form! {
                     this.terms_accepted = !this.terms_accepted;
                     this.terms_checkbox.update(cx, |button, cx| button.set_data(this.terms_accepted, cx));
                 },
-            email_checkbox: Checkbox = radix_theme
+            email_checkbox: Checkbox = look
                 .primary_checkbox("upgrade-email-opt")
                 .with_data(false)
                 .content(|_, _| div().child("Allow us to send you emails").into_any_element())
@@ -50,11 +50,11 @@ declare_form! {
                     this.email_opt_in = !this.email_opt_in;
                     this.email_checkbox.update(cx, |button, cx| button.set_data(this.email_opt_in, cx));
                 },
-            cancel_button: Entity<Button> = radix_theme.secondary_button("upgrade-cancel").label("Cancel").size(size),
-            upgrade_button: Entity<Button> = radix_theme.primary_button("upgrade-submit").label("Upgrade Plan").size(size),
+            cancel_button: Entity<Button> = look.secondary_button("upgrade-cancel").label("Cancel").size(size),
+            upgrade_button: Entity<Button> = look.primary_button("upgrade-submit").label("Upgrade Plan").size(size),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             size: ControlSize,
         },
         fields: {
@@ -66,7 +66,7 @@ declare_form! {
 
 impl Render for UpgradePanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card(
             380.0,

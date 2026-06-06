@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar, NavigationSidebarEvent};
-use gpui_luma_theme_radix::prelude::*;
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 
@@ -83,15 +83,15 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 ];
 
 pub struct NavigationSidebarPanel {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     sidebar: Entity<NavigationSidebar>,
     collapsed: Rc<Cell<bool>>,
     _subscriptions: Vec<Subscription>,
 }
 
 impl NavigationSidebarPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>) -> Self {
-        let sidebar = radix_theme
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+        let sidebar = look
             .navigation_sidebar("properties-navigation-sidebar")
             .title("Properties")
             .subtitle("Rectangle / Prominent card")
@@ -111,13 +111,13 @@ impl NavigationSidebarPanel {
             }
         }));
 
-        Self { radix_theme, sidebar, collapsed, _subscriptions: subscriptions }
+        Self { look, sidebar, collapsed, _subscriptions: subscriptions }
     }
 }
 
 impl Render for NavigationSidebarPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let sidebar_width = if self.collapsed.get() {
             SIDEBAR_WIDTH_COLLAPSED_PX
         } else {

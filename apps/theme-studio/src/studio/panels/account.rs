@@ -4,9 +4,9 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
 use super::common::{card, card_header, or_divider};
@@ -14,17 +14,17 @@ use super::common::{card, card_header, or_divider};
 declare_form! {
     pub struct AccountPanel {
         controls: {
-            github_button: Entity<Button> = radix_theme.outline_button("account-github").label("GitHub").size(size),
-            google_button: Entity<Button> = radix_theme.outline_button("account-google").label("Google").size(size),
-            email_field: TextField = radix_theme.textfield("account-email").placeholder("Email").full_width(true),
-            password_field: TextField = radix_theme
+            github_button: Entity<Button> = look.outline_button("account-github").label("GitHub").size(size),
+            google_button: Entity<Button> = look.outline_button("account-google").label("Google").size(size),
+            email_field: TextField = look.textfield("account-email").placeholder("Email").full_width(true),
+            password_field: TextField = look
                 .textfield("account-password")
                 .placeholder("Password")
                 .full_width(true),
-            create_button: Entity<Button> = radix_theme.primary_button("account-create").label("Create account").size(size),
+            create_button: Entity<Button> = look.primary_button("account-create").label("Create account").size(size),
         },
         args: {
-            radix_theme: Arc<RadixTheme>,
+            look: Arc<ShadcnLook>,
             size: ControlSize,
         },
         fields: {}
@@ -33,7 +33,7 @@ declare_form! {
 
 impl Render for AccountPanel {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
 
         card(
             340.0,

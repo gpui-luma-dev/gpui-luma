@@ -11,9 +11,9 @@ use gpui_luma::controls::list_view::{
     ListViewColumn, ListViewColumnCellTemplate, ListViewControl, ListViewEvent, ListViewRowRenderModel,
 };
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma_theme_radix::prelude::*;
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_theme_radix::RadixTheme;
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -40,7 +40,7 @@ struct PaymentRow {
 }
 
 pub struct PaymentsPanel {
-    radix_theme: Arc<RadixTheme>,
+    look: Arc<ShadcnLook>,
     list_view: Entity<ListViewControl<PaymentRow>>,
     row_checkboxes: Arc<Vec<Checkbox>>,
     prev_button: Entity<Button>,
@@ -50,9 +50,9 @@ pub struct PaymentsPanel {
 }
 
 impl PaymentsPanel {
-    pub fn new(cx: &mut Context<Self>, radix_theme: Arc<RadixTheme>, size: ControlSize) -> Self {
-        let row_checkboxes = Arc::new(spawn_row_checkboxes(radix_theme.clone(), sample_payments().len(), cx));
-        let list_view = radix_theme
+    pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>, size: ControlSize) -> Self {
+        let row_checkboxes = Arc::new(spawn_row_checkboxes(look.clone(), sample_payments().len(), cx));
+        let list_view = look
             .list_view("studio-payments")
             .items(sample_payments())
             .multiple()
@@ -86,8 +86,8 @@ impl PaymentsPanel {
             }));
         }
 
-        let prev_button = radix_theme.secondary_button("payments-prev").label("Previous").size(size).spawn(cx);
-        let next_button = radix_theme.secondary_button("payments-next").label("Next").size(size).spawn(cx);
+        let prev_button = look.secondary_button("payments-prev").label("Previous").size(size).spawn(cx);
+        let next_button = look.secondary_button("payments-next").label("Next").size(size).spawn(cx);
         subscriptions.push(cx.subscribe(&prev_button, |panel, _, event, cx| {
             if matches!(event, ButtonEvent::Click) {
                 panel.list_view.update(cx, |list, cx| list.prev_page(cx));
@@ -104,7 +104,7 @@ impl PaymentsPanel {
             next_button,
             list_view,
             row_checkboxes,
-            radix_theme,
+            look,
             selected_count: 0,
             _subscriptions: subscriptions,
         }
@@ -131,7 +131,7 @@ impl PaymentsPanel {
 
 impl Render for PaymentsPanel {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.radix_theme.chrome();
+        let chrome = self.look.chrome();
         let total_rows = self.list_view.read(cx).items().len();
         let at_first = self.list_view.read(cx).current_page() == 0;
         let at_last = self.list_view.read(cx).current_page() + 1 >= self.list_view.read(cx).page_count().max(1);
@@ -173,15 +173,10 @@ impl Render for PaymentsPanel {
     }
 }
 
-fn spawn_row_checkboxes(
-    radix_theme: Arc<RadixTheme>,
-    row_count: usize,
-    cx: &mut Context<PaymentsPanel>,
-) -> Vec<Checkbox> {
+fn spawn_row_checkboxes(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Context<PaymentsPanel>) -> Vec<Checkbox> {
     (0..row_count)
         .map(|index| {
-            radix_theme
-                .primary_checkbox(format!("studio-payments-row-{index}"))
+            look.primary_checkbox(format!("studio-payments-row-{index}"))
                 .with_data(false)
                 .size(ControlSize::Sm)
                 .indicator_only()
