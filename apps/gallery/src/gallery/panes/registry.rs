@@ -16,8 +16,8 @@ use super::{
     accordion, autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
     tree_view, icon_button, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress,
     prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel,
-    selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea,
-    textfield, theme_usage, toggle, toggle_group,
+    split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation,
+    textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -67,6 +67,10 @@ enum GalleryPageKind {
     TabsNavigation,
     Progress,
     ResizablePanels,
+    SplitViewUnified,
+    SplitViewInset,
+    SplitViewIconRail,
+    SplitViewDetached,
     Settings,
 }
 
@@ -173,6 +177,30 @@ const RESIZABLE_PANELS_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::ResizablePanels,
 };
+const SPLIT_VIEW_UNIFIED_PAGE: GalleryPage = GalleryPage {
+    id: "split-view-unified",
+    label: "Split View: Unified",
+    icon: None,
+    kind: GalleryPageKind::SplitViewUnified,
+};
+const SPLIT_VIEW_INSET_PAGE: GalleryPage = GalleryPage {
+    id: "split-view-inset",
+    label: "Split View: Inset",
+    icon: None,
+    kind: GalleryPageKind::SplitViewInset,
+};
+const SPLIT_VIEW_ICON_RAIL_PAGE: GalleryPage = GalleryPage {
+    id: "split-view-icon-rail",
+    label: "Split View: Icon Rail",
+    icon: None,
+    kind: GalleryPageKind::SplitViewIconRail,
+};
+const SPLIT_VIEW_DETACHED_PAGE: GalleryPage = GalleryPage {
+    id: "split-view-detached",
+    label: "Split View: Detached",
+    icon: None,
+    kind: GalleryPageKind::SplitViewDetached,
+};
 const NAVIGATION_SIDEBAR_PAGE: GalleryPage = GalleryPage {
     id: "navigation-sidebar",
     label: "Navigation Sidebar",
@@ -237,7 +265,13 @@ const CHOICE_PAGES: &[GalleryPage] = &[
 ];
 const INPUT_PAGES: &[GalleryPage] = &[TEXTFIELD_PAGE, TEXTAREA_PAGE, SLIDER_PAGE, SCROLLBAR_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[FLOATING_MENU_PAGE, POPUP_MENU_PAGE, CONTEXT_MENU_PAGE];
-const LAYOUT_PAGES: &[GalleryPage] = &[RESIZABLE_PANELS_PAGE];
+const LAYOUT_PAGES: &[GalleryPage] = &[
+    RESIZABLE_PANELS_PAGE,
+    SPLIT_VIEW_UNIFIED_PAGE,
+    SPLIT_VIEW_INSET_PAGE,
+    SPLIT_VIEW_ICON_RAIL_PAGE,
+    SPLIT_VIEW_DETACHED_PAGE,
+];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
 const SELECTION_PAGES: &[GalleryPage] = &[
@@ -340,6 +374,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) tabs_navigation: tabs_navigation::TabsNavigationPane,
     pub(super) progress: progress::ProgressPane,
     pub(super) resizable_panels: resizable_panels::ResizablePanelsPane,
+    pub(super) split_view: split_view::SplitViewPane,
 }
 
 impl GalleryPanes {
@@ -431,6 +466,7 @@ impl GalleryPanes {
             tabs_navigation: tabs_navigation::TabsNavigationPane::new(cx, look.clone()),
             progress: progress::ProgressPane::new(cx, look.clone()),
             resizable_panels: resizable_panels::ResizablePanelsPane::new(cx, look.clone()),
+            split_view: split_view::SplitViewPane::new(cx, look.clone()),
         }
     }
 
@@ -466,9 +502,9 @@ impl GalleryPanes {
         self.navigation_sidebar.subscribe(cx, subscriptions);
         self.tabs_navigation.subscribe(cx, subscriptions);
         self.resizable_panels.subscribe(cx, subscriptions);
+        self.split_view.subscribe(cx, subscriptions);
     }
 
-    #[allow(dead_code)]
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.introduction.notify_controls(cx);
         self.decorated_button.notify_controls(cx);
@@ -504,6 +540,7 @@ impl GalleryPanes {
         self.tabs_navigation.notify_controls(cx);
         self.progress.notify_controls(cx);
         self.resizable_panels.notify_controls(cx);
+        self.split_view.notify_controls(cx);
     }
 
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
@@ -550,6 +587,16 @@ impl GalleryPanes {
             GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.look),
             GalleryPageKind::Progress => self.progress.render(&self.look),
             GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.look),
+            GalleryPageKind::SplitViewUnified => {
+                self.split_view.render(split_view::SplitViewDemoKind::Unified, &self.look)
+            }
+            GalleryPageKind::SplitViewInset => self.split_view.render(split_view::SplitViewDemoKind::Inset, &self.look),
+            GalleryPageKind::SplitViewIconRail => {
+                self.split_view.render(split_view::SplitViewDemoKind::IconRail, &self.look)
+            }
+            GalleryPageKind::SplitViewDetached => {
+                self.split_view.render(split_view::SplitViewDemoKind::Detached, &self.look)
+            }
             GalleryPageKind::Settings => settings::render(&self.look),
         }
     }

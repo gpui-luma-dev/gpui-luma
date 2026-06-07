@@ -78,6 +78,33 @@ impl SplitView {
         self.model.collapsed
     }
 
+    pub fn separator_visibility(&self) -> super::SplitViewSeparatorVisibility {
+        self.model.separator_visibility
+    }
+
+    pub fn set_separator_visibility(
+        &mut self,
+        visibility: super::SplitViewSeparatorVisibility,
+        cx: &mut Context<Self>,
+    ) {
+        if self.model.separator_visibility == visibility {
+            return;
+        }
+
+        self.model.separator_visibility = visibility;
+        cx.notify();
+    }
+
+    pub fn set_theme(&mut self, theme: std::sync::Arc<dyn super::theme::SplitViewTheme>, cx: &mut Context<Self>) {
+        if std::sync::Arc::ptr_eq(&self.model.theme, &theme) {
+            cx.notify();
+            return;
+        }
+
+        self.model.theme = theme;
+        cx.notify();
+    }
+
     pub fn set_panes(&mut self, sidebar: PaneRender, content: PaneRender) {
         self.model.sidebar = sidebar;
         self.model.content = content;
@@ -137,8 +164,9 @@ impl SplitView {
             enabled: self.model.enabled,
             separator_hovered: self.separator_hovered,
             separator_visibility: self.model.separator_visibility,
-            separator_color: self.model.separator_color,
-            separator_hover_color: self.model.separator_hover_color,
+            theme: &self.model.theme,
+            separator_color_override: self.model.separator_color_override,
+            separator_hover_color_override: self.model.separator_hover_color_override,
         }
     }
 

@@ -258,6 +258,7 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - roadmap and scope (not a data grid): `docs/retired/listview-vnext.md`; phase-2 paging/scroll/sizing: `docs/retired/listview_2.md`; facade re-unification: `docs/retired/listview_3.md`
 - `split_view/*`
   - resizable/collapsible split pane shell + `SplitViewEvent`
+  - `SplitViewTheme` resolves separator colors at render time; `set_theme` for hot-swaps
 - `resizable_panels/*`
   - multi-panel groups (horizontal/vertical, nested via composition) with mixed `PanelSize::{Absolute,Weight}` sizing + `ResizablePanelsEvent`
   - overlay resize handles (no layout width); `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` (lane, grip, hit scale together); `ResizablePanelSpec::bg(Hsla)` supplies panel/handle-half colors

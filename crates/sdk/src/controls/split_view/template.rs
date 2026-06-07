@@ -82,12 +82,13 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
             mouse_up_out,
             drag_move,
         } = handlers;
+        let appearance = model.theme.resolve(model.separator_hovered, model.enabled);
+        let separator_color = model.separator_color_override.unwrap_or(appearance.separator);
+        let separator_hover_color = model.separator_hover_color_override.unwrap_or(appearance.separator_hover);
         let cue_color = match model.separator_visibility {
-            SplitViewSeparatorVisibility::Always if model.separator_hovered => {
-                model.separator_hover_color.or(model.separator_color)
-            }
-            SplitViewSeparatorVisibility::Always => model.separator_color,
-            SplitViewSeparatorVisibility::Hover if model.separator_hovered => model.separator_hover_color,
+            SplitViewSeparatorVisibility::Always if model.separator_hovered => Some(separator_hover_color),
+            SplitViewSeparatorVisibility::Always => Some(separator_color),
+            SplitViewSeparatorVisibility::Hover if model.separator_hovered => Some(separator_hover_color),
             SplitViewSeparatorVisibility::Hover => None,
         };
         let cue_width = separator_cue_width(model.separator_hovered);

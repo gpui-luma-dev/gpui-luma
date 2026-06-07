@@ -7,11 +7,12 @@ pub enum InspectableId {
     CookieSettings,
     ReportIssue,
     Payments,
+    TreeView,
     NavigationSidebar,
 }
 
 impl InspectableId {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -19,6 +20,7 @@ impl InspectableId {
         Self::CookieSettings,
         Self::ReportIssue,
         Self::Payments,
+        Self::TreeView,
         Self::NavigationSidebar,
     ];
 
@@ -26,7 +28,7 @@ impl InspectableId {
         &Self::ALL
     }
 
-    pub const CARDS: [Self; 7] = [
+    pub const CARDS: [Self; 8] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -34,6 +36,7 @@ impl InspectableId {
         Self::CookieSettings,
         Self::ReportIssue,
         Self::Payments,
+        Self::TreeView,
     ];
 
     pub const DASHBOARD: [Self; 0] = [];
@@ -47,6 +50,7 @@ impl InspectableId {
             Self::CookieSettings => "cookie_settings",
             Self::ReportIssue => "report_issue",
             Self::Payments => "payments",
+            Self::TreeView => "tree_view",
             Self::NavigationSidebar => "navigation_sidebar",
         }
     }

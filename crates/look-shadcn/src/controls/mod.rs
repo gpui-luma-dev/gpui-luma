@@ -14,6 +14,7 @@ mod progress;
 mod radio;
 mod resizable_panels;
 mod scrollbar;
+mod split_view;
 mod selection_panel;
 mod selector;
 mod selector_items_panel;

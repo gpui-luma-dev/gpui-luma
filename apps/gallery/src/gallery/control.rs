@@ -32,17 +32,14 @@ impl GalleryApp {
         window.focus(&focus_scope, cx);
         let look = theme_choice.shadcn_look();
         look.set_mode(ThemeMode::Dark);
-        let chrome = look.chrome();
-
-        let split_view = SplitView::new("gallery-shell")
+        let split_view = look
+            .split_view("gallery-shell")
             .sidebar_width(px(280.0))
             .sidebar_min_width(px(220.0))
             .sidebar_max_width(px(420.0))
             .sidebar_collapsed_width(px(56.0))
             .collapsed(false)
             .resizable(true)
-            .separator_color(chrome.border)
-            .separator_hover_color(chrome.border)
             .spawn(cx);
         let initial_selection = GalleryPanes::initial_selection();
         let navigation = GalleryPanes::navigation(cx, look.clone());

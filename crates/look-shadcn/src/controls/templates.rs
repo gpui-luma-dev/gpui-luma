@@ -23,6 +23,7 @@ use gpui_luma::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
 use gpui_luma::controls::selector_panel::default_selector_items_template;
 use gpui_luma::controls::selection_panel::SelectionPanelAppearanceProvider;
 use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
+use gpui_luma::controls::split_view::SplitViewTheme;
 use gpui_luma::controls::slider::{SliderTheme, ThemedSliderTemplate};
 use gpui_luma::controls::switch::{SwitchTheme, ThemedSwitchTemplate};
 use gpui_luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
@@ -53,6 +54,7 @@ use super::slider::slider_appearance;
 use super::switch::switch_appearance;
 use super::accordion::{accordion_content_palette, accordion_trigger_palette};
 use super::resizable_panels::resizable_panels_appearance;
+use super::split_view::split_view_appearance;
 use super::tree_view::tree_view_row_palette;
 use super::tabs_navigation::{tabs_navigation_item_appearance, tabs_navigation_list_appearance};
 use super::button::button_palette;
@@ -181,6 +183,10 @@ pub fn resizable_panels_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ResizablePanels
     Arc::new(RadixResizablePanelsTheme { theme: theme.as_ref().clone() })
 }
 
+pub fn split_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SplitViewTheme> {
+    Arc::new(RadixSplitViewTheme { theme: theme.as_ref().clone() })
+}
+
 pub fn scrollbar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ScrollbarTheme> {
     Arc::new(RadixScrollbarTheme { theme: theme.as_ref().clone() })
 }
@@ -200,6 +206,16 @@ struct RadixResizablePanelsTheme {
 impl ResizablePanelsTheme for RadixResizablePanelsTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsAppearance {
         resizable_panels_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+    }
+}
+
+struct RadixSplitViewTheme {
+    theme: ShadcnLook,
+}
+
+impl SplitViewTheme for RadixSplitViewTheme {
+    fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewAppearance {
+        split_view_appearance(self.theme.mode_tokens(), self.theme.mode(), hovered, enabled)
     }
 }
 

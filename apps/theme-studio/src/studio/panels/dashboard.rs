@@ -38,8 +38,8 @@ pub struct DashboardPanel {
 
 impl DashboardPanel {
     pub fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
-        let chrome = look.chrome();
-        let split_view = SplitView::new("studio-dashboard-shell")
+        let split_view = look
+            .split_view("studio-dashboard-shell")
             .sidebar_width(px(280.0))
             .sidebar_min_width(px(220.0))
             .sidebar_max_width(px(420.0))
@@ -47,8 +47,6 @@ impl DashboardPanel {
             .collapsed(false)
             .resizable(true)
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
-            .separator_color(chrome.border)
-            .separator_hover_color(chrome.border)
             .spawn(cx);
 
         let navigation_sidebar = look

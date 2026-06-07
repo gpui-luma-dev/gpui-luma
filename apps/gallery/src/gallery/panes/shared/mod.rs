@@ -326,6 +326,48 @@ pub(in crate::gallery::panes) fn format_compact_hsla(color: Hsla) -> String {
     )
 }
 
+pub(in crate::gallery::panes) fn format_hex_color(color: Hsla) -> String {
+    let (r, g, b) = hsla_to_rgb8(color);
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+fn hsla_to_rgb8(color: Hsla) -> (u8, u8, u8) {
+    let h = color.h.fract() * 6.0;
+    let s = color.s.clamp(0.0, 1.0);
+    let l = color.l.clamp(0.0, 1.0);
+
+    if s <= f32::EPSILON {
+        let gray = (l * 255.0).round() as u8;
+        return (gray, gray, gray);
+    }
+
+    let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
+    let p = 2.0 * l - q;
+    let r = hue_to_channel(p, q, h + 0.0);
+    let g = hue_to_channel(p, q, h + 2.0);
+    let b = hue_to_channel(p, q, h + 4.0);
+    ((r * 255.0).round() as u8, (g * 255.0).round() as u8, (b * 255.0).round() as u8)
+}
+
+fn hue_to_channel(p: f32, q: f32, t: f32) -> f32 {
+    let mut t = t;
+    if t < 0.0 {
+        t += 6.0;
+    }
+    if t >= 6.0 {
+        t -= 6.0;
+    }
+    if t < 1.0 {
+        p + (q - p) * t
+    } else if t < 3.0 {
+        q
+    } else if t < 4.0 {
+        p + (q - p) * (4.0 - t)
+    } else {
+        p
+    }
+}
+
 fn rounded_channel(value: f32) -> i32 {
     value.round() as i32
 }

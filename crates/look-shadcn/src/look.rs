@@ -428,6 +428,17 @@ impl ShadcnLook {
         gpui_luma::controls::resizable_panels::ResizablePanels::new(id).theme(self.resizable_panels_theme())
     }
 
+    pub fn split_view_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::split_view::SplitViewTheme> {
+        templates::split_view_theme(Arc::clone(self))
+    }
+
+    pub fn split_view(
+        self: &Arc<Self>,
+        id: impl Into<SharedString>,
+    ) -> gpui_luma::controls::split_view::SplitViewBuilder {
+        gpui_luma::controls::split_view::SplitView::new(id).theme(self.split_view_theme())
+    }
+
     pub fn navigation_sidebar_template(
         self: &Arc<Self>,
     ) -> Arc<dyn gpui_luma::controls::navigation_sidebar::NavigationSidebarTemplate> {

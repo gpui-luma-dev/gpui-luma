@@ -71,6 +71,8 @@ impl Render for GalleryApp {
                                 ThemeMode::Dark => ThemeMode::Light,
                             };
                             this.look.set_mode(mode);
+                            this.panes.notify_controls(cx);
+                            this.split_view.update(cx, |_, cx| cx.notify());
                             tracing::info!("title bar theme toggled");
                             cx.notify();
                         }))

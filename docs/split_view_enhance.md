@@ -145,6 +145,24 @@ pub fn set_separator_visibility(
 
 This is low-risk and should be one of the first enhancements.
 
+**Status:** implemented.
+
+### Theme Integration
+
+Split view separator colors must resolve from a live theme at render time, not from snapshot `Hsla`
+values captured at construction.
+
+Luma path (implemented):
+
+- `SplitViewTheme` trait with `resolve(hovered, enabled) -> SplitViewAppearance`
+- `DefaultSplitViewTheme` for token-based apps
+- `SplitViewBuilder::theme(...)` and `SplitView::set_theme(...)`
+- Optional `.separator_color()` / `.separator_hover_color()` overrides for tests or fixed demos
+- `gpui_luma_look_shadcn::ShadcnLook::split_view_theme()` and `.split_view(id)` factories
+
+Gallery and theme-studio shell split views should use the Shadcn theme factory so light/dark
+toggles update separator cues without rebuilding the control.
+
 ### External Collapse Actions
 
 Opal showed collapse being triggered from content controls, not only from the separator.
@@ -261,14 +279,15 @@ Open questions:
 
 ## Suggested Enhancement Order
 
-1. Add `set_separator_visibility`.
-2. Add a gallery action button that calls `toggle_collapsed`.
-3. Add icon-rail gallery coverage using nonzero `sidebar_collapsed_width`.
-4. Add telemetry for effective width, collapsed width, and last event.
-5. Add a custom detached/floating template if the gallery wants that visual treatment.
-6. Add right placement only when an inspector/details layout needs it.
-7. Add three-pane support after the gallery has real page/detail content.
-8. Consider a separate resizable panel group control for arbitrary nested layouts.
+1. ~~Add `set_separator_visibility`.~~ Done.
+2. ~~Add theme integration (`SplitViewTheme`, Shadcn factory, gallery wiring).~~ Done.
+3. Add a gallery action button that calls `toggle_collapsed`.
+4. Add icon-rail gallery coverage using nonzero `sidebar_collapsed_width`.
+5. Add telemetry for effective width, collapsed width, and last event.
+6. Add a custom detached/floating template if the gallery wants that visual treatment.
+7. Add right placement only when an inspector/details layout needs it.
+8. Add three-pane support after the gallery has real page/detail content.
+9. Consider a separate resizable panel group control for arbitrary nested layouts.
 
 ## Design Guardrails
 

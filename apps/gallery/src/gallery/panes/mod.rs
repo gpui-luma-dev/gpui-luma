@@ -20,6 +20,7 @@ mod prototypes;
 mod radio_button;
 mod radio_group;
 mod resizable_panels;
+mod split_view;
 pub(super) mod registry;
 mod scrollbar;
 mod search;

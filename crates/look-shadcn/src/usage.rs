@@ -246,6 +246,19 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         ],
     },
     &ThemeUsage {
+        label: "SplitView",
+        parts: &[
+            part("separator", "border", &["default"], &["SplitViewAppearance.separator"]),
+            part("separator hover", "border", &["hovered"], &["SplitViewAppearance.separator_hover"]),
+            part(
+                "disabled separator",
+                "muted-foreground",
+                &["disabled"],
+                &["SplitViewAppearance.separator", "SplitViewAppearance.separator_hover"],
+            ),
+        ],
+    },
+    &ThemeUsage {
         label: "Progress",
         parts: &[
             part("track", "muted", &["enabled"], &["ProgressAppearance.track_color"]),
