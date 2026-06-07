@@ -1,12 +1,4 @@
-use std::sync::OnceLock;
-
-use anyhow::{Context as _, anyhow};
 use gpui::{BoxShadow, FontWeight, Hsla, hsla, point, px, rgb};
-use serde::Deserialize;
-
-//pub const DEFAULT_THEME_TOML: &str = include_str!("no-color-theme.tom");
-pub const DEFAULT_THEME_TOML: &str = include_str!("default-theme.toml");
-
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ThemeMode {
     #[default]
@@ -35,7 +27,6 @@ pub struct LumaThemeMode {
     pub metrics: MetricTokens,
     pub typography: LumaTypography,
     pub elevation: LumaElevation,
-    pub colors: ColorTokens,
 }
 
 pub type ThemeTokens = LumaThemeMode;
@@ -50,7 +41,6 @@ pub struct ThemeModes {
 pub struct LumaPalette {
     pub app: AppPalette,
     pub surface: SurfacePalette,
-    pub action: ActionPalette,
     pub state: StatePalette,
     pub form: FormPalette,
     pub focus: FocusPalette,
@@ -84,23 +74,6 @@ pub struct SurfaceWithBorderPalette {
 pub struct SurfaceTonePalette {
     pub background: Hsla,
     pub foreground: Hsla,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ActionPalette {
-    pub prominent: ActionRolePalette,
-    pub subtle: ActionRolePalette,
-    pub standard: ActionRolePalette,
-    pub ghost: ActionRolePalette,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ActionRolePalette {
-    pub background: Hsla,
-    pub foreground: Hsla,
-    pub hover_background: Hsla,
-    pub pressed_background: Hsla,
-    pub border: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -168,36 +141,15 @@ pub struct DataPalette {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct ColorTokens {
-    pub surface: Hsla,
-    pub surface_hover: Hsla,
-    pub surface_pressed: Hsla,
-    pub surface_disabled: Hsla,
-    pub prominent: Hsla,
-    pub prominent_hover: Hsla,
-    pub prominent_pressed: Hsla,
-    pub selected: Hsla,
-    pub selected_hover: Hsla,
-    pub selected_pressed: Hsla,
-    pub text: Hsla,
-    pub text_inverse: Hsla,
-    pub text_disabled: Hsla,
-    pub border: Hsla,
-}
-
-#[derive(Clone, Copy, Debug)]
 pub struct MetricTokens {
     pub spacing: SpacingTokens,
     pub radius: RadiusTokens,
     pub border_width: BorderWidthTokens,
     pub focus: FocusMetricTokens,
     pub control: ControlMetricScale,
-    pub sm: ControlMetricTokens,
-    pub md: ControlMetricTokens,
-    pub lg: ControlMetricTokens,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub struct SpacingTokens {
     pub s0: f32,
     pub s1: f32,
@@ -208,7 +160,7 @@ pub struct SpacingTokens {
     pub s6: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub struct RadiusTokens {
     pub none: f32,
     pub sm: f32,
@@ -218,14 +170,14 @@ pub struct RadiusTokens {
     pub pill: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub struct BorderWidthTokens {
     pub hairline: f32,
     pub default: f32,
     pub strong: f32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub struct FocusMetricTokens {
     pub width: f32,
     pub offset: f32,
@@ -238,7 +190,7 @@ pub struct ControlMetricScale {
     pub lg: ControlMetricTokens,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub struct ControlMetricTokens {
     pub radius: f32,
     pub height: f32,
@@ -261,7 +213,7 @@ pub struct FontTokens {
     pub serif: FontFamilyToken,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct FontFamilyToken {
     pub family: String,
 }
@@ -308,16 +260,12 @@ pub struct LumaShadowLayer {
 }
 
 impl LumaTheme {
-    pub fn native() -> Self {
-        Self::load_default().expect("embedded Luma default theme TOML should parse")
-    }
-
-    pub fn load_default() -> anyhow::Result<Self> {
-        Self::from_toml_str(DEFAULT_THEME_TOML)
-    }
-
-    pub fn from_toml_str(source: &str) -> anyhow::Result<Self> {
-        RawTheme::from_toml_str(source)?.try_into_theme()
+    pub fn structural_default() -> Self {
+        Self {
+            name: "Structural".to_string(),
+            version: 1,
+            modes: ThemeModes::new(LumaThemeMode::light(), LumaThemeMode::dark()),
+        }
     }
 
     pub fn mode(&self, mode: ThemeMode) -> &LumaThemeMode {
@@ -327,7 +275,7 @@ impl LumaTheme {
 
 impl Default for LumaTheme {
     fn default() -> Self {
-        Self::native()
+        Self::structural_default()
     }
 }
 
@@ -346,9 +294,7 @@ impl LumaThemeMode {
         typography: LumaTypography,
         elevation: LumaElevation,
     ) -> Self {
-        let colors = ColorTokens::from_palette(&palette);
-
-        Self { palette, metrics, typography, elevation, colors }
+        Self { palette, metrics, typography, elevation }
     }
 }
 
@@ -383,31 +329,21 @@ impl ThemeModes {
     }
 }
 
-fn cached_native_light_mode() -> &'static LumaThemeMode {
-    static LIGHT: OnceLock<LumaThemeMode> = OnceLock::new();
-    LIGHT.get_or_init(|| LumaTheme::native().mode(ThemeMode::Light).clone())
-}
-
-fn cached_native_dark_mode() -> &'static LumaThemeMode {
-    static DARK: OnceLock<LumaThemeMode> = OnceLock::new();
-    DARK.get_or_init(|| LumaTheme::native().mode(ThemeMode::Dark).clone())
-}
-
 impl Default for ThemeModes {
     fn default() -> Self {
-        Self { light: cached_native_light_mode().clone(), dark: cached_native_dark_mode().clone() }
+        Self::new(LumaThemeMode::light(), LumaThemeMode::dark())
     }
 }
 
 impl Default for LumaThemeMode {
     fn default() -> Self {
-        cached_native_light_mode().clone()
+        Self::light()
     }
 }
 
 impl Default for LumaPalette {
     fn default() -> Self {
-        cached_native_light_mode().palette.clone()
+        Self::light()
     }
 }
 
@@ -431,36 +367,6 @@ impl LumaPalette {
                     border: rgb(0xcbd5e1).into(),
                 },
                 subtle: SurfaceTonePalette { background: rgb(0xf1f5f9).into(), foreground: rgb(0x334155).into() },
-            },
-            action: ActionPalette {
-                prominent: ActionRolePalette {
-                    background: rgb(0x2563eb).into(),
-                    foreground: rgb(0xffffff).into(),
-                    hover_background: rgb(0x1d4ed8).into(),
-                    pressed_background: rgb(0x1e40af).into(),
-                    border: rgb(0x2563eb).into(),
-                },
-                subtle: ActionRolePalette {
-                    background: rgb(0xf1f5f9).into(),
-                    foreground: rgb(0x0f172a).into(),
-                    hover_background: rgb(0xe2e8f0).into(),
-                    pressed_background: rgb(0xcbd5e1).into(),
-                    border: rgb(0xf1f5f9).into(),
-                },
-                standard: ActionRolePalette {
-                    background: rgb(0xffffff).into(),
-                    foreground: rgb(0x0f172a).into(),
-                    hover_background: rgb(0xf1f5f9).into(),
-                    pressed_background: rgb(0xe2e8f0).into(),
-                    border: rgb(0xcbd5e1).into(),
-                },
-                ghost: ActionRolePalette {
-                    background: rgb(0xf8fafc).into(),
-                    foreground: rgb(0x0f172a).into(),
-                    hover_background: rgb(0xe2e8f0).into(),
-                    pressed_background: rgb(0xcbd5e1).into(),
-                    border: hsla(0.0, 0.0, 0.0, 0.0),
-                },
             },
             state: StatePalette {
                 hover: StateTonePalette { background: rgb(0xe2e8f0).into(), foreground: rgb(0x0f172a).into() },
@@ -518,36 +424,6 @@ impl LumaPalette {
                 },
                 subtle: SurfaceTonePalette { background: rgb(0x1e293b).into(), foreground: rgb(0xcbd5e1).into() },
             },
-            action: ActionPalette {
-                prominent: ActionRolePalette {
-                    background: rgb(0x60a5fa).into(),
-                    foreground: rgb(0x082f49).into(),
-                    hover_background: rgb(0x93c5fd).into(),
-                    pressed_background: rgb(0xbfdbfe).into(),
-                    border: rgb(0x60a5fa).into(),
-                },
-                subtle: ActionRolePalette {
-                    background: rgb(0x1e293b).into(),
-                    foreground: rgb(0xf8fafc).into(),
-                    hover_background: rgb(0x334155).into(),
-                    pressed_background: rgb(0x475569).into(),
-                    border: rgb(0x1e293b).into(),
-                },
-                standard: ActionRolePalette {
-                    background: rgb(0x111827).into(),
-                    foreground: rgb(0xf8fafc).into(),
-                    hover_background: rgb(0x1e293b).into(),
-                    pressed_background: rgb(0x334155).into(),
-                    border: rgb(0x334155).into(),
-                },
-                ghost: ActionRolePalette {
-                    background: rgb(0x1e293b).into(),
-                    foreground: rgb(0xf8fafc).into(),
-                    hover_background: rgb(0x334155).into(),
-                    pressed_background: rgb(0x475569).into(),
-                    border: hsla(0.0, 0.0, 0.0, 0.0),
-                },
-            },
             state: StatePalette {
                 hover: StateTonePalette { background: rgb(0x334155).into(), foreground: rgb(0xf8fafc).into() },
                 pressed: StateBackgroundPalette { background: rgb(0x475569).into() },
@@ -585,41 +461,6 @@ impl LumaPalette {
     }
 }
 
-impl Default for ColorTokens {
-    fn default() -> Self {
-        Self::light()
-    }
-}
-
-impl ColorTokens {
-    pub fn light() -> Self {
-        Self::from_palette(&LumaPalette::light())
-    }
-
-    pub fn dark() -> Self {
-        Self::from_palette(&LumaPalette::dark())
-    }
-
-    pub fn from_palette(palette: &LumaPalette) -> Self {
-        Self {
-            surface: palette.action.ghost.background,
-            surface_hover: palette.action.ghost.hover_background,
-            surface_pressed: palette.action.ghost.pressed_background,
-            surface_disabled: palette.state.disabled.background,
-            prominent: palette.action.prominent.background,
-            prominent_hover: palette.action.prominent.hover_background,
-            prominent_pressed: palette.action.prominent.pressed_background,
-            selected: palette.state.selected.background,
-            selected_hover: palette.action.prominent.hover_background,
-            selected_pressed: palette.action.prominent.pressed_background,
-            text: palette.app.foreground,
-            text_inverse: palette.state.selected.foreground,
-            text_disabled: palette.state.disabled.foreground,
-            border: palette.border.default,
-        }
-    }
-}
-
 impl Default for MetricTokens {
     fn default() -> Self {
         let sm = ControlMetricTokens::new(28.0, 10.0, 5.0, 6.0, 5.0);
@@ -632,9 +473,6 @@ impl Default for MetricTokens {
             border_width: BorderWidthTokens { hairline: 0.5, default: 1.0, strong: 2.0 },
             focus: FocusMetricTokens { width: 1.0, offset: 0.0 },
             control: ControlMetricScale { sm, md, lg },
-            sm,
-            md,
-            lg,
         }
     }
 }
@@ -773,607 +611,32 @@ impl LumaShadowLayer {
     }
 }
 
-#[derive(Deserialize)]
-struct RawTheme {
-    name: String,
-    version: u32,
-    light: RawThemeMode,
-    dark: RawThemeMode,
-}
-
-#[derive(Deserialize)]
-struct RawThemeMode {
-    palette: RawPalette,
-    metrics: RawMetricTokens,
-    typography: RawTypography,
-    elevation: RawElevation,
-    colors: RawColorTokens,
-}
-
-#[derive(Deserialize)]
-struct RawPalette {
-    app: RawAppPalette,
-    surface: RawSurfacePalette,
-    action: RawActionPalette,
-    state: RawStatePalette,
-    form: RawFormPalette,
-    focus: RawFocusPalette,
-    border: RawBorderPalette,
-    navigation: RawNavigationPalette,
-    data: RawDataPalette,
-}
-
-#[derive(Deserialize)]
-struct RawAppPalette {
-    background: String,
-    foreground: String,
-    muted_foreground: String,
-}
-
-#[derive(Deserialize)]
-struct RawSurfacePalette {
-    panel: RawSurfaceWithBorderPalette,
-    floating: RawSurfaceWithBorderPalette,
-    subtle: RawSurfaceTonePalette,
-}
-
-#[derive(Deserialize)]
-struct RawSurfaceWithBorderPalette {
-    background: String,
-    foreground: String,
-    border: String,
-}
-
-#[derive(Deserialize)]
-struct RawSurfaceTonePalette {
-    background: String,
-    foreground: String,
-}
-
-#[derive(Deserialize)]
-struct RawActionPalette {
-    prominent: RawActionRolePalette,
-    subtle: RawActionRolePalette,
-    #[serde(default)]
-    standard: Option<RawActionRolePalette>,
-    ghost: RawActionRolePalette,
-}
-
-#[derive(Clone, Deserialize)]
-struct RawActionRolePalette {
-    background: String,
-    foreground: String,
-    hover_background: String,
-    pressed_background: String,
-    #[serde(default)]
-    border: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct RawStatePalette {
-    hover: RawStateTonePalette,
-    pressed: RawStateBackgroundPalette,
-    selected: RawStateTonePalette,
-    disabled: RawStateTonePalette,
-}
-
-#[derive(Deserialize)]
-struct RawStateTonePalette {
-    background: String,
-    foreground: String,
-}
-
-#[derive(Deserialize)]
-struct RawStateBackgroundPalette {
-    background: String,
-}
-
-#[derive(Deserialize)]
-struct RawFormPalette {
-    input: RawFormInputPalette,
-}
-
-#[derive(Deserialize)]
-struct RawFormInputPalette {
-    background: String,
-    foreground: String,
-    border: String,
-    invalid_border: String,
-    placeholder: String,
-}
-
-#[derive(Deserialize)]
-struct RawFocusPalette {
-    ring: String,
-}
-
-#[derive(Deserialize)]
-struct RawBorderPalette {
-    default: String,
-    strong: String,
-}
-
-#[derive(Deserialize)]
-struct RawNavigationPalette {
-    background: String,
-    foreground: String,
-    muted_foreground: String,
-    hover_background: String,
-    selected_background: String,
-    selected_foreground: String,
-    border: String,
-}
-
-#[derive(Deserialize)]
-struct RawDataPalette {
-    accent_1: String,
-    accent_2: String,
-    accent_3: String,
-    accent_4: String,
-    accent_5: String,
-}
-
-#[derive(Deserialize)]
-struct RawColorTokens {
-    surface: String,
-    surface_hover: String,
-    surface_pressed: String,
-    surface_disabled: String,
-    prominent: String,
-    prominent_hover: String,
-    prominent_pressed: String,
-    selected: String,
-    selected_hover: String,
-    selected_pressed: String,
-    text: String,
-    text_inverse: String,
-    text_disabled: String,
-    border: String,
-}
-
-#[derive(Deserialize)]
-struct RawMetricTokens {
-    spacing: SpacingTokens,
-    radius: RadiusTokens,
-    border_width: BorderWidthTokens,
-    focus: FocusMetricTokens,
-    control: RawControlMetricScale,
-    sm: ControlMetricTokens,
-    md: ControlMetricTokens,
-    lg: ControlMetricTokens,
-}
-
-#[derive(Deserialize)]
-struct RawControlMetricScale {
-    sm: ControlMetricTokens,
-    md: ControlMetricTokens,
-    lg: ControlMetricTokens,
-}
-
-#[derive(Deserialize)]
-struct RawTypography {
-    font: RawFontTokens,
-    text: RawTextTokens,
-}
-
-#[derive(Deserialize)]
-struct RawFontTokens {
-    sans: FontFamilyToken,
-    mono: FontFamilyToken,
-    serif: FontFamilyToken,
-}
-
-#[derive(Deserialize)]
-struct RawTextTokens {
-    body: RawTextStyle,
-    label: RawTextStyle,
-    caption: RawTextStyle,
-    title: RawTextStyle,
-    code: RawTextStyle,
-}
-
-#[derive(Deserialize)]
-struct RawTextStyle {
-    size: f32,
-    line_height: f32,
-    weight: f32,
-}
-
-#[derive(Deserialize)]
-struct RawElevation {
-    none: RawShadow,
-    control: RawShadow,
-    thumb: RawShadow,
-    menu: RawShadow,
-    popover: RawShadow,
-    panel: RawShadow,
-    dialog: RawShadow,
-}
-
-#[derive(Deserialize)]
-struct RawShadow {
-    layers: Vec<RawShadowLayer>,
-}
-
-#[derive(Deserialize)]
-struct RawShadowLayer {
-    color: String,
-    offset_x: f32,
-    offset_y: f32,
-    blur: f32,
-    spread: f32,
-}
-
-impl RawTheme {
-    fn from_toml_str(source: &str) -> anyhow::Result<Self> {
-        toml::from_str(source).context("failed to parse Luma theme TOML")
-    }
-
-    fn try_into_theme(self) -> anyhow::Result<LumaTheme> {
-        Ok(LumaTheme {
-            name: self.name,
-            version: self.version,
-            modes: ThemeModes::new(
-                self.light.try_into_theme_mode().context("failed to load light theme mode")?,
-                self.dark.try_into_theme_mode().context("failed to load dark theme mode")?,
-            ),
-        })
-    }
-}
-
-impl RawThemeMode {
-    fn try_into_theme_mode(self) -> anyhow::Result<LumaThemeMode> {
-        Ok(LumaThemeMode {
-            palette: self.palette.try_into_palette()?,
-            metrics: self.metrics.into_metrics(),
-            typography: self.typography.into_typography(),
-            elevation: self.elevation.try_into_elevation()?,
-            colors: self.colors.try_into_colors()?,
-        })
-    }
-}
-
-impl RawPalette {
-    fn try_into_palette(self) -> anyhow::Result<LumaPalette> {
-        Ok(LumaPalette {
-            app: self.app.try_into_app()?,
-            surface: self.surface.try_into_surface()?,
-            action: self.action.try_into_action()?,
-            state: self.state.try_into_state()?,
-            form: self.form.try_into_form()?,
-            focus: self.focus.try_into_focus()?,
-            border: self.border.try_into_border()?,
-            navigation: self.navigation.try_into_navigation()?,
-            data: self.data.try_into_data()?,
-        })
-    }
-}
-
-impl RawAppPalette {
-    fn try_into_app(self) -> anyhow::Result<AppPalette> {
-        Ok(AppPalette {
-            background: parse_hsla(&self.background)?,
-            foreground: parse_hsla(&self.foreground)?,
-            muted_foreground: parse_hsla(&self.muted_foreground)?,
-        })
-    }
-}
-
-impl RawSurfacePalette {
-    fn try_into_surface(self) -> anyhow::Result<SurfacePalette> {
-        Ok(SurfacePalette {
-            panel: self.panel.try_into_surface_with_border()?,
-            floating: self.floating.try_into_surface_with_border()?,
-            subtle: self.subtle.try_into_surface_tone()?,
-        })
-    }
-}
-
-impl RawSurfaceWithBorderPalette {
-    fn try_into_surface_with_border(self) -> anyhow::Result<SurfaceWithBorderPalette> {
-        Ok(SurfaceWithBorderPalette {
-            background: parse_hsla(&self.background)?,
-            foreground: parse_hsla(&self.foreground)?,
-            border: parse_hsla(&self.border)?,
-        })
-    }
-}
-
-impl RawSurfaceTonePalette {
-    fn try_into_surface_tone(self) -> anyhow::Result<SurfaceTonePalette> {
-        Ok(SurfaceTonePalette { background: parse_hsla(&self.background)?, foreground: parse_hsla(&self.foreground)? })
-    }
-}
-
-impl RawActionPalette {
-    fn try_into_action(self) -> anyhow::Result<ActionPalette> {
-        let standard = self.standard.unwrap_or_else(|| self.ghost.clone());
-
-        Ok(ActionPalette {
-            prominent: self.prominent.try_into_action_role()?,
-            subtle: self.subtle.try_into_action_role()?,
-            standard: standard.try_into_action_role()?,
-            ghost: self.ghost.try_into_action_role()?,
-        })
-    }
-}
-
-impl RawActionRolePalette {
-    fn try_into_action_role(self) -> anyhow::Result<ActionRolePalette> {
-        let background = parse_hsla(&self.background)?;
-        Ok(ActionRolePalette {
-            background,
-            foreground: parse_hsla(&self.foreground)?,
-            hover_background: parse_hsla(&self.hover_background)?,
-            pressed_background: parse_hsla(&self.pressed_background)?,
-            border: self.border.as_deref().map(parse_hsla).transpose()?.unwrap_or(background),
-        })
-    }
-}
-
-impl RawStatePalette {
-    fn try_into_state(self) -> anyhow::Result<StatePalette> {
-        Ok(StatePalette {
-            hover: self.hover.try_into_state_tone()?,
-            pressed: self.pressed.try_into_state_background()?,
-            selected: self.selected.try_into_state_tone()?,
-            disabled: self.disabled.try_into_state_tone()?,
-        })
-    }
-}
-
-impl RawStateTonePalette {
-    fn try_into_state_tone(self) -> anyhow::Result<StateTonePalette> {
-        Ok(StateTonePalette { background: parse_hsla(&self.background)?, foreground: parse_hsla(&self.foreground)? })
-    }
-}
-
-impl RawStateBackgroundPalette {
-    fn try_into_state_background(self) -> anyhow::Result<StateBackgroundPalette> {
-        Ok(StateBackgroundPalette { background: parse_hsla(&self.background)? })
-    }
-}
-
-impl RawFormPalette {
-    fn try_into_form(self) -> anyhow::Result<FormPalette> {
-        Ok(FormPalette { input: self.input.try_into_form_input()? })
-    }
-}
-
-impl RawFormInputPalette {
-    fn try_into_form_input(self) -> anyhow::Result<FormInputPalette> {
-        Ok(FormInputPalette {
-            background: parse_hsla(&self.background)?,
-            foreground: parse_hsla(&self.foreground)?,
-            border: parse_hsla(&self.border)?,
-            invalid_border: parse_hsla(&self.invalid_border)?,
-            placeholder: parse_hsla(&self.placeholder)?,
-        })
-    }
-}
-
-impl RawFocusPalette {
-    fn try_into_focus(self) -> anyhow::Result<FocusPalette> {
-        Ok(FocusPalette { ring: parse_hsla(&self.ring)? })
-    }
-}
-
-impl RawBorderPalette {
-    fn try_into_border(self) -> anyhow::Result<BorderPalette> {
-        Ok(BorderPalette { default: parse_hsla(&self.default)?, strong: parse_hsla(&self.strong)? })
-    }
-}
-
-impl RawNavigationPalette {
-    fn try_into_navigation(self) -> anyhow::Result<NavigationPalette> {
-        Ok(NavigationPalette {
-            background: parse_hsla(&self.background)?,
-            foreground: parse_hsla(&self.foreground)?,
-            muted_foreground: parse_hsla(&self.muted_foreground)?,
-            hover_background: parse_hsla(&self.hover_background)?,
-            selected_background: parse_hsla(&self.selected_background)?,
-            selected_foreground: parse_hsla(&self.selected_foreground)?,
-            border: parse_hsla(&self.border)?,
-        })
-    }
-}
-
-impl RawDataPalette {
-    fn try_into_data(self) -> anyhow::Result<DataPalette> {
-        Ok(DataPalette {
-            accent_1: parse_hsla(&self.accent_1)?,
-            accent_2: parse_hsla(&self.accent_2)?,
-            accent_3: parse_hsla(&self.accent_3)?,
-            accent_4: parse_hsla(&self.accent_4)?,
-            accent_5: parse_hsla(&self.accent_5)?,
-        })
-    }
-}
-
-impl RawColorTokens {
-    fn try_into_colors(self) -> anyhow::Result<ColorTokens> {
-        Ok(ColorTokens {
-            surface: parse_hsla(&self.surface)?,
-            surface_hover: parse_hsla(&self.surface_hover)?,
-            surface_pressed: parse_hsla(&self.surface_pressed)?,
-            surface_disabled: parse_hsla(&self.surface_disabled)?,
-            prominent: parse_hsla(&self.prominent)?,
-            prominent_hover: parse_hsla(&self.prominent_hover)?,
-            prominent_pressed: parse_hsla(&self.prominent_pressed)?,
-            selected: parse_hsla(&self.selected)?,
-            selected_hover: parse_hsla(&self.selected_hover)?,
-            selected_pressed: parse_hsla(&self.selected_pressed)?,
-            text: parse_hsla(&self.text)?,
-            text_inverse: parse_hsla(&self.text_inverse)?,
-            text_disabled: parse_hsla(&self.text_disabled)?,
-            border: parse_hsla(&self.border)?,
-        })
-    }
-}
-
-impl RawMetricTokens {
-    fn into_metrics(self) -> MetricTokens {
-        MetricTokens {
-            spacing: self.spacing,
-            radius: self.radius,
-            border_width: self.border_width,
-            focus: self.focus,
-            control: ControlMetricScale { sm: self.control.sm, md: self.control.md, lg: self.control.lg },
-            sm: self.sm,
-            md: self.md,
-            lg: self.lg,
-        }
-    }
-}
-
-impl RawTypography {
-    fn into_typography(self) -> LumaTypography {
-        LumaTypography {
-            font: FontTokens { sans: self.font.sans, mono: self.font.mono, serif: self.font.serif },
-            text: TextTokens {
-                body: self.text.body.into_text_style(),
-                label: self.text.label.into_text_style(),
-                caption: self.text.caption.into_text_style(),
-                title: self.text.title.into_text_style(),
-                code: self.text.code.into_text_style(),
-            },
-        }
-    }
-}
-
-impl RawTextStyle {
-    fn into_text_style(self) -> LumaTextStyle {
-        LumaTextStyle { size: self.size, line_height: self.line_height, weight: self.weight.into() }
-    }
-}
-
-impl RawElevation {
-    fn try_into_elevation(self) -> anyhow::Result<LumaElevation> {
-        Ok(LumaElevation {
-            none: self.none.try_into_shadow()?,
-            control: self.control.try_into_shadow()?,
-            thumb: self.thumb.try_into_shadow()?,
-            menu: self.menu.try_into_shadow()?,
-            popover: self.popover.try_into_shadow()?,
-            panel: self.panel.try_into_shadow()?,
-            dialog: self.dialog.try_into_shadow()?,
-        })
-    }
-}
-
-impl RawShadow {
-    fn try_into_shadow(self) -> anyhow::Result<LumaShadow> {
-        Ok(LumaShadow {
-            layers: self.layers.into_iter().map(RawShadowLayer::try_into_layer).collect::<anyhow::Result<_>>()?,
-        })
-    }
-}
-
-impl RawShadowLayer {
-    fn try_into_layer(self) -> anyhow::Result<LumaShadowLayer> {
-        Ok(LumaShadowLayer {
-            color: parse_hsla(&self.color)?,
-            offset_x: self.offset_x,
-            offset_y: self.offset_y,
-            blur: self.blur,
-            spread: self.spread,
-        })
-    }
-}
-
-fn parse_hsla(value: &str) -> anyhow::Result<Hsla> {
-    let value = value.trim();
-    let (inner, requires_alpha) =
-        if let Some(inner) = value.strip_prefix("hsla(").and_then(|value| value.strip_suffix(')')) {
-            (inner, true)
-        } else if let Some(inner) = value.strip_prefix("hsl(").and_then(|value| value.strip_suffix(')')) {
-            (inner, false)
-        } else {
-            return Err(anyhow!("unsupported color syntax `{value}`"));
-        };
-
-    let (channels, alpha) = match inner.split_once('/') {
-        Some((channels, alpha)) => (
-            channels,
-            alpha.trim().parse::<f32>().with_context(|| format!("invalid alpha channel in color `{value}`"))?,
-        ),
-        None if requires_alpha => return Err(anyhow!("missing alpha channel in color `{value}`")),
-        None => (inner, 1.0),
-    };
-
-    let mut channels = channels.split_whitespace();
-    let hue = parse_number(channels.next(), value, "hue")?;
-    let saturation = parse_percent(channels.next(), value, "saturation")?;
-    let lightness = parse_percent(channels.next(), value, "lightness")?;
-
-    if channels.next().is_some() {
-        return Err(anyhow!("too many color channels in `{value}`"));
-    }
-
-    Ok(hsla(hue / 360.0, saturation / 100.0, lightness / 100.0, alpha))
-}
-
-fn parse_number(value: Option<&str>, color: &str, channel: &str) -> anyhow::Result<f32> {
-    value
-        .ok_or_else(|| anyhow!("missing {channel} channel in color `{color}`"))?
-        .parse::<f32>()
-        .with_context(|| format!("invalid {channel} channel in color `{color}`"))
-}
-
-fn parse_percent(value: Option<&str>, color: &str, channel: &str) -> anyhow::Result<f32> {
-    value
-        .ok_or_else(|| anyhow!("missing {channel} channel in color `{color}`"))?
-        .strip_suffix('%')
-        .ok_or_else(|| anyhow!("missing percent sign for {channel} channel in color `{color}`"))?
-        .parse::<f32>()
-        .with_context(|| format!("invalid {channel} channel in color `{color}`"))
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{ColorTokens, DEFAULT_THEME_TOML, LumaTheme, ThemeMode, ThemeModes, ThemeTokens};
+    use super::{LumaTheme, LumaThemeMode, ThemeMode, ThemeModes, ThemeTokens};
 
-    const HSLA_EPSILON: f32 = 5.0e-3;
-
-    fn assert_hsla_close(left: gpui::Hsla, right: gpui::Hsla) {
-        assert!((left.h - right.h).abs() <= HSLA_EPSILON, "hue differs: left={left:?}, right={right:?}");
-        assert!((left.s - right.s).abs() <= HSLA_EPSILON, "saturation differs: left={left:?}, right={right:?}");
-        assert!((left.l - right.l).abs() <= HSLA_EPSILON, "lightness differs: left={left:?}, right={right:?}");
-        assert!((left.a - right.a).abs() <= HSLA_EPSILON, "alpha differs: left={left:?}, right={right:?}");
+    #[test]
+    fn default_tokens_use_light_structural_palette() {
+        assert_eq!(LumaThemeMode::light().palette.app.background, ThemeTokens::default().palette.app.background);
     }
 
     #[test]
-    fn default_tokens_are_light_tokens() {
-        assert_hsla_close(ThemeTokens::default().colors.surface, ColorTokens::light().surface);
-    }
-
-    #[test]
-    fn theme_modes_select_the_requested_token_set() {
+    fn theme_modes_select_light_and_dark_palettes() {
         let modes = ThemeModes::default();
-
-        assert_hsla_close(modes.tokens(ThemeMode::Light).colors.surface, ThemeTokens::light().colors.surface);
-        assert_hsla_close(modes.tokens(ThemeMode::Dark).colors.surface, ThemeTokens::dark().colors.surface);
-        assert_ne!(modes.tokens(ThemeMode::Light).colors.surface, modes.tokens(ThemeMode::Dark).colors.surface);
+        assert_ne!(
+            modes.tokens(ThemeMode::Light).palette.app.background,
+            modes.tokens(ThemeMode::Dark).palette.app.background
+        );
     }
 
     #[test]
-    fn native_theme_exposes_complete_semantic_layers() {
-        let theme = LumaTheme::native();
+    fn structural_default_theme_exposes_semantic_layers() {
+        let theme = LumaTheme::structural_default();
         let light = theme.mode(ThemeMode::Light);
-
-        assert_eq!(theme.name, "Luma Native");
+        assert_eq!(theme.name, "Structural");
         assert_eq!(theme.version, 1);
-        assert_eq!(light.palette.surface.panel.background, light.palette.navigation.background);
         assert_eq!(light.metrics.radius.pill, 999.0);
         assert_eq!(light.typography.text.label.weight, gpui::FontWeight::MEDIUM);
         assert!(!light.elevation.menu.layers.is_empty());
-        assert_ne!(light.palette.action.subtle.background, light.palette.action.standard.background);
-    }
-
-    #[test]
-    fn native_theme_rejects_unsupported_color_syntax() {
-        let source = DEFAULT_THEME_TOML.replace("background = \"hsl(210 40% 98%)\"", "background = \"#f8fafc\"");
-
-        assert!(LumaTheme::from_toml_str(&source).is_err());
     }
 }

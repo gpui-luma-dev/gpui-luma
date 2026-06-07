@@ -21,12 +21,13 @@ pub enum ShadcnButtonStyle {
 
 pub(crate) fn button_appearance(
     mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
     role: ButtonFamilyRole,
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonFamilyAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
     let palette = button_palette(&ctx, style, role, size);
     let scale = StandardBoxScale::compute(size, ctx.metrics(), 1.0);
     compose_button_family_appearance(&palette, role, &scale, ctx.metrics().radius.pill)
@@ -96,8 +97,8 @@ fn button_foreground(
         return palette.disabled_foreground;
     }
 
-    if accent_filled(style, layer) {
-        return ctx.resolve_color_state(ShadcnToken::AccentForeground, InteractionLayer::Default);
+    if uses_accent_foreground_on_hover(ctx, style, layer) {
+        return ctx.palette().accent_foreground;
     }
 
     match (style, selected) {
@@ -107,7 +108,12 @@ fn button_foreground(
     }
 }
 
-fn accent_filled(style: ShadcnButtonStyle, layer: InteractionLayer) -> bool {
+/// Outline and ghost use accent foreground on hover/press (shadcn `hover:text-accent-foreground`).
+fn uses_accent_foreground_on_hover(
+    _ctx: &AppearanceContext,
+    style: ShadcnButtonStyle,
+    layer: InteractionLayer,
+) -> bool {
     matches!(style, ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost)
         && matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed)
 }
@@ -152,7 +158,7 @@ mod tests {
     use gpui_luma::controls::button_family::ButtonFamilyRole;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use gpui_luma::theme::{LumaTheme, ThemeMode};
+    use gpui_luma::theme::ThemeMode;
 
     fn retro_arcade_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -177,10 +183,10 @@ mod tests {
 
     #[test]
     fn primary_hover_background_differs_from_default() {
-        let theme = LumaTheme::native();
-        let mode = ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Light), ThemeMode::Light);
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
         let default = button_appearance(
             &mode,
+            ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             ButtonFamilyRole::Text,
             ControlSize::Md,
@@ -188,6 +194,7 @@ mod tests {
         );
         let hovered = button_appearance(
             &mode,
+            ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             ButtonFamilyRole::Text,
             ControlSize::Md,
@@ -198,11 +205,12 @@ mod tests {
     }
 
     #[test]
-    fn ghost_hover_pairs_accent_fill_with_accent_foreground() {
+    fn ghost_light_hover_pairs_accent_fill_with_accent_foreground() {
         let catalog = retro_arcade_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let hovered = button_appearance(
             &mode,
+            ThemeMode::Light,
             ShadcnButtonStyle::Ghost,
             ButtonFamilyRole::Text,
             ControlSize::Md,
@@ -214,14 +222,71 @@ mod tests {
     }
 
     #[test]
+    fn ghost_dark_hover_pairs_accent_half_fill_with_accent_foreground() {
+        let catalog = retro_arcade_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let accent = catalog.color("accent").expect("accent");
+        let hovered = button_appearance(
+            &mode,
+            ThemeMode::Dark,
+            ShadcnButtonStyle::Ghost,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState { hovered: true, ..InteractionState::default() },
+        );
+
+        assert!((hovered.background.a - 0.50).abs() < f32::EPSILON);
+        assert_eq!(hovered.background.h, accent.h);
+        assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+    }
+
+    #[test]
+    fn outline_light_hover_uses_accent_fill_and_accent_foreground() {
+        let catalog = retro_arcade_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let hovered = button_appearance(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState { hovered: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(hovered.background, catalog.color("accent").expect("accent"));
+        assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+    }
+
+    #[test]
+    fn outline_dark_hover_uses_input_alpha_with_accent_foreground() {
+        let catalog = retro_arcade_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let input = catalog.color("input").expect("input");
+        let hovered = button_appearance(
+            &mode,
+            ThemeMode::Dark,
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState { hovered: true, ..InteractionState::default() },
+        );
+
+        assert!((hovered.background.a - 0.50).abs() < f32::EPSILON);
+        assert_eq!(hovered.background.h, input.h);
+        assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+        assert_eq!(hovered.border, input);
+    }
+
+    #[test]
     fn retro_arcade_primary_hover_is_subtle() {
         let catalog = retro_arcade_catalog();
         let light = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("light");
         let dark = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Dark).expect("dark");
 
-        for mode in [&light, &dark] {
+        for (mode, theme_mode) in [(&light, ThemeMode::Light), (&dark, ThemeMode::Dark)] {
             let default = button_appearance(
                 mode,
+                theme_mode,
                 ShadcnButtonStyle::Primary,
                 ButtonFamilyRole::Text,
                 ControlSize::Md,
@@ -229,6 +294,7 @@ mod tests {
             );
             let hovered = button_appearance(
                 mode,
+                theme_mode,
                 ShadcnButtonStyle::Primary,
                 ButtonFamilyRole::Text,
                 ControlSize::Md,

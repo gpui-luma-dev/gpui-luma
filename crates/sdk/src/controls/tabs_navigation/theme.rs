@@ -70,9 +70,9 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
 
         let active_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
-            InteractionLayer::Hovered => palette.action.prominent.hover_background,
-            InteractionLayer::Default => palette.action.prominent.background,
+            InteractionLayer::Pressed => palette.state.pressed.background,
+            InteractionLayer::Hovered => palette.state.selected.background,
+            InteractionLayer::Default => palette.state.selected.background,
         };
 
         TabsNavigationItemAppearance {

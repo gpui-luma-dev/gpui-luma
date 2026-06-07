@@ -54,7 +54,7 @@ impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
             grip_emphasis: if disabled {
                 palette.state.disabled.foreground
             } else {
-                palette.action.ghost.hover_background
+                palette.state.hover.background
             },
             disabled_opacity: if disabled { 0.45 } else { 1.0 },
         }

@@ -5,7 +5,7 @@ use gpui_luma::controls::command::button::{Button, ControlIcon};
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize};
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -39,7 +39,7 @@ impl Render for ChatPanel {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let incoming_bg = chrome.panel_background;
-            let primary = self.look.mode_tokens().palette.action(ShadcnButtonStyle::Primary);
+            let primary = self.look.mode_tokens().palette.primary;
             let outgoing_bg = primary.background;
             let outgoing_fg = primary.foreground;
 

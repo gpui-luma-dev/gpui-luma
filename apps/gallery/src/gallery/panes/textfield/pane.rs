@@ -60,16 +60,19 @@ impl TextFieldPane {
                 .textfield("gallery-textfield-plain")
                 .placeholder("Text field without icon")
                 .prefix_icon(LucideIcon::Search)
-                .variant(TextFieldVariant::Ghost)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
+                .appearance_override(|mut appearance| {
+                    appearance.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+                    appearance.border = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+                    appearance
+                })
                 .spawn(cx),
             compact_plain_text_field: look
                 .textfield("gallery-textfield-compact")
                 .placeholder("Compact ghost (appearance override)")
                 .prefix_icon(LucideIcon::Search)
-                .variant(TextFieldVariant::Ghost)
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
@@ -374,6 +377,7 @@ impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let textfield_theme = self.look.textfield_theme();
+        let ghost_textfield_theme = self.look.ghost_textfield_theme();
         let samples = [
             TextFieldStateSample { id: "default", label: "Standard", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {
@@ -424,15 +428,7 @@ impl Render for TextFieldStatePreview {
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.into_iter().map(|sample| {
-                    render_state_sample(
-                        &self.template,
-                        textfield_theme.clone(),
-                        sample,
-                        TextFieldVariant::Standard,
-                        chrome.muted_text,
-                        window,
-                        cx,
-                    )
+                    render_state_sample(&self.template, textfield_theme.clone(), sample, chrome.muted_text, window, cx)
                 }),
             ))
             .child(
@@ -447,9 +443,8 @@ impl Render for TextFieldStatePreview {
                 samples.into_iter().map(|sample| {
                     render_state_sample(
                         &self.template,
-                        textfield_theme.clone(),
+                        ghost_textfield_theme.clone(),
                         sample,
-                        TextFieldVariant::Ghost,
                         chrome.muted_text,
                         window,
                         cx,
@@ -463,17 +458,16 @@ fn render_state_sample(
     template: &Arc<dyn TextFieldTemplate>,
     theme: Arc<dyn TextFieldTheme>,
     sample: TextFieldStateSample,
-    variant: TextFieldVariant,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let variant = TextFieldVariant::Standard;
     let id = SharedString::from(format!("textfield-preview-{}", sample.id));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview");
-    let appearance = preview_textfield_appearance(&theme, variant, sample.state, sample.enabled, window);
-    let character_offsets =
-        textfield_character_offsets(value.as_ref(), theme, variant, sample.state, sample.enabled, window);
+    let appearance = preview_textfield_appearance(&theme, sample.state, sample.enabled, window);
+    let character_offsets = textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, window);
     let model = TextFieldRenderModel {
         id: &id,
         placeholder: &placeholder,
@@ -503,12 +497,11 @@ fn render_state_sample(
 fn textfield_character_offsets(
     value: &str,
     theme: Arc<dyn TextFieldTheme>,
-    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = preview_textfield_appearance(&theme, variant, state, enabled, window);
+    let appearance = preview_textfield_appearance(&theme, state, enabled, window);
     let run = TextRun {
         len: value.len(),
         font: {
@@ -561,13 +554,12 @@ fn noop_click(_: &gpui::ClickEvent, _: &mut Window, _: &mut App) {}
 
 fn preview_textfield_appearance(
     theme: &Arc<dyn TextFieldTheme>,
-    variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldAppearance {
     let scale = StandardBoxScale::compute(ControlSize::Md, theme.metrics(), window.scale_factor());
-    theme.resolve_appearance(variant, state, enabled, &scale)
+    theme.resolve_appearance(TextFieldVariant::Standard, state, enabled, &scale)
 }
 
 fn noop_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}

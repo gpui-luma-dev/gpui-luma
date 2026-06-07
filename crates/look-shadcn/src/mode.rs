@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use gpui_luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode, ThemeTokens};
+use gpui_luma::theme::{InteractionLayer, LumaTypography, MetricTokens, ThemeMode};
 
 use crate::catalog::{CssTokenMap, metrics_from_catalog, typography_from_catalog};
 use crate::palette::ShadcnPalette;
@@ -27,18 +27,6 @@ impl ShadcnModeTokens {
             palette,
             catalog,
         })
-    }
-
-    pub fn from_luma_tokens(tokens: &ThemeTokens, theme_mode: ThemeMode) -> Self {
-        let palette = ShadcnPalette::from_luma_tokens(tokens);
-        let state_colors = StateColorTable::from_luma_palette(&palette, theme_mode);
-        Self {
-            catalog: CssTokenMap::default(),
-            metrics: tokens.metrics,
-            typography: tokens.typography.clone(),
-            state_colors,
-            palette,
-        }
     }
 
     /// Resolves a semantic token color for an interaction layer (O(1) lookup).

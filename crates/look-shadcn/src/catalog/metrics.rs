@@ -35,9 +35,6 @@ pub(crate) fn metrics_from_catalog(catalog: &CssTokenMap, mut scaffold: MetricTo
     let sm_radius = (base_px - 4.0).max(0.0);
     let md_radius = (base_px - 2.0).max(0.0);
     let lg_radius = base_px;
-    scale_control_metrics(&mut scaffold.sm, scale, sm_radius);
-    scale_control_metrics(&mut scaffold.md, scale, md_radius);
-    scale_control_metrics(&mut scaffold.lg, scale, lg_radius);
     scale_control_metrics(&mut scaffold.control.sm, scale, sm_radius);
     scale_control_metrics(&mut scaffold.control.md, scale, md_radius);
     scale_control_metrics(&mut scaffold.control.lg, scale, lg_radius);

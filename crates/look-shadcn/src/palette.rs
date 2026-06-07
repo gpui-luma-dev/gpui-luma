@@ -1,9 +1,10 @@
 use anyhow::{Context as _, Result};
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::{ActionRolePalette, ThemeMode, ThemeTokens};
+use gpui_luma::theme::ThemeMode;
 
 use crate::catalog::CssTokenMap;
+use crate::color::with_alpha;
 use crate::state_color::{algorithmic_state_color, catalog_state_color, token_base_from_palette};
 use crate::tokens::ShadcnToken;
 use gpui_luma::theme::InteractionLayer;
@@ -46,8 +47,8 @@ impl ShadcnPalette {
     pub fn from_catalog(catalog: &CssTokenMap, theme_mode: ThemeMode) -> Result<Self> {
         let primary = filled_role(catalog, "primary", "primary-foreground", theme_mode)?;
         let secondary = filled_role(catalog, "secondary", "secondary-foreground", theme_mode)?;
-        let outline = outline_role(catalog)?;
-        let ghost = ghost_role(catalog)?;
+        let outline = outline_role(catalog, theme_mode)?;
+        let ghost = ghost_role(catalog, theme_mode)?;
         let accent_background = catalog.optional_color(&["accent"])?.unwrap_or(catalog.color("muted")?);
         let accent_foreground = catalog.optional_color(&["accent-foreground"])?.unwrap_or(catalog.color("foreground")?);
         let destructive_background = catalog.optional_color(&["destructive"])?.unwrap_or(catalog.color("muted")?);
@@ -78,35 +79,6 @@ impl ShadcnPalette {
             destructive_foreground,
         })
     }
-
-    /// One-time conversion from legacy Luma TOML until import emits shadcn palette directly.
-    pub fn from_luma_tokens(tokens: &ThemeTokens) -> Self {
-        let palette = &tokens.palette;
-
-        Self {
-            primary: action_role_from(&palette.action.prominent),
-            secondary: action_role_from(&palette.action.standard),
-            outline: action_role_from(&palette.action.subtle),
-            ghost: action_role_from(&palette.action.ghost),
-            disabled_background: palette.state.disabled.background,
-            disabled_foreground: palette.state.disabled.foreground,
-            selected_background: palette.state.selected.background,
-            selected_foreground: palette.state.selected.foreground,
-            focus_ring: palette.focus.ring,
-            app_background: palette.app.background,
-            app_foreground: palette.app.foreground,
-            app_muted_foreground: palette.app.muted_foreground,
-            border_default: palette.border.default,
-            input_background: palette.form.input.background,
-            muted_background: palette.state.hover.background,
-            panel_background: palette.surface.panel.background,
-            body_text: palette.surface.subtle.foreground,
-            accent_background: palette.action.ghost.hover_background,
-            accent_foreground: palette.action.ghost.foreground,
-            destructive_background: palette.state.disabled.background,
-            destructive_foreground: palette.state.disabled.foreground,
-        }
-    }
 }
 
 fn filled_role(
@@ -124,27 +96,56 @@ fn filled_role(
     Ok(ShadcnActionRole { background, foreground, hover_background, pressed_background, border: background })
 }
 
-fn outline_role(catalog: &CssTokenMap) -> Result<ShadcnActionRole> {
-    let background = catalog.optional_color(&["card", "background"])?.context("card or background")?;
+fn outline_role(catalog: &CssTokenMap, theme_mode: ThemeMode) -> Result<ShadcnActionRole> {
     let foreground = catalog.color("foreground")?;
-    let border = catalog.color("border")?;
-    let hover_background = catalog.optional_color(&["accent", "muted"])?.context("accent or muted")?;
-    let pressed_background = catalog.color("muted")?;
-    Ok(ShadcnActionRole { background, foreground, hover_background, pressed_background, border })
+    let accent = catalog.optional_color(&["accent"])?.unwrap_or(catalog.color("muted")?);
+
+    match theme_mode {
+        ThemeMode::Light => {
+            let background = catalog.color("background")?;
+            let border = catalog.color("border")?;
+            Ok(ShadcnActionRole {
+                background,
+                foreground,
+                hover_background: accent,
+                pressed_background: accent,
+                border,
+            })
+        }
+        ThemeMode::Dark => {
+            let input = catalog.color("input")?;
+            Ok(ShadcnActionRole {
+                background: with_alpha(input, 0.30),
+                foreground,
+                hover_background: with_alpha(input, 0.50),
+                pressed_background: with_alpha(input, 0.50),
+                border: input,
+            })
+        }
+    }
 }
 
-fn ghost_role(catalog: &CssTokenMap) -> Result<ShadcnActionRole> {
+fn ghost_role(catalog: &CssTokenMap, theme_mode: ThemeMode) -> Result<ShadcnActionRole> {
     let transparent = hsla(0.0, 0.0, 0.0, 0.0);
     let foreground = catalog.color("foreground")?;
-    let hover_background = catalog.optional_color(&["accent", "muted"])?.context("accent or muted")?;
-    let pressed_background = catalog.color("muted")?;
-    Ok(ShadcnActionRole {
-        background: transparent,
-        foreground,
-        hover_background,
-        pressed_background,
-        border: transparent,
-    })
+    let accent = catalog.optional_color(&["accent"])?.unwrap_or(catalog.color("muted")?);
+
+    match theme_mode {
+        ThemeMode::Light => Ok(ShadcnActionRole {
+            background: transparent,
+            foreground,
+            hover_background: accent,
+            pressed_background: accent,
+            border: transparent,
+        }),
+        ThemeMode::Dark => Ok(ShadcnActionRole {
+            background: transparent,
+            foreground,
+            hover_background: with_alpha(accent, 0.50),
+            pressed_background: with_alpha(accent, 0.50),
+            border: transparent,
+        }),
+    }
 }
 
 impl ShadcnPalette {
@@ -159,16 +160,6 @@ impl ShadcnPalette {
 
     pub fn token_color(&self, token: ShadcnToken) -> Hsla {
         token_base_from_palette(self, token)
-    }
-}
-
-fn action_role_from(role: &ActionRolePalette) -> ShadcnActionRole {
-    ShadcnActionRole {
-        background: role.background,
-        foreground: role.foreground,
-        hover_background: role.hover_background,
-        pressed_background: role.pressed_background,
-        border: role.border,
     }
 }
 
@@ -201,6 +192,46 @@ mod tests {
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
         ]))
+    }
+
+    #[test]
+    fn ghost_light_hover_uses_accent_fill() {
+        let catalog = sample_catalog();
+        let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Light).expect("tokens should parse");
+        assert_eq!(palette.ghost.hover_background, catalog.color("accent").expect("accent"));
+    }
+
+    #[test]
+    fn ghost_dark_hover_uses_accent_at_half_opacity() {
+        let catalog = sample_catalog();
+        let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Dark).expect("tokens should parse");
+        let accent = catalog.color("accent").expect("accent");
+        assert!((palette.ghost.hover_background.a - 0.50).abs() < f32::EPSILON);
+        assert_eq!(palette.ghost.hover_background.h, accent.h);
+    }
+
+    #[test]
+    fn outline_light_uses_background_and_accent_hover() {
+        let catalog = sample_catalog();
+        let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Light).expect("tokens should parse");
+        let outline = palette.outline;
+
+        assert_eq!(outline.background, catalog.color("background").expect("background"));
+        assert_eq!(outline.border, catalog.color("border").expect("border"));
+        assert_eq!(outline.hover_background, catalog.color("accent").expect("accent"));
+    }
+
+    #[test]
+    fn outline_dark_uses_input_alpha_and_input_border() {
+        let catalog = sample_catalog();
+        let palette = ShadcnPalette::from_catalog(&catalog, ThemeMode::Dark).expect("tokens should parse");
+        let input = catalog.color("input").expect("input");
+        let outline = palette.outline;
+
+        assert_eq!(outline.border, input);
+        assert!((outline.background.a - 0.30).abs() < f32::EPSILON);
+        assert_eq!(outline.background.h, input.h);
+        assert!((outline.hover_background.a - 0.50).abs() < f32::EPSILON);
     }
 
     #[test]

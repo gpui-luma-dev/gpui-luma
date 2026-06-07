@@ -22,28 +22,7 @@ impl StateColorTable {
         for token in ShadcnToken::ALL {
             let base = token_base_from_palette(palette, token);
             for layer in all_layers() {
-                colors[slot(token, layer)] =
-                    resolve_state_color(catalog, palette, token, layer, base, theme_mode, None);
-            }
-        }
-        Self { colors }
-    }
-
-    pub fn from_luma_palette(palette: &ShadcnPalette, theme_mode: ThemeMode) -> Self {
-        let catalog = CssTokenMap::default();
-        let mut colors = [Hsla::default(); TOKEN_COUNT * LAYER_COUNT];
-        for token in ShadcnToken::ALL {
-            let base = token_base_from_palette(palette, token);
-            for layer in all_layers() {
-                colors[slot(token, layer)] = resolve_state_color(
-                    &catalog,
-                    palette,
-                    token,
-                    layer,
-                    base,
-                    theme_mode,
-                    luma_state_override(token, layer, palette),
-                );
+                colors[slot(token, layer)] = resolve_state_color(catalog, palette, token, layer, base, theme_mode);
             }
         }
         Self { colors }
@@ -61,11 +40,7 @@ pub(crate) fn resolve_state_color(
     layer: InteractionLayer,
     base: Hsla,
     theme_mode: ThemeMode,
-    luma_override: Option<Hsla>,
 ) -> Hsla {
-    if let Some(color) = luma_override {
-        return color;
-    }
     if let Some(color) = catalog_state_color(catalog, token.css_name(), layer) {
         return color;
     }
@@ -136,18 +111,6 @@ fn disabled_color(token: ShadcnToken, palette: &ShadcnPalette) -> Hsla {
         palette.disabled_foreground
     } else {
         palette.disabled_background
-    }
-}
-
-fn luma_state_override(token: ShadcnToken, layer: InteractionLayer, palette: &ShadcnPalette) -> Option<Hsla> {
-    match (token, layer) {
-        (ShadcnToken::Primary, InteractionLayer::Hovered) => Some(palette.primary.hover_background),
-        (ShadcnToken::Primary, InteractionLayer::Pressed) => Some(palette.primary.pressed_background),
-        (ShadcnToken::Secondary, InteractionLayer::Hovered) => Some(palette.secondary.hover_background),
-        (ShadcnToken::Secondary, InteractionLayer::Pressed) => Some(palette.secondary.pressed_background),
-        (ShadcnToken::Accent, InteractionLayer::Hovered) => Some(palette.ghost.hover_background),
-        (ShadcnToken::Accent, InteractionLayer::Pressed) => Some(palette.ghost.pressed_background),
-        _ => None,
     }
 }
 
@@ -252,7 +215,6 @@ mod tests {
             InteractionLayer::Hovered,
             base,
             ThemeMode::Light,
-            None,
         );
         assert!(hover.l < base.l, "light hover should darken");
     }
@@ -284,7 +246,6 @@ mod tests {
             InteractionLayer::Hovered,
             base,
             ThemeMode::Dark,
-            None,
         );
         assert!(hover.l > base.l, "dark hover should lighten");
     }

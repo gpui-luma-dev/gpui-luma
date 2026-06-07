@@ -44,7 +44,7 @@ impl ProgressTheme for DefaultProgressTheme {
                 palette.state.disabled.background
             },
             progress_color: if enabled {
-                palette.action.prominent.background
+                palette.state.selected.background
             } else {
                 palette.state.disabled.foreground
             },

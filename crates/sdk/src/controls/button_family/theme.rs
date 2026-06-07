@@ -79,19 +79,25 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let layer = state.layer();
-    let action = native_action_role(palette, role);
+
+    let (base_background, base_foreground, border) = match role {
+        ButtonFamilyRole::Toggle { selected: true } => {
+            (palette.state.selected.background, palette.state.selected.foreground, palette.border.default)
+        }
+        _ => (palette.surface.subtle.background, palette.app.foreground, palette.border.default),
+    };
 
     let foreground = if state.disabled {
         palette.state.disabled.foreground
     } else {
-        action.foreground
+        base_foreground
     };
 
     let background = match layer {
         InteractionLayer::Disabled => palette.state.disabled.background,
-        InteractionLayer::Pressed => action.pressed_background,
-        InteractionLayer::Hovered => action.hover_background,
-        InteractionLayer::Default => action.background,
+        InteractionLayer::Pressed => palette.state.pressed.background,
+        InteractionLayer::Hovered => palette.state.hover.background,
+        InteractionLayer::Default => base_background,
     };
 
     let adorner = if state.focused {
@@ -108,7 +114,7 @@ fn native_button_palette(tokens: &ThemeTokens, role: ButtonFamilyRole, state: In
     ButtonFamilyPalette {
         background,
         foreground,
-        border: action.border,
+        border,
         adorner,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
@@ -142,12 +148,5 @@ pub fn compose_button_family_appearance(
         },
         gap: scale.gap,
         height: scale.height,
-    }
-}
-
-fn native_action_role(palette: &crate::theme::LumaPalette, role: ButtonFamilyRole) -> crate::theme::ActionRolePalette {
-    match role {
-        ButtonFamilyRole::Toggle { selected: false } => palette.action.subtle,
-        _ => palette.action.standard,
     }
 }

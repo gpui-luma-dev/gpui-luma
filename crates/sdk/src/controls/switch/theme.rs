@@ -76,12 +76,12 @@ impl SwitchTheme for DefaultSwitchTheme {
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
-        let on_action = palette.action.prominent;
+        let selected = palette.state.selected;
 
         let track_background = if state.disabled {
             palette.state.disabled.background
         } else if on {
-            on_action.background
+            selected.background
         } else {
             palette.form.input.background
         };
@@ -106,7 +106,7 @@ impl SwitchTheme for DefaultSwitchTheme {
         let (thumb_background, thumb_border) = if state.disabled {
             (palette.state.disabled.foreground, palette.state.disabled.background)
         } else if on {
-            let thumb = on_action.foreground;
+            let thumb = selected.foreground;
             (thumb, thumb)
         } else {
             (palette.app.background, palette.border.default)

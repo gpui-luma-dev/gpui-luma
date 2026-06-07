@@ -129,8 +129,8 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
 
         appearance.background = match (selected, state.layer()) {
             (_, InteractionLayer::Disabled) => None,
-            (true, InteractionLayer::Pressed) => Some(palette.action.prominent.pressed_background),
-            (true, InteractionLayer::Hovered) => Some(palette.action.prominent.hover_background),
+            (true, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
+            (true, InteractionLayer::Hovered) => Some(palette.navigation.hover_background),
             (true, InteractionLayer::Default) => Some(palette.navigation.selected_background),
             (false, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
             (false, InteractionLayer::Hovered) => Some(palette.navigation.hover_background),

@@ -88,13 +88,13 @@ impl CheckboxTheme for DefaultCheckboxTheme {
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let layer = state.layer();
-        let checked_action = palette.action.prominent;
+        let selected = palette.state.selected;
 
         let indicator_background = match (checked, layer) {
             (_, InteractionLayer::Disabled) => palette.state.disabled.background,
-            (true, InteractionLayer::Pressed) => checked_action.pressed_background,
-            (true, InteractionLayer::Hovered) => checked_action.hover_background,
-            (true, InteractionLayer::Default) => checked_action.background,
+            (true, InteractionLayer::Pressed) => palette.state.pressed.background,
+            (true, InteractionLayer::Hovered) => selected.background,
+            (true, InteractionLayer::Default) => selected.background,
             (false, InteractionLayer::Pressed) => palette.state.pressed.background,
             (false, InteractionLayer::Hovered) => palette.state.hover.background,
             (false, InteractionLayer::Default) => palette.form.input.background,
@@ -129,7 +129,7 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             checkmark_color: if state.disabled {
                 palette.state.disabled.foreground
             } else if checked {
-                checked_action.foreground
+                selected.foreground
             } else {
                 palette.app.foreground
             },

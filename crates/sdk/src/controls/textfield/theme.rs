@@ -9,7 +9,6 @@ use crate::controls::textfield::TextFieldState;
 pub enum TextFieldVariant {
     #[default]
     Standard,
-    Ghost,
 }
 
 #[derive(Clone, Debug)]
@@ -81,51 +80,29 @@ impl DefaultTextFieldTheme {
 }
 
 impl TextFieldTheme for DefaultTextFieldTheme {
-    fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
+    fn resolve(&self, _variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
-        let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
+        let (background, foreground, border, placeholder, icon, selection_background, caret) = if enabled {
+            let background = palette.form.input.background;
+            let border = if state.invalid {
+                palette.form.input.invalid_border
+            } else {
+                palette.form.input.border
+            };
 
-        let (background, foreground, border, placeholder, icon, selection_background, caret) = match (variant, enabled)
-        {
-            (TextFieldVariant::Standard, true) => {
-                let background = palette.form.input.background;
-                let border = if state.invalid {
-                    palette.form.input.invalid_border
-                } else {
-                    palette.form.input.border
-                };
-
-                (
-                    background,
-                    palette.form.input.foreground,
-                    border,
-                    palette.form.input.placeholder,
-                    palette.form.input.placeholder,
-                    palette.state.selected.background,
-                    palette.form.input.foreground,
-                )
-            }
-            (TextFieldVariant::Ghost, true) => {
-                let background = if state.focused {
-                    palette.action.ghost.background
-                } else {
-                    transparent
-                };
-                let placeholder_color = palette.action.ghost.foreground.opacity(0.65);
-
-                (
-                    background,
-                    palette.action.ghost.foreground,
-                    palette.action.ghost.border,
-                    placeholder_color,
-                    placeholder_color,
-                    palette.state.selected.background,
-                    palette.action.ghost.foreground,
-                )
-            }
-            (TextFieldVariant::Standard, false) => (
+            (
+                background,
+                palette.form.input.foreground,
+                border,
+                palette.form.input.placeholder,
+                palette.form.input.placeholder,
+                palette.state.selected.background,
+                palette.form.input.foreground,
+            )
+        } else {
+            (
                 palette.state.disabled.background,
                 palette.state.disabled.foreground,
                 palette.form.input.border,
@@ -133,16 +110,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
                 palette.state.disabled.foreground,
                 palette.state.selected.background,
                 palette.state.disabled.foreground,
-            ),
-            (TextFieldVariant::Ghost, false) => (
-                transparent,
-                palette.state.disabled.foreground,
-                palette.action.ghost.border,
-                palette.state.disabled.foreground,
-                palette.state.disabled.foreground,
-                palette.state.selected.background,
-                palette.state.disabled.foreground,
-            ),
+            )
         };
 
         TextFieldPalette {

@@ -1,13 +1,18 @@
 //! Text area — same input tokens as standard text field.
 
 use gpui_luma::controls::textarea::{TextAreaPalette, TextAreaState};
-use gpui_luma::controls::textfield::{TextFieldState, TextFieldVariant};
+use gpui_luma::controls::textfield::TextFieldState;
 
-use super::textfield::textfield_palette;
+use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
 use crate::mode::ShadcnModeTokens;
 
 pub(crate) fn textarea_palette(mode: &ShadcnModeTokens, state: TextAreaState, enabled: bool) -> TextAreaPalette {
-    textarea_from_textfield(textfield_palette(mode, TextFieldVariant::Standard, textfield_state_from(state), enabled))
+    textarea_from_textfield(textfield_palette(
+        mode,
+        ShadcnTextFieldStyle::Standard,
+        textfield_state_from(state),
+        enabled,
+    ))
 }
 
 fn textfield_state_from(state: TextAreaState) -> TextFieldState {
@@ -46,7 +51,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::controls::textfield::textfield_palette_from_catalog;
+    use crate::controls::textfield::{ShadcnTextFieldStyle, textfield_palette_from_catalog};
     use super::textarea_from_textfield;
 
     fn sample_catalog() -> CssTokenMap {
@@ -72,13 +77,9 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
-        let textfield = textfield_palette_from_catalog(
-            &ctx,
-            gpui_luma::controls::textfield::TextFieldVariant::Standard,
-            TextFieldState::default(),
-            true,
-        )
-        .expect("textfield");
+        let textfield =
+            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Standard, TextFieldState::default(), true)
+                .expect("textfield");
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, catalog.color("background").expect("background"));

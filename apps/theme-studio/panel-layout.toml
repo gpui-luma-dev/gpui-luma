@@ -2,44 +2,44 @@
 
 [window]
 width = 2118.0
-height = 1323.0
-
-[cookie_settings]
-right = 1259.55859375
-top = 14.3125
-
-[report_issue]
-right = 423.57421875
-top = 671.3046875
-
-[payments]
-right = 1209.82421875
-top = 707.9296875
-
-[navigation_sidebar]
-right = 324.53125
-top = 54.703125
-
-[chat]
-right = 837.41796875
-top = 305.1953125
-
-[accordion]
-right = 1670.3203125
-top = 121.34765625
-
-[tree_view]
-right = 1645.71484375
-top = 530.27734375
-
-[upgrade_subscription]
-right = 437.9921875
-top = 15.328125
+height = 1324.0
 
 [create_account]
 right = 1208.1875
 top = 303.9921875
 
+[chat]
+right = 837.41796875
+top = 305.1953125
+
 [team_members]
 right = 849.484375
 top = 14.41015625
+
+[report_issue]
+right = 423.57421875
+top = 671.3046875
+
+[cookie_settings]
+right = 1259.55859375
+top = 14.3125
+
+[tree_view]
+right = 1645.71484375
+top = 530.27734375
+
+[navigation_sidebar]
+right = 324.53125
+top = 54.703125
+
+[accordion]
+right = 1670.3203125
+top = 121.34765625
+
+[upgrade_subscription]
+right = 437.9921875
+top = 15.328125
+
+[payments]
+right = 1209.82421875
+top = 707.9296875

@@ -131,7 +131,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.px(px(appearance.padding_x)).py(px(appearance.padding_y)).rounded(px(appearance.radius));
         }
 
-        control = control.child((model.content)(model, cx));
+        control = control.child(div().text_color(appearance.foreground).child((model.content)(model, cx)));
 
         // Generic pipeline call
         control = self.apply_modifiers(control, model);

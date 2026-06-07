@@ -85,7 +85,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let layer = state.layer();
-        let checked_action = palette.action.prominent;
+        let selected = palette.state.selected;
 
         let indicator_background = match layer {
             InteractionLayer::Disabled => palette.state.disabled.background,
@@ -96,9 +96,9 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
 
         let selected_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => checked_action.pressed_background,
-            InteractionLayer::Hovered => checked_action.hover_background,
-            InteractionLayer::Default => checked_action.background,
+            InteractionLayer::Pressed => palette.state.pressed.background,
+            InteractionLayer::Hovered => selected.background,
+            InteractionLayer::Default => selected.background,
         };
 
         let adorner = if state.focused {
@@ -124,7 +124,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
             dot_color: if state.disabled {
                 palette.state.disabled.foreground
             } else if checked {
-                checked_action.foreground
+                selected.foreground
             } else {
                 palette.app.foreground
             },

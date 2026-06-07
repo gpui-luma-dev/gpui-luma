@@ -7,7 +7,7 @@ use std::sync::{
 use gpui::{BoxShadow, Hsla, SharedString};
 use gpui_luma::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
 use gpui_luma::theme::pack::LumaChrome;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTheme, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
@@ -46,12 +46,7 @@ struct ShadcnLookState {
 
 impl ShadcnLook {
     pub fn native() -> Self {
-        Self::from_theme(LumaTheme::native())
-    }
-
-    /// Loads a theme file. Legacy Luma-shaped TOML is converted once at the boundary.
-    pub fn from_toml_str(source: &str) -> anyhow::Result<Self> {
-        Ok(Self::from_theme(LumaTheme::from_toml_str(source)?))
+        Self::from_css_str(include_str!("../assets/native.css")).expect("embedded shadcn native CSS should parse")
     }
 
     /// Loads shadcn palette tokens from tweakcn-style CSS (`:root` / `.dark` custom properties).
@@ -71,17 +66,6 @@ impl ShadcnLook {
         let source = std::fs::read_to_string(path.as_ref())
             .map_err(|err| anyhow::anyhow!("read shadcn theme css {}: {err}", path.as_ref().display()))?;
         Self::from_css_str(&source)
-    }
-
-    pub fn from_theme(theme: LumaTheme) -> Self {
-        Self {
-            state: Arc::new(ShadcnLookState {
-                catalog: CssTokenCatalog { light: Default::default(), dark: Default::default() },
-                light: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Light), ThemeMode::Light),
-                dark: ShadcnModeTokens::from_luma_tokens(theme.mode(ThemeMode::Dark), ThemeMode::Dark),
-                mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
-            }),
-        }
     }
 
     pub fn mode(&self) -> ThemeMode {
@@ -239,7 +223,7 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), ShadcnButtonStyle::Primary, role, size, state)
+        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Primary, role, size, state)
     }
 
     pub fn resolve_secondary_button(
@@ -248,7 +232,7 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), ShadcnButtonStyle::Secondary, role, size, state)
+        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Secondary, role, size, state)
     }
 
     pub fn resolve_outline_button(
@@ -257,7 +241,7 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), ShadcnButtonStyle::Outline, role, size, state)
+        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Outline, role, size, state)
     }
 
     pub fn resolve_ghost_button(
@@ -266,7 +250,7 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), ShadcnButtonStyle::Ghost, role, size, state)
+        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
     }
 
     pub fn switch_template(
@@ -331,6 +315,10 @@ impl ShadcnLook {
 
     pub fn textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
         templates::textfield_theme(Arc::clone(self))
+    }
+
+    pub fn ghost_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
+        templates::ghost_textfield_theme(Arc::clone(self))
     }
 
     pub fn textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {

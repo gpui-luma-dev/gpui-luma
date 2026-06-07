@@ -45,11 +45,12 @@ impl SliderTheme for DefaultSliderTheme {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let elevation = &self.tokens.elevation;
+        let selected = palette.state.selected;
         let fill_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
-            InteractionLayer::Pressed => palette.action.prominent.pressed_background,
-            InteractionLayer::Hovered => palette.action.prominent.hover_background,
-            InteractionLayer::Default => palette.action.prominent.background,
+            InteractionLayer::Pressed => palette.state.pressed.background,
+            InteractionLayer::Hovered => selected.background,
+            InteractionLayer::Default => selected.background,
         };
 
         SliderAppearance {
@@ -67,7 +68,7 @@ impl SliderTheme for DefaultSliderTheme {
             thumb_border: if state.disabled {
                 palette.state.disabled.background
             } else {
-                palette.action.prominent.background
+                selected.background
             },
             thumb_shadow: elevation.thumb.to_box_shadows(),
             focus_ring: state.focused.then_some(palette.focus.ring),

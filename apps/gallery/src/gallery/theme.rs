@@ -158,9 +158,9 @@ mod tests {
     }
 
     #[test]
-    fn native_theme_has_empty_css_catalog() {
+    fn native_theme_has_css_catalog() {
         let theme = ShadcnLook::native();
-        assert!(!theme.has_css_catalog());
+        assert!(theme.has_css_catalog());
     }
 
     #[test]

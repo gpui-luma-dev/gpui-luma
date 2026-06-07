@@ -112,9 +112,9 @@ impl From<&MetricTokens> for ThemeMetricsKey {
                 metrics.border_width.strong.to_bits(),
             ],
             focus: [metrics.focus.width.to_bits(), metrics.focus.offset.to_bits()],
-            control_sm: control_metric_key(metrics.sm),
-            control_md: control_metric_key(metrics.md),
-            control_lg: control_metric_key(metrics.lg),
+            control_sm: control_metric_key(metrics.control.sm),
+            control_md: control_metric_key(metrics.control.md),
+            control_lg: control_metric_key(metrics.control.lg),
         }
     }
 }
@@ -158,7 +158,6 @@ mod tests {
         let metrics = MetricTokens::default();
         let mut other_metrics = MetricTokens::default();
         other_metrics.control.md.control_height += 2.0;
-        other_metrics.md.control_height += 2.0;
 
         let metrics_key = ThemeMetricsKey::from(&metrics);
         let other_key = ThemeMetricsKey::from(&other_metrics);
