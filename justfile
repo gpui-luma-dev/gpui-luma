@@ -1,7 +1,7 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    cargo run -p gpui-luma-gallery -- jarvis
+    cargo run -p gpui-luma-gallery -- retro-arcade
 
 gallery-rel:
     cargo run -p gpui-luma-gallery --release

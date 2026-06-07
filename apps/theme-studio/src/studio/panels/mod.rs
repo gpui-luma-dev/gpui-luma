@@ -1,4 +1,5 @@
 mod account;
+mod accordion;
 mod chat;
 mod common;
 
@@ -15,6 +16,7 @@ mod tree_view;
 mod upgrade;
 
 pub use account::AccountPanel;
+pub use accordion::AccordionPanel;
 pub use chat::ChatPanel;
 pub use cookies::CookiesPanel;
 pub use dashboard::DashboardPanel;
@@ -83,7 +85,7 @@ pub fn render_demo_board(
             .into_any_element()
     };
 
-    let all_panels: [(InspectableId, gpui::AnyElement); 8] = [
+    let all_panels: [(InspectableId, gpui::AnyElement); 9] = [
         (InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()),
         (InspectableId::CreateAccount, demos.account.clone().into_any_element()),
         (InspectableId::TeamMembers, demos.team.clone().into_any_element()),
@@ -92,6 +94,7 @@ pub fn render_demo_board(
         (InspectableId::ReportIssue, demos.report.clone().into_any_element()),
         (InspectableId::Payments, demos.payments.clone().into_any_element()),
         (InspectableId::TreeView, demos.tree_view.clone().into_any_element()),
+        (InspectableId::Accordion, demos.accordion.clone().into_any_element()),
     ];
 
     let mut panels: Vec<_> = all_panels

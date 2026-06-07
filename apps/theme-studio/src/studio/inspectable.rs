@@ -8,11 +8,12 @@ pub enum InspectableId {
     ReportIssue,
     Payments,
     TreeView,
+    Accordion,
     NavigationSidebar,
 }
 
 impl InspectableId {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -21,6 +22,7 @@ impl InspectableId {
         Self::ReportIssue,
         Self::Payments,
         Self::TreeView,
+        Self::Accordion,
         Self::NavigationSidebar,
     ];
 
@@ -28,7 +30,7 @@ impl InspectableId {
         &Self::ALL
     }
 
-    pub const CARDS: [Self; 8] = [
+    pub const CARDS: [Self; 9] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -37,6 +39,7 @@ impl InspectableId {
         Self::ReportIssue,
         Self::Payments,
         Self::TreeView,
+        Self::Accordion,
     ];
 
     pub const DASHBOARD: [Self; 0] = [];
@@ -51,6 +54,7 @@ impl InspectableId {
             Self::ReportIssue => "report_issue",
             Self::Payments => "payments",
             Self::TreeView => "tree_view",
+            Self::Accordion => "accordion",
             Self::NavigationSidebar => "navigation_sidebar",
         }
     }
