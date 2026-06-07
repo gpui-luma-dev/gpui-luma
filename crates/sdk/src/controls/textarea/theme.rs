@@ -12,6 +12,7 @@ pub struct TextAreaPalette {
     pub border: Hsla,
     pub placeholder: Hsla,
     pub selection_background: Hsla,
+    pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
     pub typography: LumaTextStyle,
@@ -25,6 +26,7 @@ pub struct TextAreaAppearance {
     pub border: Hsla,
     pub placeholder: Hsla,
     pub selection_background: Hsla,
+    pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
     pub typography: LumaTextStyle,
@@ -68,32 +70,35 @@ impl TextAreaTheme for DefaultTextAreaTheme {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
-        let (background, foreground, border, placeholder, selection_background, caret) = if enabled {
-            let background = palette.form.input.background;
-            let border = if state.invalid {
-                palette.form.input.invalid_border
-            } else {
-                palette.form.input.border
-            };
+        let (background, foreground, border, placeholder, selection_background, selection_foreground, caret) =
+            if enabled {
+                let background = palette.form.input.background;
+                let border = if state.invalid {
+                    palette.form.input.invalid_border
+                } else {
+                    palette.form.input.border
+                };
 
-            (
-                background,
-                palette.form.input.foreground,
-                border,
-                palette.form.input.placeholder,
-                palette.state.selected.background,
-                palette.form.input.foreground,
-            )
-        } else {
-            (
-                palette.state.disabled.background,
-                palette.state.disabled.foreground,
-                palette.form.input.border,
-                palette.state.disabled.foreground,
-                palette.state.selected.background,
-                palette.state.disabled.foreground,
-            )
-        };
+                (
+                    background,
+                    palette.form.input.foreground,
+                    border,
+                    palette.form.input.placeholder,
+                    palette.state.selected.background,
+                    palette.state.selected.foreground,
+                    palette.form.input.foreground,
+                )
+            } else {
+                (
+                    palette.state.disabled.background,
+                    palette.state.disabled.foreground,
+                    palette.form.input.border,
+                    palette.state.disabled.foreground,
+                    palette.state.selected.background,
+                    palette.state.selected.foreground,
+                    palette.state.disabled.foreground,
+                )
+            };
 
         TextAreaPalette {
             background,
@@ -101,6 +106,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             border,
             placeholder,
             selection_background,
+            selection_foreground,
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
             typography: typography.text.body,
@@ -124,6 +130,7 @@ pub(crate) fn compose_textarea_appearance(
         border: palette.border,
         placeholder: palette.placeholder,
         selection_background: palette.selection_background,
+        selection_foreground: palette.selection_foreground,
         caret: palette.caret,
         focus_ring: palette.focus_ring,
         typography: palette.typography,

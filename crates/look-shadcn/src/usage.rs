@@ -7,12 +7,30 @@ pub fn all_shadcn_theme_usages() -> &'static [&'static ThemeUsage] {
 }
 
 const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
-    part("background", "background", &["standard default"], &["TextFieldPalette.background"]),
-    part("border", "input", &["standard default"], &["TextFieldPalette.border"]),
-    part("foreground", "foreground", &["standard default"], &["TextFieldPalette.foreground"]),
-    part("placeholder", "muted-foreground", &["standard default"], &["TextFieldPalette.placeholder"]),
-    part("selection", "primary", &["standard focused"], &["TextFieldPalette.selection_background"]),
-    part("focus ring", "ring", &["standard focused"], &["TextFieldPalette.focus_ring"]),
+    part("surface fill", "background", &["surface light"], &["TextFieldPalette.background"]),
+    part("surface fill", "input", &["surface dark"], &["TextFieldPalette.background"]),
+    part("surface border", "input", &["surface default"], &["TextFieldPalette.border"]),
+    part("soft fill", "muted", &["soft default"], &["TextFieldPalette.background"]),
+    part("foreground", "foreground", &["surface default", "soft default"], &["TextFieldPalette.foreground"]),
+    part(
+        "placeholder",
+        "muted-foreground",
+        &["surface default", "soft default"],
+        &["TextFieldPalette.placeholder"],
+    ),
+    part(
+        "selection",
+        "primary",
+        &["surface focused", "soft focused"],
+        &["TextFieldPalette.selection_background"],
+    ),
+    part(
+        "selection text",
+        "primary-foreground",
+        &["surface focused", "soft focused"],
+        &["TextFieldPalette.selection_foreground"],
+    ),
+    part("focus ring", "ring", &["surface focused", "soft focused"], &["TextFieldPalette.focus_ring"]),
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[

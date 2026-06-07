@@ -267,8 +267,8 @@ All entries in `all_shadcn_theme_usages()` need Tier A or B treatment. Priority 
 | Radio Button | radio_button, radio_group | `controls/radio.rs` | Same family as checkbox |
 | Slider | slider | `controls/slider.rs` | Track vs fill vs thumb |
 | Scrollbar | scrollbar | `controls/scrollbar.rs` | Minimal but state-limited |
-| TextField | textfield, search flows | `controls/textfield.rs` | Ghost is look-specific (`ShadcnTextFieldStyle`), not in usage |
-| TextArea | textarea | `controls/textarea.rs` | Reuses textfield tokens |
+| TextField | textfield, search flows | `controls/textfield.rs` | Surface/Soft via `ShadcnTextFieldStyle`; bindings in `usage.rs` (soft fg TBD) |
+| TextArea | textarea | `controls/textarea.rs` | Same Surface/Soft path as textfield |
 | ComboBox | combobox | textfield + selector panel | Multi-component usage array |
 | AutocompleteTextField | autocomplete | autocomplete + floating menu | Partial |
 | SearchSelector | search_selector | search_selector + textfield | Partial |
@@ -345,7 +345,7 @@ Primary/secondary add **StateColorTable** rows for hover/pressed on `primary` / 
 Suggested order (reuse patterns from Phase 2):
 
 1. **Toggle family** — checkbox, switch, radio (shared button-style variants)
-2. **Form inputs** — textfield, textarea (+ ghost style split)
+2. **Form inputs** — textfield, textarea (Surface / Soft style split in look-shadcn)
 3. **Menus / overlays** — selector, popup, context, floating, selection panel
 4. **Navigation** — tabs, sidebar, tree
 5. **Collections** — listbox, listview, control group

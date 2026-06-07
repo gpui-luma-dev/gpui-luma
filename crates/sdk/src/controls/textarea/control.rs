@@ -47,6 +47,75 @@ struct TextAreaPrepaintState {
     vertical_scroll: Pixels,
 }
 
+fn colored_runs_for_text(
+    text: &str,
+    global_offset: usize,
+    selection: Option<(usize, usize)>,
+    appearance: &crate::controls::textarea::TextAreaAppearance,
+    font_family: String,
+    font_weight: gpui::FontWeight,
+) -> Vec<TextRun> {
+    let mut base_font = font(font_family);
+    base_font.weight = font_weight;
+    let run = |value: &str, color: gpui::Hsla| TextRun {
+        len: value.len(),
+        font: base_font.clone(),
+        color,
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let Some((sel_start, sel_end)) = selection else {
+        return vec![run(text, appearance.foreground)];
+    };
+
+    let mut runs = Vec::new();
+    let mut chunk = String::new();
+    let mut chunk_selected = None::<bool>;
+
+    for (char_ix, ch) in text.chars().enumerate() {
+        let selected = global_offset + char_ix >= sel_start && global_offset + char_ix < sel_end;
+        match chunk_selected {
+            None => {
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+            Some(current) if current == selected => chunk.push(ch),
+            Some(current) => {
+                runs.push(run(
+                    &chunk,
+                    if current {
+                        appearance.selection_foreground
+                    } else {
+                        appearance.foreground
+                    },
+                ));
+                chunk.clear();
+                chunk_selected = Some(selected);
+                chunk.push(ch);
+            }
+        }
+    }
+
+    if let Some(current) = chunk_selected {
+        runs.push(run(
+            &chunk,
+            if current {
+                appearance.selection_foreground
+            } else {
+                appearance.foreground
+            },
+        ));
+    }
+
+    runs
+}
+
 #[derive(Clone, Debug)]
 pub enum TextAreaEvent {
     Change { value: String },
@@ -1016,8 +1085,15 @@ impl gpui::Element for TextAreaElement {
                 }
 
                 let segment_text = line_chars[local_start..local_end].iter().collect::<String>();
-                let run = run_for(segment_text.len(), appearance.foreground);
-                let shaped = window.text_system().shape_line(segment_text.clone().into(), font_size, &[run], None);
+                let runs = colored_runs_for_text(
+                    &segment_text,
+                    hard_start + local_start,
+                    selection,
+                    &appearance,
+                    appearance.font_family.clone(),
+                    font_weight,
+                );
+                let shaped = window.text_system().shape_line(segment_text.clone().into(), font_size, &runs, None);
 
                 lines.push(TextAreaCachedLine {
                     start: hard_start + local_start,
@@ -1053,7 +1129,7 @@ impl gpui::Element for TextAreaElement {
                                 point(bounds.left() + x1, top),
                                 point(bounds.left() + x2.max(x1), bottom),
                             ),
-                            appearance.selection_background.opacity(0.28),
+                            appearance.selection_background,
                         ));
                     }
                 }

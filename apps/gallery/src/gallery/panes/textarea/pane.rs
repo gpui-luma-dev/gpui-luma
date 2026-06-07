@@ -9,7 +9,7 @@ use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textarea::{
     TextArea, TextAreaClickHandler, TextAreaEvent, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
     TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, Validator,
+    TextAreaTemplate, TextAreaTemplateHandlers, ThemedTextAreaTemplate, Validator,
 };
 use gpui_luma::controls::textarea::TextAreaTheme;
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
@@ -296,7 +296,8 @@ fn render_telemetry(
 #[derive(Clone)]
 struct TextAreaStatePreview {
     look: Arc<ShadcnLook>,
-    template: Arc<dyn TextAreaTemplate>,
+    surface_template: Arc<dyn TextAreaTemplate>,
+    soft_template: Arc<dyn TextAreaTemplate>,
 }
 
 #[derive(Clone, Copy)]
@@ -309,16 +310,19 @@ struct TextAreaStateSample {
 
 impl TextAreaStatePreview {
     fn new(look: Arc<ShadcnLook>) -> Self {
-        Self { look: look.clone(), template: look.textarea_template() }
+        Self {
+            look: look.clone(),
+            surface_template: Arc::new(ThemedTextAreaTemplate::new(look.textarea_theme())),
+            soft_template: Arc::new(ThemedTextAreaTemplate::new(look.soft_textarea_theme())),
+        }
     }
 }
 
 impl Render for TextAreaStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let textarea_theme = self.look.textarea_theme();
         let samples = [
-            TextAreaStateSample { id: "default", label: "Standard", state: TextAreaState::default(), enabled: true },
+            TextAreaStateSample { id: "default", label: "Default", state: TextAreaState::default(), enabled: true },
             TextAreaStateSample {
                 id: "hover",
                 label: "Hover",
@@ -358,11 +362,38 @@ impl Render for TextAreaStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Template state preview"),
+                    .child("Surface variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_state_sample(&self.template, textarea_theme.clone(), sample, chrome.muted_text, window, cx)
+                samples.iter().copied().map(|sample| {
+                    render_state_sample(
+                        &self.surface_template,
+                        self.look.textarea_theme(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Soft variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.iter().copied().map(|sample| {
+                    render_state_sample(
+                        &self.soft_template,
+                        self.look.soft_textarea_theme(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
                 }),
             ))
     }

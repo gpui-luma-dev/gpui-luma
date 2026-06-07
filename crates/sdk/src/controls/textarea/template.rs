@@ -10,7 +10,6 @@ use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
-const TEXTAREA_SELECTION_OPACITY: f32 = 0.28;
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
 const TEXTAREA_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const TEXTAREA_TRAILING_HITBOX_WIDTH: f32 = 4.0;
@@ -130,7 +129,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                 .flex()
                                 .items_center()
                                 .when(selected, |cell| {
-                                    cell.bg(appearance.selection_background.opacity(TEXTAREA_SELECTION_OPACITY))
+                                    cell.bg(appearance.selection_background).text_color(appearance.selection_foreground)
                                 })
                                 .child(ch.to_string())
                                 .when(

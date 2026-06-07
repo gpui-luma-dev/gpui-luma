@@ -317,8 +317,8 @@ impl ShadcnLook {
         templates::textfield_theme(Arc::clone(self))
     }
 
-    pub fn ghost_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
-        templates::ghost_textfield_theme(Arc::clone(self))
+    pub fn soft_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
+        templates::soft_textfield_theme(Arc::clone(self))
     }
 
     pub fn textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
@@ -327,6 +327,10 @@ impl ShadcnLook {
 
     pub fn textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
         templates::textarea_theme(Arc::clone(self))
+    }
+
+    pub fn soft_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
+        templates::soft_textarea_theme(Arc::clone(self))
     }
 
     pub fn autocomplete_textbox_theme(

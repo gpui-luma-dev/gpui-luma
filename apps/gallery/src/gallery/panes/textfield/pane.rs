@@ -24,8 +24,6 @@ use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct TextFieldPane {
     text_field: TextField,
-    plain_text_field: TextField,
-    compact_plain_text_field: TextField,
     state_preview: Entity<TextFieldStatePreview>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
@@ -55,34 +53,6 @@ impl TextFieldPane {
                 .full_width(true)
                 .clean_on_escape(true)
                 .select_all_on_tab_focus(true)
-                .spawn(cx),
-            plain_text_field: look
-                .textfield("gallery-textfield-plain")
-                .placeholder("Text field without icon")
-                .prefix_icon(LucideIcon::Search)
-                .full_width(true)
-                .clean_on_escape(true)
-                .select_all_on_tab_focus(true)
-                .appearance_override(|mut appearance| {
-                    appearance.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
-                    appearance.border = gpui::hsla(0.0, 0.0, 0.0, 0.0);
-                    appearance
-                })
-                .spawn(cx),
-            compact_plain_text_field: look
-                .textfield("gallery-textfield-compact")
-                .placeholder("Compact ghost (appearance override)")
-                .prefix_icon(LucideIcon::Search)
-                .full_width(true)
-                .clean_on_escape(true)
-                .select_all_on_tab_focus(true)
-                .appearance_override(|mut appearance| {
-                    appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
-                    appearance.typography.line_height = appearance.typography.size;
-                    appearance.min_height =
-                        (appearance.typography.line_height + (appearance.padding_y * 2.0)).max(18.0);
-                    appearance
-                })
                 .spawn(cx),
             state_preview: cx.new(|_| TextFieldStatePreview::new(look.clone())),
             set_sample_button: action_button("textfield-set-sample", "Set Sample", &look, cx),
@@ -119,12 +89,6 @@ impl TextFieldPane {
         subscriptions.push(cx.subscribe(&self.text_field, |app, _, event: &TextFieldEvent, cx| {
             app.panes.textfield.handle_text_field_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.plain_text_field, |app, _, event: &TextFieldEvent, cx| {
-            app.panes.textfield.handle_text_field_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.compact_plain_text_field, |app, _, event: &TextFieldEvent, cx| {
-            app.panes.textfield.handle_text_field_event(event, cx);
-        }));
         subscriptions.push(cx.subscribe(&self.set_sample_button, |app, _, _: &ButtonEvent, cx| {
             app.panes.textfield.set_sample_value(cx);
         }));
@@ -158,8 +122,6 @@ impl TextFieldPane {
                 .flex_col()
                 .gap(px(16.0))
                 .child(self.text_field.clone())
-                .child(self.plain_text_field.clone())
-                .child(self.compact_plain_text_field.clone())
                 .child(div().flex().flex_wrap().gap(px(8.0)).children([
                     self.set_sample_button.clone().into_any_element(),
                     self.clear_button.clone().into_any_element(),
@@ -200,8 +162,6 @@ impl TextFieldPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.text_field, cx);
-        notify_entity(&self.plain_text_field, cx);
-        notify_entity(&self.compact_plain_text_field, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.set_sample_button, cx);
         notify_entity(&self.clear_button, cx);
@@ -224,18 +184,6 @@ impl TextFieldPane {
         let validator = self.current_validator();
 
         self.text_field.update(cx, move |text_field, cx| {
-            text_field.set_enabled(enabled, cx);
-            text_field.set_clean_on_escape(clean_on_escape, cx);
-            text_field.set_validator(validator, cx);
-        });
-        let validator = self.current_validator();
-        self.plain_text_field.update(cx, move |text_field, cx| {
-            text_field.set_enabled(enabled, cx);
-            text_field.set_clean_on_escape(clean_on_escape, cx);
-            text_field.set_validator(validator, cx);
-        });
-        let validator = self.current_validator();
-        self.compact_plain_text_field.update(cx, move |text_field, cx| {
             text_field.set_enabled(enabled, cx);
             text_field.set_clean_on_escape(clean_on_escape, cx);
             text_field.set_validator(validator, cx);
@@ -273,16 +221,12 @@ impl TextFieldPane {
         let value = SharedString::from("Hello GPUI Luma");
         self.value = value.clone();
         self.text_field.update(cx, |text_field, cx| text_field.set_value(value.as_ref(), cx));
-        self.plain_text_field.update(cx, |text_field, cx| text_field.set_value(value.as_ref(), cx));
-        self.compact_plain_text_field.update(cx, |text_field, cx| text_field.set_value(value.as_ref(), cx));
         cx.notify();
     }
 
     fn clear_value(&mut self, cx: &mut Context<GalleryApp>) {
         self.value = SharedString::default();
         self.text_field.update(cx, |text_field, cx| text_field.set_value("", cx));
-        self.plain_text_field.update(cx, |text_field, cx| text_field.set_value("", cx));
-        self.compact_plain_text_field.update(cx, |text_field, cx| text_field.set_value("", cx));
         cx.notify();
     }
 
@@ -376,10 +320,10 @@ impl TextFieldStatePreview {
 impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let textfield_theme = self.look.textfield_theme();
-        let ghost_textfield_theme = self.look.ghost_textfield_theme();
+        let surface_textfield_theme = self.look.textfield_theme();
+        let soft_textfield_theme = self.look.soft_textfield_theme();
         let samples = [
-            TextFieldStateSample { id: "default", label: "Standard", state: TextFieldState::default(), enabled: true },
+            TextFieldStateSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {
                 id: "hover",
                 label: "Hover",
@@ -424,11 +368,18 @@ impl Render for TextFieldStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Standard variant state preview"),
+                    .child("Surface variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.into_iter().map(|sample| {
-                    render_state_sample(&self.template, textfield_theme.clone(), sample, chrome.muted_text, window, cx)
+                    render_state_sample(
+                        &self.template,
+                        surface_textfield_theme.clone(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
                 }),
             ))
             .child(
@@ -437,13 +388,13 @@ impl Render for TextFieldStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Ghost variant state preview"),
+                    .child("Soft variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.into_iter().map(|sample| {
                     render_state_sample(
                         &self.template,
-                        ghost_textfield_theme.clone(),
+                        soft_textfield_theme.clone(),
                         sample,
                         chrome.muted_text,
                         window,

@@ -1,18 +1,20 @@
-//! Text area — same input tokens as standard text field.
+//! Text area — surface/soft variants share the text field token resolver.
 
 use gpui_luma::controls::textarea::{TextAreaPalette, TextAreaState};
 use gpui_luma::controls::textfield::TextFieldState;
+use gpui_luma::theme::ThemeMode;
 
 use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn textarea_palette(mode: &ShadcnModeTokens, state: TextAreaState, enabled: bool) -> TextAreaPalette {
-    textarea_from_textfield(textfield_palette(
-        mode,
-        ShadcnTextFieldStyle::Standard,
-        textfield_state_from(state),
-        enabled,
-    ))
+pub(crate) fn textarea_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextAreaState,
+    enabled: bool,
+) -> TextAreaPalette {
+    textarea_from_textfield(textfield_palette(mode, theme_mode, style, textfield_state_from(state), enabled))
 }
 
 fn textfield_state_from(state: TextAreaState) -> TextFieldState {
@@ -34,6 +36,7 @@ fn textarea_from_textfield(textfield: gpui_luma::controls::textfield::TextFieldP
         border: textfield.border,
         placeholder: textfield.placeholder,
         selection_background: textfield.selection_background,
+        selection_foreground: textfield.selection_foreground,
         caret: textfield.caret,
         focus_ring: textfield.focus_ring,
         typography: textfield.typography,
@@ -73,17 +76,32 @@ mod tests {
     }
 
     #[test]
-    fn textarea_uses_same_input_tokens_as_textfield() {
+    fn textarea_uses_same_surface_tokens_as_textfield() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let textfield =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Standard, TextFieldState::default(), true)
+            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true)
                 .expect("textfield");
         let textarea = textarea_from_textfield(textfield);
 
-        assert_eq!(textarea.background, catalog.color("background").expect("background"));
+        assert_eq!(textarea.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
         assert_eq!(textarea.border, catalog.color("input").expect("input"));
         assert_eq!(textarea.foreground, catalog.color("foreground").expect("foreground"));
+        assert_eq!(textarea.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
+    }
+
+    #[test]
+    fn soft_textarea_uses_muted_fill_and_no_border() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
+        let textfield =
+            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true)
+                .expect("textfield");
+        let textarea = textarea_from_textfield(textfield);
+
+        assert_eq!(textarea.background, catalog.color("muted").expect("muted"));
+        assert_eq!(textarea.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
     }
 }

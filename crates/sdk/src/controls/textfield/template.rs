@@ -11,7 +11,6 @@ use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
-const TEXTFIELD_SELECTION_OPACITY: f32 = 0.28;
 const TEXTFIELD_CARET_WIDTH: f32 = 1.5;
 const TEXTFIELD_CARET_HEIGHT_EXTRA: f32 = 2.0;
 const TEXTFIELD_TRAILING_HITBOX_WIDTH: f32 = 4.0;
@@ -165,6 +164,13 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .font_weight(appearance.typography.weight);
 
             for caret_ix in 0..=chars.len() {
+                let in_selection = selection.map(|(start, end)| caret_ix >= start && caret_ix < end).unwrap_or(false);
+                let char_color = if in_selection {
+                    appearance.selection_foreground
+                } else {
+                    appearance.foreground
+                };
+
                 if let Some(ch) = chars.get(caret_ix) {
                     let width = model
                         .character_offsets
@@ -181,6 +187,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                             .flex()
                             .items_center()
                             .h(px(caret_height))
+                            .text_color(char_color)
                             .child(ch.to_string())
                             .when(
                                 model.enabled && model.caret_visible && cursor == caret_ix && selection.is_none(),
@@ -228,7 +235,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                         .top(px(0.0))
                         .w(px(width))
                         .h(px(caret_height))
-                        .bg(appearance.selection_background.opacity(TEXTFIELD_SELECTION_OPACITY))
+                        .bg(appearance.selection_background)
                 })
             });
 

@@ -330,7 +330,8 @@ impl TextFieldTheme for RadixTextFieldTheme {
     ) -> gpui_luma::controls::textfield::TextFieldPalette {
         super::textfield::textfield_palette(
             self.theme.mode_tokens(),
-            super::textfield::ShadcnTextFieldStyle::Standard,
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Surface,
             state,
             enabled,
         )
@@ -366,11 +367,11 @@ pub fn textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
     Arc::new(RadixTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixGhostTextFieldTheme {
+struct RadixSoftTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for RadixGhostTextFieldTheme {
+impl TextFieldTheme for RadixSoftTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -379,7 +380,8 @@ impl TextFieldTheme for RadixGhostTextFieldTheme {
     ) -> gpui_luma::controls::textfield::TextFieldPalette {
         super::textfield::textfield_palette(
             self.theme.mode_tokens(),
-            super::textfield::ShadcnTextFieldStyle::Ghost,
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Soft,
             state,
             enabled,
         )
@@ -390,8 +392,8 @@ impl TextFieldTheme for RadixGhostTextFieldTheme {
     }
 }
 
-pub fn ghost_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixGhostTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn soft_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
+    Arc::new(RadixSoftTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
 struct RadixTextAreaTheme {
@@ -404,7 +406,13 @@ impl TextAreaTheme for RadixTextAreaTheme {
         state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
     ) -> gpui_luma::controls::textarea::TextAreaPalette {
-        super::textarea::textarea_palette(self.theme.mode_tokens(), state, enabled)
+        super::textarea::textarea_palette(
+            self.theme.mode_tokens(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Surface,
+            state,
+            enabled,
+        )
     }
 
     fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
@@ -418,6 +426,34 @@ pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls:
 
 pub fn textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
     Arc::new(RadixTextAreaTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixSoftTextAreaTheme {
+    theme: ShadcnLook,
+}
+
+impl TextAreaTheme for RadixSoftTextAreaTheme {
+    fn resolve(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        super::textarea::textarea_palette(
+            self.theme.mode_tokens(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Soft,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
+        &self.theme.mode_tokens().metrics
+    }
+}
+
+pub fn soft_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(RadixSoftTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTextBoxTheme> {
