@@ -158,6 +158,25 @@ where
         }
     }
 
+    pub fn select_node_by_id(&mut self, node_id: impl Into<SharedString>, cx: &mut Context<Self>) {
+        if matches!(self.model.selection_mode, TreeViewSelectionMode::None) {
+            return;
+        }
+
+        let node_id = node_id.into();
+        if !self.flat_cache.iter().any(|node| node.id == node_id && node.enabled) {
+            return;
+        }
+
+        self.selected_ids.clear();
+        self.selected_ids.insert(node_id.clone());
+        if let Some(idx) = self.flat_index_for_id(&node_id) {
+            self.set_active_index(Some(idx), false);
+        }
+        cx.emit(TreeViewEvent::SelectionChanged { selected_ids: self.selected_ids.clone() });
+        cx.notify();
+    }
+
     fn populate_initial_expands(&mut self) {
         fn traverse<T>(node: &TreeNode<T>, expanded: &mut HashSet<SharedString>) {
             if node.initially_expanded {

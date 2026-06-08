@@ -16,7 +16,9 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_shell::ButtonInspectorShell;
+use super::inspector_tree::spawn_button_inspector_tree;
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 use super::labeling::render_vertical_section_rail;
 
 #[derive(Clone)]
@@ -26,6 +28,7 @@ pub(in crate::gallery) struct ButtonPane {
     ghost_button: Entity<Button>,
     primary_button: Entity<Button>,
     state_preview: Entity<ButtonStatePreview>,
+    inspector: Entity<ButtonInspectorShell>,
     secondary_clicks: usize,
     outline_clicks: usize,
     ghost_clicks: usize,
@@ -34,12 +37,16 @@ pub(in crate::gallery) struct ButtonPane {
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_button_inspector_tree(look.clone(), cx);
+        let inspector = cx.new(|cx| ButtonInspectorShell::new(look.clone(), tree, cx));
+
         Self {
             secondary_button: look.secondary_button("button-secondary-example").label("Secondary").spawn(cx),
             outline_button: look.outline_button("button-outline-example").label("Outline").spawn(cx),
             ghost_button: look.ghost_button("button-ghost-example").label("Ghost").spawn(cx),
             primary_button: look.primary_button("button-primary-example").label("Primary").spawn(cx),
             state_preview: cx.new(|_| ButtonStatePreview::new(look)),
+            inspector,
             secondary_clicks: 0,
             outline_clicks: 0,
             ghost_clicks: 0,
@@ -63,9 +70,8 @@ impl ButtonPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage(
+        gallery_pane_with_inspector(
             "Command (Text)",
-            "Button",
             div()
                 .flex()
                 .flex_col()
@@ -83,6 +89,7 @@ impl ButtonPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -93,6 +100,10 @@ impl ButtonPane {
         notify_entity(&self.ghost_button, cx);
         notify_entity(&self.primary_button, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_secondary_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {

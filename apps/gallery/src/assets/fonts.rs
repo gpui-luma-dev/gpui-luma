@@ -14,6 +14,27 @@ pub const RAJDHANI_FAMILY: &str = "Rajdhani Variable";
 
 const RAJDHANI_VARIABLE: &[u8] = include_bytes!("fonts/Rajdhani/Rajdhani-Variable.ttf");
 
+/// Monospace for inspector and token-style values. Theme `--font-mono` families (e.g. Space Mono)
+/// are not registered with GPUI unless explicitly embedded like Rajdhani.
+pub fn gallery_mono_font() -> gpui::SharedString {
+    #[cfg(target_os = "macos")]
+    {
+        return "Menlo".into();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return "Consolas".into();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return "DejaVu Sans Mono".into();
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        "monospace".into()
+    }
+}
+
 /// Registers Rajdhani (variable weight 300–700). No-op safe to call more than once only if GPUI allows; call once before Jarvis theme.
 pub fn load_rajdhani(cx: &mut App) -> anyhow::Result<()> {
     cx.text_system()

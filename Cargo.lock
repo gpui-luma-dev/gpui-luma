@@ -2371,9 +2371,19 @@ dependencies = [
  "anyhow",
  "gpui",
  "gpui-luma",
+ "gpui-luma-look-shadcn-macros",
  "palette",
  "serde",
  "toml 0.8.23",
+]
+
+[[package]]
+name = "gpui-luma-look-shadcn-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

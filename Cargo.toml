@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "crates/sdk",
   "crates/look-shadcn",
+  "crates/look-shadcn-macros",
   "apps/gallery",
   "apps/theme-studio",
 ]

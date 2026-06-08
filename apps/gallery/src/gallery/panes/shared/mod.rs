@@ -51,6 +51,46 @@ pub(super) fn gallery_pane_with_usage(
     gallery_pane_with_usage_description(title, None, usage_component, content, look)
 }
 
+pub(super) fn gallery_pane_with_inspector(
+    title: &'static str,
+    content: AnyElement,
+    inspector: impl IntoElement,
+    look: &ShadcnLook,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    div()
+        .size_full()
+        .relative()
+        .flex()
+        .flex_col()
+        .overflow_hidden()
+        .bg(chrome.content_background)
+        .p(px(28.0))
+        .child(render_pane_header(title, None, chrome.title_text, chrome.muted_text))
+        .child(
+            div()
+                .min_h(px(0.0))
+                .flex_1()
+                .flex()
+                .items_stretch()
+                .justify_center()
+                .gap(px(28.0))
+                .child(render_gallery_pane_content_column(content, false, true))
+                .child(
+                    div()
+                        .w(px(620.0))
+                        .min_w(px(620.0))
+                        .min_h(px(0.0))
+                        .h_full()
+                        .flex()
+                        .flex_col()
+                        .child(inspector),
+                ),
+        )
+        .into_any_element()
+}
+
 pub(super) fn gallery_pane_with_usage_top_aligned(
     title: &'static str,
     usage_component: &'static str,
@@ -329,6 +369,20 @@ pub(in crate::gallery::panes) fn format_compact_hsla(color: Hsla) -> String {
 pub(in crate::gallery::panes) fn format_hex_color(color: Hsla) -> String {
     let (r, g, b) = hsla_to_rgb8(color);
     format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+pub(in crate::gallery::panes) fn format_inspector_rgba(color: Hsla) -> String {
+    let (r, g, b) = hsla_to_rgb8(color);
+    format!("{r}, {g}, {b}, {}", compact_alpha(color.a))
+}
+
+pub(in crate::gallery::panes) fn format_inspector_hsl(color: Hsla) -> String {
+    format!(
+        "{} {}% {}%",
+        rounded_channel(color.h * 360.0),
+        rounded_channel(color.s * 100.0),
+        rounded_channel(color.l * 100.0)
+    )
 }
 
 fn hsla_to_rgb8(color: Hsla) -> (u8, u8, u8) {

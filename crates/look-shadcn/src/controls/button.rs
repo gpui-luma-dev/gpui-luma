@@ -1,4 +1,4 @@
-use gpui::Hsla;
+use gpui::{Hsla, hsla};
 
 use gpui_luma::controls::button_family::{
     ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_appearance,
@@ -8,7 +8,9 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, Standard
 
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
-use crate::tokens::ShadcnToken;
+use crate::provenance::{LookResolver, ResolvedColor};
+
+use gpui_luma_look_shadcn_macros::declare_look_table;
 
 /// Radix-style button appearance.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -17,6 +19,71 @@ pub enum ShadcnButtonStyle {
     Secondary,
     Outline,
     Ghost,
+}
+
+#[derive(Clone, Debug)]
+pub struct ButtonColorPalette {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: Option<ResolvedColor>,
+}
+
+impl ButtonColorPalette {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            foreground: ResolvedColor::fallback_foreground(),
+            border: None,
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_button_colors,
+    inputs: {
+        style: ShadcnButtonStyle,
+        layer: InteractionLayer,
+        mode: ThemeMode,
+        selected: bool,
+    },
+    output: ButtonColorPalette { background, foreground, border },
+    matrix: [
+        [ShadcnButtonStyle::Primary]   | [InteractionLayer::Default]  | [_] | [_] => "primary"         | "primary-foreground"   | None,
+        [ShadcnButtonStyle::Primary]   | [InteractionLayer::Hovered]  | [_] | [_] => "primary-hover"   | "primary-foreground"   | None,
+        [ShadcnButtonStyle::Primary]   | [InteractionLayer::Pressed]  | [_] | [_] => "primary-pressed" | "primary-foreground"   | None,
+        [ShadcnButtonStyle::Primary]   | [InteractionLayer::Disabled] | [_] | [_] => "muted"           | "muted-foreground"     | None,
+
+        [ShadcnButtonStyle::Secondary] | [InteractionLayer::Default]  | [_] | [_] => "secondary"         | "secondary-foreground" | None,
+        [ShadcnButtonStyle::Secondary] | [InteractionLayer::Hovered]  | [_] | [_] => "secondary-hover"   | "secondary-foreground" | None,
+        [ShadcnButtonStyle::Secondary] | [InteractionLayer::Pressed]  | [_] | [_] => "secondary-pressed" | "secondary-foreground" | None,
+        [ShadcnButtonStyle::Secondary] | [InteractionLayer::Disabled] | [_] | [_] => "muted"             | "muted-foreground"     | None,
+
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Default]  | [ThemeMode::Light] | [true]  => "primary"         | "primary-foreground" | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Default]  | [ThemeMode::Dark]  | [true]  => "primary"         | "primary-foreground" | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Hovered]  | [ThemeMode::Light] | [true]  => "primary-hover"   | "primary-foreground" | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Hovered]  | [ThemeMode::Dark]  | [true]  => "primary-hover"   | "primary-foreground" | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Pressed]  | [ThemeMode::Light] | [true]  => "primary-pressed" | "primary-foreground" | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Pressed]  | [ThemeMode::Dark]  | [true]  => "primary-pressed" | "primary-foreground" | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Default]  | [ThemeMode::Light] | [false] => "background"      | "foreground"         | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Default]  | [ThemeMode::Dark]  | [false] => "input/30"        | "foreground"         | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Hovered]  | [ThemeMode::Light] | [false] => "accent"          | "accent-foreground"  | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Hovered]  | [ThemeMode::Dark]  | [false] => "input/50"        | "accent-foreground"  | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Pressed]  | [ThemeMode::Light] | [false] => "accent"          | "accent-foreground"  | "border",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Pressed]  | [ThemeMode::Dark]  | [false] => "input/50"        | "accent-foreground"  | "input",
+        [ShadcnButtonStyle::Outline]   | [InteractionLayer::Disabled] | [_]                | [_]    => "transparent"     | "muted-foreground"   | "border",
+
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Default]  | [_]                | [true]  => "primary"         | "primary-foreground" | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Hovered]  | [_]                | [true]  => "primary-hover"   | "primary-foreground" | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Pressed]  | [_]                | [true]  => "primary-pressed" | "primary-foreground" | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Default]  | [_]                | [false] => "transparent"     | "foreground"         | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Hovered]  | [ThemeMode::Light] | [false] => "accent"          | "accent-foreground"  | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Hovered]  | [ThemeMode::Dark]  | [false] => "accent/50"       | "accent-foreground"  | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Pressed]  | [ThemeMode::Light] | [false] => "accent"          | "accent-foreground"  | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Pressed]  | [ThemeMode::Dark]  | [false] => "accent/50"       | "accent-foreground"  | None,
+        [ShadcnButtonStyle::Ghost]     | [InteractionLayer::Disabled] | [_]                | [_]    => "transparent"     | "muted-foreground"   | None,
+
+        [_]                            | [_]                          | [_]                | [_]    => "transparent"     | "foreground"         | None,
+    ]
 }
 
 pub(crate) fn button_appearance(
@@ -33,6 +100,63 @@ pub(crate) fn button_appearance(
     compose_button_family_appearance(&palette, role, &scale, ctx.metrics().radius.pill)
 }
 
+#[derive(Clone, Debug)]
+pub struct ButtonInspectPalette {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: ResolvedColor,
+    pub focus_ring: Option<ResolvedColor>,
+}
+
+pub fn inspect_button_color_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    state: InteractionState,
+) -> ButtonInspectPalette {
+    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
+        ShadcnButtonStyle::Outline
+    } else {
+        style
+    };
+    let layer = state.layer();
+    let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
+    let colors = resolve_button_colors(&resolver, style, layer, theme_mode, selected)
+        .unwrap_or_else(|_| ButtonColorPalette::fallback());
+
+    let border = effective_border_resolved(style, &colors);
+    let focus_ring = state
+        .focused
+        .then(|| resolver.resolve_decl("ring"))
+        .transpose()
+        .ok()
+        .flatten();
+
+    ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border, focus_ring }
+}
+
+fn effective_border_resolved(style: ShadcnButtonStyle, colors: &ButtonColorPalette) -> ResolvedColor {
+    use crate::provenance::{ColorSource, format_inspect_css_key};
+
+    if let Some(color) = &colors.border {
+        return color.clone();
+    }
+
+    let background = colors.background.hsla();
+    let (value, source) = match style {
+        ShadcnButtonStyle::Ghost => (hsla(0.0, 0.0, 0.0, 0.0), ColorSource::Transparent),
+        ShadcnButtonStyle::Primary | ShadcnButtonStyle::Secondary | ShadcnButtonStyle::Outline => (
+            background,
+            ColorSource::Derived { note: format!("= {}", format_inspect_css_key(&colors.background.source)) },
+        ),
+    };
+
+    ResolvedColor { value, source }
+}
+
 pub(crate) fn button_palette(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
@@ -46,16 +170,20 @@ pub(crate) fn button_palette(
         style
     };
 
+    let layer = state.layer();
+    let theme_mode = ctx.theme_mode;
     let palette = ctx.palette();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-    let action = palette.action(style);
-    let layer = state.layer();
 
-    let foreground = button_foreground(ctx, style, action.foreground, selected, layer);
-    let background = button_background(ctx, style, selected, layer);
-    let border = action.border;
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
+    let colors = resolve_button_colors(&resolver, style, layer, theme_mode, selected)
+        .unwrap_or_else(|_| ButtonColorPalette::fallback());
+
+    let background = colors.background.hsla();
+    let foreground = colors.foreground.hsla();
+    let border = resolve_button_border(style, &colors, background);
 
     let adorner = if state.focused {
         let (placement, distance) = match style {
@@ -83,70 +211,14 @@ pub(crate) fn button_palette(
     }
 }
 
-fn button_foreground(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    action_foreground: Hsla,
-    selected: bool,
-    layer: InteractionLayer,
-) -> Hsla {
-    let palette = ctx.palette();
-    let state = ctx.state;
-
-    if state.disabled {
-        return palette.disabled_foreground;
-    }
-
-    if uses_accent_foreground_on_hover(ctx, style, layer) {
-        return ctx.palette().accent_foreground;
-    }
-
-    match (style, selected) {
-        (ShadcnButtonStyle::Secondary, true) => action_foreground,
-        (_, true) => palette.selected_foreground,
-        _ => action_foreground,
-    }
-}
-
-/// Outline and ghost use accent foreground on hover/press (shadcn `hover:text-accent-foreground`).
-fn uses_accent_foreground_on_hover(
-    _ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    layer: InteractionLayer,
-) -> bool {
-    matches!(style, ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost)
-        && matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed)
-}
-
-fn button_background(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    selected: bool,
-    layer: InteractionLayer,
-) -> Hsla {
-    let palette = ctx.palette();
-    let action = palette.action(style);
-    match (style, selected, layer) {
-        (_, _, InteractionLayer::Disabled) => palette.disabled_background,
-        (ShadcnButtonStyle::Secondary, true, InteractionLayer::Pressed) => action.pressed_background,
-        (ShadcnButtonStyle::Secondary, true, InteractionLayer::Hovered) => action.hover_background,
-        (ShadcnButtonStyle::Secondary, true, InteractionLayer::Default) => action.background,
-        (_, true, InteractionLayer::Pressed) => {
-            ctx.resolve_color_state(ShadcnToken::Primary, InteractionLayer::Pressed)
-        }
-        (_, true, InteractionLayer::Hovered) => {
-            ctx.resolve_color_state(ShadcnToken::Primary, InteractionLayer::Hovered)
-        }
-        (_, true, InteractionLayer::Default) => palette.selected_background,
-        (ShadcnButtonStyle::Primary, _, layer) => ctx.resolve_color_state(ShadcnToken::Primary, layer),
-        (ShadcnButtonStyle::Secondary, _, layer) => ctx.resolve_color_state(ShadcnToken::Secondary, layer),
-        (ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost, _, InteractionLayer::Default) => action.background,
-        (ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost, _, InteractionLayer::Hovered) => {
-            action.hover_background
-        }
-        (ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost, _, InteractionLayer::Pressed) => {
-            action.pressed_background
-        }
+fn resolve_button_border(style: ShadcnButtonStyle, colors: &ButtonColorPalette, background: Hsla) -> Hsla {
+    match &colors.border {
+        Some(color) => color.hsla(),
+        None => match style {
+            ShadcnButtonStyle::Ghost => hsla(0.0, 0.0, 0.0, 0.0),
+            ShadcnButtonStyle::Primary | ShadcnButtonStyle::Secondary => background,
+            ShadcnButtonStyle::Outline => background,
+        },
     }
 }
 
@@ -179,6 +251,13 @@ mod tests {
             ("ring".into(), "hsl(330.9554 64.0816% 51.9608%)".into()),
             ("card".into(), "hsl(45.6000 42.3729% 88.4314%)".into()),
         ]))
+    }
+
+    #[test]
+    fn button_color_table_metadata_is_populated() {
+        let metadata = resolve_button_colors_metadata();
+        assert!(!metadata.is_empty());
+        assert!(metadata[0].inputs.len() == 4);
     }
 
     #[test]
@@ -275,6 +354,36 @@ mod tests {
         assert_eq!(hovered.background.h, input.h);
         assert_eq!(hovered.foreground, catalog.color("accent-foreground").expect("accent-foreground"));
         assert_eq!(hovered.border, input);
+    }
+
+    #[test]
+    fn inspect_palette_focused_includes_ring_token() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let palette = inspect_button_color_palette(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+        let ring = palette.focus_ring.expect("focused inspect palette should include ring");
+        assert!(matches!(ring.source, crate::provenance::ColorSource::CssVar { ref token } if token == "ring"));
+    }
+
+    #[test]
+    fn inspect_palette_inherited_border_references_background_token() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let palette = inspect_button_color_palette(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            InteractionState::default(),
+        );
+        assert!(matches!(
+            palette.border.source,
+            crate::provenance::ColorSource::Derived { ref note } if note == "= --primary"
+        ));
     }
 
     #[test]

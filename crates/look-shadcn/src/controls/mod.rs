@@ -26,7 +26,7 @@ mod textfield;
 mod textarea;
 mod tree_view;
 
-pub use button::ShadcnButtonStyle;
+pub use button::{ButtonInspectPalette, ShadcnButtonStyle, inspect_button_color_palette};
 pub use ext::{
     ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
 };
