@@ -102,7 +102,9 @@ impl ButtonPane {
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
-        notify_entity(&self.inspector.read(cx).detail(), cx);
+        let detail = self.inspector.read(cx).detail();
+        notify_entity(&detail, cx);
+        detail.update(cx, |detail, cx| detail.notify_preview_buttons(cx));
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 

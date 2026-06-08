@@ -12,8 +12,8 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
 use crate::controls::{
-    ButtonInspectPalette, button_appearance, inspect_button_color_palette, selection_panel_appearance,
-    selector_items_panel_appearance, templates,
+    ButtonInspectMetrics, ButtonInspectPalette, button_appearance, inspect_button_color_palette,
+    inspect_button_metrics, selection_panel_appearance, selector_items_panel_appearance, templates,
 };
 use crate::mode::ShadcnModeTokens;
 
@@ -263,6 +263,16 @@ impl ShadcnLook {
         state: InteractionState,
     ) -> ButtonInspectPalette {
         inspect_button_color_palette(self.mode_tokens(), self.mode(), style, role, state)
+    }
+
+    pub fn inspect_button_metrics(
+        &self,
+        style: ShadcnButtonStyle,
+        role: ButtonFamilyRole,
+        size: ControlSize,
+        state: InteractionState,
+    ) -> ButtonInspectMetrics {
+        inspect_button_metrics(self.mode_tokens(), self.mode(), style, role, size, state)
     }
 
     pub fn switch_template(

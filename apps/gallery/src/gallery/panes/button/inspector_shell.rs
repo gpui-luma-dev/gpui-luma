@@ -11,7 +11,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use super::inspector_detail::ButtonInspectorDetail;
 use super::inspector_tree::{InspectTreeData, build_button_inspect_tree, find_field_selection};
 
-const TREE_PANEL_MIN_PX: f32 = 140.0;
+const TREE_PANEL_MIN_PX: f32 = 180.0;
 const DETAIL_PANEL_MIN_PX: f32 = 180.0;
 
 pub(in crate::gallery) struct ButtonInspectorShell {
@@ -52,7 +52,7 @@ impl ButtonInspectorShell {
                     .overflow_hidden()
                     .child(tree.clone())
             })
-            .weight(4.0)
+            .weight(5.0)
             .min(px(TREE_PANEL_MIN_PX))
             .bg(panel_bg)
         };
@@ -68,7 +68,7 @@ impl ButtonInspectorShell {
                     .overflow_hidden()
                     .child(detail.clone())
             })
-            .weight(6.0)
+            .weight(5.0)
             .min(px(DETAIL_PANEL_MIN_PX))
             .bg(panel_bg)
         };

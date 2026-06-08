@@ -1,33 +1,35 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, Div, IntoElement, SharedString, Stateful, Window, div, prelude::*, px,
-};
+use gpui::{AnyElement, App, Div, IntoElement, SharedString, Stateful, Window, div, prelude::*, px};
 use gpui_luma::controls::tree_view::{
     FlatTreeNode, TreeNode, TreeViewRenderModel, TreeViewSelectionMode, TreeViewTemplate, TreeViewTemplateHandlers,
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::{
-    ButtonInspectPalette, ShadcnButtonStyle, ShadcnLook, format_inspect_css_key, format_inspect_provenance,
+    ButtonInspectMetrics, ButtonInspectPalette, ShadcnButtonStyle, ShadcnLook, format_inspect_css_key,
+    format_inspect_provenance,
 };
 
 use crate::fonts::gallery_mono_font;
+use crate::gallery::panes::shared::format_hex_color;
 use lucide_icons::Icon as LucideIcon;
+
+use super::inspector_box_model::InspectBoxModelSnapshot;
 
 mod layout {
     pub(super) const ROW_HEIGHT: f32 = 32.0;
     pub(super) const ROW_PADDING_RIGHT: f32 = 8.0;
 
-    pub(super) const INDENT_BASE: f32 = 8.0;
-    pub(super) const INDENT_PER_DEPTH: f32 = 14.0;
+    pub(super) const INDENT_BASE: f32 = 4.0;
+    pub(super) const INDENT_PER_DEPTH: f32 = 10.0;
 
     pub(super) const CHEVRON_SLOT_SIZE: f32 = 14.0;
-    pub(super) const CHEVRON_LABEL_GAP: f32 = 6.0;
+    pub(super) const CHEVRON_LABEL_GAP: f32 = 4.0;
 
     pub(super) const FIELD_SWATCH_SIZE: f32 = 12.0;
-    pub(super) const FIELD_SWATCH_GAP: f32 = 8.0;
-    pub(super) const FIELD_LABEL_GAP: f32 = 8.0;
+    pub(super) const FIELD_SWATCH_GAP: f32 = 6.0;
+    pub(super) const FIELD_LABEL_GAP: f32 = 6.0;
 }
 
 fn row_indent(depth: usize) -> gpui::Pixels {
@@ -37,21 +39,41 @@ fn row_indent(depth: usize) -> gpui::Pixels {
 #[derive(Clone)]
 pub(in crate::gallery) enum InspectTreeData {
     Branch,
-    Field(InspectFieldData),
+    ColorField(InspectColorFieldData),
+    LayoutSize(InspectLayoutSizeData),
 }
 
 #[derive(Clone)]
-pub(in crate::gallery) struct InspectFieldData {
+pub(in crate::gallery) struct InspectColorFieldData {
     pub css_key: SharedString,
     pub provenance: Option<SharedString>,
     pub swatch: gpui::Hsla,
 }
 
 #[derive(Clone)]
+pub(in crate::gallery) struct InspectMetricPropertyData {
+    pub name: SharedString,
+    pub value_px: f32,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) struct InspectLayoutSizeData {
+    pub size: ControlSize,
+    pub box_model: InspectBoxModelSnapshot,
+    pub properties: Vec<InspectMetricPropertyData>,
+}
+
+#[derive(Clone)]
 pub(in crate::gallery) struct InspectFieldSelection {
     pub id: SharedString,
     pub label: SharedString,
-    pub field: InspectFieldData,
+    pub kind: InspectFieldKind,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) enum InspectFieldKind {
+    Color(InspectColorFieldData),
+    Layout(InspectLayoutSizeData),
 }
 
 pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<InspectTreeData>> {
@@ -65,10 +87,7 @@ pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<Tr
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
         ("focused", InteractionState { focused: true, ..InteractionState::default() }),
-        (
-            "pressed",
-            InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
-        ),
+        ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
         ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
     ];
 
@@ -78,9 +97,7 @@ pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<Tr
             let style_slug = slug(label);
             let state_nodes: Vec<_> = matrix_states
                 .iter()
-                .map(|(state_label, state)| {
-                    state_palette_branch(&style_slug, label, state_label, *style, *state, look)
-                })
+                .map(|(state_label, state)| state_palette_branch(&style_slug, label, state_label, *style, *state, look))
                 .collect();
             let id: SharedString = format!("inspect-{style_slug}").into();
             TreeNode::new(id.clone(), *label, InspectTreeData::Branch)
@@ -101,10 +118,70 @@ fn state_palette_branch(
 ) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{}-{}", slug(style_label), state_label).into();
     let palette = look.inspect_button_color_palette(style, ButtonFamilyRole::Text, state);
+    let expand_layout = style_label == "Primary" && state_label == "default";
+    let mut children = field_nodes(id.as_ref(), &palette);
+    children.push(layout_branch(id.as_ref(), style, state, look, expand_layout));
     TreeNode::new(id.clone(), state_label.to_owned(), InspectTreeData::Branch)
         .branch(true)
         .expanded(style_label == "Primary" && state_label == "default")
-        .children(field_nodes(&id.to_string(), &palette))
+        .children(children)
+}
+
+fn layout_branch(
+    prefix: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    look: &ShadcnLook,
+    expand_md: bool,
+) -> TreeNode<InspectTreeData> {
+    let id: SharedString = format!("{prefix}-layout").into();
+    let sizes = [(ControlSize::Sm, "sm"), (ControlSize::Md, "md"), (ControlSize::Lg, "lg")];
+    let children: Vec<_> = sizes
+        .into_iter()
+        .map(|(size, label)| size_metrics_branch(id.as_ref(), style, state, size, label, look, expand_md))
+        .collect();
+    TreeNode::new(id.clone(), "layout", InspectTreeData::Branch)
+        .branch(true)
+        .expanded(expand_md)
+        .children(children)
+}
+
+fn size_metrics_branch(
+    prefix: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    size: ControlSize,
+    size_label: &str,
+    look: &ShadcnLook,
+    _expand_md: bool,
+) -> TreeNode<InspectTreeData> {
+    let id: SharedString = format!("{prefix}-{size_label}").into();
+    let metrics = look.inspect_button_metrics(style, ButtonFamilyRole::Text, size, state);
+    TreeNode::new(
+        id,
+        size_label.to_owned(),
+        InspectTreeData::LayoutSize(InspectLayoutSizeData {
+            size,
+            box_model: InspectBoxModelSnapshot::from_metrics(&metrics),
+            properties: layout_metric_properties(&metrics),
+        }),
+    )
+}
+
+fn layout_metric_properties(metrics: &ButtonInspectMetrics) -> Vec<InspectMetricPropertyData> {
+    [
+        ("height", &metrics.height),
+        ("padding x", &metrics.padding_x),
+        ("padding y", &metrics.padding_y),
+        ("gap", &metrics.gap),
+        ("radius", &metrics.radius),
+        ("border width", &metrics.border_width),
+        ("focus ring width", &metrics.focus_ring_width),
+        ("focus ring offset", &metrics.focus_ring_offset),
+    ]
+    .into_iter()
+    .map(|(name, metric)| InspectMetricPropertyData { name: name.into(), value_px: metric.value_px })
+    .collect()
 }
 
 fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<InspectTreeData>> {
@@ -117,10 +194,7 @@ fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<Ins
         fields.push(("focus ring", ring));
     }
 
-    fields
-        .into_iter()
-        .map(|(name, color)| field_node(prefix, name, color))
-        .collect()
+    fields.into_iter().map(|(name, color)| field_node(prefix, name, color)).collect()
 }
 
 fn field_node(prefix: &str, name: &str, color: &gpui_luma_look_shadcn::ResolvedColor) -> TreeNode<InspectTreeData> {
@@ -128,7 +202,7 @@ fn field_node(prefix: &str, name: &str, color: &gpui_luma_look_shadcn::ResolvedC
     TreeNode::new(
         id,
         name.to_owned(),
-        InspectTreeData::Field(InspectFieldData {
+        InspectTreeData::ColorField(InspectColorFieldData {
             css_key: format_inspect_css_key(&color.source).into(),
             provenance: format_inspect_provenance(&color.source).map(SharedString::from),
             swatch: color.value,
@@ -142,11 +216,18 @@ pub(in crate::gallery) fn find_field_selection(
 ) -> Option<InspectFieldSelection> {
     for node in items {
         if node.id == *id {
-            if let InspectTreeData::Field(field) = &node.data {
+            if let InspectTreeData::ColorField(field) = &node.data {
                 return Some(InspectFieldSelection {
                     id: node.id.clone(),
                     label: node.label.clone(),
-                    field: field.clone(),
+                    kind: InspectFieldKind::Color(field.clone()),
+                });
+            }
+            if let InspectTreeData::LayoutSize(field) = &node.data {
+                return Some(InspectFieldSelection {
+                    id: node.id.clone(),
+                    label: node.label.clone(),
+                    kind: InspectFieldKind::Layout(field.clone()),
                 });
             }
             return None;
@@ -161,7 +242,7 @@ pub(in crate::gallery) fn find_field_selection(
 pub(in crate::gallery) fn first_field_id(items: &[TreeNode<InspectTreeData>]) -> Option<SharedString> {
     fn walk(nodes: &[TreeNode<InspectTreeData>]) -> Option<SharedString> {
         for node in nodes {
-            if matches!(node.data, InspectTreeData::Field(_)) {
+            if matches!(node.data, InspectTreeData::ColorField(_) | InspectTreeData::LayoutSize(_)) {
                 return Some(node.id.clone());
             }
             if let Some(id) = walk(&node.children) {
@@ -210,7 +291,6 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
         let palette = theme.resolve_row(node.state.interaction_state(), node.state.selected);
         let body = &self.look.mode_tokens().typography.text.body;
         let mono = &self.look.mode_tokens().typography.text.caption;
-        let mono_font = gallery_mono_font();
         let left_padding = row_indent(node.depth);
 
         match node.data {
@@ -240,8 +320,12 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                     )
                     .into_any_element()
             }
-            InspectTreeData::Field(field) => {
-                let mut row = field_row_shell(node, palette.foreground, left_padding);
+            InspectTreeData::ColorField(field) => {
+                let value = format_hex_color(field.swatch);
+                render_leaf_row(node, handlers, palette, left_padding, chrome, body, mono, Some(field.swatch), value)
+            }
+            InspectTreeData::LayoutSize(_) => {
+                let mut row = branch_row_shell(node, palette.foreground, left_padding);
                 if node.enabled {
                     row = row
                         .on_hover(handlers.hover)
@@ -252,14 +336,10 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                 if let Some(background) = palette.background {
                     row = row.bg(background);
                 }
-
                 row.child(div().size(px(layout::CHEVRON_SLOT_SIZE)))
-                    .child(color_circle(field.swatch, chrome.border))
-                    .child(div().w(px(layout::FIELD_SWATCH_GAP)))
                     .child(
                         div()
                             .flex_1()
-                            .min_w(px(0.0))
                             .truncate()
                             .text_size(px(body.size))
                             .line_height(px(body.line_height))
@@ -267,22 +347,62 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                             .text_color(chrome.body_text)
                             .child(node.label.clone()),
                     )
-                    .child(div().w(px(layout::FIELD_LABEL_GAP)))
-                    .child(
-                        div()
-                            .flex_shrink_0()
-                            .max_w(px(140.0))
-                            .truncate()
-                            .font_family(mono_font)
-                            .text_size(px(mono.size))
-                            .line_height(px(mono.line_height))
-                            .text_color(chrome.muted_text)
-                            .child(field.css_key.clone()),
-                    )
                     .into_any_element()
             }
         }
     }
+}
+
+fn render_leaf_row(
+    node: &FlatTreeNode<'_, InspectTreeData>,
+    handlers: TreeViewTemplateHandlers,
+    palette: gpui_luma::controls::tree_view::TreeViewPalette,
+    left_padding: gpui::Pixels,
+    chrome: gpui_luma::theme::pack::LumaChrome,
+    body: &gpui_luma::theme::LumaTextStyle,
+    mono: &gpui_luma::theme::LumaTextStyle,
+    swatch: Option<gpui::Hsla>,
+    value: String,
+) -> AnyElement {
+    let mono_font = gallery_mono_font();
+    let mut row = field_row_shell(node, palette.foreground, left_padding);
+    if node.enabled {
+        row = row
+            .on_hover(handlers.hover)
+            .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
+            .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)
+            .on_click(handlers.click);
+    }
+    if let Some(background) = palette.background {
+        row = row.bg(background);
+    }
+
+    row = row.child(div().size(px(layout::CHEVRON_SLOT_SIZE)));
+    if let Some(color) = swatch {
+        row = row.child(color_circle(color, chrome.border)).child(div().w(px(layout::FIELD_SWATCH_GAP)));
+    }
+    row.child(
+        div()
+            .flex_1()
+            .min_w(px(0.0))
+            .truncate()
+            .text_size(px(body.size))
+            .line_height(px(body.line_height))
+            .font_weight(body.weight)
+            .text_color(chrome.body_text)
+            .child(node.label.clone()),
+    )
+    .child(div().w(px(layout::FIELD_LABEL_GAP)))
+    .child(
+        div()
+            .flex_shrink_0()
+            .font_family(mono_font)
+            .text_size(px(mono.size))
+            .line_height(px(mono.line_height))
+            .text_color(chrome.muted_text)
+            .child(value),
+    )
+    .into_any_element()
 }
 
 fn color_circle(color: gpui::Hsla, border: gpui::Hsla) -> Div {
@@ -362,8 +482,7 @@ pub(in crate::gallery) fn spawn_button_inspector_tree(
     look: Arc<ShadcnLook>,
     cx: &mut impl gpui::AppContext,
 ) -> gpui::Entity<gpui_luma::controls::tree_view::TreeViewControl<InspectTreeData>> {
-    let template: Arc<dyn TreeViewTemplate<InspectTreeData>> =
-        Arc::new(InspectorTreeTemplate::new(look.clone()));
+    let template: Arc<dyn TreeViewTemplate<InspectTreeData>> = Arc::new(InspectorTreeTemplate::new(look.clone()));
     let items = build_button_inspect_tree(&look);
     let initial_selection = first_field_id(&items);
     let tree = gpui_luma::controls::tree_view::new("button-inspector-tree")

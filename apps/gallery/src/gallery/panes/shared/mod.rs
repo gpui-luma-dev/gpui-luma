@@ -77,16 +77,7 @@ pub(super) fn gallery_pane_with_inspector(
                 .justify_center()
                 .gap(px(28.0))
                 .child(render_gallery_pane_content_column(content, false, true))
-                .child(
-                    div()
-                        .w(px(620.0))
-                        .min_w(px(620.0))
-                        .min_h(px(0.0))
-                        .h_full()
-                        .flex()
-                        .flex_col()
-                        .child(inspector),
-                ),
+                .child(div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector)),
         )
         .into_any_element()
 }

@@ -30,9 +30,10 @@ pub use look::ShadcnLook;
 pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
-pub use controls::{ButtonInspectPalette, inspect_button_color_palette};
+pub use controls::{ButtonInspectMetrics, ButtonInspectPalette, inspect_button_color_palette, inspect_button_metrics};
 pub use provenance::{
-    ColorSource, ResolvedColor, format_color_source, format_css_style_ref, format_inspect_css_key,
-    format_inspect_provenance,
+    ColorSource, MetricSource, ResolvedColor, ResolvedMetric, format_color_source, format_css_style_ref,
+    format_inspect_css_key, format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance,
+    format_metric_px,
 };
 pub use usage::all_shadcn_theme_usages;

@@ -1,21 +1,33 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, ClipboardItem, Context, Entity, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+    AnyElement, App, ClipboardItem, Context, Div, Entity, FontWeight, IntoElement, Render, SharedString, Window, div,
+    prelude::*, px,
 };
+use gpui_luma::controls::button_family::ButtonSize;
+use gpui_luma::controls::command::button::Button;
+use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::tree_view::TreeViewControl;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::pack::LumaChrome;
+use gpui_luma::theme::{ControlSize, LumaTextStyle};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, format_metric_px};
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, format_inspector_hsl, format_inspector_rgba};
 use lucide_icons::Icon as LucideIcon;
 
-use super::inspector_tree::{InspectFieldSelection, InspectTreeData, find_field_selection};
+use super::inspector_box_model::{BoxModelLayerColors, render_box_model_diagram};
+use super::inspector_tree::{
+    InspectColorFieldData, InspectFieldKind, InspectFieldSelection, InspectLayoutSizeData, InspectMetricPropertyData,
+    InspectTreeData, find_field_selection,
+};
 
 mod layout {
     pub(super) const PANEL_PADDING: f32 = 12.0;
     pub(super) const SWATCH_HEIGHT: f32 = 88.0;
     pub(super) const SWATCH_RADIUS: f32 = 8.0;
+    pub(super) const BOX_MODEL_GAP: f32 = 8.0;
     pub(super) const SECTION_GAP: f32 = 12.0;
     pub(super) const CARD_PADDING: f32 = 10.0;
     pub(super) const CARD_GAP: f32 = 6.0;
@@ -32,35 +44,48 @@ struct ColorValueRow {
 pub(in crate::gallery) struct ButtonInspectorDetail {
     look: Arc<ShadcnLook>,
     tree: Entity<TreeViewControl<InspectTreeData>>,
+    preview_buttons: [Entity<Button>; 3],
 }
 
 impl ButtonInspectorDetail {
-    pub fn new(
-        look: Arc<ShadcnLook>,
-        tree: Entity<TreeViewControl<InspectTreeData>>,
-        _cx: &mut Context<Self>,
-    ) -> Self {
-        Self { look, tree }
+    pub fn new(look: Arc<ShadcnLook>, tree: Entity<TreeViewControl<InspectTreeData>>, cx: &mut Context<Self>) -> Self {
+        Self {
+            look: look.clone(),
+            tree,
+            preview_buttons: [
+                look.primary_button("button-inspector-preview-sm").size(ButtonSize::Sm).label("Button").spawn(cx),
+                look.primary_button("button-inspector-preview-md").size(ButtonSize::Md).label("Button").spawn(cx),
+                look.primary_button("button-inspector-preview-lg").size(ButtonSize::Lg).label("Button").spawn(cx),
+            ],
+        }
+    }
+
+    pub(in crate::gallery) fn notify_preview_buttons(&self, cx: &mut Context<Self>) {
+        for button in &self.preview_buttons {
+            button.update(cx, |_, cx| cx.notify());
+        }
+    }
+
+    fn preview_button(&self, size: ControlSize) -> Entity<Button> {
+        self.preview_buttons[preview_button_index(size)].clone()
     }
 
     fn selected_field(&self, cx: &App) -> Option<InspectFieldSelection> {
         let tree = self.tree.read(cx);
-        tree.selected_ids()
-            .iter()
-            .next()
-            .and_then(|id| find_field_selection(tree.items(), id))
+        tree.selected_ids().iter().next().and_then(|id| find_field_selection(tree.items(), id))
     }
 }
 
 impl Render for ButtonInspectorDetail {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let selection = self.selected_field(cx);
-        render_inspector_detail(selection, &self.look, cx)
+        render_inspector_detail(selection, |size| self.preview_button(size), &self.look, cx)
     }
 }
 
 fn render_inspector_detail(
     selection: Option<InspectFieldSelection>,
+    preview_button: impl Fn(ControlSize) -> Entity<Button>,
     look: &Arc<ShadcnLook>,
     cx: &mut Context<ButtonInspectorDetail>,
 ) -> impl IntoElement {
@@ -81,10 +106,28 @@ fn render_inspector_detail(
             .text_size(px(body.size))
             .line_height(px(body.line_height))
             .text_color(chrome.muted_text)
-            .child("Select a color field");
+            .child("Select a field")
+            .into_any_element();
     };
 
-    let color = selection.field.swatch;
+    match &selection.kind {
+        InspectFieldKind::Color(field) => render_color_detail(selection, field, chrome, body, mono, mono_font, cx),
+        InspectFieldKind::Layout(field) => {
+            render_layout_detail(selection, field, preview_button, look, chrome, body, mono, mono_font, cx)
+        }
+    }
+}
+
+fn render_color_detail(
+    selection: &InspectFieldSelection,
+    field: &InspectColorFieldData,
+    chrome: LumaChrome,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> AnyElement {
+    let color = field.swatch;
     let rows = color_value_rows(color);
     let mut values_card = div()
         .flex()
@@ -119,38 +162,6 @@ fn render_inspector_detail(
         ));
     }
 
-    let mut header = div()
-        .flex()
-        .flex_col()
-        .gap(px(4.0))
-        .child(
-            div()
-                .text_size(px(body.size))
-                .line_height(px(body.line_height))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(chrome.title_text)
-                .child(selection.label.clone()),
-        )
-        .child(
-            div()
-                .font_family(mono_font.clone())
-                .text_size(px(mono.size))
-                .line_height(px(mono.line_height))
-                .text_color(chrome.muted_text)
-                .child(selection.field.css_key.clone()),
-        );
-
-    if let Some(provenance) = selection.field.provenance.clone() {
-        header = header.child(
-            div()
-                .font_family(mono_font)
-                .text_size(px(mono.size))
-                .line_height(px(mono.line_height))
-                .text_color(chrome.muted_text)
-                .child(provenance),
-        );
-    }
-
     div()
         .id("button-inspector-detail")
         .h_full()
@@ -169,8 +180,333 @@ fn render_inspector_detail(
                 .border_1()
                 .border_color(chrome.border),
         )
-        .child(header)
+        .child(field_header(
+            selection,
+            None,
+            &field.css_key,
+            field.provenance.clone(),
+            chrome.title_text,
+            chrome.muted_text,
+            body,
+            mono,
+            mono_font,
+        ))
         .child(values_card)
+        .into_any_element()
+}
+
+fn render_layout_detail(
+    selection: &InspectFieldSelection,
+    field: &InspectLayoutSizeData,
+    preview_button: impl Fn(ControlSize) -> Entity<Button>,
+    look: &Arc<ShadcnLook>,
+    chrome: LumaChrome,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> AnyElement {
+    use super::inspector_box_model::MetricFieldHighlight;
+
+    let box_colors = BoxModelLayerColors::from_look(look);
+
+    let mut values_card = div()
+        .flex()
+        .flex_col()
+        .gap(px(layout::CARD_GAP))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .p(px(layout::CARD_PADDING))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.title_text)
+                .child("Layout"),
+        );
+
+    for property in &field.properties {
+        values_card = values_card.child(render_layout_property_row(
+            property,
+            chrome.border,
+            chrome.muted_text,
+            body.size,
+            body.line_height,
+            mono.size,
+            mono.line_height,
+            cx,
+        ));
+    }
+
+    div()
+        .id("button-inspector-detail")
+        .h_full()
+        .min_w(px(0.0))
+        .overflow_y_scroll()
+        .flex()
+        .flex_col()
+        .gap(px(layout::SECTION_GAP))
+        .p(px(layout::PANEL_PADDING))
+        .child(layout_field_header(
+            selection,
+            field.size,
+            chrome.title_text,
+            chrome.muted_text,
+            body,
+            mono,
+            mono_font.clone(),
+        ))
+        .child(
+            div()
+                .w_full()
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(layout::SWATCH_RADIUS))
+                .bg(chrome.panel_background)
+                .p(px(layout::CARD_PADDING))
+                .child(
+                    div()
+                        .pb(px(layout::BOX_MODEL_GAP))
+                        .text_size(px(body.size))
+                        .line_height(px(body.line_height))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.title_text)
+                        .child("Box model"),
+                )
+                .child(render_box_model_diagram(
+                    &field.box_model,
+                    MetricFieldHighlight::None,
+                    box_colors,
+                    chrome.muted_text,
+                    mono,
+                    mono_font.clone(),
+                )),
+        )
+        .child(values_card)
+        .child(render_layout_size_preview(
+            preview_button(field.size),
+            chrome.border,
+            chrome.panel_background,
+            chrome.muted_text,
+            body,
+            field.size,
+        ))
+        .into_any_element()
+}
+
+fn layout_field_header(
+    selection: &InspectFieldSelection,
+    size: ControlSize,
+    title_text: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+) -> Div {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(4.0))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(title_text)
+                .child(selection.label.clone()),
+        )
+        .child(
+            div()
+                .font_family(mono_font)
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(format!("{} · Text", control_size_label(size))),
+        )
+}
+
+fn render_layout_property_row(
+    property: &InspectMetricPropertyData,
+    border: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    label_size: f32,
+    label_line_height: f32,
+    mono_size: f32,
+    mono_line_height: f32,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> impl IntoElement {
+    let value = format_metric_px(property.value_px);
+    let value_for_copy = value.clone();
+    let row_id = property.name.replace(' ', "-");
+
+    div()
+        .id(format!("button-inspector-layout-{row_id}"))
+        .flex()
+        .items_center()
+        .h(px(layout::VALUE_ROW_HEIGHT))
+        .border_b_1()
+        .border_color(border)
+        .cursor_pointer()
+        .child(
+            div()
+                .w(px(96.0))
+                .flex_shrink_0()
+                .text_size(px(label_size))
+                .line_height(px(label_line_height))
+                .text_color(muted_text)
+                .child(property.name.clone()),
+        )
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(0.0))
+                .truncate()
+                .text_size(px(mono_size))
+                .line_height(px(mono_line_height))
+                .text_color(muted_text)
+                .child(value),
+        )
+        .child(
+            div()
+                .id(format!("button-inspector-layout-copy-{row_id}"))
+                .size(px(layout::COPY_SLOT))
+                .flex_shrink_0()
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(4.0))
+                .cursor_pointer()
+                .hover(|style| style.bg(border))
+                .on_click(cx.listener(move |_, _, _, cx| {
+                    cx.write_to_clipboard(ClipboardItem::new_string(value_for_copy.clone()));
+                }))
+                .child(
+                    div()
+                        .font_family("lucide")
+                        .text_size(px(mono_size))
+                        .line_height(px(mono_size))
+                        .text_color(muted_text)
+                        .child(char::from(LucideIcon::Copy).to_string()),
+                ),
+        )
+}
+
+fn render_layout_size_preview(
+    button: Entity<Button>,
+    border: gpui::Hsla,
+    panel_background: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    body: &LumaTextStyle,
+    size: ControlSize,
+) -> impl IntoElement {
+    div()
+        .w_full()
+        .border_1()
+        .border_color(border)
+        .rounded(px(layout::SWATCH_RADIUS))
+        .bg(panel_background)
+        .p(px(layout::CARD_PADDING))
+        .flex()
+        .flex_col()
+        .items_start()
+        .gap(px(layout::CARD_GAP))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(muted_text)
+                .child("Primary · Text"),
+        )
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(8.0))
+                .child(
+                    div()
+                        .w(px(28.0))
+                        .flex_shrink_0()
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .text_color(muted_text)
+                        .child(control_size_label(size)),
+                )
+                .child(button),
+        )
+}
+
+fn preview_button_index(size: ControlSize) -> usize {
+    match size {
+        ControlSize::Sm => 0,
+        ControlSize::Md => 1,
+        ControlSize::Lg => 2,
+    }
+}
+
+fn control_size_label(size: ControlSize) -> &'static str {
+    match size {
+        ControlSize::Sm => "Sm",
+        ControlSize::Md => "Md",
+        ControlSize::Lg => "Lg",
+    }
+}
+
+fn field_header(
+    selection: &InspectFieldSelection,
+    size: Option<ControlSize>,
+    source: &SharedString,
+    provenance: Option<SharedString>,
+    title_text: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+) -> Div {
+    let mut header = div().flex().flex_col().gap(px(4.0)).child(
+        div()
+            .text_size(px(body.size))
+            .line_height(px(body.line_height))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(title_text)
+            .child(selection.label.clone()),
+    );
+
+    if let Some(size) = size {
+        header = header.child(
+            div()
+                .font_family(mono_font.clone())
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(format!("{} · Text", control_size_label(size))),
+        );
+    }
+
+    header = header.child(
+        div()
+            .font_family(mono_font.clone())
+            .text_size(px(mono.size))
+            .line_height(px(mono.line_height))
+            .text_color(muted_text)
+            .child(source.clone()),
+    );
+
+    if let Some(provenance) = provenance {
+        header = header.child(
+            div()
+                .font_family(mono_font)
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(provenance),
+        );
+    }
+
+    header
 }
 
 fn color_value_rows(color: gpui::Hsla) -> Vec<ColorValueRow> {

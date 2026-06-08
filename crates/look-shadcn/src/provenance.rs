@@ -15,6 +15,20 @@ pub struct ResolvedColor {
 }
 
 #[derive(Clone, Debug)]
+pub struct ResolvedMetric {
+    pub value_px: f32,
+    pub source: MetricSource,
+}
+
+#[derive(Clone, Debug)]
+pub enum MetricSource {
+    CssVar { token: String },
+    Derived { note: String },
+    Scaffold { path: String },
+    Constant { label: String },
+}
+
+#[derive(Clone, Debug)]
 pub enum ColorSource {
     Transparent,
     CssVar { token: String },
@@ -109,6 +123,39 @@ pub fn format_inspect_css_key(source: &ColorSource) -> String {
         ColorSource::Algorithmic { base_token, .. } => format!("--{base_token}"),
         ColorSource::Derived { note } => note.trim_start_matches("= ").to_string(),
     }
+}
+
+/// Primary source label for metric inspector rows (CSS token, scaffold path, or derivation).
+pub fn format_inspect_metric_source(source: &MetricSource) -> String {
+    match source {
+        MetricSource::CssVar { token } => format!("--{token}"),
+        MetricSource::Scaffold { path } => format!("scaffold · {path}"),
+        MetricSource::Constant { label } => format!("constant · {label}"),
+        MetricSource::Derived { note } => metric_derived_css_key(note).unwrap_or_else(|| note.clone()),
+    }
+}
+
+/// Secondary provenance line for metrics when the source line alone is ambiguous.
+pub fn format_inspect_metric_provenance(source: &MetricSource) -> Option<String> {
+    match source {
+        MetricSource::Derived { note } => Some(note.clone()),
+        MetricSource::CssVar { token } => Some(format!("catalog · --{token}")),
+        MetricSource::Scaffold { .. } | MetricSource::Constant { .. } => None,
+    }
+}
+
+pub fn format_metric_px(value: f32) -> String {
+    if (value - value.round()).abs() < f32::EPSILON {
+        format!("{}px", value.round() as i32)
+    } else {
+        format!("{value}px")
+    }
+}
+
+fn metric_derived_css_key(note: &str) -> Option<String> {
+    note.split_whitespace()
+        .find(|word| word.starts_with("--"))
+        .map(|token| token.trim_end_matches(|c: char| !c.is_alphanumeric() && c != '-').to_string())
 }
 
 /// How the resolved color relates to the css key (algorithmic state, inheritance, etc.).
@@ -261,15 +308,29 @@ mod tests {
             }),
             Some("catalog · hover".to_string())
         );
-        assert_eq!(
-            format_inspect_css_key(&ColorSource::Derived { note: "= --primary".into() }),
-            "--primary"
-        );
+        assert_eq!(format_inspect_css_key(&ColorSource::Derived { note: "= --primary".into() }), "--primary");
         assert_eq!(
             format_inspect_provenance(&ColorSource::Derived { note: "= --primary".into() }),
             Some("inherits · --primary".to_string())
         );
         assert!(format_inspect_provenance(&ColorSource::CssVar { token: "ring".into() }).is_none());
+    }
+
+    #[test]
+    fn format_inspect_metric_source_uses_catalog_token_for_radius_derivation() {
+        let source = MetricSource::Derived { note: "md = --radius − 2px".into() };
+        assert_eq!(format_inspect_metric_source(&source), "--radius");
+        assert_eq!(format_inspect_metric_provenance(&source), Some("md = --radius − 2px".to_string()));
+        assert_eq!(
+            format_inspect_metric_source(&MetricSource::Scaffold { path: "MetricTokens.control.md.padding_x".into() }),
+            "scaffold · MetricTokens.control.md.padding_x"
+        );
+    }
+
+    #[test]
+    fn format_metric_px_rounds_whole_numbers() {
+        assert_eq!(format_metric_px(14.0), "14px");
+        assert_eq!(format_metric_px(1.5), "1.5px");
     }
 
     #[test]
