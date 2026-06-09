@@ -1,9 +1,8 @@
 use gpui::{Hsla, hsla};
 
-use gpui_luma::theme::{InteractionLayer, ThemeMode};
+use gpui_luma::theme::InteractionLayer;
 
 use super::catalog::CssTokenMap;
-use super::state_color::algorithmic_state_color;
 
 pub(crate) fn resolve_color(catalog: &CssTokenMap, token: &str) -> anyhow::Result<Hsla> {
     catalog.color(token)
@@ -43,9 +42,4 @@ pub(crate) fn resolve_ghost_trigger_foreground(
     } else {
         resolve_label_color(catalog, false)
     }
-}
-
-/// Pressed state derived from a hover tint without component-local color math.
-pub(crate) fn resolve_whisper_pressed(hover: Hsla, theme_mode: ThemeMode) -> Hsla {
-    algorithmic_state_color(hover, InteractionLayer::Pressed, theme_mode, false)
 }

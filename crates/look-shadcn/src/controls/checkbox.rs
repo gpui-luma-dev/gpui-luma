@@ -67,70 +67,6 @@ pub fn checkbox_appearance(
     state: InteractionState,
 ) -> CheckboxPalette {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        return checkbox_appearance_from_palette(&ctx, style, checked);
-    }
-
-    checkbox_appearance_from_catalog(&ctx, style, checked).unwrap_or_else(|err| panic!("checkbox properties: {err}"))
-}
-
-pub fn checkbox_appearance_from_palette(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    checked: bool,
-) -> CheckboxPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-    let typography = ctx.typography();
-    let layer = state.layer();
-    let checked_action = palette.action(style);
-    let outline = palette.outline;
-
-    let indicator_background = match (checked, layer) {
-        (_, InteractionLayer::Disabled) => palette.disabled_background,
-        (true, InteractionLayer::Pressed) => checked_action.pressed_background,
-        (true, InteractionLayer::Hovered) => checked_action.hover_background,
-        (true, InteractionLayer::Default) => checked_action.background,
-        (false, InteractionLayer::Pressed) => outline.pressed_background,
-        (false, InteractionLayer::Hovered) => outline.hover_background,
-        (false, InteractionLayer::Default) => outline.background,
-    };
-
-    let checkmark_color = if state.disabled {
-        palette.disabled_foreground
-    } else if checked {
-        checked_action.foreground
-    } else {
-        palette.app_foreground
-    };
-
-    CheckboxPalette {
-        control_background: None,
-        control_border: None,
-        indicator_background,
-        indicator_border: if checked && !state.disabled {
-            indicator_background
-        } else {
-            palette.border_default
-        },
-        checkmark_color,
-        label_color: if state.disabled {
-            palette.disabled_foreground
-        } else {
-            palette.app_foreground
-        },
-        adorner: crate::focus::focus_adorner_from_palette(palette, metrics, state.focused),
-        label_typography: typography.text.label,
-        label_font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-pub fn checkbox_appearance_from_catalog(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    checked: bool,
-) -> anyhow::Result<CheckboxPalette> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -143,18 +79,19 @@ pub fn checkbox_appearance_from_catalog(
     let indicator_border = if checked && !state.disabled {
         colors.indicator_background.hsla()
     } else {
-        resolve_color(catalog, "border")?
+        resolve_color(catalog, "border").unwrap_or_else(|err| panic!("checkbox properties: {err}"))
     };
 
-    Ok(CheckboxPalette {
+    CheckboxPalette {
         control_background: None,
         control_border: None,
         indicator_background: colors.indicator_background.hsla(),
         indicator_border,
         checkmark_color: colors.checkmark_color.hsla(),
         label_color: colors.label_color.hsla(),
-        adorner: focus_adorner(catalog, metrics, state.focused)?,
+        adorner: focus_adorner(catalog, metrics, state.focused)
+            .unwrap_or_else(|err| panic!("checkbox properties: {err}")),
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-    })
+    }
 }

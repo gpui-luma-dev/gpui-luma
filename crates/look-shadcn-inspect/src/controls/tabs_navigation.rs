@@ -1,7 +1,7 @@
 //! Inspect metadata for `tabs_navigation`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct TabsNavigationItemInspectPalette {
     pub label_color: ResolvedColor,
@@ -31,32 +31,6 @@ pub fn inspect_tabs_navigation_item_color_palette(
     state: InteractionState,
 ) -> TabsNavigationItemInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, active);
-        return TabsNavigationItemInspectPalette {
-            label_color: resolved_from_hsla(
-                appearance.label_color,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                } else if active {
-                    ColorSource::CssVar { token: "primary".into() }
-                } else {
-                    ColorSource::CssVar { token: "foreground".into() }
-                },
-            ),
-            indicator: appearance.indicator.map(|color| {
-                resolved_from_hsla(
-                    color,
-                    if state.focused {
-                        ColorSource::CssVar { token: "ring".into() }
-                    } else {
-                        ColorSource::CssVar { token: "primary".into() }
-                    },
-                )
-            }),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tabs_navigation_item_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_item_colors(
         &resolver,
@@ -75,15 +49,6 @@ pub fn inspect_tabs_navigation_list_color_palette(
     enabled: bool,
 ) -> TabsNavigationListInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, enabled);
-        let background = match appearance.background {
-            Some(color) => Some(resolved_from_hsla(color, ColorSource::CssVar { token: "muted".into() })),
-            None => None,
-        };
-        return TabsNavigationListInspectPalette { background };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tabs_navigation_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TabsNavigationListColorTable::fallback());
@@ -106,18 +71,8 @@ pub fn inspect_tabs_navigation_metrics(
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let list = if ctx.catalog().tokens.is_empty() {
-        gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, true)
-    } else {
-        gpui_luma_look_shadcn::paint::tabs_navigation_list_from_catalog(&ctx, true)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, true))
-    };
-    let item = if ctx.catalog().tokens.is_empty() {
-        gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, true)
-    } else {
-        gpui_luma_look_shadcn::paint::tabs_navigation_item_from_catalog(&ctx, true)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, true))
-    };
+    let list = gpui_luma_look_shadcn::paint::tabs_navigation_list_appearance(mode, true);
+    let item = gpui_luma_look_shadcn::paint::tabs_navigation_item_appearance(mode, true, InteractionState::default());
 
     TabsNavigationInspectMetrics {
         list_radius: radius_metric(catalog, size, list.radius),
@@ -128,8 +83,4 @@ pub fn inspect_tabs_navigation_metrics(
         item_radius: radius_metric(catalog, size, item.radius),
         indicator_height: derived_metric("active tab indicator height", item.indicator_height),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }

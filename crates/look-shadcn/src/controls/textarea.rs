@@ -52,10 +52,9 @@ mod tests {
 
     use gpui_luma::controls::textfield::TextFieldState;
 
-    use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::controls::textfield::{ShadcnTextFieldStyle, textfield_palette_from_catalog};
+    use crate::controls::textfield::{ShadcnTextFieldStyle, textfield_palette};
     use super::textarea_from_textfield;
 
     fn sample_catalog() -> CssTokenMap {
@@ -80,10 +79,8 @@ mod tests {
     fn textarea_uses_same_surface_tokens_as_textfield() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let textfield =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
@@ -96,10 +93,8 @@ mod tests {
     fn soft_textarea_uses_muted_fill_and_no_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
         let textfield =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true);
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, catalog.color("muted").expect("muted"));

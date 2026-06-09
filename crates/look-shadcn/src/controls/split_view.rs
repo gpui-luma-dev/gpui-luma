@@ -53,34 +53,10 @@ pub fn split_view_appearance(
         InteractionState { disabled: true, ..InteractionState::default() }
     };
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if mode.catalog.tokens.is_empty() {
-        split_view_from_palette(&ctx, enabled)
-    } else {
-        split_view_from_catalog(&ctx, enabled).unwrap_or_else(|err| panic!("split view properties: {err}"))
-    }
-}
-
-pub fn split_view_from_palette(ctx: &AppearanceContext, enabled: bool) -> SplitViewAppearance {
-    let palette = ctx.palette();
-    let separator = if enabled {
-        palette.border_default
-    } else {
-        palette.disabled_foreground
-    };
-    let separator_hover = if enabled {
-        palette.accent_background
-    } else {
-        palette.disabled_foreground
-    };
-
-    SplitViewAppearance { separator, separator_hover }
-}
-
-fn split_view_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<SplitViewAppearance> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "split_view");
     let colors = resolve_split_view_colors(&resolver, enabled).unwrap_or_else(|_| SplitViewColorTable::fallback());
 
-    Ok(SplitViewAppearance { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() })
+    SplitViewAppearance { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() }
 }
 
 #[cfg(test)]

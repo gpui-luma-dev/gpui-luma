@@ -1,7 +1,7 @@
 //! Inspect metadata for `navigation_sidebar`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
@@ -39,18 +39,6 @@ pub fn inspect_navigation_sidebar_container_color_palette(
     theme_mode: ThemeMode,
 ) -> NavigationSidebarContainerInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::navigation_sidebar_container_from_palette(&ctx);
-        return NavigationSidebarContainerInspectPalette {
-            background: resolved_from_hsla(appearance.background, ColorSource::CssVar { token: "sidebar".into() }),
-            foreground: resolved_from_hsla(
-                appearance.foreground,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "sidebar-border".into() }),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_container_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_container_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarContainerColorTable::fallback());
@@ -66,16 +54,6 @@ pub fn inspect_navigation_sidebar_section_color_palette(
     theme_mode: ThemeMode,
 ) -> NavigationSidebarSectionInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::navigation_sidebar_section_from_palette(&ctx);
-        return NavigationSidebarSectionInspectPalette {
-            label_color: resolved_from_hsla(
-                appearance.label_color,
-                ColorSource::CssVar { token: "muted-foreground".into() },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_section_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_section_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarSectionColorTable::fallback());
@@ -88,24 +66,6 @@ pub fn inspect_navigation_sidebar_branch_color_palette(
     state: InteractionState,
 ) -> NavigationSidebarItemInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::navigation_sidebar_branch_from_palette(&ctx, ControlSize::Md);
-        return NavigationSidebarItemInspectPalette {
-            background: appearance.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
-            foreground: resolved_from_hsla(
-                appearance.foreground,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            icon_color: resolved_from_hsla(
-                appearance.icon_color,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            focus_ring: appearance
-                .focus_ring
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "sidebar-ring".into() })),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_branch_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_branch_colors(
         &resolver,
@@ -135,25 +95,6 @@ pub fn inspect_navigation_sidebar_item_color_palette(
     state: InteractionState,
 ) -> NavigationSidebarItemInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance =
-            gpui_luma_look_shadcn::paint::navigation_sidebar_item_from_palette(&ctx, selected, ControlSize::Md);
-        return NavigationSidebarItemInspectPalette {
-            background: appearance.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
-            foreground: resolved_from_hsla(
-                appearance.foreground,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            icon_color: resolved_from_hsla(
-                appearance.icon_color,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            focus_ring: appearance
-                .focus_ring
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "sidebar-ring".into() })),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_item_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors(
         &resolver,
@@ -197,10 +138,6 @@ pub fn inspect_navigation_sidebar_metrics(
         item_radius: radius_metric(catalog, size, metrics.radius(size)),
         item_icon_size: derived_metric("navigation sidebar icon size", 16.0),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[cfg(test)]

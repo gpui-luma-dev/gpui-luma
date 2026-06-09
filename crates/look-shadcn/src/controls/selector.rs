@@ -1,7 +1,7 @@
 //! Selector property mappings — ghost trigger (foreground-only hover) + accent item panel.
 
 use gpui_luma::controls::selector::SelectorPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
@@ -12,56 +12,28 @@ use super::selector_items_panel::selector_items_panel_appearance;
 
 pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SelectorPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if mode.catalog.tokens.is_empty() {
-        selector_palette_from_palette(&ctx)
-    } else {
-        selector_palette_from_catalog(&ctx).unwrap_or_else(|err| panic!("selector properties: {err}"))
-    }
-}
-
-fn selector_palette_from_palette(ctx: &AppearanceContext) -> SelectorPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let typography = ctx.typography();
-    let layer = state.layer();
-    let ghost = palette.ghost;
-
-    let trigger_background = match layer {
-        InteractionLayer::Disabled => palette.disabled_background,
-        InteractionLayer::Pressed | InteractionLayer::Hovered | InteractionLayer::Default => ghost.background,
-    };
-
-    SelectorPalette {
-        trigger_background,
-        trigger_foreground: if state.disabled {
-            palette.disabled_foreground
-        } else if matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
-            palette.primary.foreground
-        } else {
-            ghost.foreground
-        },
-        trigger_border: palette.border_default,
-        focus_ring: state.focused.then_some(palette.focus_ring),
-        trigger_typography: typography.text.label,
-        items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
-    }
-}
-
-pub fn selector_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<SelectorPalette> {
     let state = ctx.state;
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "selector_trigger");
     let trigger_colors = resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
         .unwrap_or_else(|_| super::floating_menu::GhostTriggerColorTable::fallback());
 
-    Ok(SelectorPalette {
+    SelectorPalette {
         trigger_background: trigger_colors.background.hsla(),
         trigger_foreground: trigger_colors.foreground.hsla(),
-        trigger_border: resolver.resolve_decl("border")?.hsla(),
-        focus_ring: state.focused.then(|| resolver.resolve_decl("ring")).transpose()?.map(|color| color.hsla()),
+        trigger_border: resolver
+            .resolve_decl("border")
+            .unwrap_or_else(|err| panic!("selector properties: {err}"))
+            .hsla(),
+        focus_ring: state
+            .focused
+            .then(|| resolver.resolve_decl("ring"))
+            .transpose()
+            .unwrap_or_else(|err| panic!("selector properties: {err}"))
+            .map(|color| color.hsla()),
         trigger_typography: typography.text.label,
         items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -71,10 +43,9 @@ mod tests {
 
     use gpui_luma::theme::ThemeMode;
 
-    use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{selector_palette_from_catalog};
+    use super::selector_palette;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -101,12 +72,11 @@ mod tests {
     fn selector_catalog_uses_ghost_trigger_table() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(
+        let palette = selector_palette(
             &mode,
             ThemeMode::Light,
             gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
         );
-        let palette = selector_palette_from_catalog(&ctx).expect("palette");
         assert_eq!(palette.trigger_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
 }

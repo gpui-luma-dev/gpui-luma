@@ -36,25 +36,6 @@ pub fn inspect_listbox_list_color_palette(
     focused: bool,
 ) -> ListBoxListInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance =
-            gpui_luma_look_shadcn::paint::listbox_list_from_palette(&ctx, enabled, focused, ControlSize::Md);
-        return ListBoxListInspectPalette {
-            background: resolved_from_hsla(
-                appearance.background,
-                if enabled {
-                    ColorSource::CssVar { token: "background".into() }
-                } else {
-                    ColorSource::CssVar { token: "muted".into() }
-                },
-            ),
-            border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "input".into() }),
-            divider: resolved_from_hsla(appearance.divider, ColorSource::CssVar { token: "border".into() }),
-            focus_ring: focused
-                .then(|| resolved_from_hsla(ctx.palette().focus_ring, ColorSource::CssVar { token: "ring".into() })),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_listbox_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxListColorTable::fallback());
@@ -79,21 +60,6 @@ pub fn inspect_listbox_row_color_palette(
     state: InteractionState,
 ) -> ListBoxRowInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let palette = gpui_luma_look_shadcn::paint::listbox_row_from_palette(&ctx, ControlSize::Md);
-        return ListBoxRowInspectPalette {
-            background: resolved_from_hsla(palette.background, ColorSource::Transparent),
-            label_color: resolved_from_hsla(
-                palette.label_color,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                } else {
-                    ColorSource::CssVar { token: "foreground".into() }
-                },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_row_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_listbox_row_colors(
         &resolver,

@@ -1,7 +1,7 @@
 //! Inspect metadata for `autocomplete`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
 
@@ -23,26 +23,6 @@ pub fn inspect_autocomplete_chrome_color_palette(
     theme_mode: ThemeMode,
 ) -> AutocompleteChromeInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance =
-            gpui_luma_look_shadcn::paint::autocomplete_textbox_appearance_from_palette(&ctx, ControlSize::Md);
-        return AutocompleteChromeInspectPalette {
-            status_color: resolved_from_hsla(appearance.status_color, ColorSource::CssVar { token: "primary".into() }),
-            muted_text_color: resolved_from_hsla(
-                appearance.muted_text_color,
-                ColorSource::CssVar { token: "muted-foreground".into() },
-            ),
-            clear_icon_color: resolved_from_hsla(
-                appearance.clear_icon_color,
-                ColorSource::CssVar { token: "muted-foreground".into() },
-            ),
-            clear_icon_hover_color: resolved_from_hsla(
-                appearance.clear_icon_hover_color,
-                ColorSource::CssVar { token: "foreground".into() },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "autocomplete_chrome_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AutocompleteChromeColorTable::fallback());
@@ -71,10 +51,6 @@ pub fn inspect_autocomplete_menu_color_palette(
     size: ControlSize,
 ) -> FloatingMenuInspectPalette {
     crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size)
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[cfg(test)]

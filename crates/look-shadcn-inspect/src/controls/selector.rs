@@ -26,46 +26,15 @@ pub fn inspect_selector_color_palette(
     size: ControlSize,
 ) -> SelectorInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    let appearance = gpui_luma_look_shadcn::paint::selector_palette(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
-
-    if ctx.catalog().tokens.is_empty() {
-        return SelectorInspectPalette {
-            trigger_background: resolved_from_hsla(
-                appearance.trigger_background,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted".into() }
-                } else {
-                    ColorSource::Transparent
-                },
-            ),
-            trigger_foreground: resolved_from_hsla(
-                appearance.trigger_foreground,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                } else if state.hovered || state.pressed {
-                    ColorSource::CssVar { token: "accent-foreground".into() }
-                } else {
-                    ColorSource::CssVar { token: "foreground".into() }
-                },
-            ),
-            trigger_border: resolved_from_hsla(
-                appearance.trigger_border,
-                ColorSource::CssVar { token: "border".into() },
-            ),
-            focus_ring: appearance
-                .focus_ring
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "ring".into() })),
-            items_panel: menu,
-        };
-    }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "selector_inspect");
     let trigger_colors =
         gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
             .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
-    let trigger_border = resolver.resolve_decl("border").unwrap_or_else(|_| {
-        resolved_from_hsla(appearance.trigger_border, ColorSource::CssVar { token: "border".into() })
+    let trigger_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
+        value: ctx.catalog().color("border").expect("border"),
+        source: ColorSource::CssVar { token: "border".into() },
     });
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
@@ -96,8 +65,4 @@ pub fn inspect_selector_metrics(
         ),
         items_panel: crate::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }

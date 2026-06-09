@@ -9,7 +9,7 @@
 //! | Icon / chevron | `sidebar-foreground`               |
 
 use gpui_luma::controls::tree_view::TreeViewPalette;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
@@ -17,8 +17,6 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_tree_view_row_color_rule, resolve_tree_view_row_color_rule,
 };
-
-use super::navigation_sidebar::navigation_sidebar_branch_appearance;
 
 #[derive(Clone, Debug)]
 pub struct TreeViewRowColorTable {
@@ -66,39 +64,12 @@ pub fn resolve_tree_view_row_colors_with_stylesheet(
 
 pub fn tree_view_row_palette(mode: &ShadcnModeTokens, _selected: bool, state: InteractionState) -> TreeViewPalette {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        tree_view_row_from_palette(mode, state, &ctx)
-    } else {
-        tree_view_row_from_catalog(&ctx, state).unwrap_or_else(|err| panic!("tree view row properties: {err}"))
-    }
-}
-
-pub fn tree_view_row_from_palette(
-    mode: &ShadcnModeTokens,
-    state: InteractionState,
-    ctx: &AppearanceContext,
-) -> TreeViewPalette {
-    let appearance = navigation_sidebar_branch_appearance(mode, state, ControlSize::Md);
-    let typography = ctx.typography();
-
-    TreeViewPalette {
-        background: appearance.background,
-        foreground: appearance.foreground,
-        icon_color: appearance.icon_color,
-        chevron_color: appearance.icon_color,
-        adorner: None,
-        typography: typography.text.label,
-        font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-fn tree_view_row_from_catalog(ctx: &AppearanceContext, state: InteractionState) -> anyhow::Result<TreeViewPalette> {
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row");
     let colors = resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| TreeViewRowColorTable::fallback());
 
-    Ok(TreeViewPalette {
+    TreeViewPalette {
         background: colors.background.map(|color| color.hsla()),
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
@@ -106,7 +77,7 @@ fn tree_view_row_from_catalog(ctx: &AppearanceContext, state: InteractionState) 
         adorner: None,
         typography: typography.text.label,
         font_family: typography.font.sans.family.clone().into(),
-    })
+    }
 }
 
 #[cfg(test)]

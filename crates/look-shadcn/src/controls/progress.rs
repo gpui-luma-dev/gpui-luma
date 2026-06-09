@@ -46,33 +46,6 @@ pub fn resolve_progress_colors_with_stylesheet(
 
 pub fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        progress_from_palette(&ctx, enabled)
-    } else {
-        progress_from_catalog(&ctx, enabled).unwrap_or_else(|err| panic!("progress properties: {err}"))
-    }
-}
-
-pub fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> ProgressAppearance {
-    let palette = ctx.palette();
-
-    ProgressAppearance {
-        track_color: if enabled {
-            palette.muted_background
-        } else {
-            palette.disabled_background
-        },
-        progress_color: if enabled {
-            palette.primary.background
-        } else {
-            palette.disabled_foreground
-        },
-        size: DEFAULT_PROGRESS_SIZE,
-        stroke_width: DEFAULT_PROGRESS_STROKE_WIDTH,
-    }
-}
-
-pub fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<ProgressAppearance> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
     let stylesheet = embedded_stylesheet();
@@ -84,12 +57,12 @@ pub fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::
         .map(|metrics| (metrics.size, metrics.stroke_width))
         .unwrap_or((DEFAULT_PROGRESS_SIZE, DEFAULT_PROGRESS_STROKE_WIDTH));
 
-    Ok(ProgressAppearance {
+    ProgressAppearance {
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
         size,
         stroke_width,
-    })
+    }
 }
 
 #[cfg(test)]

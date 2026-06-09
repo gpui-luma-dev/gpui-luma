@@ -1,7 +1,7 @@
 //! Inspect metadata for `scrollbar`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 
@@ -24,39 +24,10 @@ pub struct ScrollbarInspectMetrics {
 pub fn inspect_scrollbar_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
-    orientation: ScrollbarOrientation,
+    _orientation: ScrollbarOrientation,
     state: InteractionState,
 ) -> ScrollbarInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::scrollbar_appearance(mode, state, orientation);
-        return ScrollbarInspectPalette {
-            track_background: resolved_from_hsla(
-                appearance.track_background,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted".into() }
-                } else {
-                    ColorSource::Transparent
-                },
-            ),
-            thumb_background: resolved_from_hsla(
-                appearance.thumb_background,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                } else if state.pressed {
-                    ColorSource::Derived { note: "darken(border, 8%)".into() }
-                } else {
-                    ColorSource::CssVar { token: "border".into() }
-                },
-            ),
-            focus_ring: state
-                .focused
-                .then(|| appearance.focus_ring)
-                .flatten()
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "ring".into() })),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "scrollbar_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_scrollbar_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ScrollbarColorTable::fallback());
@@ -77,10 +48,7 @@ pub fn inspect_scrollbar_metrics(
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance =
-        gpui_luma_look_shadcn::paint::scrollbar_appearance_from_catalog(&ctx, orientation).unwrap_or_else(|_| {
-            gpui_luma_look_shadcn::paint::scrollbar_appearance(mode, InteractionState::default(), orientation)
-        });
+    let appearance = gpui_luma_look_shadcn::paint::scrollbar_appearance(mode, InteractionState::default(), orientation);
     let catalog = ctx.catalog();
 
     ScrollbarInspectMetrics {
@@ -91,8 +59,4 @@ pub fn inspect_scrollbar_metrics(
         min_thumb_length: derived_metric("minimum draggable thumb", appearance.min_thumb_length),
         radius: pill_radius_metric(catalog, appearance.radius),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }

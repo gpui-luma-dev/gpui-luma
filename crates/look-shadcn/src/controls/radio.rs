@@ -70,72 +70,6 @@ pub fn radio_button_appearance(
     state: InteractionState,
 ) -> RadioButtonPalette {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        return radio_button_appearance_from_palette(&ctx, style, selected);
-    }
-
-    radio_button_appearance_from_catalog(&ctx, style, selected).unwrap_or_else(|err| panic!("radio properties: {err}"))
-}
-
-pub fn radio_button_appearance_from_palette(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    selected: bool,
-) -> RadioButtonPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-    let typography = ctx.typography();
-    let layer = state.layer();
-    let checked_action = palette.action(style);
-    let outline = palette.outline;
-
-    let indicator_background = match layer {
-        InteractionLayer::Disabled => palette.disabled_background,
-        InteractionLayer::Pressed => outline.pressed_background,
-        InteractionLayer::Hovered => outline.hover_background,
-        InteractionLayer::Default => outline.background,
-    };
-
-    let selected_color = match layer {
-        InteractionLayer::Disabled => palette.disabled_foreground,
-        InteractionLayer::Pressed => checked_action.pressed_background,
-        InteractionLayer::Hovered => checked_action.hover_background,
-        InteractionLayer::Default => checked_action.background,
-    };
-
-    RadioButtonPalette {
-        control_background: None,
-        control_border: None,
-        indicator_background,
-        indicator_border: if selected && !state.disabled {
-            selected_color
-        } else {
-            palette.border_default
-        },
-        dot_color: if state.disabled {
-            palette.disabled_foreground
-        } else if selected {
-            checked_action.foreground
-        } else {
-            palette.app_foreground
-        },
-        label_color: if state.disabled {
-            palette.disabled_foreground
-        } else {
-            palette.app_foreground
-        },
-        adorner: crate::focus::focus_adorner_from_palette(palette, metrics, state.focused),
-        label_typography: typography.text.label,
-        label_font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-pub fn radio_button_appearance_from_catalog(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    selected: bool,
-) -> anyhow::Result<RadioButtonPalette> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -148,18 +82,20 @@ pub fn radio_button_appearance_from_catalog(
     let indicator_border = if selected && !state.disabled {
         colors.selection_ring.hsla()
     } else {
-        resolve_color(catalog, "border")?
+        resolve_color(catalog, "border").unwrap_or_else(|err| panic!("radio properties: {err}"))
     };
+    let adorner =
+        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("radio properties: {err}"));
 
-    Ok(RadioButtonPalette {
+    RadioButtonPalette {
         control_background: None,
         control_border: None,
         indicator_background: colors.indicator_background.hsla(),
         indicator_border,
         dot_color: colors.dot_color.hsla(),
         label_color: colors.label_color.hsla(),
-        adorner: focus_adorner(catalog, metrics, state.focused)?,
+        adorner,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-    })
+    }
 }

@@ -10,10 +10,7 @@
 //! | Focused row    | `accent`           |
 //! | Disabled label | `muted-foreground` |
 
-use gpui::hsla;
-
 use gpui_luma::controls::listbox::{ListBoxListAppearance, ListBoxRowPalette};
-use gpui_luma::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
@@ -101,11 +98,21 @@ pub fn listbox_list_appearance(
     size: ControlSize,
 ) -> ListBoxListAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        listbox_list_from_palette(&ctx, enabled, focused, size)
-    } else {
-        listbox_list_from_catalog(&ctx, enabled, focused, size)
-            .unwrap_or_else(|err| panic!("listbox list properties: {err}"))
+    let metrics = ctx.metrics();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
+    let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
+    let adorner =
+        focus_adorner(ctx.catalog(), metrics, focused).unwrap_or_else(|err| panic!("listbox list properties: {err}"));
+
+    ListBoxListAppearance {
+        background: colors.background.hsla(),
+        border: colors.border.hsla(),
+        adorner,
+        divider: colors.divider.hsla(),
+        radius: metrics.radius(size),
+        padding_x: 6.0,
+        padding_y: metrics.padding_y(size) * 0.5,
+        row_gap: metrics.padding_y(size) * 0.25,
     }
 }
 
@@ -113,110 +120,20 @@ pub fn listbox_row_palette(
     mode: &ShadcnModeTokens,
     _selected: bool,
     state: InteractionState,
-    size: ControlSize,
+    _size: ControlSize,
 ) -> ListBoxRowPalette {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        listbox_row_from_palette(&ctx, size)
-    } else {
-        listbox_row_from_catalog(&ctx).unwrap_or_else(|err| panic!("listbox row properties: {err}"))
-    }
-}
-
-pub fn listbox_list_from_palette(
-    ctx: &AppearanceContext,
-    enabled: bool,
-    focused: bool,
-    size: ControlSize,
-) -> ListBoxListAppearance {
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-
-    let adorner = if focused {
-        Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-            color: palette.focus_ring,
-            placement: AdornerPlacement::Inset,
-            distance: metrics.border_width.default,
-            width: metrics.focus.width,
-        }))
-    } else {
-        None
-    };
-
-    ListBoxListAppearance {
-        background: if enabled {
-            palette.app_background
-        } else {
-            palette.disabled_background
-        },
-        border: palette.input_background,
-        adorner,
-        divider: palette.border_default,
-        radius: metrics.radius(size),
-        padding_x: 6.0,
-        padding_y: metrics.padding_y(size) * 0.5,
-        row_gap: metrics.padding_y(size) * 0.25,
-    }
-}
-
-fn listbox_list_from_catalog(
-    ctx: &AppearanceContext,
-    enabled: bool,
-    focused: bool,
-    size: ControlSize,
-) -> anyhow::Result<ListBoxListAppearance> {
-    let metrics = ctx.metrics();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
-    let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
-
-    Ok(ListBoxListAppearance {
-        background: colors.background.hsla(),
-        border: colors.border.hsla(),
-        adorner: focus_adorner(ctx.catalog(), metrics, focused)?,
-        divider: colors.divider.hsla(),
-        radius: metrics.radius(size),
-        padding_x: 6.0,
-        padding_y: metrics.padding_y(size) * 0.5,
-        row_gap: metrics.padding_y(size) * 0.25,
-    })
-}
-
-pub fn listbox_row_from_palette(ctx: &AppearanceContext, _size: ControlSize) -> ListBoxRowPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let typography = ctx.typography();
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
-
-    let background = match state.layer() {
-        InteractionLayer::Disabled => transparent,
-        InteractionLayer::Pressed => palette.secondary.pressed_background,
-        InteractionLayer::Hovered => palette.secondary.background,
-        InteractionLayer::Default if state.focused => palette.secondary.background,
-        InteractionLayer::Default => transparent,
-    };
-
-    let label_color = if state.disabled {
-        palette.disabled_foreground
-    } else {
-        palette.app_foreground
-    };
-
-    ListBoxRowPalette { background, label_color, adorner: None, label_typography: typography.text.label }
-}
-
-fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRowPalette> {
-    let state = ctx.state;
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row");
     let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
         .unwrap_or_else(|_| ListBoxRowColorTable::fallback());
 
-    Ok(ListBoxRowPalette {
+    ListBoxRowPalette {
         background: colors.background.hsla(),
         label_color: colors.label_color.hsla(),
         adorner: None,
         label_typography: typography.text.label,
-    })
+    }
 }
 
 #[cfg(test)]

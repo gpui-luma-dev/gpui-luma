@@ -48,48 +48,19 @@ pub fn resolve_control_group_list_colors_with_stylesheet(
 
 pub fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        control_group_list_from_palette(&ctx, enabled)
-    } else {
-        control_group_list_from_catalog(&ctx, enabled).unwrap_or_else(|err| panic!("control group properties: {err}"))
-    }
-}
-
-pub fn control_group_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> ControlGroupListAppearance {
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-
-    ControlGroupListAppearance {
-        background: if enabled {
-            palette.muted_background
-        } else {
-            palette.disabled_background
-        },
-        border: palette.border_default,
-        radius: metrics.radius(ControlSize::Md),
-        padding_x: 6.0,
-        padding_y: 4.0,
-        gap: 6.0,
-    }
-}
-
-fn control_group_list_from_catalog(
-    ctx: &AppearanceContext,
-    enabled: bool,
-) -> anyhow::Result<ControlGroupListAppearance> {
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list");
     let colors = resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
-    Ok(ControlGroupListAppearance {
+    ControlGroupListAppearance {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         radius: metrics.radius(ControlSize::Md),
         padding_x: 6.0,
         padding_y: 4.0,
         gap: 6.0,
-    })
+    }
 }
 
 #[cfg(test)]

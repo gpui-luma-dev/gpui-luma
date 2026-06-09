@@ -26,47 +26,10 @@ pub fn inspect_context_menu_color_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> ContextMenuInspectPalette {
-    use gpui_luma_look_shadcn::{ColorSource, LookResolver};
+    use gpui_luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
 
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    let appearance = if ctx.catalog().tokens.is_empty() {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx)
-    } else {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
-    };
-
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
-
-    if ctx.catalog().tokens.is_empty() {
-        return ContextMenuInspectPalette {
-            target_background: resolved_from_hsla(
-                appearance.target_background,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted".into() }
-                } else {
-                    ColorSource::Transparent
-                },
-            ),
-            target_foreground: resolved_from_hsla(
-                appearance.target_foreground,
-                if state.disabled {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                } else if state.hovered || state.pressed {
-                    ColorSource::CssVar { token: "accent-foreground".into() }
-                } else {
-                    ColorSource::CssVar { token: "foreground".into() }
-                },
-            ),
-            target_border: resolved_from_hsla(appearance.target_border, ColorSource::CssVar { token: "border".into() }),
-            focus_ring: state
-                .focused
-                .then(|| appearance.focus_ring)
-                .flatten()
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "ring".into() })),
-            menu,
-        };
-    }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "context_menu_inspect");
     let trigger_colors =
@@ -74,8 +37,9 @@ pub fn inspect_context_menu_color_palette(
             .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
     let target_background = trigger_colors.background;
     let target_foreground = trigger_colors.foreground;
-    let target_border = resolver.resolve_decl("border").unwrap_or_else(|_| {
-        resolved_from_hsla(appearance.target_border, ColorSource::CssVar { token: "border".into() })
+    let target_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
+        value: ctx.catalog().color("border").expect("border"),
+        source: ColorSource::CssVar { token: "border".into() },
     });
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
@@ -91,12 +55,8 @@ pub fn inspect_context_menu_metrics(
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance = if ctx.catalog().tokens.is_empty() {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx)
-    } else {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
-    };
+    let appearance =
+        gpui_luma_look_shadcn::paint::context_menu_appearance(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
 
     ContextMenuInspectMetrics {
@@ -106,11 +66,4 @@ pub fn inspect_context_menu_metrics(
         target_min_width: derived_metric("context menu target min width", appearance.target_min_width),
         menu: crate::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
     }
-}
-
-fn resolved_from_hsla(
-    value: gpui::Hsla,
-    source: gpui_luma_look_shadcn::ColorSource,
-) -> gpui_luma_look_shadcn::ResolvedColor {
-    gpui_luma_look_shadcn::ResolvedColor { value, source }
 }

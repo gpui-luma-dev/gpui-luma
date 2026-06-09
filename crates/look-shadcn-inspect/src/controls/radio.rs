@@ -2,7 +2,7 @@
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
+    AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
 };
 
 pub struct RadioButtonInspectPalette {
@@ -21,25 +21,6 @@ pub fn inspect_radio_button_color_palette(
     state: InteractionState,
 ) -> RadioButtonInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::radio_button_appearance_from_palette(&ctx, style, selected);
-        return RadioButtonInspectPalette {
-            indicator_background: resolved_from_hsla(
-                appearance.indicator_background,
-                ColorSource::Derived { note: "scaffold · ShadcnPalette.outline.background".into() },
-            ),
-            indicator_border: resolved_from_hsla(
-                appearance.indicator_border,
-                ColorSource::CssVar { token: "border".into() },
-            ),
-            dot_color: resolved_from_hsla(appearance.dot_color, ColorSource::CssVar { token: "foreground".into() }),
-            label_color: resolved_from_hsla(appearance.label_color, ColorSource::CssVar { token: "foreground".into() }),
-            focus_ring: state
-                .focused
-                .then(|| resolved_from_hsla(ctx.palette().focus_ring, ColorSource::CssVar { token: "ring".into() })),
-        };
-    }
-
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "radio_inspect");
@@ -59,10 +40,6 @@ pub fn inspect_radio_button_color_palette(
         label_color: colors.label_color,
         focus_ring,
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[derive(Clone, Debug)]

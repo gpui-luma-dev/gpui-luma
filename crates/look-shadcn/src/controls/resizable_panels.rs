@@ -68,51 +68,18 @@ pub fn resizable_panels_appearance(
     state: InteractionState,
 ) -> ResizablePanelsAppearance {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if mode.catalog.tokens.is_empty() {
-        resizable_panels_from_palette(&ctx)
-    } else {
-        resizable_panels_from_catalog(&ctx).unwrap_or_else(|err| panic!("resizable panels properties: {err}"))
-    }
-}
-
-pub fn resizable_panels_from_palette(ctx: &AppearanceContext) -> ResizablePanelsAppearance {
-    let palette = ctx.palette();
-    let disabled = ctx.state.layer() == InteractionLayer::Disabled;
-
-    ResizablePanelsAppearance {
-        border: palette.border_default,
-        divider: if disabled {
-            palette.disabled_foreground
-        } else {
-            palette.border_default
-        },
-        grip: if disabled {
-            palette.disabled_foreground
-        } else {
-            palette.border_default
-        },
-        grip_emphasis: if disabled {
-            palette.disabled_foreground
-        } else {
-            palette.accent_background
-        },
-        disabled_opacity: if disabled { 0.45 } else { 1.0 },
-    }
-}
-
-fn resizable_panels_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ResizablePanelsAppearance> {
     let state = ctx.state;
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "resizable_panels");
     let colors = resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| ResizablePanelsColorTable::fallback());
 
-    Ok(ResizablePanelsAppearance {
+    ResizablePanelsAppearance {
         border: colors.border.hsla(),
         divider: colors.divider.hsla(),
         grip: colors.grip.hsla(),
         grip_emphasis: colors.grip_emphasis.hsla(),
         disabled_opacity: if state.disabled { 0.45 } else { 1.0 },
-    })
+    }
 }
 
 #[cfg(test)]
@@ -120,13 +87,11 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::controls::resizable_panels::ResizeHandleSize;
-    use gpui_luma::theme::{InteractionLayer, ThemeMode};
+    use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::provenance::LookResolver;
-    use super::{resizable_panels_appearance, resolve_resizable_panels_colors};
+    use super::resizable_panels_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

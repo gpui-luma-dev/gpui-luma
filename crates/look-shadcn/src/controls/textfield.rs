@@ -5,13 +5,10 @@
 //!
 //! **Soft** (Radix soft): filled `muted` background, no border, same text/selection tokens.
 
-use gpui::{Hsla, hsla};
-
 use gpui_luma::controls::textfield::{TextFieldPalette, TextFieldState};
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::color::with_alpha;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -99,100 +96,18 @@ pub fn textfield_palette(
     enabled: bool,
 ) -> TextFieldPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        textfield_palette_from_palette(&ctx, style, state, enabled)
-    } else {
-        textfield_palette_from_catalog(&ctx, style, state, enabled)
-            .unwrap_or_else(|err| panic!("textfield properties: {err}"))
-    }
-}
-
-fn surface_background(palette: &crate::palette::ShadcnPalette, theme_mode: ThemeMode) -> Hsla {
-    match theme_mode {
-        ThemeMode::Light => hsla(0.0, 0.0, 0.0, 0.0),
-        ThemeMode::Dark => with_alpha(palette.input_background, 0.30),
-    }
-}
-
-fn shared_textfield_tokens_from_palette(
-    palette: &crate::palette::ShadcnPalette,
-) -> (Hsla, Hsla, Hsla, Hsla, Hsla, Hsla) {
-    (
-        palette.app_foreground,
-        palette.app_muted_foreground,
-        palette.app_muted_foreground,
-        palette.selected_background,
-        palette.selected_foreground,
-        palette.app_foreground,
-    )
-}
-
-pub fn textfield_palette_from_palette(
-    ctx: &AppearanceContext,
-    style: ShadcnTextFieldStyle,
-    state: TextFieldState,
-    enabled: bool,
-) -> TextFieldPalette {
-    let palette = ctx.palette();
-    let typography = ctx.typography();
-    let theme_mode = ctx.theme_mode;
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
-    let (foreground, placeholder, icon, selection_background, selection_foreground, caret) =
-        shared_textfield_tokens_from_palette(palette);
-
-    let (background, border) = match (style, enabled) {
-        (ShadcnTextFieldStyle::Surface, true) => {
-            let border = if state.invalid {
-                palette.focus_ring
-            } else {
-                palette.input_background
-            };
-            (surface_background(palette, theme_mode), border)
-        }
-        (ShadcnTextFieldStyle::Soft, true) => (palette.muted_background, transparent),
-        (ShadcnTextFieldStyle::Surface, false) => (palette.disabled_background, palette.input_background),
-        (ShadcnTextFieldStyle::Soft, false) => (palette.disabled_background, transparent),
-    };
-
-    let (foreground, placeholder, icon, caret) = if enabled {
-        (foreground, placeholder, icon, caret)
-    } else {
-        (
-            palette.disabled_foreground,
-            palette.disabled_foreground,
-            palette.disabled_foreground,
-            palette.disabled_foreground,
-        )
-    };
-
-    TextFieldPalette {
-        background,
-        foreground,
-        border,
-        placeholder,
-        icon,
-        selection_background,
-        selection_foreground,
-        caret,
-        focus_ring: (enabled && state.focus_visible).then_some(palette.focus_ring),
-        typography: typography.text.body,
-        font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-pub fn textfield_palette_from_catalog(
-    ctx: &AppearanceContext,
-    style: ShadcnTextFieldStyle,
-    state: TextFieldState,
-    enabled: bool,
-) -> anyhow::Result<TextFieldPalette> {
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
     let colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
         .unwrap_or_else(|_| TextFieldColorTable::fallback());
+    let focus_ring = if enabled && state.focus_visible {
+        Some(focus_ring_color(catalog).unwrap_or_else(|err| panic!("textfield properties: {err}")))
+    } else {
+        None
+    };
 
-    Ok(TextFieldPalette {
+    TextFieldPalette {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
@@ -201,10 +116,10 @@ pub fn textfield_palette_from_catalog(
         selection_background: colors.selection_background.hsla(),
         selection_foreground: colors.selection_foreground.hsla(),
         caret: colors.caret.hsla(),
-        focus_ring: (enabled && state.focus_visible).then(|| focus_ring_color(catalog)).transpose()?,
+        focus_ring,
         typography: typography.text.body,
         font_family: typography.font.sans.family.clone().into(),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -215,12 +130,11 @@ mod tests {
     use gpui_luma::controls::textfield::TextFieldState;
     use gpui_luma::theme::ThemeMode;
 
-    use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
 
-    use super::{ShadcnTextFieldStyle, textfield_palette_from_catalog};
+    use super::{ShadcnTextFieldStyle, textfield_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -244,10 +158,8 @@ mod tests {
     fn surface_textfield_light_uses_transparent_fill_and_input_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, Default::default());
         let appearance =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
 
         assert_eq!(appearance.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
         assert_eq!(appearance.border, catalog.color("input").expect("input"));
@@ -259,10 +171,8 @@ mod tests {
     fn surface_textfield_dark_uses_input_fill_at_thirty_percent() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Dark, Default::default());
         let appearance =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let input = catalog.color("input").expect("input");
 
         assert_eq!(appearance.background, with_alpha(input, 0.30));
@@ -273,10 +183,8 @@ mod tests {
     fn soft_textfield_uses_muted_fill_and_no_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, Default::default());
         let appearance =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true);
 
         assert_eq!(appearance.background, catalog.color("muted").expect("muted"));
         assert_eq!(appearance.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
@@ -286,14 +194,11 @@ mod tests {
     fn surface_textfield_hover_does_not_change_background() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, Default::default());
         let default =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true)
-                .expect("textfield");
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let mut hovered = TextFieldState::default();
         hovered.hovered = true;
-        let appearance =
-            textfield_palette_from_catalog(&ctx, ShadcnTextFieldStyle::Surface, hovered, true).expect("textfield");
+        let appearance = textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, hovered, true);
 
         assert_eq!(appearance.background, default.background);
     }

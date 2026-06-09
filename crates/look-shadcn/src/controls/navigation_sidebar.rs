@@ -181,180 +181,29 @@ pub fn resolve_navigation_sidebar_item_colors_with_stylesheet(
 
 pub fn navigation_sidebar_container_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarContainerAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        navigation_sidebar_container_from_palette(&ctx)
-    } else {
-        navigation_sidebar_container_from_catalog(&ctx)
-            .unwrap_or_else(|err| panic!("navigation sidebar container properties: {err}"))
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_container");
+    let colors = resolve_navigation_sidebar_container_colors(&resolver, true)
+        .unwrap_or_else(|_| NavigationSidebarContainerColorTable::fallback());
+    NavigationSidebarContainerAppearance {
+        background: colors.background.hsla(),
+        foreground: colors.foreground.hsla(),
+        border: colors.border.hsla(),
     }
 }
 
 pub fn navigation_sidebar_section_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarSectionAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        navigation_sidebar_section_from_palette(&ctx)
-    } else {
-        navigation_sidebar_section_from_catalog(&ctx)
-            .unwrap_or_else(|err| panic!("navigation sidebar section properties: {err}"))
-    }
-}
-
-pub fn navigation_sidebar_branch_appearance(
-    mode: &ShadcnModeTokens,
-    state: InteractionState,
-    size: ControlSize,
-) -> NavigationSidebarItemAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        navigation_sidebar_branch_from_palette(&ctx, size)
-    } else {
-        navigation_sidebar_branch_from_catalog(&ctx, size)
-            .unwrap_or_else(|err| panic!("navigation sidebar branch properties: {err}"))
-    }
-}
-
-pub fn navigation_sidebar_item_appearance(
-    mode: &ShadcnModeTokens,
-    selected: bool,
-    state: InteractionState,
-    size: ControlSize,
-) -> NavigationSidebarItemAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
-    if mode.catalog.tokens.is_empty() {
-        navigation_sidebar_item_from_palette(&ctx, selected, size)
-    } else {
-        navigation_sidebar_item_from_catalog(&ctx, selected, size)
-            .unwrap_or_else(|err| panic!("navigation sidebar item properties: {err}"))
-    }
-}
-
-pub fn navigation_sidebar_container_from_palette(ctx: &AppearanceContext) -> NavigationSidebarContainerAppearance {
-    let palette = ctx.palette();
-    NavigationSidebarContainerAppearance {
-        background: palette.panel_background,
-        foreground: palette.app_foreground,
-        border: palette.border_default,
-    }
-}
-
-pub fn navigation_sidebar_section_from_palette(ctx: &AppearanceContext) -> NavigationSidebarSectionAppearance {
-    let palette = ctx.palette();
-    NavigationSidebarSectionAppearance {
-        label_color: palette.app_muted_foreground,
-        typography: ctx.typography().text.caption,
-        height: 20.0,
-    }
-}
-
-fn base_item_from_palette(ctx: &AppearanceContext, size: ControlSize) -> NavigationSidebarItemAppearance {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-    let typography = ctx.typography();
-    let size_metrics = metrics.for_size(size);
-    let foreground = if state.disabled {
-        palette.disabled_foreground
-    } else {
-        palette.app_foreground
-    };
-
-    NavigationSidebarItemAppearance {
-        background: None,
-        foreground,
-        icon_color: foreground,
-        focus_ring: state.focused.then_some(palette.focus_ring),
-        typography: typography.text.label,
-        radius: metrics.radius(size),
-        height: 30.0,
-        padding_x: 8.0,
-        gap: size_metrics.gap,
-        icon_size: 16.0,
-    }
-}
-
-pub fn navigation_sidebar_branch_from_palette(
-    ctx: &AppearanceContext,
-    size: ControlSize,
-) -> NavigationSidebarItemAppearance {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let mut appearance = base_item_from_palette(ctx, size);
-
-    appearance.background = match state.layer() {
-        InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered | InteractionLayer::Pressed => Some(palette.ghost.hover_background),
-    };
-
-    if matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) && !state.disabled {
-        appearance.foreground = palette.primary.foreground;
-        appearance.icon_color = palette.primary.foreground;
-    }
-
-    appearance
-}
-
-pub fn navigation_sidebar_item_from_palette(
-    ctx: &AppearanceContext,
-    selected: bool,
-    size: ControlSize,
-) -> NavigationSidebarItemAppearance {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let mut appearance = base_item_from_palette(ctx, size);
-    let primary = palette.primary;
-
-    appearance.background = match (selected, state.layer()) {
-        (_, InteractionLayer::Disabled) => None,
-        (true, InteractionLayer::Pressed) => Some(primary.pressed_background),
-        (true, InteractionLayer::Hovered) => Some(primary.hover_background),
-        (true, InteractionLayer::Default) => Some(primary.background),
-        (false, InteractionLayer::Pressed | InteractionLayer::Hovered) => Some(palette.ghost.hover_background),
-        (false, InteractionLayer::Default) => None,
-    };
-
-    if !selected && !state.disabled && matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) {
-        appearance.foreground = palette.primary.foreground;
-        appearance.icon_color = palette.primary.foreground;
-    }
-
-    if selected && !state.disabled {
-        appearance.foreground = primary.foreground;
-        appearance.icon_color = primary.foreground;
-    }
-
-    appearance
-}
-
-pub fn navigation_sidebar_container_from_catalog(
-    ctx: &AppearanceContext,
-) -> anyhow::Result<NavigationSidebarContainerAppearance> {
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_container");
-    let colors = resolve_navigation_sidebar_container_colors(&resolver, true)
-        .unwrap_or_else(|_| NavigationSidebarContainerColorTable::fallback());
-    Ok(NavigationSidebarContainerAppearance {
-        background: colors.background.hsla(),
-        foreground: colors.foreground.hsla(),
-        border: colors.border.hsla(),
-    })
-}
-
-pub fn navigation_sidebar_section_from_catalog(
-    ctx: &AppearanceContext,
-) -> anyhow::Result<NavigationSidebarSectionAppearance> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_section");
     let colors = resolve_navigation_sidebar_section_colors(&resolver, true)
         .unwrap_or_else(|_| NavigationSidebarSectionColorTable::fallback());
-    Ok(NavigationSidebarSectionAppearance {
+    NavigationSidebarSectionAppearance {
         label_color: colors.label_color.hsla(),
         typography: ctx.typography().text.caption,
         height: 20.0,
-    })
+    }
 }
 
-fn base_item_from_catalog(
-    ctx: &AppearanceContext,
-    size: ControlSize,
-) -> anyhow::Result<NavigationSidebarItemAppearance> {
+fn base_item_appearance(ctx: &AppearanceContext, size: ControlSize) -> NavigationSidebarItemAppearance {
     let state = ctx.state;
     let metrics = ctx.metrics();
     let typography = ctx.typography();
@@ -363,13 +212,13 @@ fn base_item_from_catalog(
     let focus_ring = state
         .focused
         .then(|| resolver.resolve_first_decl(&["sidebar-ring", "ring"]))
-        .transpose()?
+        .transpose()
+        .unwrap_or_else(|err| panic!("navigation sidebar item properties: {err}"))
         .map(|color| color.hsla());
-
     let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
 
-    Ok(NavigationSidebarItemAppearance {
+    NavigationSidebarItemAppearance {
         background: None,
         foreground: colors.foreground.hsla(),
         icon_color: colors.icon_color.hsla(),
@@ -380,15 +229,16 @@ fn base_item_from_catalog(
         padding_x: 8.0,
         gap: size_metrics.gap,
         icon_size: 16.0,
-    })
+    }
 }
 
-pub fn navigation_sidebar_branch_from_catalog(
-    ctx: &AppearanceContext,
+pub fn navigation_sidebar_branch_appearance(
+    mode: &ShadcnModeTokens,
+    state: InteractionState,
     size: ControlSize,
-) -> anyhow::Result<NavigationSidebarItemAppearance> {
-    let state = ctx.state;
-    let mut appearance = base_item_from_catalog(ctx, size)?;
+) -> NavigationSidebarItemAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let mut appearance = base_item_appearance(&ctx, size);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_branch");
     let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
@@ -397,16 +247,17 @@ pub fn navigation_sidebar_branch_from_catalog(
     appearance.foreground = colors.foreground.hsla();
     appearance.icon_color = colors.icon_color.hsla();
 
-    Ok(appearance)
+    appearance
 }
 
-pub fn navigation_sidebar_item_from_catalog(
-    ctx: &AppearanceContext,
+pub fn navigation_sidebar_item_appearance(
+    mode: &ShadcnModeTokens,
     selected: bool,
+    state: InteractionState,
     size: ControlSize,
-) -> anyhow::Result<NavigationSidebarItemAppearance> {
-    let state = ctx.state;
-    let mut appearance = base_item_from_catalog(ctx, size)?;
+) -> NavigationSidebarItemAppearance {
+    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let mut appearance = base_item_appearance(&ctx, size);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item");
     let colors = resolve_navigation_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
         .unwrap_or_else(|_| NavigationSidebarItemColorTable::fallback());
@@ -415,7 +266,7 @@ pub fn navigation_sidebar_item_from_catalog(
     appearance.foreground = colors.foreground.hsla();
     appearance.icon_color = colors.icon_color.hsla();
 
-    Ok(appearance)
+    appearance
 }
 
 #[cfg(test)]
@@ -425,12 +276,11 @@ mod tests {
 
     use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-    use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use super::{
-        navigation_sidebar_container_from_catalog, navigation_sidebar_item_from_catalog,
-        navigation_sidebar_section_from_catalog,
+        navigation_sidebar_container_appearance, navigation_sidebar_item_appearance,
+        navigation_sidebar_section_appearance,
     };
 
     fn sample_catalog() -> CssTokenMap {
@@ -464,10 +314,9 @@ mod tests {
     fn navigation_sidebar_uses_sidebar_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
-        let container = navigation_sidebar_container_from_catalog(&ctx).expect("container");
-        let section = navigation_sidebar_section_from_catalog(&ctx).expect("section");
-        let selected = navigation_sidebar_item_from_catalog(&ctx, true, ControlSize::Md).expect("selected item");
+        let container = navigation_sidebar_container_appearance(&mode);
+        let section = navigation_sidebar_section_appearance(&mode);
+        let selected = navigation_sidebar_item_appearance(&mode, true, InteractionState::default(), ControlSize::Md);
 
         assert_eq!(container.background, catalog.color("sidebar").expect("sidebar"));
         assert_eq!(section.label_color, catalog.color("muted-foreground").expect("muted-foreground"));

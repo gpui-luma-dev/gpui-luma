@@ -1,7 +1,7 @@
 //! Inspect metadata for `split_view`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct SplitViewInspectPalette {
     pub separator: ResolvedColor,
@@ -35,42 +35,17 @@ pub fn inspect_split_view_color_palette(
     enabled: bool,
 ) -> SplitViewInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::split_view_from_palette(&ctx, enabled);
-        return SplitViewInspectPalette {
-            separator: resolved_from_hsla(
-                appearance.separator,
-                if enabled {
-                    ColorSource::CssVar { token: "border".into() }
-                } else {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                },
-            ),
-            separator_hover: resolved_from_hsla(
-                appearance.separator_hover,
-                if enabled {
-                    ColorSource::CssVar { token: "accent".into() }
-                } else {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "split_view_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_split_view_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SplitViewColorTable::fallback());
     SplitViewInspectPalette { separator: colors.separator, separator_hover: colors.separator_hover }
 }
 
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use gpui_luma_look_shadcn::ColorSource;
 
     #[test]
     fn split_view_metadata_covers_enabled_and_disabled() {

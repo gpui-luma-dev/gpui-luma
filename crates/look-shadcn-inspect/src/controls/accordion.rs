@@ -1,7 +1,7 @@
 //! Inspect metadata for `accordion`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct AccordionTriggerInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -35,20 +35,6 @@ pub fn inspect_accordion_trigger_color_palette(
     state: InteractionState,
 ) -> AccordionTriggerInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::accordion_trigger_from_palette(&ctx);
-        return AccordionTriggerInspectPalette {
-            background: appearance.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
-            foreground: resolved_from_hsla(appearance.foreground, ColorSource::CssVar { token: "foreground".into() }),
-            border_color: resolved_from_hsla(appearance.border_color, ColorSource::CssVar { token: "border".into() }),
-            icon_color: resolved_from_hsla(appearance.icon_color, ColorSource::CssVar { token: "foreground".into() }),
-            chevron_color: resolved_from_hsla(
-                appearance.chevron_color,
-                ColorSource::CssVar { token: "muted-foreground".into() },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect");
     let colors =
         gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
@@ -68,14 +54,6 @@ pub fn inspect_accordion_content_color_palette(
     expanded: bool,
 ) -> AccordionContentInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::accordion_content_from_palette(&ctx);
-        return AccordionContentInspectPalette {
-            background: appearance.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
-            foreground: resolved_from_hsla(appearance.foreground, ColorSource::CssVar { token: "foreground".into() }),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionContentColorTable::fallback());
@@ -113,14 +91,11 @@ pub fn inspect_accordion_metrics(
     }
 }
 
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use gpui_luma_look_shadcn::ColorSource;
 
     #[test]
     fn accordion_metadata_covers_trigger_and_content_tables() {

@@ -19,7 +19,6 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
-use crate::palette::{ShadcnActionRole, ShadcnPalette};
 use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_switch_color_rule};
 
 #[derive(Clone, Debug)]
@@ -76,59 +75,6 @@ pub fn switch_appearance(
     state: InteractionState,
 ) -> SwitchPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if mode.catalog.tokens.is_empty() {
-        return switch_appearance_from_palette(&ctx, style, on);
-    }
-
-    switch_appearance_from_catalog(&ctx, style, on).unwrap_or_else(|err| panic!("switch properties: {err}"))
-}
-
-pub fn switch_appearance_from_palette(ctx: &AppearanceContext, style: ShadcnButtonStyle, on: bool) -> SwitchPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-    let typography = ctx.typography();
-    let thumb_shadow = thumb_shadow(ctx.theme_mode);
-    let on_action = palette.action(style);
-
-    let track_background = if state.disabled {
-        palette.disabled_background
-    } else if on {
-        on_action.background
-    } else {
-        palette.input_background
-    };
-
-    let track_border = if on && !state.disabled {
-        track_background
-    } else {
-        palette.border_default
-    };
-
-    let (thumb_background, thumb_border) = switch_thumb_surface_palette(palette, on_action, on, state.disabled);
-
-    SwitchPalette {
-        track_background,
-        track_border,
-        thumb_background,
-        thumb_border,
-        thumb_shadow,
-        label_color: if state.disabled {
-            palette.disabled_foreground
-        } else {
-            palette.app_foreground
-        },
-        adorner: crate::focus::focus_adorner_from_palette(palette, metrics, state.focused),
-        label_typography: typography.text.label,
-        label_font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-pub fn switch_appearance_from_catalog(
-    ctx: &AppearanceContext,
-    style: ShadcnButtonStyle,
-    on: bool,
-) -> anyhow::Result<SwitchPalette> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -142,7 +88,7 @@ pub fn switch_appearance_from_catalog(
     let track_border = if on && !state.disabled {
         track_background
     } else {
-        resolve_color(catalog, "border")?
+        resolve_color(catalog, "border").unwrap_or_else(|err| panic!("switch properties: {err}"))
     };
     let thumb_background = colors.thumb_background.hsla();
     let thumb_border = if on && !state.disabled {
@@ -150,36 +96,20 @@ pub fn switch_appearance_from_catalog(
     } else {
         colors.thumb_border.hsla()
     };
+    let adorner =
+        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("switch properties: {err}"));
 
-    Ok(SwitchPalette {
+    SwitchPalette {
         track_background,
         track_border,
         thumb_background,
         thumb_border,
         thumb_shadow,
         label_color: colors.label_color.hsla(),
-        adorner: focus_adorner(catalog, metrics, state.focused)?,
+        adorner,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-    })
-}
-
-fn switch_thumb_surface_palette(
-    palette: &ShadcnPalette,
-    on_action: ShadcnActionRole,
-    on: bool,
-    disabled: bool,
-) -> (gpui::Hsla, gpui::Hsla) {
-    if disabled {
-        return (palette.disabled_foreground, palette.disabled_background);
     }
-
-    if on {
-        let thumb = on_action.foreground;
-        return (thumb, thumb);
-    }
-
-    (palette.app_background, palette.border_default)
 }
 
 #[cfg(test)]
@@ -189,11 +119,9 @@ mod tests {
 
     use gpui_luma::theme::{InteractionState, ThemeMode};
 
-    use crate::appearance_context::AppearanceContext;
     use crate::controls::button::ShadcnButtonStyle;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::switch_appearance_from_catalog;
     use super::switch_appearance;
 
     fn sample_catalog() -> CssTokenMap {
@@ -218,8 +146,8 @@ mod tests {
     fn off_switch_uses_input_track_and_background_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
-        let appearance = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, false).expect("switch");
+        let appearance =
+            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
 
         let input = catalog.color("input").expect("input");
         let border = catalog.color("border").expect("border");
@@ -234,8 +162,8 @@ mod tests {
     fn on_switch_uses_style_track_and_card_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
-        let appearance = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, true).expect("switch");
+        let appearance =
+            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
 
         let primary = catalog.color("primary").expect("primary");
         let primary_foreground = catalog.color("primary-foreground").expect("primary-foreground");
@@ -294,32 +222,22 @@ mod tests {
     fn hover_and_pressed_match_default_track_for_off_switch() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let default = switch_appearance_from_catalog(
-            &AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default()),
+        let default =
+            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let hovered = switch_appearance(
+            &mode,
+            ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             false,
-        )
-        .expect("default");
-        let hovered = switch_appearance_from_catalog(
-            &AppearanceContext::new(
-                &mode,
-                ThemeMode::Light,
-                InteractionState { hovered: true, ..InteractionState::default() },
-            ),
+            InteractionState { hovered: true, ..InteractionState::default() },
+        );
+        let pressed = switch_appearance(
+            &mode,
+            ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             false,
-        )
-        .expect("hovered");
-        let pressed = switch_appearance_from_catalog(
-            &AppearanceContext::new(
-                &mode,
-                ThemeMode::Light,
-                InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
-            ),
-            ShadcnButtonStyle::Primary,
-            false,
-        )
-        .expect("pressed");
+            InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+        );
 
         assert_eq!(default.track_background, hovered.track_background);
         assert_eq!(default.track_background, pressed.track_background);
@@ -330,9 +248,15 @@ mod tests {
     fn primary_and_secondary_share_off_appearance() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
-        let primary = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Primary, false).expect("primary");
-        let secondary = switch_appearance_from_catalog(&ctx, ShadcnButtonStyle::Secondary, false).expect("secondary");
+        let primary =
+            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let secondary = switch_appearance(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Secondary,
+            false,
+            InteractionState::default(),
+        );
 
         assert_eq!(primary.track_background, secondary.track_background);
         assert_eq!(primary.thumb_background, secondary.thumb_background);

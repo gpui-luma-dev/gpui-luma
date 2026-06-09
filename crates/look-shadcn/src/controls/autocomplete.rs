@@ -59,42 +59,17 @@ pub fn autocomplete_textbox_appearance(
     size: ControlSize,
 ) -> AutocompleteTextBoxAppearance {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        autocomplete_textbox_appearance_from_palette(&ctx, size)
-    } else {
-        autocomplete_textbox_appearance_from_catalog(&ctx, size)
-            .unwrap_or_else(|err| panic!("autocomplete properties: {err}"))
-    }
-}
-
-pub fn autocomplete_textbox_appearance_from_palette(
-    ctx: &AppearanceContext,
-    size: ControlSize,
-) -> AutocompleteTextBoxAppearance {
-    let palette = ctx.palette();
-    AutocompleteTextBoxAppearance {
-        status_color: palette.primary.background,
-        muted_text_color: palette.app_muted_foreground,
-        clear_icon_color: palette.app_muted_foreground,
-        clear_icon_hover_color: palette.app_foreground,
-        menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
-    }
-}
-
-pub fn autocomplete_textbox_appearance_from_catalog(
-    ctx: &AppearanceContext,
-    size: ControlSize,
-) -> anyhow::Result<AutocompleteTextBoxAppearance> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome");
     let colors = resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
-    Ok(AutocompleteTextBoxAppearance {
+
+    AutocompleteTextBoxAppearance {
         status_color: colors.status_color.hsla(),
         muted_text_color: colors.muted_text_color.hsla(),
         clear_icon_color: colors.clear_icon_color.hsla(),
         clear_icon_hover_color: colors.clear_icon_hover_color.hsla(),
         menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -108,7 +83,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{autocomplete_textbox_appearance};
+    use super::autocomplete_textbox_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

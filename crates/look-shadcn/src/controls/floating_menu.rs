@@ -108,45 +108,6 @@ pub fn floating_menu_appearance(
     size: ControlSize,
 ) -> FloatingMenuAppearance {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        floating_menu_appearance_from_palette(&ctx, size)
-    } else {
-        floating_menu_appearance_from_catalog(&ctx, size)
-            .unwrap_or_else(|err| panic!("floating menu properties: {err}"))
-    }
-}
-
-pub fn floating_menu_appearance_from_palette(ctx: &AppearanceContext, size: ControlSize) -> FloatingMenuAppearance {
-    let palette = ctx.palette();
-    let metrics = ctx.metrics();
-    let typography = ctx.typography();
-    let shadow = menu_shadow(ctx.theme_mode);
-
-    FloatingMenuAppearance {
-        background: palette.panel_background,
-        foreground: palette.app_foreground,
-        border: palette.border_default,
-        shadow,
-        radius: metrics.radius.lg,
-        padding: metrics.padding_y(size) * 0.5,
-        min_width: 180.0,
-        item_disabled_foreground: palette.disabled_foreground,
-        item_hover_background: palette.ghost.hover_background,
-        item_hover_foreground: palette.primary.foreground,
-        item_typography: typography.text.label,
-        item_height: metrics.control_height(size) * 0.9,
-        item_padding_x: metrics.padding_x(size) * 0.75,
-        item_gap: metrics.gap(size),
-        item_icon_size: metrics.control_height(size) * 0.44,
-        item_radius: metrics.radius.sm,
-        submenu_offset_x: metrics.gap(size) * 0.5,
-    }
-}
-
-pub fn floating_menu_appearance_from_catalog(
-    ctx: &AppearanceContext,
-    size: ControlSize,
-) -> anyhow::Result<FloatingMenuAppearance> {
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
@@ -154,7 +115,7 @@ pub fn floating_menu_appearance_from_catalog(
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
     let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
 
-    Ok(FloatingMenuAppearance {
+    FloatingMenuAppearance {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
@@ -172,7 +133,7 @@ pub fn floating_menu_appearance_from_catalog(
         item_icon_size: metrics.control_height(size) * 0.44,
         item_radius: metrics.radius.sm,
         submenu_offset_x: metrics.gap(size) * 0.5,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -183,10 +144,9 @@ mod tests {
 
     use gpui_luma::theme::ControlSize;
 
-    use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{floating_menu_appearance_from_catalog};
+    use super::floating_menu_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -213,8 +173,7 @@ mod tests {
     fn floating_menu_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, Default::default());
-        let appearance = floating_menu_appearance_from_catalog(&ctx, ControlSize::Md).expect("floating menu");
+        let appearance = floating_menu_appearance(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
 
         assert_eq!(appearance.background, catalog.color("popover").expect("popover"));
         assert_eq!(appearance.foreground, catalog.color("popover-foreground").expect("popover-foreground"));

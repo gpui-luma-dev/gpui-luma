@@ -1,7 +1,7 @@
 //! Inspect metadata for `control_group`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ControlGroupListInspectPalette {
     pub background: ResolvedColor,
@@ -22,21 +22,6 @@ pub fn inspect_control_group_list_color_palette(
     enabled: bool,
 ) -> ControlGroupListInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::control_group_list_from_palette(&ctx, enabled);
-        return ControlGroupListInspectPalette {
-            background: resolved_from_hsla(
-                appearance.background,
-                if enabled {
-                    ColorSource::CssVar { token: "muted".into() }
-                } else {
-                    ColorSource::CssVar { token: "muted-foreground".into() }
-                },
-            ),
-            border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "border".into() }),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
@@ -60,10 +45,6 @@ pub fn inspect_control_group_metrics(
         padding_y: derived_metric("control group padding y", appearance.padding_y),
         gap: derived_metric("control group gap", appearance.gap),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[cfg(test)]

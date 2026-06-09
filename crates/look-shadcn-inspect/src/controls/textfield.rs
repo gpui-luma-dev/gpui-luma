@@ -1,7 +1,7 @@
 //! Inspect metadata for `textfield`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
 use gpui_luma::controls::textfield::TextFieldState;
@@ -26,32 +26,6 @@ pub fn inspect_textfield_color_palette(
     enabled: bool,
 ) -> TextFieldInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::textfield_palette_from_palette(&ctx, style, state, enabled);
-        return TextFieldInspectPalette {
-            background: resolved_from_hsla(appearance.background, ColorSource::Transparent),
-            foreground: resolved_from_hsla(appearance.foreground, ColorSource::CssVar { token: "foreground".into() }),
-            border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "input".into() }),
-            placeholder: resolved_from_hsla(
-                appearance.placeholder,
-                ColorSource::CssVar { token: "muted-foreground".into() },
-            ),
-            icon: resolved_from_hsla(appearance.icon, ColorSource::CssVar { token: "muted-foreground".into() }),
-            selection_background: resolved_from_hsla(
-                appearance.selection_background,
-                ColorSource::CssVar { token: "primary".into() },
-            ),
-            selection_foreground: resolved_from_hsla(
-                appearance.selection_foreground,
-                ColorSource::CssVar { token: "primary-foreground".into() },
-            ),
-            caret: resolved_from_hsla(appearance.caret, ColorSource::CssVar { token: "foreground".into() }),
-            focus_ring: appearance
-                .focus_ring
-                .map(|color| resolved_from_hsla(color, ColorSource::CssVar { token: "ring".into() })),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
     let colors =
         gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
@@ -69,10 +43,6 @@ pub fn inspect_textfield_color_palette(
         caret: colors.caret,
         focus_ring,
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[derive(Clone, Debug)]

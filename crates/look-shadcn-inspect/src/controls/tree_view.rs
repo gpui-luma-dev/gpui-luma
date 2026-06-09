@@ -1,7 +1,7 @@
 //! Inspect metadata for `tree_view`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct TreeViewRowInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -27,25 +27,6 @@ pub fn inspect_tree_view_row_color_palette(
     state: InteractionState,
 ) -> TreeViewRowInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let palette = gpui_luma_look_shadcn::paint::tree_view_row_from_palette(mode, state, &ctx);
-        return TreeViewRowInspectPalette {
-            background: palette.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
-            foreground: resolved_from_hsla(
-                palette.foreground,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            icon_color: resolved_from_hsla(
-                palette.icon_color,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-            chevron_color: resolved_from_hsla(
-                palette.chevron_color,
-                ColorSource::CssVar { token: "sidebar-foreground".into() },
-            ),
-        };
-    }
-
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tree_view_row_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TreeViewRowColorTable::fallback());
@@ -82,10 +63,6 @@ pub fn inspect_tree_view_metrics(
         icon_size: derived_metric("tree icon size", scale.icon_size),
         chevron_size: derived_metric("tree chevron size", scale.chevron_size),
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[cfg(test)]

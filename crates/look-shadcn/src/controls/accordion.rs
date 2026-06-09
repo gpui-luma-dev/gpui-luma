@@ -104,10 +104,21 @@ pub fn accordion_trigger_palette(
     state: InteractionState,
 ) -> AccordionPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if mode.catalog.tokens.is_empty() {
-        accordion_trigger_from_palette(&ctx)
-    } else {
-        accordion_trigger_from_catalog(&ctx).unwrap_or_else(|err| panic!("accordion trigger properties: {err}"))
+    let state = ctx.state;
+    let typography = ctx.typography();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger");
+    let colors = resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| AccordionTriggerColorTable::fallback());
+
+    AccordionPalette {
+        background: colors.background.map(|color| color.hsla()),
+        foreground: colors.foreground.hsla(),
+        border_color: colors.border_color.hsla(),
+        icon_color: colors.icon_color.hsla(),
+        chevron_color: colors.chevron_color.hsla(),
+        adorner: None,
+        typography: typography.text.label,
+        font_family: typography.font.sans.family.clone().into(),
     }
 }
 
@@ -117,98 +128,14 @@ pub fn accordion_content_palette(
     expanded: bool,
 ) -> AccordionContentPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    if mode.catalog.tokens.is_empty() {
-        accordion_content_from_palette(&ctx)
-    } else {
-        accordion_content_from_catalog(&ctx, expanded)
-            .unwrap_or_else(|err| panic!("accordion content properties: {err}"))
-    }
-}
-
-pub fn accordion_trigger_from_palette(ctx: &AppearanceContext) -> AccordionPalette {
-    let state = ctx.state;
-    let palette = ctx.palette();
-    let typography = ctx.typography();
-
-    let (background, foreground, icon_color, chevron_color) = accordion_trigger_colors(
-        state.disabled,
-        state.layer(),
-        palette.app_foreground,
-        palette.app_muted_foreground,
-        palette.disabled_foreground,
-        palette.accent_background,
-        palette.accent_foreground,
-    );
-
-    AccordionPalette {
-        background,
-        foreground,
-        border_color: palette.border_default,
-        icon_color,
-        chevron_color,
-        adorner: None,
-        typography: typography.text.label,
-        font_family: typography.font.sans.family.clone().into(),
-    }
-}
-
-pub fn accordion_content_from_palette(ctx: &AppearanceContext) -> AccordionContentPalette {
-    let palette = ctx.palette();
-
-    AccordionContentPalette { background: None, foreground: palette.app_foreground }
-}
-
-fn accordion_trigger_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<AccordionPalette> {
-    let state = ctx.state;
-    let typography = ctx.typography();
-    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger");
-    let colors = resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| AccordionTriggerColorTable::fallback());
-
-    Ok(AccordionPalette {
-        background: colors.background.map(|color| color.hsla()),
-        foreground: colors.foreground.hsla(),
-        border_color: colors.border_color.hsla(),
-        icon_color: colors.icon_color.hsla(),
-        chevron_color: colors.chevron_color.hsla(),
-        adorner: None,
-        typography: typography.text.label,
-        font_family: typography.font.sans.family.clone().into(),
-    })
-}
-
-fn accordion_trigger_colors(
-    disabled: bool,
-    layer: InteractionLayer,
-    default_foreground: gpui::Hsla,
-    default_chevron: gpui::Hsla,
-    disabled_foreground: gpui::Hsla,
-    accent_background: gpui::Hsla,
-    accent_foreground: gpui::Hsla,
-) -> (Option<gpui::Hsla>, gpui::Hsla, gpui::Hsla, gpui::Hsla) {
-    if disabled {
-        return (None, disabled_foreground, disabled_foreground, disabled_foreground);
-    }
-
-    match layer {
-        InteractionLayer::Disabled | InteractionLayer::Default => {
-            (None, default_foreground, default_foreground, default_chevron)
-        }
-        InteractionLayer::Hovered | InteractionLayer::Pressed => {
-            (Some(accent_background), accent_foreground, accent_foreground, accent_foreground)
-        }
-    }
-}
-
-fn accordion_content_from_catalog(ctx: &AppearanceContext, expanded: bool) -> anyhow::Result<AccordionContentPalette> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_content");
     let colors = resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| AccordionContentColorTable::fallback());
 
-    Ok(AccordionContentPalette {
+    AccordionContentPalette {
         background: colors.background.map(|color| color.hsla()),
         foreground: colors.foreground.hsla(),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -220,8 +147,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::provenance::ColorSource;
-    use super::{accordion_trigger_palette};
+    use super::accordion_trigger_palette;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([

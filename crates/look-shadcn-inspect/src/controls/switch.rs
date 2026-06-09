@@ -23,30 +23,6 @@ pub fn inspect_switch_color_palette(
     state: InteractionState,
 ) -> SwitchInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
-    if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::switch_appearance_from_palette(&ctx, style, on);
-        return SwitchInspectPalette {
-            track_background: resolved_from_hsla(
-                appearance.track_background,
-                if on {
-                    ColorSource::CssVar { token: "primary".into() }
-                } else {
-                    ColorSource::CssVar { token: "input".into() }
-                },
-            ),
-            track_border: resolved_from_hsla(appearance.track_border, ColorSource::CssVar { token: "border".into() }),
-            thumb_background: resolved_from_hsla(
-                appearance.thumb_background,
-                ColorSource::CssVar { token: "background".into() },
-            ),
-            thumb_border: resolved_from_hsla(appearance.thumb_border, ColorSource::CssVar { token: "border".into() }),
-            label_color: resolved_from_hsla(appearance.label_color, ColorSource::CssVar { token: "foreground".into() }),
-            focus_ring: state
-                .focused
-                .then(|| resolved_from_hsla(ctx.palette().focus_ring, ColorSource::CssVar { token: "ring".into() })),
-        };
-    }
-
     let catalog = ctx.catalog();
     let resolver = LookResolver::new(catalog, theme_mode, "switch_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled)
@@ -74,10 +50,6 @@ pub fn inspect_switch_color_palette(
         label_color: colors.label_color,
         focus_ring,
     }
-}
-
-fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
-    ResolvedColor { value, source }
 }
 
 #[derive(Clone, Debug)]
