@@ -22,6 +22,7 @@ pub struct GalleryApp {
     pub(super) nav_toggle: String,
     pub(super) split_sidebar_width: f32,
     pub(super) split_sidebar_collapsed: bool,
+    pub(super) last_inspector_refresh: Option<String>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -91,6 +92,7 @@ impl GalleryApp {
             nav_toggle: "none".to_string(),
             split_sidebar_width: 280.0,
             split_sidebar_collapsed: false,
+            last_inspector_refresh: None,
             _subscriptions: subscriptions,
         }
     }

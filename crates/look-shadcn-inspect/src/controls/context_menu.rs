@@ -1,10 +1,7 @@
 //! Inspect metadata for `context_menu`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ShadcnModeTokens};
 
 pub struct ContextMenuInspectPalette {
     pub target_background: gpui_luma_look_shadcn::ResolvedColor,
@@ -35,7 +32,8 @@ pub fn inspect_context_menu_color_palette(
     let appearance = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx)
     } else {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
+        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
     };
 
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
@@ -71,8 +69,9 @@ pub fn inspect_context_menu_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "context_menu_inspect");
-    let trigger_colors = gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
+    let trigger_colors =
+        gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
     let target_background = trigger_colors.background;
     let target_foreground = trigger_colors.foreground;
     let target_border = resolver.resolve_decl("border").unwrap_or_else(|_| {
@@ -95,7 +94,8 @@ pub fn inspect_context_menu_metrics(
     let appearance = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx)
     } else {
-        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
+        gpui_luma_look_shadcn::paint::context_menu_appearance_from_catalog(&ctx)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::context_menu_appearance_from_palette(&ctx))
     };
     let catalog = ctx.catalog();
 
@@ -108,6 +108,9 @@ pub fn inspect_context_menu_metrics(
     }
 }
 
-fn resolved_from_hsla(value: gpui::Hsla, source: gpui_luma_look_shadcn::ColorSource) -> gpui_luma_look_shadcn::ResolvedColor {
+fn resolved_from_hsla(
+    value: gpui::Hsla,
+    source: gpui_luma_look_shadcn::ColorSource,
+) -> gpui_luma_look_shadcn::ResolvedColor {
     gpui_luma_look_shadcn::ResolvedColor { value, source }
 }

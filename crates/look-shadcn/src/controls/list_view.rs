@@ -16,8 +16,10 @@ use crate::color::with_alpha;
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_list_view_row_color_rule, find_list_view_surface_color_rule,
+    resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
+};
 
 const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
@@ -40,16 +42,27 @@ impl ListViewSurfaceColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_list_view_surface_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: ListViewSurfaceColorTable { background, border, header_background, header_label_color },
-    matrix: [
-        [true]  => "background" | "input" | "muted" | "muted-foreground",
-        [false] => "muted" | "input" | "muted" | "muted-foreground",
-    ]
+pub fn resolve_list_view_surface_colors(
+    resolver: &LookResolver<'_>,
+    enabled: bool,
+) -> anyhow::Result<ListViewSurfaceColorTable> {
+    resolve_list_view_surface_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_list_view_surface_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<ListViewSurfaceColorTable> {
+    let rule = find_list_view_surface_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching list view surface color rule"))?;
+    let colors = resolve_list_view_surface_color_rule(resolver, rule)?;
+    Ok(ListViewSurfaceColorTable {
+        background: colors.background,
+        border: colors.border,
+        header_background: colors.header_background,
+        header_label_color: colors.header_label_color,
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -69,29 +82,32 @@ impl ListViewRowColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_list_view_row_colors,
-    inputs: {
-        selected: bool,
-        focused: bool,
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: ListViewRowColorTable { background, label_color, divider },
-    matrix: [
-        [true] | [false] | [true] | [_] => "transparent" | "muted-foreground" | "border",
-        [false] | [false] | [true] | [_] => "transparent" | "muted-foreground" | "border",
-        [false] | [true] | [true] | [_] => "muted" | "muted-foreground" | "border",
-        [true] | [true] | [true] | [_] => "muted" | "muted-foreground" | "border",
+pub fn resolve_list_view_row_colors(
+    resolver: &LookResolver<'_>,
+    selected: bool,
+    focused: bool,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ListViewRowColorTable> {
+    resolve_list_view_row_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, focused, disabled, layer)
+}
 
-        [true] | [_] | [false] | [_] => "muted" | "foreground" | "border",
-        [false] | [true] | [false] | [_] => "muted" | "foreground" | "border",
-
-        [false] | [false] | [false] | [InteractionLayer::Default] => "transparent" | "foreground" | "border",
-        [false] | [false] | [false] | [InteractionLayer::Hovered] => "@accent_whisper_40" | "foreground" | "border",
-        [false] | [false] | [false] | [InteractionLayer::Pressed] => "@accent_whisper_pressed_40" | "foreground" | "border",
-        [false] | [false] | [false] | [InteractionLayer::Disabled] => "transparent" | "foreground" | "border",
-    ]
+pub fn resolve_list_view_row_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    selected: bool,
+    focused: bool,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ListViewRowColorTable> {
+    let rule = find_list_view_row_color_rule(stylesheet, selected, focused, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching list view row color rule"))?;
+    let colors = resolve_list_view_row_color_rule(resolver, rule, layer)?;
+    Ok(ListViewRowColorTable {
+        background: colors.background,
+        label_color: colors.label_color,
+        divider: colors.divider,
+    })
 }
 
 pub fn list_view_appearance(
@@ -239,7 +255,6 @@ fn list_view_row_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
@@ -249,10 +264,7 @@ mod tests {
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
     use crate::resolve::resolve_color;
-    use super::{
-        ROW_HOVER_ACCENT_ALPHA, list_view_row_palette, resolve_list_view_row_colors_metadata,
-        resolve_list_view_surface_colors_metadata,
-    };
+    use super::{ROW_HOVER_ACCENT_ALPHA, list_view_row_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -294,5 +306,4 @@ mod tests {
         assert_eq!(hover.background, with_alpha(accent, ROW_HOVER_ACCENT_ALPHA));
         assert_eq!(selected.background, resolve_color(&catalog, "muted").expect("muted"));
     }
-
 }

@@ -7,16 +7,10 @@ use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::LookResolver;
 
-use super::floating_menu::{
-    resolve_ghost_trigger_colors,
-};
+use super::floating_menu::{resolve_ghost_trigger_colors};
 use super::selector_items_panel::selector_items_panel_appearance;
 
-pub fn selector_palette(
-    mode: &ShadcnModeTokens,
-    theme_mode: ThemeMode,
-    state: InteractionState,
-) -> SelectorPalette {
+pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SelectorPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
     if mode.catalog.tokens.is_empty() {
         selector_palette_from_palette(&ctx)
@@ -64,11 +58,7 @@ pub fn selector_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<
         trigger_background: trigger_colors.background.hsla(),
         trigger_foreground: trigger_colors.foreground.hsla(),
         trigger_border: resolver.resolve_decl("border")?.hsla(),
-        focus_ring: state
-            .focused
-            .then(|| resolver.resolve_decl("ring"))
-            .transpose()?
-            .map(|color| color.hsla()),
+        focus_ring: state.focused.then(|| resolver.resolve_decl("ring")).transpose()?.map(|color| color.hsla()),
         trigger_typography: typography.text.label,
         items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     })
@@ -76,7 +66,6 @@ pub fn selector_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<
 
 #[cfg(test)]
 mod tests {
-
 
     use std::collections::BTreeMap;
 
@@ -118,10 +107,6 @@ mod tests {
             gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
         );
         let palette = selector_palette_from_catalog(&ctx).expect("palette");
-        assert_eq!(
-            palette.trigger_foreground,
-            catalog.color("accent-foreground").expect("accent-foreground")
-        );
+        assert_eq!(palette.trigger_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
-
 }

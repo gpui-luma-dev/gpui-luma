@@ -15,8 +15,7 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_radio_color_rule, resolve_radio_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct RadioColorTable {
@@ -37,25 +36,31 @@ impl RadioColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_radio_colors,
-    inputs: {
-        style: ShadcnButtonStyle,
-        selected: bool,
-        layer: InteractionLayer,
-    },
-    output: RadioColorTable { indicator_background, selection_ring, dot_color, label_color },
-    matrix: [
-        [_] | [_] | [InteractionLayer::Disabled] => "muted" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+pub fn resolve_radio_colors(
+    resolver: &LookResolver<'_>,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<RadioColorTable> {
+    resolve_radio_colors_with_stylesheet(resolver, embedded_stylesheet(), style, selected, layer)
+}
 
-        [_] | [false] | [InteractionLayer::Default] => "@outline_layer" | "border" | "foreground" | "foreground",
-        [_] | [false] | [InteractionLayer::Hovered] => "@outline_layer" | "border" | "foreground" | "foreground",
-        [_] | [false] | [InteractionLayer::Pressed] => "@outline_layer" | "border" | "foreground" | "foreground",
-
-        [_] | [true] | [InteractionLayer::Default] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
-        [_] | [true] | [InteractionLayer::Hovered] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
-        [_] | [true] | [InteractionLayer::Pressed] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
-    ]
+pub fn resolve_radio_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    selected: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<RadioColorTable> {
+    let rule = find_radio_color_rule(stylesheet, selected, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching radio color rule"))?;
+    let colors = resolve_radio_color_rule(resolver, rule, style, layer)?;
+    Ok(RadioColorTable {
+        indicator_background: colors.indicator_background,
+        selection_ring: colors.selection_ring,
+        dot_color: colors.dot_color,
+        label_color: colors.label_color,
+    })
 }
 
 pub fn radio_button_appearance(

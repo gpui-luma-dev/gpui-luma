@@ -12,8 +12,7 @@ use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_split_view_color_rule, resolve_split_view_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct SplitViewColorTable {
@@ -27,16 +26,19 @@ impl SplitViewColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_split_view_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: SplitViewColorTable { separator, separator_hover },
-    matrix: [
-        [true]  => "border" | "border-hover",
-        [false] => "muted-foreground" | "muted-foreground",
-    ]
+pub fn resolve_split_view_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<SplitViewColorTable> {
+    resolve_split_view_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_split_view_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<SplitViewColorTable> {
+    let rule = find_split_view_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching split view color rule"))?;
+    let colors = resolve_split_view_color_rule(resolver, rule)?;
+    Ok(SplitViewColorTable { separator: colors.separator, separator_hover: colors.separator_hover })
 }
 
 pub fn split_view_appearance(
@@ -84,15 +86,13 @@ fn split_view_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Re
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::provenance::ColorSource;
-    use super::{resolve_split_view_colors_metadata, split_view_appearance};
+    use super::split_view_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -119,5 +119,4 @@ mod tests {
         let appearance = split_view_appearance(&mode, ThemeMode::Light, false, true);
         assert_eq!(appearance.separator, catalog.color("border").expect("border"));
     }
-
 }

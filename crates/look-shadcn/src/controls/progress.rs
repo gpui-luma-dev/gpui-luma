@@ -6,8 +6,13 @@ use gpui_luma::theme::{InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_progress_color_rule, resolve_progress_color_rule,
+    resolve_progress_metrics,
+};
 
-use gpui_luma_look_shadcn_macros::declare_look_table;
+const DEFAULT_PROGRESS_SIZE: f32 = 64.0;
+const DEFAULT_PROGRESS_STROKE_WIDTH: f32 = 6.0;
 
 #[derive(Clone, Debug)]
 pub struct ProgressColorTable {
@@ -24,16 +29,19 @@ impl ProgressColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_progress_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: ProgressColorTable { track_color, progress_color },
-    matrix: [
-        [true]  => "muted" | "primary",
-        [false] => "muted-foreground" | "muted-foreground",
-    ]
+pub fn resolve_progress_colors(resolver: &LookResolver<'_>, enabled: bool) -> anyhow::Result<ProgressColorTable> {
+    resolve_progress_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_progress_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<ProgressColorTable> {
+    let rule = find_progress_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching progress color rule"))?;
+    let colors = resolve_progress_color_rule(resolver, rule)?;
+    Ok(ProgressColorTable { track_color: colors.track_color, progress_color: colors.progress_color })
 }
 
 pub fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAppearance {
@@ -59,34 +67,40 @@ pub fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> Progress
         } else {
             palette.disabled_foreground
         },
-        size: 64.0,
-        stroke_width: 6.0,
+        size: DEFAULT_PROGRESS_SIZE,
+        stroke_width: DEFAULT_PROGRESS_STROKE_WIDTH,
     }
 }
 
 pub fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<ProgressAppearance> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
+    let stylesheet = embedded_stylesheet();
+    let (size, stroke_width) = stylesheet
+        .progress
+        .metrics
+        .as_ref()
+        .map(resolve_progress_metrics)
+        .map(|metrics| (metrics.size, metrics.stroke_width))
+        .unwrap_or((DEFAULT_PROGRESS_SIZE, DEFAULT_PROGRESS_STROKE_WIDTH));
 
     Ok(ProgressAppearance {
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
-        size: 64.0,
-        stroke_width: 6.0,
+        size,
+        stroke_width,
     })
 }
 
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use crate::provenance::ColorSource;
-    use super::{progress_appearance, resolve_progress_colors_metadata};
+    use super::progress_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -114,5 +128,4 @@ mod tests {
         assert_eq!(appearance.track_color, catalog.color("muted").expect("muted"));
         assert_eq!(appearance.progress_color, catalog.color("primary").expect("primary"));
     }
-
 }

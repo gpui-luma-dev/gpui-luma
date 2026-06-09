@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
-use gpui_luma::controls::button_family::{ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
+use gpui_luma::controls::button_family::{
+    ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
+};
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
@@ -70,7 +72,7 @@ struct RadixStyledButtonFamilyTheme {
 impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
         let ctx = AppearanceContext::new(self.theme.mode_tokens(), self.theme.mode(), state);
-        button_palette(&ctx, self.style, role, size)
+        button_palette(&ctx, self.theme.stylesheet(), self.style, role, size)
     }
 
     fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
@@ -715,6 +717,9 @@ pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<
 
         let appearance =
             button_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
-        element.bg(appearance.background).text_color(appearance.foreground).border_color(appearance.border)
+        element
+            .bg(appearance.background)
+            .text_color(appearance.foreground)
+            .border_color(button_family_effective_border(appearance.border))
     }))
 }

@@ -1,9 +1,7 @@
 //! Inspect metadata for `selector`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
 
@@ -63,8 +61,9 @@ pub fn inspect_selector_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "selector_inspect");
-    let trigger_colors = gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
+    let trigger_colors =
+        gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
     let trigger_border = resolver.resolve_decl("border").unwrap_or_else(|_| {
         resolved_from_hsla(appearance.trigger_border, ColorSource::CssVar { token: "border".into() })
     });
@@ -102,4 +101,3 @@ pub fn inspect_selector_metrics(
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

@@ -2,9 +2,9 @@
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens, format_inspect_css_key,
+    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
+    format_inspect_css_key,
 };
-
 
 pub struct CheckboxInspectPalette {
     pub indicator_background: ResolvedColor,
@@ -47,8 +47,8 @@ pub fn inspect_checkbox_color_palette(
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "checkbox_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_checkbox_colors(&resolver, style, checked, layer).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::CheckboxColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_checkbox_colors(&resolver, style, checked, layer)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::CheckboxColorTable::fallback());
     let indicator_border = effective_checkbox_indicator_border(checked, state.disabled, &colors, &resolver);
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
@@ -137,4 +137,3 @@ pub fn inspect_checkbox_metrics(
         focus_ring_offset: focus_ring_offset_metric(metrics),
     }
 }
-

@@ -27,15 +27,21 @@ fn textfield_menu_tree(id: &str, title: &str, look: &ShadcnLook) -> Vec<TreeNode
     let menu = menu_branch(id, look);
     let layout = choice_layout_branch(id, false, look, textfield_and_menu_layout_data);
 
-    vec![TreeNode::new(id.to_owned(), title.to_owned(), ColorInspectTreeData::Branch)
-        .branch(true)
-        .expanded(true)
-        .children([textfield, menu, layout])]
+    vec![
+        TreeNode::new(id.to_owned(), title.to_owned(), ColorInspectTreeData::Branch)
+            .branch(true)
+            .expanded(true)
+            .children([textfield, menu, layout]),
+    ]
 }
 
 fn textfield_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     let id = format!("{prefix}-textfield");
-    let palette = ShadcnInspect::new(look).inspect_textfield_color_palette(ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
+    let palette = ShadcnInspect::new(look).inspect_textfield_color_palette(
+        ShadcnTextFieldStyle::Surface,
+        TextFieldState::default(),
+        true,
+    );
     TreeNode::new(id.clone(), "textfield".to_owned(), ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(true)

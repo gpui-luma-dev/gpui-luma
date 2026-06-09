@@ -1,10 +1,7 @@
 //! Inspect metadata for `list_view`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ListViewInspectPalette {
     pub background: ResolvedColor,
@@ -37,7 +34,8 @@ pub fn inspect_list_view_color_palette(
 ) -> ListViewInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::list_view_appearance_from_palette(&ctx, enabled, false, ControlSize::Md);
+        let appearance =
+            gpui_luma_look_shadcn::paint::list_view_appearance_from_palette(&ctx, enabled, false, ControlSize::Md);
         return ListViewInspectPalette {
             background: resolved_from_hsla(appearance.background, ColorSource::CssVar { token: "background".into() }),
             border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "input".into() }),
@@ -53,8 +51,8 @@ pub fn inspect_list_view_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "list_view_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_list_view_surface_colors(&resolver, enabled).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewSurfaceColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_list_view_surface_colors(&resolver, enabled)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewSurfaceColorTable::fallback());
     ListViewInspectPalette {
         background: colors.background,
         border: colors.border,
@@ -80,8 +78,14 @@ pub fn inspect_list_view_row_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "list_view_row_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_list_view_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewRowColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_list_view_row_colors(
+        &resolver,
+        selected,
+        state.focused,
+        state.disabled,
+        state.layer(),
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListViewRowColorTable::fallback());
     ListViewRowInspectPalette {
         background: colors.background,
         label_color: colors.label_color,
@@ -97,9 +101,7 @@ pub fn inspect_list_view_metrics(
     use gpui_luma::theme::ListRowScale;
 
     use gpui_luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{
-        control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric,
-    };
+    use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
@@ -107,8 +109,9 @@ pub fn inspect_list_view_metrics(
     let appearance = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::list_view_appearance_from_palette(&ctx, true, false, size)
     } else {
-        gpui_luma_look_shadcn::paint::list_view_appearance_from_catalog(&ctx, true, false, size)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::list_view_appearance_from_palette(&ctx, true, false, size))
+        gpui_luma_look_shadcn::paint::list_view_appearance_from_catalog(&ctx, true, false, size).unwrap_or_else(|_| {
+            gpui_luma_look_shadcn::paint::list_view_appearance_from_palette(&ctx, true, false, size)
+        })
     };
     let row_scale = ListRowScale::compute(size, metrics, 1.0);
     let size_key = control_size_key(size);
@@ -126,4 +129,3 @@ pub fn inspect_list_view_metrics(
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

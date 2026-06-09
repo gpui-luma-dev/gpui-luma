@@ -1,6 +1,10 @@
 use gpui::SharedString;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
-use gpui_luma_look_shadcn_inspect::{ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric, SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance, format_inspect_metric_source, format_metric_px};
+use gpui_luma_look_shadcn_inspect::{
+    ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric, SliderInspectMetrics,
+    SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance, format_inspect_metric_source,
+    format_metric_px,
+};
 
 use super::types::InspectMetricPropertyData;
 
@@ -234,11 +238,7 @@ pub(in crate::gallery) fn textfield_and_menu_layout_data(
     let menu = ShadcnInspect::new(look).inspect_floating_menu_metrics(size);
     super::types::InspectLayoutSizeData {
         size,
-        properties: [
-            textfield_metric_properties(&textfield),
-            floating_menu_metric_properties(&menu),
-        ]
-        .concat(),
+        properties: [textfield_metric_properties(&textfield), floating_menu_metric_properties(&menu)].concat(),
     }
 }
 
@@ -272,11 +272,7 @@ fn navigation_sidebar_metric_properties(
 fn autocomplete_metric_properties(
     metrics: &gpui_luma_look_shadcn_inspect::AutocompleteInspectMetrics,
 ) -> Vec<InspectMetricPropertyData> {
-    [
-        textfield_metric_properties(&metrics.textfield),
-        floating_menu_metric_properties(&metrics.menu),
-    ]
-    .concat()
+    [textfield_metric_properties(&metrics.textfield), floating_menu_metric_properties(&metrics.menu)].concat()
 }
 
 fn split_view_metric_properties(

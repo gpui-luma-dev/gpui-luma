@@ -8,7 +8,6 @@ publish = false
 [dependencies]
 gpui.workspace = true
 gpui-luma = { path = "../sdk" }
-gpui-luma-look-shadcn-macros = { path = "../look-shadcn-macros" }
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true

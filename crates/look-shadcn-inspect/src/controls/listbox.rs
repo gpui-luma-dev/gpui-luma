@@ -1,9 +1,7 @@
 //! Inspect metadata for `listbox`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::paint::focus_ring_color;
 
@@ -39,7 +37,8 @@ pub fn inspect_listbox_list_color_palette(
 ) -> ListBoxListInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::listbox_list_from_palette(&ctx, enabled, focused, ControlSize::Md);
+        let appearance =
+            gpui_luma_look_shadcn::paint::listbox_list_from_palette(&ctx, enabled, focused, ControlSize::Md);
         return ListBoxListInspectPalette {
             background: resolved_from_hsla(
                 appearance.background,
@@ -51,15 +50,14 @@ pub fn inspect_listbox_list_color_palette(
             ),
             border: resolved_from_hsla(appearance.border, ColorSource::CssVar { token: "input".into() }),
             divider: resolved_from_hsla(appearance.divider, ColorSource::CssVar { token: "border".into() }),
-            focus_ring: focused.then(|| {
-                resolved_from_hsla(ctx.palette().focus_ring, ColorSource::CssVar { token: "ring".into() })
-            }),
+            focus_ring: focused
+                .then(|| resolved_from_hsla(ctx.palette().focus_ring, ColorSource::CssVar { token: "ring".into() })),
         };
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxListColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_listbox_list_colors(&resolver, enabled)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxListColorTable::fallback());
     let focus_ring = focused
         .then(|| focus_ring_color(ctx.catalog()))
         .transpose()
@@ -97,8 +95,13 @@ pub fn inspect_listbox_row_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_row_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxRowColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_listbox_row_colors(
+        &resolver,
+        state.disabled,
+        state.focused,
+        state.layer(),
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxRowColorTable::fallback());
     ListBoxRowInspectPalette { background: colors.background, label_color: colors.label_color }
 }
 
@@ -110,9 +113,7 @@ pub fn inspect_listbox_metrics(
     use gpui_luma::theme::ListRowScale;
 
     use gpui_luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{
-        derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric,
-    };
+    use crate::metrics::{derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
@@ -127,10 +128,7 @@ pub fn inspect_listbox_metrics(
             format!("{size_key} list padding y = padding_y × 0.5"),
             metrics.padding_y(size) * 0.5,
         ),
-        row_gap: derived_metric(
-            format!("{size_key} list row gap = padding_y × 0.25"),
-            metrics.padding_y(size) * 0.25,
-        ),
+        row_gap: derived_metric(format!("{size_key} list row gap = padding_y × 0.25"), metrics.padding_y(size) * 0.25),
         row_min_height: scaffold_control_metric(size_key, "row_min_height", list_scale.min_height),
         row_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, list_scale.padding_x),
         row_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, list_scale.padding_y),
@@ -146,11 +144,22 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn listbox_metadata_covers_list_and_row_tables() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_listbox_list_colors_metadata().len(), 2);
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_listbox_row_colors_metadata().len(), 6);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_listbox_list_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            2
+        );
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_listbox_row_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            6
+        );
     }
 
     #[test]

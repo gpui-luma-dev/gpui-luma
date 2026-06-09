@@ -4,7 +4,9 @@ use gpui_luma::controls::textarea::TextAreaState;
 use gpui_luma::theme::{ControlSize, ThemeMode};
 use gpui_luma_look_shadcn::{ShadcnModeTokens, ShadcnTextFieldStyle};
 
-use super::textfield::{TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_metrics};
+use super::textfield::{
+    TextFieldInspectMetrics, TextFieldInspectPalette, inspect_textfield_color_palette, inspect_textfield_metrics,
+};
 
 fn textfield_state_from(state: TextAreaState) -> gpui_luma::controls::textfield::TextFieldState {
     gpui_luma::controls::textfield::TextFieldState {

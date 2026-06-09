@@ -13,6 +13,7 @@ use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
 use crate::controls::{button_appearance, selection_panel_appearance, selector_items_panel_appearance, templates};
 use crate::mode::ShadcnModeTokens;
+use crate::stylesheet::StylesheetConfig;
 
 use crate::shadow::parse_shadow_token;
 use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnToken};
@@ -41,6 +42,7 @@ struct ShadcnLookState {
     catalog: CssTokenCatalog,
     light: ShadcnModeTokens,
     dark: ShadcnModeTokens,
+    stylesheet: StylesheetConfig,
     mode: AtomicU8,
 }
 
@@ -57,6 +59,20 @@ impl ShadcnLook {
                 light: ShadcnModeTokens::from_catalog(catalog.light_map(), ThemeMode::Light)?,
                 dark: ShadcnModeTokens::from_catalog(catalog.dark_map(), ThemeMode::Dark)?,
                 catalog,
+                stylesheet: crate::stylesheet::embedded_stylesheet().clone(),
+                mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
+            }),
+        })
+    }
+
+    pub fn from_css_str_with_stylesheet(source: &str, stylesheet: StylesheetConfig) -> anyhow::Result<Self> {
+        let catalog = parse_css_catalog(source)?;
+        Ok(Self {
+            state: Arc::new(ShadcnLookState {
+                light: ShadcnModeTokens::from_catalog(catalog.light_map(), ThemeMode::Light)?,
+                dark: ShadcnModeTokens::from_catalog(catalog.dark_map(), ThemeMode::Dark)?,
+                catalog,
+                stylesheet,
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
         })
@@ -66,6 +82,22 @@ impl ShadcnLook {
         let source = std::fs::read_to_string(path.as_ref())
             .map_err(|err| anyhow::anyhow!("read shadcn theme css {}: {err}", path.as_ref().display()))?;
         Self::from_css_str(&source)
+    }
+
+    pub fn from_css_path_with_stylesheet(
+        css_path: impl AsRef<std::path::Path>,
+        stylesheet_path: impl AsRef<std::path::Path>,
+    ) -> anyhow::Result<Self> {
+        let source = std::fs::read_to_string(css_path.as_ref())
+            .map_err(|err| anyhow::anyhow!("read shadcn theme css {}: {err}", css_path.as_ref().display()))?;
+        let stylesheet_source = std::fs::read_to_string(stylesheet_path.as_ref())
+            .map_err(|err| anyhow::anyhow!("read stylesheet {}: {err}", stylesheet_path.as_ref().display()))?;
+        let stylesheet = StylesheetConfig::parse(&stylesheet_source)?;
+        Self::from_css_str_with_stylesheet(&source, stylesheet)
+    }
+
+    pub fn stylesheet(&self) -> &StylesheetConfig {
+        &self.state.stylesheet
     }
 
     pub fn mode(&self) -> ThemeMode {
@@ -193,6 +225,7 @@ impl ShadcnLook {
                 catalog: self.state.catalog.clone(),
                 light,
                 dark,
+                stylesheet: self.state.stylesheet.clone(),
                 mode: AtomicU8::new(self.state.mode.load(Ordering::Relaxed)),
             }),
         }

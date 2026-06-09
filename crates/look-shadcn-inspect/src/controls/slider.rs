@@ -1,10 +1,7 @@
 //! Inspect metadata for `slider`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {
     pub track_background: ResolvedColor,
@@ -74,7 +71,8 @@ pub fn inspect_slider_color_palette(
 
     let layer = state.layer();
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_slider_colors(&resolver, layer).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SliderColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_slider_colors(&resolver, layer)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SliderColorTable::fallback());
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     SliderInspectPalette {
@@ -93,7 +91,8 @@ pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) ->
     let appearance = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::slider_appearance_from_palette(&ctx)
     } else {
-        gpui_luma_look_shadcn::paint::slider_appearance_from_catalog(&ctx).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::slider_appearance_from_palette(&ctx))
+        gpui_luma_look_shadcn::paint::slider_appearance_from_catalog(&ctx)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::slider_appearance_from_palette(&ctx))
     };
 
     SliderInspectMetrics {
@@ -108,4 +107,3 @@ pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) ->
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

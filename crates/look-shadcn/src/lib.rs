@@ -14,6 +14,7 @@ mod provenance;
 mod resolve;
 mod shadow;
 mod state_color;
+pub mod stylesheet;
 mod tokens;
 mod usage;
 
@@ -29,6 +30,10 @@ pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
 pub use appearance_context::AppearanceContext;
+pub use stylesheet::{
+    ColorRuleMetadataSection, StylesheetConfig, all_color_rule_metadata, embedded_color_rule_metadata,
+    embedded_stylesheet,
+};
 pub use controls::{
     ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,
     ShadcnTextFieldExt, ShadcnTextFieldStyle,

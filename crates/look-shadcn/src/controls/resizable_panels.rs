@@ -14,8 +14,9 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_resizable_panels_color_rule, resolve_resizable_panels_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct ResizablePanelsColorTable {
@@ -36,21 +37,29 @@ impl ResizablePanelsColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_resizable_panels_colors,
-    inputs: {
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: ResizablePanelsColorTable { border, divider, grip, grip_emphasis },
-    matrix: [
-        [true] | [_] => "border" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+pub fn resolve_resizable_panels_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ResizablePanelsColorTable> {
+    resolve_resizable_panels_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+}
 
-        [false] | [InteractionLayer::Default] => "border" | "border" | "border" | "accent",
-        [false] | [InteractionLayer::Hovered] => "border" | "border" | "border" | "first_layer(accent)",
-        [false] | [InteractionLayer::Pressed] => "border" | "border" | "border" | "first_layer(accent)",
-        [false] | [InteractionLayer::Disabled] => "border" | "border" | "border" | "accent",
-    ]
+pub fn resolve_resizable_panels_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ResizablePanelsColorTable> {
+    let rule = find_resizable_panels_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching resizable panels color rule"))?;
+    let colors = resolve_resizable_panels_color_rule(resolver, rule, layer)?;
+    Ok(ResizablePanelsColorTable {
+        border: colors.border,
+        divider: colors.divider,
+        grip: colors.grip,
+        grip_emphasis: colors.grip_emphasis,
+    })
 }
 
 pub fn resizable_panels_appearance(
@@ -109,7 +118,6 @@ fn resizable_panels_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<Resi
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::controls::resizable_panels::ResizeHandleSize;
@@ -118,10 +126,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::LookResolver;
-    use super::{
-        resizable_panels_appearance,
-        resolve_resizable_panels_colors, resolve_resizable_panels_colors_metadata,
-    };
+    use super::{resizable_panels_appearance, resolve_resizable_panels_colors};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -149,5 +154,4 @@ mod tests {
         assert_eq!(appearance.border, catalog.color("border").expect("border"));
         assert_eq!(appearance.grip_emphasis, catalog.color("accent").expect("accent"));
     }
-
 }

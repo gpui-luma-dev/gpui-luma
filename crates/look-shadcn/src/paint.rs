@@ -1,13 +1,14 @@
 //! Public appearance/paint helpers for downstream inspect tooling.
 
 pub use crate::controls::accordion::{
-    accordion_content_from_palette, accordion_content_palette, accordion_trigger_from_palette, accordion_trigger_palette,
+    accordion_content_from_palette, accordion_content_palette, accordion_trigger_from_palette,
+    accordion_trigger_palette,
 };
-pub use crate::controls::autocomplete::{
-    autocomplete_textbox_appearance, autocomplete_textbox_appearance_from_palette,
-};
+pub use crate::controls::autocomplete::{autocomplete_textbox_appearance, autocomplete_textbox_appearance_from_palette};
 pub use crate::controls::button::{button_appearance, button_palette};
-pub use crate::controls::checkbox::{checkbox_appearance, checkbox_appearance_from_catalog, checkbox_appearance_from_palette};
+pub use crate::controls::checkbox::{
+    checkbox_appearance, checkbox_appearance_from_catalog, checkbox_appearance_from_palette,
+};
 pub use crate::controls::context_menu::{
     context_menu_appearance, context_menu_appearance_from_catalog, context_menu_appearance_from_palette,
 };
@@ -19,17 +20,24 @@ pub use crate::controls::list_view::{
     list_view_appearance, list_view_appearance_from_catalog, list_view_appearance_from_palette,
     list_view_row_from_palette, list_view_row_palette,
 };
-pub use crate::controls::listbox::{listbox_list_appearance, listbox_list_from_palette, listbox_row_from_palette, listbox_row_palette};
-pub use crate::controls::navigation_sidebar::{
-    navigation_sidebar_branch_appearance, navigation_sidebar_branch_from_catalog, navigation_sidebar_branch_from_palette,
-    navigation_sidebar_container_appearance, navigation_sidebar_container_from_catalog,
-    navigation_sidebar_container_from_palette, navigation_sidebar_item_appearance,
-    navigation_sidebar_item_from_catalog, navigation_sidebar_item_from_palette, navigation_sidebar_section_appearance,
-    navigation_sidebar_section_from_catalog, navigation_sidebar_section_from_palette,
+pub use crate::controls::listbox::{
+    listbox_list_appearance, listbox_list_from_palette, listbox_row_from_palette, listbox_row_palette,
 };
-pub use crate::controls::popup_menu::{popup_menu_palette, popup_menu_palette_from_catalog, popup_menu_palette_from_palette};
+pub use crate::controls::navigation_sidebar::{
+    navigation_sidebar_branch_appearance, navigation_sidebar_branch_from_catalog,
+    navigation_sidebar_branch_from_palette, navigation_sidebar_container_appearance,
+    navigation_sidebar_container_from_catalog, navigation_sidebar_container_from_palette,
+    navigation_sidebar_item_appearance, navigation_sidebar_item_from_catalog, navigation_sidebar_item_from_palette,
+    navigation_sidebar_section_appearance, navigation_sidebar_section_from_catalog,
+    navigation_sidebar_section_from_palette,
+};
+pub use crate::controls::popup_menu::{
+    popup_menu_palette, popup_menu_palette_from_catalog, popup_menu_palette_from_palette,
+};
 pub use crate::controls::progress::{progress_appearance, progress_from_catalog, progress_from_palette};
-pub use crate::controls::radio::{radio_button_appearance, radio_button_appearance_from_catalog, radio_button_appearance_from_palette};
+pub use crate::controls::radio::{
+    radio_button_appearance, radio_button_appearance_from_catalog, radio_button_appearance_from_palette,
+};
 pub use crate::controls::resizable_panels::{resizable_panels_appearance, resizable_panels_from_palette};
 pub use crate::controls::scrollbar::{scrollbar_appearance, scrollbar_appearance_from_catalog};
 pub use crate::controls::selection_panel::selection_panel_appearance;

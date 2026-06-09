@@ -34,16 +34,20 @@ pub use button::{
     ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, inspect_button_color_palette,
     inspect_button_metrics, inspect_button_typography,
 };
-pub use checkbox::{CheckboxInspectMetrics, CheckboxInspectPalette, inspect_checkbox_color_palette, inspect_checkbox_metrics};
+pub use checkbox::{
+    CheckboxInspectMetrics, CheckboxInspectPalette, inspect_checkbox_color_palette, inspect_checkbox_metrics,
+};
 pub use control_group::{
     ControlGroupInspectMetrics, ControlGroupListInspectPalette, inspect_control_group_list_color_palette,
     inspect_control_group_metrics,
 };
 pub use radio::{
-    RadioButtonInspectMetrics, RadioButtonInspectPalette, inspect_radio_button_color_palette, inspect_radio_button_metrics,
+    RadioButtonInspectMetrics, RadioButtonInspectPalette, inspect_radio_button_color_palette,
+    inspect_radio_button_metrics,
 };
 pub use floating_menu::{
-    FloatingMenuInspectMetrics, FloatingMenuInspectPalette, inspect_floating_menu_color_palette, inspect_floating_menu_metrics,
+    FloatingMenuInspectMetrics, FloatingMenuInspectPalette, inspect_floating_menu_color_palette,
+    inspect_floating_menu_metrics,
 };
 pub use listbox::{
     ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, inspect_listbox_list_color_palette,
@@ -61,7 +65,8 @@ pub use split_view::{
     SplitViewInspectMetrics, SplitViewInspectPalette, inspect_split_view_color_palette, inspect_split_view_metrics,
 };
 pub use context_menu::{
-    ContextMenuInspectMetrics, ContextMenuInspectPalette, inspect_context_menu_color_palette, inspect_context_menu_metrics,
+    ContextMenuInspectMetrics, ContextMenuInspectPalette, inspect_context_menu_color_palette,
+    inspect_context_menu_metrics,
 };
 pub use popup_menu::{
     PopupMenuInspectMetrics, PopupMenuInspectPalette, inspect_popup_menu_color_palette, inspect_popup_menu_metrics,
@@ -79,7 +84,8 @@ pub use textfield::{
 };
 pub use tabs_navigation::{
     TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette,
-    inspect_tabs_navigation_item_color_palette, inspect_tabs_navigation_list_color_palette, inspect_tabs_navigation_metrics,
+    inspect_tabs_navigation_item_color_palette, inspect_tabs_navigation_list_color_palette,
+    inspect_tabs_navigation_metrics,
 };
 pub use textarea::{inspect_textarea_color_palette, inspect_textarea_metrics};
 pub use tree_view::{

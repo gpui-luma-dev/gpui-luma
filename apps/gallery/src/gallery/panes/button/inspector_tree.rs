@@ -8,7 +8,11 @@ use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
-use gpui_luma_look_shadcn_inspect::{ButtonInspectMetrics, ButtonInspectPalette, format_inspect_css_key, format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance, format_inspect_typography_provenance, format_inspect_typography_source, format_metric_px, format_typography_px};
+use gpui_luma_look_shadcn_inspect::{
+    ButtonInspectMetrics, ButtonInspectPalette, format_inspect_css_key, format_inspect_metric_provenance,
+    format_inspect_metric_source, format_inspect_provenance, format_inspect_typography_provenance,
+    format_inspect_typography_source, format_metric_px, format_typography_px,
+};
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::format_hex_color;
@@ -265,7 +269,11 @@ fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<Ins
     fields.into_iter().map(|(name, color)| field_node(prefix, name, color)).collect()
 }
 
-fn field_node(prefix: &str, name: &str, color: &gpui_luma_look_shadcn_inspect::ResolvedColor) -> TreeNode<InspectTreeData> {
+fn field_node(
+    prefix: &str,
+    name: &str,
+    color: &gpui_luma_look_shadcn_inspect::ResolvedColor,
+) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{}", name.replace(' ', "-")).into();
     TreeNode::new(
         id,

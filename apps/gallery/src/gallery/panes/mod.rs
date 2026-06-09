@@ -7,7 +7,6 @@ mod checkbox;
 mod choice_controls_template;
 mod context_menu;
 mod floating_menu;
-mod icon_button;
 mod introduction;
 mod listbox;
 mod list_view;

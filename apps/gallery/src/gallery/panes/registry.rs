@@ -14,10 +14,10 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     accordion, autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
-    tree_view, icon_button, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress,
-    prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel,
-    split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation,
-    textarea, textfield, theme_usage, toggle, toggle_group,
+    tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes,
+    radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, split_view,
+    selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea,
+    textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -43,7 +43,6 @@ enum GalleryPageKind {
     SelectionPanel,
     SelectorTemplates,
     CustomButton,
-    IconButton,
     Toggle,
     ToggleGroup,
     Switch,
@@ -119,8 +118,6 @@ const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
 };
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
-const ICON_BUTTON_PAGE: GalleryPage =
-    GalleryPage { id: "icon-button", label: "Icon Button", icon: None, kind: GalleryPageKind::IconButton };
 const TOGGLE_PAGE: GalleryPage =
     GalleryPage { id: "toggle", label: "Toggle", icon: None, kind: GalleryPageKind::Toggle };
 const TOGGLE_GROUP_PAGE: GalleryPage =
@@ -248,7 +245,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 
 const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, PALETTE_PAGE, SEARCH_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
-const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE, ICON_BUTTON_PAGE];
+const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
     ACCORDION_PAGE,
     CHECKBOX_PAGE,
@@ -350,7 +347,6 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) selector_templates: selector_controls_template::SelectorControlsTemplatePane,
     pub(super) custom_button: prototypes::ModButtonPane,
     pub(super) button: button::ButtonPane,
-    pub(super) icon_button: icon_button::IconButtonPane,
     pub(super) toggle: toggle::TogglePane,
     pub(super) toggle_group: toggle_group::ToggleGroupPane,
     pub(super) switch: switch::SwitchPane,
@@ -442,7 +438,6 @@ impl GalleryPanes {
             selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, look.clone()),
             custom_button: prototypes::ModButtonPane::new(cx, look.clone()),
             button: button::ButtonPane::new(cx, look.clone()),
-            icon_button: icon_button::IconButtonPane::new(cx, look.clone()),
             toggle: toggle::TogglePane::new(cx, look.clone()),
             toggle_group: toggle_group::ToggleGroupPane::new(cx, look.clone()),
             switch: switch::SwitchPane::new(cx, look.clone()),
@@ -480,7 +475,6 @@ impl GalleryPanes {
         self.selection_panel.subscribe(cx, subscriptions);
         self.custom_button.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
-        self.icon_button.subscribe(cx, subscriptions);
         self.toggle.subscribe(cx, subscriptions);
         self.toggle_group.subscribe(cx, subscriptions);
         self.switch.subscribe(cx, subscriptions);
@@ -516,7 +510,6 @@ impl GalleryPanes {
         self.selector_templates.notify_controls(cx);
         self.custom_button.notify_controls(cx);
         self.button.notify_controls(cx);
-        self.icon_button.notify_controls(cx);
         self.toggle.notify_controls(cx);
         self.toggle_group.notify_controls(cx);
         self.switch.notify_controls(cx);
@@ -543,6 +536,56 @@ impl GalleryPanes {
         self.split_view.notify_controls(cx);
     }
 
+    pub(in crate::gallery) fn notify_selected_controls(&self, selection: &str, cx: &mut Context<GalleryApp>) {
+        let Some(page) = page_for_id(selection) else {
+            return;
+        };
+
+        match page.kind {
+            GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
+            GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
+            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.notify_controls(cx),
+            GalleryPageKind::ComboBox => self.combobox.notify_controls(cx),
+            GalleryPageKind::SearchSelector => self.search_selector.notify_controls(cx),
+            GalleryPageKind::Selector => self.selector.notify_controls(cx),
+            GalleryPageKind::SelectionPanel => self.selection_panel.notify_controls(cx),
+            GalleryPageKind::SelectorTemplates => self.selector_templates.notify_controls(cx),
+            GalleryPageKind::CustomButton => self.custom_button.notify_controls(cx),
+            GalleryPageKind::Button => self.button.notify_controls(cx),
+            GalleryPageKind::Toggle => self.toggle.notify_controls(cx),
+            GalleryPageKind::ToggleGroup => self.toggle_group.notify_controls(cx),
+            GalleryPageKind::Switch => self.switch.notify_controls(cx),
+            GalleryPageKind::Checkbox => self.checkbox.notify_controls(cx),
+            GalleryPageKind::Accordion => self.accordion.notify_controls(cx),
+            GalleryPageKind::TreeView => self.tree_view.notify_controls(cx),
+            GalleryPageKind::RadioButton => self.radio_button.notify_controls(cx),
+            GalleryPageKind::RadioGroup => self.radio_group.notify_controls(cx),
+            GalleryPageKind::ChoiceTemplates => self.choice_templates.notify_controls(cx),
+            GalleryPageKind::ListBox => self.listbox.notify_controls(cx),
+            GalleryPageKind::ScrollingListView => self.scrolling_list_view.notify_controls(cx),
+            GalleryPageKind::PagingListView => self.paging_list_view.notify_controls(cx),
+            GalleryPageKind::Slider => self.slider.notify_controls(cx),
+            GalleryPageKind::Scrollbar => self.scrollbar.notify_controls(cx),
+            GalleryPageKind::TextArea => self.textarea.notify_controls(cx),
+            GalleryPageKind::TextField => self.textfield.notify_controls(cx),
+            GalleryPageKind::FloatingMenu => self.floating_menu.notify_controls(cx),
+            GalleryPageKind::PopupMenu => self.popup_menu.notify_controls(cx),
+            GalleryPageKind::ContextMenu => self.context_menu.notify_controls(cx),
+            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.notify_controls(cx),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.notify_controls(cx),
+            GalleryPageKind::Progress => self.progress.notify_controls(cx),
+            GalleryPageKind::ResizablePanels => self.resizable_panels.notify_controls(cx),
+            GalleryPageKind::SplitViewUnified
+            | GalleryPageKind::SplitViewInset
+            | GalleryPageKind::SplitViewIconRail
+            | GalleryPageKind::SplitViewDetached => self.split_view.notify_controls(cx),
+            GalleryPageKind::Search
+            | GalleryPageKind::Palette
+            | GalleryPageKind::ThemeUsage
+            | GalleryPageKind::Settings => {}
+        }
+    }
+
     pub(in crate::gallery) fn render_selected(&self, selection: &str) -> AnyElement {
         let Some(page) = page_for_id(selection) else {
             debug_assert!(false, "unknown gallery page id: {selection}");
@@ -563,7 +606,6 @@ impl GalleryPanes {
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.look),
             GalleryPageKind::Button => self.button.render(&self.look),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
-            GalleryPageKind::IconButton => self.icon_button.render(&self.look),
             GalleryPageKind::Toggle => self.toggle.render(&self.look),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.look),
             GalleryPageKind::Switch => self.switch.render(&self.look),

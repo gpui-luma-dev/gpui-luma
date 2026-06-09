@@ -51,7 +51,7 @@ const BUTTON_PARTS: &[ThemePartUsage] = &[
     part("outline border", "border", &["subtle default"], &["ButtonFamilyAppearance.border"]),
     part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyAppearance.background"]),
     part("disabled", "muted", &["disabled"], &["ButtonFamilyAppearance.background"]),
-    part("focus ring", "ring", &["focused"], &["ButtonFamilyAppearance.adorner"]),
+    part("focus ring", "ring", &["focused"], &["ButtonFamilyAppearance.focus_ring"]),
 ];
 
 const RADIX_THEME_USAGES: &[&ThemeUsage] = &[

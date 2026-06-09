@@ -16,8 +16,11 @@ use crate::appearance_context::AppearanceContext;
 use crate::elevation::menu_shadow;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_floating_menu_surface_color_rule,
+    find_floating_menu_trigger_color_rule, resolve_floating_menu_surface_color_rule,
+    resolve_floating_menu_trigger_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuColorTable {
@@ -42,23 +45,29 @@ impl FloatingMenuColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_floating_menu_colors,
-    inputs: {
-        present: bool,
-    },
-    output: FloatingMenuColorTable {
-        background,
-        foreground,
-        border,
-        item_hover_background,
-        item_hover_foreground,
-        item_disabled_foreground,
-    },
-    matrix: [
-        [true] => "first(popover,card)" | "popover-foreground" | "border" | "accent" | "accent-foreground" | "muted-foreground",
-        [false] => "first(popover,card)" | "popover-foreground" | "border" | "accent" | "accent-foreground" | "muted-foreground",
-    ]
+pub fn resolve_floating_menu_colors(
+    resolver: &LookResolver<'_>,
+    present: bool,
+) -> anyhow::Result<FloatingMenuColorTable> {
+    resolve_floating_menu_colors_with_stylesheet(resolver, embedded_stylesheet(), present)
+}
+
+pub fn resolve_floating_menu_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    _present: bool,
+) -> anyhow::Result<FloatingMenuColorTable> {
+    let rule = find_floating_menu_surface_color_rule(stylesheet)
+        .ok_or_else(|| anyhow::anyhow!("no matching floating menu surface color rule"))?;
+    let colors = resolve_floating_menu_surface_color_rule(resolver, rule)?;
+    Ok(FloatingMenuColorTable {
+        background: colors.background,
+        foreground: colors.foreground,
+        border: colors.border,
+        item_hover_background: colors.item_hover_background,
+        item_hover_foreground: colors.item_hover_foreground,
+        item_disabled_foreground: colors.item_disabled_foreground,
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -73,21 +82,24 @@ impl GhostTriggerColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_ghost_trigger_colors,
-    inputs: {
-        layer: InteractionLayer,
-        disabled: bool,
-    },
-    output: GhostTriggerColorTable { background, foreground },
-    matrix: [
-        [_] | [true] => "muted" | "muted-foreground",
+pub fn resolve_ghost_trigger_colors(
+    resolver: &LookResolver<'_>,
+    layer: InteractionLayer,
+    disabled: bool,
+) -> anyhow::Result<GhostTriggerColorTable> {
+    resolve_ghost_trigger_colors_with_stylesheet(resolver, embedded_stylesheet(), layer, disabled)
+}
 
-        [InteractionLayer::Hovered] | [false] => "transparent" | "accent-foreground",
-        [InteractionLayer::Pressed] | [false] => "transparent" | "accent-foreground",
-        [InteractionLayer::Default] | [false] => "transparent" | "foreground",
-        [InteractionLayer::Disabled] | [false] => "transparent" | "foreground",
-    ]
+pub fn resolve_ghost_trigger_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    layer: InteractionLayer,
+    disabled: bool,
+) -> anyhow::Result<GhostTriggerColorTable> {
+    let rule = find_floating_menu_trigger_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching ghost trigger color rule"))?;
+    let colors = resolve_floating_menu_trigger_color_rule(resolver, rule, layer)?;
+    Ok(GhostTriggerColorTable { background: colors.background, foreground: colors.foreground })
 }
 
 pub fn floating_menu_appearance(
@@ -166,7 +178,6 @@ pub fn floating_menu_appearance_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
@@ -175,10 +186,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{
-        floating_menu_appearance_from_catalog, resolve_floating_menu_colors_metadata,
-        resolve_ghost_trigger_colors_metadata,
-    };
+    use super::{floating_menu_appearance_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -213,5 +221,4 @@ mod tests {
         assert_eq!(appearance.item_hover_background, catalog.color("accent").expect("accent"));
         assert_eq!(appearance.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
-
 }

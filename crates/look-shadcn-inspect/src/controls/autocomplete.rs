@@ -1,9 +1,7 @@
 //! Inspect metadata for `autocomplete`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
 
@@ -26,7 +24,8 @@ pub fn inspect_autocomplete_chrome_color_palette(
 ) -> AutocompleteChromeInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::autocomplete_textbox_appearance_from_palette(&ctx, ControlSize::Md);
+        let appearance =
+            gpui_luma_look_shadcn::paint::autocomplete_textbox_appearance_from_palette(&ctx, ControlSize::Md);
         return AutocompleteChromeInspectPalette {
             status_color: resolved_from_hsla(appearance.status_color, ColorSource::CssVar { token: "primary".into() }),
             muted_text_color: resolved_from_hsla(
@@ -83,10 +82,15 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn autocomplete_chrome_metadata_matches_table() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_autocomplete_chrome_colors_metadata().len(), 2);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_autocomplete_chrome_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            1
+        );
     }
 
     #[test]

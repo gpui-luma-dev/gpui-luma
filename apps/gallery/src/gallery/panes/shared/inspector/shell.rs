@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
@@ -103,6 +103,8 @@ impl ColorInspectorShell {
             }
         }));
 
+        sync_inspector_detail_from_tree(&tree, &detail, cx);
+
         Self { look, tree, detail, split, synced_mode, inspector_id, rebuild_tree, _subscriptions: subscriptions }
     }
 
@@ -130,6 +132,22 @@ impl ColorInspectorShell {
             }
         });
         self.detail.update(cx, |_, cx| cx.notify());
+    }
+}
+
+/// The inspect tree selects a default node during spawn, before the detail panel
+/// subscribes to selection events. Sync once at setup so the detail pane renders
+/// immediately instead of waiting for a later hover-driven repaint.
+pub(in crate::gallery) fn sync_inspector_detail_from_tree<T, D>(
+    tree: &Entity<TreeViewControl<T>>,
+    detail: &Entity<D>,
+    cx: &mut App,
+) where
+    T: Clone + Send + Sync + 'static,
+    D: 'static,
+{
+    if tree.read(cx).selected_ids().iter().next().is_some() {
+        detail.update(cx, |_, cx| cx.notify());
     }
 }
 

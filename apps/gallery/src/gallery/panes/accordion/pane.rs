@@ -31,7 +31,8 @@ pub(in crate::gallery) struct AccordionPane {
 
 impl AccordionPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let tree = spawn_color_inspector_tree("accordion-inspector-tree", look.clone(), build_accordion_inspect_tree, cx);
+        let tree =
+            spawn_color_inspector_tree("accordion-inspector-tree", look.clone(), build_accordion_inspect_tree, cx);
         let inspector = cx.new(|cx| {
             ColorInspectorShell::new(
                 look.clone(),

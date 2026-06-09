@@ -2,7 +2,10 @@ use gpui_luma::controls::tree_view::TreeNode;
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn::{ShadcnLook};
-use gpui_luma_look_shadcn_inspect::{NavigationSidebarContainerInspectPalette, NavigationSidebarItemInspectPalette, NavigationSidebarSectionInspectPalette};
+use gpui_luma_look_shadcn_inspect::{
+    NavigationSidebarContainerInspectPalette, NavigationSidebarItemInspectPalette,
+    NavigationSidebarSectionInspectPalette,
+};
 
 use crate::gallery::panes::shared::inspector::{
     ColorInspectTreeData, choice_layout_branch, color_field_nodes_optional, inspect_slug,
@@ -12,12 +15,7 @@ use crate::gallery::panes::shared::inspector::{
 pub(in crate::gallery) fn build_navigation_sidebar_inspect_tree(
     look: &ShadcnLook,
 ) -> Vec<TreeNode<ColorInspectTreeData>> {
-    vec![
-        container_branch(look),
-        section_branch(look),
-        branch_item_branch(look),
-        nav_item_branch(look),
-    ]
+    vec![container_branch(look), section_branch(look), branch_item_branch(look), nav_item_branch(look)]
 }
 
 fn container_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
@@ -49,9 +47,7 @@ fn branch_item_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     ];
     let state_nodes: Vec<_> = matrix_states
         .into_iter()
-        .map(|(state_label, state)| {
-            item_state_branch(id, state_label, state, look, false, state_label == "default")
-        })
+        .map(|(state_label, state)| item_state_branch(id, state_label, state, look, false, state_label == "default"))
         .collect();
 
     TreeNode::new(id.to_owned(), "branch item".to_owned(), ColorInspectTreeData::Branch)
@@ -152,7 +148,10 @@ fn section_color_nodes(
     color_field_nodes_optional(prefix, &[("label", Some(&palette.label_color))])
 }
 
-fn item_color_nodes(prefix: &str, palette: &NavigationSidebarItemInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {
+fn item_color_nodes(
+    prefix: &str,
+    palette: &NavigationSidebarItemInspectPalette,
+) -> Vec<TreeNode<ColorInspectTreeData>> {
     color_field_nodes_optional(
         prefix,
         &[

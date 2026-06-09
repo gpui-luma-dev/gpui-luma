@@ -1,9 +1,7 @@
 //! Inspect metadata for `scrollbar`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 
@@ -79,8 +77,10 @@ pub fn inspect_scrollbar_metrics(
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance = gpui_luma_look_shadcn::paint::scrollbar_appearance_from_catalog(&ctx, orientation)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::scrollbar_appearance(mode, InteractionState::default(), orientation));
+    let appearance =
+        gpui_luma_look_shadcn::paint::scrollbar_appearance_from_catalog(&ctx, orientation).unwrap_or_else(|_| {
+            gpui_luma_look_shadcn::paint::scrollbar_appearance(mode, InteractionState::default(), orientation)
+        });
     let catalog = ctx.catalog();
 
     ScrollbarInspectMetrics {
@@ -96,4 +96,3 @@ pub fn inspect_scrollbar_metrics(
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

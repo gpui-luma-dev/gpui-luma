@@ -16,8 +16,10 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_accordion_content_color_rule, find_accordion_trigger_color_rule,
+    resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct AccordionTriggerColorTable {
@@ -40,21 +42,30 @@ impl AccordionTriggerColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_accordion_trigger_colors,
-    inputs: {
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: AccordionTriggerColorTable { foreground, icon_color, chevron_color, border_color, background },
-    matrix: [
-        [true] | [_] => "muted-foreground" | "muted-foreground" | "muted-foreground" | "border" | None,
+pub fn resolve_accordion_trigger_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<AccordionTriggerColorTable> {
+    resolve_accordion_trigger_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+}
 
-        [false] | [InteractionLayer::Default] => "foreground" | "foreground" | "muted-foreground" | "border" | None,
-        [false] | [InteractionLayer::Disabled] => "foreground" | "foreground" | "muted-foreground" | "border" | None,
-        [false] | [InteractionLayer::Hovered] => "accent-foreground" | "accent-foreground" | "accent-foreground" | "border" | "accent",
-        [false] | [InteractionLayer::Pressed] => "accent-foreground" | "accent-foreground" | "accent-foreground" | "border" | "accent",
-    ]
+pub fn resolve_accordion_trigger_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<AccordionTriggerColorTable> {
+    let rule = find_accordion_trigger_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching accordion trigger color rule"))?;
+    let colors = resolve_accordion_trigger_color_rule(resolver, rule, layer)?;
+    Ok(AccordionTriggerColorTable {
+        foreground: colors.foreground,
+        icon_color: colors.icon_color,
+        chevron_color: colors.chevron_color,
+        border_color: colors.border_color,
+        background: colors.background,
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -69,16 +80,22 @@ impl AccordionContentColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_accordion_content_colors,
-    inputs: {
-        expanded: bool,
-    },
-    output: AccordionContentColorTable { foreground, background },
-    matrix: [
-        [true] => "foreground" | None,
-        [false] => "foreground" | None,
-    ]
+pub fn resolve_accordion_content_colors(
+    resolver: &LookResolver<'_>,
+    expanded: bool,
+) -> anyhow::Result<AccordionContentColorTable> {
+    resolve_accordion_content_colors_with_stylesheet(resolver, embedded_stylesheet(), expanded)
+}
+
+pub fn resolve_accordion_content_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    expanded: bool,
+) -> anyhow::Result<AccordionContentColorTable> {
+    let rule = find_accordion_content_color_rule(stylesheet, expanded)
+        .ok_or_else(|| anyhow::anyhow!("no matching accordion content color rule"))?;
+    let colors = resolve_accordion_content_color_rule(resolver, rule)?;
+    Ok(AccordionContentColorTable { foreground: colors.foreground, background: colors.background })
 }
 
 pub fn accordion_trigger_palette(
@@ -103,7 +120,8 @@ pub fn accordion_content_palette(
     if mode.catalog.tokens.is_empty() {
         accordion_content_from_palette(&ctx)
     } else {
-        accordion_content_from_catalog(&ctx, expanded).unwrap_or_else(|err| panic!("accordion content properties: {err}"))
+        accordion_content_from_catalog(&ctx, expanded)
+            .unwrap_or_else(|err| panic!("accordion content properties: {err}"))
     }
 }
 
@@ -184,8 +202,8 @@ fn accordion_trigger_colors(
 
 fn accordion_content_from_catalog(ctx: &AppearanceContext, expanded: bool) -> anyhow::Result<AccordionContentPalette> {
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_content");
-    let colors =
-        resolve_accordion_content_colors(&resolver, expanded).unwrap_or_else(|_| AccordionContentColorTable::fallback());
+    let colors = resolve_accordion_content_colors(&resolver, expanded)
+        .unwrap_or_else(|_| AccordionContentColorTable::fallback());
 
     Ok(AccordionContentPalette {
         background: colors.background.map(|color| color.hsla()),
@@ -196,7 +214,6 @@ fn accordion_content_from_catalog(ctx: &AppearanceContext, expanded: bool) -> an
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{InteractionState, ThemeMode};
@@ -204,10 +221,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::ColorSource;
-    use super::{
-        accordion_trigger_palette, resolve_accordion_content_colors_metadata,
-        resolve_accordion_trigger_colors_metadata,
-    };
+    use super::{accordion_trigger_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -247,5 +261,4 @@ mod tests {
         assert_eq!(hovered.icon_color, hovered.foreground);
         assert_eq!(hovered.chevron_color, hovered.foreground);
     }
-
 }

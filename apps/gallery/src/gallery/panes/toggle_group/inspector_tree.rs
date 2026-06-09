@@ -90,7 +90,11 @@ fn unselected_branch(
     look: &ShadcnLook,
     expand: bool,
 ) -> TreeNode<ColorInspectTreeData> {
-    let palette = ShadcnInspect::new(look).inspect_button_color_palette(style, ButtonFamilyRole::Toggle { selected: false }, state);
+    let palette = ShadcnInspect::new(look).inspect_button_color_palette(
+        style,
+        ButtonFamilyRole::Toggle { selected: false },
+        state,
+    );
     TreeNode::new(id.to_owned(), "unselected".to_owned(), ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(expand)
@@ -104,7 +108,11 @@ fn selected_branch(
     look: &ShadcnLook,
     expand: bool,
 ) -> TreeNode<ColorInspectTreeData> {
-    let palette = ShadcnInspect::new(look).inspect_button_color_palette(style, ButtonFamilyRole::Toggle { selected: true }, state);
+    let palette = ShadcnInspect::new(look).inspect_button_color_palette(
+        style,
+        ButtonFamilyRole::Toggle { selected: true },
+        state,
+    );
     TreeNode::new(id.to_owned(), "selected".to_owned(), ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(expand)
@@ -112,13 +120,7 @@ fn selected_branch(
 }
 
 fn list_color_nodes(prefix: &str, palette: &ControlGroupListInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {
-    color_field_nodes_optional(
-        prefix,
-        &[
-            ("background", Some(&palette.background)),
-            ("border", Some(&palette.border)),
-        ],
-    )
+    color_field_nodes_optional(prefix, &[("background", Some(&palette.background)), ("border", Some(&palette.border))])
 }
 
 fn toggle_color_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {

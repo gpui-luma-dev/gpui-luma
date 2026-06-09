@@ -91,6 +91,8 @@ impl ButtonInspectorShell {
             }
         }));
 
+        super::super::shared::inspector::sync_inspector_detail_from_tree(&tree, &detail, cx);
+
         Self { look, tree, detail, split, synced_mode, _subscriptions: subscriptions }
     }
 

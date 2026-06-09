@@ -14,8 +14,10 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_tabs_navigation_item_color_rule, find_tabs_navigation_list_color_rule,
+    resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct TabsNavigationListColorTable {
@@ -28,16 +30,22 @@ impl TabsNavigationListColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_tabs_navigation_list_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: TabsNavigationListColorTable { disabled_background },
-    matrix: [
-        [true] => "transparent",
-        [false] => "muted",
-    ]
+pub fn resolve_tabs_navigation_list_colors(
+    resolver: &LookResolver<'_>,
+    enabled: bool,
+) -> anyhow::Result<TabsNavigationListColorTable> {
+    resolve_tabs_navigation_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_tabs_navigation_list_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<TabsNavigationListColorTable> {
+    let rule = find_tabs_navigation_list_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching tabs navigation list color rule"))?;
+    let colors = resolve_tabs_navigation_list_color_rule(resolver, rule)?;
+    Ok(TabsNavigationListColorTable { disabled_background: colors.disabled_background })
 }
 
 #[derive(Clone, Debug)]
@@ -52,28 +60,26 @@ impl TabsNavigationItemColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_tabs_navigation_item_colors,
-    inputs: {
-        active: bool,
-        layer: InteractionLayer,
-        focused: bool,
-    },
-    output: TabsNavigationItemColorTable { label_color, indicator },
-    matrix: [
-        [_] | [InteractionLayer::Disabled] | [_] => "muted-foreground" | None,
+pub fn resolve_tabs_navigation_item_colors(
+    resolver: &LookResolver<'_>,
+    active: bool,
+    layer: InteractionLayer,
+    focused: bool,
+) -> anyhow::Result<TabsNavigationItemColorTable> {
+    resolve_tabs_navigation_item_colors_with_stylesheet(resolver, embedded_stylesheet(), active, layer, focused)
+}
 
-        [false] | [InteractionLayer::Default] | [_] => "foreground" | None,
-        [false] | [InteractionLayer::Hovered] | [_] => "foreground" | None,
-        [false] | [InteractionLayer::Pressed] | [_] => "foreground" | None,
-
-        [true] | [InteractionLayer::Default] | [false] => "@primary_default" | "@primary_default",
-        [true] | [InteractionLayer::Hovered] | [false] => "@primary_layer" | "@primary_layer",
-        [true] | [InteractionLayer::Pressed] | [false] => "@primary_layer" | "@primary_layer",
-        [true] | [InteractionLayer::Default] | [true] => "@primary_default" | "ring",
-        [true] | [InteractionLayer::Hovered] | [true] => "@primary_layer" | "ring",
-        [true] | [InteractionLayer::Pressed] | [true] => "@primary_layer" | "ring",
-    ]
+pub fn resolve_tabs_navigation_item_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    active: bool,
+    layer: InteractionLayer,
+    focused: bool,
+) -> anyhow::Result<TabsNavigationItemColorTable> {
+    let rule = find_tabs_navigation_item_color_rule(stylesheet, active, layer, focused)
+        .ok_or_else(|| anyhow::anyhow!("no matching tabs navigation item color rule"))?;
+    let colors = resolve_tabs_navigation_item_color_rule(resolver, rule, layer)?;
+    Ok(TabsNavigationItemColorTable { label_color: colors.label_color, indicator: colors.indicator })
 }
 
 pub fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> TabsNavigationListAppearance {
@@ -198,7 +204,6 @@ pub fn tabs_navigation_item_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{InteractionState, ThemeMode};
@@ -206,10 +211,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{
-        resolve_tabs_navigation_item_colors_metadata, resolve_tabs_navigation_list_colors_metadata,
-        tabs_navigation_item_from_catalog,
-    };
+    use super::{tabs_navigation_item_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -239,5 +241,4 @@ mod tests {
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
     }
-
 }

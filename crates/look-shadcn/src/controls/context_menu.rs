@@ -82,4 +82,3 @@ pub fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::
         floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     })
 }
-

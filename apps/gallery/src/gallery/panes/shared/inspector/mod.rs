@@ -21,6 +21,6 @@ pub(in crate::gallery) use metrics::{
     navigation_sidebar_layout_data, autocomplete_layout_data, textfield_and_menu_layout_data,
     control_group_layout_data,
 };
-pub(in crate::gallery) use shell::ColorInspectorShell;
+pub(in crate::gallery) use shell::{ColorInspectorShell, sync_inspector_detail_from_tree};
 pub(in crate::gallery) use tree::{color_field_nodes_optional, spawn_color_inspector_tree};
 pub(in crate::gallery) use types::{ColorInspectTreeData, inspect_slug};

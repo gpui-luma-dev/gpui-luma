@@ -187,7 +187,7 @@ impl Render for DashboardPanel {
         let look = self.look.clone();
         let chrome = look.chrome();
 
-        self.split_view.update(cx, |split_view, _cx| {
+        self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
                 render_pane(move || navigation_sidebar.clone()),
                 render_pane(move || {
@@ -211,6 +211,7 @@ impl Render for DashboardPanel {
                         )
                         .into_any_element()
                 }),
+                cx,
             );
         });
 

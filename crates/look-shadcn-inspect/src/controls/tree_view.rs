@@ -1,10 +1,7 @@
 //! Inspect metadata for `tree_view`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct TreeViewRowInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -68,9 +65,7 @@ pub fn inspect_tree_view_metrics(
     use gpui_luma::controls::tree_view::TreeViewScale;
 
     use gpui_luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{
-        control_size_key, derived_metric, radius_metric, spacing_control_metric,
-    };
+    use crate::metrics::{control_size_key, derived_metric, radius_metric, spacing_control_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
@@ -98,10 +93,15 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn tree_view_metadata_covers_row_table() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_tree_view_row_colors_metadata().len(), 5);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_tree_view_row_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            5
+        );
     }
 
     #[test]

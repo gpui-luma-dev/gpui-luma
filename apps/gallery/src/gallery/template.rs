@@ -9,11 +9,12 @@ use lucide_icons::Icon as LucideIcon;
 use super::control::GalleryApp;
 
 impl Render for GalleryApp {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let pane_focus = self.pane_focus.clone();
         let navigation_sidebar = self.navigation_sidebar.clone();
         let panes = self.panes.clone();
         let nav_selection = self.nav_selection.clone();
+        let needs_inspector_refresh = self.last_inspector_refresh.as_deref() != Some(nav_selection.as_str());
         let chrome = self.look.chrome();
         let sans_family = self.look.mode_tokens().typography.font.sans.family.clone();
         let content_sans_family = sans_family.clone();
@@ -23,7 +24,15 @@ impl Render for GalleryApp {
             ThemeMode::Dark => LucideIcon::Sun,
         };
 
-        self.split_view.update(cx, |split_view, _cx| {
+        if needs_inspector_refresh {
+            let selection = self.nav_selection.clone();
+            self.last_inspector_refresh = Some(selection.clone());
+            cx.on_next_frame(window, move |this, _, cx| {
+                this.panes.notify_selected_controls(&selection, cx);
+            });
+        }
+
+        self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
                 render_pane(move || navigation_sidebar.clone()),
                 render_pane(move || {
@@ -34,6 +43,7 @@ impl Render for GalleryApp {
                         content_sans_family.clone(),
                     )
                 }),
+                cx,
             );
         });
 
@@ -71,9 +81,8 @@ impl Render for GalleryApp {
                                 ThemeMode::Dark => ThemeMode::Light,
                             };
                             this.look.set_mode(mode);
+                            this.last_inspector_refresh = None;
                             this.panes.notify_controls(cx);
-                            this.split_view.update(cx, |_, cx| cx.notify());
-                            tracing::info!("title bar theme toggled");
                             cx.notify();
                         }))
                         .child(char::from(toggle_icon).to_string()),

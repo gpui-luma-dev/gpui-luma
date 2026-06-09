@@ -1,9 +1,7 @@
 //! Inspect metadata for `navigation_sidebar`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
@@ -109,8 +107,12 @@ pub fn inspect_navigation_sidebar_branch_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_branch_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarBranchColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_branch_colors(
+        &resolver,
+        state.disabled,
+        state.layer(),
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarBranchColorTable::fallback());
     let focus_ring = state
         .focused
         .then(|| resolver.resolve_first_decl(&["sidebar-ring", "ring"]))
@@ -134,7 +136,8 @@ pub fn inspect_navigation_sidebar_item_color_palette(
 ) -> NavigationSidebarItemInspectPalette {
     let ctx = AppearanceContext::new(mode, theme_mode, state);
     if ctx.catalog().tokens.is_empty() {
-        let appearance = gpui_luma_look_shadcn::paint::navigation_sidebar_item_from_palette(&ctx, selected, ControlSize::Md);
+        let appearance =
+            gpui_luma_look_shadcn::paint::navigation_sidebar_item_from_palette(&ctx, selected, ControlSize::Md);
         return NavigationSidebarItemInspectPalette {
             background: appearance.background.map(|color| resolved_from_hsla(color, ColorSource::Transparent)),
             foreground: resolved_from_hsla(
@@ -152,8 +155,13 @@ pub fn inspect_navigation_sidebar_item_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_item_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarItemColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors(
+        &resolver,
+        selected,
+        state.disabled,
+        state.layer(),
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarItemColorTable::fallback());
     let focus_ring = state
         .focused
         .then(|| resolver.resolve_first_decl(&["sidebar-ring", "ring"]))
@@ -200,15 +208,26 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn navigation_sidebar_container_metadata_matches_table() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_container_colors_metadata().len(), 2);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_navigation_sidebar_container_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            1
+        );
     }
 
     #[test]
     fn navigation_sidebar_item_metadata_matches_table() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors_metadata().len(), 10);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_navigation_sidebar_item_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            10
+        );
     }
 
     #[test]
@@ -216,16 +235,9 @@ mod tests {
         let catalog = sample_catalog();
         let sidebar_primary = catalog.color("sidebar-primary").expect("sidebar-primary");
         let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
-        let palette = inspect_navigation_sidebar_item_color_palette(
-            &mode,
-            ThemeMode::Light,
-            true,
-            InteractionState::default(),
-        );
-        assert_eq!(
-            palette.background.as_ref().map(|color| color.value),
-            Some(sidebar_primary)
-        );
+        let palette =
+            inspect_navigation_sidebar_item_color_palette(&mode, ThemeMode::Light, true, InteractionState::default());
+        assert_eq!(palette.background.as_ref().map(|color| color.value), Some(sidebar_primary));
     }
 
     #[test]

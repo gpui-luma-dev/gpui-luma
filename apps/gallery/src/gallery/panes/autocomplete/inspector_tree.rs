@@ -15,10 +15,12 @@ pub(in crate::gallery) fn build_autocomplete_inspect_tree(look: &ShadcnLook) -> 
     let menu = menu_branch(id, look);
     let layout = choice_layout_branch(id, false, look, autocomplete_layout_data);
 
-    vec![TreeNode::new(id.to_owned(), "Autocomplete".to_owned(), ColorInspectTreeData::Branch)
-        .branch(true)
-        .expanded(true)
-        .children([chrome, menu, layout])]
+    vec![
+        TreeNode::new(id.to_owned(), "Autocomplete".to_owned(), ColorInspectTreeData::Branch)
+            .branch(true)
+            .expanded(true)
+            .children([chrome, menu, layout]),
+    ]
 }
 
 fn chrome_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {

@@ -14,8 +14,9 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_tree_view_row_color_rule, resolve_tree_view_row_color_rule,
+};
 
 use super::navigation_sidebar::navigation_sidebar_branch_appearance;
 
@@ -38,28 +39,32 @@ impl TreeViewRowColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_tree_view_row_colors,
-    inputs: {
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: TreeViewRowColorTable { foreground, icon_color, chevron_color, background },
-    matrix: [
-        [true] | [_] => "muted-foreground" | "muted-foreground" | "muted-foreground" | None,
-
-        [false] | [InteractionLayer::Default] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [InteractionLayer::Disabled] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [InteractionLayer::Hovered] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first_layer(sidebar-accent,accent)",
-        [false] | [InteractionLayer::Pressed] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | "first_layer(accent)",
-    ]
+pub fn resolve_tree_view_row_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<TreeViewRowColorTable> {
+    resolve_tree_view_row_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
 }
 
-pub fn tree_view_row_palette(
-    mode: &ShadcnModeTokens,
-    _selected: bool,
-    state: InteractionState,
-) -> TreeViewPalette {
+pub fn resolve_tree_view_row_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<TreeViewRowColorTable> {
+    let rule = find_tree_view_row_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching tree view row color rule"))?;
+    let colors = resolve_tree_view_row_color_rule(resolver, rule, layer)?;
+    Ok(TreeViewRowColorTable {
+        foreground: colors.foreground,
+        icon_color: colors.icon_color,
+        chevron_color: colors.chevron_color,
+        background: colors.background,
+    })
+}
+
+pub fn tree_view_row_palette(mode: &ShadcnModeTokens, _selected: bool, state: InteractionState) -> TreeViewPalette {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     if mode.catalog.tokens.is_empty() {
         tree_view_row_from_palette(mode, state, &ctx)
@@ -107,7 +112,6 @@ fn tree_view_row_from_catalog(ctx: &AppearanceContext, state: InteractionState) 
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{InteractionLayer, ThemeMode};
@@ -115,10 +119,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::LookResolver;
-    use super::{
-        resolve_tree_view_row_colors, resolve_tree_view_row_colors_metadata,
-        tree_view_row_palette,
-    };
+    use super::{resolve_tree_view_row_colors, tree_view_row_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -156,5 +157,4 @@ mod tests {
             .map(|color| color.hsla());
         assert_eq!(palette.background, expected);
     }
-
 }

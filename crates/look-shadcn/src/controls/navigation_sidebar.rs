@@ -21,8 +21,13 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_navigation_sidebar_branch_color_rule,
+    find_navigation_sidebar_container_color_rule, find_navigation_sidebar_item_color_rule,
+    find_navigation_sidebar_section_color_rule, resolve_navigation_sidebar_branch_color_rule,
+    resolve_navigation_sidebar_container_color_rule, resolve_navigation_sidebar_item_color_rule,
+    resolve_navigation_sidebar_section_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct NavigationSidebarContainerColorTable {
@@ -41,16 +46,25 @@ impl NavigationSidebarContainerColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_navigation_sidebar_container_colors,
-    inputs: {
-        present: bool,
-    },
-    output: NavigationSidebarContainerColorTable { background, foreground, border },
-    matrix: [
-        [true] => "first(sidebar,card,background)" | "first(sidebar-foreground,foreground)" | "first(sidebar-border,border)",
-        [false] => "first(sidebar,card,background)" | "first(sidebar-foreground,foreground)" | "first(sidebar-border,border)",
-    ]
+pub fn resolve_navigation_sidebar_container_colors(
+    resolver: &LookResolver<'_>,
+    _present: bool,
+) -> anyhow::Result<NavigationSidebarContainerColorTable> {
+    resolve_navigation_sidebar_container_colors_with_stylesheet(resolver, embedded_stylesheet())
+}
+
+pub fn resolve_navigation_sidebar_container_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+) -> anyhow::Result<NavigationSidebarContainerColorTable> {
+    let rule = find_navigation_sidebar_container_color_rule(stylesheet)
+        .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar container color rule"))?;
+    let colors = resolve_navigation_sidebar_container_color_rule(resolver, rule)?;
+    Ok(NavigationSidebarContainerColorTable {
+        background: colors.background,
+        foreground: colors.foreground,
+        border: colors.border,
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -64,16 +78,21 @@ impl NavigationSidebarSectionColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_navigation_sidebar_section_colors,
-    inputs: {
-        present: bool,
-    },
-    output: NavigationSidebarSectionColorTable { label_color },
-    matrix: [
-        [true] => "muted-foreground",
-        [false] => "muted-foreground",
-    ]
+pub fn resolve_navigation_sidebar_section_colors(
+    resolver: &LookResolver<'_>,
+    _present: bool,
+) -> anyhow::Result<NavigationSidebarSectionColorTable> {
+    resolve_navigation_sidebar_section_colors_with_stylesheet(resolver, embedded_stylesheet())
+}
+
+pub fn resolve_navigation_sidebar_section_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+) -> anyhow::Result<NavigationSidebarSectionColorTable> {
+    let rule = find_navigation_sidebar_section_color_rule(stylesheet)
+        .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar section color rule"))?;
+    let colors = resolve_navigation_sidebar_section_color_rule(resolver, rule)?;
+    Ok(NavigationSidebarSectionColorTable { label_color: colors.label_color })
 }
 
 #[derive(Clone, Debug)]
@@ -93,21 +112,28 @@ impl NavigationSidebarBranchColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_navigation_sidebar_branch_colors,
-    inputs: {
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: NavigationSidebarBranchColorTable { foreground, icon_color, background },
-    matrix: [
-        [true] | [_] => "muted-foreground" | "muted-foreground" | None,
+pub fn resolve_navigation_sidebar_branch_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<NavigationSidebarBranchColorTable> {
+    resolve_navigation_sidebar_branch_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+}
 
-        [false] | [InteractionLayer::Default] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [InteractionLayer::Disabled] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [InteractionLayer::Hovered] => "accent-foreground" | "accent-foreground" | "accent",
-        [false] | [InteractionLayer::Pressed] => "accent-foreground" | "accent-foreground" | "accent",
-    ]
+pub fn resolve_navigation_sidebar_branch_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<NavigationSidebarBranchColorTable> {
+    let rule = find_navigation_sidebar_branch_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar branch color rule"))?;
+    let colors = resolve_navigation_sidebar_branch_color_rule(resolver, rule, layer)?;
+    Ok(NavigationSidebarBranchColorTable {
+        foreground: colors.foreground,
+        icon_color: colors.icon_color,
+        background: colors.background,
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -127,28 +153,30 @@ impl NavigationSidebarItemColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_navigation_sidebar_item_colors,
-    inputs: {
-        selected: bool,
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: NavigationSidebarItemColorTable { foreground, icon_color, background },
-    matrix: [
-        [true] | [true] | [_] => "muted-foreground" | "muted-foreground" | None,
-        [false] | [true] | [_] => "muted-foreground" | "muted-foreground" | None,
+pub fn resolve_navigation_sidebar_item_colors(
+    resolver: &LookResolver<'_>,
+    selected: bool,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<NavigationSidebarItemColorTable> {
+    resolve_navigation_sidebar_item_colors_with_stylesheet(resolver, embedded_stylesheet(), selected, disabled, layer)
+}
 
-        [true] | [false] | [InteractionLayer::Default] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary,primary)",
-        [true] | [false] | [InteractionLayer::Hovered] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first_layer(sidebar-primary,primary)",
-        [true] | [false] | [InteractionLayer::Pressed] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first_layer(sidebar-primary,primary)",
-        [true] | [false] | [InteractionLayer::Disabled] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary,primary)",
-
-        [false] | [false] | [InteractionLayer::Default] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [false] | [InteractionLayer::Disabled] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
-        [false] | [false] | [InteractionLayer::Hovered] => "accent-foreground" | "accent-foreground" | "accent",
-        [false] | [false] | [InteractionLayer::Pressed] => "accent-foreground" | "accent-foreground" | "accent",
-    ]
+pub fn resolve_navigation_sidebar_item_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    selected: bool,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<NavigationSidebarItemColorTable> {
+    let rule = find_navigation_sidebar_item_color_rule(stylesheet, selected, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching navigation sidebar item color rule"))?;
+    let colors = resolve_navigation_sidebar_item_color_rule(resolver, rule, layer)?;
+    Ok(NavigationSidebarItemColorTable {
+        foreground: colors.foreground,
+        icon_color: colors.icon_color,
+        background: colors.background,
+    })
 }
 
 pub fn navigation_sidebar_container_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarContainerAppearance {
@@ -393,7 +421,6 @@ pub fn navigation_sidebar_item_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
@@ -403,8 +430,7 @@ mod tests {
     use crate::mode::ShadcnModeTokens;
     use super::{
         navigation_sidebar_container_from_catalog, navigation_sidebar_item_from_catalog,
-        navigation_sidebar_section_from_catalog, resolve_navigation_sidebar_container_colors_metadata,
-        resolve_navigation_sidebar_item_colors_metadata,
+        navigation_sidebar_section_from_catalog,
     };
 
     fn sample_catalog() -> CssTokenMap {
@@ -451,5 +477,4 @@ mod tests {
             catalog.color("sidebar-primary-foreground").expect("sidebar-primary-foreground")
         );
     }
-
 }

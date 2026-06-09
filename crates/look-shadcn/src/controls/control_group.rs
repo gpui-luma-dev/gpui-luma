@@ -12,8 +12,9 @@ use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_control_group_list_color_rule, resolve_control_group_list_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct ControlGroupListColorTable {
@@ -23,23 +24,26 @@ pub struct ControlGroupListColorTable {
 
 impl ControlGroupListColorTable {
     pub fn fallback() -> Self {
-        Self {
-            background: ResolvedColor::transparent(),
-            border: ResolvedColor::fallback_foreground(),
-        }
+        Self { background: ResolvedColor::transparent(), border: ResolvedColor::fallback_foreground() }
     }
 }
 
-declare_look_table! {
-    name: resolve_control_group_list_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: ControlGroupListColorTable { background, border },
-    matrix: [
-        [true] => "muted" | "border",
-        [false] => "muted-foreground" | "border",
-    ]
+pub fn resolve_control_group_list_colors(
+    resolver: &LookResolver<'_>,
+    enabled: bool,
+) -> anyhow::Result<ControlGroupListColorTable> {
+    resolve_control_group_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_control_group_list_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<ControlGroupListColorTable> {
+    let rule = find_control_group_list_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching control group list color rule"))?;
+    let colors = resolve_control_group_list_color_rule(resolver, rule)?;
+    Ok(ControlGroupListColorTable { background: colors.background, border: colors.border })
 }
 
 pub fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListAppearance {
@@ -75,8 +79,8 @@ fn control_group_list_from_catalog(
 ) -> anyhow::Result<ControlGroupListAppearance> {
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list");
-    let colors =
-        resolve_control_group_list_colors(&resolver, enabled).unwrap_or_else(|_| ControlGroupListColorTable::fallback());
+    let colors = resolve_control_group_list_colors(&resolver, enabled)
+        .unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
     Ok(ControlGroupListAppearance {
         background: colors.background.hsla(),
@@ -91,17 +95,13 @@ fn control_group_list_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{
-        control_group_list_appearance,
-        resolve_control_group_list_colors_metadata,
-    };
+    use super::control_group_list_appearance;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -129,5 +129,4 @@ mod tests {
         assert_eq!(appearance.background, catalog.color("muted").expect("muted"));
         assert_eq!(appearance.border, catalog.color("border").expect("border"));
     }
-
 }

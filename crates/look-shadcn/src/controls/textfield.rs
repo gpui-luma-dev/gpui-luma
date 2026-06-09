@@ -15,8 +15,14 @@ use crate::color::with_alpha;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
+use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_textfield_color_rule, resolve_textfield_color_rule};
 
-use gpui_luma_look_shadcn_macros::declare_look_table;
+fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
+    match style {
+        ShadcnTextFieldStyle::Surface => "surface",
+        ShadcnTextFieldStyle::Soft => "soft",
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ShadcnTextFieldStyle {
@@ -52,35 +58,37 @@ impl TextFieldColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_textfield_colors,
-    inputs: {
-        style: ShadcnTextFieldStyle,
-        enabled: bool,
-        invalid: bool,
-        theme_mode: ThemeMode,
-    },
-    output: TextFieldColorTable {
-        background,
-        foreground,
-        border,
-        placeholder,
-        icon,
-        selection_background,
-        selection_foreground,
-        caret,
-    },
-    matrix: [
-        [ShadcnTextFieldStyle::Surface] | [false] | [_] | [_] => "muted" | "muted-foreground" | "input" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground",
-        [ShadcnTextFieldStyle::Soft] | [false] | [_] | [_] => "muted" | "muted-foreground" | "transparent" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+pub fn resolve_textfield_colors(
+    resolver: &LookResolver<'_>,
+    style: ShadcnTextFieldStyle,
+    enabled: bool,
+    invalid: bool,
+    theme_mode: ThemeMode,
+) -> anyhow::Result<TextFieldColorTable> {
+    resolve_textfield_colors_with_stylesheet(resolver, embedded_stylesheet(), style, enabled, invalid, theme_mode)
+}
 
-        [ShadcnTextFieldStyle::Soft] | [true] | [_] | [_] => "muted" | "foreground" | "transparent" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
-
-        [ShadcnTextFieldStyle::Surface] | [true] | [false] | [ThemeMode::Light] => "transparent" | "foreground" | "input" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
-        [ShadcnTextFieldStyle::Surface] | [true] | [false] | [ThemeMode::Dark] => "input/30" | "foreground" | "input" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
-        [ShadcnTextFieldStyle::Surface] | [true] | [true] | [ThemeMode::Light] => "transparent" | "foreground" | "ring" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
-        [ShadcnTextFieldStyle::Surface] | [true] | [true] | [ThemeMode::Dark] => "input/30" | "foreground" | "ring" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
-    ]
+pub fn resolve_textfield_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnTextFieldStyle,
+    enabled: bool,
+    invalid: bool,
+    theme_mode: ThemeMode,
+) -> anyhow::Result<TextFieldColorTable> {
+    let rule = find_textfield_color_rule(stylesheet, textfield_style_key(style), enabled, invalid, theme_mode)
+        .ok_or_else(|| anyhow::anyhow!("no matching textfield color rule"))?;
+    let colors = resolve_textfield_color_rule(resolver, rule)?;
+    Ok(TextFieldColorTable {
+        background: colors.background,
+        foreground: colors.foreground,
+        border: colors.border,
+        placeholder: colors.placeholder,
+        icon: colors.icon,
+        selection_background: colors.selection_background,
+        selection_foreground: colors.selection_foreground,
+        caret: colors.caret,
+    })
 }
 
 pub fn textfield_palette(
@@ -202,7 +210,6 @@ pub fn textfield_palette_from_catalog(
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::controls::textfield::TextFieldState;
@@ -213,7 +220,7 @@ mod tests {
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
 
-    use super::{ShadcnTextFieldStyle, resolve_textfield_colors_metadata, textfield_palette_from_catalog};
+    use super::{ShadcnTextFieldStyle, textfield_palette_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -290,5 +297,4 @@ mod tests {
 
         assert_eq!(appearance.background, default.background);
     }
-
 }

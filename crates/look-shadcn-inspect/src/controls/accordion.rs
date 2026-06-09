@@ -1,10 +1,7 @@
 //! Inspect metadata for `accordion`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct AccordionTriggerInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -53,8 +50,9 @@ pub fn inspect_accordion_trigger_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionTriggerColorTable::fallback());
+    let colors =
+        gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionTriggerColorTable::fallback());
     AccordionTriggerInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
@@ -79,8 +77,8 @@ pub fn inspect_accordion_content_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionContentColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionContentColorTable::fallback());
     AccordionContentInspectPalette { background: colors.background, foreground: colors.foreground }
 }
 
@@ -92,9 +90,7 @@ pub fn inspect_accordion_metrics(
     use gpui_luma::controls::accordion::AccordionScale;
 
     use gpui_luma_look_shadcn::catalog::SpacingField;
-    use crate::metrics::{
-        control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric,
-    };
+    use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
@@ -126,11 +122,22 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn accordion_metadata_covers_trigger_and_content_tables() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors_metadata().len(), 5);
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_accordion_content_colors_metadata().len(), 2);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_accordion_trigger_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            5
+        );
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_accordion_content_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            2
+        );
     }
 
     #[test]

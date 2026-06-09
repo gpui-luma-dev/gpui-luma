@@ -1,10 +1,7 @@
 //! Inspect metadata for `progress`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct ProgressInspectPalette {
     pub track_color: ResolvedColor,
@@ -46,7 +43,8 @@ pub fn inspect_progress_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "progress_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ProgressColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_progress_colors(&resolver, enabled)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ProgressColorTable::fallback());
     ProgressInspectPalette { track_color: colors.track_color, progress_color: colors.progress_color }
 }
 
@@ -57,7 +55,8 @@ pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) 
     let appearance = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::progress_from_palette(&ctx, true)
     } else {
-        gpui_luma_look_shadcn::paint::progress_from_catalog(&ctx, true).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::progress_from_palette(&ctx, true))
+        gpui_luma_look_shadcn::paint::progress_from_catalog(&ctx, true)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::progress_from_palette(&ctx, true))
     };
 
     ProgressInspectMetrics {
@@ -75,10 +74,15 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn progress_metadata_has_enabled_and_disabled_rows() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_progress_colors_metadata().len(), 2);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_progress_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            2
+        );
     }
 
     #[test]

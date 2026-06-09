@@ -105,9 +105,10 @@ impl SplitView {
         cx.notify();
     }
 
-    pub fn set_panes(&mut self, sidebar: PaneRender, content: PaneRender) {
+    pub fn set_panes(&mut self, sidebar: PaneRender, content: PaneRender, cx: &mut Context<Self>) {
         self.model.sidebar = sidebar;
         self.model.content = content;
+        cx.notify();
     }
 
     pub fn set_sidebar_width(&mut self, width: Pixels, cx: &mut Context<Self>) {

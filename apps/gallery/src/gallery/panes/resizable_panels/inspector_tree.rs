@@ -9,7 +9,9 @@ use crate::gallery::panes::shared::inspector::{
     ColorInspectTreeData, color_field_nodes_optional, inspect_slug, resizable_panels_layout_data,
 };
 
-pub(in crate::gallery) fn build_resizable_panels_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<ColorInspectTreeData>> {
+pub(in crate::gallery) fn build_resizable_panels_inspect_tree(
+    look: &ShadcnLook,
+) -> Vec<TreeNode<ColorInspectTreeData>> {
     vec![appearance_branch(look), handle_layout_branch(look)]
 }
 

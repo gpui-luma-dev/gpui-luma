@@ -1,10 +1,7 @@
 //! Inspect metadata for `floating_menu`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct FloatingMenuInspectPalette {
     pub background: ResolvedColor,
@@ -59,7 +56,8 @@ pub fn inspect_floating_menu_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "floating_menu_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::FloatingMenuColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_floating_menu_colors(&resolver, true)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::FloatingMenuColorTable::fallback());
     FloatingMenuInspectPalette {
         background: colors.background,
         foreground: colors.foreground,
@@ -103,4 +101,3 @@ pub fn inspect_floating_menu_metrics(
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

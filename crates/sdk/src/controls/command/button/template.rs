@@ -4,7 +4,8 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::{
-    ButtonFamilyAppearance, ButtonFamilyTheme, compose_button_family_appearance, default_button_family_theme,
+    ButtonFamilyAppearance, ButtonFamilyTheme, button_family_effective_border, button_family_focus_adorner,
+    compose_button_family_appearance, default_button_family_theme,
 };
 use crate::theme::InteractionState;
 
@@ -108,6 +109,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         );
         let appearance = resolve_appearance(&self.theme, model, &scale);
         let focused_probe_appearance = resolve_focus_probe_appearance(&self.theme, model, &scale);
+        let border = button_family_effective_border(appearance.border);
 
         let mut control = div()
             .id(format!("{}-control", model.id))
@@ -117,13 +119,15 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             .gap(px(appearance.gap))
             .bg(appearance.background)
             .text_color(appearance.foreground)
-            .border_1()
-            .border_color(appearance.border)
             .text_size(px(appearance.typography.size))
             .line_height(px(appearance.typography.line_height))
             .font_family(appearance.font_family.clone())
             .font_weight(appearance.typography.weight)
             .h(px(appearance.height));
+
+        if border.a > 0.0 {
+            control = control.border_1().border_color(border);
+        }
 
         if model.round {
             control = control.w(px(appearance.height)).p_0().rounded_full();
@@ -144,12 +148,18 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             appearance.radius
         };
 
-        let oversize_extent = adorner_oversize_extent(appearance.adorner)
-            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+        let metrics = self.theme.metrics();
+        let adorner =
+            button_family_focus_adorner(model.state.focused, appearance.border, appearance.focus_ring, metrics);
+        let focused_adorner = focused_probe_appearance
+            .as_ref()
+            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, metrics));
+
+        let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
 
         let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, radius) {
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, radius) {
             adorned = adorned.child(adorner);
         }
 
@@ -184,8 +194,8 @@ mod tests {
         ButtonFamilyAppearance {
             background: Hsla { h: 120.0, s: 1.0, l: 0.5, a: 1.0 },
             foreground: Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 },
-            border: Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 },
-            adorner: None,
+            border: Some(Hsla { h: 120.0, s: 1.0, l: 0.3, a: 1.0 }),
+            focus_ring: Hsla { h: 200.0, s: 1.0, l: 0.5, a: 1.0 },
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
             radius: 8.0,
@@ -221,8 +231,8 @@ mod tests {
         let palette = ButtonFamilyPalette {
             background: Hsla::default(),
             foreground: Hsla::default(),
-            border: Hsla::default(),
-            adorner: None,
+            border: Some(Hsla::default()),
+            focus_ring: Hsla::default(),
             typography: LumaTextStyle { size: 14.0, line_height: 20.0, weight: gpui::FontWeight::MEDIUM },
             font_family: "test".into(),
         };

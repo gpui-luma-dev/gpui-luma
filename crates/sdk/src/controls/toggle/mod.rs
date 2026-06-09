@@ -4,7 +4,7 @@ use gpui::SharedString;
 use gpui::prelude::*;
 
 use crate::controls::command::button::{ButtonBuilder, ButtonTemplate, DefaultButtonTemplate};
-use crate::controls::button_family::{ButtonFamilyRole, default_button_family_theme};
+use crate::controls::button_family::{ButtonFamilyRole, button_family_effective_border, default_button_family_theme};
 
 pub struct Toggle;
 
@@ -28,6 +28,9 @@ pub fn default_toggle_template() -> Arc<dyn ButtonTemplate<bool>> {
 
         let palette =
             button_family_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
-        element.bg(palette.background).text_color(palette.foreground).border_color(palette.border)
+        element
+            .bg(palette.background)
+            .text_color(palette.foreground)
+            .border_color(button_family_effective_border(palette.border))
     }))
 }

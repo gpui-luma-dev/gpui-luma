@@ -15,8 +15,17 @@ use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_scrollbar_color_rule, resolve_scrollbar_color_rule,
+    resolve_scrollbar_metrics,
+};
 
-use gpui_luma_look_shadcn_macros::declare_look_table;
+const DEFAULT_SCROLLBAR_THICKNESS: f32 = 12.0;
+const DEFAULT_SCROLLBAR_TRACK_THICKNESS: f32 = 4.0;
+const DEFAULT_SCROLLBAR_THUMB_THICKNESS: f32 = 8.0;
+const DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH: f32 = 28.0;
+const DEFAULT_SCROLLBAR_LENGTH_H: f32 = 260.0;
+const DEFAULT_SCROLLBAR_LENGTH_V: f32 = 180.0;
 
 #[derive(Clone, Debug)]
 pub struct ScrollbarColorTable {
@@ -33,21 +42,24 @@ impl ScrollbarColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_scrollbar_colors,
-    inputs: {
-        disabled: bool,
-        layer: InteractionLayer,
-    },
-    output: ScrollbarColorTable { track_background, thumb_background },
-    matrix: [
-        [true] | [_] => "muted" | "muted-foreground",
+pub fn resolve_scrollbar_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ScrollbarColorTable> {
+    resolve_scrollbar_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+}
 
-        [false] | [InteractionLayer::Disabled] => "transparent" | "muted-foreground",
-        [false] | [InteractionLayer::Default] => "transparent" | "border",
-        [false] | [InteractionLayer::Hovered] => "transparent" | "border",
-        [false] | [InteractionLayer::Pressed] => "transparent" | "@darken_border",
-    ]
+pub fn resolve_scrollbar_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ScrollbarColorTable> {
+    let rule = find_scrollbar_color_rule(stylesheet, disabled, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching scrollbar color rule"))?;
+    let colors = resolve_scrollbar_color_rule(resolver, rule, layer)?;
+    Ok(ScrollbarColorTable { track_background: colors.track_background, thumb_background: colors.thumb_background })
 }
 
 pub fn scrollbar_appearance(
@@ -72,26 +84,38 @@ pub fn scrollbar_appearance_from_catalog(
         resolve_scrollbar_colors(&resolver, state.disabled, layer).unwrap_or_else(|_| ScrollbarColorTable::fallback());
 
     let length = match orientation {
-        ScrollbarOrientation::Horizontal => 260.0,
-        ScrollbarOrientation::Vertical => 180.0,
+        ScrollbarOrientation::Horizontal => DEFAULT_SCROLLBAR_LENGTH_H,
+        ScrollbarOrientation::Vertical => DEFAULT_SCROLLBAR_LENGTH_V,
     };
+    let stylesheet = embedded_stylesheet();
+    let (thickness, track_thickness, thumb_thickness, min_thumb_length) = stylesheet
+        .scrollbar
+        .metrics
+        .as_ref()
+        .map(resolve_scrollbar_metrics)
+        .map(|metrics| (metrics.thickness, metrics.track_thickness, metrics.thumb_thickness, metrics.min_thumb_length))
+        .unwrap_or((
+            DEFAULT_SCROLLBAR_THICKNESS,
+            DEFAULT_SCROLLBAR_TRACK_THICKNESS,
+            DEFAULT_SCROLLBAR_THUMB_THICKNESS,
+            DEFAULT_SCROLLBAR_MIN_THUMB_LENGTH,
+        ));
 
     Ok(ScrollbarAppearance {
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         length,
-        thickness: 12.0,
-        track_thickness: 4.0,
-        thumb_thickness: 8.0,
-        min_thumb_length: 28.0,
+        thickness,
+        track_thickness,
+        thumb_thickness,
+        min_thumb_length,
         radius: metrics.radius.pill,
     })
 }
 
 #[cfg(test)]
 mod tests {
-
 
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
@@ -102,7 +126,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{resolve_scrollbar_colors_metadata, scrollbar_appearance_from_catalog};
+    use super::{scrollbar_appearance_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -162,5 +186,4 @@ mod tests {
         assert_eq!(focused.thumb_background, border);
         assert_eq!(focused.focus_ring, Some(catalog.color("ring").expect("ring")));
     }
-
 }

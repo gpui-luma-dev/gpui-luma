@@ -1,9 +1,7 @@
 //! Inspect metadata for `textfield`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
 use gpui_luma::controls::textfield::TextFieldState;
@@ -55,8 +53,9 @@ pub fn inspect_textfield_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TextFieldColorTable::fallback());
+    let colors =
+        gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TextFieldColorTable::fallback());
     let focus_ring = (enabled && state.focus_visible).then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     TextFieldInspectPalette {
@@ -121,7 +120,6 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn inspect_soft_textfield_uses_muted_token() {
         let catalog = sample_catalog();
@@ -142,6 +140,12 @@ mod tests {
 
     #[test]
     fn textfield_metadata_covers_style_and_state_rows() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_textfield_colors_metadata().len(), 7);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_textfield_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            7
+        );
     }
 }

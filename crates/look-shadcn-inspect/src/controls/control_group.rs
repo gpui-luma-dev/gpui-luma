@@ -1,10 +1,7 @@
 //! Inspect metadata for `control_group`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ControlGroupListInspectPalette {
     pub background: ResolvedColor,
@@ -41,12 +38,9 @@ pub fn inspect_control_group_list_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
-    ControlGroupListInspectPalette {
-        background: colors.background,
-        border: colors.border,
-    }
+    let colors = gpui_luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
+    ControlGroupListInspectPalette { background: colors.background, border: colors.border }
 }
 
 pub fn inspect_control_group_metrics(
@@ -77,10 +71,15 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn control_group_metadata_covers_enabled_and_disabled() {
-        assert_eq!(gpui_luma_look_shadcn::tables::resolve_control_group_list_colors_metadata().len(), 2);
+        assert_eq!(
+            gpui_luma_look_shadcn::stylesheet::resolve_control_group_list_colors_metadata(
+                gpui_luma_look_shadcn::embedded_stylesheet()
+            )
+            .len(),
+            2
+        );
     }
 
     #[test]

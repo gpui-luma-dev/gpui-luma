@@ -23,10 +23,12 @@ pub(in crate::gallery) fn build_radio_group_inspect_tree(look: &ShadcnLook) -> V
         .map(|(state_label, state)| state_branch(id, state_label, style, *state, look))
         .collect();
 
-    vec![TreeNode::new(id.to_owned(), "Secondary item", ColorInspectTreeData::Branch)
-        .branch(true)
-        .expanded(true)
-        .children(state_nodes)]
+    vec![
+        TreeNode::new(id.to_owned(), "Secondary item", ColorInspectTreeData::Branch)
+            .branch(true)
+            .expanded(true)
+            .children(state_nodes),
+    ]
 }
 
 fn state_branch(

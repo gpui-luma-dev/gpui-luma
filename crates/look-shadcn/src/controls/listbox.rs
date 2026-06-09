@@ -20,8 +20,10 @@ use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_adorner;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_listbox_list_color_rule, find_listbox_row_color_rule,
+    resolve_listbox_list_color_rule, resolve_listbox_row_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct ListBoxListColorTable {
@@ -40,16 +42,22 @@ impl ListBoxListColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_listbox_list_colors,
-    inputs: {
-        enabled: bool,
-    },
-    output: ListBoxListColorTable { background, border, divider },
-    matrix: [
-        [true]  => "background" | "input" | "border",
-        [false] => "muted" | "input" | "border",
-    ]
+pub fn resolve_listbox_list_colors(
+    resolver: &LookResolver<'_>,
+    enabled: bool,
+) -> anyhow::Result<ListBoxListColorTable> {
+    resolve_listbox_list_colors_with_stylesheet(resolver, embedded_stylesheet(), enabled)
+}
+
+pub fn resolve_listbox_list_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    enabled: bool,
+) -> anyhow::Result<ListBoxListColorTable> {
+    let rule = find_listbox_list_color_rule(stylesheet, enabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching listbox list color rule"))?;
+    let colors = resolve_listbox_list_color_rule(resolver, rule)?;
+    Ok(ListBoxListColorTable { background: colors.background, border: colors.border, divider: colors.divider })
 }
 
 #[derive(Clone, Debug)]
@@ -64,23 +72,26 @@ impl ListBoxRowColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_listbox_row_colors,
-    inputs: {
-        disabled: bool,
-        focused: bool,
-        layer: InteractionLayer,
-    },
-    output: ListBoxRowColorTable { label_color, background },
-    matrix: [
-        [true] | [_] | [_] => "muted-foreground" | "transparent",
+pub fn resolve_listbox_row_colors(
+    resolver: &LookResolver<'_>,
+    disabled: bool,
+    focused: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ListBoxRowColorTable> {
+    resolve_listbox_row_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, focused, layer)
+}
 
-        [false] | [true] | [InteractionLayer::Default] => "foreground" | "accent",
-        [false] | [false] | [InteractionLayer::Default] => "foreground" | "transparent",
-        [false] | [_] | [InteractionLayer::Hovered] => "foreground" | "first_layer(accent)",
-        [false] | [_] | [InteractionLayer::Pressed] => "foreground" | "first_layer(accent)",
-        [false] | [_] | [InteractionLayer::Disabled] => "foreground" | "transparent",
-    ]
+pub fn resolve_listbox_row_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    disabled: bool,
+    focused: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<ListBoxRowColorTable> {
+    let rule = find_listbox_row_color_rule(stylesheet, disabled, focused, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching listbox row color rule"))?;
+    let colors = resolve_listbox_row_color_rule(resolver, rule, layer)?;
+    Ok(ListBoxRowColorTable { label_color: colors.label_color, background: colors.background })
 }
 
 pub fn listbox_list_appearance(
@@ -133,7 +144,11 @@ pub fn listbox_list_from_palette(
     };
 
     ListBoxListAppearance {
-        background: if enabled { palette.app_background } else { palette.disabled_background },
+        background: if enabled {
+            palette.app_background
+        } else {
+            palette.disabled_background
+        },
         border: palette.input_background,
         adorner,
         divider: palette.border_default,
@@ -152,8 +167,7 @@ fn listbox_list_from_catalog(
 ) -> anyhow::Result<ListBoxListAppearance> {
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
-    let colors =
-        resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
+    let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
 
     Ok(ListBoxListAppearance {
         background: colors.background.hsla(),
@@ -208,7 +222,6 @@ fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRo
 #[cfg(test)]
 mod tests {
 
-
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
@@ -216,10 +229,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::LookResolver;
-    use super::{
-        listbox_list_appearance, listbox_row_palette,
-        resolve_listbox_list_colors_metadata, resolve_listbox_row_colors, resolve_listbox_row_colors_metadata,
-    };
+    use super::{listbox_list_appearance, listbox_row_palette, resolve_listbox_row_colors};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -259,5 +269,4 @@ mod tests {
             .hsla();
         assert_eq!(row.background, expected);
     }
-
 }

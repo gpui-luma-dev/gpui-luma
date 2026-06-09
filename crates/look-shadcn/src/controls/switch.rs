@@ -20,8 +20,7 @@ use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
 use crate::palette::{ShadcnActionRole, ShadcnPalette};
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_switch_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct SwitchColorTable {
@@ -42,19 +41,31 @@ impl SwitchColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_switch_colors,
-    inputs: {
-        style: ShadcnButtonStyle,
-        on: bool,
-        disabled: bool,
-    },
-    output: SwitchColorTable { track_background, thumb_background, thumb_border, label_color },
-    matrix: [
-        [_] | [_] | [true] => "muted" | "muted-foreground" | "muted" | "muted-foreground",
-        [_] | [true] | [false] => "@action_default" | "@action_foreground" | "@action_foreground" | "foreground",
-        [_] | [false] | [false] => "input" | "background" | "border" | "foreground",
-    ]
+pub fn resolve_switch_colors(
+    resolver: &LookResolver<'_>,
+    style: ShadcnButtonStyle,
+    on: bool,
+    disabled: bool,
+) -> anyhow::Result<SwitchColorTable> {
+    resolve_switch_colors_with_stylesheet(resolver, embedded_stylesheet(), style, on, disabled)
+}
+
+pub fn resolve_switch_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    on: bool,
+    disabled: bool,
+) -> anyhow::Result<SwitchColorTable> {
+    let rule = find_switch_color_rule(stylesheet, on, disabled)
+        .ok_or_else(|| anyhow::anyhow!("no matching switch color rule"))?;
+    let colors = resolve_switch_color_rule(resolver, rule, style)?;
+    Ok(SwitchColorTable {
+        track_background: colors.track_background,
+        thumb_background: colors.thumb_background,
+        thumb_border: colors.thumb_border,
+        label_color: colors.label_color,
+    })
 }
 
 pub fn switch_appearance(
@@ -173,7 +184,6 @@ fn switch_thumb_surface_palette(
 
 #[cfg(test)]
 mod tests {
-
 
     use std::collections::BTreeMap;
 

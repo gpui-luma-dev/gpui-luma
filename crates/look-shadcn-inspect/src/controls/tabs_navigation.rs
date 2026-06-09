@@ -1,10 +1,7 @@
 //! Inspect metadata for `tabs_navigation`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens,
-};
-
+use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct TabsNavigationItemInspectPalette {
     pub label_color: ResolvedColor,
@@ -61,8 +58,13 @@ pub fn inspect_tabs_navigation_item_color_palette(
     }
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tabs_navigation_item_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_item_colors(&resolver, active, state.layer(), state.focused)
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TabsNavigationItemColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_item_colors(
+        &resolver,
+        active,
+        state.layer(),
+        state.focused,
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TabsNavigationItemColorTable::fallback());
 
     TabsNavigationItemInspectPalette { label_color: colors.label_color, indicator: colors.indicator }
 }
@@ -107,12 +109,14 @@ pub fn inspect_tabs_navigation_metrics(
     let list = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, true)
     } else {
-        gpui_luma_look_shadcn::paint::tabs_navigation_list_from_catalog(&ctx, true).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, true))
+        gpui_luma_look_shadcn::paint::tabs_navigation_list_from_catalog(&ctx, true)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_list_from_palette(&ctx, true))
     };
     let item = if ctx.catalog().tokens.is_empty() {
         gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, true)
     } else {
-        gpui_luma_look_shadcn::paint::tabs_navigation_item_from_catalog(&ctx, true).unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, true))
+        gpui_luma_look_shadcn::paint::tabs_navigation_item_from_catalog(&ctx, true)
+            .unwrap_or_else(|_| gpui_luma_look_shadcn::paint::tabs_navigation_item_from_palette(&ctx, true))
     };
 
     TabsNavigationInspectMetrics {
@@ -129,4 +133,3 @@ pub fn inspect_tabs_navigation_metrics(
 fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
     ResolvedColor { value, source }
 }
-

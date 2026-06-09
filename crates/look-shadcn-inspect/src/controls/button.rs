@@ -1,10 +1,9 @@
 //! Inspect metadata for `button`.
 
-use gpui::hsla;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric,
-    ResolvedTypography, ShadcnButtonStyle, ShadcnModeTokens, TypographySource,
+    AppearanceContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography,
+    ShadcnButtonStyle, ShadcnModeTokens, TypographySource,
 };
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -36,7 +35,7 @@ pub fn inspect_button_color_palette(
     let colors = gpui_luma_look_shadcn::tables::resolve_button_colors(&resolver, style, layer, theme_mode, selected)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ButtonColorPalette::fallback());
 
-    let border = effective_border_resolved(style, &colors);
+    let border = effective_border_resolved(&colors);
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     ButtonInspectPalette { background: colors.background, foreground: colors.foreground, border, focus_ring }
@@ -83,7 +82,10 @@ pub fn inspect_button_metrics(
             value_px: metrics.focus.width,
             source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
         },
-        focus_ring_offset: focus_ring_offset_metric(style, metrics),
+        focus_ring_offset: focus_ring_offset_metric(
+            gpui_luma::controls::button_family::button_family_effective_border(appearance.border),
+            metrics,
+        ),
     }
 }
 
@@ -104,7 +106,7 @@ pub fn inspect_button_typography(mode: &ShadcnModeTokens, theme_mode: ThemeMode)
     ButtonInspectTypography {
         font_family: typography_family_field(catalog, &typography.font.sans.family),
         font_size: typography_scaffold_field("LumaTypography.text.label.size", label.size),
-        font_weight: typography_scaffold_field("LumaTypography.text.label.weight", label.weight.0 as f32),
+        font_weight: typography_scaffold_field("LumaTypography.text.label.weight", label.weight.0),
         line_height: typography_scaffold_field("LumaTypography.text.label.line_height", label.line_height),
     }
 }
@@ -179,7 +181,11 @@ fn spacing_control_metric(
     }
 }
 
-fn radius_metric(catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap, size: ControlSize, value_px: f32) -> ResolvedMetric {
+fn radius_metric(
+    catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap,
+    size: ControlSize,
+    value_px: f32,
+) -> ResolvedMetric {
     if catalog.get("radius").is_some() {
         let (size_label, offset) = match size {
             ControlSize::Sm => ("sm", 4.0_f32),
@@ -200,38 +206,27 @@ fn radius_metric(catalog: &gpui_luma_look_shadcn::catalog::CssTokenMap, size: Co
     }
 }
 
-fn focus_ring_offset_metric(style: ShadcnButtonStyle, metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
-    let border = metrics.border_width.default;
+fn focus_ring_offset_metric(border: gpui::Hsla, metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+    let border_width = metrics.border_width.default;
     let focus = metrics.focus.width;
-    match style {
-        ShadcnButtonStyle::Ghost => ResolvedMetric {
-            value_px: border,
-            source: MetricSource::Derived { note: "inset · border_width.default".into() },
-        },
-        _ => ResolvedMetric {
-            value_px: border + focus,
+    if border.a <= 0.0 {
+        ResolvedMetric { value_px: 0.0, source: MetricSource::Derived { note: "inset · borderless".into() } }
+    } else {
+        ResolvedMetric {
+            value_px: border_width + focus,
             source: MetricSource::Derived { note: "border_width.default + focus.width".into() },
-        },
+        }
     }
 }
 
-fn effective_border_resolved(style: ShadcnButtonStyle, colors: &gpui_luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
-    use gpui_luma_look_shadcn::{ColorSource, format_inspect_css_key};
+fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColorPalette) -> ResolvedColor {
+    use gpui_luma_look_shadcn::ColorSource;
 
     if let Some(color) = &colors.border {
         return color.clone();
     }
 
-    let background = colors.background.hsla();
-    let (value, source) = match style {
-        ShadcnButtonStyle::Ghost => (hsla(0.0, 0.0, 0.0, 0.0), ColorSource::Transparent),
-        ShadcnButtonStyle::Primary | ShadcnButtonStyle::Secondary | ShadcnButtonStyle::Outline => (
-            background,
-            ColorSource::Derived { note: format!("= {}", format_inspect_css_key(&colors.background.source)) },
-        ),
-    };
-
-    ResolvedColor { value, source }
+    ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent }
 }
 
 #[cfg(test)]
@@ -239,10 +234,11 @@ mod tests {
     use super::*;
     use crate::test_support::{retro_arcade_catalog, sample_catalog};
 
-
     #[test]
     fn button_color_table_metadata_is_populated() {
-        let metadata = gpui_luma_look_shadcn::tables::resolve_button_colors_metadata();
+        let metadata = gpui_luma_look_shadcn::stylesheet::resolve_button_colors_metadata(
+            gpui_luma_look_shadcn::embedded_stylesheet(),
+        );
         assert!(!metadata.is_empty());
         assert!(metadata[0].inputs.len() == 4);
     }
@@ -273,8 +269,9 @@ mod tests {
         );
         assert!(matches!(
             palette.border.source,
-            gpui_luma_look_shadcn::ColorSource::Derived { ref note } if note == "= --primary"
+            gpui_luma_look_shadcn::ColorSource::CssVar { ref token } if token == "primary"
         ));
+        assert_eq!(palette.border.value, palette.background.value);
     }
 
     #[test]

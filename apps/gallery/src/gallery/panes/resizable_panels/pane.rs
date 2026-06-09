@@ -1,6 +1,7 @@
 use std::{cell::Cell, rc::Rc, sync::Arc};
 
-use gpui::{AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px,
+use gpui::{
+    AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px,
     transparent_black,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};

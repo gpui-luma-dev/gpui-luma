@@ -15,8 +15,7 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
-
-use gpui_luma_look_shadcn_macros::declare_look_table;
+use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_checkbox_color_rule, resolve_checkbox_color_rule};
 
 #[derive(Clone, Debug)]
 pub struct CheckboxColorTable {
@@ -35,25 +34,30 @@ impl CheckboxColorTable {
     }
 }
 
-declare_look_table! {
-    name: resolve_checkbox_colors,
-    inputs: {
-        style: ShadcnButtonStyle,
-        checked: bool,
-        layer: InteractionLayer,
-    },
-    output: CheckboxColorTable { indicator_background, checkmark_color, label_color },
-    matrix: [
-        [_] | [_] | [InteractionLayer::Disabled] => "muted" | "muted-foreground" | "muted-foreground",
+pub fn resolve_checkbox_colors(
+    resolver: &LookResolver<'_>,
+    style: ShadcnButtonStyle,
+    checked: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<CheckboxColorTable> {
+    resolve_checkbox_colors_with_stylesheet(resolver, embedded_stylesheet(), style, checked, layer)
+}
 
-        [_] | [false] | [InteractionLayer::Default] => "@outline_layer" | "foreground" | "foreground",
-        [_] | [false] | [InteractionLayer::Hovered] => "@outline_layer" | "foreground" | "foreground",
-        [_] | [false] | [InteractionLayer::Pressed] => "@outline_layer" | "foreground" | "foreground",
-
-        [_] | [true] | [InteractionLayer::Default] => "@action_layer" | "@action_foreground" | "foreground",
-        [_] | [true] | [InteractionLayer::Hovered] => "@action_layer" | "@action_foreground" | "foreground",
-        [_] | [true] | [InteractionLayer::Pressed] => "@action_layer" | "@action_foreground" | "foreground",
-    ]
+pub fn resolve_checkbox_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    checked: bool,
+    layer: InteractionLayer,
+) -> anyhow::Result<CheckboxColorTable> {
+    let rule = find_checkbox_color_rule(stylesheet, checked, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching checkbox color rule"))?;
+    let colors = resolve_checkbox_color_rule(resolver, rule, style, layer)?;
+    Ok(CheckboxColorTable {
+        indicator_background: colors.indicator_background,
+        checkmark_color: colors.checkmark_color,
+        label_color: colors.label_color,
+    })
 }
 
 pub fn checkbox_appearance(

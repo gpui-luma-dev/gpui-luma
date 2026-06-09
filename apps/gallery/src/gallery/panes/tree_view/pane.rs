@@ -30,7 +30,8 @@ pub(in crate::gallery) struct TreeViewPane {
 
 impl TreeViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let tree = spawn_color_inspector_tree("tree-view-inspector-tree", look.clone(), build_tree_view_inspect_tree, cx);
+        let tree =
+            spawn_color_inspector_tree("tree-view-inspector-tree", look.clone(), build_tree_view_inspect_tree, cx);
         let inspector = cx.new(|cx| {
             ColorInspectorShell::new(
                 look.clone(),

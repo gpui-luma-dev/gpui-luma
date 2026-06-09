@@ -5,7 +5,6 @@ use gpui_luma_look_shadcn::{
     AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
 };
 
-
 pub struct RadioButtonInspectPalette {
     pub indicator_background: ResolvedColor,
     pub indicator_border: ResolvedColor,
@@ -44,8 +43,8 @@ pub fn inspect_radio_button_color_palette(
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "radio_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_radio_colors(&resolver, style, selected, layer).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::RadioColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_radio_colors(&resolver, style, selected, layer)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::RadioColorTable::fallback());
     let indicator_border = if selected && !state.disabled {
         colors.selection_ring
     } else {
@@ -116,4 +115,3 @@ pub fn inspect_radio_button_metrics(
         focus_ring_offset: focus_ring_offset_metric(metrics),
     }
 }
-

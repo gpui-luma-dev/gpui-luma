@@ -2,9 +2,9 @@
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens, format_inspect_css_key,
+    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
+    format_inspect_css_key,
 };
-
 
 pub struct SwitchInspectPalette {
     pub track_background: ResolvedColor,
@@ -49,8 +49,8 @@ pub fn inspect_switch_color_palette(
 
     let catalog = ctx.catalog();
     let resolver = LookResolver::new(catalog, theme_mode, "switch_inspect");
-    let colors =
-        gpui_luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled).unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SwitchColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled)
+        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SwitchColorTable::fallback());
     let thumb_border_color = colors.thumb_border;
     let track_border = if on && !state.disabled {
         let note = format!("= {}", format_inspect_css_key(&colors.track_background.source));
@@ -124,4 +124,3 @@ pub fn inspect_switch_metrics(
         focus_ring_offset: focus_ring_offset_metric(metrics),
     }
 }
-
