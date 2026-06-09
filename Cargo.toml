@@ -4,6 +4,7 @@ members = [
   "crates/sdk",
   "crates/look-shadcn",
   "crates/look-shadcn-macros",
+  "crates/look-shadcn-inspect",
   "apps/gallery",
   "apps/theme-studio",
 ]

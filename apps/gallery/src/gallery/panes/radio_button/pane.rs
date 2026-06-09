@@ -13,20 +13,41 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_radio_button_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioButtonPane {
     secondary_radio: RadioButton,
     primary_radio: RadioButton,
     state_preview: Entity<RadioButtonStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     secondary_selected: bool,
     primary_selected: bool,
 }
 
 impl RadioButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "radio-button-inspector-tree",
+            look.clone(),
+            build_radio_button_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "radio-button-inspector",
+                "radio-button-inspector-split",
+                "radio-button-inspector-detail",
+                build_radio_button_inspect_tree,
+                cx,
+            )
+        });
+
         Self {
             secondary_radio: look
                 .secondary_radio("radio-button-secondary-example")
@@ -39,6 +60,7 @@ impl RadioButtonPane {
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| RadioButtonStatePreview::new(look)),
+            inspector,
             secondary_selected: true,
             primary_selected: false,
         }
@@ -56,8 +78,7 @@ impl RadioButtonPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Radio Button",
+        gallery_pane_with_inspector(
             "Radio Button",
             div()
                 .flex()
@@ -90,6 +111,7 @@ impl RadioButtonPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -98,6 +120,10 @@ impl RadioButtonPane {
         notify_entity(&self.secondary_radio, cx);
         notify_entity(&self.primary_radio, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn flip_radio(radio: &RadioButton, selected: &mut bool, cx: &mut Context<GalleryApp>) {

@@ -4,11 +4,50 @@ use gpui_luma::controls::autocomplete::AutocompleteTextBoxAppearance;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use super::floating_menu::floating_menu_appearance;
-use crate::resolve::resolve_color;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn autocomplete_textbox_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+use super::floating_menu::floating_menu_appearance;
+
+#[derive(Clone, Debug)]
+pub struct AutocompleteChromeColorTable {
+    pub status_color: ResolvedColor,
+    pub muted_text_color: ResolvedColor,
+    pub clear_icon_color: ResolvedColor,
+    pub clear_icon_hover_color: ResolvedColor,
+}
+
+impl AutocompleteChromeColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            status_color: ResolvedColor::fallback_foreground(),
+            muted_text_color: ResolvedColor::fallback_foreground(),
+            clear_icon_color: ResolvedColor::fallback_foreground(),
+            clear_icon_hover_color: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_autocomplete_chrome_colors,
+    inputs: {
+        present: bool,
+    },
+    output: AutocompleteChromeColorTable {
+        status_color,
+        muted_text_color,
+        clear_icon_color,
+        clear_icon_hover_color,
+    },
+    matrix: [
+        [true] => "primary" | "muted-foreground" | "muted-foreground" | "foreground",
+        [false] => "primary" | "muted-foreground" | "muted-foreground" | "foreground",
+    ]
+}
+
+pub fn autocomplete_textbox_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
@@ -22,7 +61,7 @@ pub(crate) fn autocomplete_textbox_appearance(
     }
 }
 
-fn autocomplete_textbox_appearance_from_palette(
+pub fn autocomplete_textbox_appearance_from_palette(
     ctx: &AppearanceContext,
     size: ControlSize,
 ) -> AutocompleteTextBoxAppearance {
@@ -36,16 +75,70 @@ fn autocomplete_textbox_appearance_from_palette(
     }
 }
 
-pub(crate) fn autocomplete_textbox_appearance_from_catalog(
+pub fn autocomplete_textbox_appearance_from_catalog(
     ctx: &AppearanceContext,
     size: ControlSize,
 ) -> anyhow::Result<AutocompleteTextBoxAppearance> {
-    let catalog = ctx.catalog();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome");
+    let colors = resolve_autocomplete_chrome_colors(&resolver, true)
+        .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
     Ok(AutocompleteTextBoxAppearance {
-        status_color: resolve_color(catalog, "primary")?,
-        muted_text_color: resolve_color(catalog, "muted-foreground")?,
-        clear_icon_color: resolve_color(catalog, "muted-foreground")?,
-        clear_icon_hover_color: resolve_color(catalog, "foreground")?,
+        status_color: colors.status_color.hsla(),
+        muted_text_color: colors.muted_text_color.hsla(),
+        clear_icon_color: colors.clear_icon_color.hsla(),
+        clear_icon_hover_color: colors.clear_icon_hover_color.hsla(),
         menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     })
+}
+
+#[cfg(test)]
+mod tests {
+
+
+    use std::collections::BTreeMap;
+
+    use gpui_luma::theme::ThemeMode;
+
+    use gpui_luma::theme::ControlSize;
+
+    use crate::catalog::CssTokenMap;
+    use crate::mode::ShadcnModeTokens;
+    use super::{
+        autocomplete_textbox_appearance,
+        resolve_autocomplete_chrome_colors_metadata,
+    };
+
+    fn sample_catalog() -> CssTokenMap {
+        CssTokenMap::from_map(BTreeMap::from([
+            ("primary".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("primary-foreground".into(), "oklch(1 0 0)".into()),
+            ("secondary".into(), "oklch(0.6437 0.1019 187.3840)".into()),
+            ("secondary-foreground".into(), "oklch(1 0 0)".into()),
+            ("background".into(), "oklch(0.9735 0.0261 90.0953)".into()),
+            ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
+            ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+            ("popover".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+            ("popover-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
+            ("accent-foreground".into(), "oklch(1 0 0)".into()),
+        ]))
+    }
+
+    #[test]
+    fn autocomplete_chrome_uses_primary_and_muted_tokens() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let appearance = autocomplete_textbox_appearance(&mode, ThemeMode::Light, ControlSize::Md);
+        assert_eq!(appearance.status_color, catalog.color("primary").expect("primary"));
+        assert_eq!(
+            appearance.muted_text_color,
+            catalog.color("muted-foreground").expect("muted-foreground")
+        );
+    }
+
 }

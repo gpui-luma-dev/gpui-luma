@@ -4,7 +4,6 @@ use gpui_luma_look_shadcn::ShadcnLook;
 pub(super) const PAGE_SPEC: PageSpec = PageSpec {
     title: "Selection Panel",
     description: "Template preview + spawnable SDK control with live SelectionPanelEvent stream.",
-    theme_components: &["Selection Panel"],
     header: HeaderSpec {
         title: "SelectionPanel composition",
         description: "Template states, custom item rendering, keyboard flow, and theme tokens in one live surface.",
@@ -34,7 +33,6 @@ pub(super) const PAGE_SPEC: PageSpec = PageSpec {
 pub(super) struct PageSpec {
     pub(super) title: &'static str,
     pub(super) description: &'static str,
-    pub(super) theme_components: &'static [&'static str],
     pub(super) header: HeaderSpec,
     pub(super) sections: &'static [Section],
 }

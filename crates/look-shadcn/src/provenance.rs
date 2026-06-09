@@ -29,6 +29,18 @@ pub enum MetricSource {
 }
 
 #[derive(Clone, Debug)]
+pub enum TypographySource {
+    CssVar { token: String },
+    Scaffold { path: String },
+}
+
+#[derive(Clone, Debug)]
+pub struct ResolvedTypography {
+    pub value: String,
+    pub source: TypographySource,
+}
+
+#[derive(Clone, Debug)]
 pub enum ColorSource {
     Transparent,
     CssVar { token: String },
@@ -38,7 +50,6 @@ pub enum ColorSource {
     Derived { note: String },
 }
 
-#[expect(dead_code)]
 #[derive(Clone, Debug)]
 pub struct TableRuleMetadata {
     pub inputs: Vec<String>,
@@ -93,6 +104,111 @@ impl<'a> LookResolver<'a> {
 
         anyhow::bail!("unknown color declaration `{decl}`")
     }
+
+    /// First catalog token that exists, otherwise the first token.
+    pub fn resolve_first_decl(&self, tokens: &[&str]) -> anyhow::Result<ResolvedColor> {
+        for token in tokens {
+            if self.catalog.get(token).is_some() {
+                return self.resolve_decl(token);
+            }
+        }
+        tokens.first().map_or_else(
+            || anyhow::bail!("resolve_first_decl called with empty token list"),
+            |token| self.resolve_decl(token),
+        )
+    }
+
+    /// Like [`resolve_color_first_layer`](crate::resolve::resolve_color_first_layer) with provenance.
+    pub fn resolve_first_layer_decl(&self, tokens: &[&str], layer: InteractionLayer) -> anyhow::Result<ResolvedColor> {
+        for token in tokens {
+            if catalog_state_color(self.catalog, token, layer).is_some() {
+                let state_decl = match layer {
+                    InteractionLayer::Default => token.to_string(),
+                    InteractionLayer::Hovered => format!("{token}-hover"),
+                    InteractionLayer::Pressed => format!("{token}-pressed"),
+                    InteractionLayer::Disabled => format!("{token}-disabled"),
+                };
+                return self.resolve_decl(&state_decl);
+            }
+        }
+        let base = tokens.iter().find(|token| self.catalog.get(token).is_some()).copied().unwrap_or(tokens[0]);
+        let state_decl = match layer {
+            InteractionLayer::Default => base.to_string(),
+            InteractionLayer::Hovered => format!("{base}-hover"),
+            InteractionLayer::Pressed => format!("{base}-pressed"),
+            InteractionLayer::Disabled => format!("{base}-disabled"),
+        };
+        self.resolve_decl(&state_decl)
+    }
+
+    /// Outline / unchecked selection surface (card/background, accent hover, muted pressed).
+    pub fn resolve_outline_layer_decl(&self, layer: InteractionLayer) -> anyhow::Result<ResolvedColor> {
+        match layer {
+            InteractionLayer::Disabled | InteractionLayer::Pressed => self.resolve_decl("muted"),
+            InteractionLayer::Hovered => self.resolve_first_layer_decl(&["accent", "muted"], layer),
+            InteractionLayer::Default => self.resolve_first_layer_decl(&["card", "background"], layer),
+        }
+    }
+
+    /// Filled action background for a button style and interaction layer.
+    pub fn resolve_action_layer_decl(
+        &self,
+        style: crate::controls::ShadcnButtonStyle,
+        layer: InteractionLayer,
+    ) -> anyhow::Result<ResolvedColor> {
+        let (background, _) = crate::action::style_token_pair(style);
+        match layer {
+            InteractionLayer::Disabled => self.resolve_decl("muted"),
+            InteractionLayer::Default => self.resolve_decl(background),
+            InteractionLayer::Hovered => self.resolve_decl(&format!("{background}-hover")),
+            InteractionLayer::Pressed => self.resolve_decl(&format!("{background}-pressed")),
+        }
+    }
+
+    /// Foreground token paired with a button style (`primary-foreground`, etc.).
+    pub fn resolve_action_foreground_decl(
+        &self,
+        style: crate::controls::ShadcnButtonStyle,
+    ) -> anyhow::Result<ResolvedColor> {
+        let (_, foreground) = crate::action::style_token_pair(style);
+        self.resolve_decl(foreground)
+    }
+
+    /// Label text color for enabled/disabled controls.
+    pub fn resolve_label_decl(&self, disabled: bool) -> anyhow::Result<ResolvedColor> {
+        if disabled {
+            self.resolve_decl("muted-foreground")
+        } else {
+            self.resolve_decl("foreground")
+        }
+    }
+
+    /// Scrollbar thumb pressed state: darken the border token.
+    pub fn resolve_darken_border_decl(&self, amount: f32) -> anyhow::Result<ResolvedColor> {
+        let base = self.resolve_decl("border")?;
+        Ok(ResolvedColor {
+            value: crate::color::darken(base.value, amount),
+            source: ColorSource::Derived { note: format!("darken(border, {}%)", (amount * 100.0).round() as i32) },
+        })
+    }
+
+    /// List row hover tint (`accent/40` with `first(accent,muted)` fallback).
+    pub fn resolve_accent_whisper_decl(&self, alpha_percent: u8) -> anyhow::Result<ResolvedColor> {
+        let base = self.resolve_first_decl(&["accent", "muted"])?;
+        Ok(ResolvedColor {
+            value: crate::color::with_alpha(base.value, f32::from(alpha_percent) / 100.0),
+            source: ColorSource::Derived { note: format!("--accent/{alpha_percent} · first(accent,muted)") },
+        })
+    }
+
+    /// Pressed list row derived from the accent whisper hover tint.
+    pub fn resolve_accent_whisper_pressed_decl(&self, alpha_percent: u8) -> anyhow::Result<ResolvedColor> {
+        let hover = self.resolve_accent_whisper_decl(alpha_percent)?;
+        Ok(ResolvedColor {
+            value: algorithmic_state_color(hover.value, InteractionLayer::Pressed, self.theme_mode, false),
+            source: ColorSource::Derived { note: format!("= {} · pressed", format_inspect_css_key(&hover.source)) },
+        })
+    }
 }
 
 /// Full CSS custom-property form, e.g. `--accent/50`.
@@ -142,6 +258,30 @@ pub fn format_inspect_metric_provenance(source: &MetricSource) -> Option<String>
         MetricSource::CssVar { token } => Some(format!("catalog · --{token}")),
         MetricSource::Scaffold { .. } | MetricSource::Constant { .. } => None,
     }
+}
+
+/// Primary source label for typography inspector rows.
+pub fn format_inspect_typography_source(source: &TypographySource) -> String {
+    match source {
+        TypographySource::CssVar { token } => format!("--{token}"),
+        TypographySource::Scaffold { path } => format!("scaffold · {path}"),
+    }
+}
+
+/// Secondary provenance line for typography when the source is a catalog token.
+pub fn format_inspect_typography_provenance(source: &TypographySource) -> Option<String> {
+    match source {
+        TypographySource::CssVar { token } => Some(format!("catalog · --{token}")),
+        TypographySource::Scaffold { .. } => None,
+    }
+}
+
+pub fn format_typography_px(value: f32) -> String {
+    format_metric_px(value)
+}
+
+pub fn format_font_weight(value: gpui::FontWeight) -> String {
+    format!("{}", value.0)
 }
 
 pub fn format_metric_px(value: f32) -> String {

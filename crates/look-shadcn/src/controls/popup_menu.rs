@@ -14,7 +14,7 @@ use crate::focus::focus_ring_color;
 use crate::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn popup_menu_palette(
+pub fn popup_menu_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
@@ -27,7 +27,7 @@ pub(crate) fn popup_menu_palette(
     }
 }
 
-fn popup_menu_palette_from_palette(ctx: &AppearanceContext) -> PopupMenuPalette {
+pub fn popup_menu_palette_from_palette(ctx: &AppearanceContext) -> PopupMenuPalette {
     let state = ctx.state;
     let palette = ctx.palette();
     let typography = ctx.typography();
@@ -56,7 +56,7 @@ fn popup_menu_palette_from_palette(ctx: &AppearanceContext) -> PopupMenuPalette 
     }
 }
 
-pub(crate) fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<PopupMenuPalette> {
+pub fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<PopupMenuPalette> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
@@ -74,6 +74,8 @@ pub(crate) fn popup_menu_palette_from_catalog(ctx: &AppearanceContext) -> anyhow
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 

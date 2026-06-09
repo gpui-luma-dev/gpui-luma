@@ -10,7 +10,9 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+use super::inspector_tree::build_accordion_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 
 const ACCORDION_DESCRIPTION: &str = concat!(
     "Accordion groups collapsible sections with single or multiple expansion modes. ",
@@ -24,10 +26,24 @@ pub(in crate::gallery) struct AccordionPane {
     interactive: Entity<AccordionControl>,
     interactive_field: TextField,
     last_event: SharedString,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl AccordionPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("accordion-inspector-tree", look.clone(), build_accordion_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "accordion-inspector",
+                "accordion-inspector-split",
+                "accordion-inspector-detail",
+                build_accordion_inspect_tree,
+                cx,
+            )
+        });
+
         let interactive_field =
             look.textfield("accordion-interactive-field").value("Edit me").full_width(true).spawn(cx);
         let field_for_content = interactive_field.clone();
@@ -91,6 +107,7 @@ impl AccordionPane {
             interactive,
             interactive_field,
             last_event: "None".into(),
+            inspector,
         }
     }
 
@@ -111,10 +128,9 @@ impl AccordionPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_description(
+        gallery_pane_with_inspector_description(
             "Accordion",
             Some(ACCORDION_DESCRIPTION),
-            "Accordion",
             div()
                 .w(px(420.0))
                 .flex()
@@ -130,6 +146,7 @@ impl AccordionPane {
                         .child(format!("Last event: {}", self.last_event)),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -138,6 +155,10 @@ impl AccordionPane {
         notify_entity(&self.single, cx);
         notify_entity(&self.multiple, cx);
         notify_entity(&self.interactive, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(&mut self, event: &AccordionEvent, cx: &mut Context<GalleryApp>) {

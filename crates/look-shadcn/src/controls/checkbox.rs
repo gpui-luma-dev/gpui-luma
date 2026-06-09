@@ -11,14 +11,52 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_adorner;
-use crate::resolve::{
-    resolve_action_foreground, resolve_action_layer, resolve_color, resolve_label_color, resolve_outline_layer,
-};
+use crate::provenance::{LookResolver, ResolvedColor};
+use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
-use crate::catalog::CssTokenMap;
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn checkbox_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct CheckboxColorTable {
+    pub indicator_background: ResolvedColor,
+    pub checkmark_color: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+impl CheckboxColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            indicator_background: ResolvedColor::transparent(),
+            checkmark_color: ResolvedColor::fallback_foreground(),
+            label_color: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_checkbox_colors,
+    inputs: {
+        style: ShadcnButtonStyle,
+        checked: bool,
+        layer: InteractionLayer,
+    },
+    output: CheckboxColorTable { indicator_background, checkmark_color, label_color },
+    matrix: [
+        [_] | [_] | [InteractionLayer::Disabled] => "muted" | "muted-foreground" | "muted-foreground",
+
+        [_] | [false] | [InteractionLayer::Default] => "@outline_layer" | "foreground" | "foreground",
+        [_] | [false] | [InteractionLayer::Hovered] => "@outline_layer" | "foreground" | "foreground",
+        [_] | [false] | [InteractionLayer::Pressed] => "@outline_layer" | "foreground" | "foreground",
+
+        [_] | [true] | [InteractionLayer::Default] => "@action_layer" | "@action_foreground" | "foreground",
+        [_] | [true] | [InteractionLayer::Hovered] => "@action_layer" | "@action_foreground" | "foreground",
+        [_] | [true] | [InteractionLayer::Pressed] => "@action_layer" | "@action_foreground" | "foreground",
+    ]
+}
+
+pub fn checkbox_appearance(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
     checked: bool,
@@ -32,7 +70,7 @@ pub(crate) fn checkbox_appearance(
     checkbox_appearance_from_catalog(&ctx, style, checked).unwrap_or_else(|err| panic!("checkbox properties: {err}"))
 }
 
-fn checkbox_appearance_from_palette(
+pub fn checkbox_appearance_from_palette(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
     checked: bool,
@@ -84,7 +122,7 @@ fn checkbox_appearance_from_palette(
     }
 }
 
-pub(crate) fn checkbox_appearance_from_catalog(
+pub fn checkbox_appearance_from_catalog(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
     checked: bool,
@@ -94,15 +132,12 @@ pub(crate) fn checkbox_appearance_from_catalog(
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
-
-    let indicator_background = match (checked, layer) {
-        (_, InteractionLayer::Disabled) => resolve_color(catalog, "muted")?,
-        (true, _) => resolve_action_layer(catalog, style, layer, ctx.theme_mode)?,
-        (false, _) => resolve_outline_layer(catalog, layer, ctx.theme_mode)?,
-    };
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "checkbox");
+    let colors =
+        resolve_checkbox_colors(&resolver, style, checked, layer).unwrap_or_else(|_| CheckboxColorTable::fallback());
 
     let indicator_border = if checked && !state.disabled {
-        indicator_background
+        colors.indicator_background.hsla()
     } else {
         resolve_color(catalog, "border")?
     };
@@ -110,27 +145,12 @@ pub(crate) fn checkbox_appearance_from_catalog(
     Ok(CheckboxPalette {
         control_background: None,
         control_border: None,
-        indicator_background,
+        indicator_background: colors.indicator_background.hsla(),
         indicator_border,
-        checkmark_color: checkmark_color(catalog, style, checked, state.disabled)?,
-        label_color: resolve_label_color(catalog, state.disabled)?,
+        checkmark_color: colors.checkmark_color.hsla(),
+        label_color: colors.label_color.hsla(),
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
     })
-}
-
-fn checkmark_color(
-    catalog: &CssTokenMap,
-    style: ShadcnButtonStyle,
-    checked: bool,
-    disabled: bool,
-) -> anyhow::Result<gpui::Hsla> {
-    if disabled {
-        return resolve_color(catalog, "muted-foreground");
-    }
-    if checked {
-        return resolve_action_foreground(catalog, style);
-    }
-    resolve_color(catalog, "foreground")
 }

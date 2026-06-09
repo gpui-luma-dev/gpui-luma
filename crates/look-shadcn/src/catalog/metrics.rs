@@ -1,6 +1,46 @@
-use gpui_luma::theme::{LumaTypography, MetricTokens};
+use gpui_luma::theme::{ControlSize, LumaTypography, MetricTokens};
 
 use super::CssTokenMap;
+
+struct ControlSpacingScale {
+    padding_x: f32,
+    padding_y: f32,
+    gap: f32,
+}
+
+fn control_spacing_scale(size: ControlSize) -> ControlSpacingScale {
+    match size {
+        ControlSize::Sm => ControlSpacingScale { padding_x: 2.5, padding_y: 1.25, gap: 1.5 },
+        ControlSize::Md => ControlSpacingScale { padding_x: 3.5, padding_y: 2.0, gap: 2.0 },
+        ControlSize::Lg => ControlSpacingScale { padding_x: 4.5, padding_y: 2.5, gap: 2.5 },
+    }
+}
+
+fn apply_spacing_to_control(
+    metrics: &mut gpui_luma::theme::ControlMetricTokens,
+    spacing_px: f32,
+    scale: ControlSpacingScale,
+) {
+    metrics.padding_x = spacing_px * scale.padding_x;
+    metrics.padding_y = spacing_px * scale.padding_y;
+    metrics.gap = spacing_px * scale.gap;
+}
+
+pub fn spacing_multiplier(size: ControlSize, field: SpacingField) -> f32 {
+    let scale = control_spacing_scale(size);
+    match field {
+        SpacingField::PaddingX => scale.padding_x,
+        SpacingField::PaddingY => scale.padding_y,
+        SpacingField::Gap => scale.gap,
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum SpacingField {
+    PaddingX,
+    PaddingY,
+    Gap,
+}
 
 const GENERIC_FAMILIES: &[&str] = &[
     "ui-sans-serif",
@@ -17,6 +57,15 @@ const GENERIC_FAMILIES: &[&str] = &[
 ];
 
 pub(crate) fn metrics_from_catalog(catalog: &CssTokenMap, mut scaffold: MetricTokens) -> MetricTokens {
+    if let Some(spacing_raw) = catalog.get("spacing") {
+        if let Some(spacing_px) = parse_length_px(spacing_raw) {
+            apply_spacing_to_control(&mut scaffold.control.sm, spacing_px, control_spacing_scale(ControlSize::Sm));
+            apply_spacing_to_control(&mut scaffold.control.md, spacing_px, control_spacing_scale(ControlSize::Md));
+            apply_spacing_to_control(&mut scaffold.control.lg, spacing_px, control_spacing_scale(ControlSize::Lg));
+            scaffold.spacing.s1 = spacing_px;
+        }
+    }
+
     let Some(radius_raw) = catalog.get("radius") else {
         return scaffold;
     };
@@ -110,5 +159,23 @@ mod tests {
     #[test]
     fn maps_rajdhani_css_export_to_variable_family() {
         assert_eq!(first_font_family("Rajdhani, sans-serif"), "Rajdhani Variable");
+    }
+
+    #[test]
+    fn spacing_token_scales_control_padding_and_gap() {
+        use gpui_luma::theme::ControlSize;
+
+        let catalog = CssTokenMap::from_map(std::collections::BTreeMap::from([
+            ("spacing".into(), "0.25rem".into()),
+            ("radius".into(), "0.25rem".into()),
+        ]));
+        let metrics = metrics_from_catalog(&catalog, MetricTokens::default());
+
+        assert_eq!(metrics.control.md.padding_x, 14.0);
+        assert_eq!(metrics.control.md.padding_y, 8.0);
+        assert_eq!(metrics.control.md.gap, 8.0);
+        assert_eq!(metrics.control.sm.padding_x, 10.0);
+        assert_eq!(metrics.control.lg.padding_x, 18.0);
+        assert_eq!(spacing_multiplier(ControlSize::Md, SpacingField::PaddingX), 3.5);
     }
 }

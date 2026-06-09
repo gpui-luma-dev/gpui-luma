@@ -19,11 +19,139 @@ use gpui_luma::controls::navigation_sidebar::{
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::resolve::{resolve_accent_hover_pair, resolve_color, resolve_color_layer};
-use crate::catalog::CssTokenMap;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn navigation_sidebar_container_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarContainerAppearance {
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct NavigationSidebarContainerColorTable {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: ResolvedColor,
+}
+
+impl NavigationSidebarContainerColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            foreground: ResolvedColor::fallback_foreground(),
+            border: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_navigation_sidebar_container_colors,
+    inputs: {
+        present: bool,
+    },
+    output: NavigationSidebarContainerColorTable { background, foreground, border },
+    matrix: [
+        [true] => "first(sidebar,card,background)" | "first(sidebar-foreground,foreground)" | "first(sidebar-border,border)",
+        [false] => "first(sidebar,card,background)" | "first(sidebar-foreground,foreground)" | "first(sidebar-border,border)",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct NavigationSidebarSectionColorTable {
+    pub label_color: ResolvedColor,
+}
+
+impl NavigationSidebarSectionColorTable {
+    pub fn fallback() -> Self {
+        Self { label_color: ResolvedColor::fallback_foreground() }
+    }
+}
+
+declare_look_table! {
+    name: resolve_navigation_sidebar_section_colors,
+    inputs: {
+        present: bool,
+    },
+    output: NavigationSidebarSectionColorTable { label_color },
+    matrix: [
+        [true] => "muted-foreground",
+        [false] => "muted-foreground",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct NavigationSidebarBranchColorTable {
+    pub foreground: ResolvedColor,
+    pub icon_color: ResolvedColor,
+    pub background: Option<ResolvedColor>,
+}
+
+impl NavigationSidebarBranchColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            foreground: ResolvedColor::fallback_foreground(),
+            icon_color: ResolvedColor::fallback_foreground(),
+            background: None,
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_navigation_sidebar_branch_colors,
+    inputs: {
+        disabled: bool,
+        layer: InteractionLayer,
+    },
+    output: NavigationSidebarBranchColorTable { foreground, icon_color, background },
+    matrix: [
+        [true] | [_] => "muted-foreground" | "muted-foreground" | None,
+
+        [false] | [InteractionLayer::Default] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
+        [false] | [InteractionLayer::Disabled] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
+        [false] | [InteractionLayer::Hovered] => "accent-foreground" | "accent-foreground" | "accent",
+        [false] | [InteractionLayer::Pressed] => "accent-foreground" | "accent-foreground" | "accent",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct NavigationSidebarItemColorTable {
+    pub foreground: ResolvedColor,
+    pub icon_color: ResolvedColor,
+    pub background: Option<ResolvedColor>,
+}
+
+impl NavigationSidebarItemColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            foreground: ResolvedColor::fallback_foreground(),
+            icon_color: ResolvedColor::fallback_foreground(),
+            background: None,
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_navigation_sidebar_item_colors,
+    inputs: {
+        selected: bool,
+        disabled: bool,
+        layer: InteractionLayer,
+    },
+    output: NavigationSidebarItemColorTable { foreground, icon_color, background },
+    matrix: [
+        [true] | [true] | [_] => "muted-foreground" | "muted-foreground" | None,
+        [false] | [true] | [_] => "muted-foreground" | "muted-foreground" | None,
+
+        [true] | [false] | [InteractionLayer::Default] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary,primary)",
+        [true] | [false] | [InteractionLayer::Hovered] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first_layer(sidebar-primary,primary)",
+        [true] | [false] | [InteractionLayer::Pressed] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first_layer(sidebar-primary,primary)",
+        [true] | [false] | [InteractionLayer::Disabled] => "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary-foreground,primary-foreground)" | "first(sidebar-primary,primary)",
+
+        [false] | [false] | [InteractionLayer::Default] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
+        [false] | [false] | [InteractionLayer::Disabled] => "first(sidebar-foreground,foreground)" | "first(sidebar-foreground,foreground)" | None,
+        [false] | [false] | [InteractionLayer::Hovered] => "accent-foreground" | "accent-foreground" | "accent",
+        [false] | [false] | [InteractionLayer::Pressed] => "accent-foreground" | "accent-foreground" | "accent",
+    ]
+}
+
+pub fn navigation_sidebar_container_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarContainerAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
         navigation_sidebar_container_from_palette(&ctx)
@@ -33,7 +161,7 @@ pub(crate) fn navigation_sidebar_container_appearance(mode: &ShadcnModeTokens) -
     }
 }
 
-pub(crate) fn navigation_sidebar_section_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarSectionAppearance {
+pub fn navigation_sidebar_section_appearance(mode: &ShadcnModeTokens) -> NavigationSidebarSectionAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
         navigation_sidebar_section_from_palette(&ctx)
@@ -43,7 +171,7 @@ pub(crate) fn navigation_sidebar_section_appearance(mode: &ShadcnModeTokens) -> 
     }
 }
 
-pub(crate) fn navigation_sidebar_branch_appearance(
+pub fn navigation_sidebar_branch_appearance(
     mode: &ShadcnModeTokens,
     state: InteractionState,
     size: ControlSize,
@@ -57,7 +185,7 @@ pub(crate) fn navigation_sidebar_branch_appearance(
     }
 }
 
-pub(crate) fn navigation_sidebar_item_appearance(
+pub fn navigation_sidebar_item_appearance(
     mode: &ShadcnModeTokens,
     selected: bool,
     state: InteractionState,
@@ -72,7 +200,7 @@ pub(crate) fn navigation_sidebar_item_appearance(
     }
 }
 
-fn navigation_sidebar_container_from_palette(ctx: &AppearanceContext) -> NavigationSidebarContainerAppearance {
+pub fn navigation_sidebar_container_from_palette(ctx: &AppearanceContext) -> NavigationSidebarContainerAppearance {
     let palette = ctx.palette();
     NavigationSidebarContainerAppearance {
         background: palette.panel_background,
@@ -81,7 +209,7 @@ fn navigation_sidebar_container_from_palette(ctx: &AppearanceContext) -> Navigat
     }
 }
 
-fn navigation_sidebar_section_from_palette(ctx: &AppearanceContext) -> NavigationSidebarSectionAppearance {
+pub fn navigation_sidebar_section_from_palette(ctx: &AppearanceContext) -> NavigationSidebarSectionAppearance {
     let palette = ctx.palette();
     NavigationSidebarSectionAppearance {
         label_color: palette.app_muted_foreground,
@@ -116,7 +244,7 @@ fn base_item_from_palette(ctx: &AppearanceContext, size: ControlSize) -> Navigat
     }
 }
 
-fn navigation_sidebar_branch_from_palette(
+pub fn navigation_sidebar_branch_from_palette(
     ctx: &AppearanceContext,
     size: ControlSize,
 ) -> NavigationSidebarItemAppearance {
@@ -137,7 +265,7 @@ fn navigation_sidebar_branch_from_palette(
     appearance
 }
 
-fn navigation_sidebar_item_from_palette(
+pub fn navigation_sidebar_item_from_palette(
     ctx: &AppearanceContext,
     selected: bool,
     size: ControlSize,
@@ -169,47 +297,27 @@ fn navigation_sidebar_item_from_palette(
     appearance
 }
 
-fn resolve_sidebar_background(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar", "card", "background"])
-}
-
-fn resolve_sidebar_foreground(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-foreground", "foreground"])
-}
-
-fn resolve_sidebar_border(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-border", "border"])
-}
-
-fn resolve_sidebar_primary(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-primary", "primary"])
-}
-
-fn resolve_sidebar_primary_foreground(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-primary-foreground", "primary-foreground"])
-}
-
-fn resolve_sidebar_ring(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
-    catalog.color_first(&["sidebar-ring", "ring"])
-}
-
-pub(crate) fn navigation_sidebar_container_from_catalog(
+pub fn navigation_sidebar_container_from_catalog(
     ctx: &AppearanceContext,
 ) -> anyhow::Result<NavigationSidebarContainerAppearance> {
-    let catalog = ctx.catalog();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_container");
+    let colors = resolve_navigation_sidebar_container_colors(&resolver, true)
+        .unwrap_or_else(|_| NavigationSidebarContainerColorTable::fallback());
     Ok(NavigationSidebarContainerAppearance {
-        background: resolve_sidebar_background(catalog)?,
-        foreground: resolve_sidebar_foreground(catalog)?,
-        border: resolve_sidebar_border(catalog)?,
+        background: colors.background.hsla(),
+        foreground: colors.foreground.hsla(),
+        border: colors.border.hsla(),
     })
 }
 
-pub(crate) fn navigation_sidebar_section_from_catalog(
+pub fn navigation_sidebar_section_from_catalog(
     ctx: &AppearanceContext,
 ) -> anyhow::Result<NavigationSidebarSectionAppearance> {
-    let catalog = ctx.catalog();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_section");
+    let colors = resolve_navigation_sidebar_section_colors(&resolver, true)
+        .unwrap_or_else(|_| NavigationSidebarSectionColorTable::fallback());
     Ok(NavigationSidebarSectionAppearance {
-        label_color: resolve_color(catalog, "muted-foreground")?,
+        label_color: colors.label_color.hsla(),
         typography: ctx.typography().text.caption,
         height: 20.0,
     })
@@ -220,21 +328,24 @@ fn base_item_from_catalog(
     size: ControlSize,
 ) -> anyhow::Result<NavigationSidebarItemAppearance> {
     let state = ctx.state;
-    let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let size_metrics = metrics.for_size(size);
-    let foreground = if state.disabled {
-        resolve_color(catalog, "muted-foreground")?
-    } else {
-        resolve_sidebar_foreground(catalog)?
-    };
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item_base");
+    let focus_ring = state
+        .focused
+        .then(|| resolver.resolve_first_decl(&["sidebar-ring", "ring"]))
+        .transpose()?
+        .map(|color| color.hsla());
+
+    let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
 
     Ok(NavigationSidebarItemAppearance {
         background: None,
-        foreground,
-        icon_color: foreground,
-        focus_ring: state.focused.then(|| resolve_sidebar_ring(catalog)).transpose()?,
+        foreground: colors.foreground.hsla(),
+        icon_color: colors.icon_color.hsla(),
+        focus_ring,
         typography: typography.text.label,
         radius: metrics.radius(size),
         height: 30.0,
@@ -244,88 +355,56 @@ fn base_item_from_catalog(
     })
 }
 
-pub(crate) fn navigation_sidebar_branch_from_catalog(
+pub fn navigation_sidebar_branch_from_catalog(
     ctx: &AppearanceContext,
     size: ControlSize,
 ) -> anyhow::Result<NavigationSidebarItemAppearance> {
     let state = ctx.state;
-    let catalog = ctx.catalog();
     let mut appearance = base_item_from_catalog(ctx, size)?;
-    let (hover_background, hover_foreground) = resolve_accent_hover_pair(catalog)?;
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_branch");
+    let colors = resolve_navigation_sidebar_branch_colors(&resolver, state.disabled, state.layer())
+        .unwrap_or_else(|_| NavigationSidebarBranchColorTable::fallback());
 
-    appearance.background = match state.layer() {
-        InteractionLayer::Disabled | InteractionLayer::Default => None,
-        InteractionLayer::Hovered | InteractionLayer::Pressed => Some(hover_background),
-    };
-
-    if matches!(state.layer(), InteractionLayer::Hovered | InteractionLayer::Pressed) && !state.disabled {
-        appearance.foreground = hover_foreground;
-        appearance.icon_color = hover_foreground;
-    }
+    appearance.background = colors.background.map(|color| color.hsla());
+    appearance.foreground = colors.foreground.hsla();
+    appearance.icon_color = colors.icon_color.hsla();
 
     Ok(appearance)
 }
 
-fn resolve_sidebar_primary_layer(
-    catalog: &CssTokenMap,
-    layer: InteractionLayer,
-    theme_mode: ThemeMode,
-) -> anyhow::Result<gpui::Hsla> {
-    if catalog.get("sidebar-primary").is_some() {
-        resolve_color_layer(catalog, "sidebar-primary", layer, true, theme_mode)
-    } else {
-        resolve_color_layer(catalog, "primary", layer, true, theme_mode)
-    }
-}
-
-pub(crate) fn navigation_sidebar_item_from_catalog(
+pub fn navigation_sidebar_item_from_catalog(
     ctx: &AppearanceContext,
     selected: bool,
     size: ControlSize,
 ) -> anyhow::Result<NavigationSidebarItemAppearance> {
     let state = ctx.state;
-    let catalog = ctx.catalog();
     let mut appearance = base_item_from_catalog(ctx, size)?;
-    let layer = state.layer();
-    let (hover_background, hover_foreground) = resolve_accent_hover_pair(catalog)?;
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "navigation_sidebar_item");
+    let colors = resolve_navigation_sidebar_item_colors(&resolver, selected, state.disabled, state.layer())
+        .unwrap_or_else(|_| NavigationSidebarItemColorTable::fallback());
 
-    appearance.background = match (selected, layer) {
-        (_, InteractionLayer::Disabled) => None,
-        (true, InteractionLayer::Pressed | InteractionLayer::Hovered) => {
-            Some(resolve_sidebar_primary_layer(catalog, layer, ctx.theme_mode)?)
-        }
-        (true, InteractionLayer::Default) => Some(resolve_sidebar_primary(catalog)?),
-        (false, InteractionLayer::Pressed | InteractionLayer::Hovered) => Some(hover_background),
-        (false, InteractionLayer::Default) => None,
-    };
-
-    if !selected && !state.disabled && matches!(layer, InteractionLayer::Hovered | InteractionLayer::Pressed) {
-        appearance.foreground = hover_foreground;
-        appearance.icon_color = hover_foreground;
-    }
-
-    if selected && !state.disabled {
-        let selected_foreground = resolve_sidebar_primary_foreground(catalog)?;
-        appearance.foreground = selected_foreground;
-        appearance.icon_color = selected_foreground;
-    }
+    appearance.background = colors.background.map(|color| color.hsla());
+    appearance.foreground = colors.foreground.hsla();
+    appearance.icon_color = colors.icon_color.hsla();
 
     Ok(appearance)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-    use gpui_luma::theme::ThemeMode;
 
-    use gpui_luma::theme::{ControlSize, InteractionState};
+
+    use std::collections::BTreeMap;
+
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use super::{
         navigation_sidebar_container_from_catalog, navigation_sidebar_item_from_catalog,
-        navigation_sidebar_section_from_catalog,
+        navigation_sidebar_section_from_catalog, resolve_navigation_sidebar_container_colors_metadata,
+        resolve_navigation_sidebar_item_colors_metadata,
     };
 
     fn sample_catalog() -> CssTokenMap {
@@ -359,7 +438,7 @@ mod tests {
     fn navigation_sidebar_uses_sidebar_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
+        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
         let container = navigation_sidebar_container_from_catalog(&ctx).expect("container");
         let section = navigation_sidebar_section_from_catalog(&ctx).expect("section");
         let selected = navigation_sidebar_item_from_catalog(&ctx, true, ControlSize::Md).expect("selected item");
@@ -372,4 +451,5 @@ mod tests {
             catalog.color("sidebar-primary-foreground").expect("sidebar-primary-foreground")
         );
     }
+
 }

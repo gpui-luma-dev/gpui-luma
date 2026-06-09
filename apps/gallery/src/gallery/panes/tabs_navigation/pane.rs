@@ -16,19 +16,39 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_tabs_navigation_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TabsNavigationPane {
     tabs: Entity<TabsNavigation>,
     local_theme_tabs: Entity<TabsNavigation>,
     state_preview: Entity<TabsNavigationStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     active_label: String,
     local_theme_active_label: String,
 }
 
 impl TabsNavigationPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "tabs-navigation-inspector-tree",
+            look.clone(),
+            build_tabs_navigation_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "tabs-navigation-inspector",
+                "tabs-navigation-inspector-split",
+                "tabs-navigation-inspector-detail",
+                build_tabs_navigation_inspect_tree,
+                cx,
+            )
+        });
         Self {
             tabs: look.tabs_navigation("project-tabs").items(project_tabs()).active("activity").spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
@@ -37,6 +57,7 @@ impl TabsNavigationPane {
                 .template(local_tabs_navigation_template(look.clone()))
                 .spawn(cx),
             state_preview: cx.new(|_| TabsNavigationStatePreview::new(look.clone())),
+            inspector,
             active_label: "Activity".to_string(),
             local_theme_active_label: "Activity".to_string(),
         }
@@ -52,8 +73,7 @@ impl TabsNavigationPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage(
-            "Tabs Navigation",
+        gallery_pane_with_inspector(
             "Tabs Navigation",
             div()
                 .flex()
@@ -82,6 +102,7 @@ impl TabsNavigationPane {
                         .child(render_tab_content(&self.local_theme_active_label, look)),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -90,6 +111,10 @@ impl TabsNavigationPane {
         notify_entity(&self.tabs, cx);
         notify_entity(&self.local_theme_tabs, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {

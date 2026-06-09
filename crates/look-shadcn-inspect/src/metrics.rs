@@ -1,0 +1,109 @@
+//! Shared inspect metric helpers.
+
+use gpui_luma::theme::ControlSize;
+
+use gpui_luma_look_shadcn::catalog::{CssTokenMap, SpacingField};
+use gpui_luma_look_shadcn::{MetricSource, ResolvedMetric};
+
+pub fn control_size_key(size: ControlSize) -> &'static str {
+    match size {
+        ControlSize::Sm => "sm",
+        ControlSize::Md => "md",
+        ControlSize::Lg => "lg",
+    }
+}
+
+pub fn scaffold_control_metric(size_key: &str, field: &str, value_px: f32) -> ResolvedMetric {
+    ResolvedMetric {
+        value_px,
+        source: MetricSource::Scaffold { path: format!("MetricTokens.control.{size_key}.{field}") },
+    }
+}
+
+pub fn derived_metric(note: impl Into<String>, value_px: f32) -> ResolvedMetric {
+    ResolvedMetric { value_px, source: MetricSource::Derived { note: note.into() } }
+}
+
+pub fn spacing_control_metric(
+    catalog: &CssTokenMap,
+    size: ControlSize,
+    field: SpacingField,
+    value_px: f32,
+) -> ResolvedMetric {
+    if catalog.get("spacing").is_some() {
+        let size_key = control_size_key(size);
+        let field_label = match field {
+            SpacingField::PaddingX => "padding_x",
+            SpacingField::PaddingY => "padding_y",
+            SpacingField::Gap => "gap",
+        };
+        let multiplier = gpui_luma_look_shadcn::catalog::spacing_multiplier(size, field);
+        let multiplier_label = if (multiplier - multiplier.round()).abs() < f32::EPSILON {
+            format!("{}", multiplier.round() as i32)
+        } else {
+            format!("{multiplier}")
+        };
+        ResolvedMetric {
+            value_px,
+            source: MetricSource::Derived {
+                note: format!("{size_key} {field_label} = --spacing × {multiplier_label}"),
+            },
+        }
+    } else {
+        let field_label = match field {
+            SpacingField::PaddingX => "padding_x",
+            SpacingField::PaddingY => "padding_y",
+            SpacingField::Gap => "gap",
+        };
+        scaffold_control_metric(control_size_key(size), field_label, value_px)
+    }
+}
+
+pub fn radius_metric(catalog: &CssTokenMap, size: ControlSize, value_px: f32) -> ResolvedMetric {
+    if catalog.get("radius").is_some() {
+        let (size_label, offset) = match size {
+            ControlSize::Sm => ("sm", 4.0_f32),
+            ControlSize::Md => ("md", 2.0_f32),
+            ControlSize::Lg => ("lg", 0.0_f32),
+        };
+        let offset_label = if (offset - offset.round()).abs() < f32::EPSILON {
+            format!("{}px", offset.round() as i32)
+        } else {
+            format!("{offset}px")
+        };
+        ResolvedMetric {
+            value_px,
+            source: MetricSource::Derived { note: format!("{size_label} = --radius − {offset_label}") },
+        }
+    } else {
+        scaffold_control_metric(control_size_key(size), "radius", value_px)
+    }
+}
+
+pub fn pill_radius_metric(catalog: &CssTokenMap, value_px: f32) -> ResolvedMetric {
+    if catalog.get("radius").is_some() {
+        derived_metric("--radius (pill track)", value_px)
+    } else {
+        ResolvedMetric { value_px, source: MetricSource::Scaffold { path: "MetricTokens.radius.pill".into() } }
+    }
+}
+
+pub fn focus_ring_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+    ResolvedMetric {
+        value_px: metrics.focus.width,
+        source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
+    }
+}
+
+pub fn border_width_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+    ResolvedMetric {
+        value_px: metrics.border_width.default,
+        source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
+    }
+}
+
+pub fn focus_ring_offset_metric(metrics: &gpui_luma::theme::MetricTokens) -> ResolvedMetric {
+    let border = metrics.border_width.default;
+    let focus = metrics.focus.width;
+    derived_metric("border_width.default + focus.width", border + focus)
+}

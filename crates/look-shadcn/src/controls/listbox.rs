@@ -1,4 +1,14 @@
-//! List box — same input surface tokens as text field; accent row hover.
+//! List box — input surface tokens; accent row hover and keyboard focus.
+//!
+//! | Part           | Token              |
+//! |----------------|--------------------|
+//! | List bg        | `background`       |
+//! | Disabled list  | `muted`            |
+//! | Border         | `input`            |
+//! | Divider        | `border`           |
+//! | Row hover      | `accent` (layer)   |
+//! | Focused row    | `accent`           |
+//! | Disabled label | `muted-foreground` |
 
 use gpui::hsla;
 
@@ -8,10 +18,72 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 
 use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_adorner;
-use crate::resolve::{resolve_color, resolve_color_layer};
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn listbox_list_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct ListBoxListColorTable {
+    pub background: ResolvedColor,
+    pub border: ResolvedColor,
+    pub divider: ResolvedColor,
+}
+
+impl ListBoxListColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            border: ResolvedColor::fallback_foreground(),
+            divider: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_listbox_list_colors,
+    inputs: {
+        enabled: bool,
+    },
+    output: ListBoxListColorTable { background, border, divider },
+    matrix: [
+        [true]  => "background" | "input" | "border",
+        [false] => "muted" | "input" | "border",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct ListBoxRowColorTable {
+    pub label_color: ResolvedColor,
+    pub background: ResolvedColor,
+}
+
+impl ListBoxRowColorTable {
+    pub fn fallback() -> Self {
+        Self { label_color: ResolvedColor::fallback_foreground(), background: ResolvedColor::transparent() }
+    }
+}
+
+declare_look_table! {
+    name: resolve_listbox_row_colors,
+    inputs: {
+        disabled: bool,
+        focused: bool,
+        layer: InteractionLayer,
+    },
+    output: ListBoxRowColorTable { label_color, background },
+    matrix: [
+        [true] | [_] | [_] => "muted-foreground" | "transparent",
+
+        [false] | [true] | [InteractionLayer::Default] => "foreground" | "accent",
+        [false] | [false] | [InteractionLayer::Default] => "foreground" | "transparent",
+        [false] | [_] | [InteractionLayer::Hovered] => "foreground" | "first_layer(accent)",
+        [false] | [_] | [InteractionLayer::Pressed] => "foreground" | "first_layer(accent)",
+        [false] | [_] | [InteractionLayer::Disabled] => "foreground" | "transparent",
+    ]
+}
+
+pub fn listbox_list_appearance(
     mode: &ShadcnModeTokens,
     enabled: bool,
     focused: bool,
@@ -26,7 +98,7 @@ pub(crate) fn listbox_list_appearance(
     }
 }
 
-pub(crate) fn listbox_row_palette(
+pub fn listbox_row_palette(
     mode: &ShadcnModeTokens,
     _selected: bool,
     state: InteractionState,
@@ -40,7 +112,7 @@ pub(crate) fn listbox_row_palette(
     }
 }
 
-fn listbox_list_from_palette(
+pub fn listbox_list_from_palette(
     ctx: &AppearanceContext,
     enabled: bool,
     focused: bool,
@@ -61,11 +133,7 @@ fn listbox_list_from_palette(
     };
 
     ListBoxListAppearance {
-        background: if enabled {
-            palette.app_background
-        } else {
-            palette.disabled_background
-        },
+        background: if enabled { palette.app_background } else { palette.disabled_background },
         border: palette.input_background,
         adorner,
         divider: palette.border_default,
@@ -82,18 +150,16 @@ fn listbox_list_from_catalog(
     focused: bool,
     size: ControlSize,
 ) -> anyhow::Result<ListBoxListAppearance> {
-    let catalog = ctx.catalog();
     let metrics = ctx.metrics();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
+    let colors =
+        resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
 
     Ok(ListBoxListAppearance {
-        background: if enabled {
-            resolve_color(catalog, "background")?
-        } else {
-            resolve_color(catalog, "muted")?
-        },
-        border: resolve_color(catalog, "input")?,
-        adorner: focus_adorner(catalog, metrics, focused)?,
-        divider: resolve_color(catalog, "border")?,
+        background: colors.background.hsla(),
+        border: colors.border.hsla(),
+        adorner: focus_adorner(ctx.catalog(), metrics, focused)?,
+        divider: colors.divider.hsla(),
         radius: metrics.radius(size),
         padding_x: 6.0,
         padding_y: metrics.padding_y(size) * 0.5,
@@ -101,7 +167,7 @@ fn listbox_list_from_catalog(
     })
 }
 
-fn listbox_row_from_palette(ctx: &AppearanceContext, _size: ControlSize) -> ListBoxRowPalette {
+pub fn listbox_row_from_palette(ctx: &AppearanceContext, _size: ControlSize) -> ListBoxRowPalette {
     let state = ctx.state;
     let palette = ctx.palette();
     let typography = ctx.typography();
@@ -126,43 +192,34 @@ fn listbox_row_from_palette(ctx: &AppearanceContext, _size: ControlSize) -> List
 
 fn listbox_row_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ListBoxRowPalette> {
     let state = ctx.state;
-    let catalog = ctx.catalog();
     let typography = ctx.typography();
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
-    let layer = state.layer();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row");
+    let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
+        .unwrap_or_else(|_| ListBoxRowColorTable::fallback());
 
-    let background = if state.disabled {
-        transparent
-    } else {
-        match layer {
-            InteractionLayer::Pressed | InteractionLayer::Hovered => {
-                resolve_color_layer(catalog, "accent", layer, true, ctx.theme_mode)?
-            }
-            InteractionLayer::Default if state.focused => resolve_color(catalog, "accent")?,
-            InteractionLayer::Default => transparent,
-            InteractionLayer::Disabled => transparent,
-        }
-    };
-
-    let label_color = if state.disabled {
-        resolve_color(catalog, "muted-foreground")?
-    } else {
-        resolve_color(catalog, "foreground")?
-    };
-
-    Ok(ListBoxRowPalette { background, label_color, adorner: None, label_typography: typography.text.label })
+    Ok(ListBoxRowPalette {
+        background: colors.background.hsla(),
+        label_color: colors.label_color.hsla(),
+        adorner: None,
+        label_typography: typography.text.label,
+    })
 }
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
-    use crate::resolve::resolve_color_layer;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::{listbox_list_appearance, listbox_row_palette};
+    use crate::provenance::LookResolver;
+    use super::{
+        listbox_list_appearance, listbox_row_palette,
+        resolve_listbox_list_colors_metadata, resolve_listbox_row_colors, resolve_listbox_row_colors_metadata,
+    };
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -195,8 +252,12 @@ mod tests {
         );
 
         assert_eq!(list.border, catalog.color("input").expect("input"));
-        let expected_hover = resolve_color_layer(&catalog, "accent", InteractionLayer::Hovered, true, ThemeMode::Light)
-            .expect("accent hover");
-        assert_eq!(row.background, expected_hover);
+        let resolver = LookResolver::new(&catalog, ThemeMode::Light, "test");
+        let expected = resolve_listbox_row_colors(&resolver, false, false, InteractionLayer::Hovered)
+            .expect("row colors")
+            .background
+            .hsla();
+        assert_eq!(row.background, expected);
     }
+
 }

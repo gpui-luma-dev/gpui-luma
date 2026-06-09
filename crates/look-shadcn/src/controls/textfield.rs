@@ -14,7 +14,9 @@ use crate::appearance_context::AppearanceContext;
 use crate::color::with_alpha;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
-use crate::resolve::resolve_color;
+use crate::provenance::{LookResolver, ResolvedColor};
+
+use gpui_luma_look_shadcn_macros::declare_look_table;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ShadcnTextFieldStyle {
@@ -23,7 +25,65 @@ pub enum ShadcnTextFieldStyle {
     Soft,
 }
 
-pub(crate) fn textfield_palette(
+#[derive(Clone, Debug)]
+pub struct TextFieldColorTable {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: ResolvedColor,
+    pub placeholder: ResolvedColor,
+    pub icon: ResolvedColor,
+    pub selection_background: ResolvedColor,
+    pub selection_foreground: ResolvedColor,
+    pub caret: ResolvedColor,
+}
+
+impl TextFieldColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            foreground: ResolvedColor::fallback_foreground(),
+            border: ResolvedColor::fallback_foreground(),
+            placeholder: ResolvedColor::fallback_foreground(),
+            icon: ResolvedColor::fallback_foreground(),
+            selection_background: ResolvedColor::fallback_foreground(),
+            selection_foreground: ResolvedColor::fallback_foreground(),
+            caret: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_textfield_colors,
+    inputs: {
+        style: ShadcnTextFieldStyle,
+        enabled: bool,
+        invalid: bool,
+        theme_mode: ThemeMode,
+    },
+    output: TextFieldColorTable {
+        background,
+        foreground,
+        border,
+        placeholder,
+        icon,
+        selection_background,
+        selection_foreground,
+        caret,
+    },
+    matrix: [
+        [ShadcnTextFieldStyle::Surface] | [false] | [_] | [_] => "muted" | "muted-foreground" | "input" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+        [ShadcnTextFieldStyle::Soft] | [false] | [_] | [_] => "muted" | "muted-foreground" | "transparent" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+
+        [ShadcnTextFieldStyle::Soft] | [true] | [_] | [_] => "muted" | "foreground" | "transparent" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
+
+        [ShadcnTextFieldStyle::Surface] | [true] | [false] | [ThemeMode::Light] => "transparent" | "foreground" | "input" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
+        [ShadcnTextFieldStyle::Surface] | [true] | [false] | [ThemeMode::Dark] => "input/30" | "foreground" | "input" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
+        [ShadcnTextFieldStyle::Surface] | [true] | [true] | [ThemeMode::Light] => "transparent" | "foreground" | "ring" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
+        [ShadcnTextFieldStyle::Surface] | [true] | [true] | [ThemeMode::Dark] => "input/30" | "foreground" | "ring" | "muted-foreground" | "muted-foreground" | "primary" | "primary-foreground" | "foreground",
+    ]
+}
+
+pub fn textfield_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnTextFieldStyle,
@@ -46,16 +106,6 @@ fn surface_background(palette: &crate::palette::ShadcnPalette, theme_mode: Theme
     }
 }
 
-fn surface_background_from_catalog(
-    catalog: &crate::catalog::CssTokenMap,
-    theme_mode: ThemeMode,
-) -> anyhow::Result<Hsla> {
-    match theme_mode {
-        ThemeMode::Light => Ok(hsla(0.0, 0.0, 0.0, 0.0)),
-        ThemeMode::Dark => Ok(with_alpha(resolve_color(catalog, "input")?, 0.30)),
-    }
-}
-
 fn shared_textfield_tokens_from_palette(
     palette: &crate::palette::ShadcnPalette,
 ) -> (Hsla, Hsla, Hsla, Hsla, Hsla, Hsla) {
@@ -69,20 +119,7 @@ fn shared_textfield_tokens_from_palette(
     )
 }
 
-fn shared_textfield_tokens_from_catalog(
-    catalog: &crate::catalog::CssTokenMap,
-) -> anyhow::Result<(Hsla, Hsla, Hsla, Hsla, Hsla, Hsla)> {
-    Ok((
-        resolve_color(catalog, "foreground")?,
-        resolve_color(catalog, "muted-foreground")?,
-        resolve_color(catalog, "muted-foreground")?,
-        resolve_color(catalog, "primary")?,
-        resolve_color(catalog, "primary-foreground")?,
-        resolve_color(catalog, "foreground")?,
-    ))
-}
-
-fn textfield_palette_from_palette(
+pub fn textfield_palette_from_palette(
     ctx: &AppearanceContext,
     style: ShadcnTextFieldStyle,
     state: TextFieldState,
@@ -135,7 +172,7 @@ fn textfield_palette_from_palette(
     }
 }
 
-pub(crate) fn textfield_palette_from_catalog(
+pub fn textfield_palette_from_catalog(
     ctx: &AppearanceContext,
     style: ShadcnTextFieldStyle,
     state: TextFieldState,
@@ -143,41 +180,19 @@ pub(crate) fn textfield_palette_from_catalog(
 ) -> anyhow::Result<TextFieldPalette> {
     let catalog = ctx.catalog();
     let typography = ctx.typography();
-    let theme_mode = ctx.theme_mode;
-    let transparent = hsla(0.0, 0.0, 0.0, 0.0);
-    let (foreground, placeholder, icon, selection_background, selection_foreground, caret) =
-        shared_textfield_tokens_from_catalog(catalog)?;
-
-    let (background, border) = match (style, enabled) {
-        (ShadcnTextFieldStyle::Surface, true) => {
-            let border = if state.invalid {
-                focus_ring_color(catalog)?
-            } else {
-                resolve_color(catalog, "input")?
-            };
-            (surface_background_from_catalog(catalog, theme_mode)?, border)
-        }
-        (ShadcnTextFieldStyle::Soft, true) => (resolve_color(catalog, "muted")?, transparent),
-        (ShadcnTextFieldStyle::Surface, false) => (resolve_color(catalog, "muted")?, resolve_color(catalog, "input")?),
-        (ShadcnTextFieldStyle::Soft, false) => (resolve_color(catalog, "muted")?, transparent),
-    };
-
-    let disabled_foreground = resolve_color(catalog, "muted-foreground")?;
-    let (foreground, placeholder, icon, caret) = if enabled {
-        (foreground, placeholder, icon, caret)
-    } else {
-        (disabled_foreground, disabled_foreground, disabled_foreground, disabled_foreground)
-    };
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
+    let colors = resolve_textfield_colors(&resolver, style, enabled, state.invalid, ctx.theme_mode)
+        .unwrap_or_else(|_| TextFieldColorTable::fallback());
 
     Ok(TextFieldPalette {
-        background,
-        foreground,
-        border,
-        placeholder,
-        icon,
-        selection_background,
-        selection_foreground,
-        caret,
+        background: colors.background.hsla(),
+        foreground: colors.foreground.hsla(),
+        border: colors.border.hsla(),
+        placeholder: colors.placeholder.hsla(),
+        icon: colors.icon.hsla(),
+        selection_background: colors.selection_background.hsla(),
+        selection_foreground: colors.selection_foreground.hsla(),
+        caret: colors.caret.hsla(),
         focus_ring: (enabled && state.focus_visible).then(|| focus_ring_color(catalog)).transpose()?,
         typography: typography.text.body,
         font_family: typography.font.sans.family.clone().into(),
@@ -186,6 +201,8 @@ pub(crate) fn textfield_palette_from_catalog(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
 
     use gpui_luma::controls::textfield::TextFieldState;
@@ -196,7 +213,7 @@ mod tests {
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
 
-    use super::{ShadcnTextFieldStyle, textfield_palette_from_catalog};
+    use super::{ShadcnTextFieldStyle, resolve_textfield_colors_metadata, textfield_palette_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -273,4 +290,5 @@ mod tests {
 
         assert_eq!(appearance.background, default.background);
     }
+
 }

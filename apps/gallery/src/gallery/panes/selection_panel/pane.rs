@@ -18,7 +18,10 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_usage_descriptions, notify_entity};
+
+use super::inspector_tree::build_selection_panel_inspect_tree;
+use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_inspector_description, notify_entity};
 use super::layout::{PAGE_SPEC, render_live_panel_sample, render_page_header, render_section};
 
 #[derive(Clone)]
@@ -27,10 +30,29 @@ pub(in crate::gallery) struct SelectionPanelPane {
     interactive_panel: Entity<SelectionPanelControl<SelectionPanelItem>>,
     parameterized_panel: Entity<SelectionPanelControl<SelectionPanelItem>>,
     event_demo: Entity<SelectionPanelEventDemo>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl SelectionPanelPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "selection-panel-inspector-tree",
+            look.clone(),
+            build_selection_panel_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "selection-panel-inspector",
+                "selection-panel-inspector-split",
+                "selection-panel-inspector-detail",
+                build_selection_panel_inspect_tree,
+                cx,
+            )
+        });
+
         let interactive_items = (1..=20)
             .map(|index| {
                 SelectionPanelItem::new(format!("item-{index}"))
@@ -140,6 +162,7 @@ impl SelectionPanelPane {
             interactive_panel,
             parameterized_panel,
             event_demo: cx.new(|_| SelectionPanelEventDemo::new(look.clone())),
+            inspector,
         }
     }
 
@@ -168,10 +191,9 @@ impl SelectionPanelPane {
         let chrome = look.chrome();
         let sections = PAGE_SPEC.sections;
 
-        gallery_pane_with_usage_descriptions(
+        gallery_pane_with_inspector_description(
             PAGE_SPEC.title,
             Some(PAGE_SPEC.description),
-            PAGE_SPEC.theme_components,
             div()
                 .id("selection-panel-content")
                 .h_full()
@@ -215,6 +237,7 @@ impl SelectionPanelPane {
                     look,
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -224,6 +247,10 @@ impl SelectionPanelPane {
         notify_entity(&self.interactive_panel, cx);
         notify_entity(&self.parameterized_panel, cx);
         notify_entity(&self.event_demo, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

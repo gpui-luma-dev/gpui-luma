@@ -1,20 +1,42 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::autocomplete::{AutocompleteTextBox, AutocompleteTextBoxEvent, SelectionItem};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
+
+use super::inspector_tree::build_autocomplete_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct AutocompleteTextFieldPane {
     autocomplete_textbox: AutocompleteTextBox,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl AutocompleteTextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "autocomplete-inspector-tree",
+            look.clone(),
+            build_autocomplete_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "autocomplete-inspector",
+                "autocomplete-inspector-split",
+                "autocomplete-inspector-detail",
+                build_autocomplete_inspect_tree,
+                cx,
+            )
+        });
+
         let autocomplete_textbox = look
             .autocomplete("prototype-autocomplete", autocomplete_demo_items())
             .placeholder("Start typing…")
@@ -22,7 +44,7 @@ impl AutocompleteTextFieldPane {
             .clean_on_escape(true)
             .spawn(cx);
 
-        Self { autocomplete_textbox }
+        Self { autocomplete_textbox, inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -35,10 +57,8 @@ impl AutocompleteTextFieldPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage_descriptions(
+        gallery_pane_with_inspector(
             "Autocomplete TextBox",
-            Some("Autocomplete text box"),
-            &["Autocomplete TextBox", "Floating Menu"],
             div()
                 .w(px(240.0))
                 .max_w_full()
@@ -47,12 +67,17 @@ impl AutocompleteTextFieldPane {
                 .gap(px(18.0))
                 .child(self.autocomplete_textbox.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.autocomplete_textbox, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

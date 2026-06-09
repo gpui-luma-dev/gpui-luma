@@ -13,20 +13,36 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_checkbox_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct CheckboxPane {
     secondary_checkbox: Checkbox,
     primary_checkbox: Checkbox,
     state_preview: Entity<CheckboxStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     secondary_checked: bool,
     primary_checked: bool,
 }
 
 impl CheckboxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("checkbox-inspector-tree", look.clone(), build_checkbox_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "checkbox-inspector",
+                "checkbox-inspector-split",
+                "checkbox-inspector-detail",
+                build_checkbox_inspect_tree,
+                cx,
+            )
+        });
+
         Self {
             secondary_checkbox: look
                 .secondary_checkbox("checkbox-secondary-example")
@@ -39,6 +55,7 @@ impl CheckboxPane {
                 .content(|_, _| div().child("Primary").into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| CheckboxStatePreview::new(look)),
+            inspector,
             secondary_checked: true,
             primary_checked: false,
         }
@@ -56,8 +73,7 @@ impl CheckboxPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Checkbox",
+        gallery_pane_with_inspector(
             "Checkbox",
             div()
                 .flex()
@@ -90,6 +106,7 @@ impl CheckboxPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -98,6 +115,10 @@ impl CheckboxPane {
         notify_entity(&self.secondary_checkbox, cx);
         notify_entity(&self.primary_checkbox, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn flip_checkbox(checkbox: &Checkbox, checked: &mut bool, cx: &mut Context<GalleryApp>) {

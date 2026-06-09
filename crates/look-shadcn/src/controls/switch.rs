@@ -10,18 +10,54 @@
 //! surface). Only `focused` adds a focus ring via the adorner.
 
 use gpui_luma::controls::switch::SwitchPalette;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_adorner;
-use crate::resolve::{resolve_action_layer, resolve_color, resolve_label_color};
+use crate::provenance::{LookResolver, ResolvedColor};
+use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
-use crate::catalog::CssTokenMap;
 use crate::mode::ShadcnModeTokens;
 use crate::palette::{ShadcnActionRole, ShadcnPalette};
 
-pub(crate) fn switch_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct SwitchColorTable {
+    pub track_background: ResolvedColor,
+    pub thumb_background: ResolvedColor,
+    pub thumb_border: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+impl SwitchColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            track_background: ResolvedColor::transparent(),
+            thumb_background: ResolvedColor::fallback_foreground(),
+            thumb_border: ResolvedColor::fallback_foreground(),
+            label_color: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_switch_colors,
+    inputs: {
+        style: ShadcnButtonStyle,
+        on: bool,
+        disabled: bool,
+    },
+    output: SwitchColorTable { track_background, thumb_background, thumb_border, label_color },
+    matrix: [
+        [_] | [_] | [true] => "muted" | "muted-foreground" | "muted" | "muted-foreground",
+        [_] | [true] | [false] => "@action_default" | "@action_foreground" | "@action_foreground" | "foreground",
+        [_] | [false] | [false] => "input" | "background" | "border" | "foreground",
+    ]
+}
+
+pub fn switch_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
@@ -36,7 +72,7 @@ pub(crate) fn switch_appearance(
     switch_appearance_from_catalog(&ctx, style, on).unwrap_or_else(|err| panic!("switch properties: {err}"))
 }
 
-fn switch_appearance_from_palette(ctx: &AppearanceContext, style: ShadcnButtonStyle, on: bool) -> SwitchPalette {
+pub fn switch_appearance_from_palette(ctx: &AppearanceContext, style: ShadcnButtonStyle, on: bool) -> SwitchPalette {
     let state = ctx.state;
     let palette = ctx.palette();
     let metrics = ctx.metrics();
@@ -77,7 +113,7 @@ fn switch_appearance_from_palette(ctx: &AppearanceContext, style: ShadcnButtonSt
     }
 }
 
-pub(crate) fn switch_appearance_from_catalog(
+pub fn switch_appearance_from_catalog(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
     on: bool,
@@ -87,22 +123,22 @@ pub(crate) fn switch_appearance_from_catalog(
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let thumb_shadow = thumb_shadow(ctx.theme_mode);
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
+    let colors =
+        resolve_switch_colors(&resolver, style, on, state.disabled).unwrap_or_else(|_| SwitchColorTable::fallback());
 
-    let track_background = if state.disabled {
-        resolve_color(catalog, "muted")?
-    } else if on {
-        resolve_action_layer(catalog, style, InteractionLayer::Default, ctx.theme_mode)?
-    } else {
-        resolve_color(catalog, "input")?
-    };
-
+    let track_background = colors.track_background.hsla();
     let track_border = if on && !state.disabled {
         track_background
     } else {
         resolve_color(catalog, "border")?
     };
-
-    let (thumb_background, thumb_border) = switch_thumb_colors(catalog, style, on, state.disabled)?;
+    let thumb_background = colors.thumb_background.hsla();
+    let thumb_border = if on && !state.disabled {
+        thumb_background
+    } else {
+        colors.thumb_border.hsla()
+    };
 
     Ok(SwitchPalette {
         track_background,
@@ -110,33 +146,11 @@ pub(crate) fn switch_appearance_from_catalog(
         thumb_background,
         thumb_border,
         thumb_shadow,
-        label_color: resolve_label_color(catalog, state.disabled)?,
+        label_color: colors.label_color.hsla(),
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
     })
-}
-
-fn switch_thumb_colors(
-    catalog: &CssTokenMap,
-    style: ShadcnButtonStyle,
-    on: bool,
-    disabled: bool,
-) -> anyhow::Result<(gpui::Hsla, gpui::Hsla)> {
-    if disabled {
-        let thumb = resolve_color(catalog, "muted-foreground")?;
-        let border = resolve_color(catalog, "muted")?;
-        return Ok((thumb, border));
-    }
-
-    if on {
-        let thumb = crate::resolve::resolve_action_foreground(catalog, style)?;
-        return Ok((thumb, thumb));
-    }
-
-    let thumb = resolve_color(catalog, "background")?;
-    let border = resolve_color(catalog, "border")?;
-    Ok((thumb, border))
 }
 
 fn switch_thumb_surface_palette(
@@ -159,6 +173,8 @@ fn switch_thumb_surface_palette(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{InteractionState, ThemeMode};

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
 use gpui_luma::controls::control_group::toggle_button_item_template;
 use gpui_luma::controls::icon::lucide_glyph;
@@ -10,7 +10,9 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_descriptions, notify_entity};
+use super::inspector_tree::build_toggle_group_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleGroupPane {
@@ -18,10 +20,29 @@ pub(in crate::gallery) struct ToggleGroupPane {
     multiple_group: IconGroup<IconGroupItem>,
     placement: String,
     visible_edges: Vec<String>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl ToggleGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "toggle-group-inspector-tree",
+            look.clone(),
+            build_toggle_group_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "toggle-group-inspector",
+                "toggle-group-inspector-split",
+                "toggle-group-inspector-detail",
+                build_toggle_group_inspect_tree,
+                cx,
+            )
+        });
+
         let toggle_template = look.toggle_template(ShadcnButtonStyle::Ghost);
 
         let single_group = look
@@ -48,6 +69,7 @@ impl ToggleGroupPane {
             multiple_group,
             placement: "Bottom".to_string(),
             visible_edges: vec!["Top".to_string(), "Left".to_string()],
+            inspector,
         }
     }
 
@@ -63,10 +85,8 @@ impl ToggleGroupPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_descriptions(
+        gallery_pane_with_inspector(
             "Toggle Group",
-            None,
-            &["Control Group", "Toggle"],
             div()
                 .flex()
                 .flex_col()
@@ -85,6 +105,7 @@ impl ToggleGroupPane {
                     div().text_color(chrome.body_text).child(format!("Multiple: {}", self.visible_edges.join(", "))),
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -92,6 +113,10 @@ impl ToggleGroupPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.single_group, cx);
         notify_entity(&self.multiple_group, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_single_event(&mut self, event: &IconGroupEvent, cx: &mut Context<GalleryApp>) {

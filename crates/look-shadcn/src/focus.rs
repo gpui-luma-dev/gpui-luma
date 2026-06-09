@@ -23,7 +23,7 @@ pub(crate) fn focus_adorner_from_palette(
     }))
 }
 
-pub(crate) fn focus_ring_color(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
+pub fn focus_ring_color(catalog: &CssTokenMap) -> anyhow::Result<gpui::Hsla> {
     resolve_color(catalog, "ring")
 }
 

@@ -14,7 +14,7 @@ use crate::focus::focus_ring_color;
 use crate::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn context_menu_appearance(
+pub fn context_menu_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
@@ -27,7 +27,7 @@ pub(crate) fn context_menu_appearance(
     }
 }
 
-fn context_menu_appearance_from_palette(ctx: &AppearanceContext) -> ContextMenuAppearance {
+pub fn context_menu_appearance_from_palette(ctx: &AppearanceContext) -> ContextMenuAppearance {
     let state = ctx.state;
     let palette = ctx.palette();
     let metrics = ctx.metrics();
@@ -61,7 +61,7 @@ fn context_menu_appearance_from_palette(ctx: &AppearanceContext) -> ContextMenuA
     }
 }
 
-pub(crate) fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ContextMenuAppearance> {
+pub fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<ContextMenuAppearance> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -82,3 +82,4 @@ pub(crate) fn context_menu_appearance_from_catalog(ctx: &AppearanceContext) -> a
         floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
     })
 }
+

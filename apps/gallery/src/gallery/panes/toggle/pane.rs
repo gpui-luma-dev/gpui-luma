@@ -13,8 +13,10 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_toggle_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TogglePane {
@@ -23,6 +25,7 @@ pub(in crate::gallery) struct TogglePane {
     secondary_round_icon_toggle: Entity<Button<bool>>,
     primary_round_icon_toggle: Entity<Button<bool>>,
     state_preview: Entity<ToggleStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     secondary_selected: bool,
     primary_selected: bool,
     secondary_round_icon_selected: bool,
@@ -31,6 +34,19 @@ pub(in crate::gallery) struct TogglePane {
 
 impl TogglePane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("toggle-inspector-tree", look.clone(), build_toggle_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "toggle-inspector",
+                "toggle-inspector-split",
+                "toggle-inspector-detail",
+                build_toggle_inspect_tree,
+                cx,
+            )
+        });
+
         Self {
             secondary_toggle: look
                 .secondary_toggle("toggle-secondary-example")
@@ -55,6 +71,7 @@ impl TogglePane {
                 .content(|_, _| round_icon_glyph(true).into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| ToggleStatePreview::new(look)),
+            inspector,
             secondary_selected: true,
             primary_selected: false,
             secondary_round_icon_selected: false,
@@ -80,8 +97,7 @@ impl TogglePane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Toggle",
+        gallery_pane_with_inspector(
             "Toggle",
             div()
                 .flex()
@@ -138,6 +154,7 @@ impl TogglePane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -148,6 +165,10 @@ impl TogglePane {
         notify_entity(&self.secondary_round_icon_toggle, cx);
         notify_entity(&self.primary_round_icon_toggle, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn flip_toggle(button: &Entity<Button<bool>>, selected: &mut bool, cx: &mut Context<GalleryApp>) {

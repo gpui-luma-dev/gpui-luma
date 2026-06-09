@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{
     braced, bracketed,
@@ -117,6 +118,96 @@ impl Parse for MultiValueLookTable {
     }
 }
 
+fn input_ident<'a>(inputs: &'a [(Ident, Type)], name: &str) -> &'a Ident {
+    inputs
+        .iter()
+        .find(|(ident, _)| ident == name)
+        .map(|(ident, _)| ident)
+        .unwrap_or_else(|| panic!("declare_look_table! `{name}` special token requires an input named `{name}`"))
+}
+
+fn css_field_resolver(lit: &LitStr, inputs: &[(Ident, Type)]) -> TokenStream2 {
+    let value = lit.value();
+    match value.as_str() {
+        "@outline_layer" => {
+            let layer = input_ident(inputs, "layer");
+            quote! { resolver.resolve_outline_layer_decl(#layer)? }
+        }
+        "@action_layer" => {
+            let style = input_ident(inputs, "style");
+            let layer = input_ident(inputs, "layer");
+            quote! { resolver.resolve_action_layer_decl(#style, #layer)? }
+        }
+        "@action_foreground" => {
+            let style = input_ident(inputs, "style");
+            quote! { resolver.resolve_action_foreground_decl(#style)? }
+        }
+        "@action_default" => {
+            let style = input_ident(inputs, "style");
+            quote! {
+                resolver.resolve_action_layer_decl(#style, gpui_luma::theme::InteractionLayer::Default)?
+            }
+        }
+        "@primary_layer" => {
+            let layer = input_ident(inputs, "layer");
+            quote! {
+                resolver.resolve_action_layer_decl(
+                    crate::controls::ShadcnButtonStyle::Primary,
+                    #layer,
+                )?
+            }
+        }
+        "@primary_default" => quote! {
+            resolver.resolve_action_layer_decl(
+                crate::controls::ShadcnButtonStyle::Primary,
+                gpui_luma::theme::InteractionLayer::Default,
+            )?
+        },
+        "@darken_border" => quote! { resolver.resolve_darken_border_decl(0.08)? },
+        "@accent_whisper_40" => quote! { resolver.resolve_accent_whisper_decl(40)? },
+        "@accent_whisper_pressed_40" => quote! { resolver.resolve_accent_whisper_pressed_decl(40)? },
+        "@label" => {
+            let disabled = input_ident(inputs, "disabled");
+            quote! { resolver.resolve_label_decl(#disabled)? }
+        }
+        other if other.starts_with("first(") && other.ends_with(')') => {
+            let tokens: Vec<_> =
+                other.trim_start_matches("first(").trim_end_matches(')').split(',').map(str::trim).collect();
+            quote! { resolver.resolve_first_decl(&[#(#tokens),*])? }
+        }
+        other if other.starts_with("first_layer(") && other.ends_with(')') => {
+            let layer = input_ident(inputs, "layer");
+            let tokens: Vec<_> =
+                other.trim_start_matches("first_layer(").trim_end_matches(')').split(',').map(str::trim).collect();
+            quote! { resolver.resolve_first_layer_decl(&[#(#tokens),*], #layer)? }
+        }
+        _ => quote! { resolver.resolve_decl(#lit)? },
+    }
+}
+
+fn metadata_output_string(field: &Ident, val: &TableValue) -> TokenStream2 {
+    match val {
+        TableValue::Css(lit) => {
+            let val_str = lit.value();
+            match val_str.as_str() {
+                "transparent" => quote! { format!("{}: {}", stringify!(#field), #val_str) },
+                "@outline_layer" => quote! { format!("{}: @outline_layer", stringify!(#field)) },
+                "@action_layer" => quote! { format!("{}: @action_layer", stringify!(#field)) },
+                "@action_foreground" => quote! { format!("{}: @action_foreground", stringify!(#field)) },
+                "@label" => quote! { format!("{}: @label", stringify!(#field)) },
+                other if other.starts_with("first(") => {
+                    quote! { format!("{}: {}", stringify!(#field), #other) }
+                }
+                other if other.starts_with("first_layer(") => {
+                    quote! { format!("{}: {}", stringify!(#field), #other) }
+                }
+                _ => quote! { format!("{}: --{}", stringify!(#field), #val_str) },
+            }
+        }
+        TableValue::Expr(expr) => quote! { format!("{}: {}", stringify!(#field), stringify!(#expr)) },
+    }
+}
+
 fn clean_pattern_string(pat: &Pat) -> String {
     let raw = quote! { #pat }.to_string();
     raw.replace("ShadcnButtonStyle :: ", "")
@@ -140,8 +231,11 @@ pub fn declare_look_table(input: TokenStream) -> TokenStream {
         let outputs = &row.outputs;
 
         let field_resolvers = output_fields.iter().zip(outputs).map(|(field, val)| match val {
-            TableValue::Css(lit) => quote! { #field: resolver.resolve_decl(#lit)?.into() },
-            TableValue::Expr(expr) => quote! { #field: #expr },
+            TableValue::Css(lit) => {
+                let resolver_expr = css_field_resolver(lit, &inputs);
+                quote! { #field: (#resolver_expr).into() }
+            }
+            TableValue::Expr(expr) => quote! { #field: (#expr).into() },
         });
 
         quote! {
@@ -159,17 +253,8 @@ pub fn declare_look_table(input: TokenStream) -> TokenStream {
             quote! { #cleaned.to_string() }
         });
 
-        let output_strings = output_fields.iter().zip(&row.outputs).map(|(field, val)| match val {
-            TableValue::Css(lit) => {
-                let val_str = lit.value();
-                if val_str == "transparent" {
-                    quote! { format!("{}: {}", stringify!(#field), #val_str) }
-                } else {
-                    quote! { format!("{}: --{}", stringify!(#field), #val_str) }
-                }
-            }
-            TableValue::Expr(expr) => quote! { format!("{}: {}", stringify!(#field), stringify!(#expr)) },
-        });
+        let output_strings =
+            output_fields.iter().zip(&row.outputs).map(|(field, val)| metadata_output_string(field, val));
 
         quote! {
             crate::provenance::TableRuleMetadata {

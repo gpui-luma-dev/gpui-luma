@@ -16,12 +16,47 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 use crate::appearance_context::AppearanceContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_ring_color;
-use crate::resolve::{resolve_action_layer, resolve_color};
-use crate::tokens::ShadcnToken;
-use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
+use crate::tokens::ShadcnToken;
 
-pub(crate) fn slider_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct SliderColorTable {
+    pub track_background: ResolvedColor,
+    pub fill_background: ResolvedColor,
+    pub thumb_background: ResolvedColor,
+    pub thumb_border: ResolvedColor,
+}
+
+impl SliderColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            track_background: ResolvedColor::transparent(),
+            fill_background: ResolvedColor::fallback_foreground(),
+            thumb_background: ResolvedColor::fallback_foreground(),
+            thumb_border: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_slider_colors,
+    inputs: {
+        layer: InteractionLayer,
+    },
+    output: SliderColorTable { track_background, fill_background, thumb_background, thumb_border },
+    matrix: [
+        [InteractionLayer::Disabled] => "muted" | "muted-foreground" | "muted-foreground" | "muted",
+
+        [InteractionLayer::Default] => "border" | "@primary_default" | "first(background,card)" | "@primary_default",
+        [InteractionLayer::Hovered] => "border" | "@primary_layer" | "first(background,card)" | "@primary_default",
+        [InteractionLayer::Pressed] => "border" | "@primary_layer" | "first(background,card)" | "@primary_default",
+    ]
+}
+
+pub fn slider_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
@@ -34,7 +69,7 @@ pub(crate) fn slider_appearance(
     }
 }
 
-fn slider_appearance_from_palette(ctx: &AppearanceContext) -> SliderAppearance {
+pub fn slider_appearance_from_palette(ctx: &AppearanceContext) -> SliderAppearance {
     let state = ctx.state;
     let palette = ctx.palette();
     let metrics = ctx.metrics();
@@ -73,40 +108,20 @@ fn slider_appearance_from_palette(ctx: &AppearanceContext) -> SliderAppearance {
     }
 }
 
-pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<SliderAppearance> {
+pub fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow::Result<SliderAppearance> {
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
     let thumb_shadow = thumb_shadow(ctx.theme_mode);
-
-    let fill_background = match layer {
-        InteractionLayer::Disabled => resolve_color(catalog, "muted-foreground")?,
-        _ => resolve_action_layer(catalog, ShadcnButtonStyle::Primary, layer, ctx.theme_mode)?,
-    };
-
-    let track_background = if state.disabled {
-        resolve_color(catalog, "muted")?
-    } else {
-        resolve_color(catalog, "border")?
-    };
-
-    let (thumb_background, thumb_border) = if state.disabled {
-        let thumb = resolve_color(catalog, "muted-foreground")?;
-        let border = resolve_color(catalog, "muted")?;
-        (thumb, border)
-    } else {
-        let thumb = catalog.color_first(&["background", "card"])?;
-        let border =
-            resolve_action_layer(catalog, ShadcnButtonStyle::Primary, InteractionLayer::Default, ctx.theme_mode)?;
-        (thumb, border)
-    };
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider");
+    let colors = resolve_slider_colors(&resolver, layer).unwrap_or_else(|_| SliderColorTable::fallback());
 
     Ok(SliderAppearance {
-        track_background,
-        fill_background,
-        thumb_background,
-        thumb_border,
+        track_background: colors.track_background.hsla(),
+        fill_background: colors.fill_background.hsla(),
+        thumb_background: colors.thumb_background.hsla(),
+        thumb_border: colors.thumb_border.hsla(),
         thumb_shadow,
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         width: 260.0,
@@ -119,6 +134,8 @@ pub(crate) fn slider_appearance_from_catalog(ctx: &AppearanceContext) -> anyhow:
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
@@ -127,7 +144,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::slider_appearance_from_catalog;
+    use super::{resolve_slider_colors_metadata, slider_appearance_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -195,4 +212,5 @@ mod tests {
         assert!(border.l > muted.l || (border.l - muted.l).abs() > 0.05);
         assert!(border.l < card.l - 0.05);
     }
+
 }

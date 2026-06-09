@@ -16,7 +16,9 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_popup_menu_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct PopupMenuPane {
@@ -25,12 +27,26 @@ pub(in crate::gallery) struct PopupMenuPane {
     popup_above: Entity<PopupMenu>,
     popup_centered: Entity<PopupMenu>,
     state_preview: Entity<PopupMenuStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     selection: String,
 }
 
 impl PopupMenuPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let popup_template = look.popup_menu_template();
+        let tree =
+            spawn_color_inspector_tree("popup-menu-inspector-tree", look.clone(), build_popup_menu_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "popup-menu-inspector",
+                "popup-menu-inspector-split",
+                "popup-menu-inspector-detail",
+                build_popup_menu_inspect_tree,
+                cx,
+            )
+        });
         Self {
             popup_smart: look
                 .popup_menu("popup-menu-smart-example")
@@ -57,6 +73,7 @@ impl PopupMenuPane {
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
                 .spawn(cx),
             state_preview: cx.new(|_| PopupMenuStatePreview::new(look.clone(), popup_template)),
+            inspector,
             selection: "none".to_string(),
         }
     }
@@ -79,8 +96,7 @@ impl PopupMenuPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Popup Menu",
+        gallery_pane_with_inspector(
             "Popup Menu",
             div()
                 .w_full()
@@ -111,6 +127,7 @@ impl PopupMenuPane {
                 )
                 .child(self.popup_smart.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -121,6 +138,10 @@ impl PopupMenuPane {
         notify_entity(&self.popup_above, cx);
         notify_entity(&self.popup_centered, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(&mut self, event: &PopupMenuEvent, cx: &mut Context<GalleryApp>) {

@@ -1,7 +1,6 @@
 use std::{cell::Cell, rc::Rc, sync::Arc};
 
-use gpui::{
-    AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px,
+use gpui::{AnyElement, Context, Entity, IntoElement, ParentElement, SharedString, Subscription, div, prelude::*, px,
     transparent_black,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
@@ -13,7 +12,9 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description_scrollable, notify_entity};
+use super::inspector_tree::build_resizable_panels_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 
 const DEMO_WIDTH: f32 = 540.0;
 const DEMO_HEIGHT: f32 = 220.0;
@@ -38,10 +39,29 @@ pub(in crate::gallery) struct ResizablePanelsPane {
     nested_outer_sizes: SharedString,
     controlled_sizes: SharedString,
     controlled_last_event: SharedString,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl ResizablePanelsPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "resizable-panels-inspector-tree",
+            look.clone(),
+            build_resizable_panels_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "resizable-panels-inspector",
+                "resizable-panels-inspector-split",
+                "resizable-panels-inspector-detail",
+                build_resizable_panels_inspect_tree,
+                cx,
+            )
+        });
+
         let demo_theme = look.clone();
 
         let horizontal = look
@@ -178,7 +198,7 @@ impl ResizablePanelsPane {
         let reset_controlled_button =
             Button::new("resizable-panels-controlled-reset").label("Reset Controlled (30 / 70)").spawn(cx);
 
-        let this = Self {
+        Self {
             horizontal,
             vertical,
             nested_outer,
@@ -190,8 +210,8 @@ impl ResizablePanelsPane {
             nested_outer_sizes: "270px / 270px".into(),
             controlled_sizes: "162px / 378px".into(),
             controlled_last_event: "None".into(),
-        };
-        this
+            inspector,
+        }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -215,12 +235,11 @@ impl ResizablePanelsPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_description_scrollable(
+        gallery_pane_with_inspector_description(
             "Resizable Panels",
             Some(
                 "Panel groups for horizontal, vertical, overlay handles (ResizeHandleSize), nested composition, and weight-based splits with pixel min/max.",
             ),
-            "ResizablePanels",
             div()
                 .w_full()
                 .flex()
@@ -254,6 +273,7 @@ impl ResizablePanelsPane {
                     &self.controlled_sizes,
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -264,6 +284,10 @@ impl ResizablePanelsPane {
         notify_entity(&self.nested_outer, cx);
         notify_entity(&self.controlled, cx);
         notify_entity(&self.reset_controlled_button, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn reset_controlled(&mut self, cx: &mut Context<GalleryApp>) {

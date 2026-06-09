@@ -1,6 +1,7 @@
 use gpui::{Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
 use gpui_luma::theme::LumaTextStyle;
-use gpui_luma_look_shadcn::{ButtonInspectMetrics, ShadcnLook};
+use gpui_luma_look_shadcn::{ShadcnLook};
+use gpui_luma_look_shadcn_inspect::{ButtonInspectMetrics};
 
 #[derive(Clone, Copy, Debug)]
 pub(in crate::gallery) struct BoxModelLayerColors {

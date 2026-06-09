@@ -15,21 +15,37 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_slider_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
     slider: Slider,
     state_preview: Entity<SliderStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     value: f32,
 }
 
 impl SliderPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let slider_template = look.slider_template();
+        let tree = spawn_color_inspector_tree("slider-inspector-tree", look.clone(), build_slider_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "slider-inspector",
+                "slider-inspector-split",
+                "slider-inspector-detail",
+                build_slider_inspect_tree,
+                cx,
+            )
+        });
         Self {
             slider: look.slider("slider-example").range(1..100).step(10).value(41).spawn(cx),
             state_preview: cx.new(|_| SliderStatePreview::new(look.clone(), slider_template)),
+            inspector,
             value: 41.0,
         }
     }
@@ -43,8 +59,7 @@ impl SliderPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Slider",
+        gallery_pane_with_inspector(
             "Slider",
             div()
                 .flex()
@@ -61,6 +76,7 @@ impl SliderPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -68,6 +84,10 @@ impl SliderPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.slider, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {

@@ -4,10 +4,39 @@ use gpui_luma::controls::progress::ProgressAppearance;
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::resolve::resolve_color;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 
-pub(crate) fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAppearance {
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct ProgressColorTable {
+    pub track_color: ResolvedColor,
+    pub progress_color: ResolvedColor,
+}
+
+impl ProgressColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            track_color: ResolvedColor { value: gpui::hsla(0.0, 0.0, 0.0, 0.0), source: ColorSource::Transparent },
+            progress_color: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_progress_colors,
+    inputs: {
+        enabled: bool,
+    },
+    output: ProgressColorTable { track_color, progress_color },
+    matrix: [
+        [true]  => "muted" | "primary",
+        [false] => "muted-foreground" | "muted-foreground",
+    ]
+}
+
+pub fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
         progress_from_palette(&ctx, enabled)
@@ -16,7 +45,7 @@ pub(crate) fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> Pro
     }
 }
 
-fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> ProgressAppearance {
+pub fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> ProgressAppearance {
     let palette = ctx.palette();
 
     ProgressAppearance {
@@ -35,19 +64,13 @@ fn progress_from_palette(ctx: &AppearanceContext, enabled: bool) -> ProgressAppe
     }
 }
 
-fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<ProgressAppearance> {
-    let catalog = ctx.catalog();
+pub fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Result<ProgressAppearance> {
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
+    let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
+
     Ok(ProgressAppearance {
-        track_color: if enabled {
-            resolve_color(catalog, "muted")?
-        } else {
-            resolve_color(catalog, "muted-foreground")?
-        },
-        progress_color: if enabled {
-            resolve_color(catalog, "primary")?
-        } else {
-            resolve_color(catalog, "muted-foreground")?
-        },
+        track_color: colors.track_color.hsla(),
+        progress_color: colors.progress_color.hsla(),
         size: 64.0,
         stroke_width: 6.0,
     })
@@ -55,12 +78,15 @@ fn progress_from_catalog(ctx: &AppearanceContext, enabled: bool) -> anyhow::Resu
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::progress_appearance;
+    use crate::provenance::ColorSource;
+    use super::{progress_appearance, resolve_progress_colors_metadata};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -88,4 +114,5 @@ mod tests {
         assert_eq!(appearance.track_color, catalog.color("muted").expect("muted"));
         assert_eq!(appearance.progress_color, catalog.color("primary").expect("primary"));
     }
+
 }

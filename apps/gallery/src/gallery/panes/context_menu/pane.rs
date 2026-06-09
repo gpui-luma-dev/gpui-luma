@@ -8,14 +8,17 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_context_menu_inspect_tree;
 use super::radial::radial_context_menu_template;
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 use super::template::gallery_context_menu_template;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ContextMenuPane {
     default_context_menu: Entity<ContextMenu>,
     radial_context_menu: Entity<ContextMenu>,
+    inspector: Entity<ColorInspectorShell>,
     default_selection: String,
     radial_selection: String,
 }
@@ -29,6 +32,23 @@ enum ContextMenuPresentation {
 impl ContextMenuPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let context_menu_theme = look.context_menu_theme();
+        let tree = spawn_color_inspector_tree(
+            "context-menu-inspector-tree",
+            look.clone(),
+            build_context_menu_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "context-menu-inspector",
+                "context-menu-inspector-split",
+                "context-menu-inspector-detail",
+                build_context_menu_inspect_tree,
+                cx,
+            )
+        });
         Self {
             default_context_menu: ContextMenu::new("context-menu-default-example")
                 .label("Right-click me: Default")
@@ -40,6 +60,7 @@ impl ContextMenuPane {
                 .items(radial_context_menu_items())
                 .template(radial_context_menu_template(context_menu_theme))
                 .spawn(cx),
+            inspector,
             default_selection: "none".to_string(),
             radial_selection: "none".to_string(),
         }
@@ -57,8 +78,7 @@ impl ContextMenuPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Context Menu",
+        gallery_pane_with_inspector(
             "Context Menu",
             div()
                 .flex()
@@ -91,6 +111,7 @@ impl ContextMenuPane {
                     )),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -98,6 +119,10 @@ impl ContextMenuPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.default_context_menu, cx);
         notify_entity(&self.radial_context_menu, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(

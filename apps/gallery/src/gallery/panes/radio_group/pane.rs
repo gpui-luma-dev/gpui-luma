@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Div, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Div, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::ButtonTemplate;
 use gpui_luma::controls::radio_group::{
     self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupTemplate,
@@ -11,7 +11,9 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+use super::inspector_tree::build_radio_group_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 
 const RADIO_GROUP_DESCRIPTION: &str = concat!(
     "Radio groups use single-selection semantics with custom item templates. ",
@@ -58,10 +60,25 @@ pub(in crate::gallery) struct RadioGroupPane {
     horizontal_choice: String,
     indented_choice: String,
     delivery_choice: String,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl RadioGroupPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree =
+            spawn_color_inspector_tree("radio-group-inspector-tree", look.clone(), build_radio_group_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "radio-group-inspector",
+                "radio-group-inspector-split",
+                "radio-group-inspector-detail",
+                build_radio_group_inspect_tree,
+                cx,
+            )
+        });
+
         let secondary_vertical = look.radio_group_template(ShadcnButtonStyle::Secondary);
         let secondary_horizontal = look.radio_group_horizontal_template(ShadcnButtonStyle::Secondary);
         let radio_template = look.radio_button_template(ShadcnButtonStyle::Secondary);
@@ -102,6 +119,7 @@ impl RadioGroupPane {
             horizontal_choice: Density::Comfortable.id().to_string(),
             indented_choice: Density::Comfortable.id().to_string(),
             delivery_choice: DeliveryWindow::Today.id().to_string(),
+            inspector,
         }
     }
 
@@ -123,10 +141,9 @@ impl RadioGroupPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_description(
+        gallery_pane_with_inspector_description(
             "Radio Group",
             Some(RADIO_GROUP_DESCRIPTION),
-            "Radio Button",
             div()
                 .flex()
                 .flex_col()
@@ -164,6 +181,7 @@ impl RadioGroupPane {
                     chrome.body_text,
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -173,6 +191,10 @@ impl RadioGroupPane {
         notify_entity(&self.horizontal_group, cx);
         notify_entity(&self.indented_group, cx);
         notify_entity(&self.delivery_group, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_vertical_event(&mut self, event: &RadioGroupEvent, cx: &mut Context<GalleryApp>) {

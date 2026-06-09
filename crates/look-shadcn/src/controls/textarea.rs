@@ -7,7 +7,7 @@ use gpui_luma::theme::ThemeMode;
 use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn textarea_palette(
+pub fn textarea_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnTextFieldStyle,
@@ -46,6 +46,7 @@ fn textarea_from_textfield(textfield: gpui_luma::controls::textfield::TextFieldP
 
 #[cfg(test)]
 mod tests {
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 

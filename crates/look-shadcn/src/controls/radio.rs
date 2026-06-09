@@ -11,14 +11,54 @@ use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_adorner;
-use crate::resolve::{
-    resolve_action_foreground, resolve_action_layer, resolve_color, resolve_label_color, resolve_outline_layer,
-};
+use crate::provenance::{LookResolver, ResolvedColor};
+use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
-use crate::catalog::CssTokenMap;
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn radio_button_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct RadioColorTable {
+    pub indicator_background: ResolvedColor,
+    pub selection_ring: ResolvedColor,
+    pub dot_color: ResolvedColor,
+    pub label_color: ResolvedColor,
+}
+
+impl RadioColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            indicator_background: ResolvedColor::transparent(),
+            selection_ring: ResolvedColor::fallback_foreground(),
+            dot_color: ResolvedColor::fallback_foreground(),
+            label_color: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_radio_colors,
+    inputs: {
+        style: ShadcnButtonStyle,
+        selected: bool,
+        layer: InteractionLayer,
+    },
+    output: RadioColorTable { indicator_background, selection_ring, dot_color, label_color },
+    matrix: [
+        [_] | [_] | [InteractionLayer::Disabled] => "muted" | "muted-foreground" | "muted-foreground" | "muted-foreground",
+
+        [_] | [false] | [InteractionLayer::Default] => "@outline_layer" | "border" | "foreground" | "foreground",
+        [_] | [false] | [InteractionLayer::Hovered] => "@outline_layer" | "border" | "foreground" | "foreground",
+        [_] | [false] | [InteractionLayer::Pressed] => "@outline_layer" | "border" | "foreground" | "foreground",
+
+        [_] | [true] | [InteractionLayer::Default] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
+        [_] | [true] | [InteractionLayer::Hovered] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
+        [_] | [true] | [InteractionLayer::Pressed] => "@outline_layer" | "@action_layer" | "@action_foreground" | "foreground",
+    ]
+}
+
+pub fn radio_button_appearance(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
     selected: bool,
@@ -32,7 +72,7 @@ pub(crate) fn radio_button_appearance(
     radio_button_appearance_from_catalog(&ctx, style, selected).unwrap_or_else(|err| panic!("radio properties: {err}"))
 }
 
-fn radio_button_appearance_from_palette(
+pub fn radio_button_appearance_from_palette(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
     selected: bool,
@@ -86,7 +126,7 @@ fn radio_button_appearance_from_palette(
     }
 }
 
-pub(crate) fn radio_button_appearance_from_catalog(
+pub fn radio_button_appearance_from_catalog(
     ctx: &AppearanceContext,
     style: ShadcnButtonStyle,
     selected: bool,
@@ -96,19 +136,12 @@ pub(crate) fn radio_button_appearance_from_catalog(
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let layer = state.layer();
-
-    let indicator_background = match layer {
-        InteractionLayer::Disabled => resolve_color(catalog, "muted")?,
-        _ => resolve_outline_layer(catalog, layer, ctx.theme_mode)?,
-    };
-
-    let selected_color = match layer {
-        InteractionLayer::Disabled => resolve_color(catalog, "muted-foreground")?,
-        _ => resolve_action_layer(catalog, style, layer, ctx.theme_mode)?,
-    };
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "radio");
+    let colors =
+        resolve_radio_colors(&resolver, style, selected, layer).unwrap_or_else(|_| RadioColorTable::fallback());
 
     let indicator_border = if selected && !state.disabled {
-        selected_color
+        colors.selection_ring.hsla()
     } else {
         resolve_color(catalog, "border")?
     };
@@ -116,27 +149,12 @@ pub(crate) fn radio_button_appearance_from_catalog(
     Ok(RadioButtonPalette {
         control_background: None,
         control_border: None,
-        indicator_background,
+        indicator_background: colors.indicator_background.hsla(),
         indicator_border,
-        dot_color: dot_color(catalog, style, selected, state.disabled)?,
-        label_color: resolve_label_color(catalog, state.disabled)?,
+        dot_color: colors.dot_color.hsla(),
+        label_color: colors.label_color.hsla(),
         adorner: focus_adorner(catalog, metrics, state.focused)?,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
     })
-}
-
-fn dot_color(
-    catalog: &CssTokenMap,
-    style: ShadcnButtonStyle,
-    selected: bool,
-    disabled: bool,
-) -> anyhow::Result<gpui::Hsla> {
-    if disabled {
-        return resolve_color(catalog, "muted-foreground");
-    }
-    if selected {
-        return resolve_action_foreground(catalog, style);
-    }
-    resolve_color(catalog, "foreground")
 }

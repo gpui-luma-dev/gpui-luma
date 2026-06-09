@@ -16,13 +16,16 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_scrollbar_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ScrollbarPane {
     horizontal_scrollbar: Entity<Scrollbar>,
     vertical_scrollbar: Entity<Scrollbar>,
     state_preview: Entity<ScrollbarStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     horizontal_value: f32,
     vertical_value: f32,
 }
@@ -36,6 +39,19 @@ enum ScrollbarPresentation {
 impl ScrollbarPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let scrollbar_template = look.scrollbar_template();
+        let tree =
+            spawn_color_inspector_tree("scrollbar-inspector-tree", look.clone(), build_scrollbar_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "scrollbar-inspector",
+                "scrollbar-inspector-split",
+                "scrollbar-inspector-detail",
+                build_scrollbar_inspect_tree,
+                cx,
+            )
+        });
         Self {
             horizontal_scrollbar: look
                 .scrollbar("scrollbar-horizontal-example")
@@ -56,6 +72,7 @@ impl ScrollbarPane {
                 .thumb_fraction(0.45)
                 .spawn(cx),
             state_preview: cx.new(|_| ScrollbarStatePreview::new(look.clone(), scrollbar_template)),
+            inspector,
             horizontal_value: 40.0,
             vertical_value: 80.0,
         }
@@ -71,8 +88,7 @@ impl ScrollbarPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage(
-            "Scrollbar",
+        gallery_pane_with_inspector(
             "Scrollbar",
             div()
                 .flex()
@@ -82,6 +98,7 @@ impl ScrollbarPane {
                 .child(self.scrollbar_example(look))
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -90,6 +107,10 @@ impl ScrollbarPane {
         notify_entity(&self.horizontal_scrollbar, cx);
         notify_entity(&self.vertical_scrollbar, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(

@@ -1,3 +1,4 @@
+mod inspector_tree;
 mod layout;
 mod pane;
 

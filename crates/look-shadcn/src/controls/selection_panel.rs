@@ -7,7 +7,7 @@ use gpui_luma::theme::{ControlSize, ThemeMode};
 use super::selector_items_panel::selector_items_panel_appearance;
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn selection_panel_appearance(
+pub fn selection_panel_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
@@ -15,7 +15,7 @@ pub(crate) fn selection_panel_appearance(
     selection_panel_from_items_panel(selector_items_panel_appearance(mode, theme_mode, size))
 }
 
-pub(crate) fn selection_panel_from_items_panel(panel: SelectorItemsPanelAppearance) -> SelectionPanelAppearance {
+pub fn selection_panel_from_items_panel(panel: SelectorItemsPanelAppearance) -> SelectionPanelAppearance {
     SelectionPanelAppearance {
         background: panel.background,
         foreground: panel.foreground,

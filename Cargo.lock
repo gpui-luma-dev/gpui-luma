@@ -2357,6 +2357,7 @@ dependencies = [
  "gpui",
  "gpui-luma",
  "gpui-luma-look-shadcn",
+ "gpui-luma-look-shadcn-inspect",
  "gpui_platform",
  "gtk",
  "lucide-icons",
@@ -2375,6 +2376,16 @@ dependencies = [
  "palette",
  "serde",
  "toml 0.8.23",
+]
+
+[[package]]
+name = "gpui-luma-look-shadcn-inspect"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
 ]
 
 [[package]]

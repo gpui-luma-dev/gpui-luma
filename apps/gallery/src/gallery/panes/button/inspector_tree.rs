@@ -6,10 +6,9 @@ use gpui_luma::controls::tree_view::{
 };
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{
-    ButtonInspectMetrics, ButtonInspectPalette, ShadcnButtonStyle, ShadcnLook, format_inspect_css_key,
-    format_inspect_provenance,
-};
+use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn_inspect::{ButtonInspectMetrics, ButtonInspectPalette, format_inspect_css_key, format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance, format_inspect_typography_provenance, format_inspect_typography_source, format_metric_px, format_typography_px};
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::format_hex_color;
@@ -41,6 +40,7 @@ pub(in crate::gallery) enum InspectTreeData {
     Branch,
     ColorField(InspectColorFieldData),
     LayoutSize(InspectLayoutSizeData),
+    Typography(InspectTypographyData),
 }
 
 #[derive(Clone)]
@@ -53,7 +53,9 @@ pub(in crate::gallery) struct InspectColorFieldData {
 #[derive(Clone)]
 pub(in crate::gallery) struct InspectMetricPropertyData {
     pub name: SharedString,
-    pub value_px: f32,
+    pub value: SharedString,
+    pub source: SharedString,
+    pub provenance: Option<SharedString>,
 }
 
 #[derive(Clone)]
@@ -61,6 +63,23 @@ pub(in crate::gallery) struct InspectLayoutSizeData {
     pub size: ControlSize,
     pub box_model: InspectBoxModelSnapshot,
     pub properties: Vec<InspectMetricPropertyData>,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) struct InspectTypographyPropertyData {
+    pub name: SharedString,
+    pub value: SharedString,
+    pub source: SharedString,
+    pub provenance: Option<SharedString>,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) struct InspectTypographyData {
+    pub font_family: SharedString,
+    pub font_size: f32,
+    pub font_weight: gpui::FontWeight,
+    pub line_height: f32,
+    pub properties: Vec<InspectTypographyPropertyData>,
 }
 
 #[derive(Clone)]
@@ -74,6 +93,7 @@ pub(in crate::gallery) struct InspectFieldSelection {
 pub(in crate::gallery) enum InspectFieldKind {
     Color(InspectColorFieldData),
     Layout(InspectLayoutSizeData),
+    Typography(InspectTypographyData),
 }
 
 pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<InspectTreeData>> {
@@ -117,10 +137,11 @@ fn state_palette_branch(
     look: &ShadcnLook,
 ) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{}-{}", slug(style_label), state_label).into();
-    let palette = look.inspect_button_color_palette(style, ButtonFamilyRole::Text, state);
+    let palette = ShadcnInspect::new(look).inspect_button_color_palette(style, ButtonFamilyRole::Text, state);
     let expand_layout = style_label == "Primary" && state_label == "default";
     let mut children = field_nodes(id.as_ref(), &palette);
     children.push(layout_branch(id.as_ref(), style, state, look, expand_layout));
+    children.push(typography_branch(id.as_ref(), look));
     TreeNode::new(id.clone(), state_label.to_owned(), InspectTreeData::Branch)
         .branch(true)
         .expanded(style_label == "Primary" && state_label == "default")
@@ -156,7 +177,7 @@ fn size_metrics_branch(
     _expand_md: bool,
 ) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{size_label}").into();
-    let metrics = look.inspect_button_metrics(style, ButtonFamilyRole::Text, size, state);
+    let metrics = ShadcnInspect::new(look).inspect_button_metrics(style, ButtonFamilyRole::Text, size, state);
     TreeNode::new(
         id,
         size_label.to_owned(),
@@ -166,6 +187,48 @@ fn size_metrics_branch(
             properties: layout_metric_properties(&metrics),
         }),
     )
+}
+
+fn typography_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<InspectTreeData> {
+    let id: SharedString = format!("{prefix}-typography").into();
+    let typography = ShadcnInspect::new(look).inspect_button_typography();
+    TreeNode::new(
+        id,
+        "typography".to_owned(),
+        InspectTreeData::Typography(InspectTypographyData {
+            font_family: typography.font_family.value.clone().into(),
+            font_size: typography.font_size.value.parse().unwrap_or(13.0),
+            font_weight: gpui::FontWeight(typography.font_weight.value.parse().unwrap_or(500.0)),
+            line_height: typography.line_height.value.parse().unwrap_or(18.0),
+            properties: typography_properties(&typography),
+        }),
+    )
+}
+
+fn typography_properties(
+    typography: &gpui_luma_look_shadcn_inspect::ButtonInspectTypography,
+) -> Vec<InspectTypographyPropertyData> {
+    [
+        ("font family", &typography.font_family),
+        ("font size", &typography.font_size),
+        ("font weight", &typography.font_weight),
+        ("line height", &typography.line_height),
+    ]
+    .into_iter()
+    .map(|(name, field)| InspectTypographyPropertyData {
+        name: name.into(),
+        value: typography_display_value(name, field).into(),
+        source: format_inspect_typography_source(&field.source).into(),
+        provenance: format_inspect_typography_provenance(&field.source).map(SharedString::from),
+    })
+    .collect()
+}
+
+fn typography_display_value(name: &str, field: &gpui_luma_look_shadcn_inspect::ResolvedTypography) -> String {
+    match name {
+        "font size" | "line height" => format_typography_px(field.value.parse().unwrap_or(0.0)),
+        _ => field.value.clone(),
+    }
 }
 
 fn layout_metric_properties(metrics: &ButtonInspectMetrics) -> Vec<InspectMetricPropertyData> {
@@ -180,12 +243,17 @@ fn layout_metric_properties(metrics: &ButtonInspectMetrics) -> Vec<InspectMetric
         ("focus ring offset", &metrics.focus_ring_offset),
     ]
     .into_iter()
-    .map(|(name, metric)| InspectMetricPropertyData { name: name.into(), value_px: metric.value_px })
+    .map(|(name, metric)| InspectMetricPropertyData {
+        name: name.into(),
+        value: format_metric_px(metric.value_px).into(),
+        source: format_inspect_metric_source(&metric.source).into(),
+        provenance: format_inspect_metric_provenance(&metric.source).map(SharedString::from),
+    })
     .collect()
 }
 
 fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<InspectTreeData>> {
-    let mut fields: Vec<(&str, &gpui_luma_look_shadcn::ResolvedColor)> = vec![
+    let mut fields: Vec<(&str, &gpui_luma_look_shadcn_inspect::ResolvedColor)> = vec![
         ("background", &palette.background),
         ("foreground", &palette.foreground),
         ("border", &palette.border),
@@ -197,7 +265,7 @@ fn field_nodes(prefix: &str, palette: &ButtonInspectPalette) -> Vec<TreeNode<Ins
     fields.into_iter().map(|(name, color)| field_node(prefix, name, color)).collect()
 }
 
-fn field_node(prefix: &str, name: &str, color: &gpui_luma_look_shadcn::ResolvedColor) -> TreeNode<InspectTreeData> {
+fn field_node(prefix: &str, name: &str, color: &gpui_luma_look_shadcn_inspect::ResolvedColor) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{}", name.replace(' ', "-")).into();
     TreeNode::new(
         id,
@@ -230,6 +298,13 @@ pub(in crate::gallery) fn find_field_selection(
                     kind: InspectFieldKind::Layout(field.clone()),
                 });
             }
+            if let InspectTreeData::Typography(field) = &node.data {
+                return Some(InspectFieldSelection {
+                    id: node.id.clone(),
+                    label: node.label.clone(),
+                    kind: InspectFieldKind::Typography(field.clone()),
+                });
+            }
             return None;
         }
         if let Some(selection) = find_field_selection(&node.children, id) {
@@ -242,7 +317,10 @@ pub(in crate::gallery) fn find_field_selection(
 pub(in crate::gallery) fn first_field_id(items: &[TreeNode<InspectTreeData>]) -> Option<SharedString> {
     fn walk(nodes: &[TreeNode<InspectTreeData>]) -> Option<SharedString> {
         for node in nodes {
-            if matches!(node.data, InspectTreeData::ColorField(_) | InspectTreeData::LayoutSize(_)) {
+            if matches!(
+                node.data,
+                InspectTreeData::ColorField(_) | InspectTreeData::LayoutSize(_) | InspectTreeData::Typography(_)
+            ) {
                 return Some(node.id.clone());
             }
             if let Some(id) = walk(&node.children) {
@@ -324,7 +402,7 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                 let value = format_hex_color(field.swatch);
                 render_leaf_row(node, handlers, palette, left_padding, chrome, body, mono, Some(field.swatch), value)
             }
-            InspectTreeData::LayoutSize(_) => {
+            InspectTreeData::LayoutSize(_) | InspectTreeData::Typography(_) => {
                 let mut row = branch_row_shell(node, palette.foreground, left_padding);
                 if node.enabled {
                     row = row

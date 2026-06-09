@@ -9,12 +9,15 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_navigation_sidebar_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct NavigationSidebarPane {
     sidebar: Entity<NavigationSidebar>,
     collapsed: Rc<Cell<bool>>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 #[derive(Clone, Copy)]
@@ -87,6 +90,24 @@ const FOOTER_PROPERTIES: &[PropertyLeaf] = &[
 
 impl NavigationSidebarPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "navigation-sidebar-inspector-tree",
+            look.clone(),
+            build_navigation_sidebar_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "navigation-sidebar-inspector",
+                "navigation-sidebar-inspector-split",
+                "navigation-sidebar-inspector-detail",
+                build_navigation_sidebar_inspect_tree,
+                cx,
+            )
+        });
+
         let sidebar = look
             .navigation_sidebar("properties-navigation-sidebar")
             .title("Properties")
@@ -97,7 +118,7 @@ impl NavigationSidebarPane {
             .footer_nodes(FOOTER_PROPERTIES.iter().map(property_leaf_node))
             .spawn(cx);
 
-        Self { sidebar, collapsed: Rc::new(Cell::new(false)) }
+        Self { sidebar, collapsed: Rc::new(Cell::new(false)), inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -114,8 +135,7 @@ impl NavigationSidebarPane {
         let chrome = look.chrome();
         let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
 
-        gallery_pane_with_usage(
-            "Navigation Sidebar",
+        gallery_pane_with_inspector(
             "Navigation Sidebar",
             div()
                 .flex_none()
@@ -127,12 +147,17 @@ impl NavigationSidebarPane {
                 .border_color(chrome.border)
                 .child(self.sidebar.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.sidebar, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

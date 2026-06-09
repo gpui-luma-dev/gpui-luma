@@ -7,8 +7,10 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_tree_view_inspect_tree;
 use super::scroll_shell::TreeViewScrollShell;
-use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 
 const TREE_VIEW_DESCRIPTION: &str = concat!(
     "Virtualized tree view for hierarchical data such as file explorers. ",
@@ -23,10 +25,24 @@ const TREE_DEPTH: usize = 5;
 pub(in crate::gallery) struct TreeViewPane {
     shell: Entity<TreeViewScrollShell>,
     last_event: SharedString,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl TreeViewPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("tree-view-inspector-tree", look.clone(), build_tree_view_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "tree-view-inspector",
+                "tree-view-inspector-split",
+                "tree-view-inspector-detail",
+                build_tree_view_inspect_tree,
+                cx,
+            )
+        });
+
         let tree = look
             .tree_view("gallery-tree-view")
             .selection_mode(TreeViewSelectionMode::Single)
@@ -35,7 +51,7 @@ impl TreeViewPane {
 
         let shell = cx.new(|cx| TreeViewScrollShell::new(look, tree, cx));
 
-        Self { shell, last_event: "None".into() }
+        Self { shell, last_event: "None".into(), inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -50,10 +66,9 @@ impl TreeViewPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_description(
+        gallery_pane_with_inspector_description(
             "Tree View",
             Some(TREE_VIEW_DESCRIPTION),
-            "TreeView",
             div()
                 .w(px(360.0))
                 .h(px(480.0))
@@ -84,6 +99,7 @@ impl TreeViewPane {
                         .child(format!("Last event: {}", self.last_event)),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -91,6 +107,10 @@ impl TreeViewPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.shell, cx);
         notify_entity(&self.shell.read(cx).tree(), cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_event(&mut self, event: &TreeViewEvent<SharedString>, cx: &mut Context<GalleryApp>) {

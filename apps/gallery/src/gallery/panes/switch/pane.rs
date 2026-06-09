@@ -13,20 +13,36 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_switch_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SwitchPane {
     secondary_switch: Switch,
     primary_switch: Switch,
     state_preview: Entity<SwitchStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     secondary_on: bool,
     primary_on: bool,
 }
 
 impl SwitchPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("switch-inspector-tree", look.clone(), build_switch_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "switch-inspector",
+                "switch-inspector-split",
+                "switch-inspector-detail",
+                build_switch_inspect_tree,
+                cx,
+            )
+        });
+
         Self {
             secondary_switch: look
                 .secondary_switch("switch-secondary-example")
@@ -39,6 +55,7 @@ impl SwitchPane {
                 .content(|_, _| div().into_any_element())
                 .spawn(cx),
             state_preview: cx.new(|_| SwitchStatePreview::new(look)),
+            inspector,
             secondary_on: true,
             primary_on: false,
         }
@@ -56,8 +73,7 @@ impl SwitchPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Switch",
+        gallery_pane_with_inspector(
             "Switch",
             div()
                 .flex()
@@ -90,6 +106,7 @@ impl SwitchPane {
                 )
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -98,6 +115,10 @@ impl SwitchPane {
         notify_entity(&self.secondary_switch, cx);
         notify_entity(&self.primary_switch, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn flip_switch(switch: &Switch, on: &mut bool, cx: &mut Context<GalleryApp>) {

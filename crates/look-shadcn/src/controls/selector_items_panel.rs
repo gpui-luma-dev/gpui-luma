@@ -6,7 +6,7 @@ use gpui_luma::theme::{ControlSize, ThemeMode};
 use super::floating_menu::floating_menu_appearance;
 use crate::mode::ShadcnModeTokens;
 
-pub(crate) fn selector_items_panel_appearance(
+pub fn selector_items_panel_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
@@ -15,7 +15,7 @@ pub(crate) fn selector_items_panel_appearance(
     selector_items_panel_from_floating_menu(menu)
 }
 
-pub(crate) fn selector_items_panel_from_floating_menu(
+pub fn selector_items_panel_from_floating_menu(
     menu: gpui_luma::controls::floating_menu::FloatingMenuAppearance,
 ) -> SelectorItemsPanelAppearance {
     SelectorItemsPanelAppearance {
@@ -40,6 +40,7 @@ pub(crate) fn selector_items_panel_from_floating_menu(
 
 #[cfg(test)]
 mod tests {
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 

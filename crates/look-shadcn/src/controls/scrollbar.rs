@@ -7,19 +7,50 @@
 //! | Hover | `border` (no change) |
 //! | Press | `border` (darkened)  |
 
-use gpui::hsla;
-
 use gpui_luma::controls::scrollbar::ScrollbarAppearance;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::focus::focus_ring_color;
-use crate::resolve::resolve_color;
-use crate::color::darken;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn scrollbar_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct ScrollbarColorTable {
+    pub track_background: ResolvedColor,
+    pub thumb_background: ResolvedColor,
+}
+
+impl ScrollbarColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            track_background: ResolvedColor::transparent(),
+            thumb_background: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_scrollbar_colors,
+    inputs: {
+        disabled: bool,
+        layer: InteractionLayer,
+    },
+    output: ScrollbarColorTable { track_background, thumb_background },
+    matrix: [
+        [true] | [_] => "muted" | "muted-foreground",
+
+        [false] | [InteractionLayer::Disabled] => "transparent" | "muted-foreground",
+        [false] | [InteractionLayer::Default] => "transparent" | "border",
+        [false] | [InteractionLayer::Hovered] => "transparent" | "border",
+        [false] | [InteractionLayer::Pressed] => "transparent" | "@darken_border",
+    ]
+}
+
+pub fn scrollbar_appearance(
     mode: &ShadcnModeTokens,
     state: InteractionState,
     orientation: ScrollbarOrientation,
@@ -28,7 +59,7 @@ pub(crate) fn scrollbar_appearance(
     scrollbar_appearance_from_catalog(&ctx, orientation).unwrap_or_else(|err| panic!("scrollbar properties: {err}"))
 }
 
-pub(crate) fn scrollbar_appearance_from_catalog(
+pub fn scrollbar_appearance_from_catalog(
     ctx: &AppearanceContext,
     orientation: ScrollbarOrientation,
 ) -> anyhow::Result<ScrollbarAppearance> {
@@ -36,19 +67,9 @@ pub(crate) fn scrollbar_appearance_from_catalog(
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
-    let thumb = resolve_color(catalog, "border")?;
-
-    let thumb_background = match layer {
-        InteractionLayer::Disabled => resolve_color(catalog, "muted-foreground")?,
-        InteractionLayer::Pressed => darken(thumb, 0.08),
-        InteractionLayer::Hovered | InteractionLayer::Default => thumb,
-    };
-
-    let track_background = if state.disabled {
-        resolve_color(catalog, "muted")?
-    } else {
-        hsla(0.0, 0.0, 0.0, 0.0)
-    };
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "scrollbar");
+    let colors =
+        resolve_scrollbar_colors(&resolver, state.disabled, layer).unwrap_or_else(|_| ScrollbarColorTable::fallback());
 
     let length = match orientation {
         ScrollbarOrientation::Horizontal => 260.0,
@@ -56,8 +77,8 @@ pub(crate) fn scrollbar_appearance_from_catalog(
     };
 
     Ok(ScrollbarAppearance {
-        track_background,
-        thumb_background,
+        track_background: colors.track_background.hsla(),
+        thumb_background: colors.thumb_background.hsla(),
         focus_ring: state.focused.then(|| focus_ring_color(catalog)).transpose()?,
         length,
         thickness: 12.0,
@@ -70,6 +91,8 @@ pub(crate) fn scrollbar_appearance_from_catalog(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
@@ -79,7 +102,7 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::scrollbar_appearance_from_catalog;
+    use super::{resolve_scrollbar_colors_metadata, scrollbar_appearance_from_catalog};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -139,4 +162,5 @@ mod tests {
         assert_eq!(focused.thumb_background, border);
         assert_eq!(focused.focus_ring, Some(catalog.color("ring").expect("ring")));
     }
+
 }

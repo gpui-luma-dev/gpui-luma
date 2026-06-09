@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, Context, Subscription, anchored, deferred, div, point, prelude::*, px};
+use gpui::{AnyElement, App, Context, Entity, Subscription, anchored, deferred, div, point, prelude::*, px};
 use gpui_luma::controls::combobox::{
     ComboBox, ComboBoxEvent, ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers,
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, SelectionItem, TypingPolicy,
@@ -10,15 +10,32 @@ use gpui_luma::theme::{ControlSize};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
+
+use super::inspector_tree::build_combobox_inspect_tree;
+use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ComboBoxPane {
     strict_combobox: ComboBox,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl ComboBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("combobox-inspector-tree", look.clone(), build_combobox_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "combobox-inspector",
+                "combobox-inspector-split",
+                "combobox-inspector-detail",
+                build_combobox_inspect_tree,
+                cx,
+            )
+        });
+
         let strict_combobox = look
             .combobox("gallery-combobox-strict", combobox_demo_items())
             .items_template(Arc::new(GalleryComboboxItemsTemplate::new(look.clone())))
@@ -31,7 +48,7 @@ impl ComboBoxPane {
             .show_clear_button(true)
             .spawn(cx);
 
-        Self { strict_combobox }
+        Self { strict_combobox, inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -41,10 +58,8 @@ impl ComboBoxPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage_descriptions(
+        gallery_pane_with_inspector(
             "ComboBox",
-            Some("Select-oriented input with dropdown trigger, open/close toggle, and strict typing policy."),
-            &["ComboBox", "Floating Menu"],
             div()
                 .w(px(240.0))
                 .max_w_full()
@@ -60,12 +75,17 @@ impl ComboBoxPane {
                 )
                 .child(self.strict_combobox.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.strict_combobox, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

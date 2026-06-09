@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, FontWeight, IntoElement, SharedString, Subscription, Window, div, prelude::*,
-    px,
+    AnyElement, App, ClickEvent, Context, Entity, FontWeight, IntoElement, SharedString, Subscription, Window, div,
+    prelude::*, px,
 };
 use gpui_luma::controls::floating_menu::{
     FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuState,
@@ -15,16 +15,36 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::gallery_pane_with_usage;
+use super::inspector_tree::build_floating_menu_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct FloatingMenuPane {
     menu_theme: Arc<dyn FloatingMenuTheme>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl FloatingMenuPane {
-    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        Self { menu_theme: look.floating_menu_theme() }
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "floating-menu-inspector-tree",
+            look.clone(),
+            build_floating_menu_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "floating-menu-inspector",
+                "floating-menu-inspector-split",
+                "floating-menu-inspector-detail",
+                build_floating_menu_inspect_tree,
+                cx,
+            )
+        });
+        Self { menu_theme: look.floating_menu_theme(), inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
@@ -33,8 +53,7 @@ impl FloatingMenuPane {
         let chrome = look.chrome();
         let appearance = self.menu_theme.resolve();
 
-        gallery_pane_with_usage(
-            "Floating Menu",
+        gallery_pane_with_inspector(
             "Floating Menu",
             div()
                 .flex()
@@ -79,11 +98,17 @@ impl FloatingMenuPane {
                         .child(floating_menu_state_machine_snapshot()),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
 
-    pub(in crate::gallery) fn notify_controls(&self, _cx: &mut Context<GalleryApp>) {}
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
+    }
 }
 
 fn render_state_sample(

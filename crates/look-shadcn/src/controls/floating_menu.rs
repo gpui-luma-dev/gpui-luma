@@ -10,14 +10,87 @@
 //! | Item disabled | `muted-foreground`               |
 
 use gpui_luma::controls::floating_menu::FloatingMenuAppearance;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
 use crate::elevation::menu_shadow;
-use crate::resolve::{resolve_accent_hover_pair, resolve_color, resolve_popover_background, resolve_popover_foreground};
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn floating_menu_appearance(
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct FloatingMenuColorTable {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: ResolvedColor,
+    pub item_hover_background: ResolvedColor,
+    pub item_hover_foreground: ResolvedColor,
+    pub item_disabled_foreground: ResolvedColor,
+}
+
+impl FloatingMenuColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            foreground: ResolvedColor::fallback_foreground(),
+            border: ResolvedColor::fallback_foreground(),
+            item_hover_background: ResolvedColor::transparent(),
+            item_hover_foreground: ResolvedColor::fallback_foreground(),
+            item_disabled_foreground: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_floating_menu_colors,
+    inputs: {
+        present: bool,
+    },
+    output: FloatingMenuColorTable {
+        background,
+        foreground,
+        border,
+        item_hover_background,
+        item_hover_foreground,
+        item_disabled_foreground,
+    },
+    matrix: [
+        [true] => "first(popover,card)" | "popover-foreground" | "border" | "accent" | "accent-foreground" | "muted-foreground",
+        [false] => "first(popover,card)" | "popover-foreground" | "border" | "accent" | "accent-foreground" | "muted-foreground",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct GhostTriggerColorTable {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+}
+
+impl GhostTriggerColorTable {
+    pub fn fallback() -> Self {
+        Self { background: ResolvedColor::transparent(), foreground: ResolvedColor::fallback_foreground() }
+    }
+}
+
+declare_look_table! {
+    name: resolve_ghost_trigger_colors,
+    inputs: {
+        layer: InteractionLayer,
+        disabled: bool,
+    },
+    output: GhostTriggerColorTable { background, foreground },
+    matrix: [
+        [_] | [true] => "muted" | "muted-foreground",
+
+        [InteractionLayer::Hovered] | [false] => "transparent" | "accent-foreground",
+        [InteractionLayer::Pressed] | [false] => "transparent" | "accent-foreground",
+        [InteractionLayer::Default] | [false] => "transparent" | "foreground",
+        [InteractionLayer::Disabled] | [false] => "transparent" | "foreground",
+    ]
+}
+
+pub fn floating_menu_appearance(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
@@ -31,7 +104,7 @@ pub(crate) fn floating_menu_appearance(
     }
 }
 
-fn floating_menu_appearance_from_palette(ctx: &AppearanceContext, size: ControlSize) -> FloatingMenuAppearance {
+pub fn floating_menu_appearance_from_palette(ctx: &AppearanceContext, size: ControlSize) -> FloatingMenuAppearance {
     let palette = ctx.palette();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
@@ -58,7 +131,7 @@ fn floating_menu_appearance_from_palette(ctx: &AppearanceContext, size: ControlS
     }
 }
 
-pub(crate) fn floating_menu_appearance_from_catalog(
+pub fn floating_menu_appearance_from_catalog(
     ctx: &AppearanceContext,
     size: ControlSize,
 ) -> anyhow::Result<FloatingMenuAppearance> {
@@ -66,20 +139,20 @@ pub(crate) fn floating_menu_appearance_from_catalog(
     let metrics = ctx.metrics();
     let typography = ctx.typography();
     let shadow = menu_shadow(ctx.theme_mode);
-
-    let (item_hover_background, item_hover_foreground) = resolve_accent_hover_pair(catalog)?;
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
+    let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
 
     Ok(FloatingMenuAppearance {
-        background: resolve_popover_background(catalog)?,
-        foreground: resolve_popover_foreground(catalog)?,
-        border: resolve_color(catalog, "border")?,
+        background: colors.background.hsla(),
+        foreground: colors.foreground.hsla(),
+        border: colors.border.hsla(),
         shadow,
         radius: metrics.radius.lg,
         padding: metrics.padding_y(size) * 0.5,
         min_width: 180.0,
-        item_disabled_foreground: resolve_color(catalog, "muted-foreground")?,
-        item_hover_background,
-        item_hover_foreground,
+        item_disabled_foreground: colors.item_disabled_foreground.hsla(),
+        item_hover_background: colors.item_hover_background.hsla(),
+        item_hover_foreground: colors.item_hover_foreground.hsla(),
         item_typography: typography.text.label,
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
@@ -92,6 +165,8 @@ pub(crate) fn floating_menu_appearance_from_catalog(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
@@ -100,7 +175,10 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::floating_menu_appearance_from_catalog;
+    use super::{
+        floating_menu_appearance_from_catalog, resolve_floating_menu_colors_metadata,
+        resolve_ghost_trigger_colors_metadata,
+    };
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -135,4 +213,5 @@ mod tests {
         assert_eq!(appearance.item_hover_background, catalog.color("accent").expect("accent"));
         assert_eq!(appearance.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
+
 }

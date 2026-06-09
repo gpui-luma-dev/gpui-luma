@@ -1,0 +1,93 @@
+use gpui_luma::controls::tree_view::TreeNode;
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn_inspect::ShadcnInspect;
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn_inspect::{RadioButtonInspectPalette};
+
+use crate::gallery::panes::shared::inspector::{
+    ColorInspectTreeData, choice_layout_branch, color_field_nodes_optional, inspect_slug, radio_layout_data,
+};
+
+pub(in crate::gallery) fn build_radio_group_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<ColorInspectTreeData>> {
+    let style = ShadcnButtonStyle::Secondary;
+    let id = "inspect-secondary";
+    let matrix_states = [
+        ("default", InteractionState::default()),
+        ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
+        ("focused", InteractionState { focused: true, ..InteractionState::default() }),
+        ("pressed", InteractionState { hovered: true, pressed: true, ..InteractionState::default() }),
+        ("disabled", InteractionState { disabled: true, ..InteractionState::default() }),
+    ];
+    let state_nodes: Vec<_> = matrix_states
+        .iter()
+        .map(|(state_label, state)| state_branch(id, state_label, style, *state, look))
+        .collect();
+
+    vec![TreeNode::new(id.to_owned(), "Secondary item", ColorInspectTreeData::Branch)
+        .branch(true)
+        .expanded(true)
+        .children(state_nodes)]
+}
+
+fn state_branch(
+    prefix: &str,
+    state_label: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    look: &ShadcnLook,
+) -> TreeNode<ColorInspectTreeData> {
+    let id = format!("{prefix}-{}", inspect_slug(state_label));
+    let unselected_id = format!("{id}-unselected");
+    let selected_id = format!("{id}-selected");
+    let expand = state_label == "default";
+
+    TreeNode::new(id.clone(), state_label.to_owned(), ColorInspectTreeData::Branch)
+        .branch(true)
+        .expanded(expand)
+        .children([
+            selected_branch(&selected_id, style, state, look, expand),
+            unselected_branch(&unselected_id, style, state, look, expand),
+            choice_layout_branch(&id, expand, look, radio_layout_data),
+        ])
+}
+
+fn unselected_branch(
+    id: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    look: &ShadcnLook,
+    expand: bool,
+) -> TreeNode<ColorInspectTreeData> {
+    let palette = ShadcnInspect::new(look).inspect_radio_button_color_palette(style, false, state);
+    TreeNode::new(id.to_owned(), "unselected", ColorInspectTreeData::Branch)
+        .branch(true)
+        .expanded(expand)
+        .children(radio_color_nodes(id, &palette))
+}
+
+fn selected_branch(
+    id: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    look: &ShadcnLook,
+    expand: bool,
+) -> TreeNode<ColorInspectTreeData> {
+    let palette = ShadcnInspect::new(look).inspect_radio_button_color_palette(style, true, state);
+    TreeNode::new(id.to_owned(), "selected", ColorInspectTreeData::Branch)
+        .branch(true)
+        .expanded(expand)
+        .children(radio_color_nodes(id, &palette))
+}
+
+fn radio_color_nodes(prefix: &str, palette: &RadioButtonInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {
+    color_field_nodes_optional(
+        prefix,
+        &[
+            ("indicator background", Some(&palette.indicator_background)),
+            ("indicator border", Some(&palette.indicator_border)),
+            ("dot", Some(&palette.dot_color)),
+            ("label", Some(&palette.label_color)),
+            ("focus ring", palette.focus_ring.as_ref()),
+        ],
+    )
+}

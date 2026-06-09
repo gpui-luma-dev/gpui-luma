@@ -1,3 +1,4 @@
+mod inspector_tree;
 mod pane;
 mod scroll_shell;
 

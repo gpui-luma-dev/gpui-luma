@@ -1,13 +1,48 @@
 //! Control group list chrome — muted surface + border.
+//!
+//! | Part            | Token                |
+//! |-----------------|----------------------|
+//! | Enabled bg      | `muted`              |
+//! | Disabled bg     | `muted-foreground`   |
+//! | Border          | `border`             |
 
 use gpui_luma::controls::control_group::ControlGroupListAppearance;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::resolve::resolve_color;
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListAppearance {
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct ControlGroupListColorTable {
+    pub background: ResolvedColor,
+    pub border: ResolvedColor,
+}
+
+impl ControlGroupListColorTable {
+    pub fn fallback() -> Self {
+        Self {
+            background: ResolvedColor::transparent(),
+            border: ResolvedColor::fallback_foreground(),
+        }
+    }
+}
+
+declare_look_table! {
+    name: resolve_control_group_list_colors,
+    inputs: {
+        enabled: bool,
+    },
+    output: ControlGroupListColorTable { background, border },
+    matrix: [
+        [true] => "muted" | "border",
+        [false] => "muted-foreground" | "border",
+    ]
+}
+
+pub fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
         control_group_list_from_palette(&ctx, enabled)
@@ -16,7 +51,7 @@ pub(crate) fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bo
     }
 }
 
-fn control_group_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> ControlGroupListAppearance {
+pub fn control_group_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> ControlGroupListAppearance {
     let palette = ctx.palette();
     let metrics = ctx.metrics();
 
@@ -38,16 +73,14 @@ fn control_group_list_from_catalog(
     ctx: &AppearanceContext,
     enabled: bool,
 ) -> anyhow::Result<ControlGroupListAppearance> {
-    let catalog = ctx.catalog();
     let metrics = ctx.metrics();
+    let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list");
+    let colors =
+        resolve_control_group_list_colors(&resolver, enabled).unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
     Ok(ControlGroupListAppearance {
-        background: if enabled {
-            resolve_color(catalog, "muted")?
-        } else {
-            resolve_color(catalog, "muted-foreground")?
-        },
-        border: resolve_color(catalog, "border")?,
+        background: colors.background.hsla(),
+        border: colors.border.hsla(),
         radius: metrics.radius(ControlSize::Md),
         padding_x: 6.0,
         padding_y: 4.0,
@@ -57,12 +90,18 @@ fn control_group_list_from_catalog(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
+
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::control_group_list_appearance;
+    use super::{
+        control_group_list_appearance,
+        resolve_control_group_list_colors_metadata,
+    };
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -90,4 +129,5 @@ mod tests {
         assert_eq!(appearance.background, catalog.color("muted").expect("muted"));
         assert_eq!(appearance.border, catalog.color("border").expect("border"));
     }
+
 }

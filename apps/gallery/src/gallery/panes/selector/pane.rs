@@ -8,9 +8,11 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
+use super::inspector_tree::build_selector_inspect_tree;
 use super::panel_preview::SelectorPanelPreview;
 use super::preview::SelectorStatePreview;
-use super::super::shared::{format_compact_hsla, gallery_pane_with_usage, notify_entity};
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{format_compact_hsla, gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SelectorPane {
@@ -23,10 +25,24 @@ pub(in crate::gallery) struct SelectorPane {
     panel_preview: Entity<SelectorPanelPreview>,
     selection: String,
     selected_swatch_id: String,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl SelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("selector-inspector-tree", look.clone(), build_selector_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "selector-inspector",
+                "selector-inspector-split",
+                "selector-inspector-detail",
+                build_selector_inspect_tree,
+                cx,
+            )
+        });
+
         let initial_swatch_id = selected_swatch_id();
         let initial_swatch_label = selected_swatch_label();
 
@@ -101,6 +117,7 @@ impl SelectorPane {
             panel_preview: cx.new(|_| SelectorPanelPreview::new(look.clone())),
             selection: initial_swatch_label.to_string(),
             selected_swatch_id: initial_swatch_id.to_string(),
+            inspector,
         }
     }
 
@@ -113,8 +130,7 @@ impl SelectorPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "Selector",
+        gallery_pane_with_inspector(
             "Selector",
             div()
                 .w_full()
@@ -147,6 +163,7 @@ impl SelectorPane {
                 )
                 .child(self.selector_smart.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -159,6 +176,10 @@ impl SelectorPane {
         notify_entity(&self.selector_swatch, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.panel_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_swatch_event(&mut self, event: &SelectorEvent, cx: &mut Context<GalleryApp>) {

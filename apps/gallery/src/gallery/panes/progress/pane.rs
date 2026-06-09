@@ -8,25 +8,40 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_progress_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ProgressPane {
     progress: Progress,
     state_preview: Entity<ProgressStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl ProgressPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("progress-inspector-tree", look.clone(), build_progress_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "progress-inspector",
+                "progress-inspector-split",
+                "progress-inspector-detail",
+                build_progress_inspect_tree,
+                cx,
+            )
+        });
         Self {
             progress: look.progress("progress-example").range(1..100).value(41).spawn(cx),
             state_preview: cx.new(|_| ProgressStatePreview::new(look)),
+            inspector,
         }
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage(
-            "Progress",
+        gallery_pane_with_inspector(
             "Progress",
             div()
                 .flex()
@@ -36,6 +51,7 @@ impl ProgressPane {
                 .child(self.progress.clone())
                 .child(self.state_preview.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -43,6 +59,10 @@ impl ProgressPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.progress, cx);
         notify_entity(&self.state_preview, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

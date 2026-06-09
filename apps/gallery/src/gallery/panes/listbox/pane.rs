@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
 use gpui_luma_look_shadcn::prelude::*;
@@ -8,7 +8,9 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage, notify_entity};
+use super::inspector_tree::build_listbox_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ListBoxPane {
@@ -16,10 +18,24 @@ pub(in crate::gallery) struct ListBoxPane {
     multiple: ListBox,
     single_choice: String,
     multi_choices: Vec<String>,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl ListBoxPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("listbox-inspector-tree", look.clone(), build_listbox_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "listbox-inspector",
+                "listbox-inspector-split",
+                "listbox-inspector-detail",
+                build_listbox_inspect_tree,
+                cx,
+            )
+        });
+
         let single = look.listbox("listbox-density-single").items(density_items()).selected("comfortable").spawn(cx);
 
         let multiple = look
@@ -33,6 +49,7 @@ impl ListBoxPane {
             multiple,
             single_choice: "Comfortable".to_string(),
             multi_choices: vec!["Compact".to_string(), "Expanded".to_string()],
+            inspector,
         }
     }
 
@@ -49,8 +66,7 @@ impl ListBoxPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage(
-            "ListBox",
+        gallery_pane_with_inspector(
             "ListBox",
             div()
                 .w(px(420.0))
@@ -88,6 +104,7 @@ impl ListBoxPane {
                         ),
                 )
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -95,6 +112,10 @@ impl ListBoxPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.single, cx);
         notify_entity(&self.multiple, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn handle_single_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {

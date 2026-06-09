@@ -12,11 +12,71 @@ use gpui_luma::controls::tabs_navigation::{TabsNavigationItemAppearance, TabsNav
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::appearance_context::AppearanceContext;
-use crate::focus::focus_ring_color;
-use crate::resolve::{resolve_color, resolve_color_layer, resolve_label_color};
 use crate::mode::ShadcnModeTokens;
+use crate::provenance::{LookResolver, ResolvedColor};
 
-pub(crate) fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> TabsNavigationListAppearance {
+use gpui_luma_look_shadcn_macros::declare_look_table;
+
+#[derive(Clone, Debug)]
+pub struct TabsNavigationListColorTable {
+    pub disabled_background: ResolvedColor,
+}
+
+impl TabsNavigationListColorTable {
+    pub fn fallback() -> Self {
+        Self { disabled_background: ResolvedColor::transparent() }
+    }
+}
+
+declare_look_table! {
+    name: resolve_tabs_navigation_list_colors,
+    inputs: {
+        enabled: bool,
+    },
+    output: TabsNavigationListColorTable { disabled_background },
+    matrix: [
+        [true] => "transparent",
+        [false] => "muted",
+    ]
+}
+
+#[derive(Clone, Debug)]
+pub struct TabsNavigationItemColorTable {
+    pub label_color: ResolvedColor,
+    pub indicator: Option<ResolvedColor>,
+}
+
+impl TabsNavigationItemColorTable {
+    pub fn fallback() -> Self {
+        Self { label_color: ResolvedColor::fallback_foreground(), indicator: None }
+    }
+}
+
+declare_look_table! {
+    name: resolve_tabs_navigation_item_colors,
+    inputs: {
+        active: bool,
+        layer: InteractionLayer,
+        focused: bool,
+    },
+    output: TabsNavigationItemColorTable { label_color, indicator },
+    matrix: [
+        [_] | [InteractionLayer::Disabled] | [_] => "muted-foreground" | None,
+
+        [false] | [InteractionLayer::Default] | [_] => "foreground" | None,
+        [false] | [InteractionLayer::Hovered] | [_] => "foreground" | None,
+        [false] | [InteractionLayer::Pressed] | [_] => "foreground" | None,
+
+        [true] | [InteractionLayer::Default] | [false] => "@primary_default" | "@primary_default",
+        [true] | [InteractionLayer::Hovered] | [false] => "@primary_layer" | "@primary_layer",
+        [true] | [InteractionLayer::Pressed] | [false] => "@primary_layer" | "@primary_layer",
+        [true] | [InteractionLayer::Default] | [true] => "@primary_default" | "ring",
+        [true] | [InteractionLayer::Hovered] | [true] => "@primary_layer" | "ring",
+        [true] | [InteractionLayer::Pressed] | [true] => "@primary_layer" | "ring",
+    ]
+}
+
+pub fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> TabsNavigationListAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     if mode.catalog.tokens.is_empty() {
         tabs_navigation_list_from_palette(&ctx, enabled)
@@ -26,7 +86,7 @@ pub(crate) fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: 
     }
 }
 
-pub(crate) fn tabs_navigation_item_appearance(
+pub fn tabs_navigation_item_appearance(
     mode: &ShadcnModeTokens,
     active: bool,
     state: InteractionState,
@@ -40,7 +100,7 @@ pub(crate) fn tabs_navigation_item_appearance(
     }
 }
 
-fn tabs_navigation_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> TabsNavigationListAppearance {
+pub fn tabs_navigation_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> TabsNavigationListAppearance {
     let palette = ctx.palette();
     let metrics = ctx.metrics();
     let size = ControlSize::Md;
@@ -54,7 +114,7 @@ fn tabs_navigation_list_from_palette(ctx: &AppearanceContext, enabled: bool) -> 
     }
 }
 
-fn tabs_navigation_item_from_palette(ctx: &AppearanceContext, active: bool) -> TabsNavigationItemAppearance {
+pub fn tabs_navigation_item_from_palette(ctx: &AppearanceContext, active: bool) -> TabsNavigationItemAppearance {
     let state = ctx.state;
     let palette = ctx.palette();
     let metrics = ctx.metrics();
@@ -86,19 +146,22 @@ fn tabs_navigation_item_from_palette(ctx: &AppearanceContext, active: bool) -> T
     }
 }
 
-pub(crate) fn tabs_navigation_list_from_catalog(
+pub fn tabs_navigation_list_from_catalog(
     ctx: &AppearanceContext,
     enabled: bool,
 ) -> anyhow::Result<TabsNavigationListAppearance> {
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let size = ControlSize::Md;
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "tabs_navigation_list");
+    let colors = resolve_tabs_navigation_list_colors(&resolver, enabled)
+        .unwrap_or_else(|_| TabsNavigationListColorTable::fallback());
 
     Ok(TabsNavigationListAppearance {
         background: if enabled {
             None
         } else {
-            Some(resolve_color(catalog, "muted")?)
+            Some(colors.disabled_background.hsla())
         },
         border: None,
         radius: metrics.radius(size),
@@ -107,7 +170,7 @@ pub(crate) fn tabs_navigation_list_from_catalog(
     })
 }
 
-pub(crate) fn tabs_navigation_item_from_catalog(
+pub fn tabs_navigation_item_from_catalog(
     ctx: &AppearanceContext,
     active: bool,
 ) -> anyhow::Result<TabsNavigationItemAppearance> {
@@ -117,27 +180,13 @@ pub(crate) fn tabs_navigation_item_from_catalog(
     let typography = ctx.typography();
     let size = ControlSize::Md;
     let layer = state.layer();
-
-    let active_color = resolve_color_layer(catalog, "primary", layer, true, ctx.theme_mode)?;
-    let inactive_color = resolve_label_color(catalog, state.disabled)?;
+    let resolver = LookResolver::new(catalog, ctx.theme_mode, "tabs_navigation_item");
+    let colors = resolve_tabs_navigation_item_colors(&resolver, active, layer, state.focused)
+        .unwrap_or_else(|_| TabsNavigationItemColorTable::fallback());
 
     Ok(TabsNavigationItemAppearance {
-        label_color: if state.disabled {
-            resolve_color(catalog, "muted-foreground")?
-        } else if active {
-            active_color
-        } else {
-            inactive_color
-        },
-        indicator: if active {
-            Some(if state.focused {
-                focus_ring_color(catalog)?
-            } else {
-                active_color
-            })
-        } else {
-            None
-        },
+        label_color: colors.label_color.hsla(),
+        indicator: colors.indicator.map(|color| color.hsla()),
         label_typography: typography.text.label,
         radius: metrics.radius(size),
         padding_x: metrics.padding_x(size),
@@ -148,6 +197,8 @@ pub(crate) fn tabs_navigation_item_from_catalog(
 
 #[cfg(test)]
 mod tests {
+
+
     use std::collections::BTreeMap;
 
     use gpui_luma::theme::{InteractionState, ThemeMode};
@@ -155,7 +206,10 @@ mod tests {
     use crate::appearance_context::AppearanceContext;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::tabs_navigation_item_from_catalog;
+    use super::{
+        resolve_tabs_navigation_item_colors_metadata, resolve_tabs_navigation_list_colors_metadata,
+        tabs_navigation_item_from_catalog,
+    };
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -185,4 +239,5 @@ mod tests {
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
     }
+
 }

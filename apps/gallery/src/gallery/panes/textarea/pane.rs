@@ -18,12 +18,15 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+use super::inspector_tree::build_textarea_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TextAreaPane {
     text_area: Entity<TextArea>,
     state_preview: Entity<TextAreaStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
     enabled_checkbox: Entity<Button<bool>>,
@@ -42,6 +45,18 @@ pub(in crate::gallery) struct TextAreaPane {
 
 impl TextAreaPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree("textarea-inspector-tree", look.clone(), build_textarea_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "textarea-inspector",
+                "textarea-inspector-split",
+                "textarea-inspector-detail",
+                build_textarea_inspect_tree,
+                cx,
+            )
+        });
         Self {
             text_area: look
                 .textarea("gallery-textarea")
@@ -52,6 +67,7 @@ impl TextAreaPane {
                 .select_all_on_tab_focus(true)
                 .spawn(cx),
             state_preview: cx.new(|_| TextAreaStatePreview::new(look.clone())),
+            inspector,
             set_sample_button: action_button("textarea-set-sample", "Set Sample", &look, cx),
             clear_button: action_button("textarea-clear", "Clear", &look, cx),
             enabled_checkbox: look
@@ -107,10 +123,9 @@ impl TextAreaPane {
         let value = self.value.as_ref();
         let line_count = if value.is_empty() { 0 } else { value.lines().count() };
 
-        gallery_pane_with_usage_description(
+        gallery_pane_with_inspector_description(
             "TextArea",
             Some("Multiline input with hard-line editing, selection, escape-clear, validation, and fixed row height."),
-            "TextArea",
             div()
                 .w(px(620.0))
                 .max_w_full()
@@ -153,6 +168,7 @@ impl TextAreaPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -165,6 +181,10 @@ impl TextAreaPane {
         notify_entity(&self.enabled_checkbox, cx);
         notify_entity(&self.clean_on_escape_checkbox, cx);
         notify_entity(&self.validation_checkbox, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn current_validator(&self) -> Option<Validator> {

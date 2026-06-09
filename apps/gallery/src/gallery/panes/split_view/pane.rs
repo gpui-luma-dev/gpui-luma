@@ -14,7 +14,9 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description_scrollable, notify_entity};
+use super::inspector_tree::build_split_view_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
 use super::shared::{
     DEMO_HEIGHT, DEMO_WIDTH, ICON_RAIL_COLLAPSED_WIDTH, apply_separator_visibility_toggle, content_pane_with_panel,
     demo_frame, inset_content_pane, mockup_shell, nav_pane_mock, separator_switch, separator_visibility_label,
@@ -64,6 +66,7 @@ pub(in crate::gallery) struct SplitViewPane {
     inset: DemoState,
     icon_rail: IconRailDemo,
     detached: DetachedDemo,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl SplitViewPane {
@@ -148,7 +151,21 @@ impl SplitViewPane {
             separator_visibility: detached_visibility,
         };
 
-        Self { unified, inset, icon_rail, detached }
+        let tree =
+            spawn_color_inspector_tree("split-view-inspector-tree", look.clone(), build_split_view_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "split-view-inspector",
+                "split-view-inspector-split",
+                "split-view-inspector-detail",
+                build_split_view_inspect_tree,
+                cx,
+            )
+        });
+
+        Self { unified, inset, icon_rail, detached, inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -209,6 +226,10 @@ impl SplitViewPane {
         notify_entity(&self.detached.split_view, cx);
         notify_entity(&self.detached.separator_switch, cx);
         notify_entity(&self.detached.toggle_button, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn spawn_demo(
@@ -259,10 +280,9 @@ impl SplitViewPane {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
-        gallery_pane_with_usage_description_scrollable(
+        gallery_pane_with_inspector_description(
             "Split View: Unified",
             Some("Baseline unified split view with fixed nav pane width in a shared frame."),
-            "SplitView",
             self.demo_body(
                 look,
                 demo_frame(
@@ -284,6 +304,7 @@ impl SplitViewPane {
                     None,
                 ),
             ),
+            self.inspector.clone(),
             look,
         )
     }
@@ -298,10 +319,9 @@ impl SplitViewPane {
         let sample_width = (shell_width - shell_pad * 2.0).max(px(1.0));
         let split_width = (sample_width - inset_pad * 2.0).max(px(1.0));
 
-        gallery_pane_with_usage_description_scrollable(
+        gallery_pane_with_inspector_description(
             "Split View: Layered Inset",
             Some("Layered inset split view with nav and content panes in one frame."),
-            "SplitView",
             self.demo_body(
                 look,
                 demo_frame(
@@ -329,6 +349,7 @@ impl SplitViewPane {
                     None,
                 ),
             ),
+            self.inspector.clone(),
             look,
         )
     }
@@ -337,10 +358,9 @@ impl SplitViewPane {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
-        gallery_pane_with_usage_description_scrollable(
+        gallery_pane_with_inspector_description(
             "Split View: Icon Rail",
             Some("Split view with collapse-to-icon-rail behavior."),
-            "SplitView",
             self.demo_body(
                 look,
                 demo_frame(
@@ -369,6 +389,7 @@ impl SplitViewPane {
                     Some(self.icon_rail.last_event.clone()),
                 ),
             ),
+            self.inspector.clone(),
             look,
         )
     }
@@ -377,10 +398,9 @@ impl SplitViewPane {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
-        gallery_pane_with_usage_description_scrollable(
+        gallery_pane_with_inspector_description(
             "Split View: Detached",
             Some("Detached nav pane and independent content pane surface."),
-            "SplitView",
             self.demo_body(
                 look,
                 demo_frame(
@@ -406,6 +426,7 @@ impl SplitViewPane {
                     None,
                 ),
             ),
+            self.inspector.clone(),
             look,
         )
     }

@@ -58,4 +58,5 @@ impl CssTokenCatalog {
     }
 }
 
+pub use metrics::{SpacingField, spacing_multiplier};
 pub(crate) use metrics::{metrics_from_catalog, typography_from_catalog};

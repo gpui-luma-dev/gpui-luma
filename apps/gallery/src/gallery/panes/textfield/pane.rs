@@ -19,12 +19,15 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane_with_usage_description, notify_entity};
+use super::inspector_tree::build_textfield_inspect_tree;
+use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TextFieldPane {
     text_field: TextField,
     state_preview: Entity<TextFieldStatePreview>,
+    inspector: Entity<ColorInspectorShell>,
     set_sample_button: Entity<Button>,
     clear_button: Entity<Button>,
     enabled_checkbox: Entity<Button<bool>>,
@@ -44,6 +47,20 @@ pub(in crate::gallery) struct TextFieldPane {
 
 impl TextFieldPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree =
+            spawn_color_inspector_tree("textfield-inspector-tree", look.clone(), build_textfield_inspect_tree, cx);
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "textfield-inspector",
+                "textfield-inspector-split",
+                "textfield-inspector-detail",
+                build_textfield_inspect_tree,
+                cx,
+            )
+        });
+
         Self {
             text_field: look
                 .textfield("gallery-textfield")
@@ -55,6 +72,7 @@ impl TextFieldPane {
                 .select_all_on_tab_focus(true)
                 .spawn(cx),
             state_preview: cx.new(|_| TextFieldStatePreview::new(look.clone())),
+            inspector,
             set_sample_button: action_button("textfield-set-sample", "Set Sample", &look, cx),
             clear_button: action_button("textfield-clear", "Clear", &look, cx),
             enabled_checkbox: look
@@ -109,11 +127,7 @@ impl TextFieldPane {
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_usage_description(
-            "TextField",
-            Some(
-                "Single-line input with selection, submit on Enter, escape-clear, validation, and optional prefix icon.",
-            ),
+        gallery_pane_with_inspector(
             "TextField",
             div()
                 .w(px(560.0))
@@ -121,6 +135,16 @@ impl TextFieldPane {
                 .flex()
                 .flex_col()
                 .gap(px(16.0))
+                .child(
+                    div()
+                        .max_w(px(560.0))
+                        .text_size(px(13.0))
+                        .line_height(px(18.0))
+                        .text_color(chrome.muted_text)
+                        .child(
+                            "Single-line input with selection, submit on Enter, escape-clear, validation, and optional prefix icon.",
+                        ),
+                )
                 .child(self.text_field.clone())
                 .child(div().flex().flex_wrap().gap(px(8.0)).children([
                     self.set_sample_button.clone().into_any_element(),
@@ -156,6 +180,7 @@ impl TextFieldPane {
                     chrome.muted_text,
                 ))
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
@@ -168,6 +193,10 @@ impl TextFieldPane {
         notify_entity(&self.enabled_checkbox, cx);
         notify_entity(&self.clean_on_escape_checkbox, cx);
         notify_entity(&self.validation_checkbox, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
     fn current_validator(&self) -> Option<Validator> {

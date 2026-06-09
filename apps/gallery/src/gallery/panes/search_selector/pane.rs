@@ -1,20 +1,42 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::search_selector::{SearchSelector, SearchSelectorEvent, SelectionItem};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{gallery_pane_with_usage_descriptions, notify_entity};
+
+use super::inspector_tree::build_search_selector_inspect_tree;
+use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
+use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SearchSelectorPane {
     selector: SearchSelector,
+    inspector: Entity<ColorInspectorShell>,
 }
 
 impl SearchSelectorPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let tree = spawn_color_inspector_tree(
+            "search-selector-inspector-tree",
+            look.clone(),
+            build_search_selector_inspect_tree,
+            cx,
+        );
+        let inspector = cx.new(|cx| {
+            ColorInspectorShell::new(
+                look.clone(),
+                tree,
+                "search-selector-inspector",
+                "search-selector-inspector-split",
+                "search-selector-inspector-detail",
+                build_search_selector_inspect_tree,
+                cx,
+            )
+        });
+
         let selector = look
             .search_selector("gallery-search-selector", search_selector_demo_items())
             .placeholder("Choose a state…")
@@ -23,7 +45,7 @@ impl SearchSelectorPane {
             .clean_on_escape(true)
             .spawn(cx);
 
-        Self { selector }
+        Self { selector, inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
@@ -33,12 +55,8 @@ impl SearchSelectorPane {
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        gallery_pane_with_usage_descriptions(
+        gallery_pane_with_inspector(
             "SearchSelector",
-            Some(
-                "Read-only selector with a search icon trigger. Focus opens a popup containing an inline search field.",
-            ),
-            &["Autocomplete TextBox", "Floating Menu"],
             div()
                 .w(px(280.0))
                 .max_w_full()
@@ -54,12 +72,17 @@ impl SearchSelectorPane {
                 )
                 .child(self.selector.clone())
                 .into_any_element(),
+            self.inspector.clone(),
             look,
         )
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.selector, cx);
+        notify_entity(&self.inspector, cx);
+        notify_entity(&self.inspector.read(cx).tree(), cx);
+        notify_entity(&self.inspector.read(cx).detail(), cx);
+        notify_entity(&self.inspector.read(cx).split(), cx);
     }
 }
 

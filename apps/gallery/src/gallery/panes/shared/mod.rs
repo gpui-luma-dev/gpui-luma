@@ -1,6 +1,8 @@
 mod template_pipeline;
 mod theme_context;
 
+pub(in crate::gallery) mod inspector;
+
 pub(in crate::gallery) use theme_context::render_sparse_catalog_callout;
 
 pub(in crate::gallery) use template_pipeline::{
@@ -57,6 +59,16 @@ pub(super) fn gallery_pane_with_inspector(
     inspector: impl IntoElement,
     look: &ShadcnLook,
 ) -> AnyElement {
+    gallery_pane_with_inspector_description(title, None, content, inspector, look)
+}
+
+pub(super) fn gallery_pane_with_inspector_description(
+    title: &'static str,
+    description: Option<&'static str>,
+    content: AnyElement,
+    inspector: impl IntoElement,
+    look: &ShadcnLook,
+) -> AnyElement {
     let chrome = look.chrome();
 
     div()
@@ -67,7 +79,7 @@ pub(super) fn gallery_pane_with_inspector(
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
-        .child(render_pane_header(title, None, chrome.title_text, chrome.muted_text))
+        .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
         .child(
             div()
                 .min_h(px(0.0))
@@ -80,25 +92,6 @@ pub(super) fn gallery_pane_with_inspector(
                 .child(div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector)),
         )
         .into_any_element()
-}
-
-pub(super) fn gallery_pane_with_usage_top_aligned(
-    title: &'static str,
-    usage_component: &'static str,
-    content: AnyElement,
-    look: &ShadcnLook,
-) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, None, &[usage_component], content, look, true, false)
-}
-
-pub(super) fn gallery_pane_with_usage_description_scrollable(
-    title: &'static str,
-    description: Option<&'static str>,
-    usage_component: &'static str,
-    content: AnyElement,
-    look: &ShadcnLook,
-) -> AnyElement {
-    render_gallery_pane_with_usage_descriptions(title, description, &[usage_component], content, look, true, true)
 }
 
 pub(super) fn gallery_pane_with_usage_description(

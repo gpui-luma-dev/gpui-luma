@@ -11,7 +11,7 @@ use gpui_luma::controls::tree_view::TreeViewControl;
 use gpui_luma::theme::pack::LumaChrome;
 use gpui_luma::theme::{ControlSize, LumaTextStyle};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, format_metric_px};
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, format_inspector_hsl, format_inspector_rgba};
@@ -20,7 +20,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::inspector_box_model::{BoxModelLayerColors, render_box_model_diagram};
 use super::inspector_tree::{
     InspectColorFieldData, InspectFieldKind, InspectFieldSelection, InspectLayoutSizeData, InspectMetricPropertyData,
-    InspectTreeData, find_field_selection,
+    InspectTreeData, InspectTypographyData, InspectTypographyPropertyData, find_field_selection,
 };
 
 mod layout {
@@ -114,6 +114,9 @@ fn render_inspector_detail(
         InspectFieldKind::Color(field) => render_color_detail(selection, field, chrome, body, mono, mono_font, cx),
         InspectFieldKind::Layout(field) => {
             render_layout_detail(selection, field, preview_button, look, chrome, body, mono, mono_font, cx)
+        }
+        InspectFieldKind::Typography(field) => {
+            render_typography_detail(selection, field, preview_button, chrome, body, mono, mono_font, cx)
         }
     }
 }
@@ -297,6 +300,261 @@ fn render_layout_detail(
         .into_any_element()
 }
 
+fn render_typography_detail(
+    selection: &InspectFieldSelection,
+    field: &InspectTypographyData,
+    preview_button: impl Fn(ControlSize) -> Entity<Button>,
+    chrome: LumaChrome,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> AnyElement {
+    let font_family_property = field.properties.iter().find(|property| property.name == "font family");
+    let mut values_card = div()
+        .flex()
+        .flex_col()
+        .gap(px(layout::CARD_GAP))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .p(px(layout::CARD_PADDING))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.title_text)
+                .child("Typography"),
+        );
+
+    for property in &field.properties {
+        values_card = values_card.child(render_typography_property_row(
+            property,
+            chrome.border,
+            chrome.muted_text,
+            body.size,
+            body.line_height,
+            mono.size,
+            mono.line_height,
+            cx,
+        ));
+    }
+
+    div()
+        .id("button-inspector-detail")
+        .h_full()
+        .min_w(px(0.0))
+        .overflow_y_scroll()
+        .flex()
+        .flex_col()
+        .gap(px(layout::SECTION_GAP))
+        .p(px(layout::PANEL_PADDING))
+        .child(typography_field_header(
+            selection,
+            font_family_property.map(|property| property.source.clone()),
+            font_family_property.and_then(|property| property.provenance.clone()),
+            chrome.title_text,
+            chrome.muted_text,
+            body,
+            mono,
+            mono_font.clone(),
+        ))
+        .child(
+            div()
+                .w_full()
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(layout::SWATCH_RADIUS))
+                .bg(chrome.panel_background)
+                .p(px(layout::CARD_PADDING))
+                .flex()
+                .flex_col()
+                .gap(px(layout::CARD_GAP))
+                .child(
+                    div()
+                        .text_size(px(body.size))
+                        .line_height(px(body.line_height))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.muted_text)
+                        .child("Type sample"),
+                )
+                .child(
+                    div()
+                        .font_family(field.font_family.clone())
+                        .text_size(px(field.font_size))
+                        .line_height(px(field.line_height))
+                        .font_weight(field.font_weight)
+                        .text_color(chrome.title_text)
+                        .child("Button"),
+                )
+                .child(
+                    div()
+                        .text_size(px(mono.size))
+                        .line_height(px(mono.line_height))
+                        .text_color(chrome.muted_text)
+                        .child("Label size, weight, and line-height are SDK scaffold until wired to theme tokens."),
+                ),
+        )
+        .child(values_card)
+        .child(render_layout_size_preview(
+            preview_button(ControlSize::Md),
+            chrome.border,
+            chrome.panel_background,
+            chrome.muted_text,
+            body,
+            ControlSize::Md,
+        ))
+        .into_any_element()
+}
+
+fn typography_field_header(
+    selection: &InspectFieldSelection,
+    source: Option<SharedString>,
+    provenance: Option<SharedString>,
+    title_text: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+) -> Div {
+    let mut header = div().flex().flex_col().gap(px(4.0)).child(
+        div()
+            .text_size(px(body.size))
+            .line_height(px(body.line_height))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(title_text)
+            .child(selection.label.clone()),
+    );
+
+    header = header.child(
+        div()
+            .font_family(mono_font.clone())
+            .text_size(px(mono.size))
+            .line_height(px(mono.line_height))
+            .text_color(muted_text)
+            .child("Label · Text"),
+    );
+
+    if let Some(source) = source {
+        header = header.child(
+            div()
+                .font_family(mono_font.clone())
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(source),
+        );
+    }
+
+    if let Some(provenance) = provenance {
+        header = header.child(
+            div()
+                .font_family(mono_font)
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(provenance),
+        );
+    }
+
+    header
+}
+
+fn render_typography_property_row(
+    property: &InspectTypographyPropertyData,
+    border: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    label_size: f32,
+    label_line_height: f32,
+    mono_size: f32,
+    mono_line_height: f32,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> impl IntoElement {
+    let value = property.value.clone();
+    let value_for_copy = value.to_string();
+    let row_id = property.name.replace(' ', "-");
+
+    div()
+        .id(format!("button-inspector-typography-{row_id}"))
+        .flex()
+        .flex_col()
+        .gap(px(2.0))
+        .pb(px(layout::CARD_GAP))
+        .border_b_1()
+        .border_color(border)
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .h(px(layout::VALUE_ROW_HEIGHT))
+                .cursor_pointer()
+                .child(
+                    div()
+                        .w(px(96.0))
+                        .flex_shrink_0()
+                        .text_size(px(label_size))
+                        .line_height(px(label_line_height))
+                        .text_color(muted_text)
+                        .child(property.name.clone()),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(0.0))
+                        .truncate()
+                        .text_size(px(mono_size))
+                        .line_height(px(mono_line_height))
+                        .text_color(muted_text)
+                        .child(value.clone()),
+                )
+                .child(
+                    div()
+                        .id(format!("button-inspector-typography-copy-{row_id}"))
+                        .size(px(layout::COPY_SLOT))
+                        .flex_shrink_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(4.0))
+                        .cursor_pointer()
+                        .hover(|style| style.bg(border))
+                        .on_click(cx.listener(move |_, _, _, cx| {
+                            cx.write_to_clipboard(ClipboardItem::new_string(value_for_copy.clone()));
+                        }))
+                        .child(
+                            div()
+                                .font_family("lucide")
+                                .text_size(px(mono_size))
+                                .line_height(px(mono_size))
+                                .text_color(muted_text)
+                                .child(char::from(LucideIcon::Copy).to_string()),
+                        ),
+                ),
+        )
+        .child(
+            div()
+                .pl(px(96.0))
+                .font_family(gallery_mono_font())
+                .text_size(px(mono_size))
+                .line_height(px(mono_line_height))
+                .text_color(muted_text)
+                .child(property.source.clone()),
+        )
+        .when_some(property.provenance.clone(), |row, provenance| {
+            row.child(
+                div()
+                    .pl(px(96.0))
+                    .font_family(gallery_mono_font())
+                    .text_size(px(mono_size))
+                    .line_height(px(mono_line_height))
+                    .text_color(muted_text)
+                    .child(provenance),
+            )
+        })
+}
+
 fn layout_field_header(
     selection: &InspectFieldSelection,
     size: ControlSize,
@@ -338,60 +596,87 @@ fn render_layout_property_row(
     mono_line_height: f32,
     cx: &mut Context<ButtonInspectorDetail>,
 ) -> impl IntoElement {
-    let value = format_metric_px(property.value_px);
-    let value_for_copy = value.clone();
+    let value = property.value.clone();
+    let value_for_copy = value.to_string();
     let row_id = property.name.replace(' ', "-");
 
     div()
         .id(format!("button-inspector-layout-{row_id}"))
         .flex()
-        .items_center()
-        .h(px(layout::VALUE_ROW_HEIGHT))
+        .flex_col()
+        .gap(px(2.0))
+        .pb(px(layout::CARD_GAP))
         .border_b_1()
         .border_color(border)
-        .cursor_pointer()
         .child(
             div()
-                .w(px(96.0))
-                .flex_shrink_0()
-                .text_size(px(label_size))
-                .line_height(px(label_line_height))
-                .text_color(muted_text)
-                .child(property.name.clone()),
+                .flex()
+                .items_center()
+                .h(px(layout::VALUE_ROW_HEIGHT))
+                .cursor_pointer()
+                .child(
+                    div()
+                        .w(px(96.0))
+                        .flex_shrink_0()
+                        .text_size(px(label_size))
+                        .line_height(px(label_line_height))
+                        .text_color(muted_text)
+                        .child(property.name.clone()),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(0.0))
+                        .truncate()
+                        .text_size(px(mono_size))
+                        .line_height(px(mono_line_height))
+                        .text_color(muted_text)
+                        .child(value),
+                )
+                .child(
+                    div()
+                        .id(format!("button-inspector-layout-copy-{row_id}"))
+                        .size(px(layout::COPY_SLOT))
+                        .flex_shrink_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(4.0))
+                        .cursor_pointer()
+                        .hover(|style| style.bg(border))
+                        .on_click(cx.listener(move |_, _, _, cx| {
+                            cx.write_to_clipboard(ClipboardItem::new_string(value_for_copy.clone()));
+                        }))
+                        .child(
+                            div()
+                                .font_family("lucide")
+                                .text_size(px(mono_size))
+                                .line_height(px(mono_size))
+                                .text_color(muted_text)
+                                .child(char::from(LucideIcon::Copy).to_string()),
+                        ),
+                ),
         )
         .child(
             div()
-                .flex_1()
-                .min_w(px(0.0))
-                .truncate()
+                .pl(px(96.0))
+                .font_family(gallery_mono_font())
                 .text_size(px(mono_size))
                 .line_height(px(mono_line_height))
                 .text_color(muted_text)
-                .child(value),
+                .child(property.source.clone()),
         )
-        .child(
-            div()
-                .id(format!("button-inspector-layout-copy-{row_id}"))
-                .size(px(layout::COPY_SLOT))
-                .flex_shrink_0()
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(px(4.0))
-                .cursor_pointer()
-                .hover(|style| style.bg(border))
-                .on_click(cx.listener(move |_, _, _, cx| {
-                    cx.write_to_clipboard(ClipboardItem::new_string(value_for_copy.clone()));
-                }))
-                .child(
-                    div()
-                        .font_family("lucide")
-                        .text_size(px(mono_size))
-                        .line_height(px(mono_size))
-                        .text_color(muted_text)
-                        .child(char::from(LucideIcon::Copy).to_string()),
-                ),
-        )
+        .when_some(property.provenance.clone(), |row, provenance| {
+            row.child(
+                div()
+                    .pl(px(96.0))
+                    .font_family(gallery_mono_font())
+                    .text_size(px(mono_size))
+                    .line_height(px(mono_line_height))
+                    .text_color(muted_text)
+                    .child(provenance),
+            )
+        })
 }
 
 fn render_layout_size_preview(
