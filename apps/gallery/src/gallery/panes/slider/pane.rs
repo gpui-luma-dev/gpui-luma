@@ -6,7 +6,8 @@ use gpui::{
 };
 use gpui_luma::controls::slider::{
     Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
-    SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
+    SliderInputStrategy, SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate,
+    SliderTemplateHandlers,
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma_look_shadcn::prelude::*;
@@ -178,8 +179,11 @@ fn render_state_sample(
     let id = SharedString::from(format!("slider-preview-{}", sample.id));
     let range = ControlRange::from(1..100);
     let value = 41.0;
+    let strategy = SliderInputStrategy::Horizontal;
     let model = SliderRenderModel {
         id: &id,
+        strategy,
+        orientation: strategy.orientation(),
         range,
         step: 10.0,
         value,
