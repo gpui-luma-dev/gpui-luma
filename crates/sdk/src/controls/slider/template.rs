@@ -7,7 +7,7 @@ use gpui::{
 
 const DISABLED_OPACITY: f32 = 0.56;
 
-use super::{SliderDrag, SliderRenderModel};
+use super::{SliderDrag, SliderOrientation, SliderRenderModel};
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -62,28 +62,61 @@ impl SliderTemplate for ThemedSliderTemplate {
         let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
         let appearance = self.theme.resolve(model.state);
         let percentage = model.percentage.clamp(0.0, 1.0);
-        let fill_width = appearance.width * percentage;
-        let thumb_left = (appearance.width - appearance.thumb_size).max(0.0) * percentage;
-        let thumb_top = (appearance.height - appearance.thumb_size) * 0.5;
+        let long_axis = appearance.width;
+        let short_axis = appearance.height;
+        let cross_axis = appearance.track_height;
+        let (root_width, root_height, track_left, track_top, track_width, track_height, thumb_left, thumb_top) =
+            match model.orientation {
+                SliderOrientation::Horizontal => (
+                    long_axis,
+                    short_axis,
+                    0.0,
+                    (short_axis - cross_axis) * 0.5,
+                    long_axis,
+                    cross_axis,
+                    (long_axis - appearance.thumb_size).max(0.0) * percentage,
+                    (short_axis - appearance.thumb_size) * 0.5,
+                ),
+                SliderOrientation::Vertical => (
+                    short_axis,
+                    long_axis,
+                    (short_axis - cross_axis) * 0.5,
+                    0.0,
+                    cross_axis,
+                    long_axis,
+                    (short_axis - appearance.thumb_size) * 0.5,
+                    (long_axis - appearance.thumb_size).max(0.0) * (1.0 - percentage),
+                ),
+            };
 
         let track = div()
             .id(format!("{}-track", model.id))
-            .relative()
-            .w(px(appearance.width))
-            .h(px(appearance.track_height))
+            .absolute()
+            .left(px(track_left))
+            .top(px(track_top))
+            .w(px(track_width))
+            .h(px(track_height))
             .bg(appearance.track_background)
             .rounded(px(appearance.radius))
             .overflow_hidden()
-            .child(
-                div()
+            .child(match model.orientation {
+                SliderOrientation::Horizontal => div()
                     .absolute()
                     .left(px(0.0))
                     .top(px(0.0))
                     .h_full()
-                    .w(px(fill_width))
+                    .w(px(track_width * percentage))
                     .bg(appearance.fill_background)
                     .rounded(px(appearance.radius)),
-            );
+                SliderOrientation::Vertical => div()
+                    .absolute()
+                    .left(px(0.0))
+                    .bottom(px(0.0))
+                    .w_full()
+                    .h(px(track_height * percentage))
+                    .bg(appearance.fill_background)
+                    .rounded(px(appearance.radius)),
+            });
 
         let thumb = div()
             .id(format!("{}-thumb", model.id))
@@ -112,8 +145,9 @@ impl SliderTemplate for ThemedSliderTemplate {
             .relative()
             .flex()
             .items_center()
-            .w(px(appearance.width))
-            .h(px(appearance.height))
+            .justify_center()
+            .w(px(root_width))
+            .h(px(root_height))
             .on_hover(hover)
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)

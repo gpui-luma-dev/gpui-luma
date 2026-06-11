@@ -9,20 +9,20 @@ use gpui_luma::controls::toggle;
 use lucide_icons::Icon as LucideIcon;
 
 use crate::background::deck_background;
-use crate::components::{Dial, DialSize, fake_analyzer_display};
+use crate::components::{DialSize, dial, fake_analyzer_display};
 use crate::power_toggle_template::neumorphic_power_toggle_template;
 use crate::radio_group_template::neumorphic_radio_group_template;
 use crate::slider_template::neumorphic_slider_template;
 use crate::switch_template::neumorphic_switch_template;
 
 pub struct NeumorphicDemoApp {
-    level_dial: Entity<Dial>,
-    width_dial: Entity<Dial>,
-    drive_dial: Entity<Dial>,
-    output_dial: Entity<Dial>,
-    bias_dial: Entity<Dial>,
-    tone_dial: Entity<Dial>,
-    mix_dial: Entity<Dial>,
+    level_dial: Slider,
+    width_dial: Slider,
+    drive_dial: Slider,
+    output_dial: Slider,
+    bias_dial: Slider,
+    tone_dial: Slider,
+    mix_dial: Slider,
     low_slider: Slider,
     mid_slider: Slider,
     high_slider: Slider,
@@ -127,13 +127,13 @@ impl NeumorphicDemoApp {
         }));
 
         Self {
-            level_dial: cx.new(|_| Dial::new("level", "Level", 0.33, DialSize::Large)),
-            width_dial: cx.new(|_| Dial::new("width", "Width", 0.65, DialSize::Medium)),
-            drive_dial: cx.new(|_| Dial::new("drive", "Drive", 0.20, DialSize::Medium)),
-            output_dial: cx.new(|_| Dial::new("output", "Output", 0.26, DialSize::Medium)),
-            bias_dial: cx.new(|_| Dial::new("bias", "Bias", 0.16, DialSize::Small)),
-            tone_dial: cx.new(|_| Dial::new("tone", "Tone", 0.30, DialSize::Small)),
-            mix_dial: cx.new(|_| Dial::new("mix", "Mix", 0.42, DialSize::Small)),
+            level_dial: dial("level", "Level", 0.33, DialSize::Large).spawn(cx),
+            width_dial: dial("width", "Width", 0.65, DialSize::Medium).spawn(cx),
+            drive_dial: dial("drive", "Drive", 0.20, DialSize::Medium).spawn(cx),
+            output_dial: dial("output", "Output", 0.26, DialSize::Medium).spawn(cx),
+            bias_dial: dial("bias", "Bias", 0.16, DialSize::Small).spawn(cx),
+            tone_dial: dial("tone", "Tone", 0.30, DialSize::Small).spawn(cx),
+            mix_dial: dial("mix", "Mix", 0.42, DialSize::Small).spawn(cx),
             low_slider,
             mid_slider,
             high_slider,

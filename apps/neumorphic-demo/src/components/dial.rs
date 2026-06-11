@@ -1,15 +1,16 @@
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{
-    Bounds, BoxShadow, Context, Corners, DragMoveEvent, Empty, FontFeatures, MouseButton, MouseDownEvent, MouseUpEvent,
-    PathBuilder, Pixels, Point, Render, SharedString, Window, canvas, div, fill, hsla, point, prelude::*, px, rgb,
-    size,
+    App, Bounds, BoxShadow, Corners, Div, FontFeatures, PathBuilder, Pixels, Point, SharedString, Stateful, Window,
+    canvas, div, fill, hsla, point, prelude::*, px, rgb, size,
 };
+use gpui_luma::controls::slider::{self, SliderBuilder, SliderRenderModel, SliderTemplate, SliderTemplateHandlers};
 
 const MIN_ANGLE: f32 = -1.25 * PI;
 const MAX_ANGLE: f32 = 0.25 * PI;
 const ANGLE_SPAN: f32 = MAX_ANGLE - MIN_ANGLE;
+const DISABLED_OPACITY: f32 = 0.56;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DialSize {
@@ -132,106 +133,60 @@ impl DialSize {
     }
 }
 
-#[derive(Clone, Debug)]
-struct DialDrag {
-    id: SharedString,
+pub fn dial(id: impl Into<SharedString>, label: impl Into<SharedString>, value: f32, size: DialSize) -> SliderBuilder {
+    slider::new(id)
+        .range(0.0..=1.0)
+        .step(0.001)
+        .value(value)
+        .angular(MIN_ANGLE, MAX_ANGLE)
+        .template(Arc::new(NeumorphicDialTemplate { size, label: label.into() }))
 }
 
-impl Render for DialDrag {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl gpui::IntoElement {
-        Empty
-    }
-}
-
-pub struct Dial {
-    id: SharedString,
-    label: SharedString,
-    value: f32,
+struct NeumorphicDialTemplate {
     size: DialSize,
-    bounds: Option<Bounds<Pixels>>,
+    label: SharedString,
 }
 
-impl Dial {
-    pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>, value: f32, size: DialSize) -> Self {
-        Self { id: id.into(), label: label.into(), value: value.clamp(0.0, 1.0), size, bounds: None }
-    }
-
-    fn set_value_from_position(&mut self, bounds: Bounds<Pixels>, position: Point<Pixels>, cx: &mut Context<Self>) {
-        let center = bounds.center();
-        let dy = (position.y - center.y).as_f32();
-        let dx = (position.x - center.x).as_f32();
-        let angle = dy.atan2(dx);
-        let value = value_for_angle(angle);
-
-        if (self.value - value).abs() <= f32::EPSILON {
-            return;
-        }
-
-        self.value = value;
-        cx.notify();
-    }
-
-    fn capture_bounds(&mut self, bounds: &Bounds<Pixels>, _: &mut Window, _: &mut Context<Self>) {
-        self.bounds = Some(*bounds);
-    }
-
-    fn handle_mouse_down(&mut self, event: &MouseDownEvent, _: &mut Window, cx: &mut Context<Self>) {
-        if event.button != MouseButton::Left {
-            return;
-        }
-
-        let Some(bounds) = self.bounds else {
-            return;
-        };
-
-        self.set_value_from_position(bounds, event.position, cx);
-    }
-
-    fn handle_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, _: &mut Context<Self>) {}
-
-    fn handle_drag_move(&mut self, event: &DragMoveEvent<DialDrag>, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.drag(cx).id != self.id {
-            return;
-        }
-
-        self.set_value_from_position(event.bounds, event.event.position, cx);
-    }
-}
-
-impl Render for Dial {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        let value = self.value;
+impl SliderTemplate for NeumorphicDialTemplate {
+    fn render(
+        &self,
+        model: &SliderRenderModel<'_>,
+        handlers: SliderTemplateHandlers,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> Stateful<Div> {
+        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
+        let value = model.value;
         let dial_size = self.size;
         let label = self.label.clone();
-        let id = self.id.clone();
-        let drag_id = id.clone();
-        let capture_bounds = cx.listener(Self::capture_bounds);
 
-        div()
+        let interactive_area = div()
+            .id(model.id.clone())
+            .relative()
+            .size(dial_size.frame_diameter())
+            .on_hover(hover)
+            .on_mouse_down(gpui::MouseButton::Left, mouse_down)
+            .on_mouse_up(gpui::MouseButton::Left, mouse_up)
+            .on_mouse_up_out(gpui::MouseButton::Left, mouse_up_out)
+            .on_drag(gpui_luma::controls::slider::SliderDrag::new(model.id.clone()), |drag, _, _, cx| {
+                cx.stop_propagation();
+                cx.new(|_| drag.clone())
+            })
+            .on_drag_move(drag_move)
+            .child(
+                canvas(
+                    move |bounds, window, cx| track_bounds(&bounds, window, cx),
+                    move |bounds, _, window, _| paint_dial(bounds, value, dial_size, window),
+                )
+                .size_full(),
+            );
+
+        let mut root = div()
+            .id(format!("{}-shell", model.id))
             .flex_col()
             .items_center()
             .gap(px(12.0))
-            .child(
-                div()
-                    .id(id.clone())
-                    .relative()
-                    .size(dial_size.frame_diameter())
-                    .cursor_pointer()
-                    .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
-                    .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-                    .on_drag(DialDrag { id: drag_id }, |drag, _, _, cx| {
-                        cx.stop_propagation();
-                        cx.new(|_| drag.clone())
-                    })
-                    .on_drag_move(cx.listener(Self::handle_drag_move))
-                    .child(
-                        canvas(
-                            move |bounds, window, cx| capture_bounds(&bounds, window, cx),
-                            move |bounds, _, window, _| paint_dial(bounds, value, dial_size, window),
-                        )
-                        .size_full(),
-                    ),
-            )
+            .child(interactive_area)
             .child(
                 div()
                     .w(dial_size.frame_diameter())
@@ -243,17 +198,16 @@ impl Render for Dial {
                     .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
                     .text_color(rgb(0x596273))
                     .child(label),
-            )
-    }
-}
+            );
 
-fn value_for_angle(angle: f32) -> f32 {
-    let mut angle = angle;
-    if angle > MAX_ANGLE {
-        angle -= TAU;
+        if model.enabled {
+            root = root.cursor_pointer();
+        } else {
+            root = root.opacity(DISABLED_OPACITY);
+        }
+
+        root
     }
-    let angle = angle.clamp(MIN_ANGLE, MAX_ANGLE);
-    ((angle - MIN_ANGLE) / ANGLE_SPAN).clamp(0.0, 1.0)
 }
 
 fn angle_for_value(value: f32) -> f32 {
@@ -527,26 +481,5 @@ fn paint_rounded_indicator(
 
     if let Ok(path) = builder.build() {
         window.paint_path(path, color);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{MAX_ANGLE, MIN_ANGLE, value_for_angle};
-    use std::f32::consts::PI;
-
-    fn approx_eq(left: f32, right: f32) {
-        assert!((left - right).abs() < 0.0001, "{left} != {right}");
-    }
-
-    #[test]
-    fn lower_left_quadrant_wraps_into_active_arc() {
-        approx_eq(value_for_angle(0.75 * PI), 0.0);
-    }
-
-    #[test]
-    fn arc_endpoints_stay_stable() {
-        approx_eq(value_for_angle(MIN_ANGLE), 0.0);
-        approx_eq(value_for_angle(MAX_ANGLE), 1.0);
     }
 }
