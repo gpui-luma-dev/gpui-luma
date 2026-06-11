@@ -4,13 +4,13 @@ use gpui::{
     AnyElement, App, Context, Entity, Hsla, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*,
     px, rgb,
 };
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::command::button::{
     Button, ButtonEvent, ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, HasPresenter,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
-use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::prelude::*;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_description, notify_entity};

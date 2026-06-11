@@ -36,6 +36,7 @@ enum GalleryPageKind {
     ThemeUsage,
     Button,
     DecoratedButton,
+    ShadowButton,
     AutocompleteTextField,
     ComboBox,
     SearchSelector,
@@ -214,6 +215,8 @@ const DECORATED_BUTTON_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::DecoratedButton,
 };
+const SHADOW_BUTTON_PAGE: GalleryPage =
+    GalleryPage { id: "shadow-button", label: "Shadow Button", icon: None, kind: GalleryPageKind::ShadowButton };
 const CUSTOM_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
 const AUTOCOMPLETE_TEXTFIELD_PAGE: GalleryPage = GalleryPage {
@@ -279,7 +282,7 @@ const SELECTION_PAGES: &[GalleryPage] = &[
     SELECTION_PANEL_PAGE,
     SELECTOR_TEMPLATES_PAGE,
 ];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, SHADOW_BUTTON_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -339,6 +342,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) look: Arc<ShadcnLook>,
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) decorated_button: prototypes::ButtonPane,
+    pub(super) shadow_button: prototypes::ShadowButtonPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
     pub(super) combobox: combobox::ComboBoxPane,
     pub(super) search_selector: search_selector::SearchSelectorPane,
@@ -430,6 +434,7 @@ impl GalleryPanes {
             look: look.clone(),
             introduction: introduction::IntroductionPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
+            shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
             autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, look.clone()),
             combobox: combobox::ComboBoxPane::new(cx, look.clone()),
             search_selector: search_selector::SearchSelectorPane::new(cx, look.clone()),
@@ -468,6 +473,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
+        self.shadow_button.subscribe(cx, subscriptions);
         self.autocomplete_textfield.subscribe(cx, subscriptions);
         self.combobox.subscribe(cx, subscriptions);
         self.search_selector.subscribe(cx, subscriptions);
@@ -502,6 +508,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         self.introduction.notify_controls(cx);
         self.decorated_button.notify_controls(cx);
+        self.shadow_button.notify_controls(cx);
         self.autocomplete_textfield.notify_controls(cx);
         self.combobox.notify_controls(cx);
         self.search_selector.notify_controls(cx);
@@ -544,6 +551,7 @@ impl GalleryPanes {
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
+            GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.notify_controls(cx),
             GalleryPageKind::ComboBox => self.combobox.notify_controls(cx),
             GalleryPageKind::SearchSelector => self.search_selector.notify_controls(cx),
@@ -595,6 +603,7 @@ impl GalleryPanes {
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
+            GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.look),
             GalleryPageKind::ComboBox => self.combobox.render(&self.look),
             GalleryPageKind::SearchSelector => self.search_selector.render(&self.look),
