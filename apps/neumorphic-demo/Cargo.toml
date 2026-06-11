@@ -1,0 +1,16 @@
+[package]
+name = "gpui-luma-neumorphic-demo"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+gpui = { workspace = true }
+gpui-luma = { path = "../../crates/sdk" }
+gpui_platform = { workspace = true }
+lucide-icons = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = { version = "0.18" }

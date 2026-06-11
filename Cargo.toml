@@ -6,8 +6,9 @@ members = [
   "crates/look-shadcn-inspect",
   "apps/gallery",
   "apps/theme-studio",
+  "apps/neumorphic-demo",
 ]
-default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio"]
+default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio", "apps/neumorphic-demo"]
 
 [workspace.package]
 edition = "2024"
@@ -41,6 +42,9 @@ opt-level = 2
 opt-level = 1
 
 [profile.dev.package.gpui-luma-theme-studio]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-neumorphic-demo]
 opt-level = 1
 
 [profile.dev.package.gpui]

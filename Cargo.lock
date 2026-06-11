@@ -2388,6 +2388,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-neumorphic-demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+]
+
+[[package]]
 name = "gpui-luma-theme-studio"
 version = "0.1.0"
 dependencies = [

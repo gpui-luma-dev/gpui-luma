@@ -1,9 +1,9 @@
 # Unified Stylesheet Mapping Architecture (`style.toml`)
 
 > [!NOTE]
-> **Status:** Architecture Design Document & Proposal  
+> **Status:** Implemented and Active  
 > **Workspace Edition:** Rust 2024  
-> **Objective:** Define the decoupled theming system for `look-shadcn` to replace hardcoded Rust styling resolvers and scattered look tables with a single, centralized stylesheet.
+> **Objective:** Decouple theming for `look-shadcn` by replacing hardcoded Rust styling resolvers and macro lookup tables with a single, centralized stylesheet.
 
 ---
 
@@ -354,61 +354,55 @@ impl ButtonColorRule {
 
 ### C. Integrating and Resolving at Runtime (`button.rs`)
 
-The loaded stylesheet config is accessed through the `AppearanceContext` and evaluated. The custom procedural macro `declare_look_table!` acts as an intermediate compiler cache or code-gen reference, but the ultimate stylesheet loader queries the TOML rules sequentially:
+The loaded stylesheet config is accessed through the `AppearanceContext` and evaluated. The legacy macros have been retired; the stylesheet loader queries the TOML rules sequentially at runtime:
 
 ```rust
-pub(crate) fn button_palette(
+pub fn resolve_button_colors_with_stylesheet(
+    resolver: &LookResolver<'_>,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+    layer: InteractionLayer,
+    theme_mode: ThemeMode,
+    selected: bool,
+) -> anyhow::Result<ButtonColorPalette> {
+    let rule = find_button_color_rule(stylesheet, style, layer, theme_mode, selected)
+        .ok_or_else(|| anyhow::anyhow!("no matching button color rule"))?;
+
+    let colors = resolve_button_color_rule(resolver, rule)?;
+    Ok(ButtonColorPalette { background: colors.background, foreground: colors.foreground, border: colors.border })
+}
+
+pub fn button_palette(
     ctx: &AppearanceContext,
+    stylesheet: &StylesheetConfig,
     style: ShadcnButtonStyle,
     role: ButtonFamilyRole,
     size: ControlSize,
 ) -> ButtonFamilyPalette {
-    let state = ctx.state;
-    let layer = state.layer().to_string(); // "default", "hover", "pressed", "disabled"
-    let theme_mode = ctx.theme_mode.to_string(); // "light", "dark"
+    let style = effective_button_style(style, role);
+    let layer = ctx.state.layer();
+    let theme_mode = ctx.theme_mode;
     let selected = matches!(role, ButtonFamilyRole::Toggle { selected: true });
-    
-    let style_str = match style {
-        ShadcnButtonStyle::Primary => "primary",
-        ShadcnButtonStyle::Secondary => "secondary",
-        ShadcnButtonStyle::Outline => "outline",
-        ShadcnButtonStyle::Ghost => "ghost",
-    };
 
-    // 1. Resolve colors from the stylesheet config rules
-    let colors = ctx.look().stylesheet()
-        .find_color_rule(style_str, &layer, &theme_mode, selected)
-        .map(|rule| ButtonColorPalette {
-            background: ctx.resolver().resolve_decl(&rule.background).unwrap_or_default(),
-            foreground: ctx.resolver().resolve_decl(&rule.foreground).unwrap_or_default(),
-            border: rule.border.as_ref().map(|b| ctx.resolver().resolve_decl(b).unwrap_or_default()),
-        })
-        .unwrap_or_else(|| ButtonColorPalette::fallback());
+    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "button_resolver");
+    let colors = resolve_button_colors_with_stylesheet(&resolver, stylesheet, style, layer, theme_mode, selected)
+        .unwrap_or_else(|_| ButtonColorPalette::fallback());
 
-    // 2. Resolve metrics configurations by size key ("sm", "md", "lg")
-    let size_key = match size {
-        ControlSize::Sm => "sm",
-        ControlSize::Md => "md",
-        ControlSize::Lg => "lg",
-    };
-    let metrics = ctx.look().stylesheet()
-        .get_metrics("button", size_key)
-        .unwrap_or_else(|| ButtonMetrics::fallback());
+    let size_metrics = stylesheet
+        .button
+        .metrics_for_size(size)
+        .map(|rule| resolve_button_metrics_rule(rule, ctx.metrics(), size));
 
-    // 3. Set conditional outer focus ring
-    let adorner = state.focused.then(|| {
-        AdornerSpec::FocusRing(FocusRingAdornerSpec {
-            color: ctx.palette().focus_ring,
-            placement: match style {
-                ShadcnButtonStyle::Ghost => AdornerPlacement::Inset,
-                _ => AdornerPlacement::Oversize,
-            },
-            distance: ctx.metrics().border_width.default + ctx.metrics().focus.width,
-            width: ctx.metrics().focus.width,
-        })
-    });
+    let background = colors.background.hsla();
+    let foreground = colors.foreground.hsla();
+    let border = resolve_button_border(style, &colors, background);
+    let adorner = button_focus_adorner(style, ctx.state.focused, ctx.palette().focus_ring, ctx.metrics());
 
-    // 4. Assemble the final style palette for the button rendering template
+    let mut typography = ctx.typography().text.label;
+    if let Some(metrics) = size_metrics {
+        typography.size = metrics.font_size;
+    }
+
     ButtonFamilyPalette {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),

@@ -86,10 +86,10 @@ This pattern improves consistency and makes style/theming separable from behavio
 - Phase-5 density refactoring is now active on `switch`, `checkbox`, `button_family`, `radio_button`, `textfield`, `textarea`, `selector`, `popup_menu`, `list_view`, and `listbox`: those theme traits now resolve palette-only structs for control visuals, while templates or control layout paths compose cached shared layout scales from `MetricTokens` + `window.scale_factor()`.
 - TextField supports per-instance appearance specialization (`.appearance_override(...)`) without adding global variants/tokens; overrides are applied after appearance resolution and used consistently by both template rendering and text layout/shaping.
 - `ShadcnLook` serves as the product runtime theme:
-  - loads tweakcn/shadcn CSS catalogs (`ShadcnLook::from_css_path`) or native fallback (`ShadcnLook::native()`)
-  - stores active light/dark mode and exposes control template/theme factories
-  - apps keep one `Arc<ShadcnLook>` in app state and pass it explicitly into control/theme factory helpers
-  - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into look-shadcn template/theme factories
+  - Loads CSS catalogs (`ShadcnLook::from_css_path`) and parses/holds the embedded `style.toml` stylesheet configuration (`ShadcnLook::stylesheet()`), or loads both custom CSS and TOML dynamically at runtime.
+  - Exposes control template and theme factories powered by the dynamic stylesheet engine.
+  - Apps keep one `Arc<ShadcnLook>` in app state and pass it explicitly into control/theme factory helpers.
+  - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into look-shadcn template/theme factories.
 - `control_group` provides optional themed list chrome via `ControlGroupTheme` + `ThemedControlGroupTemplate` (`ControlTemplate` + modifiers from `controls/template.rs`):
   - group border/background/radius/padding from `border.default` and `surface.subtle.background`
   - item visuals still come from `ControlGroupItemTemplate` (e.g. `button_item_template` + `ButtonTemplate`)

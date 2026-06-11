@@ -15,6 +15,12 @@ theme-studio:
 theme-studio-rel:
     cargo run -p gpui-luma-theme-studio --release
 
+neumorphic-demo:
+    cargo run -p gpui-luma-neumorphic-demo
+
+neumorphic-demo-rel:
+    cargo run -p gpui-luma-neumorphic-demo --release
+
 loc:
     tokei --types Rust
 

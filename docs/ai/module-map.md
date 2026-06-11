@@ -45,6 +45,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - `ShadcnLook`, `ShadcnButtonStyle`, `ShadcnModeTokens`, CSS catalog types
   - `ShadcnLookControlExt` and builder style helpers (`ShadcnButtonStyleExt`, …)
   - `all_shadcn_theme_usages`, per-control resolvers and template factories
+- `stylesheet/`
+  - `mod.rs`: Embedded styles compilation wrapper and lookup interface (`find_*_color_rule`).
+  - `config.rs`: Strongly typed Serde deserialize layouts and matching engines for all 18 controls.
+  - `selector.rs`: String selector mappings (`AsSelectorState`) for look states.
+  - `resolve.rs`: Local variable interpolation (`@field`), px/rem parsing, and final color mappings.
 - `ext.rs` — layout utility extensions (`bg_cn`, `text_cn`, `gap_cn`, …)
 - `context.rs` — `with_look` thread-local scope for token resolution
 - depends on `gpui-luma`; consumed by gallery and theme-studio alongside the SDK
