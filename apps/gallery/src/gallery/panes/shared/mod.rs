@@ -169,9 +169,9 @@ fn hsla_to_rgb8(color: Hsla) -> (u8, u8, u8) {
 
     let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
     let p = 2.0 * l - q;
-    let r = hue_to_channel(p, q, h + 0.0);
-    let g = hue_to_channel(p, q, h + 2.0);
-    let b = hue_to_channel(p, q, h + 4.0);
+    let r = hue_to_channel(p, q, h + 2.0);
+    let g = hue_to_channel(p, q, h);
+    let b = hue_to_channel(p, q, h - 2.0);
     ((r * 255.0).round() as u8, (g * 255.0).round() as u8, (b * 255.0).round() as u8)
 }
 

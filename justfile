@@ -1,7 +1,8 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    cargo run -p gpui-luma-gallery -- elegent-luxury
+    #cargo run -p gpui-luma-gallery -- elegent-luxury
+    cargo run -p gpui-luma-gallery -- jarvis
 
 gallery-rel:
     cargo run -p gpui-luma-gallery --release
