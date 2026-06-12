@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
+use gpui_luma::controls::button_family::{
+    ButtonFamilyAppearance, button_family_effective_border, button_family_focus_adorner,
+};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
-use gpui_luma::theme::InteractionState;
+use gpui_luma::theme::{AdornerPlacement, AdornerSpec, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
-use gpui_luma_look_shadcn::prelude::*;
 
 const DEFAULT_OFFSET_X: f32 = 0.0;
 const DEFAULT_OFFSET_Y: f32 = 5.0;
 const DEFAULT_BLUR: f32 = 5.0;
 const DEFAULT_SPREAD: f32 = 0.0;
 const DEFAULT_OPACITY: f32 = 0.35;
+const DISABLED_OPACITY: f32 = 0.56;
 
 const PRESSED_OFFSET_FACTOR: f32 = 0.55;
 const PRESSED_OPACITY_FACTOR: f32 = 0.82;
@@ -88,7 +91,6 @@ impl ShadowButtonControls {
 
 #[derive(Clone)]
 struct PrototypeShadowButtonTemplate {
-    inner: Arc<dyn ButtonTemplate<()>>,
     controls: ShadowButtonControls,
     color_override: Option<Hsla>,
     look: Arc<ShadcnLook>,
@@ -96,32 +98,127 @@ struct PrototypeShadowButtonTemplate {
 
 impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<()>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let button = self.inner.render(model, window, cx);
+        let appearance = self.resolve_appearance(model);
+        let focused_probe_appearance = self.resolve_focus_probe_appearance(model);
+        let border = button_family_effective_border(appearance.border);
+
+        let mut control = div()
+            .id(format!("{}-control", model.id))
+            .flex()
+            .items_center()
+            .justify_center()
+            .gap(px(appearance.gap))
+            .bg(appearance.background)
+            .text_color(appearance.foreground)
+            .text_size(px(appearance.typography.size))
+            .line_height(px(appearance.typography.line_height))
+            .font_family(appearance.font_family.clone())
+            .font_weight(appearance.typography.weight)
+            .h(px(appearance.height));
+
+        if border.a > 0.0 {
+            control = control.border_1().border_color(border);
+        }
+
+        if model.round {
+            control = control.w(px(appearance.height)).p_0().rounded_full();
+        } else {
+            control = control.px(px(appearance.padding_x)).py(px(appearance.padding_y)).rounded(px(appearance.radius));
+        }
+
+        control = control.child(div().text_color(appearance.foreground).child((model.content)(model, cx)));
+
+        let radius = if let Some(radius_override) = model.radius_override.get() {
+            radius_override
+        } else if model.round {
+            appearance.height / 2.0
+        } else {
+            appearance.radius
+        };
+
         let state = ButtonVisualState::from(model.state);
         let mut base_spec = self.controls.base_spec(&self.look);
         if let Some(color) = self.color_override {
             base_spec.color = color;
         }
-        let Some(spec) = resolve_shadow_spec(base_spec, state) else {
-            return button;
-        };
-        let appearance = self.look.resolve_primary_button(model.role, model.size, model.state);
-        let radius = if model.round {
-            appearance.height / 2.0
-        } else {
-            appearance.radius
-        };
-        let insets = shadow_projection_insets(spec);
+        let shadow_spec = resolve_shadow_spec(base_spec, state);
+        let shadow_insets = shadow_spec.map(shadow_projection_insets).unwrap_or_default();
 
-        div()
-            .id(format!("{}-shadow-root", model.id))
+        let metrics = &self.look.mode_tokens().metrics;
+        let adorner =
+            button_family_focus_adorner(model.state.focused, appearance.border, appearance.focus_ring, metrics);
+        let focused_adorner = focused_probe_appearance
+            .as_ref()
+            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, metrics));
+        let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
+        let root_insets = combine_outer_insets(shadow_insets, oversize_extent);
+
+        let mut surface = div().id(format!("{}-surface", model.id)).relative();
+        if let Some(spec) = shadow_spec {
+            surface = surface.child(render_shadow(&model.id, spec, radius));
+        }
+        surface = surface.child(control);
+
+        let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(surface);
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, radius) {
+            adorned = adorned.child(adorner);
+        }
+
+        let mut root = div()
+            .id(model.id.clone())
             .relative()
-            .pt(px(insets.top))
-            .pr(px(insets.right))
-            .pb(px(insets.bottom))
-            .pl(px(insets.left))
-            .child(render_shadow(&model.id, spec, radius))
-            .child(button)
+            .pt(px(root_insets.top))
+            .pr(px(root_insets.right))
+            .pb(px(root_insets.bottom))
+            .pl(px(root_insets.left))
+            .child(adorned);
+
+        if model.state.disabled {
+            root = root.opacity(DISABLED_OPACITY);
+        } else {
+            root = root.cursor_pointer();
+        }
+
+        let _ = window;
+        root
+    }
+}
+
+impl PrototypeShadowButtonTemplate {
+    fn resolve_appearance(&self, model: &ButtonRenderModel<()>) -> ButtonFamilyAppearance {
+        if let Some(resolve) = &model.appearance {
+            resolve(model)
+        } else {
+            self.look.resolve_primary_button(model.role, model.size, model.state)
+        }
+    }
+
+    fn resolve_focus_probe_appearance(&self, model: &ButtonRenderModel<()>) -> Option<ButtonFamilyAppearance> {
+        if model.state.disabled {
+            return None;
+        }
+
+        if let Some(resolve) = &model.appearance {
+            let focused_state = InteractionState { focused: true, ..model.state };
+            let focused_model = ButtonRenderModel {
+                id: model.id.clone(),
+                data: model.data,
+                content: model.content.clone(),
+                role: model.role,
+                size: model.size,
+                state: focused_state,
+                round: model.round,
+                radius_override: std::cell::Cell::new(model.radius_override.get()),
+                appearance: model.appearance.clone(),
+            };
+            return Some(resolve(&focused_model));
+        }
+
+        Some(self.look.resolve_primary_button(
+            model.role,
+            model.size,
+            InteractionState { focused: true, ..model.state },
+        ))
     }
 }
 
@@ -130,12 +227,7 @@ pub(in crate::gallery) fn prototype_shadow_button_template(
     controls: ShadowButtonControls,
     color_override: Option<Hsla>,
 ) -> Arc<dyn ButtonTemplate<()>> {
-    Arc::new(PrototypeShadowButtonTemplate {
-        inner: look.button_template(ShadcnButtonStyle::Primary),
-        controls,
-        color_override,
-        look,
-    })
+    Arc::new(PrototypeShadowButtonTemplate { controls, color_override, look })
 }
 
 pub(in crate::gallery) fn resolve_shadow_spec(
@@ -196,10 +288,10 @@ fn render_shadow(id: &SharedString, spec: ShadowButtonSpec, radius: f32) -> Stat
     div()
         .id(format!("{}-shadow", id))
         .absolute()
-        .top(px(insets.top))
-        .left(px(insets.left))
-        .right(px(insets.right))
-        .bottom(px(insets.bottom))
+        .top(px(-insets.top))
+        .left(px(-insets.left))
+        .right(px(-insets.right))
+        .bottom(px(-insets.bottom))
         .rounded(px(radius))
         .bg(spec.color.opacity(0.0))
         .shadow(shadow_layers(spec))
@@ -255,6 +347,12 @@ struct ShadowProjectionInsets {
     left: f32,
 }
 
+impl Default for ShadowProjectionInsets {
+    fn default() -> Self {
+        Self { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
+    }
+}
+
 fn shadow_projection_insets(spec: ShadowButtonSpec) -> ShadowProjectionInsets {
     let reach = (spec.blur_radius.max(0.0) + spec.spread_radius).max(0.0);
 
@@ -264,6 +362,95 @@ fn shadow_projection_insets(spec: ShadowButtonSpec) -> ShadowProjectionInsets {
         bottom: (reach + spec.offset_y).ceil().max(0.0),
         left: (reach - spec.offset_x).ceil().max(0.0),
     }
+}
+
+fn combine_outer_insets(shadow: ShadowProjectionInsets, oversize_extent: f32) -> ShadowProjectionInsets {
+    ShadowProjectionInsets {
+        top: shadow.top.max(oversize_extent),
+        right: shadow.right.max(oversize_extent),
+        bottom: shadow.bottom.max(oversize_extent),
+        left: shadow.left.max(oversize_extent),
+    }
+}
+
+fn adorner_oversize_extent(spec: Option<AdornerSpec>) -> f32 {
+    match spec {
+        Some(AdornerSpec::FocusRing(focus_ring)) if matches!(focus_ring.placement, AdornerPlacement::Oversize) => {
+            focus_ring.distance.max(0.0)
+        }
+        _ => 0.0,
+    }
+}
+
+fn focus_ring_radius(spec: AdornerSpec, base_radius: f32) -> Option<f32> {
+    match spec {
+        AdornerSpec::FocusRing(focus_ring) => Some(match focus_ring.placement {
+            AdornerPlacement::Inset => {
+                (base_radius - focus_ring.distance.max(0.0) - focus_ring.width.max(0.0)).max(0.0)
+            }
+            AdornerPlacement::Oversize => base_radius + focus_ring.distance.max(0.0),
+        }),
+    }
+}
+
+fn render_optional_adorner_with_focus_radius(spec: Option<AdornerSpec>, base_radius: f32) -> Option<Div> {
+    spec.and_then(|spec| render_adorner_with_focus_radius(spec, base_radius))
+}
+
+fn render_adorner_with_focus_radius(spec: AdornerSpec, base_radius: f32) -> Option<Div> {
+    let adorner = render_adorner(spec, base_radius)?;
+    let radius = focus_ring_radius(spec, base_radius)?;
+    Some(adorner.rounded(px(radius)))
+}
+
+fn render_adorner(spec: AdornerSpec, radius: f32) -> Option<Div> {
+    match spec {
+        AdornerSpec::FocusRing(focus_ring) => match focus_ring.placement {
+            AdornerPlacement::Inset => {
+                render_inset_focus_ring_adorner(Some(focus_ring.color), radius, focus_ring.distance, focus_ring.width)
+            }
+            AdornerPlacement::Oversize => render_oversize_focus_ring_adorner(
+                Some(focus_ring.color),
+                radius,
+                focus_ring.distance,
+                focus_ring.width,
+            ),
+        },
+    }
+}
+
+fn render_inset_focus_ring_adorner(color: Option<Hsla>, radius: f32, gap: f32, width: f32) -> Option<Div> {
+    let color = color?;
+    let inset = gap.max(0.0);
+
+    Some(
+        div()
+            .absolute()
+            .top(px(inset))
+            .right(px(inset))
+            .bottom(px(inset))
+            .left(px(inset))
+            .border(px(width.max(0.0)))
+            .border_color(color)
+            .rounded(px((radius - inset).max(0.0))),
+    )
+}
+
+fn render_oversize_focus_ring_adorner(color: Option<Hsla>, radius: f32, outset: f32, width: f32) -> Option<Div> {
+    let color = color?;
+    let outset = outset.max(0.0);
+
+    Some(
+        div()
+            .absolute()
+            .top(px(-outset))
+            .right(px(-outset))
+            .bottom(px(-outset))
+            .left(px(-outset))
+            .border(px(width.max(0.0)))
+            .border_color(color)
+            .rounded(px(radius + outset)),
+    )
 }
 
 fn hue_to_channel(p: f32, q: f32, t: f32) -> f32 {
