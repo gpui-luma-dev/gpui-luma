@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, BoxShadow, Context, Div, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Stateful,
-    Subscription, Window, div, point, prelude::*, px,
+    AnyElement, App, Context, Entity, FontWeight, Hsla, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*, px,
 };
+use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
 use gpui_luma::controls::presenter::HasPresenter;
@@ -13,89 +14,13 @@ use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 
+use super::button::{
+    ButtonVisualState, ShadowButtonControls, ShadowButtonSpec, default_shadow_color_placeholder, format_css_box_shadow,
+    format_rgb_triplet, prototype_shadow_button_template, resolve_shadow_spec, resolved_shadow_color,
+};
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, notify_entity};
 use crate::gallery::theme::GalleryChrome;
-
-const DEFAULT_OFFSET_X: f32 = 0.0;
-const DEFAULT_OFFSET_Y: f32 = 5.0;
-const DEFAULT_BLUR: f32 = 5.0;
-const DEFAULT_SPREAD: f32 = 0.0;
-const DEFAULT_OPACITY: f32 = 0.35;
-
-const PRESSED_OFFSET_FACTOR: f32 = 0.55;
-const PRESSED_OPACITY_FACTOR: f32 = 0.82;
-const HOVER_OFFSET_BONUS: f32 = 1.0;
-const HOVER_OPACITY_BONUS: f32 = 0.03;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ButtonVisualState {
-    Default,
-    Hovered,
-    Pressed,
-    Focused,
-    Disabled,
-}
-
-impl From<InteractionState> for ButtonVisualState {
-    fn from(state: InteractionState) -> Self {
-        if state.disabled {
-            Self::Disabled
-        } else if state.pressed {
-            Self::Pressed
-        } else if state.hovered {
-            Self::Hovered
-        } else if state.focused {
-            Self::Focused
-        } else {
-            Self::Default
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct PrototypeShadowSpec {
-    pub color: Hsla,
-    pub offset_x: f32,
-    pub offset_y: f32,
-    pub blur_radius: f32,
-    pub spread_radius: f32,
-    pub opacity: f32,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct PrototypeShadowControls {
-    offset_x: f32,
-    offset_y: f32,
-    blur_radius: f32,
-    spread_radius: f32,
-    opacity: f32,
-}
-
-impl Default for PrototypeShadowControls {
-    fn default() -> Self {
-        Self {
-            offset_x: DEFAULT_OFFSET_X,
-            offset_y: DEFAULT_OFFSET_Y,
-            blur_radius: DEFAULT_BLUR,
-            spread_radius: DEFAULT_SPREAD,
-            opacity: DEFAULT_OPACITY,
-        }
-    }
-}
-
-impl PrototypeShadowControls {
-    fn base_spec(self, look: &ShadcnLook) -> PrototypeShadowSpec {
-        PrototypeShadowSpec {
-            color: resolved_shadow_color(look),
-            offset_x: self.offset_x,
-            offset_y: self.offset_y,
-            blur_radius: self.blur_radius,
-            spread_radius: self.spread_radius,
-            opacity: self.opacity,
-        }
-    }
-}
 
 #[derive(Clone, Copy, Debug)]
 enum ShadowSliderField {
@@ -104,45 +29,6 @@ enum ShadowSliderField {
     Blur,
     Spread,
     Opacity,
-}
-
-#[derive(Clone)]
-struct PrototypeShadowButtonTemplate {
-    inner: Arc<dyn ButtonTemplate<()>>,
-    controls: PrototypeShadowControls,
-    color_override: Option<Hsla>,
-    look: Arc<ShadcnLook>,
-}
-
-impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
-    fn render(&self, model: &ButtonRenderModel<()>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let button = self.inner.render(model, window, cx);
-        let state = ButtonVisualState::from(model.state);
-        let mut base_spec = self.controls.base_spec(&self.look);
-        if let Some(color) = self.color_override {
-            base_spec.color = color;
-        }
-        let Some(spec) = resolve_shadow_spec(base_spec, state) else {
-            return button;
-        };
-        let appearance = self.look.resolve_primary_button(model.role, model.size, model.state);
-        let radius = if model.round {
-            appearance.height / 2.0
-        } else {
-            appearance.radius
-        };
-        let insets = shadow_projection_insets(spec);
-
-        div()
-            .id(format!("{}-shadow-root", model.id))
-            .relative()
-            .pt(px(insets.top))
-            .pr(px(insets.right))
-            .pb(px(insets.bottom))
-            .pl(px(insets.left))
-            .child(render_shadow(&model.id, spec, radius))
-            .child(button)
-    }
 }
 
 #[derive(Clone)]
@@ -161,7 +47,7 @@ pub(in crate::gallery) struct ButtonPane {
     opacity_slider: Slider,
 
     demo_clicks: usize,
-    shadow: PrototypeShadowControls,
+    shadow: ShadowButtonControls,
     color_input: SharedString,
     color_override: Option<Hsla>,
     color_input_valid: bool,
@@ -170,7 +56,7 @@ pub(in crate::gallery) struct ButtonPane {
 
 impl ButtonPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let shadow = PrototypeShadowControls::default();
+        let shadow = ShadowButtonControls::default();
         let template = prototype_shadow_button_template(look.clone(), shadow, None);
         let default_shadow_color = resolved_shadow_color(&look);
 
@@ -263,36 +149,30 @@ impl ButtonPane {
             .bg(chrome.content_background)
             .p(px(28.0))
             .child(
-                div()
-                    .id("shadow-button-content")
-                    .size_full()
-                    .flex()
-                    .flex_col()
-                    .gap(px(24.0))
-                    .overflow_y_scroll()
-                    .child(render_pane_header(
+                vstack! {
+                    gap=24.0;
+                    render_pane_header(
                         "Shadow Button",
                         Some("Gallery-only prototype for a CSS-style box shadow wrapped around the existing button template."),
                         chrome,
-                    ))
-                    .child(
+                    ),
+                    hstack! {
+                        justify=center;
                         div()
                             .w_full()
+                            .max_w(px(980.0))
                             .flex()
+                            .flex_wrap()
+                            .items_start()
                             .justify_center()
-                            .child(
-                                div()
-                                    .w_full()
-                                    .max_w(px(980.0))
-                                    .flex()
-                                    .flex_wrap()
-                                    .items_start()
-                                    .justify_center()
-                                    .gap(px(32.0))
-                                    .child(self.render_demo_column(look))
-                                    .child(self.render_controls_column(look)),
-                            ),
-                    ),
+                            .gap(px(32.0))
+                            .child(self.render_demo_column(look))
+                            .child(self.render_controls_column(look))
+                    }
+                }
+                .id("shadow-button-content")
+                .size_full()
+                .overflow_y_scroll(),
             )
             .into_any_element()
     }
@@ -317,43 +197,22 @@ impl ButtonPane {
         let base_spec = self.base_spec(look);
         let pressed_spec = resolve_shadow_spec(base_spec, ButtonVisualState::Pressed).unwrap_or(base_spec);
 
-        div()
-            .w(px(420.0))
-            .max_w_full()
-            .flex()
-            .flex_col()
-            .items_stretch()
-            .gap(px(18.0))
-            .child(
-                div()
-                    .w_full()
-                    .min_h(px(184.0))
-                    .border_1()
-                    .border_color(chrome.border)
-                    .bg(chrome.panel_background)
-                    .rounded(px(10.0))
-                    .p(px(24.0))
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .justify_center()
-                    .gap(px(16.0))
-                    .child(
-                        div()
-                            .when(self.show_bounds, |container| container.border_1().border_color(foreground))
-                            .child(self.demo_button.clone()),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .text_color(chrome.muted_text)
-                            .child(format!("Clicks: {}", self.demo_clicks)),
-                    ),
-            )
-            .child(render_shadow_summary_card(chrome, base_spec, pressed_spec))
-            .child(self.state_preview.clone())
-            .into_any_element()
+        vstack! {
+            gap=18.0;
+            render_demo_stage(
+                self.demo_button.clone(),
+                self.demo_clicks,
+                self.show_bounds,
+                foreground,
+                chrome,
+            ),
+            render_shadow_summary_card(chrome, base_spec, pressed_spec),
+            self.state_preview.clone(),
+        }
+        .w(px(420.0))
+        .max_w_full()
+        .items_stretch()
+        .into_any_element()
     }
 
     fn render_controls_column(&self, look: &ShadcnLook) -> AnyElement {
@@ -366,120 +225,62 @@ impl ButtonPane {
             look.token_color("destructive").unwrap_or(chrome.body_text)
         };
 
-        div()
-            .w(px(420.0))
-            .max_w_full()
-            .flex()
-            .flex_col()
-            .gap(px(12.0))
-            .child(
-                div()
-                    .border_1()
-                    .border_color(chrome.border)
-                    .bg(chrome.panel_background)
-                    .rounded(px(10.0))
-                    .p(px(14.0))
-                    .flex()
-                    .flex_col()
-                    .gap(px(14.0))
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(4.0))
-                            .child(
-                                div()
-                                    .text_size(px(13.0))
-                                    .line_height(px(18.0))
-                                    .font_weight(gpui::FontWeight::SEMIBOLD)
-                                    .text_color(chrome.title_text)
-                                    .child("Shadow Tuning"),
-                            )
-                            .child(
-                                div()
-                                    .text_size(px(12.0))
-                                    .line_height(px(16.0))
-                                    .text_color(chrome.muted_text)
-                                    .child("CSS-style shadow prototype: x, y, blur, spread, and a theme-aware neutral shadow tone."),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .justify_between()
-                            .gap(px(12.0))
-                            .child(
-                                div()
-                                    .flex()
-                                    .items_center()
-                                    .gap(px(8.0))
-                                    .child(
-                                        div()
-                                            .size(px(20.0))
-                                            .rounded(px(999.0))
-                                            .bg(base_spec.color)
-                                            .border_1()
-                                            .border_color(base_spec.color.opacity(0.42)),
-                                    )
-                                    .child(
-                                        div()
-                                            .font_family("Monaco")
-                                            .text_size(px(11.0))
-                                            .line_height(px(15.0))
-                                            .text_color(chrome.muted_text)
-                                            .child(format_compact_hsla(base_spec.color)),
-                                    ),
-                            )
-                            .child(self.reset_button.clone()),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .justify_end()
-                            .child(self.bounds_toggle.clone()),
-                    )
-                    .child(render_text_field_row(
-                        "Color",
-                        "RGB, rgb(...), or #hex",
-                        self.color_field.clone(),
-                        color_help_text,
-                        color_help_color,
-                        chrome,
-                    ))
-                    .child(render_slider_row(
-                        "X offset",
-                        format!("{:.0}px", self.shadow.offset_x),
-                        self.offset_x_slider.clone(),
-                        chrome,
-                    ))
-                    .child(render_slider_row(
-                        "Y offset",
-                        format!("{:.0}px", self.shadow.offset_y),
-                        self.offset_y_slider.clone(),
-                        chrome,
-                    ))
-                    .child(render_slider_row(
-                        "Blur",
-                        format!("{:.0}px", self.shadow.blur_radius),
-                        self.blur_slider.clone(),
-                        chrome,
-                    ))
-                    .child(render_slider_row(
-                        "Spread",
-                        format!("{:.0}px", self.shadow.spread_radius),
-                        self.spread_slider.clone(),
-                        chrome,
-                    ))
-                    .child(render_slider_row(
-                        "Opacity",
-                        format!("{:.0}%", self.shadow.opacity * 100.0),
-                        self.opacity_slider.clone(),
-                        chrome,
-                    ))
-                    .child(render_css_shadow_value(base_spec, chrome)),
-            )
-            .into_any_element()
+        vstack! {
+            gap=12.0;
+            vstack! {
+                gap=14.0;
+                render_controls_intro(chrome),
+                render_color_chip_row(base_spec.color, self.reset_button.clone(), chrome),
+                hstack! { justify=end; self.bounds_toggle.clone() },
+                render_text_field_row(
+                    "Color",
+                    "RGB, rgb(...), or #hex",
+                    self.color_field.clone(),
+                    color_help_text,
+                    color_help_color,
+                    chrome,
+                ),
+                render_slider_row(
+                    "X offset",
+                    format!("{:.0}px", self.shadow.offset_x),
+                    self.offset_x_slider.clone(),
+                    chrome,
+                ),
+                render_slider_row(
+                    "Y offset",
+                    format!("{:.0}px", self.shadow.offset_y),
+                    self.offset_y_slider.clone(),
+                    chrome,
+                ),
+                render_slider_row(
+                    "Blur",
+                    format!("{:.0}px", self.shadow.blur_radius),
+                    self.blur_slider.clone(),
+                    chrome,
+                ),
+                render_slider_row(
+                    "Spread",
+                    format!("{:.0}px", self.shadow.spread_radius),
+                    self.spread_slider.clone(),
+                    chrome,
+                ),
+                render_slider_row(
+                    "Opacity",
+                    format!("{:.0}%", self.shadow.opacity * 100.0),
+                    self.opacity_slider.clone(),
+                    chrome,
+                ),
+                render_css_shadow_value(base_spec, chrome),
+            }
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .rounded(px(10.0))
+            .p(px(14.0))
+        }
+        .w(px(420.0))
+        .max_w_full()
+        .into_any_element()
     }
 
     fn handle_button_event(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
@@ -494,7 +295,7 @@ impl ButtonPane {
 
     fn handle_reset(&mut self, event: &ButtonEvent, cx: &mut Context<GalleryApp>) {
         if matches!(event, ButtonEvent::Click) {
-            self.shadow = PrototypeShadowControls::default();
+            self.shadow = ShadowButtonControls::default();
             self.color_input = SharedString::default();
             self.color_override = None;
             self.color_input_valid = true;
@@ -580,7 +381,7 @@ impl ButtonPane {
         cx.notify();
     }
 
-    fn base_spec(&self, look: &ShadcnLook) -> PrototypeShadowSpec {
+    fn base_spec(&self, look: &ShadcnLook) -> ShadowButtonSpec {
         let mut spec = self.shadow.base_spec(look);
         if let Some(color) = self.color_override {
             spec.color = color;
@@ -649,167 +450,188 @@ impl Render for ButtonStatePreview {
             },
         ];
 
-        div()
-            .w_full()
-            .mt(px(2.0))
-            .flex()
-            .flex_col()
-            .gap(px(10.0))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
-                    .text_color(chrome.muted_text)
-                    .child("Template state preview"),
-            )
-            .child(
-                div().w_full().flex().flex_wrap().items_start().justify_start().gap(px(16.0)).children(
-                    samples.into_iter().map(|sample| {
-                        render_button_state_sample(&self.template, sample, chrome.muted_text, window, cx)
-                    }),
-                ),
-            )
+        vstack! {
+            gap=10.0;
+            div()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.muted_text)
+                .child("Template state preview"),
+            hstack! {}
+                .w_full()
+                .flex_wrap()
+                .items_start()
+                .justify_start()
+                .gap(px(16.0))
+                .children(samples.into_iter().map(|sample| {
+                    render_button_state_sample(&self.template, sample, chrome.muted_text, window, cx)
+                })),
+        }
+        .w_full()
+        .mt(px(2.0))
     }
-}
-
-fn prototype_shadow_button_template(
-    look: Arc<ShadcnLook>,
-    controls: PrototypeShadowControls,
-    color_override: Option<Hsla>,
-) -> Arc<dyn ButtonTemplate<()>> {
-    Arc::new(PrototypeShadowButtonTemplate {
-        inner: look.button_template(ShadcnButtonStyle::Primary),
-        controls,
-        color_override,
-        look,
-    })
-}
-
-fn render_shadow(id: &SharedString, spec: PrototypeShadowSpec, radius: f32) -> Stateful<Div> {
-    let shadow_color = spec.color;
-    let insets = shadow_projection_insets(spec);
-
-    div()
-        .id(format!("{}-shadow", id))
-        .absolute()
-        .top(px(insets.top))
-        .left(px(insets.left))
-        .right(px(insets.right))
-        .bottom(px(insets.bottom))
-        .rounded(px(radius))
-        .bg(shadow_color.opacity(0.0))
-        .shadow(shadow_layers(spec))
 }
 
 fn render_shadow_summary_card(
     chrome: GalleryChrome,
-    base_spec: PrototypeShadowSpec,
-    pressed_spec: PrototypeShadowSpec,
+    base_spec: ShadowButtonSpec,
+    pressed_spec: ShadowButtonSpec,
 ) -> AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .flex_col()
-        .gap(px(8.0))
-        .border_1()
-        .border_color(chrome.border)
-        .rounded(px(10.0))
-        .bg(chrome.panel_background)
-        .p(px(12.0))
-        .child(
+    vstack! {
+        gap=8.0;
+        div()
+            .text_size(px(11.0))
+            .line_height(px(15.0))
+            .font_family("Monaco")
+            .text_color(chrome.muted_text)
+            .child("effective shadow spec"),
+        render_summary_row("color", format_compact_hsla(base_spec.color), chrome),
+        render_summary_row("x", format!("{:.0}px", base_spec.offset_x), chrome),
+        render_summary_row("y", format!("{:.0}px", base_spec.offset_y), chrome),
+        render_summary_row("blur", format!("{:.0}px", base_spec.blur_radius), chrome),
+        render_summary_row("spread", format!("{:.0}px", base_spec.spread_radius), chrome),
+        render_summary_row("pressed y", format!("{:.0}px", pressed_spec.offset_y), chrome),
+        render_summary_row("pressed opacity", format!("{:.0}%", pressed_spec.opacity * 100.0), chrome),
+    }
+    .w_full()
+    .border_1()
+    .border_color(chrome.border)
+    .rounded(px(10.0))
+    .bg(chrome.panel_background)
+    .p(px(12.0))
+    .into_any_element()
+}
+
+fn render_demo_stage(
+    demo_button: Entity<Button>,
+    demo_clicks: usize,
+    show_bounds: bool,
+    foreground: Hsla,
+    chrome: GalleryChrome,
+) -> AnyElement {
+    vstack! {
+        gap=10.0;
+        div()
+            .relative()
+            .border_1()
+            .border_color(if show_bounds { foreground } else { foreground.opacity(0.0) })
+            .px(px(36.0))
+            .pt(px(8.0))
+            .pb(px(10.0))
+            .child(demo_button),
+        div()
+            .text_size(px(12.0))
+            .line_height(px(16.0))
+            .text_color(chrome.muted_text)
+            .child(format!("Clicks: {demo_clicks}")),
+    }
+    .w_full()
+    .items_center()
+    .into_any_element()
+}
+
+fn render_controls_intro(chrome: GalleryChrome) -> AnyElement {
+    vstack! {
+        gap=2.0;
+        div()
+            .text_size(px(16.0))
+            .line_height(px(22.0))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(chrome.title_text)
+            .child("Shadow Tuning"),
+        div()
+            .text_size(px(12.0))
+            .line_height(px(17.0))
+            .text_color(chrome.muted_text)
+            .child("CSS-style shadow prototype: x, y, blur, spread, and a theme-aware neutral shadow tone."),
+    }
+    .into_any_element()
+}
+
+fn render_color_chip_row(color: Hsla, reset_button: Entity<Button>, chrome: GalleryChrome) -> AnyElement {
+    hstack! {
+        gap=12.0;
+        hstack! {
+            gap=8.0;
+            div().size(px(28.0)).rounded_full().bg(color),
             div()
+                .font_family("Monaco")
                 .text_size(px(11.0))
                 .line_height(px(15.0))
-                .font_family("Monaco")
-                .text_color(chrome.muted_text)
-                .child("effective shadow spec"),
-        )
-        .child(render_summary_row("color", format_compact_hsla(base_spec.color), chrome))
-        .child(render_summary_row("x", format!("{:.0}px", base_spec.offset_x), chrome))
-        .child(render_summary_row("y", format!("{:.0}px", base_spec.offset_y), chrome))
-        .child(render_summary_row("blur", format!("{:.0}px", base_spec.blur_radius), chrome))
-        .child(render_summary_row("spread", format!("{:.0}px", base_spec.spread_radius), chrome))
-        .child(render_summary_row("pressed y", format!("{:.0}px", pressed_spec.offset_y), chrome))
-        .child(render_summary_row("pressed opacity", format!("{:.0}%", pressed_spec.opacity * 100.0), chrome))
-        .into_any_element()
+                .text_color(chrome.body_text)
+                .child(format_compact_hsla(color)),
+        },
+        reset_button,
+    }
+    .items_center()
+    .justify_between()
+    .into_any_element()
 }
 
 fn render_pane_header(title: &'static str, description: Option<&'static str>, chrome: GalleryChrome) -> AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .flex_col()
-        .gap(px(4.0))
-        .child(
+    vstack! {
+        gap=4.0;
+        div()
+            .text_size(px(20.0))
+            .line_height(px(28.0))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(chrome.title_text)
+            .child(title),
+    }
+    .w_full()
+    .when_some(description, |header, description| {
+        header.child(
             div()
-                .text_size(px(20.0))
-                .line_height(px(28.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(chrome.title_text)
-                .child(title),
+                .max_w(px(760.0))
+                .text_size(px(13.0))
+                .line_height(px(18.0))
+                .text_color(chrome.muted_text)
+                .child(description),
         )
-        .when_some(description, |header, description| {
-            header.child(
-                div()
-                    .max_w(px(760.0))
-                    .text_size(px(13.0))
-                    .line_height(px(18.0))
-                    .text_color(chrome.muted_text)
-                    .child(description),
-            )
-        })
-        .into_any_element()
+    })
+    .into_any_element()
 }
 
 fn render_summary_row(label: &'static str, value: String, chrome: GalleryChrome) -> AnyElement {
-    div()
-        .flex()
-        .items_center()
-        .justify_between()
-        .gap(px(8.0))
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.body_text).child(label))
-        .child(
+    hstack! {
+        gap=8.0;
+        div().text_size(px(12.0)).line_height(px(16.0)).text_color(chrome.body_text).child(label),
+        div()
+            .font_family("Monaco")
+            .text_size(px(11.0))
+            .line_height(px(15.0))
+            .text_color(chrome.muted_text)
+            .child(value),
+    }
+    .items_center()
+    .justify_between()
+    .into_any_element()
+}
+
+fn render_slider_row(label: &'static str, value: String, slider: Slider, chrome: GalleryChrome) -> AnyElement {
+    vstack! {
+        gap=6.0;
+        hstack! {
+            gap=8.0;
+            div()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.body_text)
+                .child(label),
             div()
                 .font_family("Monaco")
                 .text_size(px(11.0))
                 .line_height(px(15.0))
                 .text_color(chrome.muted_text)
                 .child(value),
-        )
-        .into_any_element()
-}
-
-fn render_slider_row(label: &'static str, value: String, slider: Slider, chrome: GalleryChrome) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(6.0))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .justify_between()
-                .gap(px(8.0))
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(label),
-                )
-                .child(
-                    div()
-                        .font_family("Monaco")
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
-                        .text_color(chrome.muted_text)
-                        .child(value),
-                ),
-        )
-        .child(slider)
-        .into_any_element()
+        }
+        .items_center()
+        .justify_between(),
+        slider,
+    }
+    .into_any_element()
 }
 
 fn render_text_field_row(
@@ -820,66 +642,58 @@ fn render_text_field_row(
     assistive_color: Hsla,
     chrome: GalleryChrome,
 ) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(6.0))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .justify_between()
-                .gap(px(8.0))
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(label),
-                )
-                .child(
-                    div()
-                        .font_family("Monaco")
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
-                        .text_color(chrome.muted_text)
-                        .child(value_hint),
-                ),
-        )
-        .child(text_field)
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(assistive_color).child(assistive_text))
-        .into_any_element()
-}
-
-fn render_css_shadow_value(spec: PrototypeShadowSpec, chrome: GalleryChrome) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(6.0))
-        .child(
+    vstack! {
+        gap=6.0;
+        hstack! {
+            gap=8.0;
             div()
                 .text_size(px(12.0))
                 .line_height(px(16.0))
-                .font_weight(gpui::FontWeight::MEDIUM)
+                .font_weight(FontWeight::MEDIUM)
                 .text_color(chrome.body_text)
-                .child("CSS box-shadow"),
-        )
-        .child(
+                .child(label),
             div()
-                .w_full()
-                .border_1()
-                .border_color(chrome.border)
-                .bg(chrome.content_background)
-                .rounded(px(8.0))
-                .p(px(10.0))
                 .font_family("Monaco")
                 .text_size(px(11.0))
-                .line_height(px(16.0))
-                .text_color(chrome.body_text)
-                .child(format_css_box_shadow(spec)),
-        )
-        .into_any_element()
+                .line_height(px(15.0))
+                .text_color(chrome.muted_text)
+                .child(value_hint),
+        }
+        .items_center()
+        .justify_between(),
+        text_field,
+        div()
+            .text_size(px(11.0))
+            .line_height(px(15.0))
+            .text_color(assistive_color)
+            .child(assistive_text),
+    }
+    .into_any_element()
+}
+
+fn render_css_shadow_value(spec: ShadowButtonSpec, chrome: GalleryChrome) -> AnyElement {
+    vstack! {
+        gap=6.0;
+        div()
+            .text_size(px(12.0))
+            .line_height(px(16.0))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(chrome.body_text)
+            .child("CSS box-shadow"),
+        div()
+            .w_full()
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.content_background)
+            .rounded(px(8.0))
+            .p(px(10.0))
+            .font_family("Monaco")
+            .text_size(px(11.0))
+            .line_height(px(16.0))
+            .text_color(chrome.body_text)
+            .child(format_css_box_shadow(spec)),
+    }
+    .into_any_element()
 }
 
 fn render_button_state_sample(
@@ -905,91 +719,18 @@ fn render_button_state_sample(
         appearance: None,
     };
 
-    div()
-        .w(px(120.0))
-        .flex()
-        .flex_col()
-        .items_center()
-        .gap(px(6.0))
-        .child(template.render(&model, window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
-        .into_any_element()
-}
-
-fn resolve_shadow_spec(base: PrototypeShadowSpec, state: ButtonVisualState) -> Option<PrototypeShadowSpec> {
-    match state {
-        ButtonVisualState::Disabled => None,
-        ButtonVisualState::Hovered => Some(PrototypeShadowSpec {
-            offset_y: base.offset_y + HOVER_OFFSET_BONUS,
-            opacity: (base.opacity + HOVER_OPACITY_BONUS).clamp(0.0, 1.0),
-            ..base
-        }),
-        ButtonVisualState::Pressed => Some(PrototypeShadowSpec {
-            offset_y: (base.offset_y * PRESSED_OFFSET_FACTOR).max(1.0),
-            opacity: (base.opacity * PRESSED_OPACITY_FACTOR).clamp(0.0, 1.0),
-            ..base
-        }),
-        ButtonVisualState::Default | ButtonVisualState::Focused => Some(base),
+    vstack! {
+        gap=6.0;
+        template.render(&model, window, cx),
+        div()
+            .text_size(px(11.0))
+            .line_height(px(15.0))
+            .text_color(label_color)
+            .child(sample.label),
     }
-}
-
-fn resolved_shadow_color(look: &ShadcnLook) -> Hsla {
-    let chrome = look.chrome();
-    let background = chrome.panel_background;
-
-    if background.l <= 0.35 {
-        Hsla { h: 0.0, s: 0.0, l: 0.82, a: 1.0 }
-    } else {
-        Hsla { h: 0.0, s: 0.0, l: 0.08, a: 1.0 }
-    }
-}
-
-fn default_shadow_color_placeholder(color: Hsla) -> String {
-    format!("{}, {}, {}", rgb_triplet(color).0, rgb_triplet(color).1, rgb_triplet(color).2)
-}
-
-fn format_css_box_shadow(spec: PrototypeShadowSpec) -> String {
-    format!(
-        "box-shadow: {} {}px {}px {}px {}px;",
-        format_css_rgba(spec.color, spec.opacity),
-        rounded_px(spec.offset_x),
-        rounded_px(spec.offset_y),
-        rounded_px(spec.blur_radius.max(0.0)),
-        rounded_px(spec.spread_radius),
-    )
-}
-
-fn format_css_rgba(color: Hsla, opacity: f32) -> String {
-    let (r, g, b) = rgb_triplet(color);
-    format!("rgba({r}, {g}, {b}, {})", compact_alpha(opacity.clamp(0.0, 1.0)))
-}
-
-fn format_rgb_triplet(color: Hsla) -> String {
-    let (r, g, b) = rgb_triplet(color);
-    format!("{r}, {g}, {b}")
-}
-
-fn rounded_px(value: f32) -> i32 {
-    value.round() as i32
-}
-
-fn rgb_triplet(color: Hsla) -> (u8, u8, u8) {
-    let h = color.h.fract() * 6.0;
-    let s = color.s.clamp(0.0, 1.0);
-    let l = color.l.clamp(0.0, 1.0);
-
-    if s <= f32::EPSILON {
-        let gray = (l * 255.0).round() as u8;
-        return (gray, gray, gray);
-    }
-
-    let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
-    let p = 2.0 * l - q;
-    let r = hue_to_channel(p, q, h + 0.0);
-    let g = hue_to_channel(p, q, h + 2.0);
-    let b = hue_to_channel(p, q, h + 4.0);
-
-    ((r * 255.0).round() as u8, (g * 255.0).round() as u8, (b * 255.0).round() as u8)
+    .w(px(120.0))
+    .items_center()
+    .into_any_element()
 }
 
 fn shadow_color_validator() -> Validator {
@@ -1049,56 +790,4 @@ fn parse_hex_color(raw: &str) -> Option<Hsla> {
 
 fn rgb_hex(r: u8, g: u8, b: u8) -> u32 {
     (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b)
-}
-
-fn compact_alpha(value: f32) -> String {
-    let formatted = format!("{value:.3}");
-    formatted.trim_end_matches('0').trim_end_matches('.').to_string()
-}
-
-fn shadow_layers(spec: PrototypeShadowSpec) -> Vec<BoxShadow> {
-    vec![BoxShadow {
-        color: spec.color.opacity(spec.opacity.clamp(0.0, 1.0)),
-        offset: point(px(spec.offset_x), px(spec.offset_y)),
-        blur_radius: px(spec.blur_radius.max(0.0)),
-        spread_radius: px(spec.spread_radius),
-    }]
-}
-
-#[derive(Clone, Copy, Debug)]
-struct ShadowProjectionInsets {
-    top: f32,
-    right: f32,
-    bottom: f32,
-    left: f32,
-}
-
-fn shadow_projection_insets(spec: PrototypeShadowSpec) -> ShadowProjectionInsets {
-    let reach = (spec.blur_radius.max(0.0) + spec.spread_radius).max(0.0);
-
-    ShadowProjectionInsets {
-        top: (reach - spec.offset_y).ceil().max(0.0),
-        right: (reach + spec.offset_x).ceil().max(0.0),
-        bottom: (reach + spec.offset_y).ceil().max(0.0),
-        left: (reach - spec.offset_x).ceil().max(0.0),
-    }
-}
-
-fn hue_to_channel(p: f32, q: f32, t: f32) -> f32 {
-    let mut t = t;
-    if t < 0.0 {
-        t += 6.0;
-    }
-    if t >= 6.0 {
-        t -= 6.0;
-    }
-    if t < 1.0 {
-        p + (q - p) * t
-    } else if t < 3.0 {
-        q
-    } else if t < 4.0 {
-        p + (q - p) * (4.0 - t)
-    } else {
-        p
-    }
 }
