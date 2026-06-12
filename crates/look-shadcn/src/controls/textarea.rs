@@ -70,7 +70,7 @@ mod tests {
             ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
             ("accent-foreground".into(), "oklch(1 0 0)".into()),
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
-            ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("input".into(), "oklch(0.7200 0.0120 205.0000)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
         ]))
     }
@@ -84,7 +84,7 @@ mod tests {
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
-        assert_eq!(textarea.border, catalog.color("input").expect("input"));
+        assert_eq!(textarea.border, catalog.color("border").expect("border"));
         assert_eq!(textarea.foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(textarea.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
     }

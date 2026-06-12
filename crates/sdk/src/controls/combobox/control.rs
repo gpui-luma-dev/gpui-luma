@@ -6,6 +6,7 @@ use gpui::{
 use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
+use crate::theme::observe_theme_revision;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::item_template::ComboBoxItemTemplate;
@@ -77,6 +78,7 @@ impl ComboBoxControl {
                     cx.notify();
                 }
             }),
+            observe_theme_revision(cx, |_, cx| cx.notify()),
         ];
 
         Self {

@@ -1,6 +1,6 @@
 //! Text field property mappings (shadcn / Radix):
 //!
-//! **Surface** (shadcn Input): `border-input`, light transparent fill, dark `input/30`,
+//! **Surface** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
 //! `selection:bg-primary`, `selection:text-primary-foreground`, `placeholder:text-muted-foreground`.
 //!
 //! **Soft** (Radix soft): filled `muted` background, no border, same text/selection tokens.
@@ -149,26 +149,26 @@ mod tests {
             ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
             ("accent-foreground".into(), "oklch(1 0 0)".into()),
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
-            ("input".into(), "oklch(0.6537 0.0197 205.2618)".into()),
+            ("input".into(), "oklch(0.7200 0.0120 205.0000)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
         ]))
     }
 
     #[test]
-    fn surface_textfield_light_uses_transparent_fill_and_input_border() {
+    fn surface_textfield_light_uses_transparent_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let appearance =
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
 
         assert_eq!(appearance.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
-        assert_eq!(appearance.border, catalog.color("input").expect("input"));
+        assert_eq!(appearance.border, catalog.color("border").expect("border"));
         assert_eq!(appearance.foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(appearance.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
     }
 
     #[test]
-    fn surface_textfield_dark_uses_input_fill_at_thirty_percent() {
+    fn surface_textfield_dark_uses_input_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
         let appearance =
@@ -176,7 +176,7 @@ mod tests {
         let input = catalog.color("input").expect("input");
 
         assert_eq!(appearance.background, with_alpha(input, 0.30));
-        assert_eq!(appearance.border, input);
+        assert_eq!(appearance.border, catalog.color("border").expect("border"));
     }
 
     #[test]

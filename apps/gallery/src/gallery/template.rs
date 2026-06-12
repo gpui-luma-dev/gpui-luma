@@ -2,7 +2,7 @@ use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, Render, W
 use gpui_luma::controls::split_view::render_pane;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ThemeMode};
+use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -81,8 +81,8 @@ impl Render for GalleryApp {
                                 ThemeMode::Dark => ThemeMode::Light,
                             };
                             this.look.set_mode(mode);
+                            cx.bump_luma_theme_revision();
                             this.last_inspector_refresh = None;
-                            this.panes.notify_controls(cx);
                             cx.notify();
                         }))
                         .child(char::from(toggle_icon).to_string()),

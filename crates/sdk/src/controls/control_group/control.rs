@@ -12,6 +12,7 @@ use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum ControlGroupEvent {
@@ -43,6 +44,7 @@ where
         normalize_model(&mut builder.model);
         let enabled = builder.model.enabled;
 
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),

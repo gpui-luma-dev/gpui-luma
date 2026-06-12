@@ -11,6 +11,7 @@ use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum AccordionEvent {
@@ -48,6 +49,7 @@ impl AccordionControl {
             }
         }
 
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),

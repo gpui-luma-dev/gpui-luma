@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use super::token_color_row::token_color_row;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
@@ -99,34 +99,7 @@ impl ThemeSidebar {
             }
         }
 
-        let sidebar_for_accordion = cx.entity();
-        let mut accordion_builder = look
-            .accordion("theme-studio-token-accordion")
-            .multiple()
-            .item_dividers(false)
-            .trigger_min_height(28.0)
-            .trigger_padding_y(4.0)
-            .content_padding_top(0.0)
-            .content_padding_bottom(4.0)
-            .template(look.accordion_template());
-
-        for (category, tokens) in TOKEN_CATEGORIES {
-            let items = *tokens;
-            let sidebar = sidebar_for_accordion.clone();
-            let mut item = AccordionItem::new(
-                category_item_id(category),
-                AccordionTrigger::new(*category),
-                AccordionContent::custom(move |_window, cx| {
-                    category_token_content(sidebar.read(cx), items).into_any_element()
-                }),
-            );
-            if *category == "BASE" {
-                item = item.expanded(true);
-            }
-            accordion_builder = accordion_builder.item(item);
-        }
-
-        let token_accordion = accordion_builder.spawn(cx);
+        let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
 
         Self { vm: ThemeSidebarViewModel { look, global_overrides, token_fields }, theme_selector, token_accordion }
     }
@@ -168,21 +141,24 @@ impl ThemeSidebar {
         overrides: &StudioOverrides,
         cx: &mut Context<Self>,
     ) {
+        let expanded_categories = self.expanded_category_ids(cx);
         self.vm.look = look;
         self.vm.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.vm.look.clone();
-        self.sync_control_templates(&theme, cx);
+        self.sync_theme_selector_template(&theme, cx);
+        self.sync_token_field_templates(&theme, cx);
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
-        self.notify_token_accordion(cx);
+        self.token_accordion = Self::build_token_accordion(cx.entity(), theme, &expanded_categories, cx);
+        cx.notify();
     }
 
-    pub(crate) fn sync_control_templates(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_theme_selector_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.theme_selector.update(cx, |selector, cx| {
             selector.set_template(theme.selector_template(), cx);
         });
-        self.token_accordion.update(cx, |accordion, cx| {
-            accordion.set_template(theme.accordion_template(), cx);
-        });
+    }
+
+    fn sync_token_field_templates(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
         for field in self.vm.token_fields.values() {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
@@ -192,10 +168,12 @@ impl ThemeSidebar {
     }
 
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
+        let expanded_categories = self.expanded_category_ids(cx);
         self.vm.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.vm.look.clone();
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
-        self.notify_token_accordion(cx);
+        self.token_accordion = Self::build_token_accordion(cx.entity(), theme, &expanded_categories, cx);
+        cx.notify();
     }
 
     pub fn sync_theme_selector(&mut self, active_theme_id: impl Into<gpui::SharedString>, cx: &mut Context<Self>) {
@@ -217,9 +195,55 @@ impl ThemeSidebar {
         }
     }
 
-    fn notify_token_accordion(&self, cx: &mut Context<Self>) {
-        self.token_accordion.update(cx, |_, cx| cx.notify());
-        cx.notify();
+    fn expanded_category_ids(&self, cx: &App) -> HashSet<String> {
+        let accordion = self.token_accordion.read(cx);
+        TOKEN_CATEGORIES
+            .iter()
+            .filter_map(|(category, _)| {
+                let id = category_item_id(category);
+                accordion.is_expanded(&id.clone().into()).then_some(id)
+            })
+            .collect()
+    }
+
+    fn build_token_accordion(
+        sidebar: Entity<Self>,
+        look: std::sync::Arc<ShadcnLook>,
+        expanded_categories: &HashSet<String>,
+        cx: &mut Context<Self>,
+    ) -> Entity<AccordionControl> {
+        let mut accordion_builder = look
+            .accordion("theme-studio-token-accordion")
+            .multiple()
+            .item_dividers(false)
+            .trigger_min_height(28.0)
+            .trigger_padding_y(4.0)
+            .content_padding_top(0.0)
+            .content_padding_bottom(4.0)
+            .template(look.accordion_template());
+
+        for (category, tokens) in TOKEN_CATEGORIES {
+            let items = *tokens;
+            let sidebar = sidebar.clone();
+            let id = category_item_id(category);
+            let expanded = if expanded_categories.is_empty() {
+                *category == "BASE"
+            } else {
+                expanded_categories.contains(&id)
+            };
+            accordion_builder = accordion_builder.item(
+                AccordionItem::new(
+                    id,
+                    AccordionTrigger::new(*category),
+                    AccordionContent::custom(move |_window, cx| {
+                        category_token_content(sidebar.read(cx), items).into_any_element()
+                    }),
+                )
+                .expanded(expanded),
+            );
+        }
+
+        accordion_builder.spawn(cx)
     }
 }
 

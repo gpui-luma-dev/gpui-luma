@@ -31,32 +31,22 @@ use std::collections::HashMap;
 
 use gpui::{Context, MouseButton, Point, Pixels, div, prelude::*, px};
 
-use gpui_luma::theme::LumaChrome;
-
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::panel_layout::{DemoPanelDrag, PANEL_BOARD_MIN_HEIGHT_PX, default_panel_position};
 use super::content_pane::ContentPaneHost;
 
 pub fn render_demo_board(
-    selected: Option<InspectableId>,
+    _selected: Option<InspectableId>,
     positions: HashMap<InspectableId, Point<Pixels>>,
     panel_z_order: HashMap<InspectableId, u32>,
     demos: DemoControls,
-    chrome: LumaChrome,
     filter: Option<&'static [InspectableId]>,
     cx: &mut Context<ContentPaneHost>,
 ) -> impl IntoElement {
     let pick = |id: InspectableId, child: gpui::AnyElement| {
-        let selected_panel = selected == Some(id);
         let position = positions.get(&id).copied().unwrap_or_else(|| default_panel_position(id));
         let drag = DemoPanelDrag::new(id);
-
-        let border_color = if selected_panel {
-            chrome.title_text
-        } else {
-            gpui::hsla(0.0, 0.0, 0.0, 0.0)
-        };
 
         div()
             .absolute()
@@ -65,10 +55,6 @@ pub fn render_demo_board(
             .flex()
             .flex_col()
             .occlude()
-            .rounded(px(12.0))
-            .border_2()
-            .border_color(border_color)
-            .when(selected_panel, |panel| panel.bg(gpui::hsla(0.0, 0.0, 1.0, 0.05)))
             .child(
                 div()
                     .id(format!("panel-{id:?}"))

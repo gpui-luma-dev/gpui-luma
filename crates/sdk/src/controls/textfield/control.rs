@@ -12,6 +12,7 @@ use super::{
     model::TextFieldModel,
 };
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone)]
 struct TextFieldLayoutCache {
@@ -43,6 +44,7 @@ pub struct TextFieldControl {
     model: TextFieldModel,
     state: TextFieldState,
     focus_handle: FocusHandle,
+    theme_epoch: u64,
     change_count: usize,
     submit_count: usize,
     focus_count: usize,
@@ -73,6 +75,7 @@ impl TextFieldControl {
             model: builder.model,
             state,
             focus_handle: cx.focus_handle().tab_stop(true),
+            theme_epoch: 0,
             change_count: 0,
             submit_count: 0,
             focus_count: 0,
@@ -89,6 +92,12 @@ impl TextFieldControl {
         };
         this.focus_handle = this.focus_handle.clone().tab_stop(this.model.enabled);
         this.recompute_invalid();
+        observe_theme_revision(cx, |this, cx| {
+            this.layout_cache = None;
+            this.theme_epoch = this.theme_epoch.wrapping_add(1);
+            cx.notify();
+        })
+        .detach();
         this
     }
 
@@ -548,6 +557,7 @@ impl Render for TextFieldControl {
 
         div()
             .relative()
+            .id(format!("{}-theme-{}", self.model.id, self.theme_epoch))
             .child(
                 self.model
                     .template

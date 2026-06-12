@@ -12,6 +12,7 @@ use crate::controls::tabs_navigation::model::TabsNavigationModel;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum TabsNavigationEvent {
@@ -37,6 +38,7 @@ impl TabsNavigation {
         normalize_active_id(&mut builder.model);
         let enabled = builder.model.enabled;
 
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),
@@ -62,6 +64,15 @@ impl TabsNavigation {
         self.hovered_item = None;
         self.pressed_item = None;
         normalize_active_id(&mut self.model);
+        cx.notify();
+    }
+
+    pub fn set_template(
+        &mut self,
+        template: std::sync::Arc<dyn super::TabsNavigationTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.template = template;
         cx.notify();
     }
 

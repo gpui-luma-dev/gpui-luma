@@ -12,6 +12,7 @@ pub use crate::controls::command::{CommandCore, CommandEvent as ButtonEvent};
 use crate::keyhandling::{ActivateControl, ControlKeyProfile};
 use crate::controls::command::button::model::ControlIcon;
 use crate::controls::button_family::ButtonFamilyRole;
+use crate::theme::observe_theme_revision;
 
 pub struct Button<D = ()> {
     model: super::model::ButtonModel<D>,
@@ -43,6 +44,7 @@ impl<D: Clone + 'static> Button<D> {
     pub(crate) fn from_builder(builder: ButtonBuilder<D>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         let tab_stop = builder.model.tab_stop;
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self { model: builder.model, command: CommandCore::new_with_tab_stop(enabled, tab_stop, cx) }
     }
 

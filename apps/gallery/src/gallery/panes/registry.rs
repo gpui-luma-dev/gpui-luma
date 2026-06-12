@@ -505,44 +505,6 @@ impl GalleryPanes {
         self.split_view.subscribe(cx, subscriptions);
     }
 
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.introduction.notify_controls(cx);
-        self.decorated_button.notify_controls(cx);
-        self.shadow_button.notify_controls(cx);
-        self.autocomplete_textfield.notify_controls(cx);
-        self.combobox.notify_controls(cx);
-        self.search_selector.notify_controls(cx);
-        self.selector.notify_controls(cx);
-        self.selection_panel.notify_controls(cx);
-        self.selector_templates.notify_controls(cx);
-        self.custom_button.notify_controls(cx);
-        self.button.notify_controls(cx);
-        self.toggle.notify_controls(cx);
-        self.toggle_group.notify_controls(cx);
-        self.switch.notify_controls(cx);
-        self.checkbox.notify_controls(cx);
-        self.accordion.notify_controls(cx);
-        self.tree_view.notify_controls(cx);
-        self.radio_button.notify_controls(cx);
-        self.radio_group.notify_controls(cx);
-        self.choice_templates.notify_controls(cx);
-        self.listbox.notify_controls(cx);
-        self.scrolling_list_view.notify_controls(cx);
-        self.paging_list_view.notify_controls(cx);
-        self.slider.notify_controls(cx);
-        self.scrollbar.notify_controls(cx);
-        self.textarea.notify_controls(cx);
-        self.textfield.notify_controls(cx);
-        self.floating_menu.notify_controls(cx);
-        self.popup_menu.notify_controls(cx);
-        self.context_menu.notify_controls(cx);
-        self.navigation_sidebar.notify_controls(cx);
-        self.tabs_navigation.notify_controls(cx);
-        self.progress.notify_controls(cx);
-        self.resizable_panels.notify_controls(cx);
-        self.split_view.notify_controls(cx);
-    }
-
     pub(in crate::gallery) fn notify_selected_controls(&self, selection: &str, cx: &mut Context<GalleryApp>) {
         let Some(page) = page_for_id(selection) else {
             return;

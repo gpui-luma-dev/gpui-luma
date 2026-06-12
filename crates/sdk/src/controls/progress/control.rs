@@ -3,6 +3,7 @@ use gpui::{Context, IntoElement, Render, SharedString, Window, div, prelude::*};
 use super::{ProgressBuilder, ProgressRenderModel};
 use crate::controls::progress::model::ProgressModel;
 use crate::controls::value::{ControlRange, value_from_input};
+use crate::theme::observe_theme_revision;
 
 pub struct ProgressControl {
     model: ProgressModel,
@@ -14,7 +15,8 @@ impl ProgressControl {
         ProgressBuilder::new(id)
     }
 
-    pub(crate) fn from_builder(builder: ProgressBuilder, _cx: &mut Context<Self>) -> Self {
+    pub(crate) fn from_builder(builder: ProgressBuilder, cx: &mut Context<Self>) -> Self {
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self { model: builder.model }
     }
 

@@ -21,6 +21,7 @@ use crate::keyhandling::{
 };
 use crate::theme::adorner::adorner_oversize_extent;
 use crate::theme::{ControlSize, InteractionState, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum ListViewEvent {
@@ -62,6 +63,7 @@ where
 
     pub(crate) fn from_builder(mut builder: ListViewBuilder<T>, cx: &mut Context<Self>) -> Self {
         normalize_model(&mut builder.model);
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
         let visible_count = Self::visible_list_item_count(&builder.model, 0);
         let mut list_state = ListState::new(visible_count, builder.model.alignment, px(builder.model.overdraw));

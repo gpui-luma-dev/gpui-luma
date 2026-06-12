@@ -13,6 +13,7 @@ use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 gpui::actions!(tree_view, [ExpandNode, CollapseNode]);
 
@@ -65,6 +66,7 @@ where
 {
     pub(crate) fn from_builder(builder: TreeViewBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
         let mut control = Self {
             model: builder.model,

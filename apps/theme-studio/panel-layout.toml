@@ -4,9 +4,25 @@
 width = 2038.0
 height = 1328.0
 
+[upgrade_subscription]
+right = 437.9921875
+top = 15.328125
+
+[report_issue]
+right = 423.57421875
+top = 671.3046875
+
 [team_members]
 right = 849.484375
 top = 14.41015625
+
+[payments]
+right = 1176.08984375
+top = 683.25390625
+
+[accordion]
+right = 1670.3203125
+top = 121.34765625
 
 [navigation_sidebar]
 right = 324.53125
@@ -16,30 +32,14 @@ top = 54.703125
 right = 1259.55859375
 top = 14.3125
 
-[report_issue]
-right = 423.57421875
-top = 671.3046875
-
-[accordion]
-right = 1670.3203125
-top = 121.34765625
-
-[upgrade_subscription]
-right = 437.9921875
-top = 15.328125
-
-[payments]
-right = 1176.08984375
-top = 683.25390625
-
 [tree_view]
 right = 1645.71484375
 top = 530.27734375
 
-[create_account]
-right = 1208.1875
-top = 303.9921875
-
 [chat]
-right = 837.41796875
-top = 305.1953125
+right = 1248.71484375
+top = 314.57421875
+
+[create_account]
+right = 830.328125
+top = 301.10546875

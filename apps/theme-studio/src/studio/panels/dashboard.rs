@@ -197,7 +197,7 @@ impl Render for DashboardPanel {
                         .flex()
                         .flex_col()
                         .border_l_1()
-                        .border_color(gpui::hsla(0.0, 0.85, 0.55, 1.0))
+                        .border_color(chrome.border)
                         .bg(chrome.content_background)
                         .child(render_list_header(sidebar_toggle.clone(), &look))
                         .child(render_list_header_divider(chrome.border))

@@ -17,6 +17,7 @@ use crate::keyhandling::{
     ActivateControl, CloseSubmenu, ControlKeyProfile, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem,
     SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum NavigationSidebarEvent {
@@ -58,11 +59,14 @@ impl NavigationSidebar {
             cx,
         );
         let scrollbar = main_scroll.scrollbar();
-        let subscriptions = vec![cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
-            ScrollbarEvent::Change { value } => {
-                this.main_scroll.set_vertical_offset(*value, cx);
-            }
-        })];
+        let subscriptions = vec![
+            cx.subscribe(&scrollbar, |this, _, event: &ScrollbarEvent, cx| match event {
+                ScrollbarEvent::Change { value } => {
+                    this.main_scroll.set_vertical_offset(*value, cx);
+                }
+            }),
+            observe_theme_revision(cx, |_, cx| cx.notify()),
+        ];
 
         Self {
             model: builder.model,

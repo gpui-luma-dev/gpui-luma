@@ -15,7 +15,7 @@ use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
@@ -161,6 +161,7 @@ pub struct TextArea {
     model: TextAreaModel,
     state: TextAreaState,
     focus_handle: FocusHandle,
+    theme_epoch: u64,
     change_count: usize,
     focus_count: usize,
     blur_count: usize,
@@ -211,6 +212,7 @@ impl TextArea {
             model: builder.model,
             state,
             focus_handle: cx.focus_handle().tab_stop(true),
+            theme_epoch: 0,
             change_count: 0,
             focus_count: 0,
             blur_count: 0,
@@ -237,6 +239,11 @@ impl TextArea {
         this.state = state;
         this.focus_handle = this.focus_handle.clone().tab_stop(this.model.enabled);
         this.recompute_invalid();
+        this._subscriptions.push(observe_theme_revision(cx, |this, cx| {
+            this.layout_cache = None;
+            this.theme_epoch = this.theme_epoch.wrapping_add(1);
+            cx.notify();
+        }));
         this
     }
 
@@ -1243,7 +1250,7 @@ impl Render for TextArea {
             );
 
         let control = div()
-            .id(format!("{}-control", self.model.id))
+            .id(format!("{}-control-{}", self.model.id, self.theme_epoch))
             .relative()
             .flex()
             .items_start()

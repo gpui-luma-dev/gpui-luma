@@ -10,6 +10,7 @@ use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum SliderEvent {
@@ -52,6 +53,7 @@ impl SliderControl {
     pub(crate) fn from_builder(builder: SliderBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
 
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             interaction: ControlInteraction::new(enabled, cx),

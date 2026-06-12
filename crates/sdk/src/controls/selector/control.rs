@@ -16,6 +16,7 @@ use crate::focus::EscapeFocus;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
+use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum SelectorEvent {
@@ -63,6 +64,7 @@ where
             })
             .or_else(|| builder.model.items.iter().position(|item| item.is_selected() && item.is_enabled()));
 
+        observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             open: false,

@@ -11,6 +11,7 @@ use crate::controls::interaction::ControlInteraction;
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::textfield::TextFieldState;
+use crate::theme::observe_theme_revision;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::item_template::SearchSelectorItemTemplate;
@@ -90,6 +91,7 @@ impl SearchSelectorControl {
                     cx.notify();
                 }
             }),
+            observe_theme_revision(cx, |_, cx| cx.notify()),
         ];
 
         Self {

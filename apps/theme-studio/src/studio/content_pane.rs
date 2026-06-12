@@ -127,6 +127,7 @@ impl ContentPaneHost {
         let look = board.look.clone();
         let overrides = board.overrides.clone();
         self.board = board;
+        self.tabs.update(cx, |tabs, cx| tabs.set_template(look.tabs_navigation_template(), cx));
         self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look, overrides, cx));
         cx.notify();
     }
@@ -191,7 +192,6 @@ impl Render for ContentPaneHost {
                     board.panel_positions.clone(),
                     board.panel_z_order.clone(),
                     board.demos.clone(),
-                    chrome,
                     active_tab.panels(),
                     cx,
                 ))),

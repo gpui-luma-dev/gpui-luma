@@ -41,4 +41,17 @@ impl DemoControls {
     }
 
     pub fn subscribe(&self, _cx: &mut Context<ThemeStudioApp>, _subscriptions: &mut Vec<Subscription>) {}
+
+    pub fn sync(&self, cx: &mut Context<ThemeStudioApp>, look: Arc<ShadcnLook>, size: ControlSize) {
+        self.upgrade.update(cx, |panel, cx| *panel = UpgradePanel::new(cx, look.clone(), size));
+        self.account.update(cx, |panel, cx| *panel = AccountPanel::new(cx, look.clone(), size));
+        self.team.update(cx, |panel, cx| *panel = TeamPanel::new(cx, look.clone()));
+        self.chat.update(cx, |panel, cx| *panel = ChatPanel::new(cx, look.clone(), size));
+        self.cookies.update(cx, |panel, cx| *panel = CookiesPanel::new(cx, look.clone()));
+        self.report.update(cx, |panel, cx| *panel = ReportPanel::new(cx, look.clone(), size));
+        self.payments.update(cx, |panel, cx| *panel = PaymentsPanel::new(cx, look.clone(), size));
+        self.tree_view.update(cx, |panel, cx| *panel = TreeViewPanel::new(cx, look.clone()));
+        self.accordion.update(cx, |panel, cx| *panel = AccordionPanel::new(cx, look.clone()));
+        self.dashboard.update(cx, |panel, cx| *panel = DashboardPanel::new(cx, look.clone()));
+    }
 }

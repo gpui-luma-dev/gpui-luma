@@ -9,7 +9,7 @@ use gpui_luma::controls::resizable_panels::ResizablePanels;
 use gpui_luma::resizable_panels;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -168,7 +168,8 @@ impl ThemeStudioApp {
         let base = Self::load_theme(&self.active_theme_id);
         base.set_mode(self.look.mode());
         self.look = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
-        self.refresh_demos(cx);
+        cx.bump_luma_theme_revision();
+        self.demos.sync(cx, self.look.clone(), self.control_size);
         self.sync_main_split_theme(cx);
         self.refresh_content_pane(cx);
     }
@@ -195,11 +196,6 @@ impl ThemeStudioApp {
     fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
         let theme = self.look.resizable_panels_theme();
         self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
-    }
-
-    fn refresh_demos(&mut self, cx: &mut Context<Self>) {
-        self.demos = DemoControls::spawn(cx, self.look.clone(), self.control_size);
-        self.demos.subscribe(cx, &mut self._subscriptions);
     }
 
     pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
@@ -299,7 +295,7 @@ impl ThemeStudioApp {
             return;
         }
         self.control_size = size;
-        self.refresh_demos(cx);
+        self.demos.sync(cx, self.look.clone(), self.control_size);
         self.refresh_content_pane(cx);
         cx.notify();
     }
@@ -352,9 +348,11 @@ impl Render for ThemeStudioApp {
                                     ThemeMode::Dark => ThemeMode::Light,
                                 };
                                 this.look.set_mode(mode);
+                                cx.bump_luma_theme_revision();
                                 let theme = this.look.clone();
+                                let overrides = this.overrides.clone();
                                 this.theme_sidebar.update(cx, |sidebar, cx| {
-                                    sidebar.sync_control_templates(&theme, cx);
+                                    sidebar.apply_theme_snapshot(theme, &overrides, cx);
                                 });
                                 this.sync_main_split_theme(cx);
                                 this.refresh_content_pane(cx);
