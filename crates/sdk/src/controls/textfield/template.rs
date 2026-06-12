@@ -44,7 +44,7 @@ pub trait TextFieldTemplate: Send + Sync {
             variant,
             state,
             enabled,
-            &StandardBoxScale::compute(ControlSize::Md, default_textfield_theme().metrics(), 1.0),
+            &StandardBoxScale::compute(ControlSize::Md, &default_textfield_theme().metrics(), 1.0),
         )
     }
 
@@ -95,7 +95,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             variant,
             state,
             enabled,
-            &StandardBoxScale::compute(ControlSize::Md, self.theme.metrics(), 1.0),
+            &StandardBoxScale::compute(ControlSize::Md, &self.theme.metrics(), 1.0),
         )
     }
 

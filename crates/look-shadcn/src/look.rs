@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{
     Arc,
     atomic::{AtomicU8, Ordering},
+    RwLock,
 };
 
 use gpui::{BoxShadow, Hsla, SharedString};
@@ -39,11 +40,49 @@ pub struct ShadcnLook {
 }
 
 struct ShadcnLookState {
-    catalog: CssTokenCatalog,
-    light: ShadcnModeTokens,
-    dark: ShadcnModeTokens,
-    stylesheet: StylesheetConfig,
+    snapshot: RwLock<Arc<ShadcnLookSnapshot>>,
     mode: AtomicU8,
+}
+
+struct ShadcnLookSnapshot {
+    catalog: Arc<CssTokenCatalog>,
+    light: Arc<ShadcnModeTokens>,
+    dark: Arc<ShadcnModeTokens>,
+    stylesheet: Arc<StylesheetConfig>,
+}
+
+impl ShadcnLookSnapshot {
+    fn new(catalog: CssTokenCatalog, stylesheet: StylesheetConfig) -> anyhow::Result<Self> {
+        let light_catalog = catalog.light_map();
+        let dark_catalog = catalog.dark_map();
+        Ok(Self {
+            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            catalog: Arc::new(catalog),
+            stylesheet: Arc::new(stylesheet),
+        })
+    }
+
+    fn with_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<Self> {
+        if overrides.is_empty() {
+            return Ok(Self {
+                catalog: Arc::clone(&self.catalog),
+                light: Arc::clone(&self.light),
+                dark: Arc::clone(&self.dark),
+                stylesheet: Arc::clone(&self.stylesheet),
+            });
+        }
+
+        let light_catalog = apply_color_overrides_to_catalog(self.light.catalog.clone(), overrides);
+        let dark_catalog = apply_color_overrides_to_catalog(self.dark.catalog.clone(), overrides);
+
+        Ok(Self {
+            catalog: Arc::clone(&self.catalog),
+            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            stylesheet: Arc::clone(&self.stylesheet),
+        })
+    }
 }
 
 impl ShadcnLook {
@@ -56,10 +95,10 @@ impl ShadcnLook {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
             state: Arc::new(ShadcnLookState {
-                light: ShadcnModeTokens::from_catalog(catalog.light_map(), ThemeMode::Light)?,
-                dark: ShadcnModeTokens::from_catalog(catalog.dark_map(), ThemeMode::Dark)?,
-                catalog,
-                stylesheet: crate::stylesheet::embedded_stylesheet().clone(),
+                snapshot: RwLock::new(Arc::new(ShadcnLookSnapshot::new(
+                    catalog,
+                    crate::stylesheet::embedded_stylesheet().clone(),
+                )?)),
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
         })
@@ -69,10 +108,7 @@ impl ShadcnLook {
         let catalog = parse_css_catalog(source)?;
         Ok(Self {
             state: Arc::new(ShadcnLookState {
-                light: ShadcnModeTokens::from_catalog(catalog.light_map(), ThemeMode::Light)?,
-                dark: ShadcnModeTokens::from_catalog(catalog.dark_map(), ThemeMode::Dark)?,
-                catalog,
-                stylesheet,
+                snapshot: RwLock::new(Arc::new(ShadcnLookSnapshot::new(catalog, stylesheet)?)),
                 mode: AtomicU8::new(mode_to_u8(ThemeMode::Light)),
             }),
         })
@@ -96,8 +132,12 @@ impl ShadcnLook {
         Self::from_css_str_with_stylesheet(&source, stylesheet)
     }
 
-    pub fn stylesheet(&self) -> &StylesheetConfig {
-        &self.state.stylesheet
+    fn snapshot(&self) -> Arc<ShadcnLookSnapshot> {
+        self.state.snapshot.read().expect("shadcn look snapshot lock poisoned").clone()
+    }
+
+    pub fn stylesheet(&self) -> Arc<StylesheetConfig> {
+        Arc::clone(&self.snapshot().stylesheet)
     }
 
     pub fn mode(&self) -> ThemeMode {
@@ -108,24 +148,27 @@ impl ShadcnLook {
         self.state.mode.store(mode_to_u8(mode), Ordering::Relaxed);
     }
 
-    pub fn mode_tokens(&self) -> &ShadcnModeTokens {
+    pub fn mode_tokens(&self) -> Arc<ShadcnModeTokens> {
+        let snapshot = self.snapshot();
         match self.mode() {
-            ThemeMode::Light => &self.state.light,
-            ThemeMode::Dark => &self.state.dark,
+            ThemeMode::Light => Arc::clone(&snapshot.light),
+            ThemeMode::Dark => Arc::clone(&snapshot.dark),
         }
     }
 
-    pub fn catalog(&self) -> &CssTokenCatalog {
-        &self.state.catalog
+    pub fn catalog(&self) -> Arc<CssTokenCatalog> {
+        Arc::clone(&self.snapshot().catalog)
     }
 
     /// `true` when the look was loaded from tweakcn/shadcn CSS (non-empty catalog).
     pub fn has_css_catalog(&self) -> bool {
-        !self.state.light.catalog.tokens.is_empty() || !self.state.dark.catalog.tokens.is_empty()
+        let snapshot = self.snapshot();
+        !snapshot.light.catalog.tokens.is_empty() || !snapshot.dark.catalog.tokens.is_empty()
     }
 
-    pub fn token(&self, name: &str) -> Option<&str> {
-        self.mode_tokens().catalog.get(name)
+    fn token(&self, name: &str) -> Option<String> {
+        let tokens = self.mode_tokens();
+        tokens.catalog.get(name).map(ToOwned::to_owned)
     }
 
     /// Resolves colors directly from the loaded palette.
@@ -148,7 +191,7 @@ impl ShadcnLook {
             ShadcnFont::Serif => "font-serif",
             ShadcnFont::Mono => "font-mono",
         };
-        self.token(key).map(first_font_family).unwrap_or_else(|| match role {
+        self.token(key).as_deref().map(first_font_family).unwrap_or_else(|| match role {
             ShadcnFont::Sans => SharedString::from("sans-serif"),
             ShadcnFont::Serif => SharedString::from("serif"),
             ShadcnFont::Mono => SharedString::from("monospace"),
@@ -185,54 +228,56 @@ impl ShadcnLook {
     }
 
     pub fn parse_pixel_token(&self, name: &str) -> Option<f32> {
-        self.token(name).and_then(parse_length_px)
+        self.token(name).as_deref().and_then(parse_length_px)
     }
 
     pub fn parse_shadow_token(&self, token_key: &str) -> anyhow::Result<Vec<BoxShadow>> {
-        parse_shadow_token(&self.mode_tokens().catalog, token_key)
+        let tokens = self.mode_tokens();
+        parse_shadow_token(&tokens.catalog, token_key)
     }
 
-    pub fn light_tokens(&self) -> &ShadcnModeTokens {
-        &self.state.light
+    pub fn light_tokens(&self) -> Arc<ShadcnModeTokens> {
+        Arc::clone(&self.snapshot().light)
     }
 
-    pub fn dark_tokens(&self) -> &ShadcnModeTokens {
-        &self.state.dark
+    pub fn dark_tokens(&self) -> Arc<ShadcnModeTokens> {
+        Arc::clone(&self.snapshot().dark)
     }
 
     pub fn token_color(&self, name: &str) -> anyhow::Result<Hsla> {
-        self.mode_tokens().catalog.color(name)
+        let tokens = self.mode_tokens();
+        tokens.catalog.color(name)
+    }
+
+    pub fn replace_theme(&self, other: &ShadcnLook) {
+        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = other.snapshot();
+    }
+
+    pub fn apply_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<()> {
+        let snapshot = self.snapshot();
+        let next = snapshot.with_color_overrides(overrides)?;
+        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        Ok(())
     }
 
     /// Returns a copy of this look with global color overrides applied to both mode catalogs.
     pub fn with_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> Self {
-        if overrides.is_empty() {
-            return self.clone();
-        }
-
-        let light_catalog = apply_color_overrides_to_catalog(self.state.light.catalog.clone(), overrides);
-        let dark_catalog = apply_color_overrides_to_catalog(self.state.dark.catalog.clone(), overrides);
-
-        let Ok(light) = ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light) else {
-            return self.clone();
-        };
-        let Ok(dark) = ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark) else {
+        let snapshot = self.snapshot();
+        let Ok(next) = snapshot.with_color_overrides(overrides) else {
             return self.clone();
         };
 
         Self {
             state: Arc::new(ShadcnLookState {
-                catalog: self.state.catalog.clone(),
-                light,
-                dark,
-                stylesheet: self.state.stylesheet.clone(),
+                snapshot: RwLock::new(Arc::new(next)),
                 mode: AtomicU8::new(self.state.mode.load(Ordering::Relaxed)),
             }),
         }
     }
 
     pub fn chrome(&self) -> LumaChrome {
-        let palette = &self.mode_tokens().palette;
+        let tokens = self.mode_tokens();
+        let palette = &tokens.palette;
 
         LumaChrome {
             app_background: palette.app_background,
@@ -256,7 +301,8 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Primary, role, size, state)
+        let tokens = self.mode_tokens();
+        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Primary, role, size, state)
     }
 
     pub fn resolve_secondary_button(
@@ -265,7 +311,8 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Secondary, role, size, state)
+        let tokens = self.mode_tokens();
+        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Secondary, role, size, state)
     }
 
     pub fn resolve_outline_button(
@@ -274,7 +321,8 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Outline, role, size, state)
+        let tokens = self.mode_tokens();
+        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Outline, role, size, state)
     }
 
     pub fn resolve_ghost_button(
@@ -283,7 +331,8 @@ impl ShadcnLook {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonFamilyAppearance {
-        button_appearance(self.mode_tokens(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
+        let tokens = self.mode_tokens();
+        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
     }
 
     pub fn switch_template(
@@ -376,14 +425,16 @@ impl ShadcnLook {
         &self,
         size: ControlSize,
     ) -> gpui_luma::controls::selector_panel::SelectorItemsPanelAppearance {
-        selector_items_panel_appearance(self.mode_tokens(), self.mode(), size)
+        let tokens = self.mode_tokens();
+        selector_items_panel_appearance(tokens.as_ref(), self.mode(), size)
     }
 
     pub fn selection_panel_appearance(
         &self,
         size: ControlSize,
     ) -> gpui_luma::controls::selection_panel::SelectionPanelAppearance {
-        selection_panel_appearance(self.mode_tokens(), self.mode(), size)
+        let tokens = self.mode_tokens();
+        selection_panel_appearance(tokens.as_ref(), self.mode(), size)
     }
 
     pub fn selection_panel_appearance_provider(

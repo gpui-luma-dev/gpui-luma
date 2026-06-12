@@ -59,7 +59,7 @@ pub type RadioButtonAppearance = RadioButtonPalette;
 
 pub trait RadioButtonTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -139,7 +139,7 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

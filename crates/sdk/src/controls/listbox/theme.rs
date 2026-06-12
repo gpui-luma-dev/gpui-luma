@@ -43,7 +43,7 @@ pub struct ListBoxRowAppearance {
 pub trait ListBoxTheme: Send + Sync {
     fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListAppearance;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListBoxRowPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_row_appearance(
         &self,
@@ -130,8 +130,8 @@ impl ListBoxTheme for DefaultListBoxTheme {
         ListBoxRowPalette { background, label_color, adorner, label_typography: typography.text.label }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

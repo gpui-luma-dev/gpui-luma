@@ -90,7 +90,7 @@ struct ModePalette {
 
 pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
-    let palettes = [mode_palette(look.light_tokens(), "Light"), mode_palette(look.dark_tokens(), "Dark")];
+    let palettes = [mode_palette(&look.light_tokens(), "Light"), mode_palette(&look.dark_tokens(), "Dark")];
 
     div()
         .size_full()

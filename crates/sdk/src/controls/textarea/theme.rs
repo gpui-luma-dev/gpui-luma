@@ -41,7 +41,7 @@ pub struct TextAreaAppearance {
 pub trait TextAreaTheme: Send + Sync {
     fn resolve(&self, state: TextAreaState, enabled: bool) -> TextAreaPalette;
 
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_appearance(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaAppearance {
         compose_textarea_appearance(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
@@ -114,8 +114,8 @@ impl TextAreaTheme for DefaultTextAreaTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

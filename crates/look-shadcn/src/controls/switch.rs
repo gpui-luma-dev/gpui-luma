@@ -177,8 +177,9 @@ mod tests {
     fn astrovista_light_off_switch_uses_background_thumb_and_border_track() {
         let css = include_str!("../../../../apps/gallery/tweakcn/astrovista.css");
         let theme = crate::ShadcnLook::from_css_str(css).expect("astrovista css");
+        let mode_tokens = theme.mode_tokens();
         let appearance = switch_appearance(
-            theme.mode_tokens(),
+            mode_tokens.as_ref(),
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             false,
@@ -203,8 +204,9 @@ mod tests {
         let css = include_str!("../../../../apps/gallery/tweakcn/astrovista.css");
         let theme = crate::ShadcnLook::from_css_str(css).expect("astrovista css");
         theme.set_mode(ThemeMode::Dark);
+        let mode_tokens = theme.mode_tokens();
         let appearance = switch_appearance(
-            theme.mode_tokens(),
+            mode_tokens.as_ref(),
             ThemeMode::Dark,
             ShadcnButtonStyle::Primary,
             false,

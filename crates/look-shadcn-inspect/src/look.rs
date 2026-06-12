@@ -57,7 +57,7 @@ impl<'a> ShadcnInspect<'a> {
         self.look
     }
 
-    fn mode_tokens(&self) -> &gpui_luma_look_shadcn::ShadcnModeTokens {
+    fn mode_tokens(&self) -> std::sync::Arc<gpui_luma_look_shadcn::ShadcnModeTokens> {
         self.look.mode_tokens()
     }
 
@@ -71,7 +71,7 @@ impl<'a> ShadcnInspect<'a> {
         role: ButtonFamilyRole,
         state: InteractionState,
     ) -> ButtonInspectPalette {
-        inspect_button_color_palette(self.mode_tokens(), self.theme_mode(), style, role, state)
+        inspect_button_color_palette(&self.mode_tokens(), self.theme_mode(), style, role, state)
     }
 
     pub fn inspect_button_metrics(
@@ -81,11 +81,11 @@ impl<'a> ShadcnInspect<'a> {
         size: ControlSize,
         state: InteractionState,
     ) -> ButtonInspectMetrics {
-        inspect_button_metrics(self.mode_tokens(), self.theme_mode(), style, role, size, state)
+        inspect_button_metrics(&self.mode_tokens(), self.theme_mode(), style, role, size, state)
     }
 
     pub fn inspect_button_typography(&self) -> ButtonInspectTypography {
-        inspect_button_typography(self.mode_tokens(), self.theme_mode())
+        inspect_button_typography(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_checkbox_color_palette(
@@ -94,7 +94,7 @@ impl<'a> ShadcnInspect<'a> {
         checked: bool,
         state: InteractionState,
     ) -> CheckboxInspectPalette {
-        inspect_checkbox_color_palette(self.mode_tokens(), self.theme_mode(), style, checked, state)
+        inspect_checkbox_color_palette(&self.mode_tokens(), self.theme_mode(), style, checked, state)
     }
 
     pub fn inspect_textfield_color_palette(
@@ -103,7 +103,7 @@ impl<'a> ShadcnInspect<'a> {
         state: TextFieldState,
         enabled: bool,
     ) -> TextFieldInspectPalette {
-        inspect_textfield_color_palette(self.mode_tokens(), self.theme_mode(), style, state, enabled)
+        inspect_textfield_color_palette(&self.mode_tokens(), self.theme_mode(), style, state, enabled)
     }
 
     pub fn inspect_radio_button_color_palette(
@@ -112,7 +112,7 @@ impl<'a> ShadcnInspect<'a> {
         selected: bool,
         state: InteractionState,
     ) -> RadioButtonInspectPalette {
-        inspect_radio_button_color_palette(self.mode_tokens(), self.theme_mode(), style, selected, state)
+        inspect_radio_button_color_palette(&self.mode_tokens(), self.theme_mode(), style, selected, state)
     }
 
     pub fn inspect_switch_color_palette(
@@ -121,19 +121,19 @@ impl<'a> ShadcnInspect<'a> {
         on: bool,
         state: InteractionState,
     ) -> SwitchInspectPalette {
-        inspect_switch_color_palette(self.mode_tokens(), self.theme_mode(), style, on, state)
+        inspect_switch_color_palette(&self.mode_tokens(), self.theme_mode(), style, on, state)
     }
 
     pub fn inspect_checkbox_metrics(&self, size: ControlSize) -> CheckboxInspectMetrics {
-        inspect_checkbox_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_checkbox_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_radio_button_metrics(&self, size: ControlSize) -> RadioButtonInspectMetrics {
-        inspect_radio_button_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_radio_button_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_switch_metrics(&self, size: ControlSize) -> SwitchInspectMetrics {
-        inspect_switch_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_scrollbar_color_palette(
@@ -141,27 +141,27 @@ impl<'a> ShadcnInspect<'a> {
         orientation: ScrollbarOrientation,
         state: InteractionState,
     ) -> ScrollbarInspectPalette {
-        inspect_scrollbar_color_palette(self.mode_tokens(), self.theme_mode(), orientation, state)
+        inspect_scrollbar_color_palette(&self.mode_tokens(), self.theme_mode(), orientation, state)
     }
 
     pub fn inspect_scrollbar_metrics(&self, orientation: ScrollbarOrientation) -> ScrollbarInspectMetrics {
-        inspect_scrollbar_metrics(self.mode_tokens(), self.theme_mode(), orientation)
+        inspect_scrollbar_metrics(&self.mode_tokens(), self.theme_mode(), orientation)
     }
 
     pub fn inspect_slider_color_palette(&self, state: InteractionState) -> SliderInspectPalette {
-        inspect_slider_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_slider_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_slider_metrics(&self) -> SliderInspectMetrics {
-        inspect_slider_metrics(self.mode_tokens(), self.theme_mode())
+        inspect_slider_metrics(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_progress_color_palette(&self, enabled: bool) -> ProgressInspectPalette {
-        inspect_progress_color_palette(self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_progress_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
     pub fn inspect_progress_metrics(&self) -> ProgressInspectMetrics {
-        inspect_progress_metrics(self.mode_tokens(), self.theme_mode())
+        inspect_progress_metrics(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_textarea_color_palette(
@@ -170,23 +170,23 @@ impl<'a> ShadcnInspect<'a> {
         state: TextAreaState,
         enabled: bool,
     ) -> TextFieldInspectPalette {
-        inspect_textarea_color_palette(self.mode_tokens(), self.theme_mode(), style, state, enabled)
+        inspect_textarea_color_palette(&self.mode_tokens(), self.theme_mode(), style, state, enabled)
     }
 
     pub fn inspect_textarea_metrics(&self, size: ControlSize) -> TextFieldInspectMetrics {
-        inspect_textarea_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_textarea_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_textfield_metrics(&self, size: ControlSize) -> TextFieldInspectMetrics {
-        inspect_textfield_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_textfield_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_floating_menu_color_palette(&self, size: ControlSize) -> FloatingMenuInspectPalette {
-        inspect_floating_menu_color_palette(self.mode_tokens(), self.theme_mode(), size)
+        inspect_floating_menu_color_palette(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_floating_menu_metrics(&self, size: ControlSize) -> FloatingMenuInspectMetrics {
-        inspect_floating_menu_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_floating_menu_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_context_menu_color_palette(
@@ -194,11 +194,11 @@ impl<'a> ShadcnInspect<'a> {
         state: InteractionState,
         size: ControlSize,
     ) -> ContextMenuInspectPalette {
-        inspect_context_menu_color_palette(self.mode_tokens(), self.theme_mode(), state, size)
+        inspect_context_menu_color_palette(&self.mode_tokens(), self.theme_mode(), state, size)
     }
 
     pub fn inspect_context_menu_metrics(&self, size: ControlSize) -> ContextMenuInspectMetrics {
-        inspect_context_menu_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_context_menu_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_popup_menu_color_palette(
@@ -206,11 +206,11 @@ impl<'a> ShadcnInspect<'a> {
         state: InteractionState,
         size: ControlSize,
     ) -> PopupMenuInspectPalette {
-        inspect_popup_menu_color_palette(self.mode_tokens(), self.theme_mode(), state, size)
+        inspect_popup_menu_color_palette(&self.mode_tokens(), self.theme_mode(), state, size)
     }
 
     pub fn inspect_popup_menu_metrics(&self, size: ControlSize) -> PopupMenuInspectMetrics {
-        inspect_popup_menu_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_popup_menu_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_tabs_navigation_item_color_palette(
@@ -218,19 +218,19 @@ impl<'a> ShadcnInspect<'a> {
         active: bool,
         state: InteractionState,
     ) -> TabsNavigationItemInspectPalette {
-        inspect_tabs_navigation_item_color_palette(self.mode_tokens(), self.theme_mode(), active, state)
+        inspect_tabs_navigation_item_color_palette(&self.mode_tokens(), self.theme_mode(), active, state)
     }
 
     pub fn inspect_tabs_navigation_list_color_palette(&self, enabled: bool) -> TabsNavigationListInspectPalette {
-        inspect_tabs_navigation_list_color_palette(self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_tabs_navigation_list_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
     pub fn inspect_tabs_navigation_metrics(&self, size: ControlSize) -> TabsNavigationInspectMetrics {
-        inspect_tabs_navigation_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_tabs_navigation_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_split_view_color_palette(&self, enabled: bool) -> SplitViewInspectPalette {
-        inspect_split_view_color_palette(self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_split_view_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
     pub fn inspect_split_view_metrics(&self) -> SplitViewInspectMetrics {
@@ -238,7 +238,7 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_resizable_panels_color_palette(&self, state: InteractionState) -> ResizablePanelsInspectPalette {
-        inspect_resizable_panels_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_resizable_panels_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_resizable_panels_metrics(&self, handle_size: ResizeHandleSize) -> ResizablePanelsInspectMetrics {
@@ -246,7 +246,7 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_list_view_color_palette(&self, enabled: bool) -> ListViewInspectPalette {
-        inspect_list_view_color_palette(self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_list_view_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
     pub fn inspect_list_view_row_color_palette(
@@ -254,58 +254,58 @@ impl<'a> ShadcnInspect<'a> {
         selected: bool,
         state: InteractionState,
     ) -> ListViewRowInspectPalette {
-        inspect_list_view_row_color_palette(self.mode_tokens(), self.theme_mode(), selected, state)
+        inspect_list_view_row_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
     }
 
     pub fn inspect_list_view_metrics(&self, size: ControlSize) -> ListViewInspectMetrics {
-        inspect_list_view_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_list_view_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_accordion_trigger_color_palette(&self, state: InteractionState) -> AccordionTriggerInspectPalette {
-        inspect_accordion_trigger_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_accordion_trigger_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_accordion_content_color_palette(&self, expanded: bool) -> AccordionContentInspectPalette {
-        inspect_accordion_content_color_palette(self.mode_tokens(), self.theme_mode(), expanded)
+        inspect_accordion_content_color_palette(&self.mode_tokens(), self.theme_mode(), expanded)
     }
 
     pub fn inspect_accordion_metrics(&self, size: ControlSize) -> AccordionInspectMetrics {
-        inspect_accordion_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_accordion_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_listbox_list_color_palette(&self, enabled: bool, focused: bool) -> ListBoxListInspectPalette {
-        inspect_listbox_list_color_palette(self.mode_tokens(), self.theme_mode(), enabled, focused)
+        inspect_listbox_list_color_palette(&self.mode_tokens(), self.theme_mode(), enabled, focused)
     }
 
     pub fn inspect_listbox_row_color_palette(&self, state: InteractionState) -> ListBoxRowInspectPalette {
-        inspect_listbox_row_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_listbox_row_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_listbox_metrics(&self, size: ControlSize) -> ListBoxInspectMetrics {
-        inspect_listbox_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_listbox_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_tree_view_row_color_palette(&self, state: InteractionState) -> TreeViewRowInspectPalette {
-        inspect_tree_view_row_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_tree_view_row_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_tree_view_metrics(&self, size: ControlSize) -> TreeViewInspectMetrics {
-        inspect_tree_view_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_tree_view_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_navigation_sidebar_container_color_palette(&self) -> NavigationSidebarContainerInspectPalette {
-        inspect_navigation_sidebar_container_color_palette(self.mode_tokens(), self.theme_mode())
+        inspect_navigation_sidebar_container_color_palette(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_navigation_sidebar_section_color_palette(&self) -> NavigationSidebarSectionInspectPalette {
-        inspect_navigation_sidebar_section_color_palette(self.mode_tokens(), self.theme_mode())
+        inspect_navigation_sidebar_section_color_palette(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_navigation_sidebar_branch_color_palette(
         &self,
         state: InteractionState,
     ) -> NavigationSidebarItemInspectPalette {
-        inspect_navigation_sidebar_branch_color_palette(self.mode_tokens(), self.theme_mode(), state)
+        inspect_navigation_sidebar_branch_color_palette(&self.mode_tokens(), self.theme_mode(), state)
     }
 
     pub fn inspect_navigation_sidebar_item_color_palette(
@@ -313,38 +313,38 @@ impl<'a> ShadcnInspect<'a> {
         selected: bool,
         state: InteractionState,
     ) -> NavigationSidebarItemInspectPalette {
-        inspect_navigation_sidebar_item_color_palette(self.mode_tokens(), self.theme_mode(), selected, state)
+        inspect_navigation_sidebar_item_color_palette(&self.mode_tokens(), self.theme_mode(), selected, state)
     }
 
     pub fn inspect_navigation_sidebar_metrics(&self, size: ControlSize) -> NavigationSidebarInspectMetrics {
-        inspect_navigation_sidebar_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_navigation_sidebar_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_autocomplete_chrome_color_palette(&self) -> AutocompleteChromeInspectPalette {
-        inspect_autocomplete_chrome_color_palette(self.mode_tokens(), self.theme_mode())
+        inspect_autocomplete_chrome_color_palette(&self.mode_tokens(), self.theme_mode())
     }
 
     pub fn inspect_autocomplete_menu_color_palette(&self, size: ControlSize) -> FloatingMenuInspectPalette {
-        inspect_autocomplete_menu_color_palette(self.mode_tokens(), self.theme_mode(), size)
+        inspect_autocomplete_menu_color_palette(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_autocomplete_metrics(&self, size: ControlSize) -> AutocompleteInspectMetrics {
-        inspect_autocomplete_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_autocomplete_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_selector_color_palette(&self, state: InteractionState, size: ControlSize) -> SelectorInspectPalette {
-        inspect_selector_color_palette(self.mode_tokens(), self.theme_mode(), state, size)
+        inspect_selector_color_palette(&self.mode_tokens(), self.theme_mode(), state, size)
     }
 
     pub fn inspect_selector_metrics(&self, size: ControlSize) -> SelectorInspectMetrics {
-        inspect_selector_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_selector_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_control_group_list_color_palette(&self, enabled: bool) -> ControlGroupListInspectPalette {
-        inspect_control_group_list_color_palette(self.mode_tokens(), self.theme_mode(), enabled)
+        inspect_control_group_list_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
     }
 
     pub fn inspect_control_group_metrics(&self, size: ControlSize) -> ControlGroupInspectMetrics {
-        inspect_control_group_metrics(self.mode_tokens(), self.theme_mode(), size)
+        inspect_control_group_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 }

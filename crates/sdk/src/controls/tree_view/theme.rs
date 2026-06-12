@@ -47,7 +47,7 @@ pub struct TreeViewPalette {
 
 pub trait TreeViewTheme: Send + Sync {
     fn resolve_row(&self, state: InteractionState, selected: bool) -> TreeViewPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -96,7 +96,7 @@ impl TreeViewTheme for DefaultTreeViewTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

@@ -87,6 +87,7 @@ This pattern improves consistency and makes style/theming separable from behavio
 - TextField supports per-instance appearance specialization (`.appearance_override(...)`) without adding global variants/tokens; overrides are applied after appearance resolution and used consistently by both template rendering and text layout/shaping.
 - `ShadcnLook` serves as the product runtime theme:
   - Loads CSS catalogs (`ShadcnLook::from_css_path`) and parses/holds the embedded `style.toml` stylesheet configuration (`ShadcnLook::stylesheet()`), or loads both custom CSS and TOML dynamically at runtime.
+  - Keeps one shared live look identity per app while allowing the underlying catalog, mode token snapshots, and stylesheet-backed overrides to be replaced in place at runtime.
   - Exposes control template and theme factories powered by the dynamic stylesheet engine.
   - Apps keep one `Arc<ShadcnLook>` in app state and pass it explicitly into control/theme factory helpers.
   - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into look-shadcn template/theme factories.

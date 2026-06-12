@@ -121,7 +121,7 @@ impl Render for PalettePanel {
                 ThemeMode::Light => self.look.light_tokens(),
                 ThemeMode::Dark => self.look.dark_tokens(),
             };
-            let palette = mode_palette(mode_tokens, &self.overrides.global_color_overrides);
+            let palette = mode_palette(&mode_tokens, &self.overrides.global_color_overrides);
 
             vstack! {
                 gap=18;

@@ -62,7 +62,7 @@ pub type CheckboxAppearance = CheckboxPalette;
 
 pub trait CheckboxTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -140,7 +140,7 @@ impl CheckboxTheme for DefaultCheckboxTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

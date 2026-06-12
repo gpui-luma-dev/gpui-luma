@@ -58,7 +58,7 @@ pub struct AccordionContentPalette {
 pub trait AccordionTheme: Send + Sync {
     fn resolve_trigger(&self, state: InteractionState) -> AccordionPalette;
     fn resolve_content(&self, expanded: bool) -> AccordionContentPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -114,7 +114,7 @@ impl AccordionTheme for DefaultAccordionTheme {
         AccordionContentPalette { background: None, foreground: palette.app.foreground }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

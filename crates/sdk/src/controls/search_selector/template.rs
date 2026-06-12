@@ -111,7 +111,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             TextFieldVariant::Standard,
             model.trigger_state,
             true,
-            &StandardBoxScale::compute(ControlSize::Md, model.trigger_theme.metrics(), window.scale_factor()),
+            &StandardBoxScale::compute(ControlSize::Md, &model.trigger_theme.metrics(), window.scale_factor()),
         );
 
         div()

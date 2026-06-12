@@ -150,10 +150,10 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
 
         let metrics = self.theme.metrics();
         let adorner =
-            button_family_focus_adorner(model.state.focused, appearance.border, appearance.focus_ring, metrics);
+            button_family_focus_adorner(model.state.focused, appearance.border, appearance.focus_ring, &metrics);
         let focused_adorner = focused_probe_appearance
             .as_ref()
-            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, metrics));
+            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics));
 
         let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
 

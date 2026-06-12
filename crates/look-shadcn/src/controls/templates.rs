@@ -71,12 +71,14 @@ struct RadixStyledButtonFamilyTheme {
 
 impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
-        let ctx = AppearanceContext::new(self.theme.mode_tokens(), self.theme.mode(), state);
-        button_palette(&ctx, self.theme.stylesheet(), self.style, role, size)
+        let tokens = self.theme.mode_tokens();
+        let stylesheet = self.theme.stylesheet();
+        let ctx = AppearanceContext::new(tokens.as_ref(), self.theme.mode(), state);
+        button_palette(&ctx, stylesheet.as_ref(), self.style, role, size)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -99,11 +101,12 @@ struct RadixStyledSwitchTheme {
 
 impl SwitchTheme for RadixStyledSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState) -> gpui_luma::controls::switch::SwitchPalette {
-        switch_appearance(self.theme.mode_tokens(), self.theme.mode(), self.style, on, state)
+        let tokens = self.theme.mode_tokens();
+        switch_appearance(tokens.as_ref(), self.theme.mode(), self.style, on, state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -114,11 +117,12 @@ struct RadixStyledCheckboxTheme {
 
 impl CheckboxTheme for RadixStyledCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState) -> gpui_luma::controls::checkbox::CheckboxPalette {
-        checkbox_appearance(self.theme.mode_tokens(), self.style, checked, state)
+        let tokens = self.theme.mode_tokens();
+        checkbox_appearance(tokens.as_ref(), self.style, checked, state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -133,11 +137,12 @@ impl RadioButtonTheme for RadixStyledRadioButtonTheme {
         selected: bool,
         state: InteractionState,
     ) -> gpui_luma::controls::radio_button::RadioButtonPalette {
-        radio_button_appearance(self.theme.mode_tokens(), self.style, selected, state)
+        let tokens = self.theme.mode_tokens();
+        radio_button_appearance(tokens.as_ref(), self.style, selected, state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -207,7 +212,8 @@ struct RadixResizablePanelsTheme {
 
 impl ResizablePanelsTheme for RadixResizablePanelsTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsAppearance {
-        resizable_panels_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        resizable_panels_appearance(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -217,7 +223,8 @@ struct RadixSplitViewTheme {
 
 impl SplitViewTheme for RadixSplitViewTheme {
     fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewAppearance {
-        split_view_appearance(self.theme.mode_tokens(), self.theme.mode(), hovered, enabled)
+        let tokens = self.theme.mode_tokens();
+        split_view_appearance(tokens.as_ref(), self.theme.mode(), hovered, enabled)
     }
 }
 
@@ -227,7 +234,8 @@ struct RadixSliderTheme {
 
 impl SliderTheme for RadixSliderTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::slider::SliderAppearance {
-        slider_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        slider_appearance(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -241,7 +249,8 @@ impl ScrollbarTheme for RadixScrollbarTheme {
         state: InteractionState,
         orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
     ) -> gpui_luma::controls::scrollbar::ScrollbarAppearance {
-        scrollbar_appearance(self.theme.mode_tokens(), state, orientation)
+        let tokens = self.theme.mode_tokens();
+        scrollbar_appearance(tokens.as_ref(), state, orientation)
     }
 }
 
@@ -259,7 +268,8 @@ struct RadixFloatingMenuTheme {
 
 impl FloatingMenuTheme for RadixFloatingMenuTheme {
     fn resolve(&self) -> gpui_luma::controls::floating_menu::FloatingMenuAppearance {
-        floating_menu_appearance(self.theme.mode_tokens(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
+        let tokens = self.theme.mode_tokens();
+        floating_menu_appearance(tokens.as_ref(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
     }
 }
 
@@ -269,11 +279,12 @@ struct RadixPopupMenuTheme {
 
 impl PopupMenuTheme for RadixPopupMenuTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::popup_menu::PopupMenuPalette {
-        super::popup_menu::popup_menu_palette(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        super::popup_menu::popup_menu_palette(tokens.as_ref(), self.theme.mode(), state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -283,7 +294,8 @@ struct RadixContextMenuTheme {
 
 impl ContextMenuTheme for RadixContextMenuTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuAppearance {
-        context_menu_appearance(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        context_menu_appearance(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -311,11 +323,12 @@ struct RadixSelectorTheme {
 
 impl SelectorTheme for RadixSelectorTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::selector::SelectorPalette {
-        super::selector::selector_palette(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        super::selector::selector_palette(tokens.as_ref(), self.theme.mode(), state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -330,8 +343,9 @@ impl TextFieldTheme for RadixTextFieldTheme {
         state: TextFieldState,
         enabled: bool,
     ) -> gpui_luma::controls::textfield::TextFieldPalette {
+        let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
-            self.theme.mode_tokens(),
+            tokens.as_ref(),
             self.theme.mode(),
             super::textfield::ShadcnTextFieldStyle::Surface,
             state,
@@ -339,8 +353,8 @@ impl TextFieldTheme for RadixTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -350,7 +364,8 @@ struct RadixAutocompleteTextBoxTheme {
 
 impl AutocompleteTextBoxTheme for RadixAutocompleteTextBoxTheme {
     fn resolve(&self) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxAppearance {
-        autocomplete_textbox_appearance(self.theme.mode_tokens(), self.theme.mode(), ControlSize::Md)
+        let tokens = self.theme.mode_tokens();
+        autocomplete_textbox_appearance(tokens.as_ref(), self.theme.mode(), ControlSize::Md)
     }
 }
 
@@ -380,8 +395,9 @@ impl TextFieldTheme for RadixSoftTextFieldTheme {
         state: TextFieldState,
         enabled: bool,
     ) -> gpui_luma::controls::textfield::TextFieldPalette {
+        let tokens = self.theme.mode_tokens();
         super::textfield::textfield_palette(
-            self.theme.mode_tokens(),
+            tokens.as_ref(),
             self.theme.mode(),
             super::textfield::ShadcnTextFieldStyle::Soft,
             state,
@@ -389,8 +405,8 @@ impl TextFieldTheme for RadixSoftTextFieldTheme {
         )
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -408,8 +424,9 @@ impl TextAreaTheme for RadixTextAreaTheme {
         state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
     ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
-            self.theme.mode_tokens(),
+            tokens.as_ref(),
             self.theme.mode(),
             super::textfield::ShadcnTextFieldStyle::Surface,
             state,
@@ -417,8 +434,8 @@ impl TextAreaTheme for RadixTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -440,8 +457,9 @@ impl TextAreaTheme for RadixSoftTextAreaTheme {
         state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
     ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        let tokens = self.theme.mode_tokens();
         super::textarea::textarea_palette(
-            self.theme.mode_tokens(),
+            tokens.as_ref(),
             self.theme.mode(),
             super::textfield::ShadcnTextFieldStyle::Soft,
             state,
@@ -449,8 +467,8 @@ impl TextAreaTheme for RadixSoftTextAreaTheme {
         )
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -463,7 +481,10 @@ pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn Autocomplet
 }
 
 pub fn selection_panel_appearance_provider(theme: Arc<ShadcnLook>) -> SelectionPanelAppearanceProvider {
-    Arc::new(move |size| selection_panel_appearance(theme.mode_tokens(), theme.mode(), size))
+    Arc::new(move |size| {
+        let tokens = theme.mode_tokens();
+        selection_panel_appearance(tokens.as_ref(), theme.mode(), size)
+    })
 }
 
 struct RadixTreeViewTheme {
@@ -472,11 +493,12 @@ struct RadixTreeViewTheme {
 
 impl TreeViewTheme for RadixTreeViewTheme {
     fn resolve_row(&self, state: InteractionState, selected: bool) -> gpui_luma::controls::tree_view::TreeViewPalette {
-        tree_view_row_palette(self.theme.mode_tokens(), selected, state)
+        let tokens = self.theme.mode_tokens();
+        tree_view_row_palette(tokens.as_ref(), selected, state)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -486,15 +508,17 @@ struct RadixAccordionTheme {
 
 impl AccordionTheme for RadixAccordionTheme {
     fn resolve_trigger(&self, state: InteractionState) -> gpui_luma::controls::accordion::AccordionPalette {
-        accordion_trigger_palette(self.theme.mode_tokens(), self.theme.mode(), state)
+        let tokens = self.theme.mode_tokens();
+        accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state)
     }
 
     fn resolve_content(&self, expanded: bool) -> gpui_luma::controls::accordion::AccordionContentPalette {
-        accordion_content_palette(self.theme.mode_tokens(), self.theme.mode(), expanded)
+        let tokens = self.theme.mode_tokens();
+        accordion_content_palette(tokens.as_ref(), self.theme.mode(), expanded)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -504,7 +528,8 @@ struct RadixTabsNavigationTheme {
 
 impl TabsNavigationTheme for RadixTabsNavigationTheme {
     fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
-        tabs_navigation_list_appearance(self.theme.mode_tokens(), enabled)
+        let tokens = self.theme.mode_tokens();
+        tabs_navigation_list_appearance(tokens.as_ref(), enabled)
     }
 
     fn resolve_item(
@@ -512,7 +537,8 @@ impl TabsNavigationTheme for RadixTabsNavigationTheme {
         active: bool,
         state: InteractionState,
     ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
-        tabs_navigation_item_appearance(self.theme.mode_tokens(), active, state)
+        let tokens = self.theme.mode_tokens();
+        tabs_navigation_item_appearance(tokens.as_ref(), active, state)
     }
 }
 
@@ -522,11 +548,13 @@ struct RadixNavigationSidebarTheme {
 
 impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
     fn resolve_container(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarContainerAppearance {
-        navigation_sidebar_container_appearance(self.theme.mode_tokens())
+        let tokens = self.theme.mode_tokens();
+        navigation_sidebar_container_appearance(tokens.as_ref())
     }
 
     fn resolve_section(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarSectionAppearance {
-        navigation_sidebar_section_appearance(self.theme.mode_tokens())
+        let tokens = self.theme.mode_tokens();
+        navigation_sidebar_section_appearance(tokens.as_ref())
     }
 
     fn resolve_branch(
@@ -534,7 +562,8 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        navigation_sidebar_branch_appearance(self.theme.mode_tokens(), state, size)
+        let tokens = self.theme.mode_tokens();
+        navigation_sidebar_branch_appearance(tokens.as_ref(), state, size)
     }
 
     fn resolve_item(
@@ -543,7 +572,8 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        navigation_sidebar_item_appearance(self.theme.mode_tokens(), selected, state, size)
+        let tokens = self.theme.mode_tokens();
+        navigation_sidebar_item_appearance(tokens.as_ref(), selected, state, size)
     }
 }
 
@@ -592,7 +622,8 @@ struct RadixControlGroupTheme {
 
 impl ControlGroupTheme for RadixControlGroupTheme {
     fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::control_group::ControlGroupListAppearance {
-        control_group_list_appearance(self.theme.mode_tokens(), enabled)
+        let tokens = self.theme.mode_tokens();
+        control_group_list_appearance(tokens.as_ref(), enabled)
     }
 }
 
@@ -618,7 +649,8 @@ impl ListBoxTheme for RadixListBoxTheme {
         focused: bool,
         size: ControlSize,
     ) -> gpui_luma::controls::listbox::ListBoxListAppearance {
-        listbox_list_appearance(self.theme.mode_tokens(), enabled, focused, size)
+        let tokens = self.theme.mode_tokens();
+        listbox_list_appearance(tokens.as_ref(), enabled, focused, size)
     }
 
     fn resolve_row(
@@ -627,11 +659,12 @@ impl ListBoxTheme for RadixListBoxTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::listbox::ListBoxRowPalette {
-        listbox_row_palette(self.theme.mode_tokens(), selected, state, size)
+        let tokens = self.theme.mode_tokens();
+        listbox_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -654,7 +687,8 @@ impl ListViewTheme for RadixListViewTheme {
         focused: bool,
         size: ControlSize,
     ) -> gpui_luma::controls::list_view::ListViewAppearance {
-        list_view_appearance(self.theme.mode_tokens(), enabled, focused, size)
+        let tokens = self.theme.mode_tokens();
+        list_view_appearance(tokens.as_ref(), enabled, focused, size)
     }
 
     fn resolve_row(
@@ -663,11 +697,12 @@ impl ListViewTheme for RadixListViewTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::list_view::ListViewRowPalette {
-        list_view_row_palette(self.theme.mode_tokens(), selected, state, size)
+        let tokens = self.theme.mode_tokens();
+        list_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
-    fn metrics(&self) -> &gpui_luma::theme::MetricTokens {
-        &self.theme.mode_tokens().metrics
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
     }
 }
 
@@ -696,7 +731,8 @@ struct RadixProgressTheme {
 
 impl ProgressTheme for RadixProgressTheme {
     fn resolve(&self, enabled: bool) -> gpui_luma::controls::progress::ProgressAppearance {
-        progress_appearance(self.theme.mode_tokens(), enabled)
+        let tokens = self.theme.mode_tokens();
+        progress_appearance(tokens.as_ref(), enabled)
     }
 }
 

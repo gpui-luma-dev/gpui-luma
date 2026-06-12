@@ -529,7 +529,7 @@ fn preview_textarea_appearance(
     enabled: bool,
     window: &Window,
 ) -> gpui_luma::controls::textarea::TextAreaAppearance {
-    let scale = StandardBoxScale::compute(ControlSize::Md, theme.metrics(), window.scale_factor());
+    let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
     theme.resolve_appearance(state, enabled, &scale)
 }
 

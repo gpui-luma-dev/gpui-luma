@@ -53,7 +53,7 @@ pub struct ListViewRowAppearance {
 pub trait ListViewTheme: Send + Sync {
     fn resolve_appearance(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewAppearance;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_row_appearance(
         &self,
@@ -152,8 +152,8 @@ impl ListViewTheme for DefaultListViewTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

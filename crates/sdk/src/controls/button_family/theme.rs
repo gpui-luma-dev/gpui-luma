@@ -46,7 +46,7 @@ pub struct ButtonFamilyAppearance {
 
 pub trait ButtonFamilyTheme: Send + Sync {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -71,8 +71,8 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         native_button_palette(&self.tokens, role, state)
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

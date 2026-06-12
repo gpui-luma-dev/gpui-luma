@@ -37,7 +37,7 @@ pub struct SelectorAppearance {
 pub trait SelectorTheme: Send + Sync {
     fn resolve(&self, state: InteractionState) -> SelectorPalette;
 
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorAppearance {
         compose_selector_appearance(&self.resolve(state), scale)
@@ -89,8 +89,8 @@ impl SelectorTheme for DefaultSelectorTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

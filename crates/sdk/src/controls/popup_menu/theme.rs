@@ -37,7 +37,7 @@ pub struct PopupMenuAppearance {
 pub trait PopupMenuTheme: Send + Sync {
     fn resolve(&self, state: InteractionState) -> PopupMenuPalette;
 
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuAppearance {
         compose_popup_menu_appearance(&self.resolve(state), scale)
@@ -89,8 +89,8 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

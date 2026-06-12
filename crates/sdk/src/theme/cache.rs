@@ -12,12 +12,12 @@ pub struct LayoutCacheKey {
 }
 
 pub trait LumaLayoutCacheExt: BorrowAppContext {
-    fn use_cached_layout<S, F>(&mut self, metrics: &MetricTokens, key: LayoutCacheKey, compute: F) -> S
+    fn use_cached_layout<S, F>(&mut self, metrics: MetricTokens, key: LayoutCacheKey, compute: F) -> S
     where
         S: Clone + Send + Sync + 'static,
         F: FnOnce(&MetricTokens) -> S,
     {
-        let metrics_key = ThemeMetricsKey::from(metrics);
+        let metrics_key = ThemeMetricsKey::from(&metrics);
         let mut compute = Some(compute);
 
         self.update_default_global(|registry: &mut LumaLayoutCacheRegistry, _| {
@@ -28,7 +28,7 @@ pub trait LumaLayoutCacheExt: BorrowAppContext {
                 return cached;
             }
 
-            let value = compute.take().expect("layout cache compute closure should only run once")(metrics);
+            let value = compute.take().expect("layout cache compute closure should only run once")(&metrics);
             registry.insert(entry_key, value.clone());
             value
         })

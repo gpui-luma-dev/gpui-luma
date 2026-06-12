@@ -51,7 +51,7 @@ pub struct TextFieldAppearance {
 pub trait TextFieldTheme: Send + Sync {
     fn resolve(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldPalette;
 
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 
     fn resolve_appearance(
         &self,
@@ -133,8 +133,8 @@ impl TextFieldTheme for DefaultTextFieldTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }
 

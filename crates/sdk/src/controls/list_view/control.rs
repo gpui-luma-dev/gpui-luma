@@ -462,7 +462,7 @@ where
     }
 
     fn resolve_row_appearance_for_metrics(&self) -> super::theme::ListViewRowAppearance {
-        let scale = ListRowScale::compute(self.model.size, self.model.theme.metrics(), 1.0);
+        let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), 1.0);
         self.model.theme.resolve_row_appearance(false, InteractionState::default(), self.model.size, &scale)
     }
 

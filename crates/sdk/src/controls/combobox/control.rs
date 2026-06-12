@@ -454,7 +454,11 @@ impl Render for ComboBoxControl {
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
-                &crate::theme::StandardBoxScale::compute(crate::theme::ControlSize::Md, textfield_theme.metrics(), 1.0),
+                &crate::theme::StandardBoxScale::compute(
+                    crate::theme::ControlSize::Md,
+                    &textfield_theme.metrics(),
+                    1.0,
+                ),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_appearance.typography.weight;

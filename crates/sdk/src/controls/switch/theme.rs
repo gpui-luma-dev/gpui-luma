@@ -50,7 +50,7 @@ pub type SwitchAppearance = SwitchPalette;
 
 pub trait SwitchTheme: Send + Sync {
     fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette;
-    fn metrics(&self) -> &MetricTokens;
+    fn metrics(&self) -> MetricTokens;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -129,7 +129,7 @@ impl SwitchTheme for DefaultSwitchTheme {
         }
     }
 
-    fn metrics(&self) -> &MetricTokens {
-        &self.tokens.metrics
+    fn metrics(&self) -> MetricTokens {
+        self.tokens.metrics
     }
 }

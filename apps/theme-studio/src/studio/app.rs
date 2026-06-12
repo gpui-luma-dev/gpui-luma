@@ -167,9 +167,11 @@ impl ThemeStudioApp {
     fn apply_theme_overrides(&mut self, cx: &mut Context<Self>) {
         let base = Self::load_theme(&self.active_theme_id);
         base.set_mode(self.look.mode());
-        self.look = Arc::new(base.with_color_overrides(&self.overrides.global_color_overrides));
+        self.look.replace_theme(base.as_ref());
+        if let Err(err) = self.look.apply_color_overrides(&self.overrides.global_color_overrides) {
+            tracing::warn!("failed to apply studio color overrides: {err:?}");
+        }
         cx.bump_luma_theme_revision();
-        self.demos.sync(cx, self.look.clone(), self.control_size);
         self.sync_main_split_theme(cx);
         self.refresh_content_pane(cx);
     }
@@ -295,7 +297,7 @@ impl ThemeStudioApp {
             return;
         }
         self.control_size = size;
-        self.demos.sync(cx, self.look.clone(), self.control_size);
+        self.demos = DemoControls::spawn(cx, self.look.clone(), self.control_size);
         self.refresh_content_pane(cx);
         cx.notify();
     }
