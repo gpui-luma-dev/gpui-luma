@@ -5,11 +5,15 @@ use gpui::{
     Context, DragMoveEvent, Entity, MouseDownEvent, MouseUpEvent, Overflow, Point, Pixels, Render, Subscription,
     Window, div, prelude::*, px,
 };
-use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationEvent, TabsNavigationItem};
+use gpui_luma::controls::tabs_navigation::{
+    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
+};
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
+use super::content_tabs::theme_studio_tabs_navigation_template;
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::overrides::StudioOverrides;
@@ -72,6 +76,9 @@ impl ContentPaneHost {
         let tabs = board
             .look
             .tabs_navigation("theme-studio-content-tabs")
+            .size(ControlSize::Lg)
+            .width_mode(TabsNavigationWidthMode::Uniform)
+            .template(theme_studio_tabs_navigation_template(board.look.clone(), ControlSize::Lg))
             .items([
                 TabsNavigationItem::new("cards").label("Cards"),
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
@@ -127,7 +134,11 @@ impl ContentPaneHost {
         let look = board.look.clone();
         let overrides = board.overrides.clone();
         self.board = board;
-        self.tabs.update(cx, |tabs, cx| tabs.set_template(look.tabs_navigation_template(), cx));
+        self.tabs.update(cx, |tabs, cx| {
+            tabs.set_size(ControlSize::Lg, cx);
+            tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
+            tabs.set_template(theme_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
+        });
         self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look, overrides, cx));
         cx.notify();
     }
@@ -176,16 +187,7 @@ impl Render for ContentPaneHost {
             .flex_col()
             .overflow_hidden()
             .bg(board_bg)
-            .child(
-                div()
-                    .flex_shrink_0()
-                    .px(px(24.0))
-                    .pt(px(16.0))
-                    .pb(px(8.0))
-                    .border_b_1()
-                    .border_color(chrome.border)
-                    .child(self.tabs.clone()),
-            )
+            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.clone())))
             .child(match active_tab {
                 ContentTab::Cards => scrollable_body().child(div().p(px(24.0)).child(render_demo_board(
                     board.selected,

@@ -82,10 +82,13 @@ pub fn resolve_tabs_navigation_item_colors_with_stylesheet(
     Ok(TabsNavigationItemColorTable { label_color: colors.label_color, indicator: colors.indicator })
 }
 
-pub fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> TabsNavigationListAppearance {
+pub fn tabs_navigation_list_appearance(
+    mode: &ShadcnModeTokens,
+    enabled: bool,
+    size: ControlSize,
+) -> TabsNavigationListAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
-    let size = ControlSize::Md;
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_navigation_list");
     let colors = resolve_tabs_navigation_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| TabsNavigationListColorTable::fallback());
@@ -99,7 +102,7 @@ pub fn tabs_navigation_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -
         border: None,
         radius: metrics.radius(size),
         padding: 0.0,
-        gap: metrics.spacing.s5,
+        gap: metrics.gap(size),
     }
 }
 
@@ -107,23 +110,28 @@ pub fn tabs_navigation_item_appearance(
     mode: &ShadcnModeTokens,
     active: bool,
     state: InteractionState,
+    size: ControlSize,
 ) -> TabsNavigationItemAppearance {
     let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
     let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let size = ControlSize::Md;
     let layer = state.layer();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tabs_navigation_item");
     let colors = resolve_tabs_navigation_item_colors(&resolver, active, layer, state.focused)
         .unwrap_or_else(|_| TabsNavigationItemColorTable::fallback());
+    let label_typography = match size {
+        ControlSize::Sm => typography.text.caption,
+        ControlSize::Md => typography.text.label,
+        ControlSize::Lg => typography.text.body,
+    };
 
     TabsNavigationItemAppearance {
         label_color: colors.label_color.hsla(),
         indicator: colors.indicator.map(|color| color.hsla()),
-        label_typography: typography.text.label,
+        label_typography,
         radius: metrics.radius(size),
         padding_x: metrics.padding_x(size),
-        height: typography.text.label.line_height + metrics.spacing.s2,
+        height: label_typography.line_height + metrics.padding_y(size) * 2.0,
         indicator_height: 2.0,
     }
 }
@@ -133,7 +141,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -159,11 +167,23 @@ mod tests {
     fn active_tab_uses_primary_and_inactive_uses_foreground() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let active = tabs_navigation_item_appearance(&mode, true, InteractionState::default());
-        let inactive = tabs_navigation_item_appearance(&mode, false, InteractionState::default());
+        let active = tabs_navigation_item_appearance(&mode, true, InteractionState::default(), ControlSize::Md);
+        let inactive = tabs_navigation_item_appearance(&mode, false, InteractionState::default(), ControlSize::Md);
 
         assert_eq!(active.label_color, catalog.color("primary").expect("primary"));
         assert_eq!(inactive.label_color, catalog.color("foreground").expect("foreground"));
         assert_eq!(active.indicator, Some(catalog.color("primary").expect("primary")));
+    }
+
+    #[test]
+    fn tab_typography_changes_with_size() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let small = tabs_navigation_item_appearance(&mode, false, InteractionState::default(), ControlSize::Sm);
+        let medium = tabs_navigation_item_appearance(&mode, false, InteractionState::default(), ControlSize::Md);
+        let large = tabs_navigation_item_appearance(&mode, false, InteractionState::default(), ControlSize::Lg);
+
+        assert!(small.label_typography.size < medium.label_typography.size);
+        assert!(medium.label_typography.size < large.label_typography.size);
     }
 }

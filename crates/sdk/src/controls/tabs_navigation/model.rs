@@ -4,6 +4,14 @@ use gpui::{AppContext, Entity, SharedString};
 
 use super::{TabsNavigation, TabsNavigationTemplate, default_tabs_navigation_template};
 use crate::controls::tabs_navigation::{ControlFocusState, TabsNavigationItemState};
+use crate::theme::ControlSize;
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum TabsNavigationWidthMode {
+    #[default]
+    Intrinsic,
+    Uniform,
+}
 
 #[derive(Clone, Debug)]
 pub struct TabsNavigationItem {
@@ -45,6 +53,8 @@ impl TabsNavigationItem {
 #[derive(Clone)]
 pub struct TabsNavigationModel {
     pub(crate) id: SharedString,
+    pub(crate) size: ControlSize,
+    pub(crate) width_mode: TabsNavigationWidthMode,
     pub(crate) items: Vec<TabsNavigationItem>,
     pub(crate) active_id: Option<SharedString>,
     pub(crate) enabled: bool,
@@ -61,6 +71,8 @@ pub struct TabsNavigationRenderItem<'a> {
 
 pub struct TabsNavigationRenderModel<'a> {
     pub id: &'a SharedString,
+    pub size: ControlSize,
+    pub width_mode: TabsNavigationWidthMode,
     pub items: Vec<TabsNavigationRenderItem<'a>>,
     pub active_id: Option<&'a SharedString>,
     pub enabled: bool,
@@ -76,6 +88,8 @@ impl TabsNavigationBuilder {
         Self {
             model: TabsNavigationModel {
                 id: id.into(),
+                size: ControlSize::Md,
+                width_mode: TabsNavigationWidthMode::Intrinsic,
                 items: Vec::new(),
                 active_id: None,
                 enabled: true,
@@ -96,6 +110,16 @@ impl TabsNavigationBuilder {
 
     pub fn active(mut self, active_id: impl Into<SharedString>) -> Self {
         self.model.active_id = Some(active_id.into());
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
+        self
+    }
+
+    pub fn width_mode(mut self, width_mode: TabsNavigationWidthMode) -> Self {
+        self.model.width_mode = width_mode;
         self
     }
 

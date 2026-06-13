@@ -8,10 +8,10 @@ use gpui_luma::controls::tabs_navigation::{
     ControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent, TabsNavigationHoverHandler,
     TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
     TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    ThemedTabsNavigationTemplate, TabsNavigationTheme,
+    ThemedTabsNavigationTemplate, TabsNavigationTheme, TabsNavigationWidthMode,
 };
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -23,10 +23,12 @@ use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct TabsNavigationPane {
     tabs: Entity<TabsNavigation>,
+    uniform_tabs: Entity<TabsNavigation>,
     local_theme_tabs: Entity<TabsNavigation>,
     state_preview: Entity<TabsNavigationStatePreview>,
     inspector: Entity<ColorInspectorShell>,
     active_label: String,
+    uniform_active_label: String,
     local_theme_active_label: String,
 }
 
@@ -51,6 +53,12 @@ impl TabsNavigationPane {
         });
         Self {
             tabs: look.tabs_navigation("project-tabs").items(project_tabs()).active("activity").spawn(cx),
+            uniform_tabs: look
+                .tabs_navigation("project-tabs-uniform")
+                .items(uniform_width_tabs())
+                .active("recent-activity")
+                .width_mode(TabsNavigationWidthMode::Uniform)
+                .spawn(cx),
             local_theme_tabs: TabsNavigation::new("project-tabs-local-theme")
                 .items(project_tabs())
                 .active("activity")
@@ -59,6 +67,7 @@ impl TabsNavigationPane {
             state_preview: cx.new(|_| TabsNavigationStatePreview::new(look.clone())),
             inspector,
             active_label: "Activity".to_string(),
+            uniform_active_label: "Recent Activity".to_string(),
             local_theme_active_label: "Activity".to_string(),
         }
     }
@@ -66,6 +75,9 @@ impl TabsNavigationPane {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.tabs, |app, _, event: &TabsNavigationEvent, cx| {
             app.panes.tabs_navigation.handle_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.uniform_tabs, |app, _, event: &TabsNavigationEvent, cx| {
+            app.panes.tabs_navigation.handle_uniform_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.local_theme_tabs, |app, _, event: &TabsNavigationEvent, cx| {
             app.panes.tabs_navigation.handle_local_theme_event(event, cx);
@@ -80,27 +92,31 @@ impl TabsNavigationPane {
                 .flex_col()
                 .items_center()
                 .gap_3()
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_3()
-                        .child(self.tabs.clone())
-                        .child(render_tab_content(&self.active_label, look)),
-                )
+                .child(render_tabs_example(
+                    "Intrinsic width",
+                    self.tabs.clone(),
+                    &self.active_label,
+                    "Each tab keeps its own intrinsic width.",
+                    360.0,
+                    look,
+                ))
                 .child(self.state_preview.clone())
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_3()
-                        .mt(px(10.0))
-                        .child(render_example_label("Local theme customization", look))
-                        .child(self.local_theme_tabs.clone())
-                        .child(render_tab_content(&self.local_theme_active_label, look)),
-                )
+                .child(render_tabs_example(
+                    "Uniform width (match widest label)",
+                    self.uniform_tabs.clone(),
+                    &self.uniform_active_label,
+                    "The widest label defines the slot width for every tab.",
+                    420.0,
+                    look,
+                ))
+                .child(div().mt(px(10.0)).child(render_tabs_example(
+                    "Local theme customization",
+                    self.local_theme_tabs.clone(),
+                    &self.local_theme_active_label,
+                    "Template overrides still work with the shared tabs behavior.",
+                    360.0,
+                    look,
+                )))
                 .into_any_element(),
             self.inspector.clone(),
             look,
@@ -109,6 +125,7 @@ impl TabsNavigationPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.tabs, cx);
+        notify_entity(&self.uniform_tabs, cx);
         notify_entity(&self.local_theme_tabs, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.inspector, cx);
@@ -121,6 +138,15 @@ impl TabsNavigationPane {
         match event {
             TabsNavigationEvent::Activate { label, .. } => {
                 self.active_label = label.to_string();
+                cx.notify();
+            }
+        }
+    }
+
+    fn handle_uniform_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            TabsNavigationEvent::Activate { label, .. } => {
+                self.uniform_active_label = label.to_string();
                 cx.notify();
             }
         }
@@ -141,16 +167,25 @@ struct LocalTabsNavigationTheme {
 }
 
 impl TabsNavigationTheme for LocalTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
-        self.inner.resolve_list(enabled)
+    fn resolve_list(
+        &self,
+        enabled: bool,
+        size: ControlSize,
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
+        self.inner.resolve_list(enabled, size)
     }
 
     fn resolve_item(
         &self,
         active: bool,
         state: InteractionState,
+        size: ControlSize,
     ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
-        self.inner.resolve_item(active, InteractionState { focused: false, ..state })
+        self.inner.resolve_item(active, InteractionState { focused: false, ..state }, size)
+    }
+
+    fn font_family(&self) -> SharedString {
+        self.inner.font_family()
     }
 }
 
@@ -317,6 +352,8 @@ fn render_tabs_state_sample(
         .collect::<Vec<_>>();
     let model = TabsNavigationRenderModel {
         id: &id,
+        size: ControlSize::Md,
+        width_mode: TabsNavigationWidthMode::Intrinsic,
         items: render_items,
         active_id,
         enabled: sample.enabled,
@@ -336,11 +373,39 @@ fn render_tabs_state_sample(
         .into_any_element()
 }
 
+fn render_tabs_example(
+    label: &'static str,
+    tabs: Entity<TabsNavigation>,
+    active_label: &str,
+    detail: &'static str,
+    content_width: f32,
+    look: &ShadcnLook,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap_3()
+        .child(render_example_label(label, look))
+        .child(tabs)
+        .child(render_tab_content(active_label, detail, content_width, look))
+        .into_any_element()
+}
+
 fn project_tabs() -> [TabsNavigationItem; 4] {
     [
         TabsNavigationItem::new("overview").label("Overview"),
         TabsNavigationItem::new("activity").label("Activity"),
         TabsNavigationItem::new("metrics").label("Metrics"),
+        TabsNavigationItem::new("settings").label("Settings").enabled(false),
+    ]
+}
+
+fn uniform_width_tabs() -> [TabsNavigationItem; 4] {
+    [
+        TabsNavigationItem::new("home").label("Home"),
+        TabsNavigationItem::new("recent-activity").label("Recent Activity"),
+        TabsNavigationItem::new("api-integrations").label("API & Integrations"),
         TabsNavigationItem::new("settings").label("Settings").enabled(false),
     ]
 }
@@ -383,11 +448,11 @@ fn render_example_label(label: &'static str, look: &ShadcnLook) -> AnyElement {
         .into_any_element()
 }
 
-fn render_tab_content(active_label: &str, look: &ShadcnLook) -> AnyElement {
+fn render_tab_content(active_label: &str, detail: &'static str, width: f32, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
 
     div()
-        .w(px(360.0))
+        .w(px(width))
         .min_h(px(112.0))
         .flex()
         .flex_col()
@@ -405,11 +470,6 @@ fn render_tab_content(active_label: &str, look: &ShadcnLook) -> AnyElement {
                 .font_weight(gpui::FontWeight::MEDIUM)
                 .child(format!("{active_label} tab")),
         )
-        .child(
-            div()
-                .text_size(px(13.0))
-                .line_height(px(18.0))
-                .child("The pane stays responsible for focus after a tab activation."),
-        )
+        .child(div().text_size(px(13.0)).line_height(px(18.0)).child(detail))
         .into_any_element()
 }

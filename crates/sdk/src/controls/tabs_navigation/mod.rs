@@ -5,7 +5,8 @@ mod theme;
 
 pub use control::{TabsNavigation, TabsNavigationEvent};
 pub use model::{
-    TabsNavigationBuilder, TabsNavigationItem, TabsNavigationModel, TabsNavigationRenderItem, TabsNavigationRenderModel,
+    TabsNavigationBuilder, TabsNavigationItem, TabsNavigationModel, TabsNavigationRenderItem,
+    TabsNavigationRenderModel, TabsNavigationWidthMode,
 };
 pub use template::{
     TabsNavigationClickHandler, TabsNavigationHoverHandler, TabsNavigationMouseDownHandler,

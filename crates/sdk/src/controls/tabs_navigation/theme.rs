@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{Hsla, SharedString};
 
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
@@ -25,8 +25,9 @@ pub struct TabsNavigationItemAppearance {
 }
 
 pub trait TabsNavigationTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool) -> TabsNavigationListAppearance;
-    fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance;
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListAppearance;
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemAppearance;
+    fn font_family(&self) -> SharedString;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -47,26 +48,29 @@ impl DefaultTabsNavigationTheme {
 }
 
 impl TabsNavigationTheme for DefaultTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool) -> TabsNavigationListAppearance {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
-        let size = ControlSize::Md;
 
         TabsNavigationListAppearance {
             background: (!enabled).then_some(palette.state.disabled.background),
             border: None,
             radius: metrics.radius(size),
             padding: 0.0,
-            gap: metrics.spacing.s5,
+            gap: metrics.gap(size),
         }
     }
 
-    fn resolve_item(&self, active: bool, state: InteractionState) -> TabsNavigationItemAppearance {
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemAppearance {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
-        let size = ControlSize::Md;
         let layer = state.layer();
+        let label_typography = match size {
+            ControlSize::Sm => typography.text.caption,
+            ControlSize::Md => typography.text.label,
+            ControlSize::Lg => typography.text.body,
+        };
 
         let active_color = match layer {
             InteractionLayer::Disabled => palette.state.disabled.foreground,
@@ -86,11 +90,15 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
             } else {
                 active_color
             }),
-            label_typography: typography.text.label,
+            label_typography,
             radius: metrics.radius(size),
             padding_x: metrics.padding_x(size),
-            height: typography.text.label.line_height + metrics.spacing.s2,
+            height: label_typography.line_height + metrics.padding_y(size) * 2.0,
             indicator_height: 2.0,
         }
+    }
+
+    fn font_family(&self) -> SharedString {
+        self.tokens.typography.font.sans.family.clone().into()
     }
 }

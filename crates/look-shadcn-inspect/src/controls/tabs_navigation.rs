@@ -71,8 +71,9 @@ pub fn inspect_tabs_navigation_metrics(
 
     let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let list = gpui_luma_look_shadcn::paint::tabs_navigation_list_appearance(mode, true);
-    let item = gpui_luma_look_shadcn::paint::tabs_navigation_item_appearance(mode, true, InteractionState::default());
+    let list = gpui_luma_look_shadcn::paint::tabs_navigation_list_appearance(mode, true, size);
+    let item =
+        gpui_luma_look_shadcn::paint::tabs_navigation_item_appearance(mode, true, InteractionState::default(), size);
 
     TabsNavigationInspectMetrics {
         list_radius: radius_metric(catalog, size, list.radius),

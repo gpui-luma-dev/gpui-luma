@@ -1,61 +1,34 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
-use gpui::{
-    App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, TextRun,
-    Window, div, font, px, prelude::*,
+use gpui::{App, Div, ElementId, Hsla, MouseButton, SharedString, Stateful, TextRun, Window, div, font, prelude::*, px};
+use gpui_luma::controls::tabs_navigation::{
+    TabsNavigationItemAppearance, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
+    TabsNavigationTheme, TabsNavigationWidthMode,
 };
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::ShadcnLook;
 
-use super::{TabsNavigationRenderModel, model::TabsNavigationWidthMode};
-use crate::controls::tabs_navigation::{TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme};
+pub fn theme_studio_tabs_navigation_template(
+    look: Arc<ShadcnLook>,
+    tab_size: ControlSize,
+) -> Arc<dyn TabsNavigationTemplate> {
+    let full_bar_color = look.token_color("border").unwrap_or(look.chrome().border);
+    Arc::new(ThemeStudioTabsNavigationTemplate { theme: look.tabs_navigation_theme(), full_bar_color, tab_size })
+}
 
-pub type TabsNavigationClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-
-pub struct TabsNavigationTemplateHandlers {
-    pub item_hovers: Vec<TabsNavigationHoverHandler>,
-    pub item_mouse_downs: Vec<TabsNavigationMouseDownHandler>,
-    pub item_mouse_ups: Vec<TabsNavigationMouseUpHandler>,
-    pub item_mouse_up_outs: Vec<TabsNavigationMouseUpHandler>,
-    pub item_clicks: Vec<TabsNavigationClickHandler>,
+struct ThemeStudioTabsNavigationTemplate {
+    theme: Arc<dyn TabsNavigationTheme>,
+    full_bar_color: Hsla,
+    tab_size: ControlSize,
 }
 
 struct TabsNavigationItemVisualModel<'a> {
     id: ElementId,
     label: &'a SharedString,
-    state: crate::controls::state::CompositeItemState,
+    state: gpui_luma::controls::tabs_navigation::TabsNavigationItemState,
 }
 
-pub trait TabsNavigationTemplate: Send + Sync {
-    fn render(
-        &self,
-        model: &TabsNavigationRenderModel<'_>,
-        handlers: TabsNavigationTemplateHandlers,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Stateful<Div>;
-}
-
-pub struct ThemedTabsNavigationTemplate {
-    theme: Arc<dyn TabsNavigationTheme>,
-}
-
-impl ThemedTabsNavigationTemplate {
-    pub fn new(theme: Arc<dyn TabsNavigationTheme>) -> Self {
-        Self { theme }
-    }
-}
-
-pub fn default_tabs_navigation_template() -> Arc<dyn TabsNavigationTemplate> {
-    static TEMPLATE: OnceLock<Arc<dyn TabsNavigationTemplate>> = OnceLock::new();
-
-    TEMPLATE
-        .get_or_init(|| Arc::new(ThemedTabsNavigationTemplate::new(default_tabs_navigation_theme())))
-        .clone()
-}
-
-impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
+impl TabsNavigationTemplate for ThemeStudioTabsNavigationTemplate {
     fn render(
         &self,
         model: &TabsNavigationRenderModel<'_>,
@@ -70,18 +43,21 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
-        let list_appearance = self.theme.resolve_list(model.enabled, model.size);
-        let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), window);
+        let list_appearance = self.theme.resolve_list(model.enabled, self.tab_size);
+        let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), self.tab_size, window);
 
         let mut root = div()
             .id(model.id.clone())
             .relative()
+            .w_full()
             .flex()
             .flex_row()
             .items_center()
+            .px(px(24.0))
             .gap(px(list_appearance.gap))
             .p(px(list_appearance.padding))
-            .rounded(px(list_appearance.radius));
+            .rounded(px(list_appearance.radius))
+            .child(div().absolute().left(px(0.0)).right(px(0.0)).bottom(px(0.0)).h(px(1.0)).bg(self.full_bar_color));
 
         if let Some(background) = list_appearance.background {
             root = root.bg(background);
@@ -114,7 +90,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
                 break;
             };
 
-            let appearance = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
+            let appearance = self.theme.resolve_item(item.active, item.state.interaction_state(), self.tab_size);
             let mut tab = render_tabs_navigation_item_visual(
                 TabsNavigationItemVisualModel {
                     id: ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("tab-{}", item.id).into()),
@@ -147,6 +123,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
 fn resolve_uniform_tab_width(
     model: &TabsNavigationRenderModel<'_>,
     theme: &dyn TabsNavigationTheme,
+    tab_size: ControlSize,
     window: &mut Window,
 ) -> Option<f32> {
     if model.width_mode != TabsNavigationWidthMode::Uniform {
@@ -157,7 +134,7 @@ fn resolve_uniform_tab_width(
     let mut max_width = 0.0_f32;
 
     for item in &model.items {
-        let appearance = theme.resolve_item(item.active, item.state.interaction_state(), model.size);
+        let appearance = theme.resolve_item(item.active, item.state.interaction_state(), tab_size);
         let run = TextRun {
             len: item.label.len(),
             font: {

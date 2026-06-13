@@ -8,11 +8,11 @@ use super::{
     TabsNavigationTemplateHandlers,
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
-use crate::controls::tabs_navigation::model::TabsNavigationModel;
+use crate::controls::tabs_navigation::model::{TabsNavigationModel, TabsNavigationWidthMode};
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
 };
-use crate::theme::observe_theme_revision;
+use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
 pub enum TabsNavigationEvent {
@@ -76,6 +76,22 @@ impl TabsNavigation {
         cx.notify();
     }
 
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        if self.model.size == size {
+            return;
+        }
+        self.model.size = size;
+        cx.notify();
+    }
+
+    pub fn set_width_mode(&mut self, width_mode: TabsNavigationWidthMode, cx: &mut Context<Self>) {
+        if self.model.width_mode == width_mode {
+            return;
+        }
+        self.model.width_mode = width_mode;
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
@@ -118,6 +134,8 @@ impl TabsNavigation {
 
         TabsNavigationRenderModel {
             id: &self.model.id,
+            size: self.model.size,
+            width_mode: self.model.width_mode,
             items,
             active_id: self.model.active_id.as_ref(),
             enabled: self.model.enabled,

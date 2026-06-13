@@ -529,18 +529,27 @@ struct RadixTabsNavigationTheme {
 }
 
 impl TabsNavigationTheme for RadixTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
+    fn resolve_list(
+        &self,
+        enabled: bool,
+        size: ControlSize,
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_list_appearance(tokens.as_ref(), enabled)
+        tabs_navigation_list_appearance(tokens.as_ref(), enabled, size)
     }
 
     fn resolve_item(
         &self,
         active: bool,
         state: InteractionState,
+        size: ControlSize,
     ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_item_appearance(tokens.as_ref(), active, state)
+        tabs_navigation_item_appearance(tokens.as_ref(), active, state, size)
+    }
+
+    fn font_family(&self) -> gpui::SharedString {
+        self.theme.mode_tokens().typography.font.sans.family.clone().into()
     }
 }
 
