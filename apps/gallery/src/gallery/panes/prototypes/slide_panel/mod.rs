@@ -1,0 +1,4 @@
+mod control;
+mod pane;
+
+pub(in crate::gallery) use pane::SlidePanelPane;

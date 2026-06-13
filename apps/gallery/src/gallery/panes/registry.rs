@@ -39,6 +39,7 @@ enum GalleryPageKind {
     Button,
     DecoratedButton,
     ShadowButton,
+    SlidePanel,
     AutocompleteTextField,
     ComboBox,
     SearchSelector,
@@ -221,6 +222,8 @@ const DECORATED_BUTTON_PAGE: GalleryPage = GalleryPage {
 };
 const SHADOW_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "shadow-button", label: "Shadow Button", icon: None, kind: GalleryPageKind::ShadowButton };
+const SLIDE_PANEL_PAGE: GalleryPage =
+    GalleryPage { id: "slide-panel", label: "Slide Panel", icon: None, kind: GalleryPageKind::SlidePanel };
 const CUSTOM_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
 const AUTOCOMPLETE_TEXTFIELD_PAGE: GalleryPage = GalleryPage {
@@ -287,7 +290,7 @@ const SELECTION_PAGES: &[GalleryPage] = &[
     SELECTION_PANEL_PAGE,
     SELECTOR_TEMPLATES_PAGE,
 ];
-const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, SHADOW_BUTTON_PAGE];
+const PROTOTYPES_PAGES: &[GalleryPage] = &[DECORATED_BUTTON_PAGE, SHADOW_BUTTON_PAGE, SLIDE_PANEL_PAGE];
 const CONTROL_GROUPS: &[GalleryNavGroup] = &[
     GalleryNavGroup {
         id: "command",
@@ -350,6 +353,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) card: card::CardPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) shadow_button: prototypes::ShadowButtonPane,
+    pub(super) slide_panel: prototypes::SlidePanelPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
     pub(super) combobox: combobox::ComboBoxPane,
     pub(super) search_selector: search_selector::SearchSelectorPane,
@@ -444,6 +448,7 @@ impl GalleryPanes {
             card: card::CardPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
             shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
+            slide_panel: prototypes::SlidePanelPane::new(cx, look.clone()),
             autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, look.clone()),
             combobox: combobox::ComboBoxPane::new(cx, look.clone()),
             search_selector: search_selector::SearchSelectorPane::new(cx, look.clone()),
@@ -485,6 +490,7 @@ impl GalleryPanes {
         self.card.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.shadow_button.subscribe(cx, subscriptions);
+        self.slide_panel.subscribe(cx, subscriptions);
         self.autocomplete_textfield.subscribe(cx, subscriptions);
         self.combobox.subscribe(cx, subscriptions);
         self.search_selector.subscribe(cx, subscriptions);
@@ -527,6 +533,7 @@ impl GalleryPanes {
             GalleryPageKind::Card => self.card.notify_controls(cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
+            GalleryPageKind::SlidePanel => self.slide_panel.notify_controls(cx),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.notify_controls(cx),
             GalleryPageKind::ComboBox => self.combobox.notify_controls(cx),
             GalleryPageKind::SearchSelector => self.search_selector.notify_controls(cx),
@@ -581,6 +588,7 @@ impl GalleryPanes {
             GalleryPageKind::Card => self.card.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),
+            GalleryPageKind::SlidePanel => self.slide_panel.render(&self.look),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.look),
             GalleryPageKind::ComboBox => self.combobox.render(&self.look),
             GalleryPageKind::SearchSelector => self.search_selector.render(&self.look),
