@@ -61,7 +61,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `app_shell.rs`
   - `open(cx)` for window creation and root entity mount
 - `theme.rs`
-  - `StudioThemeChoice` (CLI `default` or tweakcn CSS stem under `apps/gallery/tweakcn/`)
+  - `StudioThemeChoice` (CLI `default` or built-in shadcn theme id from `gpui-luma-look-shadcn`)
 - `studio/app.rs`
   - `ThemeStudioApp` — single-board dashboard, size/mode toolbar, inspector overlay
 - `studio/panels/*`
@@ -71,7 +71,7 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `studio/inspector.rs`
   - click-to-inspect settings sheet (scale metrics, token colors, export)
 - `studio/export.rs`
-  - writes override CSS to `apps/gallery/tweakcn/exports/`
+  - small token-to-CSS export helpers used by the inspector and palette panels
 
 Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>`
 

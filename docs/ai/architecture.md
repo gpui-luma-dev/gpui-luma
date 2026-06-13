@@ -116,11 +116,13 @@ This pattern improves consistency and makes style/theming separable from behavio
 ## Theme loading
 
 ```
-apps/gallery/tweakcn/<stem>.css
+crates/look-shadcn/assets/tweakcn/<stem>.css
         ↓
-GalleryThemeChoice (CLI: default or CSS stem)
+embedded built-in theme catalog (`gpui_luma_look_shadcn::built_in_themes`)
         ↓
-ShadcnLook::from_css_path / ShadcnLook::native()
+GalleryThemeChoice / StudioThemeChoice (CLI: default or built-in theme id)
+        ↓
+ShadcnLook::from_built_in_theme / ShadcnLook::native()
         ↓
 GalleryApp state (Arc<ShadcnLook>)
         ↓

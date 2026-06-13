@@ -1,5 +1,6 @@
 mod action;
 mod appearance_context;
+mod built_in;
 pub mod catalog;
 mod color;
 mod context;
@@ -30,6 +31,7 @@ pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
 pub use appearance_context::AppearanceContext;
+pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use stylesheet::{
     ColorRuleMetadataSection, StylesheetConfig, all_color_rule_metadata, embedded_color_rule_metadata,
     embedded_stylesheet,

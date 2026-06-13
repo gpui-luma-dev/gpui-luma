@@ -90,6 +90,13 @@ impl ShadcnLook {
         Self::from_css_str(include_str!("../assets/native.css")).expect("embedded shadcn native CSS should parse")
     }
 
+    pub fn from_built_in_theme(theme_id: &str) -> anyhow::Result<Self> {
+        let Some(theme) = crate::built_in_theme(theme_id) else {
+            anyhow::bail!("unknown built-in shadcn theme `{theme_id}`");
+        };
+        Self::from_css_str(theme.css)
+    }
+
     /// Loads shadcn palette tokens from tweakcn-style CSS (`:root` / `.dark` custom properties).
     pub fn from_css_str(source: &str) -> anyhow::Result<Self> {
         let catalog = parse_css_catalog(source)?;

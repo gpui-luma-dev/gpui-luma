@@ -309,8 +309,7 @@ mod tests {
 
     #[test]
     fn radix_usage_tokens_resolve_in_css_theme() {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/gallery/tweakcn/retro-arcade.css");
-        let theme = ShadcnLook::from_css_path(&path).expect("retro-arcade css");
+        let theme = ShadcnLook::from_built_in_theme("retro-arcade").expect("retro-arcade css");
         for usage in all_shadcn_theme_usages() {
             for part in usage.parts {
                 assert!(

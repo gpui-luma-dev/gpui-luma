@@ -1,4 +1,4 @@
-//! Rajdhani for themes that reference it (e.g. Jarvis — see `gallery/tweakcn/jarvis.css`).
+//! Rajdhani for built-in themes that reference it (e.g. Jarvis in `gpui-luma-look-shadcn`).
 //! License: `fonts/Rajdhani/OFL.txt` (SIL OFL 1.1 — keep with the font). See `fonts/Rajdhani/README.md`.
 
 use std::borrow::Cow;

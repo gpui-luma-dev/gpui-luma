@@ -1,31 +1,13 @@
-use std::ffi::OsStr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
-use gpui_luma_look_shadcn::ShadcnLook;
-
-/// `apps/gallery/tweakcn/` — shared shadcn product themes with the gallery app.
-pub fn tweakcn_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../gallery/tweakcn")
-}
-
-fn theme_css_path(stem: &str) -> PathBuf {
-    tweakcn_dir().join(format!("{stem}.css"))
-}
+use gpui_luma_look_shadcn::{BuiltInTheme, ShadcnLook, built_in_theme, built_in_themes};
 
 pub fn available_theme_names() -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(tweakcn_dir()) else {
-        return Vec::new();
-    };
+    built_in_themes().iter().map(|theme| theme.id.to_string()).collect()
+}
 
-    let mut names: Vec<String> = entries
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file() && path.extension() == Some(OsStr::new("css")))
-        .filter_map(|path| path.file_stem().and_then(|s| s.to_str()).map(str::to_string))
-        .collect();
-    names.sort();
-    names
+pub fn available_themes() -> &'static [BuiltInTheme] {
+    built_in_themes()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,14 +33,13 @@ impl StudioThemeChoice {
             return Ok(Self::Default);
         }
 
-        let path = theme_css_path(&stem);
-        if path.is_file() {
+        if built_in_theme(&stem).is_some() {
             return Ok(Self::Named(stem));
         }
 
         let available = available_theme_names();
         let hint = if available.is_empty() {
-            format!("no .css themes found in {}", tweakcn_dir().display())
+            "no embedded built-in themes found".to_string()
         } else {
             format!("available: {}", available.join(", "))
         };
@@ -75,7 +56,10 @@ impl StudioThemeChoice {
 
     /// Jarvis bundles Rajdhani; load the embedded font when that theme is selected.
     pub fn loads_rajdhani_font(&self) -> bool {
-        matches!(self, Self::Named(stem) if stem == "jarvis")
+        match self {
+            Self::Default => false,
+            Self::Named(stem) => built_in_theme(stem).is_some_and(|theme| theme.requires_rajdhani_font),
+        }
     }
 
     pub fn id(&self) -> String {
@@ -96,13 +80,10 @@ impl StudioThemeChoice {
     pub fn shadcn_look(self) -> Arc<ShadcnLook> {
         match self {
             Self::Default => Arc::new(ShadcnLook::native()),
-            Self::Named(stem) => {
-                let path = theme_css_path(&stem);
-                Arc::new(
-                    ShadcnLook::from_css_path(&path)
-                        .unwrap_or_else(|err| panic!("parse shadcn theme {}: {err}", path.display())),
-                )
-            }
+            Self::Named(stem) => Arc::new(
+                ShadcnLook::from_built_in_theme(&stem)
+                    .unwrap_or_else(|err| panic!("parse built-in shadcn theme {stem}: {err}")),
+            ),
         }
     }
 }

@@ -14,7 +14,7 @@ use crate::studio::app::ThemeStudioApp;
 use crate::studio::export::{catalog_color_for_token, token_css_name};
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::panels::{format_hex_color, parse_hex_color};
-use crate::theme::available_theme_names;
+use crate::theme::available_themes;
 
 const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ("BASE", &[("background", "Background"), ("foreground", "Foreground")]),
@@ -252,7 +252,7 @@ impl ThemeSidebar {
 fn token_field_mono_font() -> gpui::SharedString {
     #[cfg(target_os = "macos")]
     {
-        return "Menlo".into();
+        "Menlo".into()
     }
     #[cfg(target_os = "windows")]
     {
@@ -390,8 +390,8 @@ impl Render for ThemeSidebar {
 
 fn theme_selector_items() -> Vec<SelectorItem> {
     let mut items = vec![SelectorItem::new("default").label("Default")];
-    for name in available_theme_names() {
-        items.push(SelectorItem::new(name.clone()).label(name));
+    for theme in available_themes() {
+        items.push(SelectorItem::new(theme.id).label(theme.display_name()));
     }
     items
 }

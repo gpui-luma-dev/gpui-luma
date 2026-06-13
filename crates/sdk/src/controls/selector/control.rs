@@ -179,9 +179,7 @@ where
     }
 
     fn trigger_label(&self) -> &SharedString {
-        self.selected_index
-            .and_then(|index| self.model.items.get(index))
-            .map_or(&self.model.label, SelectorItemLike::id)
+        selected_trigger_label(&self.model.label, &self.model.items, self.selected_index)
     }
 
     fn index_by_id(&self, item_id: &SharedString) -> Option<usize> {
@@ -476,6 +474,17 @@ where
     }
 }
 
+fn selected_trigger_label<'a, T>(
+    fallback_label: &'a SharedString,
+    items: &'a [T],
+    selected_index: Option<usize>,
+) -> &'a SharedString
+where
+    T: SelectorItemLike + 'static,
+{
+    selected_index.and_then(|index| items.get(index)).map_or(fallback_label, SelectorItemLike::label)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -515,5 +524,14 @@ mod tests {
             .with_item_template(|item, _cx| gpui::div().child(item.item.id().clone()));
 
         assert!(builder.model.item_template.is_some());
+    }
+
+    #[test]
+    fn selected_trigger_prefers_item_label_over_id() {
+        let fallback = SharedString::from("Theme");
+        let items = vec![SelectorItem::new("retro-arcade").label("Retro Arcade")];
+
+        let label = selected_trigger_label(&fallback, &items, Some(0));
+        assert_eq!(label.as_ref(), "Retro Arcade");
     }
 }
