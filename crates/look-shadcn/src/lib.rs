@@ -6,6 +6,7 @@ mod color;
 mod context;
 mod controls;
 mod elevation;
+mod elements;
 mod ext;
 mod focus;
 mod look;
@@ -35,6 +36,9 @@ pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use stylesheet::{
     ColorRuleMetadataSection, StylesheetConfig, all_color_rule_metadata, embedded_color_rule_metadata,
     embedded_stylesheet,
+};
+pub use elements::{
+    Badge, BadgeAppearance, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_appearance, resolve_badge_colors,
 };
 pub use controls::{
     ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,

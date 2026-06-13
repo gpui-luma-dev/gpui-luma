@@ -1,9 +1,9 @@
 use gpui::SharedString;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn_inspect::{
-    ButtonInspectMetrics, CardInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric,
-    SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance,
-    format_inspect_metric_source, format_metric_px,
+    BadgeInspectMetrics, ButtonInspectMetrics, CardInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics,
+    ResolvedMetric, SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics,
+    format_inspect_metric_provenance, format_inspect_metric_source, format_metric_px,
 };
 
 use super::types::InspectMetricPropertyData;
@@ -110,6 +110,14 @@ pub(in crate::gallery) fn card_layout_data(
     super::types::InspectLayoutSizeData { size, properties: card_metric_properties(&metrics) }
 }
 
+pub(in crate::gallery) fn badge_layout_data(
+    look: &gpui_luma_look_shadcn::ShadcnLook,
+    size: gpui_luma::theme::ControlSize,
+) -> super::types::InspectLayoutSizeData {
+    let metrics = ShadcnInspect::new(look).inspect_badge_metrics(gpui_luma_look_shadcn::BadgeVariant::Default, size);
+    super::types::InspectLayoutSizeData { size, properties: badge_metric_properties(&metrics) }
+}
+
 fn textfield_metric_properties(metrics: &TextFieldInspectMetrics) -> Vec<InspectMetricPropertyData> {
     metric_properties(&[
         ("min height", &metrics.min_height),
@@ -157,6 +165,17 @@ fn card_metric_properties(metrics: &CardInspectMetrics) -> Vec<InspectMetricProp
         ("section gap", &metrics.section_gap),
         ("header gap", &metrics.header_gap),
         ("body gap", &metrics.body_gap),
+        ("radius", &metrics.radius),
+    ])
+}
+
+fn badge_metric_properties(metrics: &BadgeInspectMetrics) -> Vec<InspectMetricPropertyData> {
+    metric_properties(&[
+        ("min height", &metrics.min_height),
+        ("padding x", &metrics.padding_x),
+        ("padding y", &metrics.padding_y),
+        ("gap", &metrics.gap),
+        ("icon size", &metrics.icon_size),
         ("radius", &metrics.radius),
     ])
 }

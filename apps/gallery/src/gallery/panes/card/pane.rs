@@ -97,15 +97,7 @@ impl CardPane {
                                 .text_color(look.chrome().muted_text)
                                 .child("This variant opts out of the shadow."),
                         ),
-                    div()
-                        .rounded_full()
-                        .bg(look.color(ShadcnToken::Primary))
-                        .text_color(look.color(ShadcnToken::PrimaryForeground))
-                        .px(px(10.0))
-                        .py(px(4.0))
-                        .text_size(px(11.0))
-                        .line_height(px(14.0))
-                        .child("Preview"),
+                    look.badge("Preview").variant(BadgeVariant::Default),
                 }
                 .into_any_element()
             })

@@ -7,6 +7,7 @@ pub use crate::controls::accordion::{
     AccordionTriggerColorTable,
 };
 pub use crate::controls::autocomplete::{resolve_autocomplete_chrome_colors, AutocompleteChromeColorTable};
+pub use crate::elements::badge::{BadgeColorTable, resolve_badge_colors};
 pub use crate::controls::button::{resolve_button_colors, ButtonColorPalette};
 pub use crate::controls::checkbox::{resolve_checkbox_colors, CheckboxColorTable};
 pub use crate::controls::control_group::{resolve_control_group_list_colors, ControlGroupListColorTable};

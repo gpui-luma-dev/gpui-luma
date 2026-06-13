@@ -44,10 +44,11 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 - `lib.rs`
   - `ShadcnLook`, `ShadcnButtonStyle`, `ShadcnModeTokens`, CSS catalog types
   - `ShadcnLookControlExt` and builder style helpers (`ShadcnButtonStyleExt`, …)
+  - look-specific visual add-ons such as `Badge`, `BadgeVariant`, and `BadgeIconPlacement`
   - `all_shadcn_theme_usages`, per-control resolvers and template factories
 - `stylesheet/`
   - `mod.rs`: Embedded styles compilation wrapper and lookup interface (`find_*_color_rule`).
-  - `config.rs`: Strongly typed Serde deserialize layouts and matching engines for all 18 controls.
+  - `config.rs`: Strongly typed Serde deserialize layouts and matching engines for all themed controls and visual add-ons.
   - `selector.rs`: String selector mappings (`AsSelectorState`) for look states.
   - `resolve.rs`: Local variable interpolation (`@field`), px/rem parsing, and final color mappings.
 - `ext.rs` — layout utility extensions (`bg_cn`, `text_cn`, `gap_cn`, …)

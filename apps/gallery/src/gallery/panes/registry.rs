@@ -13,11 +13,11 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    accordion, autocomplete, button, card, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
-    tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes,
-    radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, split_view,
-    selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea,
-    textfield, theme_usage, toggle, toggle_group,
+    accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, combobox, context_menu,
+    floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress,
+    prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel,
+    split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation,
+    textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -34,6 +34,7 @@ enum GalleryPageKind {
     Search,
     Palette,
     ThemeUsage,
+    Badge,
     Card,
     Button,
     DecoratedButton,
@@ -118,6 +119,7 @@ const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
     icon: Some(LucideIcon::ListTree),
     kind: GalleryPageKind::ThemeUsage,
 };
+const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
 const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
@@ -276,7 +278,7 @@ const LAYOUT_PAGES: &[GalleryPage] = &[
     SPLIT_VIEW_UNIFIED_PAGE,
 ];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
-const FEEDBACK_PAGES: &[GalleryPage] = &[PROGRESS_PAGE];
+const FEEDBACK_PAGES: &[GalleryPage] = &[BADGE_PAGE, PROGRESS_PAGE];
 const SELECTION_PAGES: &[GalleryPage] = &[
     AUTOCOMPLETE_TEXTFIELD_PAGE,
     COMBOBOX_PAGE,
@@ -344,6 +346,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) look: Arc<ShadcnLook>,
     pub(super) introduction: introduction::IntroductionPane,
+    pub(super) badge: badge::BadgePane,
     pub(super) card: card::CardPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) shadow_button: prototypes::ShadowButtonPane,
@@ -437,6 +440,7 @@ impl GalleryPanes {
         Self {
             look: look.clone(),
             introduction: introduction::IntroductionPane::new(cx, look.clone()),
+            badge: badge::BadgePane::new(cx, look.clone()),
             card: card::CardPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
             shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
@@ -477,6 +481,7 @@ impl GalleryPanes {
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
+        self.badge.subscribe(cx, subscriptions);
         self.card.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.shadow_button.subscribe(cx, subscriptions);
@@ -518,6 +523,7 @@ impl GalleryPanes {
 
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
+            GalleryPageKind::Badge => self.badge.notify_controls(cx),
             GalleryPageKind::Card => self.card.notify_controls(cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
@@ -571,6 +577,7 @@ impl GalleryPanes {
 
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.render(&self.look),
+            GalleryPageKind::Badge => self.badge.render(&self.look),
             GalleryPageKind::Card => self.card.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),

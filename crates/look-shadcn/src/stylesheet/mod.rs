@@ -9,7 +9,7 @@ pub fn embedded_stylesheet() -> &'static StylesheetConfig {
 pub use config::StylesheetConfig;
 pub use resolve::{
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule, resolve_button_color_rule,
-    resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
+    resolve_badge_color_rule, resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
     resolve_control_group_list_color_rule, resolve_floating_menu_surface_color_rule,
     resolve_floating_menu_trigger_color_rule, resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
     resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_navigation_sidebar_branch_color_rule,
@@ -26,18 +26,19 @@ use std::sync::OnceLock;
 use gpui_luma::theme::{InteractionLayer, ThemeMode};
 
 use crate::controls::ShadcnButtonStyle;
+use crate::elements::BadgeVariant;
 use crate::provenance::TableRuleMetadata;
 
 use config::{
-    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, ButtonColorRule, CardColorRule,
-    CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule, FloatingMenuTriggerColorRule,
-    ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule, ListViewSurfaceColorRule,
-    NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule, NavigationSidebarItemColorRule,
-    NavigationSidebarSectionColorRule, ProgressColorRule, RadioColorRule, ResizablePanelsColorRule, ScrollbarColorRule,
-    SliderColorRule, SplitViewColorRule, SwitchColorRule, TabsNavigationItemColorRule, TabsNavigationListColorRule,
-    TextfieldColorRule, TreeViewRowColorRule,
+    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
+    CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
+    FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
+    ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
+    NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, RadioColorRule,
+    ResizablePanelsColorRule, ScrollbarColorRule, SliderColorRule, SplitViewColorRule, SwitchColorRule,
+    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule,
 };
-use selector::{theme_mode_key, AsSelectorState, ButtonSelectorState};
+use selector::{AsSelectorState, ButtonSelectorState, badge_variant_key, theme_mode_key};
 
 const EMBEDDED_STYLE_TOML: &str = include_str!("../../assets/style.toml");
 
@@ -233,6 +234,14 @@ pub fn find_progress_color_rule(stylesheet: &StylesheetConfig, enabled: bool) ->
 
 pub fn find_card_color_rule(stylesheet: &StylesheetConfig) -> Option<&CardColorRule> {
     stylesheet.card.color_rule()
+}
+
+pub fn find_badge_color_rule(
+    stylesheet: &StylesheetConfig,
+    variant: BadgeVariant,
+    theme_mode: ThemeMode,
+) -> Option<&BadgeColorRule> {
+    stylesheet.badge.find_color_rule(badge_variant_key(variant), theme_mode_key(theme_mode))
 }
 
 pub fn find_split_view_color_rule(stylesheet: &StylesheetConfig, enabled: bool) -> Option<&SplitViewColorRule> {
@@ -721,6 +730,25 @@ pub fn resolve_progress_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<Ta
         .collect()
 }
 
+pub fn resolve_badge_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
+    stylesheet
+        .badge
+        .color_rules
+        .iter()
+        .map(|rule| TableRuleMetadata {
+            inputs: vec![
+                rule.style.clone().unwrap_or_else(|| "any".into()),
+                rule.mode.clone().unwrap_or_else(|| "any".into()),
+            ],
+            outputs: vec![
+                color_output_label("background", &rule.background),
+                color_output_label("foreground", &rule.foreground),
+                optional_color_output_label("border", rule.border.as_deref()),
+            ],
+        })
+        .collect()
+}
+
 pub fn resolve_split_view_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<TableRuleMetadata> {
     stylesheet
         .split_view
@@ -802,6 +830,7 @@ pub struct ColorRuleMetadataSection {
 pub fn all_color_rule_metadata(stylesheet: &StylesheetConfig) -> Vec<ColorRuleMetadataSection> {
     vec![
         section(stylesheet, "button", "color", resolve_button_colors_metadata(stylesheet)),
+        section(stylesheet, "badge", "color", resolve_badge_colors_metadata(stylesheet)),
         section(stylesheet, "checkbox", "color", resolve_checkbox_colors_metadata(stylesheet)),
         section(stylesheet, "radio", "color", resolve_radio_colors_metadata(stylesheet)),
         section(stylesheet, "switch", "color", resolve_switch_colors_metadata(stylesheet)),
@@ -872,6 +901,7 @@ mod tests {
     fn embedded_stylesheet_parses() {
         let stylesheet = embedded_stylesheet();
         assert!(!stylesheet.button.color_rules.is_empty());
+        assert_eq!(stylesheet.badge.color_rules.len(), 5);
         assert_eq!(stylesheet.checkbox.color_rules.len(), 3);
         assert_eq!(stylesheet.radio.color_rules.len(), 3);
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
@@ -896,6 +926,7 @@ mod tests {
     #[test]
     fn enabled_controls_find_matching_rules() {
         let stylesheet = embedded_stylesheet();
+        assert!(find_badge_color_rule(stylesheet, BadgeVariant::Default, ThemeMode::Dark).is_some());
         assert!(find_progress_color_rule(stylesheet, true).is_some());
         assert!(find_split_view_color_rule(stylesheet, false).is_some());
         assert!(find_control_group_list_color_rule(stylesheet, true).is_some());
@@ -908,11 +939,12 @@ mod tests {
     #[test]
     fn embedded_color_rule_metadata_covers_all_controls() {
         let sections = embedded_color_rule_metadata();
-        assert_eq!(sections.len(), 27);
+        assert_eq!(sections.len(), 28);
         assert!(sections.iter().all(|section| !section.rules.is_empty()));
         assert_eq!(
             sections.iter().map(|section| section.rules.len()).sum::<usize>(),
             embedded_stylesheet().button.color_rules.len()
+                + embedded_stylesheet().badge.color_rules.len()
                 + embedded_stylesheet().checkbox.color_rules.len()
                 + embedded_stylesheet().radio.color_rules.len()
                 + embedded_stylesheet().switch.color_rules.len()

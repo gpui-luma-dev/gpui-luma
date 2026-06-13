@@ -1,6 +1,7 @@
 mod accordion;
 mod tree_view;
 mod autocomplete;
+mod badge;
 mod button;
 mod card;
 mod combobox;

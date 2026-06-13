@@ -1,5 +1,6 @@
 mod accordion;
 mod autocomplete;
+mod badge;
 mod button;
 mod card;
 mod checkbox;
@@ -31,6 +32,7 @@ pub use autocomplete::{
     AutocompleteChromeInspectPalette, AutocompleteInspectMetrics, inspect_autocomplete_chrome_color_palette,
     inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics,
 };
+pub use badge::{BadgeInspectMetrics, BadgeInspectPalette, inspect_badge_color_palette, inspect_badge_metrics};
 pub use button::{
     ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, inspect_button_color_palette,
     inspect_button_metrics, inspect_button_typography,

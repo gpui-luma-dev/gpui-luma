@@ -6,7 +6,7 @@ use crate::controls::ShadcnButtonStyle;
 use crate::provenance::{LookResolver, ResolvedColor};
 
 use super::config::{
-    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, ButtonColorRule,
+    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
     ButtonMetricsRule, CardColorRule, CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule,
     FloatingMenuTriggerColorRule, ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule,
     ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
@@ -157,6 +157,20 @@ pub fn resolve_card_color_rule(
     let muted_foreground = resolve_color_ref(resolver, &rule.muted_foreground, &fields)?;
     let border = resolve_color_ref(resolver, &rule.border, &fields)?;
     Ok(ResolvedCardColors { background, foreground, muted_foreground, border })
+}
+
+pub fn resolve_badge_color_rule(
+    resolver: &LookResolver<'_>,
+    rule: &BadgeColorRule,
+) -> anyhow::Result<ResolvedBadgeColors> {
+    let ctx = ResolveContext::default();
+    let mut fields = ResolvedFields::default();
+    let background = resolve_stylesheet_color(resolver, &rule.background, &fields, &ctx)?;
+    fields.insert("background", background.clone());
+    let foreground = resolve_stylesheet_color(resolver, &rule.foreground, &fields, &ctx)?;
+    fields.insert("foreground", foreground.clone());
+    let border = resolve_optional_stylesheet_color(resolver, rule.border.as_deref(), &fields, &ctx)?;
+    Ok(ResolvedBadgeColors { background, foreground, border })
 }
 
 pub fn resolve_split_view_color_rule(
@@ -588,6 +602,13 @@ pub struct ResolvedCardColors {
     pub foreground: ResolvedColor,
     pub muted_foreground: ResolvedColor,
     pub border: ResolvedColor,
+}
+
+#[derive(Clone, Debug)]
+pub struct ResolvedBadgeColors {
+    pub background: ResolvedColor,
+    pub foreground: ResolvedColor,
+    pub border: Option<ResolvedColor>,
 }
 
 #[derive(Clone, Debug)]

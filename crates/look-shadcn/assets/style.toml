@@ -278,6 +278,39 @@ foreground = "foreground"
 
 
 # =====================================================================
+# 1b. BADGE
+# =====================================================================
+[[badge.color_rules]]
+style = "default"
+background = "primary"
+foreground = "primary-foreground"
+
+[[badge.color_rules]]
+style = "secondary"
+background = "secondary"
+foreground = "secondary-foreground"
+
+[[badge.color_rules]]
+style = "outline"
+mode = "light"
+background = "background"
+foreground = "foreground"
+border = "border"
+
+[[badge.color_rules]]
+style = "outline"
+mode = "dark"
+background = "input/30"
+foreground = "foreground"
+border = "input"
+
+[[badge.color_rules]]
+style = "ghost"
+background = "transparent"
+foreground = "foreground"
+
+
+# =====================================================================
 # 2. CHECKBOX
 # =====================================================================
 [[checkbox.color_rules]]

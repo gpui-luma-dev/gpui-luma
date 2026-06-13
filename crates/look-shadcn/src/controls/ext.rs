@@ -41,9 +41,10 @@ use gpui_luma::controls::toggle;
 use gpui_luma::theme::ControlSize;
 
 use super::button::ShadcnButtonStyle;
+use crate::elements::Badge;
 use crate::look::ShadcnLook;
 
-/// Constructs SDK controls from a shared [`ShadcnLook`], with look templates applied.
+/// Constructs SDK controls and visual add-ons from a shared [`ShadcnLook`].
 pub trait ShadcnLookControlExt {
     fn button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
     fn primary_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
@@ -96,6 +97,7 @@ pub trait ShadcnLookControlExt {
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
+    fn badge(&self, label: impl Into<SharedString>) -> Badge;
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
     fn selector(&self, id: impl Into<SharedString>) -> SelectorBuilder<SelectorItem>;
@@ -311,6 +313,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder {
         gpui_luma::controls::card::new(id).template(self.card_template())
+    }
+
+    fn badge(&self, label: impl Into<SharedString>) -> Badge {
+        ShadcnLook::badge(self, label)
     }
 
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder {
