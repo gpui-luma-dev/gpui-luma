@@ -75,6 +75,9 @@ impl Render for GalleryApp {
                         .cursor_pointer()
                         .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
                         .active(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.18)))
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                            cx.stop_propagation();
+                        })
                         .on_click(cx.listener(|this, _, _, cx| {
                             let mode = match this.look.mode() {
                                 ThemeMode::Light => ThemeMode::Dark,

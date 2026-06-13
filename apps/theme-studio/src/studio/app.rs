@@ -344,6 +344,9 @@ impl Render for ThemeStudioApp {
                             .text_color(chrome.title_text)
                             .cursor_pointer()
                             .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
+                            .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                cx.stop_propagation();
+                            })
                             .on_click(cx.listener(|this, _, _, cx| {
                                 let mode = match this.look.mode() {
                                     ThemeMode::Light => ThemeMode::Dark,
@@ -416,6 +419,12 @@ fn render_size_toggle(
                 })
                 .cursor_pointer()
                 .child(label)
-                .on_mouse_down(MouseButton::Left, cx.listener(move |app, _, _, cx| app.set_control_size(size, cx)))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |app, _, _, cx| {
+                        cx.stop_propagation();
+                        app.set_control_size(size, cx);
+                    }),
+                )
         }))
 }
