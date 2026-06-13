@@ -5,6 +5,7 @@ use gpui::{
     Render, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
+use gpui_luma::{flow, hstack, vstack};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 use lucide_icons::Icon as LucideIcon;
@@ -14,6 +15,55 @@ use crate::gallery::control::GalleryApp;
 use super::control::{
     SlidePanelEdge, SlidePanelOverlayHandlers, SlidePanelState, SlidePanelTopAnchor, render_slide_panel_overlay,
 };
+
+const PANEL_SIDE_TOP_PADDING: f32 = 42.0;
+const PANEL_VERTICAL_TOP_PADDING: f32 = 22.0;
+const PANEL_CONTENT_INSET: f32 = 22.0;
+const PANEL_SECTION_GAP: f32 = 18.0;
+const PANEL_ACTION_GAP: f32 = 10.0;
+const PANEL_HEADER_GAP: f32 = 16.0;
+const PANEL_HEADER_TEXT_GAP: f32 = 6.0;
+
+const PANE_PADDING: f32 = 28.0;
+const PANE_SECTION_GAP: f32 = 24.0;
+const PANE_HEADER_GAP: f32 = 4.0;
+const PANE_DESCRIPTION_MAX_WIDTH: f32 = 760.0;
+
+const STAGE_MAX_WIDTH: f32 = 960.0;
+const STAGE_MIN_HEIGHT: f32 = 420.0;
+const STAGE_RADIUS: f32 = 20.0;
+const STAGE_PADDING: f32 = 24.0;
+const STAGE_DESCRIPTION_MAX_WIDTH: f32 = 700.0;
+const STAGE_TRIGGER_GAP: f32 = 12.0;
+
+const STATUS_RADIUS: f32 = 16.0;
+const STATUS_PADDING: f32 = 18.0;
+const STATUS_BORDER_OPACITY: f32 = 0.78;
+const STATUS_BACKGROUND_OPACITY: f32 = 0.36;
+
+const INFO_CARD_RADIUS: f32 = 12.0;
+const INFO_CARD_PADDING: f32 = 14.0;
+const STATS_BORDER_OPACITY: f32 = 0.88;
+const STATS_BACKGROUND_OPACITY: f32 = 0.38;
+const NOTE_BORDER_OPACITY: f32 = 0.72;
+const NOTE_BACKGROUND_OPACITY: f32 = 0.22;
+
+const TITLE_TEXT_SIZE: f32 = 20.0;
+const TITLE_LINE_HEIGHT: f32 = 28.0;
+const PANEL_TITLE_TEXT_SIZE: f32 = 22.0;
+const PANEL_TITLE_LINE_HEIGHT: f32 = 28.0;
+const STAGE_TITLE_TEXT_SIZE: f32 = 24.0;
+const STAGE_TITLE_LINE_HEIGHT: f32 = 30.0;
+const BODY_TEXT_SIZE: f32 = 15.0;
+const BODY_LINE_HEIGHT: f32 = 22.0;
+const DETAIL_TEXT_SIZE: f32 = 13.0;
+const DETAIL_LINE_HEIGHT: f32 = 18.0;
+const STAGE_DETAIL_LINE_HEIGHT: f32 = 19.0;
+const LABEL_TEXT_SIZE: f32 = 12.0;
+const LABEL_LINE_HEIGHT: f32 = 16.0;
+const NOTE_LINE_HEIGHT: f32 = 18.0;
+
+const PROGRESS_PERCENT_SCALE: f32 = 100.0;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SlidePanelPane {
@@ -197,14 +247,18 @@ impl SlidePanelDemo {
     }
 
     fn notify_controls(&self, cx: &mut Context<Self>) {
-        notify_button(&self.trigger_left, cx);
-        notify_button(&self.trigger_right, cx);
-        notify_button(&self.trigger_top, cx);
-        notify_button(&self.trigger_bottom, cx);
-        notify_button(&self.close_button, cx);
-        notify_button(&self.primary_action, cx);
-        notify_button(&self.secondary_action, cx);
-        notify_button(&self.archive_action, cx);
+        for button in [
+            &self.trigger_left,
+            &self.trigger_right,
+            &self.trigger_top,
+            &self.trigger_bottom,
+            &self.close_button,
+            &self.primary_action,
+            &self.secondary_action,
+            &self.archive_action,
+        ] {
+            notify_button(button, cx);
+        }
         notify_button(&self.backdrop_toggle, cx);
     }
 
@@ -266,118 +320,43 @@ impl SlidePanelDemo {
         let muted = look.token_color("muted-foreground").unwrap_or(chrome.muted_text);
         let border = look.token_color("border").unwrap_or(chrome.border);
         let content_padding_top = px(match edge {
-            SlidePanelEdge::Left | SlidePanelEdge::Right => 42.0,
-            SlidePanelEdge::Top | SlidePanelEdge::Bottom => 22.0,
+            SlidePanelEdge::Left | SlidePanelEdge::Right => PANEL_SIDE_TOP_PADDING,
+            SlidePanelEdge::Top | SlidePanelEdge::Bottom => PANEL_VERTICAL_TOP_PADDING,
         });
 
-        let mut panel_content = div()
-            .size_full()
-            .min_h_0()
-            .flex()
-            .flex_col()
-            .justify_between()
-            .pt(content_padding_top)
-            .pr(px(22.0))
-            .pb(px(22.0))
-            .pl(px(22.0))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(18.0))
-                    .child(
-                        div()
-                            .flex()
-                            .items_start()
-                            .justify_between()
-                            .gap(px(16.0))
-                            .child(
-                                div()
-                                    .flex()
-                                    .flex_col()
-                                    .gap(px(6.0))
-                                    .child(
-                                        div()
-                                            .text_size(px(12.0))
-                                            .line_height(px(16.0))
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                            .text_color(muted)
-                                            .child(format!("{} Edge", edge.label())),
-                                    )
-                                    .child(
-                                        div()
-                                            .text_size(px(22.0))
-                                            .line_height(px(28.0))
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                            .text_color(panel_foreground)
-                                            .child("Slide Panel Prototype"),
-                                    )
-                                    .child(
-                                        div()
-                                            .text_size(px(13.0))
-                                            .line_height(px(18.0))
-                                            .text_color(muted)
-                                            .child(edge.description()),
-                                    ),
-                            )
-                            .child(self.close_button.clone()),
-                    )
-                    .child(
-                        div()
-                            .rounded(px(12.0))
-                            .border_1()
-                            .border_color(border.opacity(0.88))
-                            .bg(chrome.content_background.opacity(0.38))
-                            .p(px(14.0))
-                            .flex()
-                            .flex_col()
-                            .gap(px(10.0))
-                            .child(render_stat_row("Edge", edge.label(), panel_foreground, muted))
-                            .child(render_stat_row(
-                                "Backdrop click",
-                                if self.state.backdrop_click_closes() {
-                                    "Enabled"
-                                } else {
-                                    "Disabled"
-                                },
-                                panel_foreground,
-                                muted,
-                            ))
-                            .child(render_stat_row("Focus", "Trapped inside panel while open", panel_foreground, muted))
-                            .child(render_stat_row(
-                                "Close",
-                                "Escape, close button, or backdrop",
-                                panel_foreground,
-                                muted,
-                            )),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_wrap()
-                            .items_center()
-                            .gap(px(10.0))
-                            .child(self.primary_action.clone())
-                            .child(self.secondary_action.clone())
-                            .child(self.archive_action.clone())
-                            .child(self.backdrop_toggle.clone()),
-                    ),
-            )
-            .child(
-                div()
-                    .rounded(px(12.0))
-                    .border_1()
-                    .border_color(border.opacity(0.72))
-                    .bg(chrome.content_background.opacity(0.22))
-                    .p(px(14.0))
-                    .text_size(px(12.0))
-                    .line_height(px(18.0))
-                    .text_color(muted)
-                    .child("Tab cycles through the panel actions and returns to the opener when the panel closes."),
-            );
+        let mut panel_content = vstack! {
+            gap=PANEL_SECTION_GAP justify=between;
+            vstack! {
+                gap=PANEL_SECTION_GAP;
+                render_panel_header(edge, self.close_button.clone().into_any_element(), panel_foreground, muted),
+                render_panel_stats_card(
+                    edge,
+                    self.state.backdrop_click_closes(),
+                    panel_foreground,
+                    muted,
+                    border,
+                    chrome.content_background,
+                ),
+                flow! {
+                    gap=PANEL_ACTION_GAP;
+                    self.primary_action.clone(),
+                    self.secondary_action.clone(),
+                    self.archive_action.clone(),
+                    self.backdrop_toggle.clone(),
+                }
+                .items_center(),
+            },
+            render_panel_focus_note(border, chrome.content_background, muted),
+        }
+        .size_full()
+        .min_h_0()
+        .pt(content_padding_top)
+        .pr(px(PANEL_CONTENT_INSET))
+        .pb(px(PANEL_CONTENT_INSET))
+        .pl(px(PANEL_CONTENT_INSET));
 
         if matches!(edge, SlidePanelEdge::Top | SlidePanelEdge::Bottom) {
-            panel_content = panel_content.justify_start().gap(px(18.0));
+            panel_content = panel_content.justify_start().gap(px(PANEL_SECTION_GAP));
             panel_content.style().overflow.y = Some(Overflow::Scroll);
         }
 
@@ -401,128 +380,62 @@ impl Render for SlidePanelDemo {
         let stage_background = self.look.token_color("card").unwrap_or(chrome.panel_background);
         let viewport = window.viewport_size();
 
-        let stage = div()
-            .w_full()
-            .max_w(px(960.0))
-            .min_h(px(420.0))
-            .rounded(px(20.0))
-            .border_1()
-            .border_color(border)
-            .bg(stage_background)
-            .p(px(24.0))
-            .flex()
-            .flex_col()
-            .justify_between()
-            .gap(px(24.0))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(10.0))
-                    .child(
-                        div()
-                            .text_size(px(24.0))
-                            .line_height(px(30.0))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(title)
-                            .child("Slide Panels"),
-                    )
-                    .child(
-                        div()
-                            .max_w(px(700.0))
-                            .text_size(px(13.0))
-                            .line_height(px(19.0))
-                            .text_color(muted)
-                            .child(
-                                "Gallery-only drawer prototype using a deferred window overlay, focus restore, Escape dismissal, and local Tab trapping.",
-                            ),
-                    ),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .items_center()
-                    .gap(px(12.0))
-                    .child(self.trigger_left.clone())
-                    .child(self.trigger_right.clone())
-                    .child(self.trigger_top.clone())
-                    .child(self.trigger_bottom.clone()),
-            )
-            .child(
-                div()
-                    .rounded(px(16.0))
-                    .border_1()
-                    .border_color(border.opacity(0.78))
-                    .bg(chrome.content_background.opacity(0.36))
-                    .p(px(18.0))
-                    .flex()
-                    .flex_col()
-                    .gap(px(10.0))
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(muted)
-                            .child("Status"),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(15.0))
-                            .line_height(px(22.0))
-                            .text_color(body)
-                            .child(self.last_action.clone()),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(12.0))
-                            .line_height(px(18.0))
-                            .text_color(muted)
-                            .child(format!(
-                                "Open progress: {:>3.0}%{}",
-                                self.state.open_progress() * 100.0,
-                                self.state
-                                    .active_edge()
-                                    .map(|edge| format!(" | active edge: {}", edge.label()))
-                                    .unwrap_or_else(|| " | panel closed".to_string())
-                            )),
-                    ),
-            );
+        let stage = vstack! {
+            gap=PANE_SECTION_GAP justify=between;
+            render_stage_intro(title, muted),
+            flow! {
+                gap=STAGE_TRIGGER_GAP;
+                self.trigger_left.clone(),
+                self.trigger_right.clone(),
+                self.trigger_top.clone(),
+                self.trigger_bottom.clone(),
+            }
+            .items_center(),
+            render_status_card(
+                self.last_action.clone(),
+                self.state.open_progress(),
+                self.state.active_edge(),
+                body,
+                muted,
+                border,
+                chrome.content_background,
+            ),
+        }
+        .w_full()
+        .max_w(px(STAGE_MAX_WIDTH))
+        .min_h(px(STAGE_MIN_HEIGHT))
+        .rounded(px(STAGE_RADIUS))
+        .border_1()
+        .border_color(border)
+        .bg(stage_background)
+        .p(px(STAGE_PADDING));
 
         let mut root = div()
             .id("slide-panel-prototype-pane")
             .size_full()
             .relative()
-            .flex()
-            .flex_col()
             .overflow_hidden()
             .bg(chrome.content_background)
-            .p(px(28.0))
+            .p(px(PANE_PADDING))
             .child(
-                div()
-                    .w_full()
-                    .flex()
-                    .flex_col()
-                    .gap(px(4.0))
-                    .child(
-                        div()
-                            .text_size(px(20.0))
-                            .line_height(px(28.0))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(title)
-                            .child("Slide Panel"),
-                    )
-                    .child(
-                        div()
-                            .max_w(px(760.0))
-                            .text_size(px(13.0))
-                            .line_height(px(18.0))
-                            .text_color(muted)
-                            .child("Open drawers from each edge and verify close behavior, focus trap, and focus restore without touching Theme Studio."),
+                vstack! {
+                    gap=PANE_SECTION_GAP;
+                    render_pane_header(
+                        "Slide Panel",
+                        "Open drawers from each edge and verify close behavior, focus trap, and focus restore without touching Theme Studio.",
+                        title,
+                        muted,
                     ),
-            )
-            .child(div().flex_1().min_h_0().flex().items_center().justify_center().child(stage));
+                    div()
+                        .flex_1()
+                        .min_h_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(stage),
+                }
+                .size_full(),
+            );
 
         if let Some(edge) = self.state.active_edge() {
             let handlers = SlidePanelOverlayHandlers {
@@ -543,22 +456,178 @@ impl Render for SlidePanelDemo {
     }
 }
 
-fn render_stat_row(label: &'static str, value: &'static str, foreground: Hsla, muted: Hsla) -> AnyElement {
-    div()
-        .flex()
-        .items_center()
-        .justify_between()
-        .gap(px(12.0))
-        .child(
+fn render_pane_header(
+    title: &'static str,
+    description: &'static str,
+    title_color: Hsla,
+    description_color: Hsla,
+) -> AnyElement {
+    vstack! {
+        gap=PANE_HEADER_GAP;
+        div()
+            .text_size(px(TITLE_TEXT_SIZE))
+            .line_height(px(TITLE_LINE_HEIGHT))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(title_color)
+            .child(title),
+        div()
+            .max_w(px(PANE_DESCRIPTION_MAX_WIDTH))
+            .text_size(px(DETAIL_TEXT_SIZE))
+            .line_height(px(DETAIL_LINE_HEIGHT))
+            .text_color(description_color)
+            .child(description),
+    }
+    .w_full()
+    .into_any_element()
+}
+
+fn render_stage_intro(title_color: Hsla, muted: Hsla) -> AnyElement {
+    vstack! {
+        gap=PANEL_ACTION_GAP;
+        div()
+            .text_size(px(STAGE_TITLE_TEXT_SIZE))
+            .line_height(px(STAGE_TITLE_LINE_HEIGHT))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(title_color)
+            .child("Slide Panels"),
+        div()
+            .max_w(px(STAGE_DESCRIPTION_MAX_WIDTH))
+            .text_size(px(DETAIL_TEXT_SIZE))
+            .line_height(px(STAGE_DETAIL_LINE_HEIGHT))
+            .text_color(muted)
+            .child("Gallery-only drawer prototype using a deferred window overlay, focus restore, Escape dismissal, and local Tab trapping."),
+    }
+    .into_any_element()
+}
+
+fn render_status_card(
+    last_action: String,
+    open_progress: f32,
+    active_edge: Option<SlidePanelEdge>,
+    body: Hsla,
+    muted: Hsla,
+    border: Hsla,
+    content_background: Hsla,
+) -> AnyElement {
+    vstack! {
+        gap=PANEL_ACTION_GAP;
+        div()
+            .text_size(px(LABEL_TEXT_SIZE))
+            .line_height(px(LABEL_LINE_HEIGHT))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(muted)
+            .child("Status"),
+        div()
+            .text_size(px(BODY_TEXT_SIZE))
+            .line_height(px(BODY_LINE_HEIGHT))
+            .text_color(body)
+            .child(last_action),
+        div()
+            .text_size(px(LABEL_TEXT_SIZE))
+            .line_height(px(NOTE_LINE_HEIGHT))
+            .text_color(muted)
+            .child(format!(
+                "Open progress: {:>3.0}%{}",
+                open_progress * PROGRESS_PERCENT_SCALE,
+                active_edge
+                    .map(|edge| format!(" | active edge: {}", edge.label()))
+                    .unwrap_or_else(|| " | panel closed".to_string())
+            )),
+    }
+    .rounded(px(STATUS_RADIUS))
+    .border_1()
+    .border_color(border.opacity(STATUS_BORDER_OPACITY))
+    .bg(content_background.opacity(STATUS_BACKGROUND_OPACITY))
+    .p(px(STATUS_PADDING))
+    .into_any_element()
+}
+
+fn render_panel_header(edge: SlidePanelEdge, close_button: AnyElement, foreground: Hsla, muted: Hsla) -> AnyElement {
+    hstack! {
+        justify=between align=start gap=PANEL_HEADER_GAP;
+        vstack! {
+            gap=PANEL_HEADER_TEXT_GAP;
             div()
-                .text_size(px(12.0))
-                .line_height(px(16.0))
+                .text_size(px(LABEL_TEXT_SIZE))
+                .line_height(px(LABEL_LINE_HEIGHT))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(muted)
-                .child(label),
-        )
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(foreground).child(value))
+                .child(format!("{} Edge", edge.label())),
+            div()
+                .text_size(px(PANEL_TITLE_TEXT_SIZE))
+                .line_height(px(PANEL_TITLE_LINE_HEIGHT))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(foreground)
+                .child("Slide Panel Prototype"),
+            div()
+                .text_size(px(DETAIL_TEXT_SIZE))
+                .line_height(px(DETAIL_LINE_HEIGHT))
+                .text_color(muted)
+                .child(edge.description()),
+        },
+        close_button,
+    }
+    .into_any_element()
+}
+
+fn render_panel_stats_card(
+    edge: SlidePanelEdge,
+    backdrop_click_closes: bool,
+    foreground: Hsla,
+    muted: Hsla,
+    border: Hsla,
+    content_background: Hsla,
+) -> AnyElement {
+    vstack! {
+        gap=PANEL_ACTION_GAP;
+        render_stat_row("Edge", edge.label(), foreground, muted),
+        render_stat_row(
+            "Backdrop click",
+            if backdrop_click_closes { "Enabled" } else { "Disabled" },
+            foreground,
+            muted,
+        ),
+        render_stat_row("Focus", "Trapped inside panel while open", foreground, muted),
+        render_stat_row("Close", "Escape, close button, or backdrop", foreground, muted),
+    }
+    .rounded(px(INFO_CARD_RADIUS))
+    .border_1()
+    .border_color(border.opacity(STATS_BORDER_OPACITY))
+    .bg(content_background.opacity(STATS_BACKGROUND_OPACITY))
+    .p(px(INFO_CARD_PADDING))
+    .into_any_element()
+}
+
+fn render_panel_focus_note(border: Hsla, content_background: Hsla, muted: Hsla) -> AnyElement {
+    div()
+        .rounded(px(INFO_CARD_RADIUS))
+        .border_1()
+        .border_color(border.opacity(NOTE_BORDER_OPACITY))
+        .bg(content_background.opacity(NOTE_BACKGROUND_OPACITY))
+        .p(px(INFO_CARD_PADDING))
+        .text_size(px(LABEL_TEXT_SIZE))
+        .line_height(px(NOTE_LINE_HEIGHT))
+        .text_color(muted)
+        .child("Tab cycles through the panel actions and returns to the opener when the panel closes.")
         .into_any_element()
+}
+
+fn render_stat_row(label: &'static str, value: &'static str, foreground: Hsla, muted: Hsla) -> AnyElement {
+    hstack! {
+        justify=between align=center gap=STAGE_TRIGGER_GAP;
+        div()
+            .text_size(px(LABEL_TEXT_SIZE))
+            .line_height(px(LABEL_LINE_HEIGHT))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(muted)
+            .child(label),
+        div()
+            .text_size(px(LABEL_TEXT_SIZE))
+            .line_height(px(LABEL_LINE_HEIGHT))
+            .text_color(foreground)
+            .child(value),
+    }
+    .into_any_element()
 }
 
 fn notify_button<T: 'static>(entity: &Entity<T>, cx: &mut Context<SlidePanelDemo>) {
