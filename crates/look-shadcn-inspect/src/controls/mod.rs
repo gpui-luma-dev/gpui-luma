@@ -1,6 +1,7 @@
 mod accordion;
 mod autocomplete;
 mod button;
+mod card;
 mod checkbox;
 mod context_menu;
 mod control_group;
@@ -34,6 +35,7 @@ pub use button::{
     ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, inspect_button_color_palette,
     inspect_button_metrics, inspect_button_typography,
 };
+pub use card::{CardInspectMetrics, inspect_card_metrics};
 pub use checkbox::{
     CheckboxInspectMetrics, CheckboxInspectPalette, inspect_checkbox_color_palette, inspect_checkbox_metrics,
 };

@@ -8,7 +8,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 
-use super::common::{card, card_header};
+use super::common::titled_card;
 
 declare_form! {
     pub struct CookiesPanel {
@@ -42,35 +42,39 @@ declare_form! {
 }
 
 impl Render for CookiesPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let necessary_switch = self.necessary_switch.clone();
+        let functional_switch = self.functional_switch.clone();
+        let save_button = self.save_button.clone();
 
-        card(
+        titled_card(
+            "theme-studio-cookies-card",
+            &self.look,
             380.0,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=14;
-                card_header(
-                    "Cookie Settings",
-                    "Manage your cookie preferences here.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                cookie_row(
-                    "Strictly Necessary",
-                    "These cookies are essential in order to use the website and use its features.",
-                    &self.necessary_switch,
-                    chrome,
-                ),
-                cookie_row(
-                    "Functional Cookies",
-                    "These cookies allow the website to provide personalized functionality.",
-                    &self.functional_switch,
-                    chrome,
-                ),
-                div().w_full().child(self.save_button.clone()),
+            "Cookie Settings",
+            "Manage your cookie preferences here.",
+            move |_, _| {
+                vstack! {
+                    gap=14;
+                    cookie_row(
+                        "Strictly Necessary",
+                        "These cookies are essential in order to use the website and use its features.",
+                        &necessary_switch,
+                        chrome,
+                    ),
+                    cookie_row(
+                        "Functional Cookies",
+                        "These cookies allow the website to provide personalized functionality.",
+                        &functional_switch,
+                        chrome,
+                    ),
+                    div().w_full().child(save_button.clone()),
+                }
+                .into_any_element()
             },
+            window,
+            _cx,
         )
     }
 }

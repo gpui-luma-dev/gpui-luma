@@ -2,6 +2,7 @@ mod accordion;
 mod tree_view;
 mod autocomplete;
 mod button;
+mod card;
 mod combobox;
 mod checkbox;
 mod choice_controls_template;

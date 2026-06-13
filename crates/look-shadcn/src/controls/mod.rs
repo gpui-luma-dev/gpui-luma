@@ -1,6 +1,7 @@
 pub(crate) mod accordion;
 pub(crate) mod autocomplete;
 pub(crate) mod button;
+pub(crate) mod card;
 pub(crate) mod checkbox;
 pub(crate) mod context_menu;
 pub(crate) mod control_group;

@@ -13,7 +13,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    accordion, autocomplete, button, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
+    accordion, autocomplete, button, card, checkbox, choice_controls_template, combobox, context_menu, floating_menu,
     tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress, prototypes,
     radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel, split_view,
     selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation, textarea,
@@ -34,6 +34,7 @@ enum GalleryPageKind {
     Search,
     Palette,
     ThemeUsage,
+    Card,
     Button,
     DecoratedButton,
     ShadowButton,
@@ -117,6 +118,7 @@ const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
     icon: Some(LucideIcon::ListTree),
     kind: GalleryPageKind::ThemeUsage,
 };
+const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
 const TOGGLE_PAGE: GalleryPage =
@@ -266,6 +268,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
 const INPUT_PAGES: &[GalleryPage] = &[SCROLLBAR_PAGE, SLIDER_PAGE, TEXTAREA_PAGE, TEXTFIELD_PAGE];
 const MENU_PAGES: &[GalleryPage] = &[CONTEXT_MENU_PAGE, FLOATING_MENU_PAGE, POPUP_MENU_PAGE];
 const LAYOUT_PAGES: &[GalleryPage] = &[
+    CARD_PAGE,
     RESIZABLE_PANELS_PAGE,
     SPLIT_VIEW_DETACHED_PAGE,
     SPLIT_VIEW_ICON_RAIL_PAGE,
@@ -341,6 +344,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) look: Arc<ShadcnLook>,
     pub(super) introduction: introduction::IntroductionPane,
+    pub(super) card: card::CardPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) shadow_button: prototypes::ShadowButtonPane,
     pub(super) autocomplete_textfield: autocomplete::AutocompleteTextFieldPane,
@@ -433,6 +437,7 @@ impl GalleryPanes {
         Self {
             look: look.clone(),
             introduction: introduction::IntroductionPane::new(cx, look.clone()),
+            card: card::CardPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
             shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
             autocomplete_textfield: autocomplete::AutocompleteTextFieldPane::new(cx, look.clone()),
@@ -472,6 +477,7 @@ impl GalleryPanes {
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         self.introduction.subscribe(cx, subscriptions);
+        self.card.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.shadow_button.subscribe(cx, subscriptions);
         self.autocomplete_textfield.subscribe(cx, subscriptions);
@@ -512,6 +518,7 @@ impl GalleryPanes {
 
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
+            GalleryPageKind::Card => self.card.notify_controls(cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.notify_controls(cx),
@@ -564,6 +571,7 @@ impl GalleryPanes {
 
         match page.kind {
             GalleryPageKind::Introduction => self.introduction.render(&self.look),
+            GalleryPageKind::Card => self.card.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),
             GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.look),

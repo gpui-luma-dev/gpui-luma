@@ -12,7 +12,7 @@ use gpui_luma::theme::{ControlSize};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
-use super::common::{card, card_header};
+use super::common::titled_card;
 
 declare_form! {
     pub struct UpgradePanel {
@@ -65,44 +65,56 @@ declare_form! {
 }
 
 impl Render for UpgradePanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let name_field = self.name_field.clone();
+        let email_field = self.email_field.clone();
+        let card_field = self.card_field.clone();
+        let expiry_field = self.expiry_field.clone();
+        let cvc_field = self.cvc_field.clone();
+        let plan_group = self.plan_group.clone();
+        let notes_area = self.notes_area.clone();
+        let terms_checkbox = self.terms_checkbox.clone();
+        let email_checkbox = self.email_checkbox.clone();
+        let cancel_button = self.cancel_button.clone();
+        let upgrade_button = self.upgrade_button.clone();
 
-        card(
+        titled_card(
+            "theme-studio-upgrade-card",
+            &self.look,
             380.0,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "Upgrade your subscription",
-                    "You are currently on the free plan. Upgrade to unlock all features.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                hstack! {
-                    gap=10;
-                    form_field!("Name", chrome; self.name_field.clone()).flex_1(),
-                    form_field!("Email", chrome; self.email_field.clone()).flex_1(),
-                },
-                form_field!("Card Number", chrome;
+            "Upgrade your subscription",
+            "You are currently on the free plan. Upgrade to unlock all features.",
+            move |_, _| {
+                vstack! {
+                    gap=12;
                     hstack! {
-                        gap=8;
-                        div().flex_1().child(self.card_field.clone()),
-                        div().w(px(72.0)).child(self.expiry_field.clone()),
-                        div().w(px(64.0)).child(self.cvc_field.clone()),
-                    }
-                ),
-                form_field!("Plan", chrome; self.plan_group.clone()),
-                form_field!("Notes", chrome; self.notes_area.clone()),
-                self.terms_checkbox.clone(),
-                self.email_checkbox.clone(),
-                hstack! {
-                    gap=8 justify=end;
-                    self.cancel_button.clone(),
-                    self.upgrade_button.clone(),
-                },
+                        gap=10;
+                        form_field!("Name", chrome; name_field.clone()).flex_1(),
+                        form_field!("Email", chrome; email_field.clone()).flex_1(),
+                    },
+                    form_field!("Card Number", chrome;
+                        hstack! {
+                            gap=8;
+                            div().flex_1().child(card_field.clone()),
+                            div().w(px(72.0)).child(expiry_field.clone()),
+                            div().w(px(64.0)).child(cvc_field.clone()),
+                        }
+                    ),
+                    form_field!("Plan", chrome; plan_group.clone()),
+                    form_field!("Notes", chrome; notes_area.clone()),
+                    terms_checkbox.clone(),
+                    email_checkbox.clone(),
+                    hstack! {
+                        gap=8 justify=end;
+                        cancel_button.clone(),
+                        upgrade_button.clone(),
+                    },
+                }
+                .into_any_element()
             },
+            window,
+            _cx,
         )
     }
 }

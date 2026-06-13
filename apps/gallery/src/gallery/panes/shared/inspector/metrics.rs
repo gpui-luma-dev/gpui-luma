@@ -1,9 +1,9 @@
 use gpui::SharedString;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn_inspect::{
-    ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric, SliderInspectMetrics,
-    SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance, format_inspect_metric_source,
-    format_metric_px,
+    ButtonInspectMetrics, CardInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric,
+    SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance,
+    format_inspect_metric_source, format_metric_px,
 };
 
 use super::types::InspectMetricPropertyData;
@@ -102,6 +102,14 @@ pub(in crate::gallery) fn progress_layout_data(
     }
 }
 
+pub(in crate::gallery) fn card_layout_data(
+    look: &gpui_luma_look_shadcn::ShadcnLook,
+    size: gpui_luma::theme::ControlSize,
+) -> super::types::InspectLayoutSizeData {
+    let metrics = ShadcnInspect::new(look).inspect_card_metrics(size);
+    super::types::InspectLayoutSizeData { size, properties: card_metric_properties(&metrics) }
+}
+
 fn textfield_metric_properties(metrics: &TextFieldInspectMetrics) -> Vec<InspectMetricPropertyData> {
     metric_properties(&[
         ("min height", &metrics.min_height),
@@ -141,6 +149,16 @@ fn progress_metric_properties(
     metrics: &gpui_luma_look_shadcn_inspect::ProgressInspectMetrics,
 ) -> Vec<InspectMetricPropertyData> {
     metric_properties(&[("size", &metrics.size), ("stroke width", &metrics.stroke_width)])
+}
+
+fn card_metric_properties(metrics: &CardInspectMetrics) -> Vec<InspectMetricPropertyData> {
+    metric_properties(&[
+        ("padding", &metrics.padding),
+        ("section gap", &metrics.section_gap),
+        ("header gap", &metrics.header_gap),
+        ("body gap", &metrics.body_gap),
+        ("radius", &metrics.radius),
+    ])
 }
 
 fn tabs_navigation_metric_properties(

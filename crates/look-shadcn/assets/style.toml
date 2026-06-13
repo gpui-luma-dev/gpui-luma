@@ -762,9 +762,18 @@ enabled = false
 track_color = "muted-foreground"
 progress_color = "muted-foreground"
 
+# =====================================================================
+# 13. CARD
+# =====================================================================
+[card.color_rule]
+background = "card"
+foreground = "card-foreground"
+muted_foreground = "muted-foreground"
+border = "border"
+
 
 # =====================================================================
-# 13. TABS NAVIGATION
+# 14. TABS NAVIGATION
 # =====================================================================
 [[tabs_navigation.list.color_rules]]
 enabled = true
@@ -837,7 +846,7 @@ indicator = "ring"
 
 
 # =====================================================================
-# 14. TREE VIEW
+# 15. TREE VIEW
 # =====================================================================
 [[tree_view.row.color_rules]]
 disabled = true
@@ -877,7 +886,7 @@ background = "first_layer(accent)"
 
 
 # =====================================================================
-# 15. CONTROL GROUP
+# 16. CONTROL GROUP
 # =====================================================================
 [[control_group.list.color_rules]]
 enabled = true
@@ -891,7 +900,7 @@ border = "border"
 
 
 # =====================================================================
-# 16. SPLIT VIEW
+# 17. SPLIT VIEW
 # =====================================================================
 [[split_view.color_rules]]
 enabled = true

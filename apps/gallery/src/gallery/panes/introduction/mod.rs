@@ -1,4 +1,3 @@
-mod common;
 mod pane;
 mod payment_panel;
 mod system_panel;

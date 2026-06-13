@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, hstack, vstack};
 
-use super::common::{avatar, AvatarSize, card, card_header};
+use super::common::{avatar, AvatarSize, card};
 
 const TEAM_CARD_WIDTH: f32 = 380.0;
 
@@ -34,28 +34,49 @@ declare_form! {
 }
 
 impl Render for TeamPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
+            let sofia_selector = self.sofia_selector.clone();
+            let jackson_selector = self.jackson_selector.clone();
+            let isabella_selector = self.isabella_selector.clone();
 
             card(
+                "theme-studio-team-card",
+                &self.look,
                 TEAM_CARD_WIDTH,
-                chrome.border,
-                chrome.panel_background,
-                vstack! {
-                    gap=12;
-                    card_header(
-                        "Team Members",
-                        "Invite your team members to collaborate.",
-                        chrome.title_text,
-                        chrome.muted_text,
-                    ),
-                    member_row("SD", "Sofia Davis", "m@example.com", &self.sofia_selector, chrome),
-                    member_row("JL", "Jackson Lee", "m@example.com", &self.jackson_selector, chrome),
-                    member_row("IN", "Isabella Nguyen", "m@example.com", &self.isabella_selector, chrome),
-                }
-                .w_full()
-                .overflow_hidden(),
+                move |_, _| {
+                    vstack! {
+                        gap=12;
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(4.0))
+                            .child(
+                                div()
+                                    .text_size(px(16.0))
+                                    .line_height(px(22.0))
+                                    .font_weight(gpui::FontWeight::SEMIBOLD)
+                                    .text_color(chrome.title_text)
+                                    .child("Team Members"),
+                            )
+                            .child(
+                                div()
+                                    .text_size(px(12.0))
+                                    .line_height(px(16.0))
+                                    .text_color(chrome.muted_text)
+                                    .child("Invite your team members to collaborate."),
+                            ),
+                        member_row("SD", "Sofia Davis", "m@example.com", &sofia_selector, chrome),
+                        member_row("JL", "Jackson Lee", "m@example.com", &jackson_selector, chrome),
+                        member_row("IN", "Isabella Nguyen", "m@example.com", &isabella_selector, chrome),
+                    }
+                    .w_full()
+                    .overflow_hidden()
+                    .into_any_element()
+                },
+                window,
+                _cx,
             )
         })
     }

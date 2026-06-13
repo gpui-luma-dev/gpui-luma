@@ -592,6 +592,18 @@ impl ShadcnLook {
         templates::progress_theme(Arc::clone(self))
     }
 
+    pub fn card_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::card::CardTemplate> {
+        templates::card_template(Arc::clone(self))
+    }
+
+    pub fn card_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::card::CardTheme> {
+        templates::card_theme(Arc::clone(self))
+    }
+
+    pub fn card(self: &Arc<Self>, id: impl Into<SharedString>) -> gpui_luma::controls::card::CardBuilder {
+        gpui_luma::controls::card::new(id).template(self.card_template())
+    }
+
     pub fn toggle_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,

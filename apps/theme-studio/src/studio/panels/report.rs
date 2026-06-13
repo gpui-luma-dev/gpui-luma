@@ -11,7 +11,7 @@ use gpui_luma::theme::{ControlSize};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
-use super::common::{card, card_header};
+use super::common::titled_card;
 
 declare_form! {
     pub struct ReportPanel {
@@ -42,34 +42,41 @@ declare_form! {
 }
 
 impl Render for ReportPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let area_selector = self.area_selector.clone();
+        let security_selector = self.security_selector.clone();
+        let subject_field = self.subject_field.clone();
+        let description_area = self.description_area.clone();
+        let cancel_button = self.cancel_button.clone();
+        let submit_button = self.submit_button.clone();
 
-        card(
+        titled_card(
+            "theme-studio-report-card",
+            &self.look,
             380.0,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "Report an issue",
-                    "What area are you having problems with?",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                hstack! {
-                    gap=10;
-                    form_field!("Area", chrome; self.area_selector.clone()).flex_1(),
-                    form_field!("Security Level", chrome; self.security_selector.clone()).flex_1(),
-                },
-                form_field!("Subject", chrome; self.subject_field.clone()),
-                form_field!("Description", chrome; self.description_area.clone()),
-                hstack! {
-                    gap=8 justify=end;
-                    self.cancel_button.clone(),
-                    self.submit_button.clone(),
-                },
+            "Report an issue",
+            "What area are you having problems with?",
+            move |_, _| {
+                vstack! {
+                    gap=12;
+                    hstack! {
+                        gap=10;
+                        form_field!("Area", chrome; area_selector.clone()).flex_1(),
+                        form_field!("Security Level", chrome; security_selector.clone()).flex_1(),
+                    },
+                    form_field!("Subject", chrome; subject_field.clone()),
+                    form_field!("Description", chrome; description_area.clone()),
+                    hstack! {
+                        gap=8 justify=end;
+                        cancel_button.clone(),
+                        submit_button.clone(),
+                    },
+                }
+                .into_any_element()
             },
+            window,
+            _cx,
         )
     }
 }

@@ -8,7 +8,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{vstack};
 use lucide_icons::Icon as LucideIcon;
 
-use super::common::{card, card_header};
+use super::common::titled_card;
 
 const TREE_VIEW_CARD_WIDTH: f32 = 360.0;
 const TREE_VIEW_HEIGHT_PX: f32 = 320.0;
@@ -55,44 +55,47 @@ impl TreeViewPanel {
 }
 
 impl Render for TreeViewPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let shell = self.shell.clone();
+        let last_event = self.last_event.clone();
 
-        card(
+        titled_card(
+            "theme-studio-tree-view-card",
+            &self.look,
             TREE_VIEW_CARD_WIDTH,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "File Explorer",
-                    "Virtualized tree view for hierarchical data.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                div()
-                    .text_size(px(12.0))
-                    .text_color(chrome.muted_text)
-                    .child(format!(
-                        "Mock tree: {TREE_DEPTH} levels deep — click branch rows to expand or collapse"
-                    )),
-                div()
-                    .w_full()
-                    .h(px(TREE_VIEW_HEIGHT_PX))
-                    .min_h(px(0.0))
-                    .overflow_hidden()
-                    .rounded(px(8.0))
-                    .border_1()
-                    .border_color(chrome.border)
-                    .bg(chrome.content_background)
-                    .child(self.shell.clone()),
-                div()
-                    .text_size(px(12.0))
-                    .text_color(chrome.muted_text)
-                    .child(format!("Last event: {}", self.last_event)),
-            }
-            .w_full()
-            .overflow_hidden(),
+            "File Explorer",
+            "Virtualized tree view for hierarchical data.",
+            move |_, _| {
+                vstack! {
+                    gap=12;
+                    div()
+                        .text_size(px(12.0))
+                        .text_color(chrome.muted_text)
+                        .child(format!(
+                            "Mock tree: {TREE_DEPTH} levels deep — click branch rows to expand or collapse"
+                        )),
+                    div()
+                        .w_full()
+                        .h(px(TREE_VIEW_HEIGHT_PX))
+                        .min_h(px(0.0))
+                        .overflow_hidden()
+                        .rounded(px(8.0))
+                        .border_1()
+                        .border_color(chrome.border)
+                        .bg(chrome.content_background)
+                        .child(shell.clone()),
+                    div()
+                        .text_size(px(12.0))
+                        .text_color(chrome.muted_text)
+                        .child(format!("Last event: {}", last_event)),
+                }
+                .w_full()
+                .overflow_hidden()
+                .into_any_element()
+            },
+            window,
+            _cx,
         )
     }
 }

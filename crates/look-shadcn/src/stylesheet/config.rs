@@ -42,6 +42,8 @@ pub struct StylesheetConfig {
     #[serde(default)]
     pub progress: ProgressStylesheet,
     #[serde(default)]
+    pub card: CardStylesheet,
+    #[serde(default)]
     pub split_view: SplitViewStylesheet,
     #[serde(default)]
     pub control_group: ControlGroupStylesheet,
@@ -150,6 +152,26 @@ impl EnabledColorRule for ProgressColorRule {
     fn enabled(&self) -> Option<bool> {
         self.enabled
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct CardStylesheet {
+    #[serde(default)]
+    pub color_rule: Option<CardColorRule>,
+}
+
+impl CardStylesheet {
+    pub fn color_rule(&self) -> Option<&CardColorRule> {
+        self.color_rule.as_ref()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct CardColorRule {
+    pub background: String,
+    pub foreground: String,
+    pub muted_foreground: String,
+    pub border: String,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

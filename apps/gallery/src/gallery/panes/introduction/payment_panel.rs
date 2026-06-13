@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*};
+use gpui::{Context, Entity, IntoElement, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::combobox::{ComboBox, ComboBoxEvent, SelectionItem, TypingPolicy};
 use gpui_luma::controls::presenter::HasPresenter;
@@ -10,7 +10,6 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::{declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
 #[derive(Clone, Copy)]
@@ -149,31 +148,43 @@ impl PaymentPanel {
 }
 
 impl Render for PaymentPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.look.chrome();
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let name_field = self.name_field.clone();
+        let email_field = self.email_field.clone();
+        let payment_combobox = self.payment_combobox.clone();
+        let same_as_shipping_checkbox = self.same_as_shipping_checkbox.clone();
+        let default_payment_method_checkbox = self.default_payment_method_checkbox.clone();
+        let submit_button = self.submit_button.clone();
+        let cancel_button = self.cancel_button.clone();
 
-        card_container(
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=10.0;
-                card_title(
-                    "Payment Method",
-                    "All transactions are secure and encrypted.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                self.name_field.clone(),
-                self.email_field.clone(),
-                self.payment_combobox.clone(),
-                self.same_as_shipping_checkbox.clone(),
-                hstack! {
-                    gap=8.0 align=center;
-                    self.submit_button.clone(),
-                    self.cancel_button.clone(),
-                },
-                self.default_payment_method_checkbox.clone(),
-            },
+        div().w(px(360.0)).max_w_full().h_full().child(
+            self.look
+                .card("intro-payment-card")
+                .title("Payment Method")
+                .description("All transactions are secure and encrypted.")
+                .elevated(false)
+                .full_height(true)
+                .body_fill(true)
+                .child_render(move |_, _| {
+                    vstack! {
+                        gap=10.0;
+                        name_field.clone(),
+                        email_field.clone(),
+                        payment_combobox.clone(),
+                        same_as_shipping_checkbox.clone(),
+                        default_payment_method_checkbox.clone(),
+                    }
+                    .into_any_element()
+                })
+                .footer(move |_, _| {
+                    hstack! {
+                        gap=8.0 align=center;
+                        submit_button.clone(),
+                        cancel_button.clone(),
+                    }
+                    .into_any_element()
+                })
+                .render(window, cx),
         )
     }
 }

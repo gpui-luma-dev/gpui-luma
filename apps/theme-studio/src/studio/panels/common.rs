@@ -1,4 +1,6 @@
-use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
+use std::sync::Arc;
+
+use gpui::{AnyElement, App, FontWeight, Hsla, IntoElement, SharedString, Window, div, prelude::*, px};
 use gpui_luma::hstack;
 use gpui_luma_look_shadcn::prelude::*;
 
@@ -82,34 +84,36 @@ pub fn panel_box_shadow() -> Vec<gpui::BoxShadow> {
     }]
 }
 
-pub fn card(width: f32, border: Hsla, background: Hsla, content: impl IntoElement) -> gpui::Div {
+pub fn card(
+    id: impl Into<SharedString>,
+    look: &Arc<ShadcnLook>,
+    width: f32,
+    content: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     div()
         .w(px(width))
         .max_w_full()
-        .overflow_hidden()
-        .border_1()
-        .border_color(border)
-        .rounded(px(12.0))
-        .bg(background)
-        .shadow(panel_box_shadow())
-        .p(px(16.0))
-        .child(content)
+        .child(look.card(id).child_render(content).render(window, cx))
+        .into_any_element()
 }
 
-pub fn card_header(title: &'static str, subtitle: &'static str, title_color: Hsla, subtitle_color: Hsla) -> AnyElement {
+#[allow(clippy::too_many_arguments)]
+pub fn titled_card(
+    id: impl Into<SharedString>,
+    look: &Arc<ShadcnLook>,
+    width: f32,
+    title: &'static str,
+    subtitle: &'static str,
+    content: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     div()
-        .flex()
-        .flex_col()
-        .gap(px(4.0))
-        .child(
-            div()
-                .text_size(px(16.0))
-                .line_height(px(22.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(title_color)
-                .child(title),
-        )
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(subtitle_color).child(subtitle))
+        .w(px(width))
+        .max_w_full()
+        .child(look.card(id).title(title).description(subtitle).child_render(content).render(window, cx))
         .into_any_element()
 }
 

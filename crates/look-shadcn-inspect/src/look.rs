@@ -10,10 +10,10 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook, ShadcnTextFieldStyle}
 use crate::controls::{
     AccordionContentInspectPalette, AccordionInspectMetrics, AccordionTriggerInspectPalette,
     AutocompleteChromeInspectPalette, AutocompleteInspectMetrics, ButtonInspectMetrics, ButtonInspectPalette,
-    ButtonInspectTypography, CheckboxInspectMetrics, CheckboxInspectPalette, ContextMenuInspectMetrics,
-    ContextMenuInspectPalette, ControlGroupInspectMetrics, ControlGroupListInspectPalette, FloatingMenuInspectMetrics,
-    FloatingMenuInspectPalette, ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette,
-    ListViewInspectMetrics, ListViewInspectPalette, ListViewRowInspectPalette,
+    ButtonInspectTypography, CardInspectMetrics, CheckboxInspectMetrics, CheckboxInspectPalette,
+    ContextMenuInspectMetrics, ContextMenuInspectPalette, ControlGroupInspectMetrics, ControlGroupListInspectPalette,
+    FloatingMenuInspectMetrics, FloatingMenuInspectPalette, ListBoxInspectMetrics, ListBoxListInspectPalette,
+    ListBoxRowInspectPalette, ListViewInspectMetrics, ListViewInspectPalette, ListViewRowInspectPalette,
     NavigationSidebarContainerInspectPalette, NavigationSidebarInspectMetrics, NavigationSidebarItemInspectPalette,
     NavigationSidebarSectionInspectPalette, PopupMenuInspectMetrics, PopupMenuInspectPalette, ProgressInspectMetrics,
     ProgressInspectPalette, RadioButtonInspectMetrics, RadioButtonInspectPalette, ResizablePanelsInspectMetrics,
@@ -24,12 +24,12 @@ use crate::controls::{
     TextFieldInspectPalette, TreeViewInspectMetrics, TreeViewRowInspectPalette,
     inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
     inspect_autocomplete_chrome_color_palette, inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics,
-    inspect_button_color_palette, inspect_button_metrics, inspect_button_typography, inspect_checkbox_color_palette,
-    inspect_checkbox_metrics, inspect_context_menu_color_palette, inspect_context_menu_metrics,
-    inspect_control_group_list_color_palette, inspect_control_group_metrics, inspect_floating_menu_color_palette,
-    inspect_floating_menu_metrics, inspect_list_view_color_palette, inspect_list_view_metrics,
-    inspect_list_view_row_color_palette, inspect_listbox_list_color_palette, inspect_listbox_metrics,
-    inspect_listbox_row_color_palette, inspect_navigation_sidebar_branch_color_palette,
+    inspect_button_color_palette, inspect_button_metrics, inspect_button_typography, inspect_card_metrics,
+    inspect_checkbox_color_palette, inspect_checkbox_metrics, inspect_context_menu_color_palette,
+    inspect_context_menu_metrics, inspect_control_group_list_color_palette, inspect_control_group_metrics,
+    inspect_floating_menu_color_palette, inspect_floating_menu_metrics, inspect_list_view_color_palette,
+    inspect_list_view_metrics, inspect_list_view_row_color_palette, inspect_listbox_list_color_palette,
+    inspect_listbox_metrics, inspect_listbox_row_color_palette, inspect_navigation_sidebar_branch_color_palette,
     inspect_navigation_sidebar_container_color_palette, inspect_navigation_sidebar_item_color_palette,
     inspect_navigation_sidebar_metrics, inspect_navigation_sidebar_section_color_palette,
     inspect_popup_menu_color_palette, inspect_popup_menu_metrics, inspect_progress_color_palette,
@@ -86,6 +86,10 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_button_typography(&self) -> ButtonInspectTypography {
         inspect_button_typography(&self.mode_tokens(), self.theme_mode())
+    }
+
+    pub fn inspect_card_metrics(&self, size: ControlSize) -> CardInspectMetrics {
+        inspect_card_metrics(self.look, size)
     }
 
     pub fn inspect_checkbox_color_palette(

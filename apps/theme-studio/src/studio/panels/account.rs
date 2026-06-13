@@ -9,7 +9,7 @@ use gpui_luma::theme::{ControlSize};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 
-use super::common::{card, card_header, or_divider};
+use super::common::{or_divider, titled_card};
 
 declare_form! {
     pub struct AccountPanel {
@@ -32,31 +32,37 @@ declare_form! {
 }
 
 impl Render for AccountPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let github_button = self.github_button.clone();
+        let google_button = self.google_button.clone();
+        let email_field = self.email_field.clone();
+        let password_field = self.password_field.clone();
+        let create_button = self.create_button.clone();
 
-        card(
+        titled_card(
+            "theme-studio-account-card",
+            &self.look,
             340.0,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header(
-                    "Create an account",
-                    "Enter your email below to create your account",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                hstack! {
-                    gap=8;
-                    div().flex_1().child(self.github_button.clone()),
-                    div().flex_1().child(self.google_button.clone()),
-                },
-                or_divider("OR CONTINUE WITH", chrome.border, chrome.muted_text),
-                form_field!("Email", chrome; self.email_field.clone()),
-                form_field!("Password", chrome; self.password_field.clone()),
-                div().w_full().child(self.create_button.clone()),
+            "Create an account",
+            "Enter your email below to create your account",
+            move |_, _| {
+                vstack! {
+                    gap=12;
+                    hstack! {
+                        gap=8;
+                        div().flex_1().child(github_button.clone()),
+                        div().flex_1().child(google_button.clone()),
+                    },
+                    or_divider("OR CONTINUE WITH", chrome.border, chrome.muted_text),
+                    form_field!("Email", chrome; email_field.clone()),
+                    form_field!("Password", chrome; password_field.clone()),
+                    div().w_full().child(create_button.clone()),
+                }
+                .into_any_element()
             },
+            window,
+            _cx,
         )
     }
 }

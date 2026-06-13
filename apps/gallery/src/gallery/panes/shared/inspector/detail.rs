@@ -4,10 +4,12 @@ use gpui::{
     AnyElement, ClipboardItem, Context, Div, Entity, FontWeight, IntoElement, Render, SharedString, Window, div,
     prelude::*, px,
 };
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
 use gpui_luma::controls::tree_view::TreeViewControl;
 use gpui_luma::theme::pack::LumaChrome;
-use gpui_luma::theme::{ControlSize, LumaTextStyle};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle};
+use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, format_inspector_hsl, format_inspector_rgba};
@@ -26,7 +28,6 @@ mod layout {
     pub(super) const CARD_PADDING: f32 = 10.0;
     pub(super) const CARD_GAP: f32 = 6.0;
     pub(super) const VALUE_ROW_HEIGHT: f32 = 32.0;
-    pub(super) const COPY_SLOT: f32 = 28.0;
 }
 
 #[derive(Clone)]
@@ -58,7 +59,7 @@ impl ColorInspectorDetail {
 }
 
 impl Render for ColorInspectorDetail {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let selection = self.selected_field(cx);
         let chrome = self.look.chrome();
         let body = &self.look.mode_tokens().typography.text.body;
@@ -82,24 +83,75 @@ impl Render for ColorInspectorDetail {
         };
 
         match &selection.kind {
-            InspectFieldKind::Color(field) => {
-                render_color_detail(selection, field, chrome, body, mono, mono_font, self.detail_id, cx)
-            }
+            InspectFieldKind::Color(field) => render_color_detail(
+                selection,
+                field,
+                &self.look,
+                chrome,
+                body,
+                mono,
+                mono_font,
+                self.detail_id,
+                window,
+                cx,
+            ),
             InspectFieldKind::Layout(field) => {
-                render_layout_detail(selection, field, chrome, body, mono, self.detail_id, cx)
+                render_layout_detail(selection, field, &self.look, chrome, body, mono, self.detail_id, window, cx)
             }
         }
+    }
+}
+
+fn render_copy_icon_button<M: 'static>(
+    look: &Arc<ShadcnLook>,
+    id: SharedString,
+    clipboard_text: String,
+    window: &mut Window,
+    cx: &mut Context<M>,
+) -> AnyElement {
+    let disabled = clipboard_text.is_empty();
+    let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(|_, _| {
+        div()
+            .font_family("lucide")
+            .text_size(px(16.0))
+            .line_height(px(16.0))
+            .child(char::from(LucideIcon::Copy).to_string())
+            .into_any_element()
+    });
+    let model = ButtonRenderModel {
+        id: id.clone(),
+        data: (),
+        content,
+        role: ButtonFamilyRole::Icon,
+        size: ButtonSize::Sm,
+        state: InteractionState { disabled, ..InteractionState::default() },
+        round: true,
+        radius_override: std::cell::Cell::new(None),
+        appearance: None,
+    };
+    let button = look.button_template(ShadcnButtonStyle::Ghost).render(&model, window, cx);
+
+    if disabled {
+        button.into_any_element()
+    } else {
+        button
+            .on_click(cx.listener(move |_, _, _, cx| {
+                cx.write_to_clipboard(ClipboardItem::new_string(clipboard_text.clone()));
+            }))
+            .into_any_element()
     }
 }
 
 fn render_color_detail(
     selection: &InspectFieldSelection,
     field: &InspectColorFieldData,
+    look: &Arc<ShadcnLook>,
     chrome: LumaChrome,
     body: &LumaTextStyle,
     mono: &LumaTextStyle,
     mono_font: SharedString,
     detail_id: &'static str,
+    window: &mut Window,
     cx: &mut Context<ColorInspectorDetail>,
 ) -> AnyElement {
     let color = field.swatch;
@@ -134,6 +186,8 @@ fn render_color_detail(
             mono.size,
             mono.line_height,
             mono_font.clone(),
+            look,
+            window,
             cx,
         ));
     }
@@ -173,10 +227,12 @@ fn render_color_detail(
 fn render_layout_detail(
     selection: &InspectFieldSelection,
     field: &InspectLayoutSizeData,
+    look: &Arc<ShadcnLook>,
     chrome: LumaChrome,
     body: &LumaTextStyle,
     mono: &LumaTextStyle,
     detail_id: &'static str,
+    window: &mut Window,
     cx: &mut Context<ColorInspectorDetail>,
 ) -> AnyElement {
     let mut values_card = div()
@@ -207,6 +263,8 @@ fn render_layout_detail(
             body.line_height,
             mono.size,
             mono.line_height,
+            look,
+            window,
             cx,
         ));
     }
@@ -315,6 +373,8 @@ fn render_layout_property_row(
     label_line_height: f32,
     mono_size: f32,
     mono_line_height: f32,
+    look: &Arc<ShadcnLook>,
+    window: &mut Window,
     cx: &mut Context<ColorInspectorDetail>,
 ) -> impl IntoElement {
     let value = property.value.clone();
@@ -354,29 +414,13 @@ fn render_layout_property_row(
                         .text_color(muted_text)
                         .child(value),
                 )
-                .child(
-                    div()
-                        .id(format!("{detail_id}-layout-copy-{row_id}"))
-                        .size(px(layout::COPY_SLOT))
-                        .flex_shrink_0()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .rounded(px(4.0))
-                        .cursor_pointer()
-                        .hover(|style| style.bg(border))
-                        .on_click(cx.listener(move |_, _, _, cx| {
-                            cx.write_to_clipboard(ClipboardItem::new_string(value_for_copy.clone()));
-                        }))
-                        .child(
-                            div()
-                                .font_family("lucide")
-                                .text_size(px(mono_size))
-                                .line_height(px(mono_size))
-                                .text_color(muted_text)
-                                .child(char::from(LucideIcon::Copy).to_string()),
-                        ),
-                ),
+                .child(render_copy_icon_button(
+                    look,
+                    format!("{detail_id}-layout-copy-{row_id}").into(),
+                    value_for_copy.clone(),
+                    window,
+                    cx,
+                )),
         )
         .child(
             div()
@@ -428,6 +472,8 @@ fn render_color_value_row(
     mono_size: f32,
     mono_line_height: f32,
     mono_font: SharedString,
+    look: &Arc<ShadcnLook>,
+    window: &mut Window,
     cx: &mut Context<ColorInspectorDetail>,
 ) -> impl IntoElement {
     let value = row.value.clone();
@@ -461,27 +507,11 @@ fn render_color_value_row(
                 .text_color(accent)
                 .child(row.value),
         )
-        .child(
-            div()
-                .id(format!("{detail_id}-copy-{row_key}"))
-                .size(px(layout::COPY_SLOT))
-                .flex_shrink_0()
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(px(4.0))
-                .cursor_pointer()
-                .hover(|style| style.bg(border))
-                .on_click(cx.listener(move |_, _, _, cx| {
-                    cx.write_to_clipboard(ClipboardItem::new_string(value.to_string()));
-                }))
-                .child(
-                    div()
-                        .font_family("lucide")
-                        .text_size(px(mono_size))
-                        .line_height(px(mono_size))
-                        .text_color(muted_text)
-                        .child(char::from(LucideIcon::Copy).to_string()),
-                ),
-        )
+        .child(render_copy_icon_button(
+            look,
+            format!("{detail_id}-copy-{row_key}").into(),
+            value.to_string(),
+            window,
+            cx,
+        ))
 }

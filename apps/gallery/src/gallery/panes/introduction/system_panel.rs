@@ -11,7 +11,6 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::{declare_form, vstack};
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
 declare_form! {
@@ -136,45 +135,57 @@ impl SystemPanel {
 }
 
 impl Render for SystemPanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
 
-        card_container(
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=10.0;
-                card_title(
-                    "System & Preferences",
-                    "Choice controls plus progress feedback.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                self.two_factor_switch.clone(),
-                self.terms_checkbox.clone(),
-                self.social_checkbox.clone(),
-                self.referral_checkbox.clone(),
-                vstack! {
-                    gap=6.0;
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(format!("Budget: {:.0}%", self.budget)),
-                    self.budget_slider.clone(),
-                },
-                vstack! {
-                    gap=6.0;
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(format!("Profile completion: {:.0}%", self.completion)),
-                    self.completion_progress.clone(),
-                },
-            },
+        let two_factor_switch = self.two_factor_switch.clone();
+        let terms_checkbox = self.terms_checkbox.clone();
+        let social_checkbox = self.social_checkbox.clone();
+        let referral_checkbox = self.referral_checkbox.clone();
+        let budget_slider = self.budget_slider.clone();
+        let completion_progress = self.completion_progress.clone();
+        let budget = self.budget;
+        let completion = self.completion;
+
+        div().w(px(360.0)).max_w_full().h_full().child(
+            self.look
+                .card("intro-system-card")
+                .title("System & Preferences")
+                .description("Choice controls plus progress feedback.")
+                .elevated(false)
+                .full_height(true)
+                .body_fill(true)
+                .child_render(move |_, _| {
+                    vstack! {
+                        gap=10.0;
+                        two_factor_switch.clone(),
+                        terms_checkbox.clone(),
+                        social_checkbox.clone(),
+                        referral_checkbox.clone(),
+                        vstack! {
+                            gap=6.0;
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .font_weight(gpui::FontWeight::MEDIUM)
+                                .text_color(chrome.body_text)
+                                .child(format!("Budget: {:.0}%", budget)),
+                            budget_slider.clone(),
+                        },
+                        vstack! {
+                            gap=6.0;
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .font_weight(gpui::FontWeight::MEDIUM)
+                                .text_color(chrome.body_text)
+                                .child(format!("Profile completion: {:.0}%", completion)),
+                            completion_progress.clone(),
+                        },
+                    }
+                    .into_any_element()
+                })
+                .render(window, cx),
         )
     }
 }

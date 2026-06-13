@@ -4,6 +4,7 @@ use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
 use gpui_luma::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
 };
+use gpui_luma::controls::card::{CardTemplate, CardTheme, ThemedCardTemplate};
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
@@ -39,6 +40,7 @@ use gpui_luma::theme::{ControlSize, InteractionState};
 
 use super::autocomplete::autocomplete_textbox_appearance;
 use super::checkbox::checkbox_appearance;
+use super::card::card_appearance;
 use super::control_group::control_group_list_appearance;
 use super::context_menu::context_menu_appearance;
 use super::floating_menu::floating_menu_appearance;
@@ -742,6 +744,24 @@ pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls:
 
 pub fn progress_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ProgressTheme> {
     Arc::new(RadixProgressTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn card_template(theme: Arc<ShadcnLook>) -> Arc<dyn CardTemplate> {
+    Arc::new(ThemedCardTemplate::new(card_theme(theme)))
+}
+
+pub fn card_theme(theme: Arc<ShadcnLook>) -> Arc<dyn CardTheme> {
+    Arc::new(RadixCardTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixCardTheme {
+    theme: ShadcnLook,
+}
+
+impl CardTheme for RadixCardTheme {
+    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::card::CardAppearance {
+        card_appearance(&self.theme, size)
+    }
 }
 
 pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {

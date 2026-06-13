@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::card::Card;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
@@ -16,6 +17,7 @@ const DETAIL_PANEL_MIN_PX: f32 = 180.0;
 
 pub(in crate::gallery) struct ButtonInspectorShell {
     look: Arc<ShadcnLook>,
+    card: Card,
     tree: Entity<TreeViewControl<InspectTreeData>>,
     detail: Entity<ButtonInspectorDetail>,
     split: Entity<ResizablePanels>,
@@ -83,6 +85,24 @@ impl ButtonInspectorShell {
             .panels([tree_panel, detail_panel])
             .spawn(cx);
 
+        let split_for_card = split.clone();
+        let card = look
+            .card("button-inspector")
+            .title("Inspector")
+            .full_height(true)
+            .body_fill(true)
+            .elevated(false)
+            .child_render(move |_, _| {
+                div()
+                    .id("button-inspector-body")
+                    .flex_1()
+                    .min_h(px(0.0))
+                    .overflow_hidden()
+                    .child(split_for_card.clone())
+                    .into_any_element()
+            })
+            .spawn(cx);
+
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tree, |shell, _, event: &TreeViewEvent<InspectTreeData>, cx| {
             if matches!(event, TreeViewEvent::SelectionChanged { .. }) {
@@ -93,7 +113,7 @@ impl ButtonInspectorShell {
 
         super::super::shared::inspector::sync_inspector_detail_from_tree(&tree, &detail, cx);
 
-        Self { look, tree, detail, split, synced_mode, _subscriptions: subscriptions }
+        Self { look, card, tree, detail, split, synced_mode, _subscriptions: subscriptions }
     }
 
     fn sync_tree_if_needed(&mut self, cx: &mut Context<Self>) {
@@ -126,37 +146,6 @@ impl ButtonInspectorShell {
 impl Render for ButtonInspectorShell {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_tree_if_needed(cx);
-
-        let chrome = self.look.chrome();
-        let body = &self.look.mode_tokens().typography.text.body;
-
-        div()
-            .id("button-inspector")
-            .h_full()
-            .min_h(px(0.0))
-            .flex()
-            .flex_col()
-            .gap(px(8.0))
-            .border_1()
-            .border_color(chrome.border)
-            .rounded(px(6.0))
-            .bg(chrome.panel_background)
-            .p(px(12.0))
-            .child(
-                div()
-                    .text_size(px(body.size))
-                    .line_height(px(body.line_height))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(chrome.title_text)
-                    .child("Inspector"),
-            )
-            .child(
-                div()
-                    .id("button-inspector-body")
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .overflow_hidden()
-                    .child(self.split.clone()),
-            )
+        self.card.clone()
     }
 }

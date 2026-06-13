@@ -21,7 +21,6 @@ use gpui_luma::controls::radio_group::{
 };
 use lucide_icons::Icon as LucideIcon;
 
-use super::common::{card_container, card_title};
 use super::pane::{AppEvent, EventBus};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -218,60 +217,72 @@ impl WorkspacePanel {
 }
 
 impl Render for WorkspacePanel {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
 
-        card_container(
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=10.0;
-                card_title(
-                    "Workspace",
-                    "Toggle groups, radio groups, icon actions, and popup menus.",
-                    chrome.title_text,
-                    chrome.muted_text,
-                ),
-                vstack! {
-                    gap=6.0 align=start;
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(format!("Layout: {}", self.layout)),
-                    self.layout_icon_group.clone(),
-                },
-                vstack! {
-                    gap=6.0;
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(chrome.body_text)
-                        .child(format!("Density: {}", self.density)),
-                    self.density_radio_group.clone(),
-                },
-                hstack! {
-                    gap=8.0 align=center;
-                    self.popup_menu.clone(),
-                },
-                vstack! {
-                    gap=6.0 align=start;
-                    div()
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
-                        .text_color(chrome.muted_text)
-                        .child(format!("Icon demo: {}", self.icon_demo)),
-                    self.icon_demo_icon_group.clone(),
-                },
-                div()
-                    .pt(px(2.0))
-                    .text_size(px(11.0))
-                    .line_height(px(16.0))
-                    .text_color(chrome.muted_text)
-                    .child(format!("Workspace action: {} | Icon demo: {}", self.action, self.icon_demo)),
-            },
+        let layout_icon_group = self.layout_icon_group.clone();
+        let density_radio_group = self.density_radio_group.clone();
+        let popup_menu = self.popup_menu.clone();
+        let icon_demo_icon_group = self.icon_demo_icon_group.clone();
+        let layout = self.layout.clone();
+        let density = self.density.clone();
+        let icon_demo = self.icon_demo.clone();
+        let action = self.action.clone();
+
+        div().w(px(360.0)).max_w_full().h_full().child(
+            self.look
+                .card("intro-workspace-card")
+                .title("Workspace")
+                .description("Toggle groups, radio groups, icon actions, and popup menus.")
+                .elevated(false)
+                .full_height(true)
+                .body_fill(true)
+                .child_render(move |_, _| {
+                    vstack! {
+                        gap=10.0;
+                        vstack! {
+                            gap=6.0 align=start;
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .font_weight(gpui::FontWeight::MEDIUM)
+                                .text_color(chrome.body_text)
+                                .child(format!("Layout: {}", layout)),
+                            layout_icon_group.clone(),
+                        },
+                        vstack! {
+                            gap=6.0;
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .font_weight(gpui::FontWeight::MEDIUM)
+                                .text_color(chrome.body_text)
+                                .child(format!("Density: {}", density)),
+                            density_radio_group.clone(),
+                        },
+                        hstack! {
+                            gap=8.0 align=center;
+                            popup_menu.clone(),
+                        },
+                        vstack! {
+                            gap=6.0 align=start;
+                            div()
+                                .text_size(px(11.0))
+                                .line_height(px(15.0))
+                                .text_color(chrome.muted_text)
+                                .child(format!("Icon demo: {}", icon_demo)),
+                            icon_demo_icon_group.clone(),
+                        },
+                        div()
+                            .pt(px(2.0))
+                            .text_size(px(11.0))
+                            .line_height(px(16.0))
+                            .text_color(chrome.muted_text)
+                            .child(format!("Workspace action: {} | Icon demo: {}", action, icon_demo)),
+                    }
+                    .into_any_element()
+                })
+                .render(window, cx),
         )
     }
 }

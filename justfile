@@ -1,8 +1,8 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    #cargo run -p gpui-luma-gallery -- elegent-luxury
-    cargo run -p gpui-luma-gallery -- jarvis
+    cargo run -p gpui-luma-gallery -- elegent-luxury
+    #cargo run -p gpui-luma-gallery -- jarvis
 
 gallery-rel:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-gallery --release

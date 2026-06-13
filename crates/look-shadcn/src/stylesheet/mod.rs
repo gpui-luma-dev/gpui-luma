@@ -9,10 +9,10 @@ pub fn embedded_stylesheet() -> &'static StylesheetConfig {
 pub use config::StylesheetConfig;
 pub use resolve::{
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule, resolve_button_color_rule,
-    resolve_button_metrics_rule, resolve_checkbox_color_rule, resolve_control_group_list_color_rule,
-    resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
-    resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule, resolve_listbox_list_color_rule,
-    resolve_listbox_row_color_rule, resolve_navigation_sidebar_branch_color_rule,
+    resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
+    resolve_control_group_list_color_rule, resolve_floating_menu_surface_color_rule,
+    resolve_floating_menu_trigger_color_rule, resolve_list_view_row_color_rule, resolve_list_view_surface_color_rule,
+    resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_navigation_sidebar_branch_color_rule,
     resolve_navigation_sidebar_container_color_rule, resolve_navigation_sidebar_item_color_rule,
     resolve_navigation_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
     resolve_progress_metrics, resolve_textfield_color_rule, resolve_radio_color_rule,
@@ -29,7 +29,7 @@ use crate::controls::ShadcnButtonStyle;
 use crate::provenance::TableRuleMetadata;
 
 use config::{
-    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, ButtonColorRule,
+    AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, ButtonColorRule, CardColorRule,
     CheckboxColorRule, ControlGroupListColorRule, FloatingMenuSurfaceColorRule, FloatingMenuTriggerColorRule,
     ListboxListColorRule, ListboxRowColorRule, ListViewRowColorRule, ListViewSurfaceColorRule,
     NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule, NavigationSidebarItemColorRule,
@@ -229,6 +229,10 @@ pub fn find_autocomplete_chrome_color_rule(stylesheet: &StylesheetConfig) -> Opt
 
 pub fn find_progress_color_rule(stylesheet: &StylesheetConfig, enabled: bool) -> Option<&ProgressColorRule> {
     stylesheet.progress.find_color_rule(enabled)
+}
+
+pub fn find_card_color_rule(stylesheet: &StylesheetConfig) -> Option<&CardColorRule> {
+    stylesheet.card.color_rule()
 }
 
 pub fn find_split_view_color_rule(stylesheet: &StylesheetConfig, enabled: bool) -> Option<&SplitViewColorRule> {

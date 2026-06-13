@@ -17,7 +17,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma::{hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
-use super::common::{card, card_header};
+use super::common::titled_card;
 
 const PAYMENTS_CARD_WIDTH: f32 = 720.0;
 const PAYMENTS_PAGE_SIZE: usize = 6;
@@ -135,40 +135,50 @@ impl Render for PaymentsPanel {
         let total_rows = self.list_view.read(cx).items().len();
         let at_first = self.list_view.read(cx).current_page() == 0;
         let at_last = self.list_view.read(cx).current_page() + 1 >= self.list_view.read(cx).page_count().max(1);
+        let selected_count = self.selected_count;
+        let list_view = self.list_view.clone();
+        let prev_button = self.prev_button.clone();
+        let next_button = self.next_button.clone();
 
         self.prev_button.update(cx, |button, cx| button.set_enabled(!at_first, cx));
         self.next_button.update(cx, |button, cx| button.set_enabled(!at_last, cx));
 
-        card(
+        titled_card(
+            "theme-studio-payments-card",
+            &self.look,
             PAYMENTS_CARD_WIDTH,
-            chrome.border,
-            chrome.panel_background,
-            vstack! {
-                gap=12;
-                card_header("Payments", "Manage your payments.", chrome.title_text, chrome.muted_text),
-                div()
-                    .w_full()
-                    .rounded(px(8.0))
-                    .border_1()
-                    .border_color(chrome.border)
-                    .overflow_hidden()
-                    .child(self.list_view.clone()),
-                hstack! {
-                    justify=between align=center gap=12;
-                    format!("{} of {total_rows} row(s) selected.", self.selected_count),
+            "Payments",
+            "Manage your payments.",
+            move |_, _| {
+                vstack! {
+                    gap=12;
+                    div()
+                        .w_full()
+                        .rounded(px(8.0))
+                        .border_1()
+                        .border_color(chrome.border)
+                        .overflow_hidden()
+                        .child(list_view.clone()),
                     hstack! {
-                        gap=8 align=center;
-                        self.prev_button.clone(),
-                        self.next_button.clone(),
-                    },
+                        justify=between align=center gap=12;
+                        format!("{} of {total_rows} row(s) selected.", selected_count),
+                        hstack! {
+                            gap=8 align=center;
+                            prev_button.clone(),
+                            next_button.clone(),
+                        },
+                    }
+                    .w_full()
+                    .text_size(px(11.0))
+                    .line_height(px(14.0))
+                    .text_color(chrome.muted_text),
                 }
                 .w_full()
-                .text_size(px(11.0))
-                .line_height(px(14.0))
-                .text_color(chrome.muted_text),
-            }
-            .w_full()
-            .overflow_hidden(),
+                .overflow_hidden()
+                .into_any_element()
+            },
+            _window,
+            cx,
         )
     }
 }
