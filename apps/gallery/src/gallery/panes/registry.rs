@@ -13,7 +13,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, combobox, context_menu,
+    accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, color, combobox, context_menu,
     floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress,
     prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel,
     split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation,
@@ -56,6 +56,18 @@ enum GalleryPageKind {
     RadioButton,
     RadioGroup,
     ChoiceTemplates,
+    ColorField,
+    ColorRing,
+    ColorArc,
+    ColorSlider,
+    ColorSliderRevealed,
+    ColorCombinations,
+    ColorPicker,
+    ColorHsvPlane,
+    ColorHsvWheel,
+    ColorSvTriangle,
+    ColorMultiMixer,
+    ColorSplitRing,
     ListBox,
     ScrollingListView,
     PagingListView,
@@ -146,6 +158,38 @@ const CHOICE_TEMPLATES_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::ChoiceTemplates,
 };
+const COLOR_FIELD_PAGE: GalleryPage =
+    GalleryPage { id: "color-field", label: "Color Field", icon: None, kind: GalleryPageKind::ColorField };
+const COLOR_RING_PAGE: GalleryPage =
+    GalleryPage { id: "color-ring", label: "Color Ring", icon: None, kind: GalleryPageKind::ColorRing };
+const COLOR_ARC_PAGE: GalleryPage =
+    GalleryPage { id: "color-arc", label: "Color Arc", icon: None, kind: GalleryPageKind::ColorArc };
+const COLOR_SLIDER_PAGE: GalleryPage =
+    GalleryPage { id: "color-slider", label: "Color Slider", icon: None, kind: GalleryPageKind::ColorSlider };
+const COLOR_SLIDER_REVEALED_PAGE: GalleryPage = GalleryPage {
+    id: "color-slider-revealed",
+    label: "Color Slider Revealed",
+    icon: None,
+    kind: GalleryPageKind::ColorSliderRevealed,
+};
+const COLOR_COMBINATIONS_PAGE: GalleryPage = GalleryPage {
+    id: "color-combinations",
+    label: "Combinations",
+    icon: None,
+    kind: GalleryPageKind::ColorCombinations,
+};
+const COLOR_PICKER_PAGE: GalleryPage =
+    GalleryPage { id: "color-picker", label: "Color Picker", icon: None, kind: GalleryPageKind::ColorPicker };
+const COLOR_HSV_PLANE_PAGE: GalleryPage =
+    GalleryPage { id: "color-hsv-plane", label: "HSV Plane", icon: None, kind: GalleryPageKind::ColorHsvPlane };
+const COLOR_HSV_WHEEL_PAGE: GalleryPage =
+    GalleryPage { id: "color-hsv-wheel", label: "HSV Wheel", icon: None, kind: GalleryPageKind::ColorHsvWheel };
+const COLOR_SV_TRIANGLE_PAGE: GalleryPage =
+    GalleryPage { id: "color-sv-triangle", label: "SV Triangle", icon: None, kind: GalleryPageKind::ColorSvTriangle };
+const COLOR_MULTI_MIXER_PAGE: GalleryPage =
+    GalleryPage { id: "color-multi-mixer", label: "Multi Mixer", icon: None, kind: GalleryPageKind::ColorMultiMixer };
+const COLOR_SPLIT_RING_PAGE: GalleryPage =
+    GalleryPage { id: "color-split-ring", label: "Split Ring", icon: None, kind: GalleryPageKind::ColorSplitRing };
 const LISTBOX_PAGE: GalleryPage =
     GalleryPage { id: "listbox", label: "ListBox", icon: None, kind: GalleryPageKind::ListBox };
 const SCROLLING_LIST_VIEW_PAGE: GalleryPage = GalleryPage {
@@ -271,6 +315,20 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     TREE_VIEW_PAGE,
 ];
 const INPUT_PAGES: &[GalleryPage] = &[SCROLLBAR_PAGE, SLIDER_PAGE, TEXTAREA_PAGE, TEXTFIELD_PAGE];
+const COLOR_PAGES: &[GalleryPage] = &[
+    COLOR_FIELD_PAGE,
+    COLOR_RING_PAGE,
+    COLOR_ARC_PAGE,
+    COLOR_SLIDER_PAGE,
+    COLOR_SLIDER_REVEALED_PAGE,
+    COLOR_COMBINATIONS_PAGE,
+    COLOR_PICKER_PAGE,
+    COLOR_HSV_PLANE_PAGE,
+    COLOR_HSV_WHEEL_PAGE,
+    COLOR_SV_TRIANGLE_PAGE,
+    COLOR_MULTI_MIXER_PAGE,
+    COLOR_SPLIT_RING_PAGE,
+];
 const MENU_PAGES: &[GalleryPage] = &[CONTEXT_MENU_PAGE, FLOATING_MENU_PAGE, POPUP_MENU_PAGE];
 const LAYOUT_PAGES: &[GalleryPage] = &[
     CARD_PAGE,
@@ -313,6 +371,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
         expanded: false,
         pages: INPUT_PAGES,
     },
+    GalleryNavGroup { id: "color", label: "Color", icon: LucideIcon::Palette, expanded: false, pages: COLOR_PAGES },
     GalleryNavGroup { id: "menu", label: "Menu", icon: LucideIcon::Menu, expanded: false, pages: MENU_PAGES },
     GalleryNavGroup { id: "layout", label: "Layout", icon: LucideIcon::Columns2, expanded: false, pages: LAYOUT_PAGES },
     GalleryNavGroup {
@@ -371,6 +430,18 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) radio_button: radio_button::RadioButtonPane,
     pub(super) radio_group: radio_group::RadioGroupPane,
     pub(super) choice_templates: choice_controls_template::ChoiceControlsTemplatePane,
+    pub(super) color_field: color::ColorFieldPane,
+    pub(super) color_ring: color::ColorRingPane,
+    pub(super) color_arc: color::ColorArcPane,
+    pub(super) color_slider: color::ColorSliderPane,
+    pub(super) color_slider_revealed: color::ColorSliderRevealedPane,
+    pub(super) color_combinations: color::ColorCombinationsPane,
+    pub(super) color_picker: color::ColorPickerPane,
+    pub(super) color_hsv_plane: color::HsvPlanePane,
+    pub(super) color_hsv_wheel: color::HsvWheelPane,
+    pub(super) color_sv_triangle: color::SvTrianglePane,
+    pub(super) color_multi_mixer: color::MultiMixerPane,
+    pub(super) color_split_ring: color::SplitRingPane,
     pub(super) listbox: listbox::ListBoxPane,
     pub(super) scrolling_list_view: list_view::ScrollingListViewPane,
     pub(super) paging_list_view: list_view::PagingListViewPane,
@@ -466,6 +537,18 @@ impl GalleryPanes {
             radio_button: radio_button::RadioButtonPane::new(cx, look.clone()),
             radio_group: radio_group::RadioGroupPane::new(cx, look.clone()),
             choice_templates: choice_controls_template::ChoiceControlsTemplatePane::new(cx, look.clone()),
+            color_field: color::ColorFieldPane::new(cx, look.clone()),
+            color_ring: color::ColorRingPane::new(cx, look.clone()),
+            color_arc: color::ColorArcPane::new(cx, look.clone()),
+            color_slider: color::ColorSliderPane::new(cx, look.clone()),
+            color_slider_revealed: color::ColorSliderRevealedPane::new(cx, look.clone()),
+            color_combinations: color::ColorCombinationsPane::new(cx, look.clone()),
+            color_picker: color::ColorPickerPane::new(cx, look.clone()),
+            color_hsv_plane: color::HsvPlanePane::new(cx, look.clone()),
+            color_hsv_wheel: color::HsvWheelPane::new(cx, look.clone()),
+            color_sv_triangle: color::SvTrianglePane::new(cx, look.clone()),
+            color_multi_mixer: color::MultiMixerPane::new(cx, look.clone()),
+            color_split_ring: color::SplitRingPane::new(cx, look.clone()),
             listbox: listbox::ListBoxPane::new(cx, look.clone()),
             scrolling_list_view: list_view::ScrollingListViewPane::new(cx, look.clone()),
             paging_list_view: list_view::PagingListViewPane::new(cx, look.clone()),
@@ -506,6 +589,18 @@ impl GalleryPanes {
         self.tree_view.subscribe(cx, subscriptions);
         self.radio_button.subscribe(cx, subscriptions);
         self.radio_group.subscribe(cx, subscriptions);
+        self.color_field.subscribe(cx, subscriptions);
+        self.color_ring.subscribe(cx, subscriptions);
+        self.color_arc.subscribe(cx, subscriptions);
+        self.color_slider.subscribe(cx, subscriptions);
+        self.color_slider_revealed.subscribe(cx, subscriptions);
+        self.color_combinations.subscribe(cx, subscriptions);
+        self.color_picker.subscribe(cx, subscriptions);
+        self.color_hsv_plane.subscribe(cx, subscriptions);
+        self.color_hsv_wheel.subscribe(cx, subscriptions);
+        self.color_sv_triangle.subscribe(cx, subscriptions);
+        self.color_multi_mixer.subscribe(cx, subscriptions);
+        self.color_split_ring.subscribe(cx, subscriptions);
         self.listbox.subscribe(cx, subscriptions);
         self.scrolling_list_view.subscribe(cx, subscriptions);
         self.paging_list_view.subscribe(cx, subscriptions);
@@ -551,6 +646,18 @@ impl GalleryPanes {
             GalleryPageKind::RadioButton => self.radio_button.notify_controls(cx),
             GalleryPageKind::RadioGroup => self.radio_group.notify_controls(cx),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.notify_controls(cx),
+            GalleryPageKind::ColorField => self.color_field.notify_controls(cx),
+            GalleryPageKind::ColorRing => self.color_ring.notify_controls(cx),
+            GalleryPageKind::ColorArc => self.color_arc.notify_controls(cx),
+            GalleryPageKind::ColorSlider => self.color_slider.notify_controls(cx),
+            GalleryPageKind::ColorSliderRevealed => self.color_slider_revealed.notify_controls(cx),
+            GalleryPageKind::ColorCombinations => self.color_combinations.notify_controls(cx),
+            GalleryPageKind::ColorPicker => self.color_picker.notify_controls(cx),
+            GalleryPageKind::ColorHsvPlane => self.color_hsv_plane.notify_controls(cx),
+            GalleryPageKind::ColorHsvWheel => self.color_hsv_wheel.notify_controls(cx),
+            GalleryPageKind::ColorSvTriangle => self.color_sv_triangle.notify_controls(cx),
+            GalleryPageKind::ColorMultiMixer => self.color_multi_mixer.notify_controls(cx),
+            GalleryPageKind::ColorSplitRing => self.color_split_ring.notify_controls(cx),
             GalleryPageKind::ListBox => self.listbox.notify_controls(cx),
             GalleryPageKind::ScrollingListView => self.scrolling_list_view.notify_controls(cx),
             GalleryPageKind::PagingListView => self.paging_list_view.notify_controls(cx),
@@ -609,6 +716,18 @@ impl GalleryPanes {
             GalleryPageKind::RadioButton => self.radio_button.render(&self.look),
             GalleryPageKind::RadioGroup => self.radio_group.render(&self.look),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.look),
+            GalleryPageKind::ColorField => self.color_field.render(&self.look),
+            GalleryPageKind::ColorRing => self.color_ring.render(&self.look),
+            GalleryPageKind::ColorArc => self.color_arc.render(&self.look),
+            GalleryPageKind::ColorSlider => self.color_slider.render(&self.look),
+            GalleryPageKind::ColorSliderRevealed => self.color_slider_revealed.render(&self.look),
+            GalleryPageKind::ColorCombinations => self.color_combinations.render(&self.look),
+            GalleryPageKind::ColorPicker => self.color_picker.render(&self.look),
+            GalleryPageKind::ColorHsvPlane => self.color_hsv_plane.render(&self.look),
+            GalleryPageKind::ColorHsvWheel => self.color_hsv_wheel.render(&self.look),
+            GalleryPageKind::ColorSvTriangle => self.color_sv_triangle.render(&self.look),
+            GalleryPageKind::ColorMultiMixer => self.color_multi_mixer.render(&self.look),
+            GalleryPageKind::ColorSplitRing => self.color_split_ring.render(&self.look),
             GalleryPageKind::ListBox => self.listbox.render(&self.look),
             GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.look),
             GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look),

@@ -1,4 +1,5 @@
 use gpui::{Context, Entity, FocusHandle, Subscription, Window, px};
+use gpui_luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
@@ -33,6 +34,7 @@ impl GalleryApp {
         window.focus(&focus_scope, cx);
         let look = theme_choice.shadcn_look();
         look.set_mode(ThemeMode::Dark);
+        sync_color_control_theme(&look);
         let split_view = look
             .split_view("gallery-shell")
             .sidebar_width(px(280.0))
@@ -145,4 +147,14 @@ impl GalleryApp {
 
         cx.notify();
     }
+}
+
+pub(super) fn sync_color_control_theme(look: &ShadcnLook) {
+    let chrome = look.chrome();
+
+    set_active_color_control_theme(ColorControlTheme::new(
+        chrome.border,
+        chrome.panel_background,
+        matches!(look.mode(), ThemeMode::Dark),
+    ));
 }

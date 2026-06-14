@@ -6,7 +6,7 @@ use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
-use super::control::GalleryApp;
+use super::control::{GalleryApp, sync_color_control_theme};
 
 impl Render for GalleryApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -84,6 +84,7 @@ impl Render for GalleryApp {
                                 ThemeMode::Dark => ThemeMode::Light,
                             };
                             this.look.set_mode(mode);
+                            sync_color_control_theme(&this.look);
                             cx.bump_luma_theme_revision();
                             this.last_inspector_refresh = None;
                             cx.notify();

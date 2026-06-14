@@ -270,6 +270,11 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - overlay resize handles (no layout width); `ResizeHandleSize::{Sm,Md,Lg}` via `.resize_handle()` (lane, grip, hit scale together); `ResizablePanelSpec::bg(Hsla)` supplies panel/handle-half colors
   - runtime state: `PanelLayoutState` (px for absolute, weight coefficient for fill panes); legacy weight-only specs still supported via deprecated percent APIs
   - design spec: `docs/ai/fix-resize-panel.md`
+- `color/*`
+  - migrated color-control subsystem from `gpui-opal`
+  - primitives: `color_field`, `color_slider`, `color_ring`, `color_arc`
+  - shared helpers: `mouse_behavior`, `shape`, `style`
+  - current surface remains state-centric and self-rendering; gallery uses it directly while future builder/template/theme reshaping can happen incrementally
 - `slider/*`
   - ranged value control + drag semantics + `SliderEvent`
 - `scrollbar/*`
@@ -318,6 +323,7 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - intro/meta: `introduction`, `search`, `settings`, `palette`, `theme_usage`
   - command: `button`, `icon_button`, `prototypes/*`
   - choice: `toggle`, `toggle_group`, `switch`, `checkbox`, `accordion`, `radio_button`, `radio_group`, `listbox`, `choice_controls_template`
+  - color: `color/*` for primitive demos plus composition pages (`Combinations`, `Color Picker`, `HSV Plane`, `HSV Wheel`, `SV Triangle`, `Multi Mixer`, `Split Ring`)
   - input: `textfield`, `textarea`, `slider`, `scrollbar`
   - menu/selection: `floating_menu`, `popup_menu`, `context_menu`, `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`
   - navigation/feedback: `navigation_sidebar`, `tabs_navigation`, `progress`

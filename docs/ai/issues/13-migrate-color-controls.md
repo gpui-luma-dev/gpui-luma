@@ -12,8 +12,13 @@ Copy files from `/Users/scg/Developer/GitHub/gpui-opal/crates/sdk/src/controls/c
 - [ ] Register the new `color` module in the SDK controls entry point [mod.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/mod.rs).
 - [ ] Review dependencies (e.g. `tiny-skia` or custom mathematics) and verify they compile in the SDK.
 - [ ] Wire basic theme mapping configurations in `crates/look-shadcn` for styling these controls.
-- [ ] Create a color controls demonstration pane inside the Gallery.
+- [ ] Port gallery examples from the `gpui-opal` project to `gpui-luma`:
+  - [ ] Port basic color control pages from `/Users/scg/Developer/GitHub/gpui-opal/apps/gallery/src/gallery/pages/color/` (specifically `arc.rs`, `field.rs`, `ring.rs`, `slider.rs`, and `slider_revealled.rs`) to `apps/gallery/src/gallery/panes/color/` in this project.
+  - [ ] Port color composition pages from `/Users/scg/Developer/GitHub/gpui-opal/apps/gallery/src/gallery/pages/color_compositions/` (including the sub-components and pages like `hsv_wheel.rs`, `color_picker_photoshop.rs`, `split_ring_pixagram.rs`, `multi_mixer.rs`, and their helpers) to `apps/gallery/src/gallery/panes/color_compositions/` in this project.
+  - [ ] Register the new color and color composition panes in `apps/gallery/src/gallery/panes/mod.rs` and `apps/gallery/src/gallery/panes/registry.rs`.
 
 ## Acceptance Criteria
-- Color field, slider, ring, and arc render and respond correctly inside the Gallery application.
+- Basic color controls and color compositions compile and render correctly within the gallery application.
+- Interactive behavior (mouse and selection) works smoothly.
 - The workspace compiles cleanly without clippy warnings or test regressions.
+

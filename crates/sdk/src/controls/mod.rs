@@ -8,6 +8,7 @@ pub mod button_family;
 pub mod button_group;
 pub(crate) mod button_family_template;
 pub mod checkbox;
+pub mod color;
 pub mod control_group;
 pub mod presenter;
 pub mod rounded_shell;

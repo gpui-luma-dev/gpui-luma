@@ -6,6 +6,7 @@ mod button;
 mod card;
 mod combobox;
 mod checkbox;
+mod color;
 mod choice_controls_template;
 mod context_menu;
 mod floating_menu;
