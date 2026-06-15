@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
 
-use super::{DockSplitterAppearance, DockSplitterRenderModel, SplitterOrientation};
+use super::{DockSplitterAppearance, DockSplitterDrag, DockSplitterRenderModel, SplitterOrientation};
 
 pub type DockSplitterHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type DockSplitterMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -70,6 +70,7 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
             SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
         };
 
+        let drag_payload = DockSplitterDrag { id: model.id.clone() };
         let hit_target = match model.orientation {
             SplitterOrientation::Vertical => div()
                 .id(model.id.clone())
@@ -82,6 +83,13 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
                 .on_mouse_down(MouseButton::Left, mouse_down)
                 .on_mouse_up(MouseButton::Left, mouse_up)
                 .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .on_drag(drag_payload.clone(), {
+                    let drag = drag_payload.clone();
+                    move |_: &DockSplitterDrag, _, _, cx| {
+                        cx.stop_propagation();
+                        cx.new(|_| drag.clone())
+                    }
+                })
                 .when(model.enabled, |this| this.cursor_col_resize())
                 .child(
                     div()
@@ -103,6 +111,10 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
                 .on_mouse_down(MouseButton::Left, mouse_down)
                 .on_mouse_up(MouseButton::Left, mouse_up)
                 .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .on_drag(drag_payload, |drag: &DockSplitterDrag, _, _, cx| {
+                    cx.stop_propagation();
+                    cx.new(|_| drag.clone())
+                })
                 .when(model.enabled, |this| this.cursor_row_resize())
                 .child(
                     div()

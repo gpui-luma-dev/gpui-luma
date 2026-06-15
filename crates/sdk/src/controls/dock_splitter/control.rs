@@ -1,6 +1,6 @@
 use gpui::{
-    Context, EventEmitter, HitboxBehavior, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    Render, SharedString, Window, canvas, div, prelude::*,
+    Context, DragMoveEvent, EventEmitter, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render, SharedString,
+    Window, div, prelude::*,
 };
 
 use super::{
@@ -12,15 +12,26 @@ use crate::theme::observe_theme_revision;
 #[derive(Clone, Debug)]
 pub enum DockSplitterEvent {
     ResizeStart,
-    Resize { delta: f32 },
+    Resize { total_delta: f32 },
     ResizeEnd,
+}
+
+#[derive(Clone, Debug)]
+pub struct DockSplitterDrag {
+    pub id: SharedString,
+}
+
+impl Render for DockSplitterDrag {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        gpui::Empty
+    }
 }
 
 pub struct DockSplitter {
     model: DockSplitterModel,
     hovered: bool,
     dragging: bool,
-    last_axis_px: f32,
+    drag_start_axis_px: f32,
 }
 
 impl EventEmitter<DockSplitterEvent> for DockSplitter {}
@@ -33,7 +44,7 @@ impl DockSplitter {
 
     pub(crate) fn from_builder(builder: DockSplitterBuilder, cx: &mut Context<Self>) -> Self {
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
-        Self { model: builder.model, hovered: false, dragging: false, last_axis_px: 0.0 }
+        Self { model: builder.model, hovered: false, dragging: false, drag_start_axis_px: 0.0 }
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -102,28 +113,35 @@ impl DockSplitter {
         }
 
         self.dragging = true;
-        self.last_axis_px = self.axis_position(event.position);
+        self.drag_start_axis_px = self.axis_position(event.position);
         cx.emit(DockSplitterEvent::ResizeStart);
         cx.notify();
     }
 
-    fn handle_window_mouse_move(&mut self, event: &MouseMoveEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_drag_move(
+        &mut self,
+        event: &DragMoveEvent<DockSplitterDrag>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if !self.model.enabled || !self.dragging {
             return;
         }
 
-        let axis_px = self.axis_position(event.position);
-        let delta = axis_px - self.last_axis_px;
-        self.last_axis_px = axis_px;
+        let drag = event.drag(cx);
+        if drag.id != self.model.id {
+            return;
+        }
 
-        if delta.abs() <= f32::EPSILON {
+        let total_delta = self.axis_position(event.event.position) - self.drag_start_axis_px;
+        if total_delta.abs() <= f32::EPSILON {
             return;
         }
 
         if let Some(on_resize) = &self.model.on_resize {
-            on_resize(&delta, window, cx);
+            on_resize(&total_delta, window, cx);
         }
-        cx.emit(DockSplitterEvent::Resize { delta });
+        cx.emit(DockSplitterEvent::Resize { total_delta });
     }
 
     fn handle_mouse_up(&mut self, event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -142,42 +160,13 @@ impl Render for DockSplitter {
         let model = self.render_model();
         let appearance = self.appearance();
         let handlers = self.template_handlers(cx);
-        let entity = cx.entity().clone();
 
         div()
             .relative()
+            .on_drag_move(cx.listener(Self::handle_drag_move))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
             .child(self.model.template.render(&model, &appearance, handlers, window, cx))
-            .child(
-                canvas(
-                    |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
-                    move |_, _, window, _cx| {
-                        window.on_mouse_event({
-                            let entity = entity.clone();
-                            move |event: &MouseMoveEvent, phase, window, cx| {
-                                if !phase.bubble() {
-                                    return;
-                                }
-                                entity.update(cx, |this, cx| {
-                                    this.handle_window_mouse_move(event, window, cx);
-                                });
-                            }
-                        });
-                        window.on_mouse_event({
-                            let entity = entity.clone();
-                            move |event: &MouseUpEvent, phase, window, cx| {
-                                if !phase.bubble() {
-                                    return;
-                                }
-                                entity.update(cx, |this, cx| {
-                                    this.handle_mouse_up(event, window, cx);
-                                });
-                            }
-                        });
-                    },
-                )
-                .absolute()
-                .inset_0(),
-            )
             .into_any_element()
     }
 }

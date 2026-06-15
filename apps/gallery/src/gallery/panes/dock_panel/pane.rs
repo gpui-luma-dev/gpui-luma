@@ -5,8 +5,8 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::dock_splitter::{
-    DockSplitter, DockSplitterAppearance, DockSplitterRenderModel, DockSplitterTemplate, DockSplitterTemplateHandlers,
-    SplitterOrientation,
+    DockSplitter, DockSplitterAppearance, DockSplitterDrag, DockSplitterEvent, DockSplitterRenderModel,
+    DockSplitterTemplate, DockSplitterTemplateHandlers, SplitterOrientation,
 };
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -55,6 +55,7 @@ impl DockSplitterTemplate for LeftSplitterTemplate {
                 .h(px(36.0)),
         );
 
+        let drag_payload = DockSplitterDrag { id: model.id.clone() };
         let hit_target = match model.orientation {
             SplitterOrientation::Vertical => div()
                 .id(model.id.clone())
@@ -67,6 +68,13 @@ impl DockSplitterTemplate for LeftSplitterTemplate {
                 .on_mouse_down(MouseButton::Left, mouse_down)
                 .on_mouse_up(MouseButton::Left, mouse_up)
                 .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .on_drag(drag_payload.clone(), {
+                    let drag = drag_payload.clone();
+                    move |_: &DockSplitterDrag, _, _, cx| {
+                        cx.stop_propagation();
+                        cx.new(|_| drag.clone())
+                    }
+                })
                 .when(model.enabled, |this| this.cursor_col_resize())
                 .child(
                     div()
@@ -89,6 +97,10 @@ impl DockSplitterTemplate for LeftSplitterTemplate {
                 .on_mouse_down(MouseButton::Left, mouse_down)
                 .on_mouse_up(MouseButton::Left, mouse_up)
                 .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .on_drag(drag_payload, |drag: &DockSplitterDrag, _, _, cx| {
+                    cx.stop_propagation();
+                    cx.new(|_| drag.clone())
+                })
                 .when(model.enabled, |this| this.cursor_row_resize())
                 .child(
                     div()
@@ -134,6 +146,10 @@ struct DockPanelPaneState {
     right_width: f32,
     top_height: f32,
     bottom_height: f32,
+    drag_start_left_width: f32,
+    drag_start_right_width: f32,
+    drag_start_top_height: f32,
+    drag_start_bottom_height: f32,
     left_splitter: Entity<DockSplitter>,
     top_splitter: Entity<DockSplitter>,
     right_splitter: Entity<DockSplitter>,
@@ -163,51 +179,51 @@ impl DockPanelPaneState {
             right_width: 80.0,
             top_height: 50.0,
             bottom_height: 50.0,
+            drag_start_left_width: 80.0,
+            drag_start_right_width: 80.0,
+            drag_start_top_height: 50.0,
+            drag_start_bottom_height: 50.0,
             left_splitter,
             top_splitter,
             right_splitter,
             bottom_splitter,
         };
 
-        cx.subscribe(
-            &this.left_splitter,
-            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
-                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
-                    this.left_width = (this.left_width + *delta).clamp(40.0, 300.0);
-                    cx.notify();
-                }
-            },
-        )
+        cx.subscribe(&this.left_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => this.drag_start_left_width = this.left_width,
+            DockSplitterEvent::Resize { total_delta } => {
+                this.left_width = (this.drag_start_left_width + *total_delta).clamp(40.0, 300.0);
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
         .detach();
-        cx.subscribe(
-            &this.top_splitter,
-            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
-                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
-                    this.top_height = (this.top_height + *delta).clamp(30.0, 180.0);
-                    cx.notify();
-                }
-            },
-        )
+        cx.subscribe(&this.top_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => this.drag_start_top_height = this.top_height,
+            DockSplitterEvent::Resize { total_delta } => {
+                this.top_height = (this.drag_start_top_height + *total_delta).clamp(30.0, 180.0);
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
         .detach();
-        cx.subscribe(
-            &this.right_splitter,
-            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
-                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
-                    this.right_width = (this.right_width - *delta).clamp(40.0, 300.0);
-                    cx.notify();
-                }
-            },
-        )
+        cx.subscribe(&this.right_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => this.drag_start_right_width = this.right_width,
+            DockSplitterEvent::Resize { total_delta } => {
+                this.right_width = (this.drag_start_right_width - *total_delta).clamp(40.0, 300.0);
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
         .detach();
-        cx.subscribe(
-            &this.bottom_splitter,
-            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
-                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
-                    this.bottom_height = (this.bottom_height - *delta).clamp(30.0, 180.0);
-                    cx.notify();
-                }
-            },
-        )
+        cx.subscribe(&this.bottom_splitter, |this, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => this.drag_start_bottom_height = this.bottom_height,
+            DockSplitterEvent::Resize { total_delta } => {
+                this.bottom_height = (this.drag_start_bottom_height - *total_delta).clamp(30.0, 180.0);
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
         .detach();
 
         this

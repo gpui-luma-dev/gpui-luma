@@ -3,7 +3,7 @@ mod model;
 mod template;
 mod theme;
 
-pub use control::{DockSplitter, DockSplitterEvent};
+pub use control::{DockSplitter, DockSplitterDrag, DockSplitterEvent};
 pub use model::{
     DockSplitterBuilder, DockSplitterModel, DockSplitterRenderModel, DockSplitterResizeHandler, SplitterOrientation,
 };
