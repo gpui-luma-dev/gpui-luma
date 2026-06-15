@@ -37,7 +37,7 @@ Top-level modules:
 - `keyhandling` – default keyboard action profiles + default key bindings
 - `layout` – lightweight layout primitives such as `DockPanel` for edge-docked composition
 - `theme` – native tokens, Radix/CSS runtime theming, usage registry, interaction/adorner types
-- `controls` – control library (buttons, inputs, menus, navigation, layout helpers)
+- `controls` – control library (buttons, inputs, menus, navigation, layout helpers, resizable splitters)
 - `shell` – shared shell components (`TitleBar`)
 
 ## Apps (`apps/*`)

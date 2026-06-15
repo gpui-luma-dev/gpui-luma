@@ -53,7 +53,7 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
 - **Controls subsystem** (`controls/`)
   - shared infra (`template`, `state`, `value`, `motion`, `menu_item`, `menu_navigation`, `presenter`)
   - generic selection engine: `control_group` (lookless composite selection/focus primitive)
-  - concrete controls (buttons, text inputs, menu controls, nav controls, sliders/scrollbars, etc.)
+  - concrete controls (buttons, text inputs, menu controls, nav controls, sliders/scrollbars, dock splitters, etc.)
   - each control module exports builder/event/template/theme types
 
 - **Shell subsystem**

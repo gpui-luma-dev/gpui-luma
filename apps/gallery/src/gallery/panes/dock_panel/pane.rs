@@ -1,27 +1,129 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FontWeight, IntoElement, div, hsla, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui_luma::controls::dock_splitter::{DockSplitter, SplitterOrientation};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-#[derive(Clone, Default)]
-pub(in crate::gallery) struct DockPanelPane;
+use super::super::shared::notify_entity;
+
+#[derive(Clone)]
+pub(in crate::gallery) struct DockPanelPane {
+    state: Entity<DockPanelPaneState>,
+}
 
 impl DockPanelPane {
-    pub(in crate::gallery) fn new(_cx: &mut Context<GalleryApp>, _look: Arc<ShadcnLook>) -> Self {
-        Self
+    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let state = cx.new(|cx| DockPanelPaneState::new(look, cx));
+        Self { state }
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, _look: &ShadcnLook) -> AnyElement {
+        self.state.clone().into_any_element()
+    }
+
+    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
+
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+        self.state.update(cx, |state, cx| state.notify_controls(cx));
+        notify_entity(&self.state, cx);
+    }
+}
+
+struct DockPanelPaneState {
+    look: Arc<ShadcnLook>,
+    left_width: f32,
+    right_width: f32,
+    top_height: f32,
+    bottom_height: f32,
+    left_splitter: Entity<DockSplitter>,
+    top_splitter: Entity<DockSplitter>,
+    right_splitter: Entity<DockSplitter>,
+    bottom_splitter: Entity<DockSplitter>,
+}
+
+impl DockPanelPaneState {
+    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+        let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical).spawn(cx);
+        let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal).spawn(cx);
+        let right_splitter = DockSplitter::new("dock-panel-right-splitter", SplitterOrientation::Vertical).spawn(cx);
+        let bottom_splitter =
+            DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal).spawn(cx);
+
+        let this = Self {
+            look,
+            left_width: 80.0,
+            right_width: 80.0,
+            top_height: 50.0,
+            bottom_height: 50.0,
+            left_splitter,
+            top_splitter,
+            right_splitter,
+            bottom_splitter,
+        };
+
+        cx.subscribe(
+            &this.left_splitter,
+            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
+                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
+                    this.left_width = (this.left_width + *delta).clamp(40.0, 300.0);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+        cx.subscribe(
+            &this.top_splitter,
+            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
+                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
+                    this.top_height = (this.top_height + *delta).clamp(30.0, 180.0);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+        cx.subscribe(
+            &this.right_splitter,
+            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
+                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
+                    this.right_width = (this.right_width - *delta).clamp(40.0, 300.0);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+        cx.subscribe(
+            &this.bottom_splitter,
+            |this, _, event: &gpui_luma::controls::dock_splitter::DockSplitterEvent, cx| {
+                if let gpui_luma::controls::dock_splitter::DockSplitterEvent::Resize { delta } = event {
+                    this.bottom_height = (this.bottom_height - *delta).clamp(30.0, 180.0);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+
+        this
+    }
+
+    fn notify_controls(&self, cx: &mut Context<Self>) {
+        self.left_splitter.update(cx, |_, cx| cx.notify());
+        self.top_splitter.update(cx, |_, cx| cx.notify());
+        self.right_splitter.update(cx, |_, cx| cx.notify());
+        self.bottom_splitter.update(cx, |_, cx| cx.notify());
+    }
+}
+
+impl Render for DockPanelPaneState {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let top_debug = hsla(0.58, 0.55, 0.42, 1.0);
         let left_debug = hsla(0.33, 0.55, 0.38, 1.0);
         let right_debug = hsla(0.12, 0.72, 0.46, 1.0);
         let bottom_debug = hsla(0.77, 0.48, 0.44, 1.0);
         let fill_debug = gpui::red();
-
-        let chrome = look.chrome();
+        let chrome = self.look.chrome();
 
         div()
             .size_full()
@@ -41,9 +143,9 @@ impl DockPanelPane {
                         div()
                             .text_size(px(20.0))
                             .line_height(px(28.0))
-                            .font_weight(FontWeight::SEMIBOLD)
+                            .font_weight(gpui::FontWeight::SEMIBOLD)
                             .text_color(chrome.title_text)
-                            .child("DockPanel"),
+                            .child("DockSplitter"),
                     )
                     .child(
                         div()
@@ -51,38 +153,42 @@ impl DockPanelPane {
                             .text_size(px(13.0))
                             .line_height(px(18.0))
                             .text_color(chrome.muted_text)
-                            .child("Debug view for ordered docking geometry."),
+                            .child("Debug view for ordered docking geometry with resizable docked boundaries."),
                     ),
             )
             .child(div().flex_1().min_w(px(0.0)).min_h(px(0.0)).overflow_hidden().child(dock_panel! {
                 left: div()
-                    .w(px(52.0))
+                    .w(px(self.left_width))
                     .flex()
                     .items_center()
                     .justify_center()
                     .bg(left_debug)
                     .child("Left"),
+                left: self.left_splitter.clone(),
                 top: div()
-                    .h(px(44.0))
+                    .h(px(self.top_height))
                     .flex()
                     .items_center()
                     .justify_center()
                     .bg(top_debug)
                     .child("Top"),
+                top: self.top_splitter.clone(),
                 right: div()
-                    .w(px(68.0))
+                    .w(px(self.right_width))
                     .flex()
                     .items_center()
                     .justify_center()
                     .bg(right_debug)
                     .child("Right"),
+                right: self.right_splitter.clone(),
                 bottom: div()
-                    .h(px(44.0))
+                    .h(px(self.bottom_height))
                     .flex()
                     .items_center()
                     .justify_center()
                     .bg(bottom_debug)
                     .child("Bottom"),
+                bottom: self.bottom_splitter.clone(),
                 fill: div()
                     .size_full()
                     .flex()
@@ -91,15 +197,5 @@ impl DockPanelPane {
                     .bg(fill_debug)
                     .child("Center/Fill")
             }))
-            .into_any_element()
     }
-
-    pub(in crate::gallery) fn subscribe(
-        &self,
-        _cx: &mut Context<GalleryApp>,
-        _subscriptions: &mut Vec<gpui::Subscription>,
-    ) {
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, _cx: &mut Context<GalleryApp>) {}
 }

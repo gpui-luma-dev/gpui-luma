@@ -101,7 +101,7 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
 - `gallery/panes/registry.rs`
   - page registry, nav model, pane constructor/subscription/dispatch
 - `gallery/panes/dock_panel/*`
-  - dedicated DockPanel gallery pane covering builder, macro, and full five-region composition
+  - DockPanel + DockSplitter gallery/debug pane with resizable top/left/right/bottom boundaries
 - `gallery/panes/*`
   - concrete demo panes per SDK control/feature
 
@@ -205,6 +205,10 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - exports builder/model/state/template/theme + `TextAreaEvent`
 - `text/*` (crate-private)
   - shared editing/state primitives used by textfield/textarea
+
+- `dock_splitter/*`
+  - lightweight drag-to-resize separator control for use between docked edges and fill regions
+  - builder/theme/template/control split with delta-based resize callbacks and events
 
 ## Selection controls
 
