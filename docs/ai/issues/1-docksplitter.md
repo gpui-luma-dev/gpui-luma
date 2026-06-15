@@ -269,3 +269,73 @@ Spawn **only** the left-side sidebar with the localized `LeftSplitterTemplate` (
         let bottom_splitter = DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal)
             .spawn(cx);
 ```
+
+---
+
+## 4. Performance & Smoothness Analysis (Jerkiness vs. ResizablePanels)
+
+There are two primary architectural differences causing `DockSplitter` to feel less smooth ("jerkier") than `ResizablePanels`:
+
+### A. Relative Deltas (Cumulative Rounding Errors) vs. Absolute Deltas
+- **The Issue (DockSplitter):** Resizing is driven by **relative deltas**: `new_width = old_width + delta`. Since GPUI layouts snap to physical device pixels on every frame, fractional values are rounded off. Over multiple frame updates, these rounding errors accumulate, causing the mouse position and the visual divider to drift. When the drift builds up, the panel suddenly snaps or stutters.
+- **The Solution (ResizablePanels):** `ResizablePanels` solves layout dimensions from a pristine starting state: `new_width = start_width + (current_mouse - start_mouse)`. By using the **absolute delta** from the drag initiation coordinate, rounding errors never compound, and the mouse pointer stays perfectly locked to the divider.
+
+### B. Raw Window Mouse Events vs. GPUI Drag Event Coalescing
+- **The Issue (DockSplitter):** `DockSplitter` listens to raw window-level `MouseMoveEvent` callbacks registered inside a paint canvas. This callback runs as frequently as the operating system's raw mouse input rate (which can be 500Hz or 1000Hz). Flooding GPUI's main thread with dozens of reactive layout invalidations per frame budget (16.6ms at 60Hz) causes dropped frames and stutter.
+- **The Solution (ResizablePanels):** `ResizablePanels` utilizes GPUI's built-in drag-and-drop subsystem via `.on_drag` and `.on_drag_move`. GPUI throttles and coalesces these drag moves to sync them precisely with the animation rendering loop, minimizing unnecessary layout cycles.
+
+### Refactoring Recipe to Resolve Jerkiness
+
+To achieve the same high performance as `ResizablePanels` without structural changes:
+
+1. **Emit Absolute Delta instead of relative delta:**
+   Update `DockSplitter` resize events to pass the absolute distance from drag start:
+   ```rust
+   // In control.rs:
+   fn handle_mouse_down(&mut self, event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+       self.dragging = true;
+       self.drag_start_axis_px = self.axis_position(event.position); // Store absolute start position
+       cx.emit(DockSplitterEvent::ResizeStart);
+   }
+
+   fn handle_window_mouse_move(&mut self, event: &MouseMoveEvent, _window: &mut Window, cx: &mut Context<Self>) {
+       if !self.dragging { return; }
+       let absolute_delta = self.axis_position(event.position) - self.drag_start_axis_px;
+       cx.emit(DockSplitterEvent::Resize { absolute_delta });
+   }
+   ```
+
+2. **Save Start State on ResizeStart in the Container:**
+   Update the subscription in the container (`pane.rs`) to store the starting width before applying deltas:
+   ```rust
+   // In pane.rs:
+   cx.subscribe(&this.left_splitter, |this, _, event, cx| {
+       match event {
+           DockSplitterEvent::ResizeStart => {
+               this.start_left_width = this.left_width; // Freeze initial width
+           }
+           DockSplitterEvent::Resize { absolute_delta } => {
+               this.left_width = (this.start_left_width + absolute_delta).clamp(40.0, 300.0);
+               cx.notify();
+           }
+           DockSplitterEvent::ResizeEnd => {}
+       }
+   }).detach();
+   ```
+
+3. **Migrate to GPUI Drag-and-Drop Subsystem:**
+   Replace raw `canvas` window mouse listeners inside `DockSplitter::render` with GPUI's native drag payload:
+   ```rust
+   // Define payload
+   struct DockSplitterDrag { id: SharedString }
+
+   // Register on the interactive hitbox:
+   hit_target
+       .on_drag(DockSplitterDrag { id: model.id.clone() }, |_, _, _, cx| cx.new(|_| DockSplitterDrag { ... }))
+
+   // Listen on the root component:
+   root.on_drag_move(cx.listener(|this, event: &DragMoveEvent<DockSplitterDrag>, _, cx| {
+       // Perform absolute delta calculation here
+   }))
+   ```
+
