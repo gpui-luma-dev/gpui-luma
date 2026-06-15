@@ -402,7 +402,8 @@ mod tests {
     use super::{
         TabsNavigationDirection, TabsNavigationModel, active_enabled_index, next_enabled_index, normalize_active_id,
     };
-    use crate::controls::tabs_navigation::{TabsNavigationItem, default_tabs_navigation_template};
+    use crate::controls::tabs_navigation::{TabsNavigationItem, TabsNavigationWidthMode, default_tabs_navigation_template};
+    use crate::theme::ControlSize;
 
     #[test]
     fn normalize_keeps_valid_active_tab() {
@@ -446,6 +447,8 @@ mod tests {
     fn model_with_active(active_id: Option<&str>) -> TabsNavigationModel {
         TabsNavigationModel {
             id: "project-tabs".into(),
+            size: ControlSize::Md,
+            width_mode: TabsNavigationWidthMode::Intrinsic,
             items: vec![
                 TabsNavigationItem::new("overview").label("Overview"),
                 TabsNavigationItem::new("metrics").label("Metrics"),

@@ -9,10 +9,14 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
 ## `crates/sdk` (`gpui-luma`)
 
 - `lib.rs`
-  - exports: `controls`, `focus`, `init`, `keyhandling`, `macros`, `shell`, `theme`
-  - re-export: `init`
+  - exports: `controls`, `focus`, `init`, `keyhandling`, `layout`, `macros`, `shell`, `theme`
+  - re-exports: `init`, `DockPanel`
+- `layout.rs`
+  - lightweight edge-docked composition primitive
+  - `DockPanel::new().top(...).bottom(...).left(...).right(...).fill(...)`
+  - fills the parent and applies `min_w(0)` / `min_h(0)` remainder constraints for scrollable center content
 - `macros.rs`
-  - layout helpers: `vstack!`, `hstack!`, `wrappanel!`, `flow!`
+  - layout helpers: `dock_panel!`, `vstack!`, `hstack!`, `wrappanel!`, `flow!`
   - form helpers: `declare_form!`, `form_field!` (uses `controls::label::field_label` internally)
 - `controls/label.rs`
   - `field_label(text, color)` — standard form field label styling
@@ -96,6 +100,8 @@ Run: `just theme-studio` or `cargo run -p gpui-luma-theme-studio -- <theme-stem>
   - re-exports `LumaChrome` as `GalleryChrome`
 - `gallery/panes/registry.rs`
   - page registry, nav model, pane constructor/subscription/dispatch
+- `gallery/panes/dock_panel/*`
+  - dedicated DockPanel gallery pane covering builder, macro, and full five-region composition
 - `gallery/panes/*`
   - concrete demo panes per SDK control/feature
 

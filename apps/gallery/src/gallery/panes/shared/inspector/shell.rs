@@ -7,6 +7,7 @@ use gpui_luma::controls::resizable_panels::{
 };
 use gpui_luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent};
 use gpui_luma::theme::ThemeMode;
+use gpui_luma::DockPanel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::detail::ColorInspectorDetail;
@@ -105,12 +106,15 @@ impl ColorInspectorShell {
             .body_fill(true)
             .elevated(false)
             .child_render(move |_, _| {
-                div()
-                    .id(split_body_id.clone())
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .overflow_hidden()
-                    .child(split_for_card.clone())
+                DockPanel::new()
+                    .fill(
+                        div()
+                            .id(split_body_id.clone())
+                            .flex_1()
+                            .min_h(px(0.0))
+                            .overflow_hidden()
+                            .child(split_for_card.clone()),
+                    )
                     .into_any_element()
             })
             .spawn(cx);

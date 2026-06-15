@@ -14,10 +14,10 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, color, combobox, context_menu,
-    floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu, progress,
-    prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector, selection_panel,
-    split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch, tabs_navigation,
-    textarea, textfield, theme_usage, toggle, toggle_group,
+    dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu,
+    progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector,
+    selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
+    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
 };
 
 #[derive(Clone, Copy)]
@@ -36,6 +36,7 @@ enum GalleryPageKind {
     ThemeUsage,
     Badge,
     Card,
+    DockPanel,
     Button,
     DecoratedButton,
     ShadowButton,
@@ -134,6 +135,8 @@ const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
 };
 const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
 const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
+const DOCK_PANEL_PAGE: GalleryPage =
+    GalleryPage { id: "dock-panel", label: "DockPanel", icon: None, kind: GalleryPageKind::DockPanel };
 const BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "button", label: "Button", icon: None, kind: GalleryPageKind::Button };
 const TOGGLE_PAGE: GalleryPage =
@@ -332,6 +335,7 @@ const COLOR_PAGES: &[GalleryPage] = &[
 const MENU_PAGES: &[GalleryPage] = &[CONTEXT_MENU_PAGE, FLOATING_MENU_PAGE, POPUP_MENU_PAGE];
 const LAYOUT_PAGES: &[GalleryPage] = &[
     CARD_PAGE,
+    DOCK_PANEL_PAGE,
     RESIZABLE_PANELS_PAGE,
     SPLIT_VIEW_DETACHED_PAGE,
     SPLIT_VIEW_ICON_RAIL_PAGE,
@@ -410,6 +414,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) badge: badge::BadgePane,
     pub(super) card: card::CardPane,
+    pub(super) dock_panel: dock_panel::DockPanelPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) shadow_button: prototypes::ShadowButtonPane,
     pub(super) slide_panel: prototypes::SlidePanelPane,
@@ -517,6 +522,7 @@ impl GalleryPanes {
             introduction: introduction::IntroductionPane::new(cx, look.clone()),
             badge: badge::BadgePane::new(cx, look.clone()),
             card: card::CardPane::new(cx, look.clone()),
+            dock_panel: dock_panel::DockPanelPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
             shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
             slide_panel: prototypes::SlidePanelPane::new(cx, look.clone()),
@@ -571,6 +577,7 @@ impl GalleryPanes {
         self.introduction.subscribe(cx, subscriptions);
         self.badge.subscribe(cx, subscriptions);
         self.card.subscribe(cx, subscriptions);
+        self.dock_panel.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.shadow_button.subscribe(cx, subscriptions);
         self.slide_panel.subscribe(cx, subscriptions);
@@ -626,6 +633,7 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
             GalleryPageKind::Badge => self.badge.notify_controls(cx),
             GalleryPageKind::Card => self.card.notify_controls(cx),
+            GalleryPageKind::DockPanel => self.dock_panel.notify_controls(cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
             GalleryPageKind::SlidePanel => self.slide_panel.notify_controls(cx),
@@ -693,6 +701,7 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.render(&self.look),
             GalleryPageKind::Badge => self.badge.render(&self.look),
             GalleryPageKind::Card => self.card.render(&self.look),
+            GalleryPageKind::DockPanel => self.dock_panel.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),
             GalleryPageKind::SlidePanel => self.slide_panel.render(&self.look),

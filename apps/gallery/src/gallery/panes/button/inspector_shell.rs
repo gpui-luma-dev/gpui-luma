@@ -7,6 +7,7 @@ use gpui_luma::controls::resizable_panels::{
 };
 use gpui_luma::controls::tree_view::{TreeViewControl, TreeViewEvent};
 use gpui_luma::theme::ThemeMode;
+use gpui_luma::DockPanel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::inspector_detail::ButtonInspectorDetail;
@@ -93,12 +94,15 @@ impl ButtonInspectorShell {
             .body_fill(true)
             .elevated(false)
             .child_render(move |_, _| {
-                div()
-                    .id("button-inspector-body")
-                    .flex_1()
-                    .min_h(px(0.0))
-                    .overflow_hidden()
-                    .child(split_for_card.clone())
+                DockPanel::new()
+                    .fill(
+                        div()
+                            .id("button-inspector-body")
+                            .flex_1()
+                            .min_h(px(0.0))
+                            .overflow_hidden()
+                            .child(split_for_card.clone()),
+                    )
                     .into_any_element()
             })
             .spawn(cx);

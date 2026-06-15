@@ -34,6 +34,9 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
   - `focus.rs`: focus traversal actions/context
   - `keyhandling.rs`: control key profiles + default key bindings
 
+- **Layout primitives**
+  - `layout.rs`: builder-first edge docking (`DockPanel`) for top/bottom/left/right/fill composition using GPUI flex under the hood
+
 - **Theming subsystem (`gpui-luma`)**
   - `theme/tokens.rs`: native theme schema + parsing + defaults + mode selection (`LumaTheme::native()` fallback)
   - `theme/pack.rs`: `LumaChrome` shell colors only (historical module name)

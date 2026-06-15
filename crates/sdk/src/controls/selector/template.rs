@@ -321,7 +321,7 @@ mod tests {
         let theme = default_selector_theme();
         theme.resolve_appearance(
             InteractionState::default(),
-            &StandardBoxScale::compute(ControlSize::Md, theme.metrics(), 1.0),
+            &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )
     }
 

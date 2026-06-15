@@ -9,6 +9,7 @@ mod checkbox;
 mod color;
 mod choice_controls_template;
 mod context_menu;
+mod dock_panel;
 mod floating_menu;
 mod introduction;
 mod listbox;

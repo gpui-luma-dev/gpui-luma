@@ -10,6 +10,7 @@ pub(in crate::gallery) use template_pipeline::{
 };
 
 use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
+use gpui_luma::DockPanel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -67,15 +68,20 @@ pub(super) fn gallery_pane_with_inspector_description(
         .p(px(28.0))
         .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
         .child(
-            div()
-                .min_h(px(0.0))
-                .flex_1()
-                .flex()
-                .items_stretch()
-                .justify_center()
-                .gap(px(28.0))
-                .child(render_centered_pane_body(content))
-                .child(div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector)),
+            div().min_h(px(0.0)).flex_1().child(
+                DockPanel::new()
+                    .right(div().h_full().min_h(px(0.0)).flex().child(div().w(px(28.0)).h_full()).child(
+                        div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector),
+                    ))
+                    .fill(
+                        div()
+                            .min_h(px(0.0))
+                            .flex()
+                            .items_stretch()
+                            .justify_center()
+                            .child(render_centered_pane_body(content)),
+                    ),
+            ),
         )
         .into_any_element()
 }

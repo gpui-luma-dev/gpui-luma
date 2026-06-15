@@ -51,7 +51,6 @@ mod tests {
     use std::sync::Arc;
 
     use font_kit::handle::Handle;
-    use font_kit::loader::Loader;
     use font_kit::sources::mem::MemSource;
 
     #[test]

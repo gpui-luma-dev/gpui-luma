@@ -5,6 +5,9 @@ gallery:
     #cargo run -p gpui-luma-gallery -- jarvis
 
 gallery-rel:
+    cargo run -p gpui-luma-gallery --release
+
+gallery-rel-hud:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-gallery --release
 
 gallery-dbg:

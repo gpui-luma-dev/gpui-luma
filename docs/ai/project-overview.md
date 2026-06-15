@@ -35,6 +35,7 @@ Top-level modules:
 - `init` – global SDK init (`init(cx)`) currently registers Lucide font bytes
 - `focus` – shared focus actions/context and focus-scope extension trait
 - `keyhandling` – default keyboard action profiles + default key bindings
+- `layout` – lightweight layout primitives such as `DockPanel` for edge-docked composition
 - `theme` – native tokens, Radix/CSS runtime theming, usage registry, interaction/adorner types
 - `controls` – control library (buttons, inputs, menus, navigation, layout helpers)
 - `shell` – shared shell components (`TitleBar`)

@@ -1,210 +1,144 @@
-# Proposal: Declarative Layout System for GPUI-Luma
+# Proposal: DockPanel Layout System for GPUI-Luma
 
-This proposal outlines the layout noise problems in `gpui-luma` panels and defines a cohesive, declarative suite of layout primitives designed to make code visual, clean, and self-documenting.
+This proposal outlines the layout composition issues in `gpui-luma` panels and defines a WPF-inspired `DockPanel` system (builder and macro) designed to make visual layout structure self-documenting and easy to read.
 
 ---
 
 ## 1. The Problem
 
-Building a standard, interactive settings or control panel in GPUI currently introduces three main layers of code noise:
+Building multi-pane widgets and panels in GPUI currently introduces layout code noise:
 
-1. **Top-of-File Constant Bloat:** Sizing layout values (like card widths, spacing gaps, swatch diameters) are separated from the render tree as file-level constants. Tweaking a margin requires constant scrolling and disconnects layout logic from visual hierarchy.
-2. **"How" vs. "What" (Geometry-Oriented Styling):** Elements that should be simple alignments or relationships are written in CSS-like geometry details:
-   * To align a field right: `.min_w(px(0.0)).flex_1().child(control)`
-   * To center a wheel on a ring: `.relative()`, then `.absolute().left_1_2().top_1_2().ml(-half_size).mt(-half_size)`
-3. **Rust Iterator Boilerplate:** Rendering lists of elements (like swatch collections) forces visual code to be nested inside verbose `.into_iter().map(...).into_any_element()` chains.
+1. **Flexbox boilerplate:** Setting up standard layouts (like a header pinned to the top, a footer pinned to the bottom, and a body filling the rest) requires verbose nested `.flex().flex_col().h_full()` structures combined with `.flex_1().h(px(0.0))` hacks to manage scrolling and overflow clipping.
+2. **"How" vs. "What" (Geometry-Oriented Styling):** Elements that represent basic visual placements are written in CSS-like geometry details, which are hard for developers to read and error-prone for LLMs to generate.
+3. **Lack of Clear Intent:** Standard stacks (`vstack!`, `hstack!`) do not explicitly convey boundaries or edge-docking relationships.
 
 ---
 
-## 2. The Solution: Declarative Primitives
+## 2. The Solution: WPF-Style `DockPanel`
 
-We propose a core set of intent-revealing layout primitives that abstract CSS Flexbox layout mechanics into self-documenting structures.
+We propose introducing a classic `DockPanel` layout primitive (implemented builder-first with macro sugar) inspired by WPF/XAML. 
 
-### Structural Containers
-* **`vstack! { gap: F, align: A; children... }`** (Existing): Lays out children vertically.
-* **`hstack! { gap: F, align: A; children... }`** (Existing): Lays out children horizontally.
-* **`zstack! { children... }`**: Layers children on top of each other (Z-ordering), where each child defaults to centering unless wrapped in an alignment modifier.
-* **`scrollable! { child }`**: Wraps any layout in an auto-scrolling viewport with automatic clipping and mouse-wheel binding.
+A `DockPanel` arranges children by docking them to the outer boundaries (Top, Bottom, Left, Right) and letting the last/designated child fill all remaining space.
 
-### Alignment Modifiers
-* **`align_right! { child }`**: Inside an `hstack!`, pushes the child to the far right.
-* **`align_left! { child }`**: Inside an `hstack!`, aligns the child to the far left.
-* **`align_bottom! { child }`**: Inside a `vstack!`, aligns the child to the bottom.
-* **`align_top! { child }`**: Inside a `vstack!`, aligns the child to the top.
-* **`center! { child }`**: Centers a child horizontally and vertically.
+This design ensures:
+* **IDE Auto-complete & Type Checking:** The builder API uses type-safe layout methods.
+* **Self-Documenting Code:** The code directly states which components sit on the edges and which fills the center.
+* **No Flex Hacks:** The layout logic handles size constraints and overflow clipping under the hood.
 
-### Relationship Layouts
-* **`center_on! { target: A, base: B }`**: Centers element `A` (e.g. color wheel overlay) directly on top of element `B` (e.g. background lightness ring) without absolute margin math.
-* **`labeled! { "Label Text": control }`**: Generates a standard form row with a text label formatted to the active look/theme on the left, and the control automatically aligned to the right.
-* **`aspect_ratio! { ratio: F; child }`**: Forces a layout child to maintain a strict aspect ratio (e.g. a perfect square `1.0`) as it resizes.
-
----
-
-## 3. Example Usage: `combinations_pane.rs`
-
-Here is how the rendering and layout of the color combinations pane looks using the new system. 
-
-* The constants are defined inline at the point of use.
-* Absolute positioning and centering offsets are handled by `center_on!`.
-* Alignment is handled explicitly with `align_right!`.
-* Row labels and spacing are wrapped cleanly in `labeled!`.
-
+### A. The Builder API
 ```rust
-impl gpui::Render for ColorCombinationsState {
-    fn render(&mut self, window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let swatches = self.selected_combination.palette(self.color);
-        let harmony_points = harmony_points_from_swatches(&swatches);
+DockPanel::new()
+    .top(render_header())
+    .bottom(render_footer())
+    .fill(render_body())
+    .into_element()
+```
 
-        self.look
-            .card("color-combinations-card")
-            .elevated(false)
-            .child_render(move |_, _| {
-                // Outer vertical stack grouping the entire card contents
-                vstack! {
-                    gap=28.0 align=center;
-
-                    // 1. Stage Area: Center the wheel on the lightness ring.
-                    // (Replaces absolute coordinates, negative margins, and relative wraps)
-                    center_on! {
-                        target: render_combo_wheel_layer(&self.wheel, &harmony_points),
-                        base: &self.lightness_ring,
-                    },
-
-                    // 2. Color Field Row: Uses labeled! to manage row structure and spacing
-                    labeled! {
-                        "Color": hstack! {
-                            gap=16.0 align=center;
-                            
-                            // Visual Swatch
-                            div()
-                                .size(px(48.0))
-                                .rounded_full()
-                                .border_1()
-                                .border_color(self.look.chrome().border)
-                                .bg(self.color),
-                                
-                            // Input text field aligned to the right of the row
-                            align_right! {
-                                &self.color_input
-                            }
-                        }
-                    },
-
-                    // 3. Combination Menu Row
-                    labeled! {
-                        "Combination": align_right! {
-                            &self.harmony_menu
-                        }
-                    },
-
-                    // 4. Results Swatches: Balanced columns of color preview cards
-                    hstack! {
-                        gap=16.0;
-                        for swatch in swatches {
-                            vstack! {
-                                gap=10.0;
-                                
-                                // Color swatch box
-                                div()
-                                    .h(px(112.0))
-                                    .rounded(px(14.0))
-                                    .bg(swatch.color),
-                                    
-                                // Hex value text
-                                div()
-                                    .text_size(px(14.0))
-                                    .line_height(px(20.0))
-                                    .font_weight(FontWeight::MEDIUM)
-                                    .text_color(self.look.chrome().body_text)
-                                    .child(format_rgb_hex(swatch.color)),
-                            }
-                            .flex_1()
-                        }
-                    }
-                    .w_full()
-                }
-                .into_any_element()
-            })
-            .render(window, cx)
-            .w(px(520.0)) // Card width declared inline
-            .max_w_full()
-    }
-}
-
-// Renders the overlay dots for harmony combinations on top of the wheel.
-fn render_combo_wheel_layer(
-    wheel: &Entity<ColorFieldState>,
-    harmony_points: &[CombinationSwatch],
-) -> impl IntoElement {
-    // Sizing values calculated locally
-    let wheel_size = (300.0 - 2.0 * sizing::RING_THICKNESS_MEDIUM - 12.0).max(40.0);
-    let center = wheel_size * 0.5;
-    let marker_size = (((wheel_size * 0.07).max(10.0)) * 0.64).max(8.0);
-    let marker_half = marker_size * 0.5;
-    let marker_radius_max = (center - marker_half).max(0.0);
-
-    div()
-        .size(px(wheel_size))
-        .relative()
-        .child(wheel.clone())
-        .children(harmony_points.iter().map(|swatch| {
-            let angle = (swatch.color.h * 360.0).rem_euclid(360.0).to_radians();
-            let marker_radius = marker_radius_max * swatch.color.s.clamp(0.0, 1.0);
-            let left = center + marker_radius * angle.cos() - marker_half;
-            let top = center - marker_radius * angle.sin() - marker_half;
-
-            div()
-                .absolute()
-                .left(px(left))
-                .top(px(top))
-                .size(px(marker_size))
-                .rounded_full()
-                .border_1()
-                .border_color(hsla(0.0, 0.0, 0.0, 0.95))
-                .bg(hsla(0.0, 0.0, 1.0, 0.96))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(
-                    div()
-                        .size(px((marker_size - 5.0).max(3.0)))
-                        .rounded_full()
-                        .bg(swatch.color)
-                        .border_1()
-                        .border_color(hsla(0.0, 0.0, 1.0, 1.0)),
-                )
-        }))
+### B. The Macro Sugar
+```rust
+dock_panel! {
+    top: render_header(),
+    bottom: render_footer(),
+    fill: render_body()
 }
 ```
 
 ---
 
-## 4. Implementation Considerations
+## 3. Example Usage: Card Composition
 
-Before moving this layout system into production code, there are four key technical and architectural decisions in Rust/GPUI that need to be addressed:
+Here is how a standard panel containing a header, footer, and filling body is structured using the `DockPanel` system:
 
-### A. Shared Label Columns (Aligning Controls Horizontally)
-If you use `labeled! { "Label": control }` on consecutive rows, a short label like `"H"` and a long label like `"Combination"` will cause their respective sliders/selectors to start at different horizontal offsets, unless the labels share a layout column.
-* **Option A: Fixed Label Widths (Simple):** The `labeled!` macro can default to a standard visual width for the label column (e.g., `50.0px` or `80.0px`), or allow a custom override.
+```rust
+impl gpui::Render for ExamplePaneState {
+    fn render(&mut self, window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.look
+            .card("example-card")
+            .child_render(move |_, _| {
+                dock_panel! {
+                    // Header pinned to the top
+                    top: vstack! {
+                        gap=4;
+                        div().text_size(px(16.0)).child("Pane Title"),
+                        div().text_size(px(12.0)).child("Description of panel details."),
+                    },
+                    
+                    // Action controls pinned to the bottom
+                    bottom: hstack! {
+                        gap=8;
+                        align_right! {
+                            hstack! {
+                                gap=8;
+                                &self.cancel_button,
+                                &self.submit_button,
+                            }
+                        }
+                    },
+                    
+                    // Main workspace filling the center and handling scroll overflow
+                    fill: scrollable! {
+                        vstack! {
+                            gap=12;
+                            &self.content_field_1,
+                            &self.content_field_2,
+                            &self.content_field_3,
+                        }
+                    }
+                }
+                .into_any_element()
+            })
+            .render(window, cx)
+    }
+}
+```
+
+---
+
+## 4. Technical Implementation Details
+
+### A. Flexbox Mapping Under the Hood
+The `DockPanel` builder compiles down to a nested flex hierarchy. For a standard top-bottom-fill setup, it generates:
+
+```rust
+// Macro/Builder expansion
+::gpui::div()
+    .flex()
+    .flex_col()
+    .h_full()
+    .child(top_element) // Pinned top
+    .child(
+        ::gpui::div()
+            .flex_1()
+            .h(::gpui::px(0.0)) // Forces Taffy flex engine to contain scrollable height
+            .child(fill_element)
+    )
+    .child(bottom_element) // Pinned bottom
+```
+
+### B. Children Type Resolution
+To accept entities, references, and raw elements interchangeably:
+```rust
+pub trait LumaLayoutElement {
+    fn resolve_element(self, cx: &mut AppContext) -> gpui::AnyElement;
+}
+```
+
+---
+
+## 5. Gallery Documentation Pane
+
+To build out layout experience and provide a reference for developers and LLMs, we will add a dedicated **DockPanel Gallery Pane** under `apps/gallery/src/gallery/panes/dock_panel/`.
+
+* **Visual Sandbox:** Shows how changing edge alignments and resizing targets dynamically shifts boundaries.
+* **WPF-Style Complete Demo:** A dedicated layout scenario demonstrating all 5 dock boundaries simultaneously, mirroring standard desktop layouts:
   ```rust
-  labeled! { width=40.0; "H": &self.slider_h }
+  dock_panel! {
+      top: render_menu(),
+      bottom: render_status_bar(),
+      left: render_left_navigation().w(px(120.0)),
+      right: render_right_sidebar().w(px(100.0)),
+      fill: render_main_content()
+  }
   ```
-* **Option B: Parent Grid Container (WPF SharedSizeGroup style):** A wrapping `form! { ... }` macro inspects its children and automatically forces all labels to match the width of the longest label. This is more complex to write in Rust macros but provides the cleanest developer experience.
+* **Code Reference:** Serves as the codebase authority on how to construct and use the `DockPanel` builders and macros cleanly.
 
-### B. Handling GPUI `Entity<T>` vs. `impl IntoElement`
-In `gpui-luma`, some controls are owned as `Entity<T>` (like `self.plane: Entity<ColorFieldState>`), while others are simple elements or layout builders. 
-* The macro expansion must automatically check if the item implements `IntoElement` or if it's an `Entity<T>` that needs cloning/spawning.
-* Using a helper conversion trait (e.g., `LumaLayoutElement`) can allow the macro to accept `&Entity<T>`, `Entity<T>`, or raw `Div` elements interchangeably:
-  ```rust
-  // The macro should expand to something that resolves the target type:
-  luma_resolve_element(target)
-  ```
-
-### C. Rust Macro compilation and token parsing (`macro_rules!`)
-To keep the macros fast to compile and easy to maintain, we should avoid complex token-tree parsing where possible.
-* **Modular Modifiers:** A macro like `align_right! { child }` should expand to a self-contained element (e.g., a wrapper `div().flex_1().justify_end().child(child)`) rather than forcing the parent `hstack!` macro to parse and handle it uniquely. This keeps the stack macros simple.
-* **Inline loop tokens:** Parsing a `for ... in ...` loop inside a macro list requires matching the `for` token pattern. We must structure the pattern rules in `vstack!` / `hstack!` to recognize iteration tokens without breaking standard expression matches.
-
-### D. Layout Tree Performance (Yoga/Taffy Engine)
-GPUI uses a Flexbox layout engine (Taffy) written in Rust. Introducing structural wrappers like `align_right!` or `center_on!` adds nested `div()` elements. 
-* To ensure optimal rendering speeds, the macros should produce the absolute flat-est layout hierarchy possible (e.g., merging wrappers where possible rather than piling nested divs).

@@ -215,6 +215,58 @@ macro_rules! hstack {
     (@justify_content $panel:ident, evenly) => { $panel.justify_evenly() };
 }
 
+/// Declarative builder sugar for [`DockPanel`](crate::DockPanel).
+#[macro_export]
+macro_rules! dock_panel {
+    (@build $panel:expr; ) => {
+        $panel
+    };
+
+    (@build $panel:expr; top: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.top($child); $($rest)*)
+    };
+    (@build $panel:expr; bottom: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.bottom($child); $($rest)*)
+    };
+    (@build $panel:expr; left: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.left($child); $($rest)*)
+    };
+    (@build $panel:expr; right: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.right($child); $($rest)*)
+    };
+    (@build $panel:expr; fill: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.fill($child); $($rest)*)
+    };
+
+    (@build $panel:expr; top: $child:expr $(,)?) => {
+        $panel.top($child)
+    };
+    (@build $panel:expr; bottom: $child:expr $(,)?) => {
+        $panel.bottom($child)
+    };
+    (@build $panel:expr; left: $child:expr $(,)?) => {
+        $panel.left($child)
+    };
+    (@build $panel:expr; right: $child:expr $(,)?) => {
+        $panel.right($child)
+    };
+    (@build $panel:expr; fill: $child:expr $(,)?) => {
+        $panel.fill($child)
+    };
+
+    (@build $panel:expr; $field:ident : $child:expr $(, $($rest:tt)*)?) => {
+        compile_error!(concat!("dock_panel! only supports top, bottom, left, right, and fill regions; found `", stringify!($field), "`."))
+    };
+
+    () => {
+        $crate::DockPanel::new()
+    };
+
+    ( $($tokens:tt)+ ) => {
+        $crate::dock_panel!(@build $crate::DockPanel::new(); $($tokens)+)
+    };
+}
+
 /// Spawns a flow wrapping flex layout (similar to a WPF WrapPanel).
 #[macro_export]
 macro_rules! wrappanel {
