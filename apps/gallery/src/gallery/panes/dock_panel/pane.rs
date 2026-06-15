@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, hsla, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::dock_splitter::{DockSplitter, SplitterOrientation};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -46,11 +46,19 @@ struct DockPanelPaneState {
 
 impl DockPanelPaneState {
     fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
-        let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical).spawn(cx);
-        let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal).spawn(cx);
-        let right_splitter = DockSplitter::new("dock-panel-right-splitter", SplitterOrientation::Vertical).spawn(cx);
-        let bottom_splitter =
-            DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal).spawn(cx);
+        let splitter_theme = look.dock_splitter_theme();
+        let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
+            .theme(splitter_theme.clone())
+            .spawn(cx);
+        let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)
+            .theme(splitter_theme.clone())
+            .spawn(cx);
+        let right_splitter = DockSplitter::new("dock-panel-right-splitter", SplitterOrientation::Vertical)
+            .theme(splitter_theme.clone())
+            .spawn(cx);
+        let bottom_splitter = DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal)
+            .theme(splitter_theme)
+            .spawn(cx);
 
         let this = Self {
             look,
@@ -118,12 +126,8 @@ impl DockPanelPaneState {
 
 impl Render for DockPanelPaneState {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let top_debug = hsla(0.58, 0.55, 0.42, 1.0);
-        let left_debug = hsla(0.33, 0.55, 0.38, 1.0);
-        let right_debug = hsla(0.12, 0.72, 0.46, 1.0);
-        let bottom_debug = hsla(0.77, 0.48, 0.44, 1.0);
-        let fill_debug = gpui::red();
         let chrome = self.look.chrome();
+        let foreground = self.look.token_color("foreground").unwrap_or(chrome.body_text);
 
         div()
             .size_full()
@@ -156,46 +160,48 @@ impl Render for DockPanelPaneState {
                             .child("Debug view for ordered docking geometry with resizable docked boundaries."),
                     ),
             )
-            .child(div().flex_1().min_w(px(0.0)).min_h(px(0.0)).overflow_hidden().child(dock_panel! {
-                left: div()
-                    .w(px(self.left_width))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .bg(left_debug)
-                    .child("Left"),
-                left: self.left_splitter.clone(),
-                top: div()
-                    .h(px(self.top_height))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .bg(top_debug)
-                    .child("Top"),
-                top: self.top_splitter.clone(),
-                right: div()
-                    .w(px(self.right_width))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .bg(right_debug)
-                    .child("Right"),
-                right: self.right_splitter.clone(),
-                bottom: div()
-                    .h(px(self.bottom_height))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .bg(bottom_debug)
-                    .child("Bottom"),
-                bottom: self.bottom_splitter.clone(),
-                fill: div()
-                    .size_full()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .bg(fill_debug)
-                    .child("Center/Fill")
-            }))
+            .child(div().flex_1().min_w(px(0.0)).min_h(px(0.0)).p(px(100.0)).child(
+                div().size_full().overflow_hidden().border_1().border_color(chrome.border).child(dock_panel! {
+                    left: div()
+                        .w(px(self.left_width))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(foreground)
+                        .child("Left"),
+                    left: self.left_splitter.clone(),
+                    top: div()
+                        .h(px(self.top_height))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(foreground)
+                        .child("Top"),
+                    top: self.top_splitter.clone(),
+                    right: div()
+                        .w(px(self.right_width))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(foreground)
+                        .child("Right"),
+                    right: self.right_splitter.clone(),
+                    bottom: div()
+                        .h(px(self.bottom_height))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(foreground)
+                        .child("Bottom"),
+                    bottom: self.bottom_splitter.clone(),
+                    fill: div()
+                        .size_full()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_color(foreground)
+                        .child("Center/Fill")
+                }),
+            ))
     }
 }

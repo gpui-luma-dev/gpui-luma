@@ -11,6 +11,7 @@ use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTempl
 use gpui_luma::controls::control_group::{
     ControlGroupItemLike, ControlGroupTemplate, ControlGroupTheme, control_group_template_with_theme,
 };
+use gpui_luma::controls::dock_splitter::DockSplitterTheme;
 use gpui_luma::controls::radio_group::{RadioGroupLayout, radio_group_buttons_template};
 use gpui_luma::controls::floating_menu::FloatingMenuTheme;
 use gpui_luma::controls::list_view::{ListViewTheme, list_view_template_with_theme};
@@ -188,6 +189,10 @@ pub fn slider_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTheme> {
     Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })
 }
 
+pub fn dock_splitter_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DockSplitterTheme> {
+    Arc::new(RadixDockSplitterTheme { theme: theme.as_ref().clone() })
+}
+
 pub fn resizable_panels_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ResizablePanelsTheme> {
     Arc::new(RadixResizablePanelsTheme { theme: theme.as_ref().clone() })
 }
@@ -206,6 +211,25 @@ pub fn selector_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SelectorTheme> {
 
 pub fn popup_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PopupMenuTheme> {
     Arc::new(RadixPopupMenuTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixDockSplitterTheme {
+    theme: ShadcnLook,
+}
+
+impl DockSplitterTheme for RadixDockSplitterTheme {
+    fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterAppearance {
+        let tokens = self.theme.mode_tokens();
+        let border = tokens.palette.border_default;
+        let disabled = tokens.palette.disabled_foreground;
+
+        gpui_luma::controls::dock_splitter::DockSplitterAppearance {
+            line_color: if enabled { border } else { disabled },
+            hover_color: if enabled { border } else { disabled },
+            hit_target_px: 8.0,
+            visible_line_px: 1.0,
+        }
+    }
 }
 
 struct RadixResizablePanelsTheme {

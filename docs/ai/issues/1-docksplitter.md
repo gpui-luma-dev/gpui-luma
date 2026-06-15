@@ -1,30 +1,33 @@
-# Specification: Resizable DockSplitter Layout
+# Specification: Resizable DockSplitter Layout (Seamless Seams)
 
-This document describes the functionality, API, and implementation details for `DockSplitter`—a lightweight layout utility that adds drag-to-resize handles between sidebars and fill regions inside a `DockPanel`.
-
----
-
-## 1. Functionality Overview
-
-The `DockSplitter` is a stateless visual handle that intercepts mouse drag gestures. It translates mouse movement deltas on the main axis into updates for the adjacent panel’s size.
-
-Unlike complex multi-split containers, `DockSplitter` delegates state storage back to the parent container. The sidebar size is simply a local state variable (e.g. `self.left_width: f32`), which makes saving, loading, and adjusting the panels simple and clean.
-
-### Core Features:
-* **Hit Target Scaling:** Provides a narrow visible separator line (`1px`) wrapped inside a wider invisible hit target (`8px`) to ensure hover and drag interactions feel generous.
-* **Window-Level Drag Tracking:** Once clicked, the splitter registers window-level mouse-move and mouse-up listeners to track movement outside the boundary limits, automatically releasing when the mouse button is let go.
-* **Directional Cursors:** Automatically changes the system cursor to `ColResize` (for vertical splitters) or `RowResize` (for horizontal splitters).
+This document describes the functionality, API, and implementation details for `DockSplitter`—a layout utility that adds drag-to-resize handles between sidebars and fill regions inside a `DockPanel`.
 
 ---
 
-## 2. Implementation Specifications (Theme/Template Pattern)
+## 1. Layout Architecture: The Seamless Seam Pattern (Scenario B)
 
-To ensure consistency with the rest of the SDK, the `DockSplitter` is split into four parts: a State/Render Model, a Theme interface, a rendering Template, and the parent Control.
+To avoid creating an $8\text{px}$ visual gap (gutter) between docked panels in the flexbox document flow, the `DockSplitter` decouples its **layout size** from its **interactive hitbox size**:
 
-This decouples the visual style (like colors, margins, or grip icons) from the core mouse drag logic.
+1. **Layout Size ($1\text{px}$):** The splitter root container is allocated exactly $1\text{px}$ (`visible_line_px`) in the flexbox flow. Adjacent panels meet the splitter line seamlessly with zero layout spacing.
+2. **Interactive Hitbox ($8\text{px}$):** An absolute-positioned invisible hitbox is centered on top of the $1\text{px}$ line (offsetting it symmetrically by $-3.5\text{px}$ using `-half_inset`). This overlay captures hover states, cursors, and drag-and-drop gestures.
+3. **Grip Thumb:** A rounded vertical/horizontal grab handle (pill shape) is rendered inside the absolute hitbox, matching the exact sizing and style of `ResizeHandleSize::Sm` in `ResizablePanels`.
+
+```
+       [Left Panel]          [Splitter]          [Right Panel]
+       Bg: #1c1917        Layout: 1px width       Bg: #262626
+  ====================>           |           <====================
+                      |           |           |
+                      |    [8px Hitbox]       |
+                      |  <......[Grip]......> |
+                      |    -3.5px   +3.5px    |
+```
+
+---
+
+## 2. Implementation Specifications
 
 ### A. The State & Render Model
-Stores the parameters of the splitter and exposes them during render phase:
+Stores the parameters of the splitter and exposes them during rendering:
 ```rust
 pub enum SplitterOrientation {
     Horizontal, // Resizes vertical height (Top/Bottom)
@@ -35,17 +38,19 @@ pub struct DockSplitterRenderModel<'a> {
     pub id: &'a SharedString,
     pub orientation: SplitterOrientation,
     pub enabled: bool,
+    pub hovered: bool,
+    pub dragging: bool,
 }
 ```
 
-### B. The Theme & Appearance
-Defines style tokens resolved from the theme (such as `ShadcnLook` border colors and hover metrics):
+### B. Theme Resolution (SDK/Look Layer)
+Theme colors and appearances are resolved dynamically via the look stylesheet provider:
 ```rust
 pub struct DockSplitterAppearance {
     pub line_color: Hsla,
     pub hover_color: Hsla,
-    pub hit_target_px: f32,      // Default hit zone (e.g., 8.0px)
-    pub visible_line_px: f32,    // Visible separator line (e.g., 1.0px)
+    pub hit_target_px: f32,      // Default: 8.0px
+    pub visible_line_px: f32,    // Default: 1.0px
 }
 
 pub trait DockSplitterTheme: Send + Sync {
@@ -53,127 +58,214 @@ pub trait DockSplitterTheme: Send + Sync {
 }
 ```
 
-### C. The Rendering Template
-Builds the visual GPUI element structure. Looks can swap this template to add custom visual splits (like dot grips in the center):
+### C. Default SDK Seamless Template (Unopinionated)
+The default SDK template in [template.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/dock_splitter/template.rs) is lookless and unopinionated, rendering only the seamless line and hitbox:
+
 ```rust
-pub trait DockSplitterTemplate: Send + Sync {
-    fn render(&self, model: &DockSplitterRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
-}
-```
+pub struct ThemedDockSplitterTemplate;
 
-### D. The Control Builder API
-The parent control is created via the SDK builder pattern:
-```rust
-pub struct DockSplitter {
-    id: SharedString,
-    orientation: SplitterOrientation,
-    on_resize: Option<Rc<dyn Fn(f32, &mut Window, &mut AppContext)>>,
-    template: Arc<dyn DockSplitterTemplate>,
-}
+impl DockSplitterTemplate for ThemedDockSplitterTemplate {
+    fn render(
+        &self,
+        model: &DockSplitterRenderModel<'_>,
+        appearance: &DockSplitterAppearance,
+        handlers: DockSplitterTemplateHandlers,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> Stateful<Div> {
+        let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out } = handlers;
+        let line_color = if model.dragging || model.hovered {
+            appearance.hover_color
+        } else {
+            appearance.line_color
+        };
+        let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
 
-impl DockSplitter {
-    pub fn new(orientation: SplitterOrientation) -> Self;
-    pub fn on_resize(self, callback: impl Fn(f32, &mut Window, &mut AppContext) + 'static) -> Self;
-    pub fn template(self, template: Arc<dyn DockSplitterTemplate>) -> Self;
-}
-```
+        // 1. Root element in flow is only 1px wide/high
+        let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
+        root = match model.orientation {
+            SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
+            SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
+        };
 
+        // 2. Absolute hitbox overlay centered symmetrically (-3.5px offset)
+        let hit_target = match model.orientation {
+            SplitterOrientation::Vertical => div()
+                .id(model.id.clone())
+                .absolute()
+                .left(px(-half_inset))
+                .top(px(0.0))
+                .bottom(px(0.0))
+                .w(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_col_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .left(px(half_inset))
+                        .top(px(0.0))
+                        .bottom(px(0.0))
+                        .w(px(appearance.visible_line_px))
+                        .bg(line_color),
+                ),
+            SplitterOrientation::Horizontal => div()
+                .id(model.id.clone())
+                .absolute()
+                .top(px(-half_inset))
+                .left(px(0.0))
+                .right(px(0.0))
+                .h(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_row_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(half_inset))
+                        .left(px(0.0))
+                        .right(px(0.0))
+                        .h(px(appearance.visible_line_px))
+                        .bg(line_color),
+                ),
+        };
 
----
-
-## 3. Integration Example: `dock_panel/pane.rs`
-
-Below is the concrete implementation showing how `DockSplitter` is integrated into the existing `DockPanelPane` gallery pane code to make all four outer boundaries resizable.
-
-### Refactored State & Render:
-```rust
-#[derive(Clone)]
-pub(in crate::gallery) struct DockPanelPane {
-    state: Entity<DockPanelPaneState>,
-}
-
-struct DockPanelPaneState {
-    left_width: f32,
-    right_width: f32,
-    top_height: f32,
-    bottom_height: f32,
-}
-
-impl DockPanelPaneState {
-    fn new(cx: &mut Context<Self>) -> Self {
-        Self {
-            left_width: 80.0,
-            right_width: 80.0,
-            top_height: 50.0,
-            bottom_height: 50.0,
-        }
-    }
-}
-
-impl gpui::Render for DockPanelPaneState {
-    fn render(&mut self, window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.look.chrome();
-
-        dock_panel! {
-            // 1. LEFT SIDEBAR + SPLITTER
-            left: div()
-                .w(px(self.left_width))
-                .bg(chrome.panel_background)
-                .child("Left"),
-            left: DockSplitter::new(SplitterOrientation::Vertical)
-                .on_resize(cx.listener(|this, delta, cx| {
-                    this.left_width = (this.left_width + delta).clamp(40.0, 300.0);
-                    cx.notify();
-                })),
-
-            // 2. TOP HEADER + SPLITTER
-            top: div()
-                .h(px(self.top_height))
-                .bg(chrome.panel_background)
-                .child("Top"),
-            top: DockSplitter::new(SplitterOrientation::Horizontal)
-                .on_resize(cx.listener(|this, delta, cx| {
-                    this.top_height = (this.top_height + delta).clamp(30.0, 150.0);
-                    cx.notify();
-                })),
-
-            // 3. RIGHT SIDEBAR + SPLITTER
-            right: div()
-                .w(px(self.right_width))
-                .bg(chrome.panel_background)
-                .child("Right"),
-            right: DockSplitter::new(SplitterOrientation::Vertical)
-                .on_resize(cx.listener(|this, delta, cx| {
-                    // Moving cursor left (negative delta) expands right panel width
-                    this.right_width = (this.right_width - delta).clamp(40.0, 300.0);
-                    cx.notify();
-                })),
-
-            // 4. BOTTOM FOOTER + SPLITTER
-            bottom: div()
-                .h(px(self.bottom_height))
-                .bg(chrome.panel_background)
-                .child("Bottom"),
-            bottom: DockSplitter::new(SplitterOrientation::Horizontal)
-                .on_resize(cx.listener(|this, delta, cx| {
-                    // Moving cursor up (negative delta) expands bottom panel height
-                    this.bottom_height = (this.bottom_height - delta).clamp(30.0, 150.0);
-                    cx.notify();
-                })),
-
-            // 5. FILL WORKSPACE
-            fill: div()
-                .size_full()
-                .bg(gpui::red())
-                .child("Center Fill")
-        }
+        root.child(hit_target)
     }
 }
 ```
 
 ---
 
-## 4. Key Design Patterns Highlighted in the Code
-1. **Dynamic Precedence Order:** The sidebar and its splitter are docked *together* under the same edge (`left: ...` followed by `left: ...`), guaranteeing that the splitter spans the exact same height boundary as the sidebar itself.
-2. **Reverse Delta Calculation:** For the right and bottom boundaries, moving the mouse in the negative direction (left/up) increases the size of the sidebar. The callback logic handles this simply by subtracting the delta: `this.right_width - delta`.
-3. **No Intermediate Containers:** Because of the dynamic docking order, the splitters and boundaries are created without wrapping elements or complex layout math.
+## 3. Gallery Integration Sandbox (Local Custom Grip Thumb)
+
+To keep the default SDK splitter unopinionated, visual ornamentations (like the grab handle thumb) are implemented via a **local custom template** inside the application sandbox, registered **only on the left-side splitter**.
+
+### A. Local Template Implementation
+Add the custom template and imports inside [pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/dock_panel/pane.rs):
+
+```rust
+use gpui::{Div, MouseButton, Stateful, prelude::*, px};
+use gpui_luma::controls::dock_splitter::{
+    DockSplitterAppearance, DockSplitterRenderModel, DockSplitterTemplate,
+    DockSplitterTemplateHandlers,
+};
+
+struct LeftSplitterTemplate;
+
+impl DockSplitterTemplate for LeftSplitterTemplate {
+    fn render(
+        &self,
+        model: &DockSplitterRenderModel<'_>,
+        appearance: &DockSplitterAppearance,
+        handlers: DockSplitterTemplateHandlers,
+        _window: &mut Window,
+        _cx: &mut gpui::App,
+    ) -> Stateful<Div> {
+        let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out } = handlers;
+        let line_color = if model.dragging || model.hovered {
+            appearance.hover_color
+        } else {
+            appearance.line_color
+        };
+        let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
+
+        // 1px flow width container
+        let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
+        root = match model.orientation {
+            SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
+            SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
+        };
+
+        // Render the local center grip thumb (Sm metrics: 4px x 36px vertical pill)
+        let grip = div()
+            .absolute()
+            .inset_0()
+            .flex()
+            .justify_center()
+            .items_center()
+            .child(
+                div()
+                    .rounded(px(8.0)) // Pill shape
+                    .bg(if model.hovered || model.dragging {
+                        appearance.hover_color
+                    } else {
+                        appearance.line_color.opacity(0.4)
+                    })
+                    .w(px(4.0))
+                    .h(px(36.0)),
+            );
+
+        // 8px absolute overlay hitbox centered symmetrically (-3.5px offset)
+        let hit_target = match model.orientation {
+            SplitterOrientation::Vertical => div()
+                .id(model.id.clone())
+                .absolute()
+                .left(px(-half_inset))
+                .top(px(0.0))
+                .bottom(px(0.0))
+                .w(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_col_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .left(px(half_inset))
+                        .top(px(0.0))
+                        .bottom(px(0.0))
+                        .w(px(appearance.visible_line_px))
+                        .bg(line_color),
+                )
+                .child(grip), // Overlay the grip thumb in the center of the vertical hitbox
+            SplitterOrientation::Horizontal => div()
+                .id(model.id.clone())
+                .absolute()
+                .top(px(-half_inset))
+                .left(px(0.0))
+                .right(px(0.0))
+                .h(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_row_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(half_inset))
+                        .left(px(0.0))
+                        .right(px(0.0))
+                        .h(px(appearance.visible_line_px))
+                        .bg(line_color),
+                ), // No grip thumb on horizontal splitters
+        };
+
+        root.child(hit_target)
+    }
+}
+```
+
+### B. Registering the Local Template
+Spawn **only** the left-side sidebar with the localized `LeftSplitterTemplate` (top, right, and bottom splitters remain clean):
+
+```rust
+        // Left splitter gets the custom pill grip thumb
+        let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
+            .template(Arc::new(LeftSplitterTemplate))
+            .spawn(cx);
+
+        // Other splitters fall back to clean SDK default ThemedDockSplitterTemplate
+        let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)
+            .spawn(cx);
+        let right_splitter = DockSplitter::new("dock-panel-right-splitter", SplitterOrientation::Vertical)
+            .spawn(cx);
+        let bottom_splitter = DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal)
+            .spawn(cx);
+```

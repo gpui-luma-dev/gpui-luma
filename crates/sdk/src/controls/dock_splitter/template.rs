@@ -63,41 +63,58 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
         };
         let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
 
-        let mut root = div()
-            .id(model.id.clone())
-            .relative()
-            .flex_shrink_0()
-            .on_hover(hover)
-            .on_mouse_down(MouseButton::Left, mouse_down)
-            .on_mouse_up(MouseButton::Left, mouse_up)
-            .on_mouse_up_out(MouseButton::Left, mouse_up_out);
+        let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
 
         root = match model.orientation {
-            SplitterOrientation::Vertical => {
-                root.w(px(appearance.hit_target_px)).h_full().when(model.enabled, |this| this.cursor_col_resize())
-            }
-            SplitterOrientation::Horizontal => {
-                root.h(px(appearance.hit_target_px)).w_full().when(model.enabled, |this| this.cursor_row_resize())
-            }
+            SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
+            SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
         };
 
-        let line = match model.orientation {
+        let hit_target = match model.orientation {
             SplitterOrientation::Vertical => div()
+                .id(model.id.clone())
                 .absolute()
-                .left(px(half_inset))
+                .left(px(-half_inset))
                 .top(px(0.0))
                 .bottom(px(0.0))
-                .w(px(appearance.visible_line_px))
-                .bg(line_color),
+                .w(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_col_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .left(px(half_inset))
+                        .top(px(0.0))
+                        .bottom(px(0.0))
+                        .w(px(appearance.visible_line_px))
+                        .bg(line_color),
+                ),
             SplitterOrientation::Horizontal => div()
+                .id(model.id.clone())
                 .absolute()
-                .top(px(half_inset))
+                .top(px(-half_inset))
                 .left(px(0.0))
                 .right(px(0.0))
-                .h(px(appearance.visible_line_px))
-                .bg(line_color),
+                .h(px(appearance.hit_target_px))
+                .on_hover(hover)
+                .on_mouse_down(MouseButton::Left, mouse_down)
+                .on_mouse_up(MouseButton::Left, mouse_up)
+                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+                .when(model.enabled, |this| this.cursor_row_resize())
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(half_inset))
+                        .left(px(0.0))
+                        .right(px(0.0))
+                        .h(px(appearance.visible_line_px))
+                        .bg(line_color),
+                ),
         };
 
-        root.child(line)
+        root.child(hit_target)
     }
 }

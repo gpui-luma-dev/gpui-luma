@@ -498,6 +498,10 @@ impl ShadcnLook {
         gpui_luma::controls::tree_view::new(id).template(self.tree_view_template::<T>())
     }
 
+    pub fn dock_splitter_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::dock_splitter::DockSplitterTheme> {
+        templates::dock_splitter_theme(Arc::clone(self))
+    }
+
     pub fn resizable_panels_theme(
         self: &Arc<Self>,
     ) -> Arc<dyn gpui_luma::controls::resizable_panels::ResizablePanelsTheme> {

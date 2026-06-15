@@ -200,6 +200,11 @@ impl ThemeStudioApp {
         self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
     }
 
+    fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
+        let theme = self.look.resizable_panels_theme();
+        self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
+    }
+
     pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
         if self.active_theme_id == theme_id {
             return;
