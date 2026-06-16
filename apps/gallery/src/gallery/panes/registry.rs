@@ -624,7 +624,12 @@ impl GalleryPanes {
         self.split_view.subscribe(cx, subscriptions);
     }
 
-    pub(in crate::gallery) fn notify_selected_controls(&self, selection: &str, cx: &mut Context<GalleryApp>) {
+    pub(in crate::gallery) fn notify_selected_controls(
+        &self,
+        selection: &str,
+        window: &mut Window,
+        cx: &mut Context<GalleryApp>,
+    ) {
         let Some(page) = page_for_id(selection) else {
             return;
         };
@@ -633,7 +638,7 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
             GalleryPageKind::Badge => self.badge.notify_controls(cx),
             GalleryPageKind::Card => self.card.notify_controls(cx),
-            GalleryPageKind::DockPanel => self.dock_panel.notify_controls(cx),
+            GalleryPageKind::DockPanel => self.dock_panel.notify_controls(window, cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
             GalleryPageKind::SlidePanel => self.slide_panel.notify_controls(cx),

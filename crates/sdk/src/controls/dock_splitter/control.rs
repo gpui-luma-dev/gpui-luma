@@ -1,12 +1,13 @@
 use gpui::{
-    Context, DragMoveEvent, EventEmitter, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Window, div, prelude::*,
+    App, Context, DragMoveEvent, EventEmitter, FocusHandle, Focusable, IntoElement, KeyDownEvent, MouseButton,
+    MouseDownEvent, MouseUpEvent, Render, SharedString, Window, div, prelude::*,
 };
 
 use super::{
     DockSplitterAppearance, DockSplitterBuilder, DockSplitterModel, DockSplitterRenderModel,
     DockSplitterTemplateHandlers, SplitterOrientation,
 };
+use crate::controls::state::ControlFocusState;
 use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
@@ -29,6 +30,7 @@ impl Render for DockSplitterDrag {
 
 pub struct DockSplitter {
     model: DockSplitterModel,
+    focus_handle: FocusHandle,
     hovered: bool,
     dragging: bool,
     drag_start_axis_px: f32,
@@ -43,8 +45,16 @@ impl DockSplitter {
     }
 
     pub(crate) fn from_builder(builder: DockSplitterBuilder, cx: &mut Context<Self>) -> Self {
+        let enabled = builder.model.enabled;
+
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
-        Self { model: builder.model, hovered: false, dragging: false, drag_start_axis_px: 0.0 }
+        Self {
+            model: builder.model,
+            focus_handle: cx.focus_handle().tab_stop(enabled),
+            hovered: false,
+            dragging: false,
+            drag_start_axis_px: 0.0,
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -69,13 +79,17 @@ impl DockSplitter {
         cx.notify();
     }
 
-    fn render_model(&self) -> DockSplitterRenderModel<'_> {
+    fn render_model<'a>(&'a self, window: &Window) -> DockSplitterRenderModel<'a> {
+        let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
+
         DockSplitterRenderModel {
             id: &self.model.id,
             orientation: self.model.orientation,
             enabled: self.model.enabled,
             hovered: self.hovered,
             dragging: self.dragging,
+            focused: focus.focused,
+            focus_handle: &self.focus_handle,
         }
     }
 
@@ -89,6 +103,7 @@ impl DockSplitter {
             mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
             mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
             mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
+            key_down: Box::new(cx.listener(Self::handle_key_down)),
         }
     }
 
@@ -107,11 +122,12 @@ impl DockSplitter {
         cx.notify();
     }
 
-    fn handle_mouse_down(&mut self, event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled || event.button != MouseButton::Left {
             return;
         }
 
+        self.focus_handle.focus(window, cx);
         self.dragging = true;
         self.drag_start_axis_px = self.axis_position(event.position);
         cx.emit(DockSplitterEvent::ResizeStart);
@@ -144,6 +160,35 @@ impl DockSplitter {
         cx.emit(DockSplitterEvent::Resize { total_delta });
     }
 
+    fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
+        let step_px = if event.keystroke.modifiers.shift {
+            self.model.keyboard_shift_step
+        } else {
+            self.model.keyboard_step
+        };
+
+        let total_delta = match event.keystroke.key.as_str() {
+            "left" | "up" => -step_px,
+            "right" | "down" => step_px,
+            _ => return,
+        };
+
+        self.focus_handle.focus(window, cx);
+        cx.emit(DockSplitterEvent::ResizeStart);
+        if let Some(on_resize) = &self.model.on_resize {
+            on_resize(&total_delta, window, cx);
+        }
+        cx.emit(DockSplitterEvent::Resize { total_delta });
+        cx.emit(DockSplitterEvent::ResizeEnd);
+        window.prevent_default();
+        cx.stop_propagation();
+        cx.notify();
+    }
+
     fn handle_mouse_up(&mut self, event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         if event.button != MouseButton::Left || !self.dragging {
             return;
@@ -155,9 +200,15 @@ impl DockSplitter {
     }
 }
 
+impl Focusable for DockSplitter {
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+
 impl Render for DockSplitter {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let model = self.render_model();
+        let model = self.render_model(window);
         let appearance = self.appearance();
         let handlers = self.template_handlers(cx);
 

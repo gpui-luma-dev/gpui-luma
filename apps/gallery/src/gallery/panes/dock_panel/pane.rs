@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Focusable, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -26,8 +26,8 @@ impl DockPanelPane {
 
     pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
 
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
+    pub(in crate::gallery) fn notify_controls(&self, window: &mut Window, cx: &mut Context<GalleryApp>) {
+        self.state.update(cx, |state, cx| state.notify_controls(window, cx));
         notify_entity(&self.state, cx);
     }
 }
@@ -51,17 +51,21 @@ struct DockPanelPaneState {
 impl DockPanelPaneState {
     fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let splitter_theme = look.dock_splitter_theme();
+        let splitter_template = Arc::new(ThemedDockSplitterTemplate::new(true));
         let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
-            .template(Arc::new(ThemedDockSplitterTemplate::new(true)))
+            .template(splitter_template.clone())
             .theme(splitter_theme.clone())
             .spawn(cx);
         let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)
+            .template(splitter_template.clone())
             .theme(splitter_theme.clone())
             .spawn(cx);
         let right_splitter = DockSplitter::new("dock-panel-right-splitter", SplitterOrientation::Vertical)
+            .template(splitter_template.clone())
             .theme(splitter_theme.clone())
             .spawn(cx);
         let bottom_splitter = DockSplitter::new("dock-panel-bottom-splitter", SplitterOrientation::Horizontal)
+            .template(splitter_template)
             .theme(splitter_theme)
             .spawn(cx);
 
@@ -121,7 +125,10 @@ impl DockPanelPaneState {
         this
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    fn notify_controls(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let left_splitter_focus = self.left_splitter.read(cx).focus_handle(cx);
+        left_splitter_focus.focus(window, cx);
+
         self.left_splitter.update(cx, |_, cx| cx.notify());
         self.top_splitter.update(cx, |_, cx| cx.notify());
         self.right_splitter.update(cx, |_, cx| cx.notify());

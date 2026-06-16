@@ -27,8 +27,8 @@ impl Render for GalleryApp {
         if needs_inspector_refresh {
             let selection = self.nav_selection.clone();
             self.last_inspector_refresh = Some(selection.clone());
-            cx.on_next_frame(window, move |this, _, cx| {
-                this.panes.notify_selected_controls(&selection, cx);
+            cx.on_next_frame(window, move |this, window, cx| {
+                this.panes.notify_selected_controls(&selection, window, cx);
             });
         }
 

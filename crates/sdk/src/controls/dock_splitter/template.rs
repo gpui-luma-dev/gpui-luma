@@ -1,18 +1,20 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
 
 use super::{DockSplitterAppearance, DockSplitterDrag, DockSplitterRenderModel, SplitterOrientation};
 
 pub type DockSplitterHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type DockSplitterMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type DockSplitterMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
+pub type DockSplitterKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 
 pub struct DockSplitterTemplateHandlers {
     pub hover: DockSplitterHoverHandler,
     pub mouse_down: DockSplitterMouseDownHandler,
     pub mouse_up: DockSplitterMouseUpHandler,
     pub mouse_up_out: DockSplitterMouseUpHandler,
+    pub key_down: DockSplitterKeyDownHandler,
 }
 
 pub trait DockSplitterTemplate: Send + Sync {
@@ -67,8 +69,8 @@ fn render_splitter(
     handlers: DockSplitterTemplateHandlers,
     show_thumb: bool,
 ) -> Stateful<Div> {
-    let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out } = handlers;
-    let line_color = if model.dragging || model.hovered {
+    let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out, key_down } = handlers;
+    let line_color = if model.dragging || model.hovered || model.focused {
         appearance.hover_color
     } else {
         appearance.line_color
@@ -91,10 +93,13 @@ fn render_splitter(
             .top(px(0.0))
             .bottom(px(0.0))
             .w(px(appearance.hit_target_px))
+            .track_focus(model.focus_handle)
+            .tab_index(if model.enabled { 0 } else { -1 })
             .on_hover(hover)
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)
             .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+            .on_key_down(key_down)
             .on_drag(drag_payload.clone(), {
                 let drag = drag_payload.clone();
                 move |_: &DockSplitterDrag, _, _, cx| {
@@ -119,10 +124,13 @@ fn render_splitter(
             .left(px(0.0))
             .right(px(0.0))
             .h(px(appearance.hit_target_px))
+            .track_focus(model.focus_handle)
+            .tab_index(if model.enabled { 0 } else { -1 })
             .on_hover(hover)
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)
             .on_mouse_up_out(MouseButton::Left, mouse_up_out)
+            .on_key_down(key_down)
             .on_drag(drag_payload, |drag: &DockSplitterDrag, _, _, cx| {
                 cx.stop_propagation();
                 cx.new(|_| drag.clone())
@@ -144,7 +152,7 @@ fn render_splitter(
             div().absolute().inset_0().flex().justify_center().items_center().child(
                 div()
                     .rounded(px(8.0))
-                    .bg(if model.hovered || model.dragging {
+                    .bg(if model.hovered || model.dragging || model.focused {
                         appearance.thumb_color
                     } else {
                         appearance.thumb_color.opacity(0.4)
