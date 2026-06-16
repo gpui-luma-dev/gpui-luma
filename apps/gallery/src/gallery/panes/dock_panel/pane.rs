@@ -1,121 +1,13 @@
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, App, Context, Div, Entity, IntoElement, MouseButton, Render, Stateful, Subscription, Window, div,
-    prelude::*, px,
-};
-use gpui_luma::controls::dock_splitter::{
-    DockSplitter, DockSplitterAppearance, DockSplitterDrag, DockSplitterEvent, DockSplitterRenderModel,
-    DockSplitterTemplate, DockSplitterTemplateHandlers, SplitterOrientation,
-};
+use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThumbDockSplitterTemplate};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
 use super::super::shared::notify_entity;
-
-struct LeftSplitterTemplate {
-    look: Arc<ShadcnLook>,
-}
-
-impl DockSplitterTemplate for LeftSplitterTemplate {
-    fn render(
-        &self,
-        model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterAppearance,
-        handlers: DockSplitterTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
-        let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out } = handlers;
-        let line_color = if model.dragging || model.hovered {
-            appearance.hover_color
-        } else {
-            appearance.line_color
-        };
-        let accent = self.look.token_color("accent").unwrap_or(appearance.hover_color);
-        let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
-
-        let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
-        root = match model.orientation {
-            SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
-            SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
-        };
-
-        let grip = div().absolute().inset_0().flex().justify_center().items_center().child(
-            div()
-                .rounded(px(8.0))
-                .bg(if model.hovered || model.dragging {
-                    accent
-                } else {
-                    accent.opacity(0.4)
-                })
-                .w(px(4.0))
-                .h(px(36.0)),
-        );
-
-        let drag_payload = DockSplitterDrag { id: model.id.clone() };
-        let hit_target = match model.orientation {
-            SplitterOrientation::Vertical => div()
-                .id(model.id.clone())
-                .absolute()
-                .left(px(-half_inset))
-                .top(px(0.0))
-                .bottom(px(0.0))
-                .w(px(appearance.hit_target_px))
-                .on_hover(hover)
-                .on_mouse_down(MouseButton::Left, mouse_down)
-                .on_mouse_up(MouseButton::Left, mouse_up)
-                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-                .on_drag(drag_payload.clone(), {
-                    let drag = drag_payload.clone();
-                    move |_: &DockSplitterDrag, _, _, cx| {
-                        cx.stop_propagation();
-                        cx.new(|_| drag.clone())
-                    }
-                })
-                .when(model.enabled, |this| this.cursor_col_resize())
-                .child(
-                    div()
-                        .absolute()
-                        .left(px(half_inset))
-                        .top(px(0.0))
-                        .bottom(px(0.0))
-                        .w(px(appearance.visible_line_px))
-                        .bg(line_color),
-                )
-                .child(grip),
-            SplitterOrientation::Horizontal => div()
-                .id(model.id.clone())
-                .absolute()
-                .top(px(-half_inset))
-                .left(px(0.0))
-                .right(px(0.0))
-                .h(px(appearance.hit_target_px))
-                .on_hover(hover)
-                .on_mouse_down(MouseButton::Left, mouse_down)
-                .on_mouse_up(MouseButton::Left, mouse_up)
-                .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-                .on_drag(drag_payload, |drag: &DockSplitterDrag, _, _, cx| {
-                    cx.stop_propagation();
-                    cx.new(|_| drag.clone())
-                })
-                .when(model.enabled, |this| this.cursor_row_resize())
-                .child(
-                    div()
-                        .absolute()
-                        .top(px(half_inset))
-                        .left(px(0.0))
-                        .right(px(0.0))
-                        .h(px(appearance.visible_line_px))
-                        .bg(line_color),
-                ),
-        };
-
-        root.child(hit_target)
-    }
-}
 
 #[derive(Clone)]
 pub(in crate::gallery) struct DockPanelPane {
@@ -159,8 +51,9 @@ struct DockPanelPaneState {
 impl DockPanelPaneState {
     fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let splitter_theme = look.dock_splitter_theme();
+        let accent = look.token_color("accent").unwrap_or(look.chrome().border);
         let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
-            .template(Arc::new(LeftSplitterTemplate { look: look.clone() }))
+            .template(Arc::new(ThumbDockSplitterTemplate::new(accent)))
             .theme(splitter_theme.clone())
             .spawn(cx);
         let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)
