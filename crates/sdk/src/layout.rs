@@ -2,12 +2,14 @@ use gpui::{AnyElement, Div, IntoElement, div, px, prelude::*};
 
 /// A lightweight edge-docked layout primitive inspired by WPF's `DockPanel`.
 ///
-/// `DockPanel` composes optional `top`, `bottom`, `left`, and `right` regions
-/// around a required `fill` region that occupies the remaining space.
+/// `DockPanel` keeps children in declaration order. By default, the last child
+/// stretches to fill the remaining space (`last_child_fill = true`), while all
+/// earlier children dock to their requested side. Undocked children use WPF's
+/// default dock behavior (`Left`) when they are not the filling last child.
 ///
 /// The resulting layout fills its parent (`size_full`) and applies the
-/// `min_w(0)` / `min_h(0)` constraints needed for scrollable or clipped fill
-/// content inside flex containers.
+/// `min_w(0)` / `min_h(0)` constraints needed for scrollable or clipped
+/// remainder content inside flex containers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DockSide {
     Top,
@@ -16,96 +18,66 @@ pub enum DockSide {
     Right,
 }
 
-pub struct DockPanel<Fill = MissingFill> {
-    docked: Vec<(DockSide, AnyElement)>,
-    fill: Fill,
+pub struct DockPanel {
+    children: Vec<(Option<DockSide>, AnyElement)>,
+    last_child_fill: bool,
 }
 
-/// Marker type used until a `DockPanel` receives its required fill region.
-pub struct MissingFill;
-
-/// Marker type indicating the panel has a fill region and can be rendered.
-pub struct Filled {
-    element: AnyElement,
-}
-
-impl DockPanel<MissingFill> {
+impl DockPanel {
     pub fn new() -> Self {
-        Self { docked: Vec::new(), fill: MissingFill }
+        Self { children: Vec::new(), last_child_fill: true }
     }
-}
 
-impl Default for DockPanel<MissingFill> {
-    fn default() -> Self {
-        Self::new()
+    pub fn last_child_fill(mut self, last_child_fill: bool) -> Self {
+        self.last_child_fill = last_child_fill;
+        self
     }
-}
 
-impl<Fill> DockPanel<Fill> {
     pub fn top(mut self, element: impl IntoElement) -> Self {
-        self.docked.push((DockSide::Top, element.into_any_element()));
+        self.children.push((Some(DockSide::Top), element.into_any_element()));
         self
     }
 
     pub fn bottom(mut self, element: impl IntoElement) -> Self {
-        self.docked.push((DockSide::Bottom, element.into_any_element()));
+        self.children.push((Some(DockSide::Bottom), element.into_any_element()));
         self
     }
 
     pub fn left(mut self, element: impl IntoElement) -> Self {
-        self.docked.push((DockSide::Left, element.into_any_element()));
+        self.children.push((Some(DockSide::Left), element.into_any_element()));
         self
     }
 
     pub fn right(mut self, element: impl IntoElement) -> Self {
-        self.docked.push((DockSide::Right, element.into_any_element()));
+        self.children.push((Some(DockSide::Right), element.into_any_element()));
         self
     }
 
-    pub fn fill(self, element: impl IntoElement) -> DockPanel<Filled> {
-        DockPanel { docked: self.docked, fill: Filled { element: element.into_any_element() } }
+    pub fn child(mut self, element: impl IntoElement) -> Self {
+        self.children.push((None, element.into_any_element()));
+        self
     }
-}
 
-impl DockPanel<Filled> {
+    pub fn fill(self, element: impl IntoElement) -> Self {
+        self.child(element)
+    }
+
     pub fn build(self) -> Div {
-        let DockPanel { docked, fill } = self;
+        let DockPanel { mut children, last_child_fill } = self;
 
-        let mut root = stretch(fill.element);
+        if children.is_empty() {
+            return stretch(div().into_any_element());
+        }
 
-        for (side, element) in docked.into_iter().rev() {
-            root = match side {
-                DockSide::Top => div()
-                    .size_full()
-                    .min_w(px(0.0))
-                    .min_h(px(0.0))
-                    .flex()
-                    .flex_col()
-                    .child(element)
-                    .child(remainder(root.into_any_element())),
-                DockSide::Bottom => div()
-                    .size_full()
-                    .min_w(px(0.0))
-                    .min_h(px(0.0))
-                    .flex()
-                    .flex_col()
-                    .child(remainder(root.into_any_element()))
-                    .child(element),
-                DockSide::Left => div()
-                    .size_full()
-                    .min_w(px(0.0))
-                    .min_h(px(0.0))
-                    .flex()
-                    .child(element)
-                    .child(remainder(root.into_any_element())),
-                DockSide::Right => div()
-                    .size_full()
-                    .min_w(px(0.0))
-                    .min_h(px(0.0))
-                    .flex()
-                    .child(remainder(root.into_any_element()))
-                    .child(element),
-            };
+        let mut root = if last_child_fill {
+            let (_, element) = children.pop().expect("checked non-empty dock panel children");
+            stretch(element)
+        } else {
+            stretch(div().into_any_element())
+        };
+
+        for (side, element) in children.into_iter().rev() {
+            root = dock_child(side.unwrap_or(DockSide::Left), element, root.into_any_element());
         }
 
         root
@@ -116,11 +88,52 @@ impl DockPanel<Filled> {
     }
 }
 
-impl IntoElement for DockPanel<Filled> {
+impl Default for DockPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl IntoElement for DockPanel {
     type Element = Div;
 
     fn into_element(self) -> Self::Element {
         self.build()
+    }
+}
+
+fn dock_child(side: DockSide, element: AnyElement, remainder_content: AnyElement) -> Div {
+    match side {
+        DockSide::Top => div()
+            .size_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
+            .flex()
+            .flex_col()
+            .child(element)
+            .child(remainder(remainder_content)),
+        DockSide::Bottom => div()
+            .size_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
+            .flex()
+            .flex_col()
+            .child(remainder(remainder_content))
+            .child(element),
+        DockSide::Left => div()
+            .size_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
+            .flex()
+            .child(element)
+            .child(remainder(remainder_content)),
+        DockSide::Right => div()
+            .size_full()
+            .min_w(px(0.0))
+            .min_h(px(0.0))
+            .flex()
+            .child(remainder(remainder_content))
+            .child(element),
     }
 }
 
@@ -129,7 +142,7 @@ fn stretch(content: AnyElement) -> Div {
 }
 
 // `content` is already a full-size root:
-// - the initial fill is wrapped with `stretch(...)`
+// - the initial fill host is wrapped with `stretch(...)`
 // - each dock wrapper returns `size_full()`
 // so the remainder host only needs to provide flex growth and shrink constraints.
 fn remainder(content: AnyElement) -> Div {
@@ -144,25 +157,35 @@ mod tests {
     fn assert_into_element<E: IntoElement>(_element: E) {}
 
     #[test]
-    fn dock_panel_with_fill_is_into_element() {
-        assert_into_element(DockPanel::new().fill(div()));
+    fn empty_dock_panel_is_into_element() {
+        assert_into_element(DockPanel::new());
     }
 
     #[test]
-    fn dock_panel_supports_regions_before_fill() {
-        assert_into_element(DockPanel::new().top(div()).left(div()).right(div()).bottom(div()).fill(div()));
+    fn dock_panel_with_only_docked_children_is_into_element() {
+        assert_into_element(DockPanel::new().top(div()).left(div()).right(div()).bottom(div()));
     }
 
     #[test]
-    fn dock_panel_supports_regions_after_fill() {
-        assert_into_element(DockPanel::new().fill(div()).top(div()).left(div()).right(div()).bottom(div()));
+    fn dock_panel_supports_plain_children() {
+        assert_into_element(DockPanel::new().left(div()).child(div()).right(div()));
     }
 
     #[test]
-    fn dock_panel_preserves_docking_order() {
-        let panel = DockPanel::new().left(div()).top(div()).right(div()).bottom(div());
-        let sides: Vec<_> = panel.docked.iter().map(|(side, _)| *side).collect();
+    fn dock_panel_preserves_child_order_and_dock_metadata() {
+        let panel = DockPanel::new().left(div()).child(div()).top(div()).fill(div()).right(div());
+        let sides: Vec<_> = panel.children.iter().map(|(side, _)| *side).collect();
 
-        assert_eq!(sides, vec![DockSide::Left, DockSide::Top, DockSide::Right, DockSide::Bottom]);
+        assert_eq!(sides, vec![Some(DockSide::Left), None, Some(DockSide::Top), None, Some(DockSide::Right)]);
+    }
+
+    #[test]
+    fn dock_panel_defaults_last_child_fill_to_true() {
+        assert!(DockPanel::new().last_child_fill);
+    }
+
+    #[test]
+    fn dock_panel_can_disable_last_child_fill() {
+        assert!(!DockPanel::new().last_child_fill(false).last_child_fill);
     }
 }

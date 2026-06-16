@@ -12,9 +12,9 @@ This map is intended as an onboarding index. It focuses on crate/module purpose,
   - exports: `controls`, `focus`, `init`, `keyhandling`, `layout`, `macros`, `shell`, `theme`
   - re-exports: `init`, `DockPanel`
 - `layout.rs`
-  - lightweight edge-docked composition primitive
-  - `DockPanel::new().top(...).bottom(...).left(...).right(...).fill(...)`
-  - fills the parent and applies `min_w(0)` / `min_h(0)` remainder constraints for scrollable center content
+  - lightweight WPF-style edge-docked composition primitive
+  - `DockPanel::new().top(...).left(...).child(...).last_child_fill(true)` (`fill(...)` remains available as an alias for `child(...)`)
+  - fills the parent and applies `min_w(0)` / `min_h(0)` remainder constraints for scrollable remainder content
 - `macros.rs`
   - layout helpers: `dock_panel!`, `vstack!`, `hstack!`, `wrappanel!`, `flow!`
   - form helpers: `declare_form!`, `form_field!` (uses `controls::label::field_label` internally)

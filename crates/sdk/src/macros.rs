@@ -222,6 +222,13 @@ macro_rules! dock_panel {
         $panel
     };
 
+    (@build $panel:expr; last_child_fill = $value:expr; $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.last_child_fill($value); $($rest)*)
+    };
+    (@build $panel:expr; last_child_fill = $value:expr $(;)?) => {
+        $panel.last_child_fill($value)
+    };
+
     (@build $panel:expr; top: $child:expr, $($rest:tt)*) => {
         $crate::dock_panel!(@build $panel.top($child); $($rest)*)
     };
@@ -233,6 +240,9 @@ macro_rules! dock_panel {
     };
     (@build $panel:expr; right: $child:expr, $($rest:tt)*) => {
         $crate::dock_panel!(@build $panel.right($child); $($rest)*)
+    };
+    (@build $panel:expr; child: $child:expr, $($rest:tt)*) => {
+        $crate::dock_panel!(@build $panel.child($child); $($rest)*)
     };
     (@build $panel:expr; fill: $child:expr, $($rest:tt)*) => {
         $crate::dock_panel!(@build $panel.fill($child); $($rest)*)
@@ -250,12 +260,15 @@ macro_rules! dock_panel {
     (@build $panel:expr; right: $child:expr $(,)?) => {
         $panel.right($child)
     };
+    (@build $panel:expr; child: $child:expr $(,)?) => {
+        $panel.child($child)
+    };
     (@build $panel:expr; fill: $child:expr $(,)?) => {
         $panel.fill($child)
     };
 
     (@build $panel:expr; $field:ident : $child:expr $(, $($rest:tt)*)?) => {
-        compile_error!(concat!("dock_panel! only supports top, bottom, left, right, and fill regions; found `", stringify!($field), "`."))
+        compile_error!(concat!("dock_panel! only supports top, bottom, left, right, child, and fill entries; found `", stringify!($field), "`."))
     };
 
     () => {

@@ -140,6 +140,10 @@ impl Render for DockPanelPaneState {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let foreground = self.look.token_color("foreground").unwrap_or(chrome.body_text);
+        let muted = self.look.token_color("muted-foreground").unwrap_or(chrome.muted_text);
+        let band_background = self.look.token_color("muted").unwrap_or(chrome.content_background);
+        let fill_background = self.look.token_color("accent").unwrap_or(chrome.panel_background);
+        let fill_foreground = self.look.token_color("accent-foreground").unwrap_or(foreground);
 
         div()
             .size_full()
@@ -206,14 +210,155 @@ impl Render for DockPanelPaneState {
                         .text_color(foreground)
                         .child("Bottom"),
                     bottom: self.bottom_splitter.clone(),
-                    fill: div()
-                        .size_full()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_color(foreground)
-                        .child("Center/Fill")
+                    fill: render_nested_dock_panel_examples(
+                        chrome,
+                        foreground,
+                        muted,
+                        band_background,
+                        fill_background,
+                        fill_foreground,
+                    )
                 }),
             ))
     }
+}
+
+fn render_nested_dock_panel_examples(
+    chrome: gpui_luma::theme::LumaChrome,
+    foreground: gpui::Hsla,
+    muted: gpui::Hsla,
+    band_background: gpui::Hsla,
+    fill_background: gpui::Hsla,
+    fill_foreground: gpui::Hsla,
+) -> gpui::Div {
+    div()
+        .size_full()
+        .flex()
+        .flex_col()
+        .items_center()
+        .justify_center()
+        .gap(px(16.0))
+        .p(px(24.0))
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(4.0))
+                .child(
+                    div()
+                        .text_color(foreground)
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child("Nested DockPanel tests"),
+                )
+                .child(
+                    div()
+                        .text_size(px(12.0))
+                        .line_height(px(16.0))
+                        .text_color(muted)
+                        .child("Inner examples verify child ordering and last-child-fill behavior."),
+                ),
+        )
+        .child(
+            div().flex().gap(px(16.0)).children([
+                render_nested_example_card(
+                    chrome,
+                    foreground,
+                    muted,
+                    "Default last child fills",
+                    dock_panel! {
+                        top: demo_band("Top", foreground, band_background),
+                        left: demo_rail("Left", foreground, band_background),
+                        child: demo_fill("Fill", fill_foreground, fill_background)
+                    }
+                    .into_any_element(),
+                ),
+                render_nested_example_card(
+                    chrome,
+                    foreground,
+                    muted,
+                    "last_child_fill = false",
+                    dock_panel! {
+                        last_child_fill = false;
+                        top: demo_band("Top", foreground, band_background),
+                        child: demo_rail("Child → Left", foreground, band_background),
+                        right: demo_rail("Right", foreground, band_background)
+                    }
+                    .into_any_element(),
+                ),
+            ]),
+        )
+}
+
+fn render_nested_example_card(
+    chrome: gpui_luma::theme::LumaChrome,
+    foreground: gpui::Hsla,
+    muted: gpui::Hsla,
+    title: &'static str,
+    content: AnyElement,
+) -> gpui::Div {
+    div()
+        .w(px(220.0))
+        .flex()
+        .flex_col()
+        .gap(px(8.0))
+        .child(
+            div()
+                .text_size(px(12.0))
+                .font_weight(gpui::FontWeight::SEMIBOLD)
+                .text_color(foreground)
+                .child(title),
+        )
+        .child(
+            div()
+                .h(px(170.0))
+                .w_full()
+                .overflow_hidden()
+                .rounded(px(8.0))
+                .border_1()
+                .border_color(chrome.border)
+                .bg(chrome.panel_background)
+                .child(content),
+        )
+        .child(div().text_size(px(11.0)).line_height(px(14.0)).text_color(muted).child(match title {
+            "Default last child fills" => "The final child becomes the fill region.",
+            _ => "Without fill, undocked child content falls back to Left docking.",
+        }))
+}
+
+fn demo_band(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla) -> gpui::Div {
+    div()
+        .h(px(28.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(px(11.0))
+        .text_color(foreground)
+        .bg(background)
+        .child(label)
+}
+
+fn demo_rail(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla) -> gpui::Div {
+    div()
+        .w(px(68.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(px(11.0))
+        .text_color(foreground)
+        .bg(background)
+        .child(label)
+}
+
+fn demo_fill(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla) -> gpui::Div {
+    div()
+        .size_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(px(12.0))
+        .font_weight(gpui::FontWeight::SEMIBOLD)
+        .text_color(foreground)
+        .bg(background)
+        .child(label)
 }

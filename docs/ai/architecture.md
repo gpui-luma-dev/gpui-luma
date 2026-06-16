@@ -35,7 +35,7 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
   - `keyhandling.rs`: control key profiles + default key bindings
 
 - **Layout primitives**
-  - `layout.rs`: builder-first edge docking (`DockPanel`) for top/bottom/left/right/fill composition using GPUI flex under the hood
+  - `layout.rs`: WPF-inspired ordered edge docking (`DockPanel`) with `last_child_fill` semantics and GPUI flex under the hood
 
 - **Theming subsystem (`gpui-luma`)**
   - `theme/tokens.rs`: native theme schema + parsing + defaults + mode selection (`LumaTheme::native()` fallback)

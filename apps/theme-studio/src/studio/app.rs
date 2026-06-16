@@ -6,8 +6,9 @@ use gpui::{
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::resizable_panels::ResizablePanels;
-use gpui_luma::resizable_panels;
+use gpui_luma::dock_panel;
 use gpui_luma::focus::LumaFocusScopeExt;
+use gpui_luma::resizable_panels;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -368,24 +369,22 @@ impl Render for ThemeStudioApp {
                 ),
         );
 
-        div()
-            .luma_focus_scope(&self.focus_scope)
-            .size_full()
-            .flex()
-            .flex_col()
-            .font_family(sans)
-            .bg(chrome.app_background)
-            .child(title_bar)
-            .child(
-                div()
-                    .id("theme-studio-body")
-                    .flex_1()
-                    .min_h_0()
-                    .flex()
-                    .flex_col()
-                    .overflow_hidden()
-                    .child(div().flex_1().min_h_0().size_full().child(self.main_split.clone())),
-            )
+        dock_panel! {
+            top: title_bar,
+            fill: div()
+                .luma_focus_scope(&self.focus_scope)
+                .size_full()
+                .font_family(sans)
+                .bg(chrome.app_background)
+                .child(
+                    div()
+                        .id("theme-studio-body")
+                        .size_full()
+                        .min_h_0()
+                        .overflow_hidden()
+                        .child(self.main_split.clone()),
+                )
+        }
     }
 }
 
