@@ -202,7 +202,10 @@ pub(super) fn selector_items() -> [SelectorItem; 4] {
     ]
 }
 
-const SWATCHES: [(&str, &str, (f32, f32, f32, f32)); 16] = [
+type SwatchColor = (f32, f32, f32, f32);
+type SwatchSpec = (&'static str, &'static str, SwatchColor);
+
+const SWATCHES: [SwatchSpec; 16] = [
     ("sky-500", "Sky 500 (#0EA5E9)", (0.55, 0.85, 0.48, 1.0)),
     ("emerald-500", "Emerald 500 (#10B981)", (0.44, 0.85, 0.39, 1.0)),
     ("amber-500", "Amber 500 (#F59E0B)", (0.11, 0.92, 0.51, 1.0)),

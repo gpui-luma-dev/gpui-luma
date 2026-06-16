@@ -137,10 +137,10 @@ impl ButtonInspectorShell {
             .map(|field| field.id);
         self.tree.update(cx, |tree, cx| {
             tree.set_items(items, cx);
-            if let Some(id) = preserved_id {
-                if find_field_selection(tree.items(), &id).is_some() {
-                    tree.select_node_by_id(id, cx);
-                }
+            if let Some(id) = preserved_id
+                && find_field_selection(tree.items(), &id).is_some()
+            {
+                tree.select_node_by_id(id, cx);
             }
         });
         self.detail.update(cx, |_, cx| cx.notify());

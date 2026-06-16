@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::sync::Arc;
 
 use gpui::{AnyElement, App, Div, IntoElement, SharedString, Stateful, Window, div, prelude::*, px};

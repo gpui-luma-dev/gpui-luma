@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::sync::Arc;
 
 use gpui::{
@@ -17,6 +19,8 @@ use super::inspector_tree::build_radio_button_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
 use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+
+type ChoiceContentRenderer = dyn Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct RadioButtonPane {
@@ -182,7 +186,7 @@ impl RadioButtonTemplateVariant {
         matches!(self, Self::IndicatorSelected | Self::LabeledSelected)
     }
 
-    fn content(self) -> Arc<dyn Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync> {
+    fn content(self) -> Arc<ChoiceContentRenderer> {
         match self {
             Self::IndicatorUnselected | Self::IndicatorSelected => Arc::new(move |_, _| div().into_any_element()),
             Self::LabeledUnselected | Self::LabeledSelected => {

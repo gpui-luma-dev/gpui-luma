@@ -440,8 +440,8 @@ impl ButtonPane {
             Some(DEMO_BACKGROUND)
         };
 
-        write_state_override(&mut self.demo_background_overrides, self.selected_visual_state, background.clone());
-        write_state_override(&mut self.demo_foreground_overrides, self.selected_visual_state, foreground.clone());
+        write_state_override(&mut self.demo_background_overrides, self.selected_visual_state, background);
+        write_state_override(&mut self.demo_foreground_overrides, self.selected_visual_state, foreground);
 
         let theme = self.look.clone();
         let bg_overrides = self.demo_background_overrides.clone();

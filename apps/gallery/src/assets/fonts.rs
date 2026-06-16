@@ -19,15 +19,15 @@ const RAJDHANI_VARIABLE: &[u8] = include_bytes!("fonts/Rajdhani/Rajdhani-Variabl
 pub fn gallery_mono_font() -> gpui::SharedString {
     #[cfg(target_os = "macos")]
     {
-        return "Menlo".into();
+        "Menlo".into()
     }
     #[cfg(target_os = "windows")]
     {
-        return "Consolas".into();
+        "Consolas".into()
     }
     #[cfg(target_os = "linux")]
     {
-        return "DejaVu Sans Mono".into();
+        "DejaVu Sans Mono".into()
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     {

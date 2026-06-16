@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use gpui::{Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
 use gpui_luma::theme::LumaTextStyle;
 use gpui_luma_look_shadcn::{ShadcnLook};

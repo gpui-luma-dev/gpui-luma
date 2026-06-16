@@ -27,7 +27,7 @@ pub(in crate::gallery) fn rotated_label_svg_string(text: &str) -> String {
 /// - This function composes:
 ///   1. the rotated SVG label,
 ///   2. a vertical divider line,
-///   into one narrow "rail" element.
+///      into one narrow "rail" element.
 ///
 /// ## Reuse notes
 ///
