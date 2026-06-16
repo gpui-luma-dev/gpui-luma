@@ -69,6 +69,21 @@ impl AccordionControl {
         cx.notify();
     }
 
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        if !enabled {
+            self.focused_item_index = None;
+            self.hovered_item_index = None;
+            self.pressed_item_index = None;
+        }
+        cx.notify();
+    }
+
     pub fn toggle_item(&mut self, index: usize, cx: &mut Context<Self>) {
         if !self.model.enabled || index >= self.model.items.len() {
             return;

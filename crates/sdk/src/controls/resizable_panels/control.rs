@@ -143,6 +143,15 @@ impl ResizablePanels {
         cx.notify();
     }
 
+    pub fn set_template(
+        &mut self,
+        template: std::sync::Arc<dyn super::template::ResizablePanelsTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_frame_size(&mut self, width: Pixels, height: Pixels, cx: &mut Context<Self>) {
         if self.model.frame_width == Some(width) && self.model.frame_height == Some(height) {
             return;

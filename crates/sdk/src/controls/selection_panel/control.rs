@@ -202,12 +202,12 @@ where
         cx.notify();
     }
 
-    pub fn with_template(&mut self, template: std::sync::Arc<dyn SelectionPanelTemplate<T>>, cx: &mut Context<Self>) {
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn SelectionPanelTemplate<T>>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
     }
 
-    pub fn with_item_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
+    pub fn set_item_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
         F: for<'a> Fn(&crate::controls::selection_panel::SelectionPanelItemRenderModel<'a, T>, &mut App) -> E
             + Send
@@ -227,7 +227,7 @@ where
         self.set_item_template(None, cx);
     }
 
-    pub fn with_scrollbar_template(&mut self, template: std::sync::Arc<dyn ScrollbarTemplate>, cx: &mut Context<Self>) {
+    pub fn set_scrollbar_template(&mut self, template: std::sync::Arc<dyn ScrollbarTemplate>, cx: &mut Context<Self>) {
         self.model.scrollbar_template = template;
         cx.notify();
     }

@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, hsla, pr
 use gpui_luma::controls::color::color_arc::{ColorArcEvent, ColorArcRenderer, ColorArcState};
 use gpui_luma::controls::color::color_arc::raster::RasterArcDelegate;
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -103,7 +103,7 @@ impl SplitRingState {
                 ColorArcRenderer::Raster,
                 cx,
             )
-            .with_size(Size::Size(px(Self::OUTER_SIZE_PX)))
+            .size(Size::Size(px(Self::OUTER_SIZE_PX)))
             .start_degrees(90.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
             .sweep_degrees(Self::ARC_SWEEP_DEGREES)
             .arc_thickness(Self::TRACK_WIDTH_PX)
@@ -118,7 +118,7 @@ impl SplitRingState {
                 ColorArcRenderer::Raster,
                 cx,
             )
-            .with_size(Size::Size(px(Self::OUTER_SIZE_PX)))
+            .size(Size::Size(px(Self::OUTER_SIZE_PX)))
             .start_degrees(270.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
             .sweep_degrees(Self::ARC_SWEEP_DEGREES)
             .arc_thickness(Self::TRACK_WIDTH_PX)
@@ -131,7 +131,7 @@ impl SplitRingState {
                 HueRingDelegate { saturation, lightness },
                 cx,
             )
-            .with_size(Size::Size(px(Self::ring_size_px())))
+            .size(Size::Size(px(Self::ring_size_px())))
             .ring_thickness(Self::TRACK_WIDTH_PX)
             .thumb_size(Self::TRACK_WIDTH_PX)
         });

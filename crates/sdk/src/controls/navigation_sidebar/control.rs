@@ -53,6 +53,7 @@ impl NavigationSidebar {
     }
 
     pub(crate) fn from_builder(builder: NavigationSidebarBuilder, cx: &mut Context<Self>) -> Self {
+        let collapse_tab_stop = builder.model.enabled && builder.model.collapsible;
         let main_scroll = ScrollContainer::new(
             format!("{}-main-scroll", builder.model.id),
             builder.model.scrollbar_template.clone(),
@@ -75,7 +76,7 @@ impl NavigationSidebar {
             pressed_node: None,
             collapse_trigger_hovered: false,
             collapse_trigger_pressed: false,
-            collapse_trigger_focus_handle: cx.focus_handle().tab_stop(true),
+            collapse_trigger_focus_handle: cx.focus_handle().tab_stop(collapse_tab_stop),
             row_focus_handles: HashMap::new(),
             rail_focus_handles: HashMap::new(),
             rail_node_bounds: HashMap::new(),
@@ -102,6 +103,25 @@ impl NavigationSidebar {
     pub fn set_footer_nodes(&mut self, nodes: impl IntoIterator<Item = NavNode>, cx: &mut Context<Self>) {
         self.model.footer_nodes = nodes.into_iter().collect();
         self.close_rail_submenu();
+        cx.notify();
+    }
+
+    pub fn set_template(
+        &mut self,
+        template: std::sync::Arc<dyn super::NavigationSidebarTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_scrollbar_template(
+        &mut self,
+        template: std::sync::Arc<dyn crate::controls::scrollbar::ScrollbarTemplate>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.scrollbar_template = template.clone();
+        self.main_scroll.scrollbar().update(cx, |scrollbar, cx| scrollbar.set_template(template, cx));
         cx.notify();
     }
 
@@ -143,12 +163,32 @@ impl NavigationSidebar {
         self.model.collapsed
     }
 
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        self.collapse_trigger_focus_handle =
+            self.collapse_trigger_focus_handle.clone().tab_stop(enabled && self.model.collapsible);
+        if !enabled {
+            self.hovered_node = None;
+            self.pressed_node = None;
+            self.collapse_trigger_hovered = false;
+            self.collapse_trigger_pressed = false;
+            self.close_rail_submenu();
+        }
+        cx.notify();
+    }
+
     pub fn set_collapsible(&mut self, collapsible: bool, cx: &mut Context<Self>) {
         if self.model.collapsible == collapsible {
             return;
         }
 
         self.model.collapsible = collapsible;
+        self.collapse_trigger_focus_handle =
+            self.collapse_trigger_focus_handle.clone().tab_stop(self.model.enabled && collapsible);
         if !collapsible && self.model.collapsed {
             self.model.collapsed = false;
             cx.emit(NavigationSidebarEvent::CollapsedChanged { collapsed: false });
@@ -170,6 +210,9 @@ impl NavigationSidebar {
     }
 
     pub fn toggle_collapsed(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
         self.set_collapsed(!self.model.collapsed, cx);
     }
 
@@ -201,7 +244,9 @@ impl NavigationSidebar {
         let mut visible_focus_nodes = Vec::new();
         let collapse_trigger = self.model.collapsible.then(|| {
             let focus_handle = self.collapse_trigger_focus_handle.clone();
-            visible_focus_nodes.push((NavigationFocusTarget::CollapseTrigger, focus_handle.clone()));
+            if self.model.enabled {
+                visible_focus_nodes.push((NavigationFocusTarget::CollapseTrigger, focus_handle.clone()));
+            }
 
             RenderedCollapseTrigger {
                 id: format!("{}-collapse-trigger", self.model.id).into(),
@@ -209,6 +254,7 @@ impl NavigationSidebar {
                 hovered: self.collapse_trigger_hovered,
                 pressed: self.collapse_trigger_pressed,
                 focused: focus_handle.is_focused(window),
+                enabled: self.model.enabled,
                 focus_handle,
             }
         });
@@ -216,6 +262,7 @@ impl NavigationSidebar {
         let rail_nodes = if self.model.collapsed {
             render_collapsed_rail_nodes(
                 &self.model.nodes,
+                self.model.enabled,
                 self.model.selected_id.as_ref(),
                 self.hovered_node.as_ref(),
                 self.pressed_node.as_ref(),
@@ -230,6 +277,7 @@ impl NavigationSidebar {
         let rail_footer_nodes = if self.model.collapsed {
             render_collapsed_rail_nodes(
                 &self.model.footer_nodes,
+                self.model.enabled,
                 self.model.selected_id.as_ref(),
                 self.hovered_node.as_ref(),
                 self.pressed_node.as_ref(),
@@ -266,6 +314,7 @@ impl NavigationSidebar {
         let header_nodes = render_nodes(
             &self.model.header_nodes,
             0,
+            self.model.enabled,
             self.model.collapsed,
             self.model.selected_id.as_ref(),
             self.hovered_node.as_ref(),
@@ -278,6 +327,7 @@ impl NavigationSidebar {
         let nodes = render_nodes(
             &self.model.nodes,
             0,
+            self.model.enabled,
             self.model.collapsed,
             self.model.selected_id.as_ref(),
             self.hovered_node.as_ref(),
@@ -290,6 +340,7 @@ impl NavigationSidebar {
         let footer_nodes = render_nodes(
             &self.model.footer_nodes,
             0,
+            self.model.enabled,
             self.model.collapsed,
             self.model.selected_id.as_ref(),
             self.hovered_node.as_ref(),
@@ -370,8 +421,10 @@ impl NavigationSidebar {
     }
 
     fn can_interact_with_default_node(&self, node_id: &SharedString) -> bool {
-        self.find_node(node_id)
-            .is_some_and(|node| node.enabled && node.kind == NavNodeKind::Item && node.presenter.is_none())
+        self.model.enabled
+            && self
+                .find_node(node_id)
+                .is_some_and(|node| node.enabled && node.kind == NavNodeKind::Item && node.presenter.is_none())
     }
 
     fn find_node(&self, node_id: &SharedString) -> Option<&NavNode> {
@@ -385,8 +438,10 @@ impl NavigationSidebar {
     }
 
     fn can_interact_with_rail_node(&self, node_id: &SharedString) -> bool {
-        self.find_top_level_main_node(node_id)
-            .is_some_and(|node| collapsed_rail_node_visible(node) && node.enabled)
+        self.model.enabled
+            && self
+                .find_top_level_main_node(node_id)
+                .is_some_and(|node| collapsed_rail_node_visible(node) && node.enabled)
     }
 
     fn close_rail_submenu(&mut self) {
@@ -434,6 +489,10 @@ impl NavigationSidebar {
     }
 
     fn handle_collapse_trigger_hover(&mut self, hovered: &bool, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         if self.collapse_trigger_hovered != *hovered {
             self.collapse_trigger_hovered = *hovered;
             if !hovered {
@@ -449,6 +508,10 @@ impl NavigationSidebar {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if !self.model.enabled {
+            return;
+        }
+
         self.collapse_trigger_focus_handle.focus(window, cx);
         self.collapse_trigger_pressed = true;
         cx.notify();
@@ -460,6 +523,10 @@ impl NavigationSidebar {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if !self.model.enabled {
+            return;
+        }
+
         if self.collapse_trigger_pressed {
             self.collapse_trigger_pressed = false;
             cx.notify();
@@ -467,7 +534,7 @@ impl NavigationSidebar {
     }
 
     fn handle_collapse_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
+        if !self.model.enabled || event.is_keyboard() {
             return;
         }
 
@@ -722,6 +789,10 @@ impl NavigationSidebar {
     }
 
     fn handle_activate_control(&mut self, _: &ActivateControl, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         let Some(target) = self.focused_target(window) else {
             return;
         };
@@ -778,6 +849,7 @@ impl Render for NavigationSidebar {
 fn render_nodes(
     nodes: &[NavNode],
     depth: usize,
+    sidebar_enabled: bool,
     sidebar_collapsed: bool,
     selected_id: Option<&SharedString>,
     hovered_node: Option<&SharedString>,
@@ -796,7 +868,8 @@ fn render_nodes(
             continue;
         }
 
-        let has_default_interaction = node.kind == NavNodeKind::Item && node.enabled && node.presenter.is_none();
+        let has_default_interaction =
+            sidebar_enabled && node.kind == NavNodeKind::Item && node.enabled && node.presenter.is_none();
         let focus_handle = has_default_interaction.then(|| {
             let focus_handle = row_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
@@ -816,12 +889,13 @@ fn render_nodes(
             pressed: pressed_node == Some(&node.id),
             focused: focus_handle.as_ref().is_some_and(|focus_handle| focus_handle.is_focused(window)),
             expanded: node.expanded,
-            enabled: node.enabled,
+            enabled: sidebar_enabled && node.enabled,
         };
         visible_index += 1;
 
         let custom_content = node.presenter.as_ref().map(|presenter| presenter.present(&state, window, cx));
-        if node.enabled
+        if sidebar_enabled
+            && node.enabled
             && let Some(focus_handle) = custom_content.as_ref().and_then(|content| content.focus_handle.as_ref())
         {
             visible_focus_nodes.push((NavigationFocusTarget::Node(node.id.clone()), focus_handle.clone()));
@@ -832,6 +906,7 @@ fn render_nodes(
             render_nodes(
                 &node.children,
                 depth + 1,
+                sidebar_enabled,
                 sidebar_collapsed,
                 selected_id,
                 hovered_node,
@@ -864,6 +939,7 @@ fn render_nodes(
 #[allow(clippy::too_many_arguments)]
 fn render_collapsed_rail_nodes(
     nodes: &[NavNode],
+    sidebar_enabled: bool,
     selected_id: Option<&SharedString>,
     hovered_node: Option<&SharedString>,
     pressed_node: Option<&SharedString>,
@@ -876,7 +952,7 @@ fn render_collapsed_rail_nodes(
     let mut rendered_nodes = Vec::new();
 
     for (visible_index, node) in nodes.iter().filter(|node| collapsed_rail_node_visible(node)).enumerate() {
-        let focus_handle = node.enabled.then(|| {
+        let focus_handle = (sidebar_enabled && node.enabled).then(|| {
             let focus_handle = rail_focus_handles.entry(node.id.clone()).or_insert_with(|| cx.focus_handle()).clone();
             let focus_handle = focus_handle.tab_stop(true);
             rail_focus_handles.insert(node.id.clone(), focus_handle.clone());
@@ -895,7 +971,7 @@ fn render_collapsed_rail_nodes(
             pressed: pressed_node == Some(&node.id),
             focused: focus_handle.as_ref().is_some_and(|focus_handle| focus_handle.is_focused(window)),
             expanded: node.expanded,
-            enabled: node.enabled,
+            enabled: sidebar_enabled && node.enabled,
         };
 
         rendered_nodes.push(RenderedNavNode {

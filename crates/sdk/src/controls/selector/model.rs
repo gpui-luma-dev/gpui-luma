@@ -89,9 +89,7 @@ where
     }
 
     pub fn item(mut self, item: T) -> Self {
-        if item.is_enabled() {
-            self.model.items.push(item);
-        }
+        self.model.items.push(item);
         self
     }
 

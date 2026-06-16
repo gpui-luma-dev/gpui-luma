@@ -72,6 +72,11 @@ impl ContextMenu {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::ContextMenuTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     fn render_model<'a>(&'a self, window: &Window) -> ContextMenuRenderModel<'a> {
         ContextMenuRenderModel {
             id: &self.model.id,

@@ -677,7 +677,7 @@ fn render_collapse_trigger(
         hovered: trigger.hovered,
         pressed: trigger.pressed,
         focused: trigger.focused,
-        disabled: false,
+        disabled: !trigger.enabled,
     };
     let appearance = theme.resolve_item(false, interaction, ControlSize::Md);
     let icon = if trigger.collapsed {
@@ -694,7 +694,7 @@ fn render_collapse_trigger(
         .justify_center()
         .rounded(px(appearance.radius))
         .text_color(appearance.foreground)
-        .cursor_pointer()
+        .when(trigger.enabled, |row| row.cursor_pointer())
         .track_focus(&trigger.focus_handle)
         .child(render_lucide_icon(icon, appearance.icon_color, appearance.icon_size));
 

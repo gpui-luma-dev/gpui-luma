@@ -67,7 +67,7 @@ impl SelectionPanelPane {
         interactive_panel.update(cx, |panel, cx| {
             panel.set_panel_id("gallery-selection-panel-popup", cx);
             panel.set_items(interactive_items.clone(), cx);
-            panel.with_item_template(
+            panel.set_item_template_fn(
                 |item, _cx| {
                     let swatch = swatch_color(item.item.id().as_ref());
                     let selected_weight = if item.selected {
@@ -127,7 +127,7 @@ impl SelectionPanelPane {
         parameterized_panel.update(cx, |panel, cx| {
             panel.set_panel_id("gallery-selection-panel-parameterized-popup", cx);
             panel.set_items(interactive_items, cx);
-            panel.with_template(
+            panel.set_template(
                 make_parameterized_panel_template::<SelectionPanelItem>(ParameterizedPanelStyle {
                     open_opacity: 1.0,
                     closed_opacity: 0.88,

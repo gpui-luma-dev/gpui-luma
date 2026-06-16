@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Entity, Hsla, IntoElement, Subscription, div, pr
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -59,7 +59,7 @@ impl SvTriangleState {
                 HueRingDelegate { saturation: 1.0, lightness: 0.5 },
                 cx,
             )
-            .with_size(Size::Size(px(300.0)))
+            .size(Size::Size(px(300.0)))
             .ring_thickness_size(Size::Medium)
             .thumb_size(14.0)
         });

@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{AlphaDelegate, ColorSliderEvent, ColorSliderState, sizing};
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -32,13 +32,13 @@ impl ColorPickerPane {
         });
         let hue_slider = cx.new(|cx| {
             ColorSliderState::hue("color-picker-hue-slider", hsv.h, cx)
-                .with_size(Size::Small)
+                .size(Size::Small)
                 .thumb_medium()
                 .edge_to_edge()
         });
         let alpha_slider = cx.new(|cx| {
             ColorSliderState::alpha("color-picker-alpha-slider", hsv.a, AlphaDelegate { spec: hsv }, cx)
-                .with_size(Size::Small)
+                .size(Size::Small)
                 .thumb_medium()
                 .edge_to_edge()
         });

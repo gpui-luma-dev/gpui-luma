@@ -62,6 +62,7 @@ pub struct SearchSelectorRenderModel {
     pub trigger_label_is_placeholder: bool,
     pub trigger_state: TextFieldState,
     pub trigger_theme: Arc<dyn TextFieldTheme>,
+    pub enabled: bool,
     pub full_width: bool,
     pub minimum_trigger_width: Pixels,
     pub status_label: SharedString,
@@ -110,7 +111,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
         let trigger_appearance = model.trigger_theme.resolve_appearance(
             TextFieldVariant::Standard,
             model.trigger_state,
-            true,
+            model.enabled,
             &StandardBoxScale::compute(ControlSize::Md, &model.trigger_theme.metrics(), window.scale_factor()),
         );
 
@@ -148,7 +149,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                                 .text_size(px(trigger_appearance.typography.size))
                                 .line_height(px(trigger_appearance.typography.line_height))
                                 .font_weight(trigger_appearance.typography.weight)
-                                .cursor_pointer()
+                                .when(model.enabled, |row| row.cursor_pointer())
                                 .on_hover(trigger_hover)
                                 .on_mouse_down(MouseButton::Left, trigger_mouse_down)
                                 .on_mouse_up(MouseButton::Left, trigger_mouse_up)
@@ -257,8 +258,14 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                 continue;
             };
 
+            let enabled_item = model.enabled && item.enabled;
+            let color = if enabled_item {
+                appearance.foreground
+            } else {
+                appearance.item_disabled_foreground
+            };
             let selected = model.selected_source_index == Some(source_index);
-            let active = model.active_visible_index == Some(visible_index);
+            let active = enabled_item && model.active_visible_index == Some(visible_index);
             let content = if let Some(item_template) = model.item_template {
                 item_template(
                     &SearchSelectorItemRenderModel {
@@ -269,7 +276,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                         selected,
                         active,
                         open: model.open,
-                        enabled: model.enabled,
+                        enabled: enabled_item,
                     },
                     cx,
                 )
@@ -284,23 +291,28 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                 .min_h(px(appearance.item_height))
                 .px(px(appearance.item_padding_x))
                 .rounded(px(appearance.item_radius))
-                .text_color(appearance.foreground)
+                .text_color(color)
                 .text_size(px(appearance.item_typography.size))
                 .line_height(px(appearance.item_typography.line_height))
                 .font_weight(appearance.item_typography.weight)
                 .child(content);
 
-            row = row.cursor_pointer().on_hover(hover).hover({
-                let hover_background = appearance.item_hover_background;
-                move |style| style.bg(hover_background)
-            });
+            if enabled_item {
+                row = row.cursor_pointer().on_hover(hover).hover({
+                    let hover_background = appearance.item_hover_background;
+                    let hover_foreground = appearance.item_hover_foreground;
+                    move |style| style.bg(hover_background).text_color(hover_foreground)
+                });
 
-            if active {
-                row = row.bg(appearance.item_hover_background);
-            }
+                if active {
+                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                }
 
-            if let Some(click) = clicks.next() {
-                row = row.on_click(click);
+                if let Some(click) = clicks.next() {
+                    row = row.on_click(click);
+                }
+            } else {
+                row = row.opacity(0.56);
             }
 
             root = root.child(row);

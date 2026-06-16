@@ -60,9 +60,11 @@ impl SearchSelectorControl {
 
     pub(crate) fn from_builder(builder: SearchSelectorBuilder, cx: &mut Context<Self>) -> Self {
         let model = builder.model;
+        let enabled = model.enabled;
 
         let popup_search_textfield = text_selection::new(format!("{}-popup-search", model.id))
             .placeholder(model.search_placeholder.clone())
+            .enabled(model.enabled)
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
@@ -99,7 +101,7 @@ impl SearchSelectorControl {
             popup_surface,
             model,
             behavior: SelectionBehavior::new(),
-            interaction: ControlInteraction::new(true, cx),
+            interaction: ControlInteraction::new(enabled, cx),
             trigger_focused: false,
             trigger_bounds: None,
             last_event: SharedString::from("none"),
@@ -110,6 +112,10 @@ impl SearchSelectorControl {
     }
 
     fn handle_popup_search_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         match event {
             TextSelectionEvent::Change { value } => {
                 self.behavior.set_query(value.clone(), &self.model.items);
@@ -194,7 +200,19 @@ impl SearchSelectorControl {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
-        if hovered && self.behavior.state.open {
+        if !self.model.enabled {
+            return;
+        }
+
+        let enabled_item = self
+            .behavior
+            .state
+            .filtered
+            .get(index)
+            .and_then(|item_index| self.model.items.get(*item_index))
+            .is_some_and(|item| item.enabled);
+
+        if hovered && enabled_item && self.behavior.state.open {
             self.behavior.state.highlighted_filtered = Some(index);
             self.sync_popup_highlight_visibility(cx);
             cx.notify();
@@ -202,11 +220,13 @@ impl SearchSelectorControl {
     }
 
     fn handle_item_click(&mut self, index: usize, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() || !self.behavior.state.open {
+        if !self.model.enabled || event.is_keyboard() || !self.behavior.state.open {
             return;
         }
 
-        if let Some(item_index) = self.behavior.state.filtered.get(index).copied() {
+        if let Some(item_index) = self.behavior.state.filtered.get(index).copied()
+            && self.model.items.get(item_index).is_some_and(|item| item.enabled)
+        {
             self.select_item(item_index, false, cx);
         }
     }
@@ -234,6 +254,10 @@ impl SearchSelectorControl {
     }
 
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         self.last_keyboard_event = SharedString::from(format!("key:{}", event.keystroke.key));
 
         if event.keystroke.modifiers.control || event.keystroke.modifiers.secondary() {
@@ -314,6 +338,10 @@ impl SearchSelectorControl {
     }
 
     fn open_popup_with_all_items(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         if self.model.items.is_empty() {
             self.behavior.state.filtered.clear();
             self.behavior.state.highlighted_filtered = None;
@@ -324,7 +352,8 @@ impl SearchSelectorControl {
         self.popup_search_textfield.update(cx, |textfield, cx| textfield.set_value("", cx));
         self.behavior.state.query = SharedString::default();
         self.behavior.state.filtered = (0..self.model.items.len()).collect();
-        self.behavior.state.highlighted_filtered = Some(0);
+        self.behavior.state.highlighted_filtered =
+            self.model.items.iter().enumerate().find_map(|(index, item)| item.enabled.then_some(index));
         self.behavior.state.open = true;
         self.behavior.state.status = SelectionStatus::Searching;
         self.sync_popup_highlight_visibility(cx);
@@ -332,7 +361,7 @@ impl SearchSelectorControl {
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
+        if !self.model.enabled || event.is_keyboard() {
             return;
         }
 
@@ -354,7 +383,7 @@ impl SearchSelectorControl {
     }
 
     fn handle_trigger_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.interaction.handle_mouse_down(true, window, cx) {
+        if self.interaction.handle_mouse_down(self.model.enabled, window, cx) {
             cx.notify();
         }
     }
@@ -383,6 +412,23 @@ impl SearchSelectorControl {
         if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
             cx.stop_propagation();
         }
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        self.interaction.set_enabled(enabled);
+        self.popup_search_textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
+        if !enabled {
+            self.trigger_focused = false;
+            self.behavior.state.open = false;
+            self.behavior.state.highlighted_filtered = None;
+            self.clear_popup_search(cx);
+        }
+        cx.notify();
     }
 
     pub fn set_template(&mut self, template: std::sync::Arc<dyn SearchSelectorTemplate>, cx: &mut Context<Self>) {
@@ -438,6 +484,16 @@ impl SearchSelectorControl {
     }
 
     fn sync_trigger_focus(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            if self.trigger_focused || self.behavior.state.open {
+                self.trigger_focused = false;
+                self.behavior.state.open = false;
+                self.behavior.state.highlighted_filtered = None;
+                self.clear_popup_search(cx);
+            }
+            return;
+        }
+
         let focused = self.interaction.focus_handle().is_focused(window);
         if focused == self.trigger_focused {
             return;
@@ -546,7 +602,7 @@ impl Render for SearchSelectorControl {
             self.last_keyboard_event
         ));
 
-        let popup_content = if self.behavior.state.open {
+        let popup_content = if self.model.enabled && self.behavior.state.open {
             let list_id = SharedString::from("search-selector-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
@@ -585,7 +641,7 @@ impl Render for SearchSelectorControl {
                             selected_source_index: self.behavior.state.selected_item,
                             active_visible_index: self.behavior.state.highlighted_filtered,
                             open: self.behavior.state.open,
-                            enabled: true,
+                            enabled: self.model.enabled,
                             item_template: self.model.item_template.as_ref(),
                             appearance: appearance.clone(),
                         },
@@ -603,7 +659,7 @@ impl Render for SearchSelectorControl {
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
                     open: self.behavior.state.open,
-                    enabled: true,
+                    enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
                     popup_appearance: appearance.clone(),
@@ -629,7 +685,7 @@ impl Render for SearchSelectorControl {
             trigger_bounds: Box::new(cx.listener(Self::handle_trigger_bounds)),
         };
 
-        let interaction_state = self.interaction.render_state(true, window);
+        let interaction_state = self.interaction.render_state(self.model.enabled, window);
         let render_model = SearchSelectorRenderModel {
             id: self.model.id.clone(),
             trigger_label: selected_label.map(SharedString::from).unwrap_or_else(|| self.model.placeholder.clone()),
@@ -641,6 +697,7 @@ impl Render for SearchSelectorControl {
                 ..TextFieldState::default()
             },
             trigger_theme: self.model.textfield_theme.clone(),
+            enabled: self.model.enabled,
             full_width: self.model.full_width,
             minimum_trigger_width,
             status_label,

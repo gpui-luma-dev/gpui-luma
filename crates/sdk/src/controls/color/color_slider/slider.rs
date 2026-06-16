@@ -221,6 +221,15 @@ impl ColorSliderState {
         self
     }
 
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
+        let size = size.into();
+        self.dimensions.size = size;
+        if let Some(thumb) = Self::synced_thumb_size(&self.dimensions.size) {
+            self.thumb.size = thumb;
+        }
+        self
+    }
+
     #[allow(dead_code)] // Runtime setter kept for API parity with builder-based configuration.
     pub fn set_reversed(&mut self, reversed: bool, cx: &mut Context<Self>) {
         if self.reversed != reversed {
@@ -229,17 +238,13 @@ impl ColorSliderState {
         }
     }
 
-    #[allow(dead_code)] // Runtime setter kept for parity with other interactive controls.
-    pub fn set_disabled(&mut self, disabled: bool, cx: &mut Context<Self>) {
+    #[allow(dead_code)] // Parity helper with other lookless controls.
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        let disabled = !enabled;
         if self.disabled != disabled {
             self.disabled = disabled;
             cx.notify();
         }
-    }
-
-    #[allow(dead_code)] // Parity helper with other lookless controls.
-    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
-        self.set_disabled(!enabled, cx);
     }
 
     pub fn edge_to_edge(mut self) -> Self {
@@ -494,7 +499,7 @@ impl Styled for ColorSliderState {
 }
 
 impl Sizable for ColorSliderState {
-    fn with_size(mut self, size: impl Into<Size>) -> Self {
+    fn size(mut self, size: impl Into<Size>) -> Self {
         let size = size.into();
         self.dimensions.size = size;
         if let Some(thumb) = Self::synced_thumb_size(&self.dimensions.size) {

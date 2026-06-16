@@ -10,7 +10,7 @@ use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, WhiteMixHueWheelModel};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, LightnessRingDelegate, ring::sizing};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -93,7 +93,7 @@ impl ColorCombinationsState {
                 LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s },
                 cx,
             )
-            .with_size(Size::Size(px(RING_SIZE)))
+            .size(Size::Size(px(RING_SIZE)))
             .ring_thickness_size(Size::Medium)
             .thumb_size(14.0)
             .rotation_degrees(180.0)

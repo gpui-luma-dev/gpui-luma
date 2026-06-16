@@ -72,6 +72,11 @@ impl PopupMenu {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::PopupMenuTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_placement(&mut self, placement: PopupMenuPlacement, cx: &mut Context<Self>) {
         self.model.placement = placement;
         cx.notify();

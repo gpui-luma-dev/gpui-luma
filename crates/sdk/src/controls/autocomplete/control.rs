@@ -55,6 +55,7 @@ impl AutocompleteTextBoxControl {
 
         let textfield = text_selection::new(format!("{}-textfield", model.id))
             .placeholder(model.placeholder.clone())
+            .enabled(model.enabled)
             .full_width(model.full_width)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
@@ -90,6 +91,10 @@ impl AutocompleteTextBoxControl {
     }
 
     fn handle_text_selection_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         match event {
             TextSelectionEvent::Change { value } => {
                 self.behavior.set_query(value.clone(), &self.model.items);
@@ -164,7 +169,19 @@ impl AutocompleteTextBoxControl {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
-        if hovered && self.behavior.state.open {
+        if !self.model.enabled {
+            return;
+        }
+
+        let enabled_item = self
+            .behavior
+            .state
+            .filtered
+            .get(index)
+            .and_then(|item_index| self.model.items.get(*item_index))
+            .is_some_and(|item| item.enabled);
+
+        if hovered && enabled_item && self.behavior.state.open {
             self.behavior.state.highlighted_filtered = Some(index);
             self.sync_popup_highlight_visibility(cx);
             cx.notify();
@@ -172,16 +189,22 @@ impl AutocompleteTextBoxControl {
     }
 
     fn handle_item_click(&mut self, index: usize, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() || !self.behavior.state.open {
+        if !self.model.enabled || event.is_keyboard() || !self.behavior.state.open {
             return;
         }
 
-        if let Some(item_index) = self.behavior.state.filtered.get(index).copied() {
+        if let Some(item_index) = self.behavior.state.filtered.get(index).copied()
+            && self.model.items.get(item_index).is_some_and(|item| item.enabled)
+        {
             self.select_item(item_index, false, cx);
         }
     }
 
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         self.last_keyboard_event = SharedString::from(format!("key:{}", event.keystroke.key));
 
         if event.keystroke.modifiers.control || event.keystroke.modifiers.secondary() {
@@ -214,7 +237,7 @@ impl AutocompleteTextBoxControl {
     }
 
     fn handle_clear_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
+        if !self.model.enabled || event.is_keyboard() {
             return;
         }
 
@@ -239,6 +262,20 @@ impl AutocompleteTextBoxControl {
         if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
             cx.stop_propagation();
         }
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        if !enabled {
+            self.behavior.state.open = false;
+            self.behavior.state.highlighted_filtered = None;
+        }
+        self.textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
+        cx.notify();
     }
 
     pub fn set_template(&mut self, template: std::sync::Arc<dyn AutocompleteTextBoxTemplate>, cx: &mut Context<Self>) {
@@ -286,7 +323,9 @@ impl Render for AutocompleteTextBoxControl {
             .enumerate()
             .map(|(visible_index, item_index)| {
                 let item = &self.model.items[*item_index];
-                SelectorItem::new(format!("autocomplete-item-{}-{visible_index}", item.id)).label(item.label.clone())
+                SelectorItem::new(format!("autocomplete-item-{}-{visible_index}", item.id))
+                    .label(item.label.clone())
+                    .enabled(item.enabled)
             })
             .collect::<Vec<_>>();
 
@@ -342,7 +381,7 @@ impl Render for AutocompleteTextBoxControl {
             trigger_width.max(max_label_width + horizontal_chrome)
         };
 
-        let popup_content = if self.behavior.state.open && !menu_items.is_empty() {
+        let popup_content = if self.model.enabled && self.behavior.state.open && !menu_items.is_empty() {
             let menu_id = SharedString::from("autocomplete-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);

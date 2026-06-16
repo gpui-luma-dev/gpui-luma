@@ -5,7 +5,7 @@ use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
 use gpui_luma::controls::color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderState, ThumbShape,
 };
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -42,12 +42,12 @@ pub(in crate::gallery) struct ColorSliderRevealedPane {
 impl ColorSliderRevealedPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _look: Arc<ShadcnLook>) -> Self {
         let size_xsmall =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-xsmall", 180.0, cx).with_size(Size::XSmall));
+            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-xsmall", 180.0, cx).size(Size::XSmall));
         let size_small =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-small", 180.0, cx).with_size(Size::Small));
+            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-small", 180.0, cx).size(Size::Small));
         let size_medium = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-medium", 180.0, cx));
         let size_large =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-large", 180.0, cx).with_size(Size::Large));
+            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-large", 180.0, cx).size(Size::Large));
 
         let rounded_full = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-rounded-full", 180.0, cx));
         let rounded_8 =
@@ -74,7 +74,7 @@ impl ColorSliderRevealedPane {
         });
         let edge_large = cx.new(|cx| {
             ColorSliderState::hue("color-slider-revealed-edge-large", 180.0, cx)
-                .with_size(Size::Large)
+                .size(Size::Large)
                 .edge_to_edge()
         });
 

@@ -52,6 +52,11 @@ impl ProgressControl {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::ProgressTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     fn render_model(&self) -> ProgressRenderModel<'_> {
         ProgressRenderModel {
             id: &self.model.id,

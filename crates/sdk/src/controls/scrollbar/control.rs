@@ -149,6 +149,11 @@ impl Scrollbar {
         }
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::ScrollbarTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);

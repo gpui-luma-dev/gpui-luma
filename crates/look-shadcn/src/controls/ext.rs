@@ -416,7 +416,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         let theme = Arc::clone(self);
         let panel = SelectionPanelControl::new(id, cx);
         panel.update(cx, |panel, cx| {
-            panel.with_scrollbar_template(theme.scrollbar_template(), cx);
+            panel.set_scrollbar_template(theme.scrollbar_template(), cx);
             panel.set_appearance_provider(Arc::new(move |size| theme.selection_panel_appearance(size)), cx);
         });
         panel

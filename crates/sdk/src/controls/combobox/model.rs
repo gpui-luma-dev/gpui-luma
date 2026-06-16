@@ -26,6 +26,7 @@ pub struct ComboBoxModel {
     pub(crate) id: SharedString,
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
+    pub(crate) enabled: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) typing_policy: TypingPolicy,
@@ -54,6 +55,7 @@ impl ComboBoxBuilder {
                 id: id.into(),
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
+                enabled: true,
                 full_width: true,
                 clean_on_escape: true,
                 typing_policy: TypingPolicy::Flexible,
@@ -82,6 +84,11 @@ impl ComboBoxBuilder {
 
     pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.model.placeholder = placeholder.into();
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.model.enabled = enabled;
         self
     }
 

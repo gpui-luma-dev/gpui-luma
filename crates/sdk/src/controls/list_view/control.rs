@@ -14,6 +14,7 @@ use super::model::{
 use super::row::render_list_view_row;
 use super::template::ListViewTemplate;
 use super::theme::{ListViewAppearance, ListViewTheme};
+use super::model::ListViewAppearanceOverride;
 use crate::controls::state::ControlFocusState;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
@@ -293,12 +294,22 @@ where
         cx.notify();
     }
 
+    pub fn set_appearance_override(
+        &mut self,
+        appearance_override: Option<ListViewAppearanceOverride>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.appearance_override = appearance_override;
+        self.list_state.remeasure();
+        cx.notify();
+    }
+
     pub fn set_header_template(&mut self, header_template: Option<ListViewHeaderTemplate>, cx: &mut Context<Self>) {
         self.model.header_template = header_template;
         cx.notify();
     }
 
-    pub fn with_header_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
+    pub fn set_header_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
         F: for<'a> Fn(&ListViewRenderModel<'a>, &mut Window, &mut App) -> E + Send + Sync + 'static,
         E: IntoElement + 'static,
@@ -314,7 +325,7 @@ where
         }
     }
 
-    pub fn with_row_template<F, E>(&mut self, template: F, cx: &mut Context<Self>)
+    pub fn set_row_template_fn<F, E>(&mut self, template: F, cx: &mut Context<Self>)
     where
         F: for<'a> Fn(&ListViewRowRenderModel<'a, T>, gpui::AnyElement, &mut Window, &mut App) -> E
             + Send

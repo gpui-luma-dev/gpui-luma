@@ -105,6 +105,11 @@ impl SplitView {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::SplitViewTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_panes(&mut self, sidebar: PaneRender, content: PaneRender, cx: &mut Context<Self>) {
         self.model.sidebar = sidebar;
         self.model.content = content;

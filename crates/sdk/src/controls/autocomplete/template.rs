@@ -215,6 +215,12 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
         let mut clicks = item_clicks.into_iter();
 
         for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
+            let enabled_item = item.is_enabled();
+            let color = if enabled_item {
+                appearance.foreground
+            } else {
+                appearance.item_disabled_foreground
+            };
             let mut row = div()
                 .id(format!("{}-row-{}", model.id, index))
                 .flex()
@@ -222,23 +228,28 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
                 .min_h(px(appearance.item_height))
                 .px(px(appearance.item_padding_x))
                 .rounded(px(appearance.item_radius))
-                .text_color(appearance.foreground)
+                .text_color(color)
                 .text_size(px(appearance.item_typography.size))
                 .line_height(px(appearance.item_typography.line_height))
                 .font_weight(appearance.item_typography.weight)
                 .child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
 
-            row = row.cursor_pointer().on_hover(hover).hover({
-                let hover_background = appearance.item_hover_background;
-                move |style| style.bg(hover_background)
-            });
+            if enabled_item {
+                row = row.cursor_pointer().on_hover(hover).hover({
+                    let hover_background = appearance.item_hover_background;
+                    let hover_foreground = appearance.item_hover_foreground;
+                    move |style| style.bg(hover_background).text_color(hover_foreground)
+                });
 
-            if model.highlighted_index.is_some_and(|active| active == index) {
-                row = row.bg(appearance.item_hover_background);
-            }
+                if model.highlighted_index.is_some_and(|active| active == index) {
+                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                }
 
-            if let Some(click) = clicks.next() {
-                row = row.on_click(click);
+                if let Some(click) = clicks.next() {
+                    row = row.on_click(click);
+                }
+            } else {
+                row = row.opacity(0.56);
             }
 
             root = root.child(row);

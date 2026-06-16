@@ -58,6 +58,7 @@ impl ComboBoxControl {
 
         let textfield = text_selection::new(format!("{}-textfield", model.id))
             .placeholder(model.placeholder.clone())
+            .enabled(model.enabled)
             .full_width(model.full_width)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
@@ -96,6 +97,10 @@ impl ComboBoxControl {
     }
 
     fn handle_text_selection_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         match event {
             TextSelectionEvent::Change { value } => {
                 self.behavior.set_query(value.clone(), &self.model.items);
@@ -203,7 +208,19 @@ impl ComboBoxControl {
     }
 
     fn handle_item_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
-        if hovered && self.behavior.state.open {
+        if !self.model.enabled {
+            return;
+        }
+
+        let enabled_item = self
+            .behavior
+            .state
+            .filtered
+            .get(index)
+            .and_then(|item_index| self.model.items.get(*item_index))
+            .is_some_and(|item| item.enabled);
+
+        if hovered && enabled_item && self.behavior.state.open {
             self.behavior.state.highlighted_filtered = Some(index);
             self.sync_popup_highlight_visibility(cx);
             cx.notify();
@@ -211,11 +228,13 @@ impl ComboBoxControl {
     }
 
     fn handle_item_click(&mut self, index: usize, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() || !self.behavior.state.open {
+        if !self.model.enabled || event.is_keyboard() || !self.behavior.state.open {
             return;
         }
 
-        if let Some(item_index) = self.behavior.state.filtered.get(index).copied() {
+        if let Some(item_index) = self.behavior.state.filtered.get(index).copied()
+            && self.model.items.get(item_index).is_some_and(|item| item.enabled)
+        {
             self.select_item(item_index, false, cx);
         }
     }
@@ -243,6 +262,10 @@ impl ComboBoxControl {
     }
 
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         self.last_keyboard_event = SharedString::from(format!("key:{}", event.keystroke.key));
 
         if event.keystroke.modifiers.control || event.keystroke.modifiers.secondary() {
@@ -316,7 +339,7 @@ impl ComboBoxControl {
     }
 
     fn handle_clear_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
+        if !self.model.enabled || event.is_keyboard() {
             return;
         }
 
@@ -325,6 +348,10 @@ impl ComboBoxControl {
     }
 
     fn open_popup_with_all_items(&mut self, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         if self.model.items.is_empty() {
             self.behavior.state.filtered.clear();
             self.behavior.state.highlighted_filtered = None;
@@ -333,7 +360,8 @@ impl ComboBoxControl {
         }
 
         self.behavior.state.filtered = (0..self.model.items.len()).collect();
-        self.behavior.state.highlighted_filtered = Some(0);
+        self.behavior.state.highlighted_filtered =
+            self.model.items.iter().enumerate().find_map(|(index, item)| item.enabled.then_some(index));
         self.behavior.state.open = true;
         self.behavior.state.status = SelectionStatus::Searching;
         self.sync_popup_highlight_visibility(cx);
@@ -341,7 +369,7 @@ impl ComboBoxControl {
     }
 
     fn handle_trigger_click(&mut self, event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        if event.is_keyboard() {
+        if !self.model.enabled || event.is_keyboard() {
             return;
         }
 
@@ -364,6 +392,10 @@ impl ComboBoxControl {
     }
 
     fn handle_trigger_mouse_down(&mut self, event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled {
+            return;
+        }
+
         if event.click_count >= 2 {
             if self.is_textfield_focused(cx) {
                 self.open_popup_with_all_items(cx);
@@ -399,6 +431,21 @@ impl ComboBoxControl {
         if delta_y.is_finite() && delta_y.abs() > f32::EPSILON {
             cx.stop_propagation();
         }
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        if self.model.enabled == enabled {
+            return;
+        }
+
+        self.model.enabled = enabled;
+        self.textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
+        if !enabled {
+            self.behavior.state.open = false;
+            self.behavior.state.highlighted_filtered = None;
+            self.open_popup_on_next_focus = false;
+        }
+        cx.notify();
     }
 
     pub fn set_template(&mut self, template: std::sync::Arc<dyn ComboBoxTemplate>, cx: &mut Context<Self>) {
@@ -512,7 +559,7 @@ impl Render for ComboBoxControl {
             self.last_keyboard_event
         ));
 
-        let popup_content = if self.behavior.state.open && !visible_indices.is_empty() {
+        let popup_content = if self.model.enabled && self.behavior.state.open && !visible_indices.is_empty() {
             let menu_id = SharedString::from("combobox-menu");
             let row_height = px(appearance.item_height);
             let content_top_padding = px(appearance.padding);
@@ -536,7 +583,7 @@ impl Render for ComboBoxControl {
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
                     open: self.behavior.state.open,
-                    enabled: true,
+                    enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     appearance: appearance.clone(),
                 },
@@ -552,7 +599,7 @@ impl Render for ComboBoxControl {
                     selected_source_index: self.behavior.state.selected_item,
                     active_visible_index: self.behavior.state.highlighted_filtered,
                     open: self.behavior.state.open,
-                    enabled: true,
+                    enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
                     popup_appearance: appearance.clone(),

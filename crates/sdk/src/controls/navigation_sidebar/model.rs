@@ -128,6 +128,7 @@ pub struct NavigationSidebarModel {
     pub(crate) nodes: Vec<NavNode>,
     pub(crate) footer_nodes: Vec<NavNode>,
     pub(crate) selected_id: Option<SharedString>,
+    pub(crate) enabled: bool,
     pub(crate) collapsible: bool,
     pub(crate) collapsed: bool,
     pub(crate) template: Arc<dyn NavigationSidebarTemplate>,
@@ -140,6 +141,7 @@ pub struct RenderedCollapseTrigger {
     pub hovered: bool,
     pub pressed: bool,
     pub focused: bool,
+    pub enabled: bool,
     pub focus_handle: FocusHandle,
 }
 
@@ -195,6 +197,7 @@ impl NavigationSidebarBuilder {
                 nodes: Vec::new(),
                 footer_nodes: Vec::new(),
                 selected_id: None,
+                enabled: true,
                 collapsible: false,
                 collapsed: false,
                 template: default_navigation_sidebar_template(),
@@ -245,6 +248,11 @@ impl NavigationSidebarBuilder {
 
     pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
         self.model.selected_id = Some(selected_id.into());
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.model.enabled = enabled;
         self
     }
 

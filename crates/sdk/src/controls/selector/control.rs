@@ -498,16 +498,18 @@ mod tests {
     }
 
     #[test]
-    fn normalize_filters_disabled_items() {
+    fn normalize_preserves_disabled_items() {
         let filtered = normalize_selector_items(vec![
             SelectorItem::new("first").label("First"),
             SelectorItem::new("disabled").label("Disabled").enabled(false),
             SelectorItem::new("last").label("Last"),
         ]);
 
-        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered.len(), 3);
         assert_eq!(filtered[0].id().as_ref(), "first");
-        assert_eq!(filtered[1].id().as_ref(), "last");
+        assert_eq!(filtered[1].id().as_ref(), "disabled");
+        assert_eq!(filtered[2].id().as_ref(), "last");
+        assert!(!filtered[1].is_enabled());
     }
 
     #[test]

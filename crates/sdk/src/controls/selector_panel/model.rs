@@ -98,7 +98,7 @@ impl SelectorItemLike for SelectorItem {
 }
 
 pub fn normalize_selector_items<T: SelectorItemLike>(items: impl IntoIterator<Item = T>) -> Vec<T> {
-    items.into_iter().filter(SelectorItemLike::is_enabled).collect()
+    items.into_iter().collect()
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

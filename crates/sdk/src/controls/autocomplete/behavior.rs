@@ -4,11 +4,17 @@ use gpui::SharedString;
 pub struct SelectionItem {
     pub id: SharedString,
     pub label: SharedString,
+    pub enabled: bool,
 }
 
 impl SelectionItem {
     pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
-        Self { id: id.into(), label: label.into() }
+        Self { id: id.into(), label: label.into(), enabled: true }
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
     }
 }
 
@@ -113,11 +119,11 @@ impl SelectionBehavior {
             }
             SelectionEvent::Submit => self.submit(items),
             SelectionEvent::MoveNext => {
-                self.move_highlight(true);
+                self.move_highlight(items, true);
                 SubmitResult::None
             }
             SelectionEvent::MovePrevious => {
-                self.move_highlight(false);
+                self.move_highlight(items, false);
                 SubmitResult::None
             }
             SelectionEvent::Clear => {
@@ -137,29 +143,28 @@ impl SelectionBehavior {
     fn submit(&mut self, items: &[SelectionItem]) -> SubmitResult {
         let query = self.state.query.as_ref().trim().to_lowercase();
 
-        if query.is_empty() {
-            return SubmitResult::None;
-        }
-
         if let Some(index) = self
             .state
             .highlighted_filtered
             .and_then(|highlighted| self.state.filtered.get(highlighted).copied())
+            .filter(|index| items[*index].enabled)
         {
             return SubmitResult::Select { index, exact_complete: false };
         }
 
-        if let Some(index) = self
-            .state
-            .filtered
-            .iter()
-            .copied()
-            .find(|index| items[*index].label.to_string().eq_ignore_ascii_case(query.as_str()))
+        if query.is_empty() {
+            return SubmitResult::None;
+        }
+
+        if let Some(index) =
+            self.state.filtered.iter().copied().find(|index| {
+                items[*index].enabled && items[*index].label.to_string().eq_ignore_ascii_case(query.as_str())
+            })
         {
             return SubmitResult::Select { index, exact_complete: true };
         }
 
-        if let Some(first) = self.state.filtered.first().copied() {
+        if let Some(first) = self.state.filtered.iter().copied().find(|index| items[*index].enabled) {
             return SubmitResult::Select { index: first, exact_complete: false };
         }
 
@@ -170,21 +175,42 @@ impl SelectionBehavior {
         SubmitResult::None
     }
 
-    fn move_highlight(&mut self, next: bool) {
+    fn move_highlight(&mut self, items: &[SelectionItem], next: bool) {
         if self.state.filtered.is_empty() {
             return;
         }
 
-        let len = self.state.filtered.len();
-        let index = if next {
-            self.state.highlighted_filtered.map_or(0, |index| (index + 1) % len)
+        let enabled_positions = self
+            .state
+            .filtered
+            .iter()
+            .enumerate()
+            .filter_map(|(position, index)| items[*index].enabled.then_some(position))
+            .collect::<Vec<_>>();
+        if enabled_positions.is_empty() {
+            self.state.highlighted_filtered = None;
+            self.state.open = true;
+            return;
+        }
+
+        let current_position = self
+            .state
+            .highlighted_filtered
+            .and_then(|highlighted| enabled_positions.iter().position(|position| *position == highlighted));
+
+        let next_position = if next {
+            current_position.map_or(0, |position| (position + 1) % enabled_positions.len())
         } else {
-            self.state
-                .highlighted_filtered
-                .map_or(len - 1, |index| if index == 0 { len - 1 } else { index - 1 })
+            current_position.map_or(enabled_positions.len() - 1, |position| {
+                if position == 0 {
+                    enabled_positions.len() - 1
+                } else {
+                    position - 1
+                }
+            })
         };
 
-        self.state.highlighted_filtered = Some(index);
+        self.state.highlighted_filtered = Some(enabled_positions[next_position]);
         self.state.open = true;
     }
 
@@ -232,12 +258,9 @@ impl SelectionBehavior {
             return;
         }
 
-        let exact_index = self
-            .state
-            .filtered
-            .iter()
-            .copied()
-            .find(|index| items[*index].label.to_string().eq_ignore_ascii_case(query.as_str()));
+        let exact_index = self.state.filtered.iter().copied().find(|index| {
+            items[*index].enabled && items[*index].label.to_string().eq_ignore_ascii_case(query.as_str())
+        });
 
         self.state.selected_item = exact_index;
         self.state.status = if exact_index.is_some() {
@@ -245,7 +268,12 @@ impl SelectionBehavior {
         } else {
             SelectionStatus::Searching
         };
-        self.state.highlighted_filtered = Some(0);
+        self.state.highlighted_filtered = self
+            .state
+            .filtered
+            .iter()
+            .enumerate()
+            .find_map(|(position, index)| items[*index].enabled.then_some(position));
         self.state.open = self.state.focused;
     }
 }
@@ -313,6 +341,48 @@ mod tests {
                 assert_eq!(items[index].label.as_ref(), "Indiana");
                 assert!(!exact_complete);
             }
+            SubmitResult::None => panic!("expected selection result"),
+        }
+    }
+
+    #[test]
+    fn submit_selects_highlighted_item_even_when_query_is_empty() {
+        let items = sample_items();
+        let mut behavior = SelectionBehavior::new();
+
+        behavior.apply(SelectionEvent::Focus, &items);
+        behavior.state.filtered = (0..items.len()).collect();
+        behavior.state.highlighted_filtered = Some(1);
+        behavior.state.open = true;
+
+        let result = behavior.apply(SelectionEvent::Submit, &items);
+        match result {
+            SubmitResult::Select { index, exact_complete } => {
+                assert_eq!(items[index].label.as_ref(), "Hawaii");
+                assert!(!exact_complete);
+            }
+            SubmitResult::None => panic!("expected selection result"),
+        }
+    }
+
+    #[test]
+    fn disabled_items_remain_visible_but_are_skipped_for_highlight_and_submit() {
+        let items = vec![
+            SelectionItem::new("ga", "Georgia").enabled(false),
+            SelectionItem::new("ha", "Hawaii"),
+            SelectionItem::new("id", "Idaho"),
+        ];
+        let mut behavior = SelectionBehavior::new();
+
+        behavior.apply(SelectionEvent::Focus, &items);
+        behavior.set_query("i", &items);
+
+        assert_eq!(behavior.state.filtered.len(), 3);
+        assert_eq!(behavior.state.highlighted_filtered, Some(1));
+
+        let result = behavior.apply(SelectionEvent::Submit, &items);
+        match result {
+            SubmitResult::Select { index, .. } => assert_eq!(items[index].label.as_ref(), "Hawaii"),
             SubmitResult::None => panic!("expected selection result"),
         }
     }

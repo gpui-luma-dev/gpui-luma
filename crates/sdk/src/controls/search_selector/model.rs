@@ -23,6 +23,7 @@ pub struct SearchSelectorModel {
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
     pub(crate) search_placeholder: SharedString,
+    pub(crate) enabled: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) scrolling: bool,
@@ -50,6 +51,7 @@ impl SearchSelectorBuilder {
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
                 search_placeholder: SharedString::from("Selection search"),
+                enabled: true,
                 full_width: true,
                 clean_on_escape: true,
                 scrolling: true,
@@ -81,6 +83,11 @@ impl SearchSelectorBuilder {
 
     pub fn search_placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
         self.model.search_placeholder = placeholder.into();
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.model.enabled = enabled;
         self
     }
 

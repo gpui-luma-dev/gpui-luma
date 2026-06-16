@@ -447,6 +447,7 @@ fn render_search_selector_trigger(
         trigger_label_is_placeholder: true,
         trigger_state: state.textfield_state,
         trigger_theme: preview.textfield_theme.clone(),
+        enabled: state.textfield_enabled,
         full_width: true,
         minimum_trigger_width: px(168.0),
         status_label: SharedString::from(""),

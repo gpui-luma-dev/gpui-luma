@@ -5,7 +5,7 @@ use gpui_luma::controls::color::color_ring::{
     ColorRingEvent, ColorRingRenderer, ColorRingState, HueRingDelegate, LightnessRingDelegate, SaturationRingDelegate,
 };
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -37,7 +37,7 @@ impl ColorRingPane {
 
         let hue_ring = cx.new(|cx| {
             ColorRingState::hue("color-ring-hue", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .allow_inner_target(true)
         });
         let saturation_ring = cx.new(|cx| {
@@ -47,7 +47,7 @@ impl ColorRingPane {
                 SaturationRingDelegate { hue: hsv.h, hsv_value: hsv.v },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
         });
         let lightness_ring = cx.new(|cx| {
             ColorRingState::lightness(
@@ -56,7 +56,7 @@ impl ColorRingPane {
                 LightnessRingDelegate { hue: hsv.h, saturation: hsv.s },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
         });
         let vector_ring = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
@@ -67,7 +67,7 @@ impl ColorRingPane {
                 ColorRingRenderer::Vector,
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
         });
         let raster_ring = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
@@ -78,15 +78,15 @@ impl ColorRingPane {
                 ColorRingRenderer::Raster,
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
         });
         let size_small_ring = cx.new(|cx| {
             ColorRingState::hue("color-ring-size-small", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Small)
+                .size(Size::Small)
         });
         let size_large_ring = cx.new(|cx| {
             ColorRingState::hue("color-ring-size-large", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Large)
+                .size(Size::Large)
         });
         let thickness_small_ring = cx.new(|cx| {
             ColorRingState::hue(
@@ -95,7 +95,7 @@ impl ColorRingPane {
                 HueRingDelegate { saturation: hsv.s, lightness },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .ring_thickness_size(Size::Small)
         });
         let thickness_large_ring = cx.new(|cx| {
@@ -105,7 +105,7 @@ impl ColorRingPane {
                 HueRingDelegate { saturation: hsv.s, lightness },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .ring_thickness_size(Size::Large)
         });
 

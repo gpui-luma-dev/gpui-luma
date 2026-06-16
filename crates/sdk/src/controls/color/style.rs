@@ -99,5 +99,5 @@ impl From<Pixels> for Size {
 }
 
 pub trait Sizable: Sized {
-    fn with_size(self, size: impl Into<Size>) -> Self;
+    fn size(self, size: impl Into<Size>) -> Self;
 }

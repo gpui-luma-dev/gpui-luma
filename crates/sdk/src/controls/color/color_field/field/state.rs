@@ -292,8 +292,8 @@ impl ColorFieldState {
     }
 
     #[allow(dead_code)]
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.disabled = disabled;
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.disabled = !enabled;
         self
     }
 
@@ -416,8 +416,9 @@ impl ColorFieldState {
         cx.notify();
     }
 
-    #[allow(dead_code)] // Runtime setter kept for parity with other interactive controls.
-    pub fn set_disabled(&mut self, disabled: bool, cx: &mut Context<Self>) {
+    #[allow(dead_code)] // Parity helper with other lookless controls.
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        let disabled = !enabled;
         if self.disabled != disabled {
             self.disabled = disabled;
             if disabled {
@@ -426,11 +427,6 @@ impl ColorFieldState {
             }
             cx.notify();
         }
-    }
-
-    #[allow(dead_code)] // Parity helper with other lookless controls.
-    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
-        self.set_disabled(!enabled, cx);
     }
 
     pub(super) fn resolved_corner_radii(&self, window: &Window) -> Corners<Pixels> {

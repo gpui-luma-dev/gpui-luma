@@ -138,7 +138,7 @@ where
                     selected,
                     active,
                     open: model.open,
-                    enabled: model.enabled,
+                    enabled: model.enabled && enabled_item,
                 };
                 item_template(&item_model, cx)
             } else {

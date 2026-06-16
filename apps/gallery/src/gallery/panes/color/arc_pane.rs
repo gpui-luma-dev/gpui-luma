@@ -5,7 +5,7 @@ use gpui_luma::controls::color::color_arc::{
     ColorArcEvent, ColorArcRenderer, ColorArcState, HueArcDelegate, LightnessArcDelegate, SaturationArcDelegate,
 };
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -38,7 +38,7 @@ impl ColorArcPane {
 
         let hue_arc = cx.new(|cx| {
             ColorArcState::hue("color-arc-hue", hsv.h, HueArcDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .start_degrees(-45.0)
                 .sweep_degrees(270.0)
         });
@@ -49,7 +49,7 @@ impl ColorArcPane {
                 SaturationArcDelegate { hue: hsv.h, hsv_value: hsv.v },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .start_degrees(-45.0)
             .sweep_degrees(270.0)
         });
@@ -60,25 +60,25 @@ impl ColorArcPane {
                 LightnessArcDelegate { hue: hsv.h, saturation: hsv.s },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .start_degrees(-45.0)
             .sweep_degrees(270.0)
         });
         let vector_arc = cx.new(|cx| {
             ColorArcState::hue_with_renderer("color-arc-vector", hsv.h, hsv.s, lightness, ColorArcRenderer::Vector, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .start_degrees(0.0)
                 .sweep_degrees(180.0)
         });
         let raster_arc = cx.new(|cx| {
             ColorArcState::hue_with_renderer("color-arc-raster", hsv.h, hsv.s, lightness, ColorArcRenderer::Raster, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .start_degrees(0.0)
                 .sweep_degrees(180.0)
         });
         let hue_arc_270 = cx.new(|cx| {
             ColorArcState::hue("color-arc-hue-270", hsv.h, HueArcDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .start_degrees(-45.0)
                 .sweep_degrees(270.0)
         });
@@ -89,7 +89,7 @@ impl ColorArcPane {
                 SaturationArcDelegate { hue: hsv.h, hsv_value: hsv.v },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .start_degrees(-45.0)
             .sweep_degrees(270.0)
         });
@@ -100,20 +100,20 @@ impl ColorArcPane {
                 LightnessArcDelegate { hue: hsv.h, saturation: hsv.s },
                 cx,
             )
-            .with_size(Size::Medium)
+            .size(Size::Medium)
             .start_degrees(-45.0)
             .sweep_degrees(270.0)
         });
         let thickness_small_arc = cx.new(|cx| {
             ColorArcState::hue("color-arc-thickness-small", hsv.h, HueArcDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .arc_thickness_size(Size::Small)
                 .start_degrees(0.0)
                 .sweep_degrees(180.0)
         });
         let thickness_large_arc = cx.new(|cx| {
             ColorArcState::hue("color-arc-thickness-large", hsv.h, HueArcDelegate { saturation: hsv.s, lightness }, cx)
-                .with_size(Size::Medium)
+                .size(Size::Medium)
                 .arc_thickness_size(Size::Large)
                 .start_degrees(0.0)
                 .sweep_degrees(180.0)

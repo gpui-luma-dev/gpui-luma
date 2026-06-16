@@ -92,7 +92,7 @@ impl ColorSliderModel {
         self
     }
 
-    pub fn with_size(mut self, size: impl Into<Size>) -> Self {
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
         self
     }
@@ -132,8 +132,8 @@ impl ColorSliderModel {
         self
     }
 
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.disabled = disabled;
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.disabled = !enabled;
         self
     }
 

@@ -5,7 +5,7 @@ use gpui_luma::controls::color::color_slider::color_spec::{
     ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec,
 };
 use gpui_luma::controls::color::color_slider::{ChannelDelegate, ColorSliderEvent, ColorSliderState};
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -138,7 +138,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
                     initial_delegate,
                     cx,
                 )
-                .with_size(Size::Small)
+                .size(Size::Small)
                 .thumb_medium()
                 .edge_to_edge();
                 slider.set_range(channel_meta.min, channel_meta.max, cx);

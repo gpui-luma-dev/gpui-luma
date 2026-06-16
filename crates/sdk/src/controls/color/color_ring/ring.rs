@@ -224,8 +224,13 @@ impl ColorRingState {
         self
     }
 
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.disabled = disabled;
+    pub fn size(mut self, size: impl Into<Size>) -> Self {
+        self.size = size.into();
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.disabled = !enabled;
         self
     }
 
@@ -330,17 +335,13 @@ impl ColorRingState {
         cx.notify();
     }
 
-    #[allow(dead_code)] // Public API for future controls.
-    pub fn set_disabled(&mut self, disabled: bool, cx: &mut Context<Self>) {
+    #[allow(dead_code)] // Parity helper with other lookless controls.
+    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
+        let disabled = !enabled;
         if self.disabled != disabled {
             self.disabled = disabled;
             cx.notify();
         }
-    }
-
-    #[allow(dead_code)] // Parity helper with other lookless controls.
-    pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
-        self.set_disabled(!enabled, cx);
     }
 
     #[allow(dead_code)] // Runtime setter kept for parity with builder API.
@@ -578,7 +579,7 @@ impl Styled for ColorRingState {
 }
 
 impl Sizable for ColorRingState {
-    fn with_size(mut self, size: impl Into<Size>) -> Self {
+    fn size(mut self, size: impl Into<Size>) -> Self {
         self.size = size.into();
         self
     }

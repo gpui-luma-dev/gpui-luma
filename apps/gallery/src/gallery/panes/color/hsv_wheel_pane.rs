@@ -5,7 +5,7 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::style::{Size, Sizable};
+use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -61,7 +61,7 @@ impl HsvWheelState {
                 HueRingDelegate { saturation: 1.0, lightness: 0.5 },
                 cx,
             )
-            .with_size(Size::Size(px(Self::RING_OUTER_SIZE_PX)))
+            .size(Size::Size(px(Self::RING_OUTER_SIZE_PX)))
             .ring_thickness_size(Size::Medium)
             .thumb_size(16.0)
         });

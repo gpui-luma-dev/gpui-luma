@@ -95,6 +95,11 @@ where
         cx.notify();
     }
 
+    pub fn set_layout(&mut self, layout: super::model::ControlGroupLayout, cx: &mut Context<Self>) {
+        self.model.layout = layout;
+        cx.notify();
+    }
+
     pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.hovered_item = None;
@@ -142,6 +147,24 @@ where
     pub fn clear_managed_selected_ids(&mut self, cx: &mut Context<Self>) {
         self.model.clear_managed_selected_ids();
         normalize_model(&mut self.model);
+        cx.notify();
+    }
+
+    pub fn set_item_template(
+        &mut self,
+        item_template: Option<crate::controls::control_group::ControlGroupItemTemplate<T>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.item_template = item_template;
+        cx.notify();
+    }
+
+    pub fn set_template(
+        &mut self,
+        template: crate::controls::control_group::ControlGroupTemplate<T>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.template = template;
         cx.notify();
     }
 

@@ -117,6 +117,11 @@ impl SliderControl {
         cx.notify();
     }
 
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::SliderTemplate>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     fn render_model<'a>(&'a self, window: &Window) -> SliderRenderModel<'a> {
         SliderRenderModel {
             id: &self.model.id,
