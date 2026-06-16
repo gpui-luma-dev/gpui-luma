@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThumbDockSplitterTemplate};
+use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::dock_panel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -52,7 +52,7 @@ impl DockPanelPaneState {
     fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let splitter_theme = look.dock_splitter_theme();
         let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
-            .template(Arc::new(ThumbDockSplitterTemplate::new()))
+            .template(Arc::new(ThemedDockSplitterTemplate::new(true)))
             .theme(splitter_theme.clone())
             .spawn(cx);
         let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)

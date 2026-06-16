@@ -26,32 +26,26 @@ pub trait DockSplitterTemplate: Send + Sync {
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedDockSplitterTemplate;
+pub struct ThemedDockSplitterTemplate {
+    show_thumb: bool,
+}
 
 impl ThemedDockSplitterTemplate {
-    pub fn new() -> Self {
-        Self
+    pub fn new(show_thumb: bool) -> Self {
+        Self { show_thumb }
     }
 }
 
 impl Default for ThemedDockSplitterTemplate {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-pub struct ThumbDockSplitterTemplate;
-
-impl ThumbDockSplitterTemplate {
-    pub fn new() -> Self {
-        Self
+        Self::new(false)
     }
 }
 
 pub fn default_dock_splitter_template() -> Arc<dyn DockSplitterTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn DockSplitterTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedDockSplitterTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedDockSplitterTemplate::new(false))).clone()
 }
 
 impl DockSplitterTemplate for ThemedDockSplitterTemplate {
@@ -63,20 +57,7 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, false)
-    }
-}
-
-impl DockSplitterTemplate for ThumbDockSplitterTemplate {
-    fn render(
-        &self,
-        model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterAppearance,
-        handlers: DockSplitterTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
-    ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, true)
+        render_splitter(model, appearance, handlers, self.show_thumb)
     }
 }
 
