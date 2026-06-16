@@ -51,9 +51,8 @@ struct DockPanelPaneState {
 impl DockPanelPaneState {
     fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let splitter_theme = look.dock_splitter_theme();
-        let accent = look.token_color("accent").unwrap_or(look.chrome().border);
         let left_splitter = DockSplitter::new("dock-panel-left-splitter", SplitterOrientation::Vertical)
-            .template(Arc::new(ThumbDockSplitterTemplate::new(accent)))
+            .template(Arc::new(ThumbDockSplitterTemplate::new()))
             .theme(splitter_theme.clone())
             .spawn(cx);
         let top_splitter = DockSplitter::new("dock-panel-top-splitter", SplitterOrientation::Horizontal)

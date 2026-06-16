@@ -8,6 +8,7 @@ use crate::theme::ThemeTokens;
 pub struct DockSplitterAppearance {
     pub line_color: Hsla,
     pub hover_color: Hsla,
+    pub thumb_color: Hsla,
     pub hit_target_px: f32,
     pub visible_line_px: f32,
 }
@@ -44,6 +45,11 @@ impl DockSplitterTheme for DefaultDockSplitterTheme {
                 palette.state.disabled.foreground
             },
             hover_color: if enabled {
+                palette.state.selected.background
+            } else {
+                palette.state.disabled.foreground
+            },
+            thumb_color: if enabled {
                 palette.state.selected.background
             } else {
                 palette.state.disabled.foreground

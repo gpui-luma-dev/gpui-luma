@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
 
 use super::{DockSplitterAppearance, DockSplitterDrag, DockSplitterRenderModel, SplitterOrientation};
 
@@ -40,13 +40,11 @@ impl Default for ThemedDockSplitterTemplate {
     }
 }
 
-pub struct ThumbDockSplitterTemplate {
-    thumb_color: Hsla,
-}
+pub struct ThumbDockSplitterTemplate;
 
 impl ThumbDockSplitterTemplate {
-    pub fn new(thumb_color: Hsla) -> Self {
-        Self { thumb_color }
+    pub fn new() -> Self {
+        Self
     }
 }
 
@@ -65,7 +63,7 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, None)
+        render_splitter(model, appearance, handlers, false)
     }
 }
 
@@ -78,7 +76,7 @@ impl DockSplitterTemplate for ThumbDockSplitterTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, Some(self.thumb_color))
+        render_splitter(model, appearance, handlers, true)
     }
 }
 
@@ -86,7 +84,7 @@ fn render_splitter(
     model: &DockSplitterRenderModel<'_>,
     appearance: &DockSplitterAppearance,
     handlers: DockSplitterTemplateHandlers,
-    thumb_color: Option<Hsla>,
+    show_thumb: bool,
 ) -> Stateful<Div> {
     let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out } = handlers;
     let line_color = if model.dragging || model.hovered {
@@ -160,15 +158,15 @@ fn render_splitter(
             ),
     };
 
-    if let (SplitterOrientation::Vertical, Some(thumb_color)) = (model.orientation, thumb_color) {
+    if show_thumb && model.orientation == SplitterOrientation::Vertical {
         hit_target = hit_target.child(
             div().absolute().inset_0().flex().justify_center().items_center().child(
                 div()
                     .rounded(px(8.0))
                     .bg(if model.hovered || model.dragging {
-                        thumb_color
+                        appearance.thumb_color
                     } else {
-                        thumb_color.opacity(0.4)
+                        appearance.thumb_color.opacity(0.4)
                     })
                     .w(px(4.0))
                     .h(px(36.0)),

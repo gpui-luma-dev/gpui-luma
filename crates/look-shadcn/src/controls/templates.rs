@@ -226,6 +226,11 @@ impl DockSplitterTheme for RadixDockSplitterTheme {
         gpui_luma::controls::dock_splitter::DockSplitterAppearance {
             line_color: if enabled { border } else { disabled },
             hover_color: if enabled { border } else { disabled },
+            thumb_color: if enabled {
+                tokens.palette.primary.background
+            } else {
+                disabled
+            },
             hit_target_px: 8.0,
             visible_line_px: 1.0,
         }
