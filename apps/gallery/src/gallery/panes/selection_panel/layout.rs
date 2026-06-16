@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, div, hsla, prelude::*, px};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 pub(super) const PAGE_SPEC: PageSpec = PageSpec {
     title: "Selection Panel",
@@ -57,6 +57,8 @@ pub(super) struct Section {
 
 pub(super) fn render_page_header(header: HeaderSpec, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_role(ShadcnTextRole::H4);
+    let description_style = look.typography_scale(ShadcnTextSize::Sm);
 
     div()
         .flex()
@@ -73,20 +75,9 @@ pub(super) fn render_page_header(header: HeaderSpec, look: &ShadcnLook) -> AnyEl
                 .flex()
                 .flex_col()
                 .gap(px(4.0))
+                .child(div().typography_style(title_style).text_color(chrome.title_text).child(header.title))
                 .child(
-                    div()
-                        .text_size(px(15.0))
-                        .line_height(px(20.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.title_text)
-                        .child(header.title),
-                )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(17.0))
-                        .text_color(chrome.muted_text)
-                        .child(header.description),
+                    div().typography_style(description_style).text_color(chrome.muted_text).child(header.description),
                 ),
         )
         .child(
@@ -122,7 +113,10 @@ pub(super) fn render_live_panel_sample(
     panel: AnyElement,
     label_color: gpui::Hsla,
     border_color: gpui::Hsla,
+    look: &ShadcnLook,
 ) -> AnyElement {
+    let label_style = look.typography_scale(ShadcnTextSize::Xs);
+
     div()
         .flex()
         .flex_col()
@@ -134,19 +128,14 @@ pub(super) fn render_live_panel_sample(
         .bg(hsla(0.0, 0.0, 1.0, 0.035))
         .p(px(10.0))
         .child(panel)
-        .child(
-            div()
-                .text_size(px(11.0))
-                .line_height(px(15.0))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(label_color)
-                .child(label),
-        )
+        .child(div().typography_style(label_style).text_color(label_color).child(label))
         .into_any_element()
 }
 
 fn render_section_header(section: Section, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
+    let description_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .flex()
@@ -155,24 +144,18 @@ fn render_section_header(section: Section, look: &ShadcnLook) -> AnyElement {
         .gap(px(3.0))
         .child(
             div()
-                .text_size(px(13.0))
-                .line_height(px(18.0))
+                .typography_style(title_style)
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(chrome.title_text)
                 .child(section.title),
         )
-        .child(
-            div()
-                .text_size(px(11.0))
-                .line_height(px(16.0))
-                .text_color(chrome.muted_text)
-                .child(section.description),
-        )
+        .child(div().typography_style(description_style).text_color(chrome.muted_text).child(section.description))
         .into_any_element()
 }
 
 fn render_metric_chip(metric: MetricSpec, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let label_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .px(px(8.0))
@@ -181,8 +164,7 @@ fn render_metric_chip(metric: MetricSpec, look: &ShadcnLook) -> AnyElement {
         .border_1()
         .border_color(chrome.border)
         .bg(hsla(0.60, 0.70, 0.52, 0.08))
-        .text_size(px(10.0))
-        .line_height(px(14.0))
+        .typography_style(label_style)
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(chrome.muted_text)
         .child(metric.label)

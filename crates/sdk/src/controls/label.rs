@@ -1,11 +1,15 @@
-use gpui::{FontWeight, Hsla, IntoElement, div, prelude::*, px};
+use gpui::{Hsla, IntoElement, div, prelude::*, px};
+
+use crate::theme::LumaTypography;
 
 /// A standard, lightweight labeled field text component.
 pub fn field_label(text: &'static str, color: Hsla) -> impl IntoElement {
+    let style = LumaTypography::default().text.caption;
+
     div()
-        .text_size(px(11.0))
-        .line_height(px(14.0))
-        .font_weight(FontWeight::MEDIUM)
+        .text_size(px(style.size))
+        .line_height(px(style.line_height))
+        .font_weight(style.weight)
         .text_color(color)
         .child(text)
 }

@@ -10,8 +10,8 @@ use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, Butto
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{InteractionState};
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnButtonStyle, ShadcnLook, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -94,16 +94,14 @@ impl CheckboxPane {
                         .child(self.secondary_checkbox.clone())
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(look.typography_scale(ShadcnTextSize::Sm))
                                 .text_color(chrome.body_text)
                                 .child(format!("Secondary checked: {}", self.secondary_checked)),
                         )
                         .child(self.primary_checkbox.clone())
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(look.typography_scale(ShadcnTextSize::Sm))
                                 .text_color(chrome.body_text)
                                 .child(format!("Primary checked: {}", self.primary_checked)),
                         ),
@@ -237,8 +235,7 @@ impl Render for CheckboxStatePreview {
             .gap(px(16.0))
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
+                    .typography_style(self.look.typography_scale(ShadcnTextSize::Sm))
                     .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
                     .child("Template matrix preview"),
@@ -308,7 +305,7 @@ fn render_header_row(samples: &[CheckboxStateSample], label_color: gpui::Hsla) -
                 .w(px(116.0))
                 .flex()
                 .justify_center()
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .text_color(label_color)
                 .child(sample.header)

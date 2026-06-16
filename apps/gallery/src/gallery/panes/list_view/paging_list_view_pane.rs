@@ -125,22 +125,19 @@ impl PagingListViewPane {
                         .gap_1()
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .text_sm()
                                 .text_color(chrome.muted_text)
                                 .child("Paged task grid with the SDK paging toolbar wired to ListView commands."),
                         )
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .text_sm()
                                 .text_color(chrome.body_text)
                                 .child(selected_summary(&self.selected_indices)),
                         )
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .text_sm()
                                 .text_color(chrome.muted_text)
                                 .child("Keyboard: Arrow keys move the active row. Enter or Space selects it."),
                         ),

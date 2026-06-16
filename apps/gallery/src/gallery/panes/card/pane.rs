@@ -6,7 +6,7 @@ use gpui_luma::controls::command::button::Button;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{hstack, vstack};
 
 use crate::gallery::control::GalleryApp;
@@ -73,6 +73,9 @@ impl CardPane {
                 .spawn(cx)
         };
 
+        let header_title_style = look.typography_scale(ShadcnTextSize::Sm);
+        let header_subtitle_style = look.typography_scale(ShadcnTextSize::Sm);
+        let body_style = look.typography_scale(ShadcnTextSize::Sm);
         let profile_card = look
             .card("card-demo-profile")
             .elevated(false)
@@ -85,15 +88,13 @@ impl CardPane {
                         .gap(px(2.0))
                         .child(
                             div()
-                                .text_size(px(14.0))
-                                .line_height(px(18.0))
+                                .typography_style(header_title_style)
                                 .font_weight(gpui::FontWeight::SEMIBOLD)
                                 .child("Custom Header"),
                         )
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(header_subtitle_style)
                                 .text_color(look.chrome().muted_text)
                                 .child("This variant opts out of the shadow."),
                         ),
@@ -103,8 +104,7 @@ impl CardPane {
             })
             .child_render(move |_, _| {
                 div()
-                    .text_size(px(13.0))
-                    .line_height(px(18.0))
+                    .typography_style(body_style)
                     .child(
                         "Use custom headers when the slot needs actions, badges, or layout that should not be baked into the default title/description row.",
                     )

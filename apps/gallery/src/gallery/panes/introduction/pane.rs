@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, EventEmitter, FontWeight, SharedString, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, EventEmitter, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::{flow, hstack, vstack};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -178,11 +178,11 @@ impl IntroductionPane {
             hstack! {
                 vstack! {
                     gap=16.0;
-                    self.render_intro_header(chrome.title_text, chrome.body_text),
+                    self.render_intro_header(look, chrome.title_text, chrome.body_text),
                     vstack! {
                         gap=16.0;
                         self.render_panel_row(),
-                        self.render_status_line(chrome.muted_text),
+                        self.render_status_line(look, chrome.muted_text),
                     }
                     .w_full(),
                 }
@@ -197,16 +197,14 @@ impl IntroductionPane {
         )
     }
 
-    fn render_intro_header(&self, title_color: gpui::Hsla, body_color: gpui::Hsla) -> AnyElement {
+    fn render_intro_header(&self, look: &ShadcnLook, title_color: gpui::Hsla, body_color: gpui::Hsla) -> AnyElement {
+        let heading_style = look.typography_role(ShadcnTextRole::H1);
+        let subheading_style = look.typography_scale(ShadcnTextSize::Xl);
+
         vstack! {
             gap=32.0 align=start;
-            div()
-                .text_size(px(44.0))
-                .line_height(px(52.0))
-                .font_weight(FontWeight::BOLD)
-                .text_color(title_color)
-                .child(INTRO_HEADING),
-            div().text_size(px(17.0)).line_height(px(26.0)).text_color(body_color).child(INTRO_SUBHEADING),
+            div().typography_style(heading_style).text_color(title_color).child(INTRO_HEADING),
+            div().typography_style(subheading_style).text_color(body_color).child(INTRO_SUBHEADING),
         }
         .w_full()
         .max_w(px(860.0))
@@ -227,11 +225,12 @@ impl IntroductionPane {
         .into_any_element()
     }
 
-    fn render_status_line(&self, muted_text: gpui::Hsla) -> AnyElement {
+    fn render_status_line(&self, look: &ShadcnLook, muted_text: gpui::Hsla) -> AnyElement {
+        let style = look.typography_scale(ShadcnTextSize::Xs);
+
         div()
             .pt(px(2.0))
-            .text_size(px(11.0))
-            .line_height(px(16.0))
+            .typography_style(style)
             .text_color(muted_text)
             .child(format!(
                 "Clicks: submit={}, cancel={} | Last event: {}",

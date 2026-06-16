@@ -1,5 +1,5 @@
 use gpui::{AnyElement, FontWeight, Hsla, IntoElement, div, prelude::*, px};
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
 
 use crate::gallery::panes::shared::{format_hex_color, render_sparse_catalog_callout};
 
@@ -90,6 +90,11 @@ struct ModePalette {
 
 pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let heading_style = look.typography_role(ShadcnTextRole::H3);
+    let body_style = look.typography_scale(ShadcnTextSize::Sm);
+    let section_style = look.typography_scale(ShadcnTextSize::Lg);
+    let row_label_style = look.typography_scale(ShadcnTextSize::Sm);
+    let code_style = look.typography_scale(ShadcnTextSize::Sm);
     let palettes = [mode_palette(&look.light_tokens(), "Light"), mode_palette(&look.dark_tokens(), "Dark")];
 
     div()
@@ -111,15 +116,8 @@ pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
                         .flex()
                         .flex_col()
                         .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_size(px(20.0))
-                                .line_height(px(28.0))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(chrome.title_text)
-                                .child("Palette"),
-                        )
-                        .child(div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.muted_text).child(
+                        .child(div().typography_style(heading_style).text_color(chrome.title_text).child("Palette"))
+                        .child(div().typography_style(body_style).text_color(chrome.muted_text).child(
                             if look.has_css_catalog() {
                                 "Theme colors grouped by role"
                             } else {
@@ -128,7 +126,13 @@ pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
                         )),
                 )
                 .when_some(render_sparse_catalog_callout(look), |panel, callout| panel.child(callout))
-                .child(div().flex().flex_col().gap(px(24.0)).children(palettes.into_iter().map(render_mode_palette))),
+                .child(
+                    div().flex().flex_col().gap(px(24.0)).children(
+                        palettes
+                            .into_iter()
+                            .map(|palette| render_mode_palette(palette, section_style, row_label_style, code_style)),
+                    ),
+                ),
         )
         .into_any_element()
 }
@@ -159,21 +163,19 @@ fn mode_palette(tokens: &ShadcnModeTokens, label: &'static str) -> ModePalette {
     }
 }
 
-fn render_mode_palette(palette: ModePalette) -> AnyElement {
+fn render_mode_palette(
+    palette: ModePalette,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     let ModePalette { label, background, border, title_text, muted_text, sections, .. } = palette;
 
     div()
         .flex()
         .flex_col()
         .gap(px(12.0))
-        .child(
-            div()
-                .text_size(px(14.0))
-                .line_height(px(20.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(title_text)
-                .child(label),
-        )
+        .child(div().typography_style(section_style).text_color(title_text).child(label))
         .child(
             div()
                 .flex()
@@ -184,37 +186,46 @@ fn render_mode_palette(palette: ModePalette) -> AnyElement {
                 .rounded(px(10.0))
                 .bg(background)
                 .p(px(18.0))
-                .children(sections.into_iter().map(|section| render_section(section, title_text, muted_text, border))),
+                .children(sections.into_iter().map(|section| {
+                    render_section(section, title_text, muted_text, border, section_style, row_label_style, code_style)
+                })),
         )
         .into_any_element()
 }
 
-fn render_section(section: PaletteSection, title_text: Hsla, muted_text: Hsla, border: Hsla) -> AnyElement {
+fn render_section(
+    section: PaletteSection,
+    title_text: Hsla,
+    muted_text: Hsla,
+    border: Hsla,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     div()
         .flex()
         .flex_col()
         .gap(px(12.0))
+        .child(div().typography_style(section_style).text_color(title_text).child(section.title))
         .child(
-            div()
-                .text_size(px(14.0))
-                .line_height(px(20.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(title_text)
-                .child(section.title),
-        )
-        .child(
-            div()
-                .w_full()
-                .flex()
-                .flex_row()
-                .flex_wrap()
-                .gap(px(PALETTE_ITEM_GAP))
-                .children(section.rows.into_iter().map(|row| render_token_cell(row, title_text, muted_text, border))),
+            div().w_full().flex().flex_row().flex_wrap().gap(px(PALETTE_ITEM_GAP)).children(
+                section
+                    .rows
+                    .into_iter()
+                    .map(|row| render_token_cell(row, title_text, muted_text, border, row_label_style, code_style)),
+            ),
         )
         .into_any_element()
 }
 
-fn render_token_cell(row: TokenSwatchRow, title_text: Hsla, muted_text: Hsla, border: Hsla) -> AnyElement {
+fn render_token_cell(
+    row: TokenSwatchRow,
+    title_text: Hsla,
+    muted_text: Hsla,
+    border: Hsla,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     div()
         .w(px(PALETTE_CELL_WIDTH))
         .py(px(4.0))
@@ -240,8 +251,7 @@ fn render_token_cell(row: TokenSwatchRow, title_text: Hsla, muted_text: Hsla, bo
                 .gap(px(2.0))
                 .child(
                     div()
-                        .text_size(px(13.0))
-                        .line_height(px(18.0))
+                        .typography_style(row_label_style)
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(title_text)
                         .child(row.label),
@@ -249,8 +259,7 @@ fn render_token_cell(row: TokenSwatchRow, title_text: Hsla, muted_text: Hsla, bo
                 .child(
                     div()
                         .font_family("Monaco")
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
+                        .typography_style(code_style)
                         .text_color(muted_text)
                         .child(format_hex_color(row.color)),
                 ),

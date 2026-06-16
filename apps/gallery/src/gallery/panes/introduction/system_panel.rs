@@ -144,6 +144,7 @@ impl Render for SystemPanel {
         let referral_checkbox = self.referral_checkbox.clone();
         let budget_slider = self.budget_slider.clone();
         let completion_progress = self.completion_progress.clone();
+        let budget_style = self.look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Sm);
         let budget = self.budget;
         let completion = self.completion;
 
@@ -165,8 +166,7 @@ impl Render for SystemPanel {
                         vstack! {
                             gap=6.0;
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(budget_style)
                                 .font_weight(gpui::FontWeight::MEDIUM)
                                 .text_color(chrome.body_text)
                                 .child(format!("Budget: {:.0}%", budget)),
@@ -175,8 +175,7 @@ impl Render for SystemPanel {
                         vstack! {
                             gap=6.0;
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(budget_style)
                                 .font_weight(gpui::FontWeight::MEDIUM)
                                 .text_color(chrome.body_text)
                                 .child(format!("Profile completion: {:.0}%", completion)),

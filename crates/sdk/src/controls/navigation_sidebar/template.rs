@@ -10,7 +10,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedCollapseTrigger, RenderedNavNode, RenderedRailSubmenu};
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
-use crate::theme::{ControlSize, InteractionState};
+use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
 use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuTheme, default_floating_menu_theme};
 use crate::controls::navigation_sidebar::{NavigationSidebarTheme, default_navigation_sidebar_theme};
 
@@ -21,11 +21,6 @@ const HEADER_REGION_PADDING_BOTTOM: f32 = 8.0;
 const FOOTER_REGION_PADDING_TOP: f32 = 8.0;
 const TITLE_GAP: f32 = 2.0;
 const TITLE_PADDING_BOTTOM: f32 = 4.0;
-const TITLE_FONT_SIZE: f32 = 14.0;
-const TITLE_LINE_HEIGHT: f32 = 18.0;
-const TITLE_FONT_WEIGHT: FontWeight = FontWeight::MEDIUM;
-const SUBTITLE_FONT_SIZE: f32 = 12.0;
-const SUBTITLE_LINE_HEIGHT: f32 = 16.0;
 const SUBTITLE_OPACITY: f32 = 0.72;
 const SECTION_PADDING_TOP: f32 = 8.0;
 const CHILD_DEPTH_INDENT_MULTIPLIER: f32 = 1.0;
@@ -284,6 +279,14 @@ impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
     }
 }
 
+fn sidebar_title_style() -> LumaTextStyle {
+    LumaTypography::default().text.label
+}
+
+fn sidebar_subtitle_style() -> LumaTextStyle {
+    LumaTypography::default().text.scale.sm
+}
+
 fn render_title(
     title: Option<SharedString>,
     subtitle: Option<SharedString>,
@@ -291,6 +294,8 @@ fn render_title(
     collapse_handlers: RowHandlers,
     theme: &Arc<dyn NavigationSidebarTheme>,
 ) -> Div {
+    let title_style = sidebar_title_style();
+    let subtitle_style = sidebar_subtitle_style();
     let mut header = div().flex().flex_col().gap(px(TITLE_GAP)).pb(px(TITLE_PADDING_BOTTOM));
     let mut title_row = div().flex().items_center().gap(px(TITLE_GAP));
 
@@ -298,9 +303,9 @@ fn render_title(
         title_row = title_row.child(
             div()
                 .flex_1()
-                .text_size(px(TITLE_FONT_SIZE))
-                .line_height(px(TITLE_LINE_HEIGHT))
-                .font_weight(TITLE_FONT_WEIGHT)
+                .text_size(px(title_style.size))
+                .line_height(px(title_style.line_height))
+                .font_weight(title_style.weight)
                 .child(title),
         );
     } else {
@@ -316,8 +321,9 @@ fn render_title(
     if let Some(subtitle) = subtitle {
         header = header.child(
             div()
-                .text_size(px(SUBTITLE_FONT_SIZE))
-                .line_height(px(SUBTITLE_LINE_HEIGHT))
+                .text_size(px(subtitle_style.size))
+                .line_height(px(subtitle_style.line_height))
+                .font_weight(subtitle_style.weight)
                 .opacity(SUBTITLE_OPACITY)
                 .child(subtitle),
         );

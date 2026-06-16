@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use gpui_luma::theme::{ControlSize, InteractionLayer, MetricTokens};
+use gpui::FontWeight;
+use gpui_luma::theme::{ControlSize, InteractionLayer, LumaTextStyle, MetricTokens};
 
 use crate::controls::ShadcnButtonStyle;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -13,7 +14,7 @@ use super::config::{
     NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule,
     RadioColorRule, ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule,
     SplitViewColorRule, SwitchColorRule, ScrollbarColorRule, TabsNavigationItemColorRule, TabsNavigationListColorRule,
-    TextfieldColorRule, TreeViewRowColorRule,
+    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -846,6 +847,10 @@ pub fn resolve_button_metrics_rule(
     }
 }
 
+pub fn resolve_typography_rule(rule: &TypographyRule) -> LumaTextStyle {
+    LumaTextStyle { size: rule.size, line_height: rule.line_height, weight: FontWeight(rule.weight) }
+}
+
 pub fn resolve_stylesheet_metric(raw: &str, metrics: &MetricTokens, size: ControlSize) -> Option<f32> {
     match raw.trim() {
         "metrics.control.sm" => Some(metrics.control_height(ControlSize::Sm)),
@@ -915,5 +920,13 @@ mod tests {
             resolve_stylesheet_metric("radius", &metrics, ControlSize::Sm),
             Some(metrics.radius(ControlSize::Sm))
         );
+    }
+
+    #[test]
+    fn typography_rule_resolves_to_text_style() {
+        let style = resolve_typography_rule(&TypographyRule { size: 16.0, line_height: 22.0, weight: 600.0 });
+        assert_eq!(style.size, 16.0);
+        assert_eq!(style.line_height, 22.0);
+        assert_eq!(style.weight, FontWeight(600.0));
     }
 }

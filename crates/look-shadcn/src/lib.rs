@@ -26,11 +26,11 @@ pub mod tables;
 
 pub use catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 pub use context::with_look;
-pub use ext::ShadcnElementExt;
+pub use ext::{LumaTypographyExt, ShadcnElementExt};
 pub use look::ShadcnLook;
 pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
-pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
+pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
 pub use appearance_context::AppearanceContext;
 pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use stylesheet::{

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use gpui_luma::{declare_form, hstack, vstack};
 
 use super::common::{avatar, AvatarSize, card};
@@ -37,6 +37,9 @@ impl Render for TeamPanel {
     fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
+            let title_style = self.look.typography_role(ShadcnTextRole::H4);
+            let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let caption_style = self.look.typography_scale(ShadcnTextSize::Xs);
             let sofia_selector = self.sofia_selector.clone();
             let jackson_selector = self.jackson_selector.clone();
             let isabella_selector = self.isabella_selector.clone();
@@ -53,23 +56,14 @@ impl Render for TeamPanel {
                             .flex_col()
                             .gap(px(4.0))
                             .child(
-                                div()
-                                    .text_size(px(16.0))
-                                    .line_height(px(22.0))
-                                    .font_weight(gpui::FontWeight::SEMIBOLD)
-                                    .text_color(chrome.title_text)
-                                    .child("Team Members"),
+                                div().typography_style(title_style).text_color(chrome.title_text).child("Team Members"),
                             )
                             .child(
-                                div()
-                                    .text_size(px(12.0))
-                                    .line_height(px(16.0))
-                                    .text_color(chrome.muted_text)
-                                    .child("Invite your team members to collaborate."),
+                                div().typography_style(body_style).text_color(chrome.muted_text).child("Invite your team members to collaborate."),
                             ),
-                        member_row("SD", "Sofia Davis", "m@example.com", &sofia_selector, chrome),
-                        member_row("JL", "Jackson Lee", "m@example.com", &jackson_selector, chrome),
-                        member_row("IN", "Isabella Nguyen", "m@example.com", &isabella_selector, chrome),
+                        member_row("SD", "Sofia Davis", "m@example.com", &sofia_selector, chrome, body_style, caption_style),
+                        member_row("JL", "Jackson Lee", "m@example.com", &jackson_selector, chrome, body_style, caption_style),
+                        member_row("IN", "Isabella Nguyen", "m@example.com", &isabella_selector, chrome, body_style, caption_style),
                     }
                     .w_full()
                     .overflow_hidden()
@@ -88,6 +82,8 @@ fn member_row(
     email: &'static str,
     selector: &Entity<Selector>,
     chrome: gpui_luma::theme::LumaChrome,
+    body_style: gpui_luma::theme::LumaTextStyle,
+    caption_style: gpui_luma::theme::LumaTextStyle,
 ) -> impl IntoElement {
     hstack! {
         gap=10 align=center;
@@ -95,15 +91,13 @@ fn member_row(
         vstack! {
             gap=2;
             div()
-                .text_size(px(12.0))
-                .line_height(px(16.0))
+                .typography_style(body_style)
                 .font_weight(gpui::FontWeight::MEDIUM)
                 .text_color(chrome.body_text)
                 .overflow_hidden()
                 .child(name),
             div()
-                .text_size(px(11.0))
-                .line_height(px(14.0))
+                .typography_style(caption_style)
                 .text_color(chrome.muted_text)
                 .overflow_hidden()
                 .child(email),

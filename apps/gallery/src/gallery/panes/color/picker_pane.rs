@@ -175,7 +175,7 @@ impl ColorPickerPane {
 }
 
 fn label_row(label: &'static str) -> gpui::Div {
-    div().text_size(px(12.0)).line_height(px(16.0)).font_weight(gpui::FontWeight::MEDIUM).child(label)
+    div().text_sm().font_weight(gpui::FontWeight::MEDIUM).child(label)
 }
 
 fn detail_row(label: &'static str, value: String) -> gpui::Div {
@@ -184,6 +184,6 @@ fn detail_row(label: &'static str, value: String) -> gpui::Div {
         .items_center()
         .justify_between()
         .gap(px(12.0))
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).font_weight(gpui::FontWeight::MEDIUM).child(label))
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).child(value))
+        .child(div().text_sm().font_weight(gpui::FontWeight::MEDIUM).child(label))
+        .child(div().text_sm().child(value))
 }

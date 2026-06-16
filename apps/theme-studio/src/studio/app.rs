@@ -11,7 +11,7 @@ use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::resizable_panels;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::StudioThemeChoice;
@@ -316,6 +316,8 @@ impl Render for ThemeStudioApp {
             ThemeMode::Dark => LucideIcon::Sun,
         };
         let size = self.control_size;
+        let title_style = self.look.typography_role(ShadcnTextRole::H4);
+        let toggle_label_style = self.look.typography_scale(ShadcnTextSize::Xs);
 
         let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
@@ -329,43 +331,48 @@ impl Render for ThemeStudioApp {
                 .px_2()
                 .text_color(chrome.title_text)
                 .font_family(sans.clone())
-                .child(div().text_size(px(14.0)).font_weight(gpui::FontWeight::SEMIBOLD).child("Luma Theme Studio"))
+                .child(div().typography_style(title_style).child("Luma Theme Studio"))
                 .child(
-                    div().flex().items_center().gap(px(12.0)).child(render_size_toggle(size, chrome, cx)).child(
-                        div()
-                            .id("theme-studio-mode-toggle")
-                            .size(px(28.0))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .rounded(px(6.0))
-                            .font_family("lucide")
-                            .text_size(px(14.0))
-                            .line_height(px(14.0))
-                            .text_color(chrome.title_text)
-                            .cursor_pointer()
-                            .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                            .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                cx.stop_propagation();
-                            })
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let mode = match this.look.mode() {
-                                    ThemeMode::Light => ThemeMode::Dark,
-                                    ThemeMode::Dark => ThemeMode::Light,
-                                };
-                                this.look.set_mode(mode);
-                                cx.bump_luma_theme_revision();
-                                let theme = this.look.clone();
-                                let overrides = this.overrides.clone();
-                                this.theme_sidebar.update(cx, |sidebar, cx| {
-                                    sidebar.apply_theme_snapshot(theme, &overrides, cx);
-                                });
-                                this.sync_main_split_theme(cx);
-                                this.refresh_content_pane(cx);
-                                cx.notify();
-                            }))
-                            .child(char::from(toggle_icon).to_string()),
-                    ),
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(12.0))
+                        .child(render_size_toggle(size, chrome, toggle_label_style, cx))
+                        .child(
+                            div()
+                                .id("theme-studio-mode-toggle")
+                                .size(px(28.0))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .rounded(px(6.0))
+                                .font_family("lucide")
+                                .text_size(px(14.0))
+                                .line_height(px(14.0))
+                                .text_color(chrome.title_text)
+                                .cursor_pointer()
+                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    let mode = match this.look.mode() {
+                                        ThemeMode::Light => ThemeMode::Dark,
+                                        ThemeMode::Dark => ThemeMode::Light,
+                                    };
+                                    this.look.set_mode(mode);
+                                    cx.bump_luma_theme_revision();
+                                    let theme = this.look.clone();
+                                    let overrides = this.overrides.clone();
+                                    this.theme_sidebar.update(cx, |sidebar, cx| {
+                                        sidebar.apply_theme_snapshot(theme, &overrides, cx);
+                                    });
+                                    this.sync_main_split_theme(cx);
+                                    this.refresh_content_pane(cx);
+                                    cx.notify();
+                                }))
+                                .child(char::from(toggle_icon).to_string()),
+                        ),
                 ),
         );
 
@@ -391,13 +398,14 @@ impl Render for ThemeStudioApp {
 fn render_size_toggle(
     active: ControlSize,
     chrome: gpui_luma::theme::LumaChrome,
+    label_style: gpui_luma::theme::LumaTextStyle,
     cx: &mut Context<ThemeStudioApp>,
 ) -> impl IntoElement {
     div()
         .flex()
         .items_center()
         .gap(px(4.0))
-        .child(div().text_size(px(11.0)).text_color(chrome.muted_text).child("Size:"))
+        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("Size:"))
         .children([ControlSize::Sm, ControlSize::Md, ControlSize::Lg].map(|size| {
             let selected = active == size;
             let label = match size {
@@ -409,7 +417,7 @@ fn render_size_toggle(
                 .px(px(8.0))
                 .py(px(4.0))
                 .rounded(px(5.0))
-                .text_size(px(11.0))
+                .typography_style(label_style)
                 .text_color(if selected { chrome.title_text } else { chrome.muted_text })
                 .bg(if selected {
                     gpui::hsla(0.0, 0.0, 1.0, 0.12)

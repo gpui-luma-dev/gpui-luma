@@ -58,7 +58,7 @@ pub(super) fn tag_pill(tag: &'static str) -> impl IntoElement {
         .py(px(2.0))
         .rounded(px(4.0))
         .bg(gpui::hsla(0.12, 0.55, 0.92, 0.18))
-        .text_size(px(11.0))
+        .text_xs()
         .line_height(px(14.0))
         .font_weight(FontWeight::MEDIUM)
         .child(tag)

@@ -182,8 +182,7 @@ impl Render for ChoiceControlsTemplatePreview {
             .gap(px(14.0))
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
+                    .text_sm()
                     .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
                     .child("Template matrix preview"),
@@ -235,7 +234,7 @@ fn render_header_row(controls: &[ChoiceTemplateControl], label_color: gpui::Hsla
                 .w(px(152.0))
                 .flex()
                 .justify_center()
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(label_color)
@@ -260,7 +259,7 @@ fn render_state_row(
         .child(
             div()
                 .w(px(96.0))
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(label_color)

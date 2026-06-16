@@ -47,7 +47,7 @@ Per-app structure (gallery registry, theme-studio panels, etc.) is documented in
 - **Shadcn look crate (`gpui-luma-look-shadcn`, `crates/look-shadcn`)**
   - CSS-first product theming — `ShadcnLook`, CSS catalog parse, control appearance resolvers, template factories
   - `usage.rs`: hand-maintained usage metadata (`all_shadcn_theme_usages`)
-  - extension traits: `ShadcnLookControlExt`, `ShadcnButtonStyleExt`, etc.
+  - extension traits: `ShadcnLookControlExt`, `ShadcnButtonStyleExt`, `ShadcnElementExt`, and `LumaTypographyExt`
   - depends on `gpui-luma`; apps depend on both crates
 
 - **Controls subsystem** (`controls/`)
@@ -92,6 +92,8 @@ This pattern improves consistency and makes style/theming separable from behavio
   - Loads CSS catalogs (`ShadcnLook::from_css_path`) and parses/holds the embedded `style.toml` stylesheet configuration (`ShadcnLook::stylesheet()`), or loads both custom CSS and TOML dynamically at runtime.
   - Keeps one shared live look identity per app while allowing the underlying catalog, mode token snapshots, and stylesheet-backed overrides to be replaced in place at runtime.
   - Exposes control template and theme factories powered by the dynamic stylesheet engine.
+  - Resolves semantic typography through the same stylesheet layer: `style.toml` now defines `typography.semantic` roles (`h1`…`p`) and `typography.scale` entries (`xs`…`2xl`), surfaced through `ShadcnLook::typography_role(...)`, `ShadcnLook::typography_scale(...)`, and `LumaTypographyExt`.
+  - For usage policy and API guidance, see `docs/ai/typography-guidelines.md`.
   - Apps keep one `Arc<ShadcnLook>` in app state and pass it explicitly into control/theme factory helpers.
   - SDK `default_*_theme()` helpers remain native-token defaults unless a caller opts into look-shadcn template/theme factories.
 - `control_group` provides optional themed list chrome via `ControlGroupTheme` + `ThemedControlGroupTemplate` (`ControlTemplate` + modifiers from `controls/template.rs`):

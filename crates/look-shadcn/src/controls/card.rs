@@ -1,6 +1,5 @@
 //! Card surface resolved from shadcn `card` tokens.
 
-use gpui::FontWeight;
 use gpui_luma::controls::card::CardAppearance;
 use gpui_luma::theme::ControlSize;
 
@@ -8,7 +7,7 @@ use crate::appearance_context::AppearanceContext;
 use crate::look::ShadcnLook;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{embedded_stylesheet, find_card_color_rule, resolve_card_color_rule};
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow};
+use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnTextRole, ShadcnTextSize};
 
 #[derive(Clone, Debug)]
 pub struct CardColorTable {
@@ -69,13 +68,9 @@ pub fn card_appearance(theme: &ShadcnLook, size: ControlSize) -> CardAppearance 
         header_gap: (metrics.gap(size) * 0.5).max(2.0),
         body_gap: metrics.gap(size),
         title: match size {
-            ControlSize::Sm => typography.text.body,
-            ControlSize::Md => {
-                gpui_luma::theme::LumaTextStyle { size: 16.0, line_height: 22.0, weight: FontWeight::SEMIBOLD }
-            }
-            ControlSize::Lg => {
-                gpui_luma::theme::LumaTextStyle { size: 18.0, line_height: 24.0, weight: FontWeight::SEMIBOLD }
-            }
+            ControlSize::Sm => typography.text.label,
+            ControlSize::Md => theme.typography_role(ShadcnTextRole::H4),
+            ControlSize::Lg => theme.typography_scale(ShadcnTextSize::Xl),
         },
         description: typography.text.caption,
         body: typography.text.body,

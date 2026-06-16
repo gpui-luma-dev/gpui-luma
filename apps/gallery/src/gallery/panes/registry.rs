@@ -17,7 +17,7 @@ use super::{
     dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu,
     progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector,
     selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
-    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group,
+    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group, typography,
 };
 
 #[derive(Clone, Copy)]
@@ -33,6 +33,7 @@ enum GalleryPageKind {
     Introduction,
     Search,
     Palette,
+    Typography,
     ThemeUsage,
     Badge,
     Card,
@@ -127,6 +128,12 @@ const SEARCH_PAGE: GalleryPage =
     GalleryPage { id: "search", label: "Search", icon: Some(LucideIcon::Search), kind: GalleryPageKind::Search };
 const PALETTE_PAGE: GalleryPage =
     GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
+const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
+    id: "typography",
+    label: "Typography",
+    icon: Some(LucideIcon::Type),
+    kind: GalleryPageKind::Typography,
+};
 const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
     id: "theme-usage",
     label: "Theme Usage",
@@ -300,7 +307,8 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, PALETTE_PAGE, SEARCH_PAGE, THEME_USAGE_PAGE];
+const PRIMARY_PAGES: &[GalleryPage] =
+    &[INTRODUCTION_PAGE, PALETTE_PAGE, TYPOGRAPHY_PAGE, SEARCH_PAGE, THEME_USAGE_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
@@ -691,6 +699,7 @@ impl GalleryPanes {
             | GalleryPageKind::SplitViewDetached => self.split_view.notify_controls(cx),
             GalleryPageKind::Search
             | GalleryPageKind::Palette
+            | GalleryPageKind::Typography
             | GalleryPageKind::ThemeUsage
             | GalleryPageKind::Settings => {}
         }
@@ -718,6 +727,7 @@ impl GalleryPanes {
             GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.look),
             GalleryPageKind::Search => search::render(&self.look),
             GalleryPageKind::Palette => palette::render(&self.look),
+            GalleryPageKind::Typography => typography::render(&self.look),
             GalleryPageKind::ThemeUsage => theme_usage::render(&self.look),
             GalleryPageKind::Button => self.button.render(&self.look),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),

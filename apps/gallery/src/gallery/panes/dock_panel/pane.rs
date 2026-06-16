@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, Focusable, IntoElement, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::dock_splitter::{DockSplitter, DockSplitterEvent, SplitterOrientation, ThemedDockSplitterTemplate};
 use gpui_luma::dock_panel;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -144,6 +144,8 @@ impl Render for DockPanelPaneState {
         let band_background = self.look.token_color("muted").unwrap_or(chrome.content_background);
         let fill_background = self.look.token_color("accent").unwrap_or(chrome.panel_background);
         let fill_foreground = self.look.token_color("accent-foreground").unwrap_or(foreground);
+        let title_style = self.look.typography_role(ShadcnTextRole::H3);
+        let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
         div()
             .size_full()
@@ -159,19 +161,11 @@ impl Render for DockPanelPaneState {
                     .flex()
                     .flex_col()
                     .gap(px(4.0))
-                    .child(
-                        div()
-                            .text_size(px(20.0))
-                            .line_height(px(28.0))
-                            .font_weight(gpui::FontWeight::SEMIBOLD)
-                            .text_color(chrome.title_text)
-                            .child("DockSplitter"),
-                    )
+                    .child(div().typography_style(title_style).text_color(chrome.title_text).child("DockSplitter"))
                     .child(
                         div()
                             .max_w(px(760.0))
-                            .text_size(px(13.0))
-                            .line_height(px(18.0))
+                            .typography_style(body_style)
                             .text_color(chrome.muted_text)
                             .child("Debug view for ordered docking geometry with resizable docked boundaries."),
                     ),
@@ -231,6 +225,9 @@ fn render_nested_dock_panel_examples(
     fill_background: gpui::Hsla,
     fill_foreground: gpui::Hsla,
 ) -> gpui::Div {
+    let title_style = gpui_luma::theme::LumaTypography::default().text.role.h4;
+    let body_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
+
     div()
         .size_full()
         .flex()
@@ -245,16 +242,10 @@ fn render_nested_dock_panel_examples(
                 .flex_col()
                 .items_center()
                 .gap(px(4.0))
+                .child(div().typography_style(title_style).text_color(foreground).child("Nested DockPanel tests"))
                 .child(
                     div()
-                        .text_color(foreground)
-                        .font_weight(gpui::FontWeight::SEMIBOLD)
-                        .child("Nested DockPanel tests"),
-                )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
+                        .typography_style(body_style)
                         .text_color(muted)
                         .child("Inner examples verify child ordering and last-child-fill behavior."),
                 ),
@@ -297,6 +288,8 @@ fn render_nested_example_card(
     title: &'static str,
     content: AnyElement,
 ) -> gpui::Div {
+    let title_style = gpui_luma::theme::LumaTypography::default().text.scale.sm;
+    let caption_style = gpui_luma::theme::LumaTypography::default().text.scale.xs;
     div()
         .w(px(220.0))
         .flex()
@@ -304,7 +297,7 @@ fn render_nested_example_card(
         .gap(px(8.0))
         .child(
             div()
-                .text_size(px(12.0))
+                .typography_style(title_style)
                 .font_weight(gpui::FontWeight::SEMIBOLD)
                 .text_color(foreground)
                 .child(title),
@@ -320,7 +313,7 @@ fn render_nested_example_card(
                 .bg(chrome.panel_background)
                 .child(content),
         )
-        .child(div().text_size(px(11.0)).line_height(px(14.0)).text_color(muted).child(match title {
+        .child(div().typography_style(caption_style).text_color(muted).child(match title {
             "Default last child fills" => "The final child becomes the fill region.",
             _ => "Without fill, undocked child content falls back to Left docking.",
         }))
@@ -332,7 +325,7 @@ fn demo_band(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla
         .flex()
         .items_center()
         .justify_center()
-        .text_size(px(11.0))
+        .text_xs()
         .text_color(foreground)
         .bg(background)
         .child(label)
@@ -344,7 +337,7 @@ fn demo_rail(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla
         .flex()
         .items_center()
         .justify_center()
-        .text_size(px(11.0))
+        .text_xs()
         .text_color(foreground)
         .bg(background)
         .child(label)
@@ -356,7 +349,7 @@ fn demo_fill(label: &'static str, foreground: gpui::Hsla, background: gpui::Hsla
         .flex()
         .items_center()
         .justify_center()
-        .text_size(px(12.0))
+        .text_sm()
         .font_weight(gpui::FontWeight::SEMIBOLD)
         .text_color(foreground)
         .bg(background)

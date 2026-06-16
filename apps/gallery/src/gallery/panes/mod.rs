@@ -38,5 +38,6 @@ mod tabs_navigation;
 mod textarea;
 mod theme_usage;
 mod textfield;
+mod typography;
 mod toggle;
 mod toggle_group;

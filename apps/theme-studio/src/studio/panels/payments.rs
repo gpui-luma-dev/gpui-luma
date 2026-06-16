@@ -169,7 +169,7 @@ impl Render for PaymentsPanel {
                         },
                     }
                     .w_full()
-                    .text_size(px(11.0))
+                    .text_xs()
                     .line_height(px(14.0))
                     .text_color(chrome.muted_text),
                 }

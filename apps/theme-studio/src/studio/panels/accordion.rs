@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionEvent, AccordionItem, AccordionTrigger};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -51,6 +51,7 @@ impl Render for AccordionPanel {
         let chrome = self.look.chrome();
         let accordion = self.accordion.clone();
         let last_event = self.last_event.clone();
+        let event_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
         titled_card(
             "theme-studio-accordion-card",
@@ -69,7 +70,7 @@ impl Render for AccordionPanel {
                         .overflow_hidden()
                         .child(accordion.clone()),
                     div()
-                        .text_size(px(12.0))
+                        .typography_style(event_style)
                         .text_color(chrome.muted_text)
                         .child(format!("Last event: {}", last_event)),
                 }
@@ -88,8 +89,6 @@ fn demo_item(id: &str, label: &str, icon: LucideIcon, body: &str) -> AccordionIt
     AccordionItem::new(
         id.to_string(),
         AccordionTrigger::new(label.to_string()).icon(icon),
-        AccordionContent::custom(move |_, _| {
-            div().text_size(px(13.0)).line_height(px(18.0)).child(body.clone()).into_any_element()
-        }),
+        AccordionContent::custom(move |_, _| div().text_sm().child(body.clone()).into_any_element()),
     )
 }

@@ -8,16 +8,18 @@ use std::sync::{
 use gpui::{BoxShadow, Hsla, SharedString};
 use gpui_luma::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
 use gpui_luma::theme::pack::LumaChrome;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeMode};
 
 use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
 use crate::controls::{button_appearance, selection_panel_appearance, selector_items_panel_appearance, templates};
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::StylesheetConfig;
+use crate::stylesheet::{
+    StylesheetConfig, find_typography_scale_rule, find_typography_semantic_rule, resolve_typography_rule,
+};
 
 use crate::shadow::parse_shadow_token;
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnToken};
+use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
 
 const GENERIC_FAMILIES: &[&str] = &[
     "ui-sans-serif",
@@ -241,6 +243,20 @@ impl ShadcnLook {
     pub fn parse_shadow_token(&self, token_key: &str) -> anyhow::Result<Vec<BoxShadow>> {
         let tokens = self.mode_tokens();
         parse_shadow_token(&tokens.catalog, token_key)
+    }
+
+    pub fn typography_scale(&self, size: ShadcnTextSize) -> LumaTextStyle {
+        let tokens = self.mode_tokens();
+        find_typography_scale_rule(self.stylesheet().as_ref(), size)
+            .map(resolve_typography_rule)
+            .unwrap_or_else(|| tokens.typography.text.scale(size.into()))
+    }
+
+    pub fn typography_role(&self, role: ShadcnTextRole) -> LumaTextStyle {
+        let tokens = self.mode_tokens();
+        find_typography_semantic_rule(self.stylesheet().as_ref(), role)
+            .map(resolve_typography_rule)
+            .unwrap_or_else(|| tokens.typography.text.role(role.into()))
     }
 
     pub fn light_tokens(&self) -> Arc<ShadcnModeTokens> {

@@ -352,7 +352,7 @@ impl Render for ThemeSidebar {
         if !has_catalog {
             body = body.child(
                 div()
-                    .text_size(px(11.0))
+                    .text_xs()
                     .text_color(chrome.muted_text)
                     .child("Native default theme: pick a tweakcn theme above for catalog-backed swatches."),
             );
@@ -370,7 +370,7 @@ impl Render for ThemeSidebar {
             .p(px(12.0))
             .child(
                 div()
-                    .text_size(px(12.0))
+                    .text_sm()
                     .font_weight(gpui::FontWeight::SEMIBOLD)
                     .text_color(chrome.title_text)
                     .mb(px(8.0))

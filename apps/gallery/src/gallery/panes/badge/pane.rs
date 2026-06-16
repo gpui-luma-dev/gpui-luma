@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::ControlSize;
 use gpui_luma::{flow, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -115,14 +115,11 @@ impl BadgePane {
 }
 
 fn render_section(title: &'static str, content: AnyElement, look: &ShadcnLook) -> AnyElement {
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
+
     vstack! {
         gap=10.0 align=center;
-        div()
-            .text_size(px(12.0))
-            .line_height(px(16.0))
-            .font_weight(gpui::FontWeight::MEDIUM)
-            .text_color(look.chrome().muted_text)
-            .child(title),
+        div().typography_style(title_style).text_color(look.chrome().muted_text).child(title),
         div()
             .w_full()
             .flex()

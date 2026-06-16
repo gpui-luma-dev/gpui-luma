@@ -68,7 +68,7 @@ impl ComboBoxPane {
                 .gap(px(18.0))
                 .child(
                     div()
-                        .text_size(px(11.0))
+                        .text_xs()
                         .line_height(px(15.0))
                         .text_color(look.chrome().muted_text)
                         .child("Strict typing policy + down arrow"),

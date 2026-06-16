@@ -5,7 +5,7 @@ use gpui::{AnyElement, Context, FontWeight, IntoElement, Render, Window, div, pr
 use gpui_luma::theme::{LumaChrome, ThemeMode};
 use gpui_luma::{declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, ShadcnTextSize};
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
@@ -122,20 +122,19 @@ impl Render for PalettePanel {
                 ThemeMode::Dark => self.look.dark_tokens(),
             };
             let palette = mode_palette(&mode_tokens, &self.overrides.global_color_overrides);
+            let heading_style = self.look.typography_role(ShadcnTextRole::H3);
+            let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let section_style = self.look.typography_scale(ShadcnTextSize::Lg);
+            let row_label_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let code_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
             vstack! {
                 gap=18;
                 vstack! {
                     gap=4;
+                    div().typography_style(heading_style).text_color(chrome.title_text).child("Palette"),
                     div()
-                        .text_size(px(20.0))
-                        .line_height(px(28.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(chrome.title_text)
-                        .child("Palette"),
-                    div()
-                        .text_size(px(13.0))
-                        .line_height(px(18.0))
+                        .typography_style(body_style)
                         .text_color(chrome.muted_text)
                         .child(
                             if self.look.has_css_catalog() {
@@ -145,7 +144,7 @@ impl Render for PalettePanel {
                             },
                         ),
                 },
-                render_palette_sections(palette, &chrome),
+                render_palette_sections(palette, &chrome, section_style, row_label_style, code_style),
             }
             .id("theme-studio-palette")
             .size_full()
@@ -193,14 +192,22 @@ fn token_color_for_mode(
         .unwrap_or(fallback)
 }
 
-fn render_palette_sections(palette: ModePalette, chrome: &LumaChrome) -> AnyElement {
+fn render_palette_sections(
+    palette: ModePalette,
+    chrome: &LumaChrome,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     let ModePalette { title_text, muted_text, sections } = palette;
 
     div()
         .flex()
         .flex_col()
         .gap(px(20.0))
-        .children(sections.into_iter().map(|section| render_section(section, title_text, muted_text, chrome)))
+        .children(sections.into_iter().map(|section| {
+            render_section(section, title_text, muted_text, chrome, section_style, row_label_style, code_style)
+        }))
         .into_any_element()
 }
 
@@ -209,22 +216,20 @@ fn render_section(
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
     chrome: &LumaChrome,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     vstack! {
         gap=12;
-        div()
-            .text_size(px(14.0))
-            .line_height(px(20.0))
-            .font_weight(FontWeight::SEMIBOLD)
-            .text_color(title_text)
-            .child(section.title),
+        div().typography_style(section_style).text_color(title_text).child(section.title),
         div()
             .w_full()
             .flex()
             .flex_row()
             .flex_wrap()
             .gap(px(PALETTE_ITEM_GAP))
-            .children(section.rows.into_iter().map(|row| render_token_cell(row, title_text, muted_text, chrome))),
+            .children(section.rows.into_iter().map(|row| render_token_cell(row, title_text, muted_text, chrome, row_label_style, code_style))),
     }
     .into_any_element()
 }
@@ -234,6 +239,8 @@ fn render_token_cell(
     title_text: gpui::Hsla,
     muted_text: gpui::Hsla,
     chrome: &LumaChrome,
+    row_label_style: gpui_luma::theme::LumaTextStyle,
+    code_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     hstack! {
         gap=PALETTE_CELL_INNER_GAP align=start;
@@ -247,15 +254,13 @@ fn render_token_cell(
         vstack! {
             gap=2;
             div()
-                .text_size(px(13.0))
-                .line_height(px(18.0))
+                .typography_style(row_label_style)
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(title_text)
                 .child(row.label),
             div()
                 .font_family("Monaco")
-                .text_size(px(12.0))
-                .line_height(px(16.0))
+                .typography_style(code_style)
                 .text_color(muted_text)
                 .child(format_hex_color(row.color)),
         }

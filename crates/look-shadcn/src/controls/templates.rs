@@ -593,8 +593,7 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
     }
 
     fn resolve_section(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarSectionAppearance {
-        let tokens = self.theme.mode_tokens();
-        navigation_sidebar_section_appearance(tokens.as_ref())
+        navigation_sidebar_section_appearance(&self.theme)
     }
 
     fn resolve_branch(
@@ -602,8 +601,7 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        let tokens = self.theme.mode_tokens();
-        navigation_sidebar_branch_appearance(tokens.as_ref(), state, size)
+        navigation_sidebar_branch_appearance(&self.theme, state, size)
     }
 
     fn resolve_item(
@@ -612,8 +610,7 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        let tokens = self.theme.mode_tokens();
-        navigation_sidebar_item_appearance(tokens.as_ref(), selected, state, size)
+        navigation_sidebar_item_appearance(&self.theme, selected, state, size)
     }
 }
 

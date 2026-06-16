@@ -274,8 +274,7 @@ impl Render for ButtonStatePreview {
             .gap(px(16.0))
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
+                    .text_sm()
                     .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
                     .child("Template matrix preview"),
@@ -389,7 +388,7 @@ fn render_header_row(samples: &[ButtonStateSample], label_color: gpui::Hsla) -> 
                 .w(px(116.0))
                 .flex()
                 .justify_center()
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .text_color(label_color)
                 .child(sample.header)

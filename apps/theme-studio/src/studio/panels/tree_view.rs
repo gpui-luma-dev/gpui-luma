@@ -4,7 +4,7 @@ use gpui::{Context, Entity, IntoElement, Render, SharedString, Subscription, Win
 use gpui_luma::controls::scroll_container::ScrollContainer;
 use gpui_luma::controls::scrollbar::ScrollbarEvent;
 use gpui_luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent, TreeViewSelectionMode};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -59,6 +59,7 @@ impl Render for TreeViewPanel {
         let chrome = self.look.chrome();
         let shell = self.shell.clone();
         let last_event = self.last_event.clone();
+        let hint_style = self.look.typography_scale(ShadcnTextSize::Sm);
 
         titled_card(
             "theme-studio-tree-view-card",
@@ -70,7 +71,7 @@ impl Render for TreeViewPanel {
                 vstack! {
                     gap=12;
                     div()
-                        .text_size(px(12.0))
+                        .typography_style(hint_style)
                         .text_color(chrome.muted_text)
                         .child(format!(
                             "Mock tree: {TREE_DEPTH} levels deep — click branch rows to expand or collapse"
@@ -86,7 +87,7 @@ impl Render for TreeViewPanel {
                         .bg(chrome.content_background)
                         .child(shell.clone()),
                     div()
-                        .text_size(px(12.0))
+                        .typography_style(hint_style)
                         .text_color(chrome.muted_text)
                         .child(format!("Last event: {}", last_event)),
                 }

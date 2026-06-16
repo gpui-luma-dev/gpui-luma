@@ -16,7 +16,7 @@ use gpui_luma::controls::selection_panel::{
 use gpui_luma::controls::state::ControlFocusState;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{ControlSize, ThemeMode};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::gallery::control::GalleryApp;
@@ -223,12 +223,14 @@ impl SelectionPanelPane {
                             self.interactive_panel.clone().into_any_element(),
                             chrome.muted_text,
                             chrome.border,
+                            look,
                         ))
                         .child(render_live_panel_sample(
                             "Parameterized control + item templates",
                             self.parameterized_panel.clone().into_any_element(),
                             chrome.muted_text,
                             chrome.border,
+                            look,
                         ))
                         .into_any_element(),
                     look,
@@ -398,8 +400,7 @@ impl Render for SelectionPanelEventDemo {
                     .gap(px(10.0))
                     .child(
                         div()
-                            .text_size(px(12.0))
-                            .line_height(px(16.0))
+                            .typography_style(self.look.typography_scale(ShadcnTextSize::Sm))
                             .font_weight(FontWeight::SEMIBOLD)
                             .text_color(style.title)
                             .child("SelectionPanelEvent demo"),
@@ -412,8 +413,7 @@ impl Render for SelectionPanelEventDemo {
                             .border_1()
                             .border_color(style.live_border)
                             .bg(style.live_background)
-                            .text_size(px(10.0))
-                            .line_height(px(13.0))
+                            .typography_style(self.look.typography_scale(ShadcnTextSize::Xs))
                             .font_weight(FontWeight::SEMIBOLD)
                             .text_color(style.live_text)
                             .child("live"),
@@ -435,8 +435,7 @@ impl Render for SelectionPanelEventDemo {
                     .border_color(style.code_border)
                     .bg(style.code_background)
                     .p(px(8.0))
-                    .text_size(px(11.0))
-                    .line_height(px(16.0))
+                    .typography_style(self.look.typography_scale(ShadcnTextSize::Xs))
                     .font_family("Monaco")
                     .text_color(style.body)
                     .child(if self.last_event.is_empty() {
@@ -495,6 +494,8 @@ fn event_demo_style(mode: ThemeMode) -> EventDemoStyle {
 }
 
 fn render_event_count(label: &'static str, count: usize, style: EventDemoStyle) -> AnyElement {
+    let count_style = gpui_luma::theme::LumaTypography::default().text.scale.xs;
+
     div()
         .flex()
         .items_center()
@@ -508,13 +509,12 @@ fn render_event_count(label: &'static str, count: usize, style: EventDemoStyle) 
         .child(
             div()
                 .font_family("Monaco")
-                .text_size(px(11.0))
-                .line_height(px(14.0))
+                .typography_style(count_style)
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(style.body)
                 .child(count.to_string()),
         )
-        .child(div().text_size(px(10.0)).line_height(px(14.0)).text_color(style.body).opacity(0.76).child(label))
+        .child(div().typography_style(count_style).text_color(style.body).opacity(0.76).child(label))
         .into_any_element()
 }
 
@@ -529,6 +529,7 @@ fn render_template_sample(
     active_index: Option<usize>,
     cx: &mut App,
 ) -> AnyElement {
+    let label_style = gpui_luma::theme::LumaTypography::default().text.scale.xs;
     let panel_id = SharedString::from(sample_id);
     let control_id = SharedString::from(format!("{sample_id}-control"));
     let visible_indices = (0..items.len()).collect::<Vec<_>>();
@@ -564,14 +565,7 @@ fn render_template_sample(
             noop_clicks(items.len()),
             cx,
         ))
-        .child(
-            div()
-                .text_size(px(11.0))
-                .line_height(px(15.0))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(label_color)
-                .child(label),
-        )
+        .child(div().typography_style(label_style).text_color(label_color).child(label))
         .into_any_element()
 }
 

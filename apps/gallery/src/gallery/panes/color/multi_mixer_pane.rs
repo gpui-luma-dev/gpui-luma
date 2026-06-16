@@ -207,13 +207,7 @@ impl<S: ColorSpecification> gpui::Render for ColorSpaceMixerState<S> {
             .flex_col()
             .gap(px(10.0))
             .when_some(self.subtitle, |container, subtitle| {
-                container.child(
-                    div()
-                        .text_size(px(11.0))
-                        .line_height(px(16.0))
-                        .text_color(self.look.chrome().muted_text)
-                        .child(subtitle),
-                )
+                container.child(div().text_xs().text_color(self.look.chrome().muted_text).child(subtitle))
             })
             .child(div().h(px(44.0)).rounded(px(12.0)).border_1().border_color(self.look.chrome().border).bg(color))
             .child(detail_row("Hex", format_hex_color(color), &self.look))

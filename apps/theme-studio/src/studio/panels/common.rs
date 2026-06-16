@@ -124,7 +124,7 @@ pub fn or_divider(label: &'static str, border: Hsla, text: Hsla) -> impl IntoEle
         .items_center()
         .gap(px(10.0))
         .child(div().flex_1().h(px(1.0)).bg(border))
-        .child(div().text_size(px(10.0)).line_height(px(12.0)).text_color(text).child(label))
+        .child(div().text_xs().line_height(px(12.0)).text_color(text).child(label))
         .child(div().flex_1().h(px(1.0)).bg(border))
 }
 
@@ -155,7 +155,7 @@ pub fn message_bubble(text: &'static str, align_end: bool, bg: Hsla, fg: Hsla) -
         .py(px(8.0))
         .rounded(px(10.0))
         .bg(bg)
-        .text_size(px(12.0))
+        .text_sm()
         .line_height(px(16.0))
         .text_color(fg)
         .child(text);

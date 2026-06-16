@@ -5,6 +5,7 @@ use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, Accordi
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};
 use gpui_luma::vstack;
 use lucide_icons::Icon as LucideIcon;
 
@@ -60,10 +61,7 @@ impl AccordionPane {
                         vstack! {
                             gap=8;
                             field_for_content.clone(),
-                            div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
-                                .child(format!("Live value: {value}")),
+                            div().text_sm().child(format!("Live value: {value}")),
                         }
                         .into_any_element()
                     }),
@@ -142,7 +140,7 @@ impl AccordionPane {
                 .child(example_block("Context-aware content", self.interactive.clone(), chrome.muted_text))
                 .child(
                     div()
-                        .text_size(px(12.0))
+                        .typography_style(look.typography_scale(ShadcnTextSize::Sm))
                         .text_color(chrome.muted_text)
                         .child(format!("Last event: {}", self.last_event)),
                 )
@@ -178,7 +176,7 @@ fn example_block(title: &str, accordion: Entity<AccordionControl>, label_color: 
         .flex()
         .flex_col()
         .gap_2()
-        .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(label_color).child(title))
+        .child(div().text_sm().text_color(label_color).child(title))
         .child(accordion)
 }
 
@@ -187,8 +185,6 @@ fn demo_item(id: &str, label: &str, icon: LucideIcon, body: &str) -> AccordionIt
     AccordionItem::new(
         id.to_string(),
         AccordionTrigger::new(label.to_string()).icon(icon),
-        AccordionContent::custom(move |_, _| {
-            div().text_size(px(13.0)).line_height(px(18.0)).child(body.clone()).into_any_element()
-        }),
+        AccordionContent::custom(move |_, _| div().text_sm().child(body.clone()).into_any_element()),
     )
 }

@@ -499,12 +499,7 @@ fn render_combinations_card_body(
             vstack! {
                 gap=10.0;
                 div().h(px(RESULT_SWATCH_HEIGHT)).rounded(px(14.0)).bg(swatch.color),
-                div()
-                    .text_size(px(14.0))
-                    .line_height(px(20.0))
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(body_text)
-                    .child(format_rgb_hex(swatch.color)),
+                div().text_lg().font_weight(FontWeight::MEDIUM).text_color(body_text).child(format_rgb_hex(swatch.color)),
             }
             .flex_1()
             .min_w(px(0.0))
@@ -515,12 +510,7 @@ fn render_combinations_card_body(
 }
 
 fn field_label(label: &'static str, color: Hsla) -> gpui::Div {
-    div()
-        .text_size(px(18.0))
-        .line_height(px(24.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(color)
-        .child(label)
+    div().text_xl().font_weight(FontWeight::MEDIUM).text_color(color).child(label)
 }
 
 fn format_rgb_hex(color: Hsla) -> String {

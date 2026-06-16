@@ -90,13 +90,7 @@ impl FloatingMenuPane {
                             None,
                         )),
                 )
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.muted_text)
-                        .child(floating_menu_state_machine_snapshot()),
-                )
+                .child(div().text_sm().text_color(chrome.muted_text).child(floating_menu_state_machine_snapshot()))
                 .into_any_element(),
             self.inspector.clone(),
             look,
@@ -137,7 +131,7 @@ fn render_state_sample(
         ))
         .child(
             div()
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(label_color)

@@ -377,12 +377,12 @@ mod tests {
         behavior.apply(SelectionEvent::Focus, &items);
         behavior.set_query("i", &items);
 
-        assert_eq!(behavior.state.filtered.len(), 3);
-        assert_eq!(behavior.state.highlighted_filtered, Some(1));
+        assert_eq!(behavior.state.filtered, vec![2, 0, 1]);
+        assert_eq!(behavior.state.highlighted_filtered, Some(0));
 
         let result = behavior.apply(SelectionEvent::Submit, &items);
         match result {
-            SubmitResult::Select { index, .. } => assert_eq!(items[index].label.as_ref(), "Hawaii"),
+            SubmitResult::Select { index, .. } => assert_eq!(items[index].label.as_ref(), "Idaho"),
             SubmitResult::None => panic!("expected selection result"),
         }
     }

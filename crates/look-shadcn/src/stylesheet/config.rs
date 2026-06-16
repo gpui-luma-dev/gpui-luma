@@ -8,6 +8,8 @@ use super::selector::interaction_layer_key;
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct StylesheetConfig {
     #[serde(default)]
+    pub typography: TypographyStylesheet,
+    #[serde(default)]
     pub button: ButtonStylesheet,
     #[serde(default)]
     pub checkbox: CheckboxStylesheet,
@@ -55,6 +57,31 @@ impl StylesheetConfig {
     pub fn parse(source: &str) -> anyhow::Result<Self> {
         toml::from_str(source).map_err(|err| anyhow::anyhow!("parse style.toml: {err}"))
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct TypographyStylesheet {
+    #[serde(default)]
+    pub semantic: HashMap<String, TypographyRule>,
+    #[serde(default)]
+    pub scale: HashMap<String, TypographyRule>,
+}
+
+impl TypographyStylesheet {
+    pub fn semantic_rule(&self, key: &str) -> Option<&TypographyRule> {
+        self.semantic.get(key)
+    }
+
+    pub fn scale_rule(&self, key: &str) -> Option<&TypographyRule> {
+        self.scale.get(key)
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+pub struct TypographyRule {
+    pub size: f32,
+    pub line_height: f32,
+    pub weight: f32,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -1041,6 +1068,23 @@ pub struct AutocompleteChromeColorRule {
 mod tests {
     use super::*;
 
+    const TYPOGRAPHY_SNIPPET: &str = r#"
+[typography.semantic.h1]
+size = 44.0
+line_height = 52.0
+weight = 700.0
+
+[typography.scale.xs]
+size = 11.0
+line_height = 16.0
+weight = 500.0
+
+[typography.scale."2xl"]
+size = 20.0
+line_height = 28.0
+weight = 600.0
+"#;
+
     const BUTTON_SNIPPET: &str = r#"
 [button.metrics.md]
 height = "metrics.control.md"
@@ -1060,6 +1104,14 @@ foreground = "primary-foreground"
 background = "transparent"
 foreground = "foreground"
 "#;
+
+    #[test]
+    fn parses_typography_rules() {
+        let config = StylesheetConfig::parse(TYPOGRAPHY_SNIPPET).expect("parse typography snippet");
+        assert_eq!(config.typography.semantic_rule("h1").expect("h1").size, 44.0);
+        assert_eq!(config.typography.scale_rule("xs").expect("xs").line_height, 16.0);
+        assert_eq!(config.typography.scale_rule("2xl").expect("2xl").weight, 600.0);
+    }
 
     #[test]
     fn parses_button_metrics_and_rules() {

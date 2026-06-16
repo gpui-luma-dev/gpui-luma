@@ -15,10 +15,11 @@ pub use resolve::{
     resolve_listbox_list_color_rule, resolve_listbox_row_color_rule, resolve_navigation_sidebar_branch_color_rule,
     resolve_navigation_sidebar_container_color_rule, resolve_navigation_sidebar_item_color_rule,
     resolve_navigation_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
-    resolve_progress_metrics, resolve_textfield_color_rule, resolve_radio_color_rule,
-    resolve_resizable_panels_color_rule, resolve_scrollbar_color_rule, resolve_scrollbar_metrics,
-    resolve_slider_color_rule, resolve_slider_metrics, resolve_split_view_color_rule, resolve_switch_color_rule,
-    resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule, resolve_tree_view_row_color_rule,
+    resolve_progress_metrics, resolve_radio_color_rule, resolve_resizable_panels_color_rule,
+    resolve_scrollbar_color_rule, resolve_scrollbar_metrics, resolve_slider_color_rule, resolve_slider_metrics,
+    resolve_split_view_color_rule, resolve_switch_color_rule, resolve_tabs_navigation_item_color_rule,
+    resolve_tabs_navigation_list_color_rule, resolve_textfield_color_rule, resolve_tree_view_row_color_rule,
+    resolve_typography_rule,
 };
 
 use std::sync::OnceLock;
@@ -28,6 +29,7 @@ use gpui_luma::theme::{InteractionLayer, ThemeMode};
 use crate::controls::ShadcnButtonStyle;
 use crate::elements::BadgeVariant;
 use crate::provenance::TableRuleMetadata;
+use crate::tokens::{ShadcnTextRole, ShadcnTextSize};
 
 use config::{
     AccordionContentColorRule, AccordionTriggerColorRule, AutocompleteChromeColorRule, BadgeColorRule, ButtonColorRule,
@@ -36,7 +38,7 @@ use config::{
     ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
     NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, RadioColorRule,
     ResizablePanelsColorRule, ScrollbarColorRule, SliderColorRule, SplitViewColorRule, SwitchColorRule,
-    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule,
+    TabsNavigationItemColorRule, TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 use selector::{AsSelectorState, ButtonSelectorState, badge_variant_key, theme_mode_key};
 
@@ -222,6 +224,14 @@ pub fn find_textfield_color_rule<'a>(
     theme_mode: ThemeMode,
 ) -> Option<&'a TextfieldColorRule> {
     stylesheet.textfield.find_color_rule(style, enabled, invalid, theme_mode_key(theme_mode))
+}
+
+pub fn find_typography_scale_rule(stylesheet: &StylesheetConfig, size: ShadcnTextSize) -> Option<&TypographyRule> {
+    stylesheet.typography.scale_rule(size.as_str())
+}
+
+pub fn find_typography_semantic_rule(stylesheet: &StylesheetConfig, role: ShadcnTextRole) -> Option<&TypographyRule> {
+    stylesheet.typography.semantic_rule(role.as_str())
 }
 
 pub fn find_autocomplete_chrome_color_rule(stylesheet: &StylesheetConfig) -> Option<&AutocompleteChromeColorRule> {
@@ -900,6 +910,8 @@ mod tests {
     #[test]
     fn embedded_stylesheet_parses() {
         let stylesheet = embedded_stylesheet();
+        assert!(stylesheet.typography.scale_rule("xs").is_some());
+        assert!(stylesheet.typography.semantic_rule("h1").is_some());
         assert!(!stylesheet.button.color_rules.is_empty());
         assert_eq!(stylesheet.badge.color_rules.len(), 5);
         assert_eq!(stylesheet.checkbox.color_rules.len(), 3);

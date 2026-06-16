@@ -78,12 +78,11 @@ impl ListBoxPane {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_size(px(12.0)).line_height(px(16.0)).child("Single select"))
+                        .child(div().text_sm().child("Single select"))
                         .child(self.single.clone())
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .text_sm()
                                 .text_color(chrome.body_text)
                                 .child(format!("Selected: {}", self.single_choice)),
                         ),
@@ -93,12 +92,11 @@ impl ListBoxPane {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_size(px(12.0)).line_height(px(16.0)).child("Multiple select"))
+                        .child(div().text_sm().child("Multiple select"))
                         .child(self.multiple.clone())
                         .child(
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .text_sm()
                                 .text_color(chrome.body_text)
                                 .child(format!("Selected: {}", self.multi_choices.join(", "))),
                         ),

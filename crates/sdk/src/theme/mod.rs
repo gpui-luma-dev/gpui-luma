@@ -17,7 +17,8 @@ pub use registry::{ThemePartUsage, ThemeUsage};
 pub use tokens::{
     AppPalette, BorderPalette, BorderWidthTokens, ControlMetricScale, ControlMetricTokens, ControlSize, DataPalette,
     FocusMetricTokens, FocusPalette, FontFamilyToken, FontTokens, FormInputPalette, FormPalette, LumaElevation,
-    LumaPalette, LumaShadow, LumaShadowLayer, LumaTextStyle, LumaTheme, LumaThemeMode, LumaTypography, MetricTokens,
-    NavigationPalette, RadiusTokens, SpacingTokens, StateBackgroundPalette, StatePalette, StateTonePalette,
-    SurfacePalette, SurfaceTonePalette, SurfaceWithBorderPalette, TextTokens, ThemeMode, ThemeModes, ThemeTokens,
+    LumaPalette, LumaShadow, LumaShadowLayer, LumaTextRole, LumaTextScale, LumaTextStyle, LumaTheme, LumaThemeMode,
+    LumaTypography, MetricTokens, NavigationPalette, RadiusTokens, SpacingTokens, StateBackgroundPalette, StatePalette,
+    StateTonePalette, SurfacePalette, SurfaceTonePalette, SurfaceWithBorderPalette, TextRoleTokens, TextScaleTokens,
+    TextTokens, ThemeMode, ThemeModes, ThemeTokens,
 };

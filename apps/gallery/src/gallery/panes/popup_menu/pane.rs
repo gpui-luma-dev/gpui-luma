@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
-    SharedString, Subscription, Window, div, prelude::*, px,
+    AnyElement, App, Bounds, ClickEvent, Context, Entity, FontWeight, IntoElement, MouseDownEvent, MouseUpEvent,
+    Pixels, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
@@ -220,9 +220,8 @@ impl Render for PopupMenuStatePreview {
             .gap(px(14.0))
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_sm()
+                    .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
                     .child("Template state preview"),
             )
@@ -266,7 +265,7 @@ fn render_trigger_sample(
         .items_center()
         .gap(px(6.0))
         .child(template.render(&model, popup_menu_preview_handlers(items.len(), 0), window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .child(div().text_xs().line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 

@@ -336,7 +336,7 @@ fn scrollbar_pair(
                 .flex()
                 .items_center()
                 .gap_2()
-                .child(div().w(px(92.0)).text_color(chrome.title_text).child(format!("Row {:02}", row + 1)))
+                .child(div().w(px(92.0)).text_color(rgb(0x0f172a)).child(format!("Row {:02}", row + 1)))
                 .child(div().w(px(110.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbae6fd)))
                 .child(div().w(px(150.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xbbf7d0)))
                 .child(div().w(px(96.0)).h(px(22.0)).rounded(px(4.0)).bg(rgb(0xfed7aa))),

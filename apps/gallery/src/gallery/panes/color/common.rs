@@ -1,5 +1,5 @@
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 pub(super) fn color_gallery_pane(
     title: &'static str,
@@ -8,6 +8,8 @@ pub(super) fn color_gallery_pane(
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_role(ShadcnTextRole::H3);
+    let description_style = look.typography_scale(ShadcnTextSize::Sm);
 
     div()
         .size_full()
@@ -27,19 +29,11 @@ pub(super) fn color_gallery_pane(
                         .flex()
                         .flex_col()
                         .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_size(px(20.0))
-                                .line_height(px(28.0))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(chrome.title_text)
-                                .child(title),
-                        )
+                        .child(div().typography_style(title_style).text_color(chrome.title_text).child(title))
                         .child(
                             div()
                                 .max_w(px(760.0))
-                                .text_size(px(13.0))
-                                .line_height(px(18.0))
+                                .typography_style(description_style)
                                 .text_color(chrome.muted_text)
                                 .child(description),
                         ),
@@ -56,6 +50,8 @@ pub(super) fn demo_section(
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_role(ShadcnTextRole::H4);
+    let description_style = look.typography_scale(ShadcnTextSize::Sm);
 
     div()
         .flex()
@@ -68,15 +64,12 @@ pub(super) fn demo_section(
                 .gap(px(2.0))
                 .child(
                     div()
-                        .text_size(px(15.0))
-                        .line_height(px(21.0))
+                        .typography_style(title_style)
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(chrome.title_text)
                         .child(title),
                 )
-                .child(
-                    div().text_size(px(12.0)).line_height(px(17.0)).text_color(chrome.muted_text).child(description),
-                ),
+                .child(div().typography_style(description_style).text_color(chrome.muted_text).child(description)),
         )
         .child(div().flex().flex_wrap().items_start().gap(px(16.0)).children(cards))
         .into_any_element()
@@ -90,6 +83,8 @@ pub(super) fn demo_card(
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
+    let description_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .w(px(width_px))
@@ -110,15 +105,12 @@ pub(super) fn demo_card(
                 .gap(px(3.0))
                 .child(
                     div()
-                        .text_size(px(13.0))
-                        .line_height(px(18.0))
+                        .typography_style(title_style)
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(chrome.title_text)
                         .child(title),
                 )
-                .child(
-                    div().text_size(px(11.0)).line_height(px(16.0)).text_color(chrome.muted_text).child(description),
-                ),
+                .child(div().typography_style(description_style).text_color(chrome.muted_text).child(description)),
         )
         .child(content)
         .into_any_element()
@@ -126,8 +118,7 @@ pub(super) fn demo_card(
 
 pub(super) fn control_label(label: &'static str, look: &ShadcnLook) -> AnyElement {
     div()
-        .text_size(px(11.0))
-        .line_height(px(16.0))
+        .typography_style(look.typography_scale(ShadcnTextSize::Xs))
         .font_weight(FontWeight::MEDIUM)
         .text_color(look.chrome().muted_text)
         .child(label)
@@ -136,6 +127,7 @@ pub(super) fn control_label(label: &'static str, look: &ShadcnLook) -> AnyElemen
 
 pub(super) fn detail_row(label: &'static str, value: String, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let label_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .flex()
@@ -144,13 +136,12 @@ pub(super) fn detail_row(label: &'static str, value: String, look: &ShadcnLook) 
         .gap(px(12.0))
         .child(
             div()
-                .text_size(px(11.0))
-                .line_height(px(16.0))
+                .typography_style(label_style)
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(chrome.muted_text)
                 .child(label),
         )
-        .child(div().text_size(px(11.0)).line_height(px(16.0)).text_color(chrome.body_text).child(value))
+        .child(div().typography_style(label_style).text_color(chrome.body_text).child(value))
         .into_any_element()
 }
 

@@ -228,6 +228,8 @@ impl Render for WorkspacePanel {
         let density = self.density.clone();
         let icon_demo = self.icon_demo.clone();
         let action = self.action.clone();
+        let body_style = self.look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Sm);
+        let caption_style = self.look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Xs);
 
         div().w(px(360.0)).max_w_full().h_full().child(
             self.look
@@ -243,8 +245,7 @@ impl Render for WorkspacePanel {
                         vstack! {
                             gap=6.0 align=start;
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(body_style)
                                 .font_weight(gpui::FontWeight::MEDIUM)
                                 .text_color(chrome.body_text)
                                 .child(format!("Layout: {}", layout)),
@@ -253,8 +254,7 @@ impl Render for WorkspacePanel {
                         vstack! {
                             gap=6.0;
                             div()
-                                .text_size(px(12.0))
-                                .line_height(px(16.0))
+                                .typography_style(body_style)
                                 .font_weight(gpui::FontWeight::MEDIUM)
                                 .text_color(chrome.body_text)
                                 .child(format!("Density: {}", density)),
@@ -267,16 +267,14 @@ impl Render for WorkspacePanel {
                         vstack! {
                             gap=6.0 align=start;
                             div()
-                                .text_size(px(11.0))
-                                .line_height(px(15.0))
+                                .typography_style(caption_style)
                                 .text_color(chrome.muted_text)
                                 .child(format!("Icon demo: {}", icon_demo)),
                             icon_demo_icon_group.clone(),
                         },
                         div()
                             .pt(px(2.0))
-                            .text_size(px(11.0))
-                            .line_height(px(16.0))
+                            .typography_style(caption_style)
                             .text_color(chrome.muted_text)
                             .child(format!("Workspace action: {} | Icon demo: {}", action, icon_demo)),
                     }

@@ -4,8 +4,8 @@ use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ControlIcon};
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{ControlSize};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 use gpui_luma::{declare_form, hstack, vstack};
 use lucide_icons::Icon as LucideIcon;
 
@@ -45,6 +45,8 @@ impl Render for ChatPanel {
             let plus_button = self.plus_button.clone();
             let message_field = self.message_field.clone();
             let send_button = self.send_button.clone();
+            let name_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let email_style = self.look.typography_scale(ShadcnTextSize::Xs);
 
             card(
                 "theme-studio-chat-card",
@@ -61,12 +63,12 @@ impl Render for ChatPanel {
                                 vstack! {
                                     gap=2;
                                     div()
-                                        .text_size(px(13.0))
+                                        .typography_style(name_style)
                                         .font_weight(gpui::FontWeight::SEMIBOLD)
                                         .text_color(chrome.title_text)
                                         .child("Sofia Davis"),
                                     div()
-                                        .text_size(px(11.0))
+                                        .typography_style(email_style)
                                         .text_color(chrome.muted_text)
                                         .child("m@example.com"),
                                 },

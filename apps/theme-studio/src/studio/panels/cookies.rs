@@ -89,14 +89,10 @@ fn cookie_row(
         justify=between align=start gap=12;
         vstack! {
             gap=4;
-            div()
-                .text_size(px(12.0))
-                .font_weight(gpui::FontWeight::MEDIUM)
-                .text_color(chrome.body_text)
-                .child(title),
+            div().text_sm().font_weight(gpui::FontWeight::MEDIUM).text_color(chrome.body_text).child(title),
             div()
                 .w_full()
-                .text_size(px(11.0))
+                .text_xs()
                 .line_height(px(15.0))
                 .text_color(chrome.muted_text)
                 .child(body),

@@ -17,6 +17,6 @@ pub use crate::controls::{
     ShadcnTextFieldExt,
 };
 pub use crate::elements::{Badge, BadgeIconPlacement, BadgeVariant};
-pub use crate::ext::ShadcnElementExt;
+pub use crate::ext::{LumaTypographyExt, ShadcnElementExt};
 pub use crate::look::ShadcnLook;
-pub use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextSize, ShadcnToken};
+pub use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui_luma::controls::presenter::ControlPresenter;
 use gpui_luma::controls::command::button::ButtonRenderModel;
 
-use gpui::{Context, Entity, FontWeight, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ControlIcon};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::icon::lucide_glyph;
@@ -13,7 +13,7 @@ use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSepara
 use gpui_luma::theme::ControlSize;
 use gpui_luma::{column, column_emphasis, paging_list_view};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
 use super::common::panel_box_shadow;
@@ -114,9 +114,7 @@ impl DashboardPanel {
                     .py(px(model.appearance.padding_y))
                     .bg(model.appearance.background)
                     .text_color(model.appearance.label_color)
-                    .text_size(px(model.appearance.label_typography.size))
-                    .line_height(px(model.appearance.label_typography.line_height))
-                    .font_weight(model.appearance.label_typography.weight)
+                    .typography_style(model.appearance.label_typography)
                     .child(cells)
             };
         }
@@ -234,6 +232,7 @@ impl Render for DashboardPanel {
 
 fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook) -> gpui::AnyElement {
     let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Lg);
 
     div()
         .id("studio-dashboard-list-header")
@@ -247,14 +246,7 @@ fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook) -> gpui::An
         .bg(chrome.panel_background)
         .child(sidebar_toggle)
         .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
-        .child(
-            div()
-                .text_size(px(14.0))
-                .line_height(px(20.0))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(chrome.title_text)
-                .child(LIST_HEADER_TITLE),
-        )
+        .child(div().typography_style(title_style).text_color(chrome.title_text).child(LIST_HEADER_TITLE))
         .into_any_element()
 }
 

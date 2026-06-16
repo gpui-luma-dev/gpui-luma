@@ -213,7 +213,7 @@ fn slider_row(label: &'static str, slider: Entity<ColorSliderState>) -> AnyEleme
         .flex()
         .items_center()
         .gap(px(10.0))
-        .child(div().w(px(14.0)).text_size(px(10.0)).child(label))
+        .child(div().w(px(14.0)).text_xs().child(label))
         .child(div().flex_1().child(slider))
         .into_any_element()
 }

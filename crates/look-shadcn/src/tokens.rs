@@ -1,3 +1,5 @@
+use gpui_luma::theme::{LumaTextRole, LumaTextScale};
+
 /// Semantic shadcn color tokens mapped from CSS custom properties.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShadcnToken {
@@ -159,6 +161,40 @@ pub enum ShadcnShadow {
     TwoXl,
 }
 
+/// Semantic typography roles for structural headings and body copy.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ShadcnTextRole {
+    H1,
+    H2,
+    H3,
+    H4,
+    P,
+}
+
+impl ShadcnTextRole {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::H1 => "h1",
+            Self::H2 => "h2",
+            Self::H3 => "h3",
+            Self::H4 => "h4",
+            Self::P => "p",
+        }
+    }
+}
+
+impl From<ShadcnTextRole> for LumaTextRole {
+    fn from(value: ShadcnTextRole) -> Self {
+        match value {
+            ShadcnTextRole::H1 => Self::H1,
+            ShadcnTextRole::H2 => Self::H2,
+            ShadcnTextRole::H3 => Self::H3,
+            ShadcnTextRole::H4 => Self::H4,
+            ShadcnTextRole::P => Self::P,
+        }
+    }
+}
+
 /// Standardized typographic scale matching Tailwind text sizes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShadcnTextSize {
@@ -171,14 +207,27 @@ pub enum ShadcnTextSize {
 }
 
 impl ShadcnTextSize {
-    pub fn px(self) -> f32 {
+    pub fn as_str(self) -> &'static str {
         match self {
-            Self::Xs => 11.0,
-            Self::Sm => 12.5,
-            Self::Base => 14.0,
-            Self::Lg => 16.0,
-            Self::Xl => 18.0,
-            Self::TwoXl => 20.0,
+            Self::Xs => "xs",
+            Self::Sm => "sm",
+            Self::Base => "base",
+            Self::Lg => "lg",
+            Self::Xl => "xl",
+            Self::TwoXl => "2xl",
+        }
+    }
+}
+
+impl From<ShadcnTextSize> for LumaTextScale {
+    fn from(value: ShadcnTextSize) -> Self {
+        match value {
+            ShadcnTextSize::Xs => Self::Xs,
+            ShadcnTextSize::Sm => Self::Sm,
+            ShadcnTextSize::Base => Self::Md,
+            ShadcnTextSize::Lg => Self::Lg,
+            ShadcnTextSize::Xl => Self::Xl,
+            ShadcnTextSize::TwoXl => Self::TwoXl,
         }
     }
 }
