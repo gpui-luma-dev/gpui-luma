@@ -50,7 +50,7 @@ pub fn inspect_control_group_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn control_group_metadata_covers_enabled_and_disabled() {

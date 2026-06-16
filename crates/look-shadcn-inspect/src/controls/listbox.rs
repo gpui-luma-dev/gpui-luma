@@ -108,7 +108,7 @@ fn resolved_from_hsla(value: gpui::Hsla, source: ColorSource) -> ResolvedColor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn listbox_metadata_covers_list_and_row_tables() {

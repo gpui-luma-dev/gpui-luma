@@ -88,7 +88,7 @@ pub fn inspect_textfield_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn inspect_soft_textfield_uses_muted_token() {

@@ -59,7 +59,7 @@ pub fn inspect_resizable_panels_metrics(handle_size: ResizeHandleSize) -> Resiza
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
     use gpui_luma::theme::InteractionLayer;
 
     #[test]

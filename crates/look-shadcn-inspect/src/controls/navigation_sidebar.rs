@@ -143,7 +143,7 @@ pub fn inspect_navigation_sidebar_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn navigation_sidebar_container_metadata_matches_table() {

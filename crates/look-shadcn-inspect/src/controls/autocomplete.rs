@@ -56,7 +56,7 @@ pub fn inspect_autocomplete_menu_color_palette(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn autocomplete_chrome_metadata_matches_table() {

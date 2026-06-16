@@ -232,7 +232,7 @@ fn effective_border_resolved(colors: &gpui_luma_look_shadcn::tables::ButtonColor
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::retro_arcade_catalog;
 
     #[test]
     fn button_color_table_metadata_is_populated() {

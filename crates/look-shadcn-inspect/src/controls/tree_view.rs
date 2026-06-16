@@ -68,7 +68,7 @@ pub fn inspect_tree_view_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
 
     #[test]
     fn tree_view_metadata_covers_row_table() {

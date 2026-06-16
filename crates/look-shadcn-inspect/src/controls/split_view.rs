@@ -44,7 +44,7 @@ pub fn inspect_split_view_color_palette(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
     use gpui_luma_look_shadcn::ColorSource;
 
     #[test]

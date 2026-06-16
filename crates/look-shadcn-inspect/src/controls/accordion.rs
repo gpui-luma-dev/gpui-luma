@@ -94,7 +94,7 @@ pub fn inspect_accordion_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{retro_arcade_catalog, sample_catalog};
+    use crate::test_support::sample_catalog;
     use gpui_luma_look_shadcn::ColorSource;
 
     #[test]
