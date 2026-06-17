@@ -8,11 +8,10 @@ If your viewer supports Mermaid, use the map below. If not, use the categorized 
 mindmap
   root((GPUI-Luma Docs))
     Canonical
-      control-design.md
-      control-guidelines.md
-      focus-handling.md
-      keyhandling.md
-      theme.md
+      architecture.md
+      development-guidelines.md
+      theming.md
+      focus-and-key-handling.md
     Future Work
       ai/issues/14-adorner.md
 ```
@@ -20,11 +19,10 @@ mindmap
 ## Categorized list
 
 ### Canonical (current source of truth)
-- [`control-design.md`](./control-design.md) — control architecture and rationale.
-- [`control-guidelines.md`](./control-guidelines.md) — implementation patterns and rules.
-- [`focus-handling.md`](./focus-handling.md) — focus model and traversal behavior.
-- [`keyhandling.md`](./keyhandling.md) — keyboard action and profile design.
-- [`theme.md`](./theme.md) — theme strategy and token model.
+- [`architecture.md`](./architecture.md) — workspace structure, crate maps, design splits, and boundary principles.
+- [`development-guidelines.md`](./development-guidelines.md) — implementation rules, layout macros, re-entrancy snapshots, and standards.
+- [`theming.md`](./theming.md) — style system design tiers, style.toml mappings, extensions, and typography guidelines.
+- [`focus-and-key-handling.md`](./focus-and-key-handling.md) — focus traversal models, scopes, keyboard profiles, and default key bindings.
 
 ### Future work / proposals
 - [`14-adorner.md`](./ai/issues/14-adorner.md) — focus adorner proposal.
