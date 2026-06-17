@@ -1,7 +1,8 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    cargo run -p gpui-luma-gallery -- astrovista
+    cargo run -p gpui-luma-gallery -- steve
+    #cargo run -p gpui-luma-gallery -- astrovista
     #cargo run -p gpui-luma-gallery -- elegent-luxury
     #cargo run -p gpui-luma-gallery -- jarvis
 
@@ -15,7 +16,8 @@ gallery-dbg:
     RUST_BACKTRACE=1 cargo run -p gpui-luma-gallery -- jarvis
 
 theme-studio:
-    cargo run -p gpui-luma-theme-studio -- elegent-luxury
+    cargo run -p gpui-luma-theme-studio -- steve
+    #cargo run -p gpui-luma-theme-studio -- elegent-luxury
 
 theme-studio-rel:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-theme-studio --release
