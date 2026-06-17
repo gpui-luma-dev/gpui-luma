@@ -10,6 +10,7 @@ pub(crate) mod floating_menu;
 pub(crate) mod list_view;
 pub(crate) mod listbox;
 pub(crate) mod navigation_sidebar;
+pub(crate) mod pager;
 pub(crate) mod popup_menu;
 pub(crate) mod progress;
 pub(crate) mod radio;

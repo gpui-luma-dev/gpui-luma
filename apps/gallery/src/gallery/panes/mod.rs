@@ -16,6 +16,7 @@ mod listbox;
 mod list_view;
 mod navigation_sidebar;
 mod palette;
+mod pager;
 mod popup_menu;
 mod selector;
 mod progress;

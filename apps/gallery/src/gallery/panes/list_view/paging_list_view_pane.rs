@@ -3,7 +3,9 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
+use gpui_luma::controls::pager::PagerStyle;
 use gpui_luma::{column, column_emphasis, paging_list_view};
+use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -44,10 +46,13 @@ impl PagingListViewPane {
         let tasks = build_task_rows();
         let list_view = paging_list_view! {
             list_view_theme = look.list_view_theme();
-            toolbar_chrome = look.paging_toolbar_chrome();
             id = "listview-tasks-paged";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
+            pager = look
+                .pager("listview-tasks-paged-pager")
+                .style(PagerStyle::MinimalEdge)
+                .page_size(DEFAULT_PAGE_SIZE);
             selection = ListSelectionMode::Single;
             selected_index = 1;
             active_index = 1;

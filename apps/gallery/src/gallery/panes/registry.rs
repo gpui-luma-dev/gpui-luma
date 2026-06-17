@@ -15,7 +15,7 @@ use crate::gallery::control::GalleryApp;
 use super::{
     accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, color, combobox, context_menu,
     dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu,
-    progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector,
+    pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector,
     selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
     tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group, typography,
 };
@@ -73,6 +73,7 @@ enum GalleryPageKind {
     ListBox,
     ScrollingListView,
     PagingListView,
+    Pager,
     Slider,
     Scrollbar,
     TextArea,
@@ -214,6 +215,7 @@ const PAGING_LIST_VIEW_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::PagingListView,
 };
+const PAGER_PAGE: GalleryPage = GalleryPage { id: "pager", label: "Pager", icon: None, kind: GalleryPageKind::Pager };
 const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
 const SCROLLBAR_PAGE: GalleryPage =
@@ -317,6 +319,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     CHOICE_TEMPLATES_PAGE,
     LISTBOX_PAGE,
     PAGING_LIST_VIEW_PAGE,
+    PAGER_PAGE,
     RADIO_BUTTON_PAGE,
     RADIO_GROUP_PAGE,
     SCROLLING_LIST_VIEW_PAGE,
@@ -458,6 +461,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) listbox: listbox::ListBoxPane,
     pub(super) scrolling_list_view: list_view::ScrollingListViewPane,
     pub(super) paging_list_view: list_view::PagingListViewPane,
+    pub(super) pager: pager::PagerPane,
     pub(super) slider: slider::SliderPane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) textarea: textarea::TextAreaPane,
@@ -566,6 +570,7 @@ impl GalleryPanes {
             listbox: listbox::ListBoxPane::new(cx, look.clone()),
             scrolling_list_view: list_view::ScrollingListViewPane::new(cx, look.clone()),
             paging_list_view: list_view::PagingListViewPane::new(cx, look.clone()),
+            pager: pager::PagerPane::new(cx, look.clone()),
             slider: slider::SliderPane::new(cx, look.clone()),
             scrollbar: scrollbar::ScrollbarPane::new(cx, look.clone()),
             textarea: textarea::TextAreaPane::new(cx, look.clone()),
@@ -619,6 +624,7 @@ impl GalleryPanes {
         self.listbox.subscribe(cx, subscriptions);
         self.scrolling_list_view.subscribe(cx, subscriptions);
         self.paging_list_view.subscribe(cx, subscriptions);
+        self.pager.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
         self.textarea.subscribe(cx, subscriptions);
@@ -682,6 +688,7 @@ impl GalleryPanes {
             GalleryPageKind::ListBox => self.listbox.notify_controls(cx),
             GalleryPageKind::ScrollingListView => self.scrolling_list_view.notify_controls(cx),
             GalleryPageKind::PagingListView => self.paging_list_view.notify_controls(cx),
+            GalleryPageKind::Pager => self.pager.notify_controls(cx),
             GalleryPageKind::Slider => self.slider.notify_controls(cx),
             GalleryPageKind::Scrollbar => self.scrollbar.notify_controls(cx),
             GalleryPageKind::TextArea => self.textarea.notify_controls(cx),
@@ -755,6 +762,7 @@ impl GalleryPanes {
             GalleryPageKind::ListBox => self.listbox.render(&self.look),
             GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.look),
             GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look),
+            GalleryPageKind::Pager => self.pager.render(&self.look),
             GalleryPageKind::Slider => self.slider.render(&self.look),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.look),
             GalleryPageKind::TextArea => self.textarea.render(&self.look),

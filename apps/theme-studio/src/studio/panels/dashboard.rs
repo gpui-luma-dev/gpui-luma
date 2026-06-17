@@ -8,6 +8,7 @@ use gpui_luma::controls::command::button::{ButtonEvent, ControlIcon};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma::controls::list_view::{ListSelectionMode, ListViewEvent, PagingListView};
+use gpui_luma::controls::pager::PagerStyle;
 use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSeparatorVisibility, render_pane};
 use gpui_luma::theme::ControlSize;
@@ -67,10 +68,13 @@ impl DashboardPanel {
         let tasks = build_task_rows();
         let list_view = paging_list_view! {
             list_view_theme = look.list_view_theme();
-            toolbar_chrome = look.paging_toolbar_chrome();
             id = "studio-dashboard-tasks";
             items = tasks;
             page_size = DEFAULT_PAGE_SIZE;
+            pager = look
+                .pager("studio-dashboard-tasks-pager")
+                .style(PagerStyle::MinimalEdge)
+                .page_size(DEFAULT_PAGE_SIZE);
             selection = ListSelectionMode::Single;
             selected_index = 1;
             active_index = 1;

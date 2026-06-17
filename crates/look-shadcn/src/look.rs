@@ -313,11 +313,6 @@ impl ShadcnLook {
         }
     }
 
-    pub fn paging_toolbar_chrome(self: &Arc<Self>) -> gpui_luma::controls::list_view::PagingToolbarChrome {
-        let look = Arc::clone(self);
-        Arc::new(move || look.chrome())
-    }
-
     pub fn resolve_primary_button(
         &self,
         role: ButtonFamilyRole,
@@ -581,6 +576,14 @@ impl ShadcnLook {
 
     pub fn list_view_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::list_view::ListViewTheme> {
         templates::list_view_theme(Arc::clone(self))
+    }
+
+    pub fn pager_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::pager::PagerTemplate> {
+        templates::pager_template(Arc::clone(self))
+    }
+
+    pub fn pager_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::pager::PagerTheme> {
+        templates::pager_theme(Arc::clone(self))
     }
 
     pub fn radio_group_template<T>(

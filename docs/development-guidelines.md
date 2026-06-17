@@ -47,13 +47,77 @@ fn handle_activate_control(&mut self, _: &ActivateControl, _: &mut Window, cx: &
 
 Consumer applications must compose SDK controls, not reinvent them.
 
-### 2.1 Use Layout Helper Macros
-Instead of writing long chains of `.flex().flex_col().gap(...)` or `.flex().items_center().gap(...)`, reuse the layout macros defined in `gpui_luma::macros`:
-*   `vstack!`: Vertical flex layout stack.
-*   `hstack!`: Horizontal flex layout stack.
-*   `flow!`: Flow wrapping layout.
-*   `wrappanel!`: Grid wrap panels.
-*   `declare_form!`: Form validation and layouts.
+### 2.1 Use Layout Helper Macros (Strict Rules)
+In `apps/gallery` and all other application layout trees, **raw tail-chained flex layouts are strictly prohibited** for multi-child layouts. You must reuse the layout macros defined in `gpui_luma::macros` (`vstack!`, `hstack!`, `wrappanel!`, `dock_panel!`, `declare_form!`).
+
+#### The Layout Rule:
+If a container renders **more than one child**, you must use `vstack!`, `hstack!`, or `wrappanel!` instead of manually chaining `.flex().flex_col().gap(...)`.
+
+##### 1. Vertical Stack (`vstack!`)
+*   **Prohibited:**
+    ```rust
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(16.0))
+        .items_center()
+        .justify_center()
+        .child(header)
+        .child(body)
+    ```
+*   **Required:**
+    ```rust
+    vstack! {
+        gap=16.0 align=center justify=center;
+        header,
+        body,
+    }
+    ```
+
+##### 2. Horizontal Stack (`hstack!`)
+*   **Prohibited:**
+    ```rust
+    div()
+        .flex()
+        .gap(px(8.0))
+        .items_center()
+        .child(icon)
+        .child(label)
+    ```
+*   **Required:**
+    ```rust
+    hstack! {
+        gap=8.0 align=center;
+        icon,
+        label,
+    }
+    ```
+
+##### 3. Grid / Wrap Flow (`wrappanel!`)
+*   **Prohibited:**
+    ```rust
+    div()
+        .flex()
+        .flex_wrap()
+        .gap(px(10.0))
+        .child(item_a)
+        .child(item_b)
+    ```
+*   **Required:**
+    ```rust
+    wrappanel! {
+        gap=10.0;
+        item_a,
+        item_b,
+    }
+    ```
+    *Note: `flow!` is a legacy alias for `wrappanel!(orientation=horizontal)`. Use `wrappanel!` directly in new code.*
+
+##### Permitted Exceptions (Plain Containers):
+You may use `div()` directly **only** for single-child structural wrappers, such as:
+1. Adding padding around a sub-tree: `div().p(px(12.0)).child(content)`
+2. Absolute overlays: `div().absolute().top_0().child(overlay)`
+3. Theme/background borders: `div().bg(look.color(ShadcnToken::Card)).child(inner)`
 
 ### 2.2 Prototype Structure
 When writing a new prototype inside `apps/gallery` or `apps/theme-studio`:

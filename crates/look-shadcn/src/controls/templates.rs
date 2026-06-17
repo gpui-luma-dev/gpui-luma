@@ -19,6 +19,7 @@ use gpui_luma::controls::navigation_sidebar::{
     NavigationSidebarTemplate, NavigationSidebarTheme, ThemedNavigationSidebarTemplate,
 };
 use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
+use gpui_luma::controls::pager::{PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
 use gpui_luma::controls::progress::{ProgressTheme, ThemedProgressTemplate};
 use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
@@ -51,6 +52,7 @@ use super::navigation_sidebar::{
     navigation_sidebar_section_appearance,
 };
 use super::listbox::{listbox_list_appearance, listbox_row_palette};
+use super::pager::pager_appearance;
 use super::progress::progress_appearance;
 use super::radio::radio_button_appearance;
 use super::scrollbar::scrollbar_appearance;
@@ -749,6 +751,28 @@ pub fn list_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListViewTheme> {
 
 pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::list_view::ListViewTemplate> {
     list_view_template_with_theme(list_view_theme(theme))
+}
+
+struct RadixPagerTheme {
+    theme: ShadcnLook,
+}
+
+impl PagerTheme for RadixPagerTheme {
+    fn resolve(
+        &self,
+        enabled: bool,
+        style: gpui_luma::controls::pager::PagerStyle,
+    ) -> gpui_luma::controls::pager::PagerAppearance {
+        pager_appearance(&self.theme, enabled, style)
+    }
+}
+
+pub fn pager_template(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTemplate> {
+    Arc::new(ThemedPagerTemplate::new(pager_theme(theme)))
+}
+
+pub fn pager_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTheme> {
+    Arc::new(RadixPagerTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn radio_group_template<T>(

@@ -21,6 +21,7 @@ use gpui_luma::controls::list_view::{self, ListViewBuilder};
 use gpui_luma::controls::listbox::{self, ListBoxItem};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarBuilder};
 use gpui_luma::controls::context_menu::ContextMenu;
+use gpui_luma::controls::pager::{self, PagerBuilder};
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
 use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
@@ -95,6 +96,7 @@ pub trait ShadcnLookControlExt {
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
+    fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
@@ -305,6 +307,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
         slider::new(id).template(self.slider_template())
+    }
+
+    fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder {
+        pager::new(id).theme(self.pager_theme())
     }
 
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder {

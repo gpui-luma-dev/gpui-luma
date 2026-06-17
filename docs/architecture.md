@@ -73,7 +73,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.
     *   **Selection:** `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`.
     *   **Menus:** `popup_menu`, `context_menu`, `floating_menu`.
-    *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`.
+    *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`, `pager`.
 
 ### `crates/look-shadcn` Module Architecture
 *   [`look.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/look.rs): Holds the parsed CSS token database and mapping configurations.

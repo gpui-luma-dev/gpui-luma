@@ -258,17 +258,16 @@ macro_rules! paging_list_view {
     // grid_view + row_template
     (
         list_view_theme = $list_view_theme:expr;
-        toolbar_chrome = $toolbar_chrome:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
+        $( pager = $pager:expr; )?
         $( selection = $selection:expr; )?
         $( selected_index = $selected_index:expr; )?
         $( active_index = $active_index:expr; )?
         $( row_label = |$label_row:ident| $label_body:expr; )?
         $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
         $( visible_rows = $visible_rows:expr; )?
-        $( toolbar_template = |$layout:ident, $win:ident, $cx:ident| $toolbar_body:expr; )?
         grid_view = { $($col:expr),* $(,)? };
         row_template = |$model:ident, $cells:ident, $rwin:ident, $rcx:ident| $body:expr $(;)?
     ) => {{
@@ -289,34 +288,30 @@ macro_rules! paging_list_view {
         });
         $( let builder = builder.visible_rows($visible_rows); )?
 
-        let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
+        let pager_builder = $crate::controls::pager::new(format!("{}-pager", $id))
+            .style($crate::controls::pager::PagerStyle::MinimalEdge)
+            .page_size($page_size);
+        $( let pager_builder = $pager; )?
+
+        $crate::controls::list_view::PagingListViewBuilder::new(
             builder.paged($page_size),
-            $toolbar_chrome,
-        );
-
-        $(
-            let paging_builder = paging_builder.toolbar_template(std::sync::Arc::new(
-                move |$layout, $win, $cx| { $toolbar_body }
-            ));
-        )?
-
-        paging_builder
+            pager_builder,
+        )
     }};
 
     // grid_view only
     (
         list_view_theme = $list_view_theme:expr;
-        toolbar_chrome = $toolbar_chrome:expr;
         id = $id:expr;
         items = $items:expr;
         page_size = $page_size:expr;
+        $( pager = $pager:expr; )?
         $( selection = $selection:expr; )?
         $( selected_index = $selected_index:expr; )?
         $( active_index = $active_index:expr; )?
         $( row_label = |$label_row:ident| $label_body:expr; )?
         $( row_enabled = |$enabled_row:ident| $enabled_body:expr; )?
         $( visible_rows = $visible_rows:expr; )?
-        $( toolbar_template = |$layout:ident, $win:ident, $cx:ident| $toolbar_body:expr; )?
         grid_view = { $($col:expr),* $(,)? } $(;)?
     ) => {{
         let builder = $crate::controls::list_view::new_typed($id).items($items);
@@ -333,17 +328,14 @@ macro_rules! paging_list_view {
         let builder = builder.grid_view(vec![$($col),*]);
         $( let builder = builder.visible_rows($visible_rows); )?
 
-        let paging_builder = $crate::controls::list_view::PagingListViewBuilder::new(
+        let pager_builder = $crate::controls::pager::new(format!("{}-pager", $id))
+            .style($crate::controls::pager::PagerStyle::MinimalEdge)
+            .page_size($page_size);
+        $( let pager_builder = $pager; )?
+
+        $crate::controls::list_view::PagingListViewBuilder::new(
             builder.paged($page_size),
-            $toolbar_chrome,
-        );
-
-        $(
-            let paging_builder = paging_builder.toolbar_template(std::sync::Arc::new(
-                move |$layout, $win, $cx| { $toolbar_body }
-            ));
-        )?
-
-        paging_builder
+            pager_builder,
+        )
     }};
 }

@@ -32,6 +32,7 @@ pub mod selector_panel;
 pub mod selection_panel;
 pub mod search_selector;
 pub mod progress;
+pub mod pager;
 pub mod radio_button;
 pub mod radio_group;
 pub mod scrollbar;
