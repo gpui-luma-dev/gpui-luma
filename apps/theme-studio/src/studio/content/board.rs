@@ -42,7 +42,7 @@ pub fn render_demo_board(
             .into_any_element()
     };
 
-    let all_panels: [(InspectableId, gpui::AnyElement); 9] = [
+    let all_panels: [(InspectableId, gpui::AnyElement); 10] = [
         (InspectableId::UpgradeSubscription, demos.upgrade.clone().into_any_element()),
         (InspectableId::CreateAccount, demos.account.clone().into_any_element()),
         (InspectableId::TeamMembers, demos.team.clone().into_any_element()),
@@ -52,6 +52,7 @@ pub fn render_demo_board(
         (InspectableId::Payments, demos.payments.clone().into_any_element()),
         (InspectableId::TreeView, demos.tree_view.clone().into_any_element()),
         (InspectableId::Accordion, demos.accordion.clone().into_any_element()),
+        (InspectableId::SystemPreferences, demos.system_preferences.clone().into_any_element()),
     ];
 
     let mut panels: Vec<_> = all_panels

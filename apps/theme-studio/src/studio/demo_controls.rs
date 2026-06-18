@@ -6,8 +6,8 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
 use super::panels::{
-    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DashboardPanel, PaymentsPanel, ReportPanel, TeamPanel,
-    TreeViewPanel, UpgradePanel,
+    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DashboardPanel, PaymentsPanel, ReportPanel,
+    SystemPreferencesPanel, TeamPanel, TreeViewPanel, UpgradePanel,
 };
 
 #[derive(Clone)]
@@ -21,6 +21,7 @@ pub struct DemoControls {
     pub payments: Entity<PaymentsPanel>,
     pub tree_view: Entity<TreeViewPanel>,
     pub accordion: Entity<AccordionPanel>,
+    pub system_preferences: Entity<SystemPreferencesPanel>,
     pub dashboard: Entity<DashboardPanel>,
 }
 
@@ -36,6 +37,7 @@ impl DemoControls {
             payments: cx.new(|cx| PaymentsPanel::new(cx, look.clone(), size)),
             tree_view: cx.new(|cx| TreeViewPanel::new(cx, look.clone())),
             accordion: cx.new(|cx| AccordionPanel::new(cx, look.clone())),
+            system_preferences: cx.new(|cx| SystemPreferencesPanel::new(cx, look.clone(), 72.0)),
             dashboard: cx.new(|cx| DashboardPanel::new(cx, look.clone())),
         }
     }
