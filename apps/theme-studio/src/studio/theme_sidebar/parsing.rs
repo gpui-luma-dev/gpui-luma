@@ -8,7 +8,7 @@ use crate::studio::export::{catalog_color_for_token, token_css_name};
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::panels::{format_hex_color, parse_hex_color};
 
-pub(super) fn parse_metric_rem(value: &str, min: f32, max: f32) -> Option<f32> {
+fn parse_number(value: &str, min: f32, max: f32) -> Option<f32> {
     value
         .trim()
         .parse::<f32>()
@@ -17,9 +17,9 @@ pub(super) fn parse_metric_rem(value: &str, min: f32, max: f32) -> Option<f32> {
         .map(|value| value.clamp(min, max))
 }
 
-pub(super) fn format_metric_rem(value: f32) -> String {
-    let rounded = (value * 1000.0).round() / 1000.0;
-    let mut text = format!("{rounded:.3}");
+fn format_number(value: f32, rounding_scale: f32, decimals: usize) -> String {
+    let rounded = (value * rounding_scale).round() / rounding_scale;
+    let mut text = format!("{rounded:.decimals$}");
     while text.contains('.') && text.ends_with('0') {
         text.pop();
     }
@@ -27,6 +27,26 @@ pub(super) fn format_metric_rem(value: f32) -> String {
         text.pop();
     }
     text
+}
+
+pub(super) fn parse_metric_rem(value: &str, min: f32, max: f32) -> Option<f32> {
+    parse_number(value, min, max)
+}
+
+pub(super) fn format_metric_rem(value: f32) -> String {
+    format_number(value, 1000.0, 3)
+}
+
+pub(super) fn parse_palette_hsl_number(value: &str, min: f32, max: f32) -> Option<f32> {
+    parse_number(value, min, max)
+}
+
+pub(super) fn format_palette_hue_deg(value: f32) -> String {
+    format_number(value, 1.0, 0)
+}
+
+pub(super) fn format_palette_hsl_multiplier(value: f32) -> String {
+    format_number(value, 100.0, 2)
 }
 
 pub(super) fn effective_radius_rem(look: &ShadcnLook, overrides: &StudioOverrides) -> f32 {
@@ -46,15 +66,7 @@ pub(super) fn format_shadow_color_input(color: Hsla) -> String {
 }
 
 pub(super) fn format_shadow_number(value: f32) -> String {
-    let rounded = (value * 100.0).round() / 100.0;
-    let mut text = format!("{rounded:.2}");
-    while text.contains('.') && text.ends_with('0') {
-        text.pop();
-    }
-    if text.ends_with('.') {
-        text.pop();
-    }
-    text
+    format_number(value, 100.0, 2)
 }
 
 pub(super) fn parse_shadow_color_input(raw: &str) -> Option<Hsla> {

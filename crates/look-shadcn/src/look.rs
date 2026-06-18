@@ -66,7 +66,15 @@ impl ShadcnLookSnapshot {
     }
 
     fn with_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<Self> {
-        if overrides.is_empty() {
+        self.with_mode_color_overrides(overrides, overrides)
+    }
+
+    fn with_mode_color_overrides(
+        &self,
+        light_overrides: &HashMap<String, Hsla>,
+        dark_overrides: &HashMap<String, Hsla>,
+    ) -> anyhow::Result<Self> {
+        if light_overrides.is_empty() && dark_overrides.is_empty() {
             return Ok(Self {
                 catalog: Arc::clone(&self.catalog),
                 light: Arc::clone(&self.light),
@@ -75,8 +83,8 @@ impl ShadcnLookSnapshot {
             });
         }
 
-        let light_catalog = apply_color_overrides_to_catalog(self.light.catalog.clone(), overrides);
-        let dark_catalog = apply_color_overrides_to_catalog(self.dark.catalog.clone(), overrides);
+        let light_catalog = apply_color_overrides_to_catalog(self.light.catalog.clone(), light_overrides);
+        let dark_catalog = apply_color_overrides_to_catalog(self.dark.catalog.clone(), dark_overrides);
 
         Ok(Self {
             catalog: Arc::clone(&self.catalog),
@@ -300,6 +308,17 @@ impl ShadcnLook {
     pub fn apply_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_color_overrides(overrides)?;
+        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        Ok(())
+    }
+
+    pub fn apply_mode_color_overrides(
+        &self,
+        light_overrides: &HashMap<String, Hsla>,
+        dark_overrides: &HashMap<String, Hsla>,
+    ) -> anyhow::Result<()> {
+        let snapshot = self.snapshot();
+        let next = snapshot.with_mode_color_overrides(light_overrides, dark_overrides)?;
         *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
         Ok(())
     }

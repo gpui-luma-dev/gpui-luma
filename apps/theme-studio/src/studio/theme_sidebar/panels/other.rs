@@ -22,6 +22,7 @@ pub(in crate::studio::theme_sidebar) fn render_other_panel(sidebar: &ThemeSideba
 
 pub(in crate::studio::theme_sidebar) fn other_category_content(sidebar: &ThemeSidebar, category: &str) -> AnyElement {
     match category {
+        "HSL ADJUSTMENTS" => hsl_adjustments_category_content(sidebar),
         "RADIUS" => metric_category_content(
             sidebar,
             "Radius",
@@ -51,6 +52,35 @@ fn category_placeholder_content(sidebar: &ThemeSidebar, category: &str) -> AnyEl
         .text_color(chrome.muted_text)
         .child(format!("{category} controls coming soon."))
         .into_any_element()
+}
+
+fn hsl_adjustments_category_content(sidebar: &ThemeSidebar) -> AnyElement {
+    vstack! {
+        gap=SHADOW_SECTION_GAP;
+        slider_field_row_compact(
+            sidebar,
+            "Hue",
+            sidebar.vm.palette_hue_slider.clone(),
+            sidebar.vm.palette_hue_field.clone(),
+            "deg",
+        ),
+        slider_field_row_compact(
+            sidebar,
+            "Saturation",
+            sidebar.vm.palette_saturation_slider.clone(),
+            sidebar.vm.palette_saturation_field.clone(),
+            "x",
+        ),
+        slider_field_row_compact(
+            sidebar,
+            "Lightness",
+            sidebar.vm.palette_lightness_slider.clone(),
+            sidebar.vm.palette_lightness_field.clone(),
+            "x",
+        ),
+    }
+    .w_full()
+    .into_any_element()
 }
 
 fn metric_category_content(sidebar: &ThemeSidebar, label: &str, slider: Slider, field: TextField) -> AnyElement {

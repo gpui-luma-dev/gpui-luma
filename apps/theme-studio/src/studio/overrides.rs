@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use gpui::Hsla;
+use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 pub const RADIUS_REM_MIN: f32 = 0.0;
@@ -17,6 +18,36 @@ pub const SHADOW_OFFSET_X_MIN: f32 = -20.0;
 pub const SHADOW_OFFSET_X_MAX: f32 = 20.0;
 pub const SHADOW_OFFSET_Y_MIN: f32 = -8.0;
 pub const SHADOW_OFFSET_Y_MAX: f32 = 24.0;
+pub const PALETTE_HUE_DEG_MIN: f32 = -180.0;
+pub const PALETTE_HUE_DEG_MAX: f32 = 180.0;
+pub const PALETTE_SATURATION_MULTIPLIER_MIN: f32 = 0.0;
+pub const PALETTE_SATURATION_MULTIPLIER_MAX: f32 = 2.0;
+pub const PALETTE_LIGHTNESS_MULTIPLIER_MIN: f32 = 0.0;
+pub const PALETTE_LIGHTNESS_MULTIPLIER_MAX: f32 = 2.0;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ThemePaletteHslOverride {
+    pub hue_deg: f32,
+    pub saturation_multiplier: f32,
+    pub lightness_multiplier: f32,
+}
+
+impl Default for ThemePaletteHslOverride {
+    fn default() -> Self {
+        Self { hue_deg: 0.0, saturation_multiplier: 1.0, lightness_multiplier: 1.0 }
+    }
+}
+
+impl ThemePaletteHslOverride {
+    pub fn apply(&self, color: Hsla) -> Hsla {
+        Hsla {
+            h: (color.h + self.hue_deg / 360.0).rem_euclid(1.0),
+            s: (color.s * self.saturation_multiplier).clamp(0.0, 1.0),
+            l: (color.l * self.lightness_multiplier).clamp(0.0, 1.0),
+            a: color.a,
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThemeShadowOverride {
@@ -54,6 +85,8 @@ impl ThemeShadowOverride {
 #[derive(Clone, Debug, Default)]
 pub struct StudioOverrides {
     pub global_color_overrides: HashMap<String, Hsla>,
+    pub light_palette_hsl: ThemePaletteHslOverride,
+    pub dark_palette_hsl: ThemePaletteHslOverride,
     pub radius_rem: Option<f32>,
     pub spacing_rem: Option<f32>,
     pub shadow: Option<ThemeShadowOverride>,
@@ -62,6 +95,13 @@ pub struct StudioOverrides {
 impl StudioOverrides {
     pub fn global_color_override(&self, token: &str) -> Option<Hsla> {
         self.global_color_overrides.get(token).copied()
+    }
+
+    pub fn palette_hsl(&self, mode: ThemeMode) -> &ThemePaletteHslOverride {
+        match mode {
+            ThemeMode::Light => &self.light_palette_hsl,
+            ThemeMode::Dark => &self.dark_palette_hsl,
+        }
     }
 
     pub fn radius_rem(&self) -> Option<f32> {
@@ -78,6 +118,19 @@ impl StudioOverrides {
 
     pub fn set_global_color(&mut self, token: String, color: Hsla) {
         self.global_color_overrides.insert(token, color);
+    }
+
+    pub fn set_palette_hsl_override(&mut self, mode: ThemeMode, palette_hsl: ThemePaletteHslOverride) {
+        let palette_hsl = ThemePaletteHslOverride {
+            hue_deg: clamp_palette_hue_deg(palette_hsl.hue_deg),
+            saturation_multiplier: clamp_palette_saturation_multiplier(palette_hsl.saturation_multiplier),
+            lightness_multiplier: clamp_palette_lightness_multiplier(palette_hsl.lightness_multiplier),
+        };
+
+        match mode {
+            ThemeMode::Light => self.light_palette_hsl = palette_hsl,
+            ThemeMode::Dark => self.dark_palette_hsl = palette_hsl,
+        }
     }
 
     pub fn set_radius_rem(&mut self, rem: f32) {
@@ -106,6 +159,11 @@ impl StudioOverrides {
         overrides
     }
 
+    pub fn clear_palette_hsl_overrides(&mut self) {
+        self.light_palette_hsl = ThemePaletteHslOverride::default();
+        self.dark_palette_hsl = ThemePaletteHslOverride::default();
+    }
+
     pub fn clear_metric_overrides(&mut self) {
         self.radius_rem = None;
         self.spacing_rem = None;
@@ -117,9 +175,22 @@ impl StudioOverrides {
 
     pub fn clear_all_overrides(&mut self) {
         self.global_color_overrides.clear();
+        self.clear_palette_hsl_overrides();
         self.clear_metric_overrides();
         self.clear_shadow_override();
     }
+}
+
+pub fn clamp_palette_hue_deg(hue_deg: f32) -> f32 {
+    hue_deg.clamp(PALETTE_HUE_DEG_MIN, PALETTE_HUE_DEG_MAX)
+}
+
+pub fn clamp_palette_saturation_multiplier(multiplier: f32) -> f32 {
+    multiplier.clamp(PALETTE_SATURATION_MULTIPLIER_MIN, PALETTE_SATURATION_MULTIPLIER_MAX)
+}
+
+pub fn clamp_palette_lightness_multiplier(multiplier: f32) -> f32 {
+    multiplier.clamp(PALETTE_LIGHTNESS_MULTIPLIER_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX)
 }
 
 pub fn clamp_radius_rem(rem: f32) -> f32 {

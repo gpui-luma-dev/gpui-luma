@@ -4,14 +4,17 @@ use gpui_luma::controls::slider::SliderEvent;
 use gpui_luma::controls::textfield::TextFieldEvent;
 
 use super::model::TOKEN_CATEGORIES;
-use super::parsing::{parse_metric_rem, parse_shadow_color_input};
+use super::parsing::{parse_metric_rem, parse_palette_hsl_number, parse_shadow_color_input};
 use super::ThemeSidebar;
 use crate::studio::app::ThemeStudioApp;
 use crate::studio::overrides::{
-    RADIUS_REM_MAX, RADIUS_REM_MIN, SHADOW_BLUR_MAX, SHADOW_BLUR_MIN, SHADOW_OFFSET_X_MAX, SHADOW_OFFSET_X_MIN,
-    SHADOW_OFFSET_Y_MAX, SHADOW_OFFSET_Y_MIN, SHADOW_OPACITY_MAX, SHADOW_OPACITY_MIN, SHADOW_SPREAD_MAX,
-    SHADOW_SPREAD_MIN, clamp_radius_rem, clamp_shadow_blur, clamp_shadow_offset_x, clamp_shadow_offset_y,
-    clamp_shadow_opacity, clamp_shadow_spread, clamp_spacing_rem, SPACING_REM_MAX, SPACING_REM_MIN,
+    PALETTE_HUE_DEG_MAX, PALETTE_HUE_DEG_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX, PALETTE_LIGHTNESS_MULTIPLIER_MIN,
+    PALETTE_SATURATION_MULTIPLIER_MAX, PALETTE_SATURATION_MULTIPLIER_MIN, RADIUS_REM_MAX, RADIUS_REM_MIN,
+    SHADOW_BLUR_MAX, SHADOW_BLUR_MIN, SHADOW_OFFSET_X_MAX, SHADOW_OFFSET_X_MIN, SHADOW_OFFSET_Y_MAX,
+    SHADOW_OFFSET_Y_MIN, SHADOW_OPACITY_MAX, SHADOW_OPACITY_MIN, SHADOW_SPREAD_MAX, SHADOW_SPREAD_MIN, SPACING_REM_MAX,
+    SPACING_REM_MIN, clamp_palette_hue_deg, clamp_palette_lightness_multiplier, clamp_palette_saturation_multiplier,
+    clamp_radius_rem, clamp_shadow_blur, clamp_shadow_offset_x, clamp_shadow_offset_y, clamp_shadow_opacity,
+    clamp_shadow_spread, clamp_spacing_rem,
 };
 
 impl ThemeSidebar {
@@ -44,6 +47,64 @@ impl ThemeSidebar {
                 }));
             }
         }
+
+        let palette_hue_field = sidebar.read(cx).vm.palette_hue_field.clone();
+        subscriptions.push(cx.subscribe(&palette_hue_field, |app, _, event: &TextFieldEvent, cx| {
+            if let TextFieldEvent::Change { value } = event {
+                let Some(hue_deg) = parse_palette_hsl_number(value, PALETTE_HUE_DEG_MIN, PALETTE_HUE_DEG_MAX)
+                    .map(clamp_palette_hue_deg)
+                else {
+                    return;
+                };
+                app.set_palette_hue_deg(hue_deg, cx);
+            }
+        }));
+
+        let palette_saturation_field = sidebar.read(cx).vm.palette_saturation_field.clone();
+        subscriptions.push(cx.subscribe(&palette_saturation_field, |app, _, event: &TextFieldEvent, cx| {
+            if let TextFieldEvent::Change { value } = event {
+                let Some(multiplier) = parse_palette_hsl_number(
+                    value,
+                    PALETTE_SATURATION_MULTIPLIER_MIN,
+                    PALETTE_SATURATION_MULTIPLIER_MAX,
+                )
+                .map(clamp_palette_saturation_multiplier) else {
+                    return;
+                };
+                app.set_palette_saturation_multiplier(multiplier, cx);
+            }
+        }));
+
+        let palette_lightness_field = sidebar.read(cx).vm.palette_lightness_field.clone();
+        subscriptions.push(cx.subscribe(&palette_lightness_field, |app, _, event: &TextFieldEvent, cx| {
+            if let TextFieldEvent::Change { value } = event {
+                let Some(multiplier) =
+                    parse_palette_hsl_number(value, PALETTE_LIGHTNESS_MULTIPLIER_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX)
+                        .map(clamp_palette_lightness_multiplier)
+                else {
+                    return;
+                };
+                app.set_palette_lightness_multiplier(multiplier, cx);
+            }
+        }));
+
+        let palette_hue_slider = sidebar.read(cx).vm.palette_hue_slider.clone();
+        subscriptions.push(cx.subscribe(&palette_hue_slider, |app, _, event: &SliderEvent, cx| {
+            let SliderEvent::Change { value } = event;
+            app.set_palette_hue_deg(*value, cx);
+        }));
+
+        let palette_saturation_slider = sidebar.read(cx).vm.palette_saturation_slider.clone();
+        subscriptions.push(cx.subscribe(&palette_saturation_slider, |app, _, event: &SliderEvent, cx| {
+            let SliderEvent::Change { value } = event;
+            app.set_palette_saturation_multiplier(*value, cx);
+        }));
+
+        let palette_lightness_slider = sidebar.read(cx).vm.palette_lightness_slider.clone();
+        subscriptions.push(cx.subscribe(&palette_lightness_slider, |app, _, event: &SliderEvent, cx| {
+            let SliderEvent::Change { value } = event;
+            app.set_palette_lightness_multiplier(*value, cx);
+        }));
 
         let radius_field = sidebar.read(cx).vm.radius_field.clone();
         subscriptions.push(cx.subscribe(&radius_field, |app, _, event: &TextFieldEvent, cx| {

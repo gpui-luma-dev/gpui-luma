@@ -8,7 +8,10 @@ use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use super::model::METRIC_STEP_REM;
-use super::parsing::{format_metric_rem, format_shadow_color_input, format_shadow_number};
+use super::parsing::{
+    format_metric_rem, format_palette_hsl_multiplier, format_palette_hue_deg, format_shadow_color_input,
+    format_shadow_number,
+};
 use super::ThemeSidebar;
 use crate::studio::overrides::ThemeShadowOverride;
 use crate::theme::available_themes;
@@ -60,17 +63,38 @@ impl TokenFieldBuilderExt for TextFieldBuilder {
     }
 }
 
+fn build_number_field(
+    look: &Arc<ShadcnLook>,
+    id: &str,
+    value: impl Into<SharedString>,
+    cx: &mut Context<ThemeSidebar>,
+) -> TextField {
+    look.textfield(format!("theme-studio-{id}-field"))
+        .value(value)
+        .full_width(true)
+        .token_style()
+        .spawn(cx)
+}
+
+fn build_slider(
+    look: &Arc<ShadcnLook>,
+    id: &str,
+    min: f32,
+    max: f32,
+    step: f32,
+    value: f32,
+    cx: &mut Context<ThemeSidebar>,
+) -> Slider {
+    look.slider(format!("theme-studio-{id}-slider")).range(min..max).step(step).value(value).spawn(cx)
+}
+
 pub(super) fn build_metric_field(
     look: &Arc<ShadcnLook>,
     id: &str,
     value_rem: f32,
     cx: &mut Context<ThemeSidebar>,
 ) -> TextField {
-    look.textfield(format!("theme-studio-{id}-field"))
-        .value(format_metric_rem(value_rem))
-        .full_width(true)
-        .token_style()
-        .spawn(cx)
+    build_number_field(look, id, format_metric_rem(value_rem), cx)
 }
 
 pub(super) fn build_metric_slider(
@@ -81,11 +105,36 @@ pub(super) fn build_metric_slider(
     value: f32,
     cx: &mut Context<ThemeSidebar>,
 ) -> Slider {
-    look.slider(format!("theme-studio-{id}-slider"))
-        .range(min..max)
-        .step(METRIC_STEP_REM)
-        .value(value)
-        .spawn(cx)
+    build_slider(look, id, min, max, METRIC_STEP_REM, value, cx)
+}
+
+pub(super) fn build_palette_hue_field(
+    look: &Arc<ShadcnLook>,
+    value_deg: f32,
+    cx: &mut Context<ThemeSidebar>,
+) -> TextField {
+    build_number_field(look, "palette-hue", format_palette_hue_deg(value_deg), cx)
+}
+
+pub(super) fn build_palette_hsl_field(
+    look: &Arc<ShadcnLook>,
+    id: &str,
+    value: f32,
+    cx: &mut Context<ThemeSidebar>,
+) -> TextField {
+    build_number_field(look, id, format_palette_hsl_multiplier(value), cx)
+}
+
+pub(super) fn build_palette_slider(
+    look: &Arc<ShadcnLook>,
+    id: &str,
+    min: f32,
+    max: f32,
+    step: f32,
+    value: f32,
+    cx: &mut Context<ThemeSidebar>,
+) -> Slider {
+    build_slider(look, id, min, max, step, value, cx)
 }
 
 pub(super) fn build_shadow_color_field(
@@ -93,11 +142,7 @@ pub(super) fn build_shadow_color_field(
     shadow: &ThemeShadowOverride,
     cx: &mut Context<ThemeSidebar>,
 ) -> TextField {
-    look.textfield("theme-studio-shadow-color-field")
-        .value(format_shadow_color_input(shadow.color))
-        .full_width(true)
-        .token_style()
-        .spawn(cx)
+    build_number_field(look, "shadow-color", format_shadow_color_input(shadow.color), cx)
 }
 
 pub(super) fn build_shadow_number_field(
@@ -106,11 +151,7 @@ pub(super) fn build_shadow_number_field(
     value: f32,
     cx: &mut Context<ThemeSidebar>,
 ) -> TextField {
-    look.textfield(format!("theme-studio-{id}-field"))
-        .value(format_shadow_number(value))
-        .full_width(true)
-        .token_style()
-        .spawn(cx)
+    build_number_field(look, id, format_shadow_number(value), cx)
 }
 
 pub(super) fn build_shadow_slider(
@@ -121,11 +162,7 @@ pub(super) fn build_shadow_slider(
     value: f32,
     cx: &mut Context<ThemeSidebar>,
 ) -> Slider {
-    look.slider(format!("theme-studio-{id}-slider"))
-        .range(min..max)
-        .step(METRIC_STEP_REM)
-        .value(value)
-        .spawn(cx)
+    build_slider(look, id, min, max, METRIC_STEP_REM, value, cx)
 }
 
 pub(super) fn theme_selector_items() -> Vec<SelectorItem> {

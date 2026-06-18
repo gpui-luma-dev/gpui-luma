@@ -5,8 +5,8 @@ use gpui_luma::controls::tabs_navigation::TabsNavigationWidthMode;
 use super::controls::token_field_appearance_override_arc;
 use super::model::TOKEN_CATEGORIES;
 use super::parsing::{
-    effective_radius_rem, effective_spacing_rem, format_metric_rem, format_shadow_color_input, format_shadow_number,
-    token_hex_value,
+    effective_radius_rem, effective_spacing_rem, format_metric_rem, format_palette_hsl_multiplier,
+    format_palette_hue_deg, format_shadow_color_input, format_shadow_number, token_hex_value,
 };
 use super::ThemeSidebar;
 use crate::studio::content_tabs::theme_studio_tabs_navigation_template;
@@ -36,9 +36,11 @@ impl ThemeSidebar {
         self.sync_theme_selector_template(&theme, cx);
         self.sync_tabs_template(&theme, cx);
         self.sync_token_field_templates(&theme, cx);
+        self.sync_palette_hsl_control_templates(&theme, cx);
         self.sync_metric_control_templates(&theme, cx);
         self.sync_shadow_control_templates(&theme, cx);
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
+        self.sync_palette_hsl_controls_from(overrides, cx);
         self.sync_metric_controls_from(theme.as_ref(), overrides, cx);
         self.sync_shadow_controls_from(theme.as_ref(), overrides, cx);
         self.token_accordion = Self::build_token_accordion(cx.entity(), theme.clone(), &expanded_token_categories, cx);
@@ -65,6 +67,23 @@ impl ThemeSidebar {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
                 field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+            });
+        }
+    }
+
+    fn sync_palette_hsl_control_templates(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        for field in [&self.vm.palette_hue_field, &self.vm.palette_saturation_field, &self.vm.palette_lightness_field] {
+            field.update(cx, |field, cx| {
+                field.set_template(theme.textfield_template(), cx);
+                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+            });
+        }
+
+        for slider in
+            [&self.vm.palette_hue_slider, &self.vm.palette_saturation_slider, &self.vm.palette_lightness_slider]
+        {
+            slider.update(cx, |slider, cx| {
+                slider.set_template(theme.slider_template(), cx);
             });
         }
     }
@@ -124,8 +143,10 @@ impl ThemeSidebar {
     /// - `sync_global_overrides` must stay incremental so live interactions remain stable.
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
         self.vm.global_overrides = overrides.global_color_overrides.clone();
+        self.vm.palette_hsl = overrides.palette_hsl(self.vm.look.mode()).clone();
         let theme = self.vm.look.clone();
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
+        self.sync_palette_hsl_controls_from(overrides, cx);
         self.sync_metric_controls_from(theme.as_ref(), overrides, cx);
         self.sync_shadow_controls_from(theme.as_ref(), overrides, cx);
         cx.notify();
@@ -148,6 +169,28 @@ impl ThemeSidebar {
                 field.update(cx, |field, cx| field.set_value(value, cx));
             }
         }
+    }
+
+    pub fn sync_palette_hsl_controls_from(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
+        let palette_hsl = overrides.palette_hsl(self.vm.look.mode()).clone();
+        self.vm.palette_hsl = palette_hsl.clone();
+
+        self.vm
+            .palette_hue_field
+            .update(cx, |field, cx| field.set_value(format_palette_hue_deg(palette_hsl.hue_deg), cx));
+        self.vm.palette_saturation_field.update(cx, |field, cx| {
+            field.set_value(format_palette_hsl_multiplier(palette_hsl.saturation_multiplier), cx)
+        });
+        self.vm.palette_lightness_field.update(cx, |field, cx| {
+            field.set_value(format_palette_hsl_multiplier(palette_hsl.lightness_multiplier), cx)
+        });
+        self.vm.palette_hue_slider.update(cx, |slider, cx| slider.set_value(palette_hsl.hue_deg, cx));
+        self.vm
+            .palette_saturation_slider
+            .update(cx, |slider, cx| slider.set_value(palette_hsl.saturation_multiplier, cx));
+        self.vm
+            .palette_lightness_slider
+            .update(cx, |slider, cx| slider.set_value(palette_hsl.lightness_multiplier, cx));
     }
 
     /// Keep metric text fields and sliders visually in lockstep with the resolved override state.

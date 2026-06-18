@@ -6,7 +6,7 @@ use gpui_luma::controls::slider::Slider;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::studio::overrides::ThemeShadowOverride;
+use crate::studio::overrides::{ThemePaletteHslOverride, ThemeShadowOverride};
 
 pub(super) const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ("BASE", &[("background", "Background"), ("foreground", "Foreground")]),
@@ -78,7 +78,14 @@ impl SidebarTab {
 pub(super) struct ThemeSidebarViewModel {
     pub look: Arc<ShadcnLook>,
     pub global_overrides: HashMap<String, Hsla>,
+    pub palette_hsl: ThemePaletteHslOverride,
     pub token_fields: HashMap<String, TextField>,
+    pub palette_hue_field: TextField,
+    pub palette_saturation_field: TextField,
+    pub palette_lightness_field: TextField,
+    pub palette_hue_slider: Slider,
+    pub palette_saturation_slider: Slider,
+    pub palette_lightness_slider: Slider,
     pub radius_field: TextField,
     pub spacing_field: TextField,
     pub radius_slider: Slider,

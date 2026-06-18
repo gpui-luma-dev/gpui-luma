@@ -19,13 +19,14 @@ use crate::theme::StudioThemeChoice;
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::overrides::{
-    StudioOverrides, ThemeShadowOverride, clamp_shadow_blur, clamp_shadow_offset_x, clamp_shadow_offset_y,
-    clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
+    StudioOverrides, ThemePaletteHslOverride, ThemeShadowOverride, clamp_palette_hue_deg,
+    clamp_palette_lightness_multiplier, clamp_palette_saturation_multiplier, clamp_shadow_blur, clamp_shadow_offset_x,
+    clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
 };
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
 use super::content::{BoardSnapshot, ContentPaneHost};
-use super::theme_sidebar::ThemeSidebar;
+use super::theme_sidebar::{ThemeSidebar, palette_tokens};
 
 struct PanelDragState {
     id: InspectableId,
@@ -171,8 +172,12 @@ impl ThemeStudioApp {
     fn apply_theme_overrides(&mut self, cx: &mut Context<Self>) {
         let base = Self::load_theme(&self.active_theme_id);
         base.set_mode(self.look.mode());
+        let (light_palette_color_overrides, dark_palette_color_overrides) =
+            self.derived_palette_color_overrides(base.as_ref());
         self.look.replace_theme(base.as_ref());
-        if let Err(err) = self.look.apply_color_overrides(&self.overrides.global_color_overrides) {
+        if let Err(err) =
+            self.look.apply_mode_color_overrides(&light_palette_color_overrides, &dark_palette_color_overrides)
+        {
             tracing::warn!("failed to apply studio color overrides: {err:?}");
         }
         let token_overrides = self.overrides.token_overrides();
@@ -182,6 +187,32 @@ impl ThemeStudioApp {
         cx.bump_luma_theme_revision();
         self.sync_main_split_theme(cx);
         self.refresh_content_pane(cx);
+    }
+
+    fn derived_palette_color_overrides(
+        &self,
+        base: &ShadcnLook,
+    ) -> (HashMap<String, gpui::Hsla>, HashMap<String, gpui::Hsla>) {
+        let derive_for_mode = |mode: ThemeMode| {
+            let palette_hsl = self.overrides.palette_hsl(mode).clone();
+            let mode_tokens = match mode {
+                ThemeMode::Light => base.light_tokens(),
+                ThemeMode::Dark => base.dark_tokens(),
+            };
+
+            palette_tokens()
+                .into_iter()
+                .filter_map(|token| {
+                    let css_name = token_css_name(token);
+                    self.overrides
+                        .global_color_override(&css_name)
+                        .or_else(|| mode_tokens.catalog.color(token).ok())
+                        .map(|color| (css_name, palette_hsl.apply(color)))
+                })
+                .collect::<HashMap<_, _>>()
+        };
+
+        (derive_for_mode(ThemeMode::Light), derive_for_mode(ThemeMode::Dark))
     }
 
     fn board_snapshot(&self) -> BoardSnapshot {
@@ -237,6 +268,24 @@ impl ThemeStudioApp {
         self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
         self.syncing_sidebar_tokens = false;
         cx.notify();
+    }
+
+    pub fn set_palette_hue_deg(&mut self, hue_deg: f32, cx: &mut Context<Self>) {
+        self.update_palette_hsl_override(|palette_hsl| palette_hsl.hue_deg = clamp_palette_hue_deg(hue_deg), cx);
+    }
+
+    pub fn set_palette_saturation_multiplier(&mut self, multiplier: f32, cx: &mut Context<Self>) {
+        self.update_palette_hsl_override(
+            |palette_hsl| palette_hsl.saturation_multiplier = clamp_palette_saturation_multiplier(multiplier),
+            cx,
+        );
+    }
+
+    pub fn set_palette_lightness_multiplier(&mut self, multiplier: f32, cx: &mut Context<Self>) {
+        self.update_palette_hsl_override(
+            |palette_hsl| palette_hsl.lightness_multiplier = clamp_palette_lightness_multiplier(multiplier),
+            cx,
+        );
     }
 
     pub fn set_radius_rem(&mut self, rem: f32, cx: &mut Context<Self>) {
@@ -313,6 +362,32 @@ impl ThemeStudioApp {
 
     pub fn set_shadow_offset_y(&mut self, offset_y_px: f32, cx: &mut Context<Self>) {
         self.update_shadow_override(|shadow| shadow.offset_y_px = clamp_shadow_offset_y(offset_y_px), cx);
+    }
+
+    fn update_palette_hsl_override(
+        &mut self,
+        update: impl FnOnce(&mut ThemePaletteHslOverride),
+        cx: &mut Context<Self>,
+    ) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let mode = self.look.mode();
+        let mut palette_hsl = self.overrides.palette_hsl(mode).clone();
+        update(&mut palette_hsl);
+
+        if self.overrides.palette_hsl(mode) == &palette_hsl {
+            return;
+        }
+
+        self.overrides.set_palette_hsl_override(mode, palette_hsl);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
     }
 
     fn update_shadow_override(&mut self, update: impl FnOnce(&mut ThemeShadowOverride), cx: &mut Context<Self>) {

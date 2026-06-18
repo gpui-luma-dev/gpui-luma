@@ -19,8 +19,9 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 use self::controls::{
-    TokenFieldBuilderExt, build_metric_field, build_metric_slider, build_shadow_color_field, build_shadow_number_field,
-    build_shadow_slider, theme_selector_items,
+    TokenFieldBuilderExt, build_metric_field, build_metric_slider, build_palette_hsl_field, build_palette_hue_field,
+    build_palette_slider, build_shadow_color_field, build_shadow_number_field, build_shadow_slider,
+    theme_selector_items,
 };
 use self::model::{SidebarTab, ThemeSidebarViewModel, TOKEN_CATEGORIES};
 use self::panels::{render_colors_panel, render_other_panel, render_typography_panel};
@@ -28,9 +29,11 @@ use self::parsing::{effective_radius_rem, effective_spacing_rem, token_color_wit
 use super::content_tabs::theme_studio_tabs_navigation_template;
 use crate::studio::app::ThemeStudioApp;
 use crate::studio::overrides::{
-    RADIUS_REM_MAX, RADIUS_REM_MIN, SHADOW_BLUR_MAX, SHADOW_BLUR_MIN, SHADOW_OFFSET_X_MAX, SHADOW_OFFSET_X_MIN,
-    SHADOW_OFFSET_Y_MAX, SHADOW_OFFSET_Y_MIN, SHADOW_OPACITY_MAX, SHADOW_OPACITY_MIN, SHADOW_SPREAD_MAX,
-    SHADOW_SPREAD_MIN, SPACING_REM_MAX, SPACING_REM_MIN, StudioOverrides, resolved_shadow_override,
+    PALETTE_HUE_DEG_MAX, PALETTE_HUE_DEG_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX, PALETTE_LIGHTNESS_MULTIPLIER_MIN,
+    PALETTE_SATURATION_MULTIPLIER_MAX, PALETTE_SATURATION_MULTIPLIER_MIN, RADIUS_REM_MAX, RADIUS_REM_MIN,
+    SHADOW_BLUR_MAX, SHADOW_BLUR_MIN, SHADOW_OFFSET_X_MAX, SHADOW_OFFSET_X_MIN, SHADOW_OFFSET_Y_MAX,
+    SHADOW_OFFSET_Y_MIN, SHADOW_OPACITY_MAX, SHADOW_OPACITY_MIN, SHADOW_SPREAD_MAX, SHADOW_SPREAD_MIN, SPACING_REM_MAX,
+    SPACING_REM_MIN, StudioOverrides, resolved_shadow_override,
 };
 
 pub struct ThemeSidebar {
@@ -97,6 +100,40 @@ impl ThemeSidebar {
             }
         }
 
+        let palette_hsl = overrides.palette_hsl(look.mode()).clone();
+        let palette_hue_field = build_palette_hue_field(&look, palette_hsl.hue_deg, cx);
+        let palette_saturation_field =
+            build_palette_hsl_field(&look, "palette-saturation", palette_hsl.saturation_multiplier, cx);
+        let palette_lightness_field =
+            build_palette_hsl_field(&look, "palette-lightness", palette_hsl.lightness_multiplier, cx);
+        let palette_hue_slider = build_palette_slider(
+            &look,
+            "palette-hue",
+            PALETTE_HUE_DEG_MIN,
+            PALETTE_HUE_DEG_MAX,
+            1.0,
+            palette_hsl.hue_deg,
+            cx,
+        );
+        let palette_saturation_slider = build_palette_slider(
+            &look,
+            "palette-saturation",
+            PALETTE_SATURATION_MULTIPLIER_MIN,
+            PALETTE_SATURATION_MULTIPLIER_MAX,
+            0.01,
+            palette_hsl.saturation_multiplier,
+            cx,
+        );
+        let palette_lightness_slider = build_palette_slider(
+            &look,
+            "palette-lightness",
+            PALETTE_LIGHTNESS_MULTIPLIER_MIN,
+            PALETTE_LIGHTNESS_MULTIPLIER_MAX,
+            0.01,
+            palette_hsl.lightness_multiplier,
+            cx,
+        );
+
         let radius_rem = effective_radius_rem(&look, overrides);
         let spacing_rem = effective_spacing_rem(&look, overrides);
         let radius_field = build_metric_field(&look, "radius", radius_rem, cx);
@@ -141,7 +178,14 @@ impl ThemeSidebar {
             vm: ThemeSidebarViewModel {
                 look,
                 global_overrides,
+                palette_hsl,
                 token_fields,
+                palette_hue_field,
+                palette_saturation_field,
+                palette_lightness_field,
+                palette_hue_slider,
+                palette_saturation_slider,
+                palette_lightness_slider,
                 radius_field,
                 spacing_field,
                 radius_slider,
@@ -167,6 +211,10 @@ impl ThemeSidebar {
             _subscriptions: subscriptions,
         }
     }
+}
+
+pub(crate) fn palette_tokens() -> Vec<&'static str> {
+    TOKEN_CATEGORIES.iter().flat_map(|(_, tokens)| tokens.iter().map(|(token, _)| *token)).collect()
 }
 
 impl Render for ThemeSidebar {
