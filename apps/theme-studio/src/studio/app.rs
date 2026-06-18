@@ -24,7 +24,7 @@ use super::overrides::{
 };
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
-use super::content_pane::{BoardSnapshot, ContentPaneHost};
+use super::content::{BoardSnapshot, ContentPaneHost};
 use super::theme_sidebar::ThemeSidebar;
 
 struct PanelDragState {

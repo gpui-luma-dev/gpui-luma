@@ -9,47 +9,18 @@ use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
 use gpui_luma::theme::ControlSize;
-use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::prelude::*;
 
-use super::app::ThemeStudioApp;
-use super::content_tabs::theme_studio_tabs_navigation_template;
-use super::demo_controls::DemoControls;
-use super::inspectable::InspectableId;
-use super::overrides::StudioOverrides;
-use super::panel_layout::DemoPanelDrag;
-use super::panels::{PalettePanel, render_demo_board};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum ContentTab {
-    #[default]
-    Cards,
-    Dashboard,
-    Palette,
-}
-
-impl ContentTab {
-    pub fn from_id(id: &str) -> Option<Self> {
-        match id {
-            "cards" => Some(Self::Cards),
-            "dashboard" => Some(Self::Dashboard),
-            "palette" => Some(Self::Palette),
-            _ => None,
-        }
-    }
-
-    pub fn panels(self) -> Option<&'static [InspectableId]> {
-        match self {
-            Self::Cards => Some(&InspectableId::CARDS),
-            Self::Dashboard => Some(&InspectableId::DASHBOARD),
-            Self::Palette => None,
-        }
-    }
-
-    pub fn contains(self, id: InspectableId) -> bool {
-        self.panels().is_some_and(|panels| panels.contains(&id))
-    }
-}
+use super::board::render_demo_board;
+use super::tabs::ContentTab;
+use super::super::app::ThemeStudioApp;
+use super::super::content_tabs::theme_studio_tabs_navigation_template;
+use super::super::demo_controls::DemoControls;
+use super::super::inspectable::InspectableId;
+use super::super::overrides::StudioOverrides;
+use super::super::panel_layout::DemoPanelDrag;
+use super::super::panels::PalettePanel;
 
 /// Cached board state — `ContentPaneHost::render` must not read `ThemeStudioApp` (re-entrancy panic).
 #[derive(Clone)]

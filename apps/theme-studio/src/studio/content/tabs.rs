@@ -1,0 +1,32 @@
+use super::super::inspectable::InspectableId;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum ContentTab {
+    #[default]
+    Cards,
+    Dashboard,
+    Palette,
+}
+
+impl ContentTab {
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "cards" => Some(Self::Cards),
+            "dashboard" => Some(Self::Dashboard),
+            "palette" => Some(Self::Palette),
+            _ => None,
+        }
+    }
+
+    pub fn panels(self) -> Option<&'static [InspectableId]> {
+        match self {
+            Self::Cards => Some(&InspectableId::CARDS),
+            Self::Dashboard => Some(&InspectableId::DASHBOARD),
+            Self::Palette => None,
+        }
+    }
+
+    pub fn contains(self, id: InspectableId) -> bool {
+        self.panels().is_some_and(|panels| panels.contains(&id))
+    }
+}

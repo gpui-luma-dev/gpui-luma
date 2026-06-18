@@ -1,5 +1,5 @@
 mod app;
-mod content_pane;
+mod content;
 mod content_tabs;
 mod demo_controls;
 mod panel_layout;
