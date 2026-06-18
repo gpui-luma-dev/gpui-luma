@@ -5,23 +5,23 @@
 # 0. TYPOGRAPHY
 # =====================================================================
 [typography.semantic.h1]
-size = 44.0
-line_height = 52.0
+size = 32.0
+line_height = 40.0
 weight = 700.0
 
 [typography.semantic.h2]
-size = 28.0
-line_height = 36.0
+size = 24.0
+line_height = 32.0
 weight = 600.0
 
 [typography.semantic.h3]
-size = 20.0
-line_height = 28.0
+size = 18.0
+line_height = 26.0
 weight = 600.0
 
 [typography.semantic.h4]
 size = 16.0
-line_height = 22.0
+line_height = 24.0
 weight = 600.0
 
 [typography.semantic.p]
@@ -30,12 +30,12 @@ line_height = 20.0
 weight = 400.0
 
 [typography.scale.xs]
-size = 11.0
+size = 12.0
 line_height = 16.0
 weight = 500.0
 
 [typography.scale.sm]
-size = 12.5
+size = 13.0
 line_height = 18.0
 weight = 400.0
 
@@ -46,12 +46,12 @@ weight = 400.0
 
 [typography.scale.lg]
 size = 16.0
-line_height = 22.0
+line_height = 24.0
 weight = 500.0
 
 [typography.scale.xl]
 size = 18.0
-line_height = 24.0
+line_height = 26.0
 weight = 600.0
 
 [typography.scale."2xl"]

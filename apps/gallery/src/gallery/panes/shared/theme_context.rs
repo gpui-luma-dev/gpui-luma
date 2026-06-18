@@ -1,5 +1,5 @@
-use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui::{AnyElement, IntoElement, div, prelude::*, px};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
 
 use crate::gallery::theme::GalleryThemeChoice;
 
@@ -48,12 +48,11 @@ fn render_callout(
         .p(px(14.0))
         .child(
             div()
-                .text_size(px(13.0))
-                .line_height(px(18.0))
-                .font_weight(FontWeight::SEMIBOLD)
+                .typography_sm()
+                .font_weight(gpui::FontWeight::SEMIBOLD)
                 .text_color(title_color)
                 .child(title.to_string()),
         )
-        .child(div().text_size(px(12.0)).line_height(px(17.0)).text_color(body_color).child(body.to_string()))
+        .child(div().typography_xs().text_color(body_color).child(body.to_string()))
         .into_any_element()
 }

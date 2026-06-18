@@ -5,7 +5,7 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::pager::{Pager, PagerEvent, PagerStyle};
 use gpui_luma::{vstack, wrappanel};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -160,6 +160,8 @@ impl PagerPane {
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
+        let detail_style = look.typography_scale(ShadcnTextSize::Sm);
+        let label_style = look.typography_scale(ShadcnTextSize::Xs);
 
         gallery_pane_with_description(
             "Pager",
@@ -170,7 +172,7 @@ impl PagerPane {
                 gap=16.0;
                 vstack! {
                     gap=12.0;
-                    div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.body_text).child(
+                    div().typography_style(detail_style).text_color(chrome.body_text).child(
                         format!(
                             "Current page: {} · Page count: {} · Total items: {} · Per page: {} · Enabled: {}",
                             self.current_page + 1,
@@ -192,15 +194,16 @@ impl PagerPane {
                     },
                 }
                 .w_full(),
-                render_sample("Minimal · formatter: \"X / Y\"", self.minimal.clone(), chrome.muted_text),
+                render_sample("Minimal · formatter: \"X / Y\"", self.minimal.clone(), chrome.muted_text, label_style),
                 render_sample(
                     "Minimal + first/last · formatter: \"X of Y\"",
                     self.minimal_edge.clone(),
                     chrome.muted_text,
+                    label_style,
                 ),
-                render_sample("Numeric", self.numeric.clone(), chrome.muted_text),
-                render_sample("Numeric · no first/last", self.numeric_no_edges.clone(), chrome.muted_text),
-                render_sample("Numeric · 5 fixed slots", self.numeric_compact.clone(), chrome.muted_text),
+                render_sample("Numeric", self.numeric.clone(), chrome.muted_text, label_style),
+                render_sample("Numeric · no first/last", self.numeric_no_edges.clone(), chrome.muted_text, label_style),
+                render_sample("Numeric · 5 fixed slots", self.numeric_compact.clone(), chrome.muted_text, label_style),
             }
             .w(px(820.0))
             .into_any_element(),
@@ -295,12 +298,16 @@ impl PagerPane {
     }
 }
 
-fn render_sample(label: &'static str, pager: Pager, muted_text: gpui::Hsla) -> AnyElement {
+fn render_sample(
+    label: &'static str,
+    pager: Pager,
+    muted_text: gpui::Hsla,
+    label_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     vstack! {
         gap=8.0;
         div()
-            .text_size(px(12.0))
-            .line_height(px(16.0))
+            .typography_style(label_style)
             .font_weight(gpui::FontWeight::MEDIUM)
             .text_color(muted_text)
             .child(label),

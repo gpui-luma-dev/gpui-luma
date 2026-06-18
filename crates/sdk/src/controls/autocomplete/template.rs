@@ -9,6 +9,7 @@ use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
     SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
+use crate::theme::LumaTypography;
 
 pub type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTextBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -79,6 +80,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
         let AutocompleteTextBoxTemplateHandlers { key_down, scroll_wheel, clear_click, trigger_bounds } = handlers;
 
         let has_status_text = !model.status_label.is_empty() || !model.status_detail.is_empty();
+        let status_style = LumaTypography::default().text.scale.sm;
 
         let status_row = div()
             .flex()
@@ -87,15 +89,17 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
             .gap(px(10.0))
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
+                    .text_size(px(status_style.size))
+                    .line_height(px(status_style.line_height))
+                    .font_weight(status_style.weight)
                     .text_color(model.status_color)
                     .child(model.status_label),
             )
             .child(
                 div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
+                    .text_size(px(status_style.size))
+                    .line_height(px(status_style.line_height))
+                    .font_weight(status_style.weight)
                     .text_color(model.muted_text_color)
                     .child(model.status_detail),
             );

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
 use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
-use gpui_luma_look_shadcn::{ShadcnLook, all_shadcn_theme_usages};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize, all_shadcn_theme_usages};
 
 use crate::gallery::panes::shared::format_compact_hsla;
 use crate::gallery::panes::shared::render_sparse_catalog_callout;
@@ -17,6 +17,11 @@ struct CatalogToken {
 
 pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let heading_style = look.typography_role(ShadcnTextRole::H3);
+    let body_style = look.typography_scale(ShadcnTextSize::Sm);
+    let section_style = look.typography_scale(ShadcnTextSize::Sm);
+    let detail_style = look.typography_scale(ShadcnTextSize::Sm);
+    let caption_style = look.typography_scale(ShadcnTextSize::Xs);
     let catalog_tokens = catalog_tokens(look);
     let usages = all_shadcn_theme_usages();
     let by_token = usage_by_token(usages);
@@ -42,15 +47,8 @@ pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
                         .flex()
                         .flex_col()
                         .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_size(px(20.0))
-                                .line_height(px(28.0))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(chrome.title_text)
-                                .child("Theme Usage"),
-                        )
-                        .child(div().text_size(px(13.0)).line_height(px(18.0)).text_color(chrome.muted_text).child(
+                        .child(div().typography_style(heading_style).text_color(chrome.title_text).child("Theme Usage"))
+                        .child(div().typography_style(body_style).text_color(chrome.muted_text).child(
                             if look.has_css_catalog() {
                                 "Shadcn CSS token usage metadata for migrated controls"
                             } else {
@@ -60,20 +58,27 @@ pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
                 )
                 .when_some(render_sparse_catalog_callout(look), |panel, callout| panel.child(callout))
                 .child(div().flex().gap(px(8.0)).children([
-                    render_count_badge("Components", usages.len().to_string(), look),
-                    render_count_badge("Catalog tokens", catalog_tokens.len().to_string(), look),
-                    render_count_badge("Used by SDK", sdk_token_count.to_string(), look),
-                    render_count_badge("Shared values", shared_value_count.to_string(), look),
+                    render_count_badge("Components", usages.len().to_string(), look, caption_style),
+                    render_count_badge("Catalog tokens", catalog_tokens.len().to_string(), look, caption_style),
+                    render_count_badge("Used by SDK", sdk_token_count.to_string(), look, caption_style),
+                    render_count_badge("Shared values", shared_value_count.to_string(), look, caption_style),
                 ]))
                 .child(
                     div()
                         .flex()
                         .gap(px(20.0))
                         .items_start()
-                        .child(render_by_token(&catalog_tokens, &by_token, look))
-                        .child(render_by_component(usages, look)),
+                        .child(render_by_token(&catalog_tokens, &by_token, look, detail_style))
+                        .child(render_by_component(usages, look, detail_style, caption_style)),
                 )
-                .child(render_shared_values(&catalog_tokens, &by_token, look)),
+                .child(render_shared_values(
+                    &catalog_tokens,
+                    &by_token,
+                    look,
+                    caption_style,
+                    detail_style,
+                    section_style,
+                )),
         )
         .into_any_element()
 }
@@ -105,6 +110,7 @@ fn render_by_token(
     catalog_tokens: &[CatalogToken],
     by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
     look: &ShadcnLook,
+    detail_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     let chrome = look.chrome();
 
@@ -114,7 +120,7 @@ fn render_by_token(
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("By Token", look))
+        .child(section_title("By Token", look, detail_style))
         .children(catalog_tokens.iter().map(|token| {
             let consumers = by_token.get(token.token.as_str());
 
@@ -131,8 +137,7 @@ fn render_by_token(
                     parts.iter().map(|(component, part)| {
                         div()
                             .pl(px(44.0))
-                            .text_size(px(12.0))
-                            .line_height(px(17.0))
+                            .typography_style(detail_style)
                             .text_color(chrome.body_text)
                             .child(format!("{component} {}", part.part))
                     })
@@ -141,8 +146,7 @@ fn render_by_token(
                     row.child(
                         div()
                             .pl(px(44.0))
-                            .text_size(px(12.0))
-                            .line_height(px(17.0))
+                            .typography_style(detail_style)
                             .text_color(chrome.muted_text)
                             .child("No current SDK resolver usage"),
                     )
@@ -151,7 +155,12 @@ fn render_by_token(
         .into_any_element()
 }
 
-fn render_by_component(usages: &'static [&'static ThemeUsage], look: &ShadcnLook) -> AnyElement {
+fn render_by_component(
+    usages: &'static [&'static ThemeUsage],
+    look: &ShadcnLook,
+    detail_style: gpui_luma::theme::LumaTextStyle,
+    caption_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     let chrome = look.chrome();
 
     div()
@@ -160,7 +169,7 @@ fn render_by_component(usages: &'static [&'static ThemeUsage], look: &ShadcnLook
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("By Component", look))
+        .child(section_title("By Component", look, detail_style))
         .children(usages.iter().map(|usage| {
             div()
                 .flex()
@@ -172,13 +181,12 @@ fn render_by_component(usages: &'static [&'static ThemeUsage], look: &ShadcnLook
                 .p(px(10.0))
                 .child(
                     div()
-                        .text_size(px(13.0))
-                        .line_height(px(18.0))
+                        .typography_style(detail_style)
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(chrome.title_text)
                         .child(usage.label),
                 )
-                .children(usage.parts.iter().map(|part| render_component_part(part, look)))
+                .children(usage.parts.iter().map(|part| render_component_part(part, look, detail_style, caption_style)))
         }))
         .into_any_element()
 }
@@ -187,6 +195,9 @@ fn render_shared_values(
     catalog_tokens: &[CatalogToken],
     by_token: &BTreeMap<&'static str, Vec<UsageRef>>,
     look: &ShadcnLook,
+    caption_style: gpui_luma::theme::LumaTextStyle,
+    detail_style: gpui_luma::theme::LumaTextStyle,
+    section_style: gpui_luma::theme::LumaTextStyle,
 ) -> AnyElement {
     let chrome = look.chrome();
     let groups = shared_value_groups(catalog_tokens);
@@ -195,7 +206,7 @@ fn render_shared_values(
         .flex()
         .flex_col()
         .gap(px(10.0))
-        .child(section_title("Shared Values", look))
+        .child(section_title("Shared Values", look, section_style))
         .child(div().flex().flex_wrap().gap(px(12.0)).children(groups.into_iter().map(|(value, tokens)| {
             div()
                 .w(px(360.0))
@@ -210,8 +221,7 @@ fn render_shared_values(
                 .child(
                     div()
                         .font_family("Monaco")
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
+                        .typography_style(caption_style)
                         .text_color(chrome.muted_text)
                         .child(value),
                 )
@@ -226,8 +236,7 @@ fn render_shared_values(
                                 .min_w(px(0.0))
                                 .truncate()
                                 .font_family("Monaco")
-                                .text_size(px(12.0))
-                                .line_height(px(17.0))
+                                .typography_style(detail_style)
                                 .text_color(chrome.title_text)
                                 .child(token_label(token)),
                         )
@@ -247,19 +256,23 @@ fn shared_value_groups(catalog_tokens: &[CatalogToken]) -> Vec<(String, Vec<&Cat
     by_value.into_iter().filter(|(_, tokens)| tokens.len() > 1).collect()
 }
 
-fn section_title(title: &'static str, look: &ShadcnLook) -> AnyElement {
+fn section_title(title: &'static str, look: &ShadcnLook, style: gpui_luma::theme::LumaTextStyle) -> AnyElement {
     let chrome = look.chrome();
 
     div()
-        .text_size(px(13.0))
-        .line_height(px(18.0))
+        .typography_style(style)
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(chrome.title_text)
         .child(title)
         .into_any_element()
 }
 
-fn render_count_badge(label: &'static str, value: String, look: &ShadcnLook) -> AnyElement {
+fn render_count_badge(
+    label: &'static str,
+    value: String,
+    look: &ShadcnLook,
+    style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     let chrome = look.chrome();
 
     div()
@@ -271,8 +284,7 @@ fn render_count_badge(label: &'static str, value: String, look: &ShadcnLook) -> 
         .rounded(px(4.0))
         .px(px(8.0))
         .py(px(4.0))
-        .text_size(px(11.0))
-        .line_height(px(15.0))
+        .typography_style(style)
         .child(div().font_weight(FontWeight::SEMIBOLD).text_color(chrome.title_text).child(value))
         .child(div().text_color(chrome.muted_text).child(label))
         .into_any_element()
@@ -280,6 +292,8 @@ fn render_count_badge(label: &'static str, value: String, look: &ShadcnLook) -> 
 
 fn render_token_header(token: &CatalogToken, used_by_sdk: bool, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let detail_style = look.typography_scale(ShadcnTextSize::Sm);
+    let caption_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .flex()
@@ -297,8 +311,7 @@ fn render_token_header(token: &CatalogToken, used_by_sdk: bool, look: &ShadcnLoo
                     div()
                         .truncate()
                         .font_family("Monaco")
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
+                        .typography_style(detail_style)
                         .text_color(chrome.title_text)
                         .child(token_label(token)),
                 )
@@ -306,8 +319,7 @@ fn render_token_header(token: &CatalogToken, used_by_sdk: bool, look: &ShadcnLoo
                     div()
                         .truncate()
                         .font_family("Monaco")
-                        .text_size(px(11.0))
-                        .line_height(px(15.0))
+                        .typography_style(caption_style)
                         .text_color(chrome.muted_text)
                         .child(format_compact_hsla(token.color)),
                 ),
@@ -316,7 +328,12 @@ fn render_token_header(token: &CatalogToken, used_by_sdk: bool, look: &ShadcnLoo
         .into_any_element()
 }
 
-fn render_component_part(part: &ThemePartUsage, look: &ShadcnLook) -> AnyElement {
+fn render_component_part(
+    part: &ThemePartUsage,
+    look: &ShadcnLook,
+    detail_style: gpui_luma::theme::LumaTextStyle,
+    caption_style: gpui_luma::theme::LumaTextStyle,
+) -> AnyElement {
     let chrome = look.chrome();
 
     div()
@@ -331,8 +348,7 @@ fn render_component_part(part: &ThemePartUsage, look: &ShadcnLook) -> AnyElement
                 .child(
                     div()
                         .min_w(px(172.0))
-                        .text_size(px(12.0))
-                        .line_height(px(17.0))
+                        .typography_style(detail_style)
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(chrome.title_text)
                         .child(part.part),
@@ -342,25 +358,22 @@ fn render_component_part(part: &ThemePartUsage, look: &ShadcnLook) -> AnyElement
                         .min_w(px(0.0))
                         .truncate()
                         .font_family("Monaco")
-                        .text_size(px(12.0))
-                        .line_height(px(17.0))
+                        .typography_style(detail_style)
                         .text_color(chrome.body_text)
                         .child(format!("--{}", part.token)),
                 ),
         )
-        .child(
-            div()
-                .pl(px(180.0))
-                .text_size(px(11.0))
-                .line_height(px(15.0))
-                .text_color(chrome.muted_text)
-                .child(format!("{} -> {}", part.states.join(", "), part.appearance_fields.join(", "))),
-        )
+        .child(div().pl(px(180.0)).typography_style(caption_style).text_color(chrome.muted_text).child(format!(
+            "{} -> {}",
+            part.states.join(", "),
+            part.appearance_fields.join(", ")
+        )))
         .into_any_element()
 }
 
 fn render_status_badge(status: &'static str, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
+    let caption_style = look.typography_scale(ShadcnTextSize::Xs);
 
     div()
         .flex_none()
@@ -369,8 +382,7 @@ fn render_status_badge(status: &'static str, look: &ShadcnLook) -> AnyElement {
         .rounded(px(3.0))
         .px(px(6.0))
         .py(px(2.0))
-        .text_size(px(10.0))
-        .line_height(px(14.0))
+        .typography_style(caption_style)
         .text_color(chrome.muted_text)
         .child(status)
         .into_any_element()

@@ -9,9 +9,9 @@ pub(in crate::gallery) use template_pipeline::{
     render_combobox_popup_preview_from_templates, render_search_selector_popup_preview_from_templates,
 };
 
-use gpui::{AnyElement, Context, Entity, FontWeight, Hsla, IntoElement, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Hsla, IntoElement, div, prelude::*, px};
 use gpui_luma::DockPanel;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -35,7 +35,7 @@ pub(super) fn gallery_pane_with_description(
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
-        .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
+        .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
         .child(render_centered_pane_body(content))
         .into_any_element()
 }
@@ -66,7 +66,7 @@ pub(super) fn gallery_pane_with_inspector_description(
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
-        .child(render_pane_header(title, description, chrome.title_text, chrome.muted_text))
+        .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
         .child(
             div().min_h(px(0.0)).flex_1().child(
                 DockPanel::new()
@@ -101,28 +101,24 @@ fn render_centered_pane_body(content: AnyElement) -> AnyElement {
 fn render_pane_header(
     title: &'static str,
     description: Option<&'static str>,
+    look: &ShadcnLook,
     title_color: Hsla,
     description_color: Hsla,
 ) -> AnyElement {
+    let title_style = look.typography_role(ShadcnTextRole::H3);
+    let description_style = look.typography_scale(ShadcnTextSize::Sm);
+
     div()
         .w_full()
         .flex()
         .flex_col()
         .gap(px(4.0))
-        .child(
-            div()
-                .text_size(px(20.0))
-                .line_height(px(28.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(title_color)
-                .child(title),
-        )
+        .child(div().typography_style(title_style).text_color(title_color).child(title))
         .when_some(description, |header, description| {
             header.child(
                 div()
                     .max_w(px(760.0))
-                    .text_size(px(13.0))
-                    .line_height(px(18.0))
+                    .typography_style(description_style)
                     .text_color(description_color)
                     .child(description),
             )
