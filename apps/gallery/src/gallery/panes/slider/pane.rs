@@ -67,7 +67,7 @@ impl SliderPane {
                 .flex_col()
                 .items_center()
                 .gap_5()
-                .child(self.slider.clone())
+                .child(div().w(px(260.0)).max_w(px(320.0)).child(self.slider.clone()))
                 .child(
                     div()
                         .text_size(px(12.0))
@@ -197,7 +197,12 @@ fn render_state_sample(
         .flex_col()
         .items_center()
         .gap(px(6.0))
-        .child(template.render(&model, slider_preview_handlers(), window, cx))
+        .child(div().w(px(320.0)).max_w(px(360.0)).child(template.render(
+            &model,
+            slider_preview_handlers(),
+            window,
+            cx,
+        )))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{
     App, AppContext as _, Bounds, Div, DragMoveEvent, Hsla, MouseButton, MouseDownEvent, MouseUpEvent, Pixels,
-    Stateful, Window, canvas, div, hsla, px, prelude::*,
+    Stateful, Window, canvas, div, hsla, px, relative, prelude::*,
 };
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -65,80 +65,11 @@ impl SliderTemplate for ThemedSliderTemplate {
         let long_axis = appearance.width;
         let short_axis = appearance.height;
         let cross_axis = appearance.track_height;
-        let (root_width, root_height, track_left, track_top, track_width, track_height, thumb_left, thumb_top) =
-            match model.orientation {
-                SliderOrientation::Horizontal => (
-                    long_axis,
-                    short_axis,
-                    0.0,
-                    (short_axis - cross_axis) * 0.5,
-                    long_axis,
-                    cross_axis,
-                    (long_axis - appearance.thumb_size).max(0.0) * percentage,
-                    (short_axis - appearance.thumb_size) * 0.5,
-                ),
-                SliderOrientation::Vertical => (
-                    short_axis,
-                    long_axis,
-                    (short_axis - cross_axis) * 0.5,
-                    0.0,
-                    cross_axis,
-                    long_axis,
-                    (short_axis - appearance.thumb_size) * 0.5,
-                    (long_axis - appearance.thumb_size).max(0.0) * (1.0 - percentage),
-                ),
-            };
-
-        let track = div()
-            .id(format!("{}-track", model.id))
-            .absolute()
-            .left(px(track_left))
-            .top(px(track_top))
-            .w(px(track_width))
-            .h(px(track_height))
-            .bg(appearance.track_background)
-            .rounded(px(appearance.radius))
-            .overflow_hidden()
-            .child(match model.orientation {
-                SliderOrientation::Horizontal => div()
-                    .absolute()
-                    .left(px(0.0))
-                    .top(px(0.0))
-                    .h_full()
-                    .w(px(track_width * percentage))
-                    .bg(appearance.fill_background)
-                    .rounded(px(appearance.radius)),
-                SliderOrientation::Vertical => div()
-                    .absolute()
-                    .left(px(0.0))
-                    .bottom(px(0.0))
-                    .w_full()
-                    .h(px(track_height * percentage))
-                    .bg(appearance.fill_background)
-                    .rounded(px(appearance.radius)),
-            });
-
-        let thumb = div()
-            .id(format!("{}-thumb", model.id))
-            .absolute()
-            .left(px(thumb_left - thumb_focus_offset()))
-            .top(px(thumb_top - thumb_focus_offset()))
-            .flex()
-            .items_center()
-            .justify_center()
-            .p(px(THUMB_FOCUS_GAP))
-            .border(px(THUMB_FOCUS_WIDTH))
-            .border_color(focus_ring_color(appearance.focus_ring))
-            .rounded(px(appearance.radius + thumb_focus_offset()))
-            .child(
-                div()
-                    .size(px(appearance.thumb_size))
-                    .bg(appearance.thumb_background)
-                    .border_1()
-                    .border_color(appearance.thumb_border)
-                    .rounded(px(appearance.radius))
-                    .shadow(appearance.thumb_shadow.clone()),
-            );
+        let root_height = match model.orientation {
+            SliderOrientation::Horizontal => short_axis,
+            SliderOrientation::Vertical => long_axis,
+        };
+        let root_width = short_axis;
 
         let mut root = div()
             .id(model.id.clone())
@@ -146,8 +77,10 @@ impl SliderTemplate for ThemedSliderTemplate {
             .flex()
             .items_center()
             .justify_center()
-            .w(px(root_width))
-            .h(px(root_height))
+            .when(model.orientation == SliderOrientation::Horizontal, |this| {
+                this.w_full().min_w(px(0.0)).h(px(root_height)).px(px(appearance.thumb_size * 0.5))
+            })
+            .when(model.orientation == SliderOrientation::Vertical, |this| this.w(px(root_width)).h(px(root_height)))
             .on_hover(hover)
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)
@@ -156,14 +89,121 @@ impl SliderTemplate for ThemedSliderTemplate {
                 cx.stop_propagation();
                 cx.new(|_| drag.clone())
             })
-            .on_drag_move(drag_move)
-            .child(track)
-            .child(thumb)
-            .child(
-                canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
+            .on_drag_move(drag_move);
+
+        root = match model.orientation {
+            SliderOrientation::Horizontal => {
+                let track_top = (short_axis - cross_axis) * 0.5;
+                let thumb_top = (short_axis - appearance.thumb_size) * 0.5 - thumb_focus_offset();
+                let thumb_center_offset = -(appearance.thumb_size * 0.5 + thumb_focus_offset());
+
+                let track = div()
+                    .id(format!("{}-track", model.id))
                     .absolute()
-                    .size_full(),
-            );
+                    .left(px(0.0))
+                    .right(px(0.0))
+                    .top(px(track_top))
+                    .h(px(cross_axis))
+                    .bg(appearance.track_background)
+                    .rounded(px(appearance.radius))
+                    .overflow_hidden()
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .top(px(0.0))
+                            .h_full()
+                            .w(relative(percentage))
+                            .bg(appearance.fill_background)
+                            .rounded(px(appearance.radius)),
+                    )
+                    .child(
+                        canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
+                            .absolute()
+                            .size_full(),
+                    );
+
+                let thumb = div()
+                    .id(format!("{}-thumb", model.id))
+                    .absolute()
+                    .left(relative(percentage))
+                    .top(px(thumb_top))
+                    .ml(px(thumb_center_offset))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .p(px(THUMB_FOCUS_GAP))
+                    .border(px(THUMB_FOCUS_WIDTH))
+                    .border_color(focus_ring_color(appearance.focus_ring))
+                    .rounded(px(appearance.radius + thumb_focus_offset()))
+                    .child(
+                        div()
+                            .size(px(appearance.thumb_size))
+                            .bg(appearance.thumb_background)
+                            .border_1()
+                            .border_color(appearance.thumb_border)
+                            .rounded(px(appearance.radius))
+                            .shadow(appearance.thumb_shadow.clone()),
+                    );
+
+                root.child(track).child(thumb)
+            }
+            SliderOrientation::Vertical => {
+                let track_left = (short_axis - cross_axis) * 0.5;
+                let thumb_left = (short_axis - appearance.thumb_size) * 0.5;
+                let thumb_top = (long_axis - appearance.thumb_size).max(0.0) * (1.0 - percentage);
+
+                let track = div()
+                    .id(format!("{}-track", model.id))
+                    .absolute()
+                    .left(px(track_left))
+                    .top(px(0.0))
+                    .w(px(cross_axis))
+                    .h(px(long_axis))
+                    .bg(appearance.track_background)
+                    .rounded(px(appearance.radius))
+                    .overflow_hidden()
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .bottom(px(0.0))
+                            .w_full()
+                            .h(px(long_axis * percentage))
+                            .bg(appearance.fill_background)
+                            .rounded(px(appearance.radius)),
+                    )
+                    .child(
+                        canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
+                            .absolute()
+                            .size_full(),
+                    );
+
+                let thumb = div()
+                    .id(format!("{}-thumb", model.id))
+                    .absolute()
+                    .left(px(thumb_left - thumb_focus_offset()))
+                    .top(px(thumb_top - thumb_focus_offset()))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .p(px(THUMB_FOCUS_GAP))
+                    .border(px(THUMB_FOCUS_WIDTH))
+                    .border_color(focus_ring_color(appearance.focus_ring))
+                    .rounded(px(appearance.radius + thumb_focus_offset()))
+                    .child(
+                        div()
+                            .size(px(appearance.thumb_size))
+                            .bg(appearance.thumb_background)
+                            .border_1()
+                            .border_color(appearance.thumb_border)
+                            .rounded(px(appearance.radius))
+                            .shadow(appearance.thumb_shadow.clone()),
+                    );
+
+                root.child(track).child(thumb)
+            }
+        };
 
         if model.enabled {
             root = root.cursor_pointer();

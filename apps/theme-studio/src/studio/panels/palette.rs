@@ -247,7 +247,7 @@ fn render_token_cell(
         div()
             .size(px(PALETTE_SWATCH_SIZE))
             .flex_shrink_0()
-            .rounded(px(6.0))
+            .rounded_cn(ShadcnRadius::Md)
             .bg(row.color)
             .border_1()
             .border_color(chrome.border),

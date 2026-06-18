@@ -85,6 +85,27 @@ impl ShadcnLookSnapshot {
             stylesheet: Arc::clone(&self.stylesheet),
         })
     }
+
+    fn with_token_overrides(&self, overrides: &HashMap<String, String>) -> anyhow::Result<Self> {
+        if overrides.is_empty() {
+            return Ok(Self {
+                catalog: Arc::clone(&self.catalog),
+                light: Arc::clone(&self.light),
+                dark: Arc::clone(&self.dark),
+                stylesheet: Arc::clone(&self.stylesheet),
+            });
+        }
+
+        let light_catalog = apply_string_overrides_to_catalog(self.light.catalog.clone(), overrides);
+        let dark_catalog = apply_string_overrides_to_catalog(self.dark.catalog.clone(), overrides);
+
+        Ok(Self {
+            catalog: Arc::clone(&self.catalog),
+            light: Arc::new(ShadcnModeTokens::from_catalog(light_catalog, ThemeMode::Light)?),
+            dark: Arc::new(ShadcnModeTokens::from_catalog(dark_catalog, ThemeMode::Dark)?),
+            stylesheet: Arc::clone(&self.stylesheet),
+        })
+    }
 }
 
 impl ShadcnLook {
@@ -279,6 +300,13 @@ impl ShadcnLook {
     pub fn apply_color_overrides(&self, overrides: &HashMap<String, Hsla>) -> anyhow::Result<()> {
         let snapshot = self.snapshot();
         let next = snapshot.with_color_overrides(overrides)?;
+        *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
+        Ok(())
+    }
+
+    pub fn apply_token_overrides(&self, overrides: &HashMap<String, String>) -> anyhow::Result<()> {
+        let snapshot = self.snapshot();
+        let next = snapshot.with_token_overrides(overrides)?;
         *self.state.snapshot.write().expect("shadcn look snapshot lock poisoned") = Arc::new(next);
         Ok(())
     }
@@ -678,6 +706,14 @@ fn apply_color_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashMa
     for (token, color) in overrides {
         let key = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();
         catalog.tokens.insert(key, hsla_to_css_value(*color));
+    }
+    catalog
+}
+
+fn apply_string_overrides_to_catalog(mut catalog: CssTokenMap, overrides: &HashMap<String, String>) -> CssTokenMap {
+    for (token, value) in overrides {
+        let key = token.strip_prefix("--").unwrap_or(token.as_str()).to_string();
+        catalog.tokens.insert(key, value.clone());
     }
     catalog
 }

@@ -18,7 +18,10 @@ use crate::theme::StudioThemeChoice;
 
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
-use super::overrides::StudioOverrides;
+use super::overrides::{
+    StudioOverrides, ThemeShadowOverride, clamp_shadow_blur, clamp_shadow_offset_x, clamp_shadow_offset_y,
+    clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
+};
 use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
 use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
 use super::content_pane::{BoardSnapshot, ContentPaneHost};
@@ -46,7 +49,7 @@ pub struct ThemeStudioApp {
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
     main_split: Entity<ResizablePanels>,
-    /// Suppresses hex field `Change` handlers while programmatically syncing sidebar values.
+    /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
     syncing_sidebar_tokens: bool,
     _subscriptions: Vec<Subscription>,
 }
@@ -172,6 +175,10 @@ impl ThemeStudioApp {
         if let Err(err) = self.look.apply_color_overrides(&self.overrides.global_color_overrides) {
             tracing::warn!("failed to apply studio color overrides: {err:?}");
         }
+        let token_overrides = self.overrides.token_overrides();
+        if let Err(err) = self.look.apply_token_overrides(&token_overrides) {
+            tracing::warn!("failed to apply studio token overrides: {err:?}");
+        }
         cx.bump_luma_theme_revision();
         self.sync_main_split_theme(cx);
         self.refresh_content_pane(cx);
@@ -206,6 +213,8 @@ impl ThemeStudioApp {
             return;
         }
         self.active_theme_id = theme_id.to_string();
+        self.overrides.clear_metric_overrides();
+        self.overrides.clear_shadow_override();
         self.apply_theme_overrides(cx);
         self.sync_sidebar(true, cx);
         cx.notify();
@@ -222,6 +231,104 @@ impl ThemeStudioApp {
         }
 
         self.overrides.set_global_color(css_name, color);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
+    }
+
+    pub fn set_radius_rem(&mut self, rem: f32, cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let rem = crate::studio::overrides::clamp_radius_rem(rem);
+        if self.overrides.radius_rem() == Some(rem) {
+            return;
+        }
+
+        self.overrides.set_radius_rem(rem);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
+    }
+
+    pub fn set_spacing_rem(&mut self, rem: f32, cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let rem = crate::studio::overrides::clamp_spacing_rem(rem);
+        if self.overrides.spacing_rem() == Some(rem) {
+            return;
+        }
+
+        self.overrides.set_spacing_rem(rem);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
+    }
+
+    pub fn reload_active_theme(&mut self, cx: &mut Context<Self>) {
+        self.overrides.clear_all_overrides();
+        self.apply_theme_overrides(cx);
+        self.sync_sidebar(true, cx);
+        cx.notify();
+    }
+
+    pub fn set_shadow_color(&mut self, color: gpui::Hsla, cx: &mut Context<Self>) {
+        self.update_shadow_override(
+            |shadow| {
+                shadow.color.h = color.h;
+                shadow.color.s = color.s;
+                shadow.color.l = color.l;
+            },
+            cx,
+        );
+    }
+
+    pub fn set_shadow_opacity(&mut self, opacity: f32, cx: &mut Context<Self>) {
+        self.update_shadow_override(|shadow| shadow.set_opacity(clamp_shadow_opacity(opacity)), cx);
+    }
+
+    pub fn set_shadow_blur(&mut self, blur_px: f32, cx: &mut Context<Self>) {
+        self.update_shadow_override(|shadow| shadow.blur_px = clamp_shadow_blur(blur_px), cx);
+    }
+
+    pub fn set_shadow_spread(&mut self, spread_px: f32, cx: &mut Context<Self>) {
+        self.update_shadow_override(|shadow| shadow.spread_px = clamp_shadow_spread(spread_px), cx);
+    }
+
+    pub fn set_shadow_offset_x(&mut self, offset_x_px: f32, cx: &mut Context<Self>) {
+        self.update_shadow_override(|shadow| shadow.offset_x_px = clamp_shadow_offset_x(offset_x_px), cx);
+    }
+
+    pub fn set_shadow_offset_y(&mut self, offset_y_px: f32, cx: &mut Context<Self>) {
+        self.update_shadow_override(|shadow| shadow.offset_y_px = clamp_shadow_offset_y(offset_y_px), cx);
+    }
+
+    fn update_shadow_override(&mut self, update: impl FnOnce(&mut ThemeShadowOverride), cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let mut shadow =
+            self.overrides.shadow_override().cloned().unwrap_or_else(|| default_shadow_override(&self.look));
+        update(&mut shadow);
+
+        if self.overrides.shadow_override() == Some(&shadow) {
+            return;
+        }
+
+        self.overrides.set_shadow_override(shadow);
         self.apply_theme_overrides(cx);
         self.syncing_sidebar_tokens = true;
         let overrides = self.overrides.clone();
@@ -338,6 +445,28 @@ impl Render for ThemeStudioApp {
                         .items_center()
                         .gap(px(12.0))
                         .child(render_size_toggle(size, chrome, toggle_label_style, cx))
+                        .child(
+                            div()
+                                .id("theme-studio-reset-theme")
+                                .size(px(28.0))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .rounded(px(6.0))
+                                .font_family("lucide")
+                                .text_size(px(14.0))
+                                .line_height(px(14.0))
+                                .text_color(chrome.title_text)
+                                .cursor_pointer()
+                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.reload_active_theme(cx);
+                                }))
+                                .child(char::from(LucideIcon::RefreshCcw).to_string()),
+                        )
                         .child(
                             div()
                                 .id("theme-studio-mode-toggle")
