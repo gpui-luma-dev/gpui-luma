@@ -11,7 +11,7 @@ use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::panels::format_hex_color;
 
-const PALETTE_SWATCH_SIZE: f32 = 80.0;
+const PALETTE_SWATCH_SIZE: f32 = 40.0;
 const PALETTE_ITEM_GAP: f32 = 12.0;
 const PALETTE_CELL_INNER_GAP: f32 = 10.0;
 /// Fits longest label ("Sidebar Primary Foreground") beside the swatch at 13px.

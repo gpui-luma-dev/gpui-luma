@@ -2,11 +2,17 @@ use std::collections::{HashMap, HashSet};
 
 use gpui::{App, Context, Entity, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
-use super::token_color_row::token_color_row;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use gpui_luma::controls::tabs_navigation::{
+    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
+};
 use gpui_luma::controls::textfield::{TextField, TextFieldAppearance, TextFieldAppearanceOverride, TextFieldEvent};
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use gpui_luma::theme::ControlSize;
 use gpui_luma::vstack;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+
+use super::content_tabs::theme_studio_tabs_navigation_template;
+use super::token_color_row::token_color_row;
 
 use gpui::Hsla;
 
@@ -51,6 +57,25 @@ const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ),
 ];
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+enum SidebarTab {
+    #[default]
+    Colors,
+    Typography,
+    Other,
+}
+
+impl SidebarTab {
+    fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "colors" => Some(Self::Colors),
+            "typography" => Some(Self::Typography),
+            "other" => Some(Self::Other),
+            _ => None,
+        }
+    }
+}
+
 /// Theme token editing state owned by the sidebar (selectors, fields, overrides).
 pub struct ThemeSidebarViewModel {
     pub look: std::sync::Arc<ShadcnLook>,
@@ -61,7 +86,10 @@ pub struct ThemeSidebarViewModel {
 pub struct ThemeSidebar {
     vm: ThemeSidebarViewModel,
     theme_selector: Entity<Selector>,
+    tabs: Entity<TabsNavigation>,
+    active_tab: SidebarTab,
     token_accordion: Entity<AccordionControl>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl ThemeSidebar {
@@ -82,6 +110,28 @@ impl ThemeSidebar {
             .selected_id(active_theme_id.clone())
             .spawn(cx);
 
+        let tabs = look
+            .tabs_navigation("theme-studio-sidebar-tabs")
+            .size(ControlSize::Lg)
+            .width_mode(TabsNavigationWidthMode::Uniform)
+            .template(theme_studio_tabs_navigation_template(look.clone(), ControlSize::Lg))
+            .items([
+                TabsNavigationItem::new("colors").label("Colors"),
+                TabsNavigationItem::new("typography").label("Typography"),
+                TabsNavigationItem::new("other").label("Other"),
+            ])
+            .active("colors")
+            .spawn(cx);
+
+        let mut subscriptions = Vec::new();
+        subscriptions.push(cx.subscribe(&tabs, |sidebar, _, event: &TabsNavigationEvent, cx| {
+            let TabsNavigationEvent::Activate { tab_id, .. } = event;
+            if let Some(tab) = SidebarTab::from_id(tab_id.as_ref()) {
+                sidebar.active_tab = tab;
+                cx.notify();
+            }
+        }));
+
         let mut token_fields = HashMap::new();
 
         for (_, tokens) in TOKEN_CATEGORIES {
@@ -101,7 +151,14 @@ impl ThemeSidebar {
 
         let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
 
-        Self { vm: ThemeSidebarViewModel { look, global_overrides, token_fields }, theme_selector, token_accordion }
+        Self {
+            vm: ThemeSidebarViewModel { look, global_overrides, token_fields },
+            theme_selector,
+            tabs,
+            active_tab: SidebarTab::Colors,
+            token_accordion,
+            _subscriptions: subscriptions,
+        }
     }
 
     /// Wire selector and token field events on the app entity.
@@ -146,6 +203,7 @@ impl ThemeSidebar {
         self.vm.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.vm.look.clone();
         self.sync_theme_selector_template(&theme, cx);
+        self.sync_tabs_template(&theme, cx);
         self.sync_token_field_templates(&theme, cx);
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.token_accordion = Self::build_token_accordion(cx.entity(), theme, &expanded_categories, cx);
@@ -155,6 +213,14 @@ impl ThemeSidebar {
     fn sync_theme_selector_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.theme_selector.update(cx, |selector, cx| {
             selector.set_template(theme.selector_template(), cx);
+        });
+    }
+
+    fn sync_tabs_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.tabs.update(cx, |tabs, cx| {
+            tabs.set_size(ControlSize::Lg, cx);
+            tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
+            tabs.set_template(theme_studio_tabs_navigation_template(theme.clone(), ControlSize::Lg), cx);
         });
     }
 
@@ -347,18 +413,26 @@ impl Render for ThemeSidebar {
         let has_catalog = self.vm.look.has_css_catalog();
         let sidebar_bg =
             token_color_with_fallback(&self.vm.look, &self.vm.global_overrides, "sidebar", chrome.panel_background);
-        let mut body = div().flex().flex_col().w_full().gap(px(10.0)).child(self.theme_selector.clone());
 
-        if !has_catalog {
-            body = body.child(
-                div()
-                    .text_xs()
-                    .text_color(chrome.muted_text)
-                    .child("Native default theme: pick a tweakcn theme above for catalog-backed swatches."),
-            );
-        }
+        let colors_body = {
+            let mut body = div().flex().flex_col().w_full().gap(px(10.0));
 
-        body = body.child(div().w_full().child(self.token_accordion.clone()));
+            if !has_catalog {
+                body = body.child(
+                    div()
+                        .text_xs()
+                        .text_color(chrome.muted_text)
+                        .child("Native default theme: pick a tweakcn theme above for catalog-backed swatches."),
+                );
+            }
+
+            body.child(div().w_full().child(self.token_accordion.clone()))
+        };
+
+        let tab_body = match self.active_tab {
+            SidebarTab::Colors => colors_body.into_any_element(),
+            SidebarTab::Typography | SidebarTab::Other => div().w_full().into_any_element(),
+        };
 
         div()
             .id("theme-studio-sidebar")
@@ -367,15 +441,20 @@ impl Render for ThemeSidebar {
             .flex()
             .flex_col()
             .bg(sidebar_bg)
-            .p(px(12.0))
             .child(
                 div()
-                    .text_sm()
-                    .font_weight(gpui::FontWeight::SEMIBOLD)
-                    .text_color(chrome.title_text)
-                    .mb(px(8.0))
-                    .child("Theme Tokens"),
+                    .id("theme-studio-sidebar-theme-selector-shell")
+                    .w_full()
+                    .h(px(48.0))
+                    .flex_shrink_0()
+                    .flex()
+                    .items_center()
+                    .px(px(24.0))
+                    .border_b_1()
+                    .border_color(chrome.border)
+                    .child(self.theme_selector.clone()),
             )
+            .child(div().flex_shrink_0().pt(px(8.0)).child(div().w_full().child(self.tabs.clone())))
             .child(
                 div()
                     .id("theme-studio-sidebar-scroll")
@@ -383,7 +462,8 @@ impl Render for ThemeSidebar {
                     .min_h(px(0.0))
                     .w_full()
                     .overflow_y_scroll()
-                    .child(body),
+                    .p(px(12.0))
+                    .child(tab_body),
             )
     }
 }

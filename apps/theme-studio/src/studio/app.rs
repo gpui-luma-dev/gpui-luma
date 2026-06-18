@@ -100,7 +100,7 @@ impl ThemeStudioApp {
                         .overflow_hidden()
                         .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
                         .into_any_element()
-                } => px(280.0), min: px(260.0), max: px(400.0);
+                } => px(360.0), min: px(360.0), max: px(460.0);
                 |
                 move || {
                     div()
