@@ -229,11 +229,11 @@ impl SliderControl {
             return;
         }
 
-        self.track_bounds = Some(event.bounds);
         match self.model.strategy {
             SliderInputStrategy::Angular { min_angle, max_angle } => {
+                let bounds = self.track_bounds.unwrap_or(event.bounds);
                 if let (Some(pointer_angle), Some(offset), Some(previous_pointer_angle)) = (
-                    angle_from_position(event.bounds, event.event.position),
+                    angle_from_position(bounds, event.event.position),
                     self.angular_drag_angle_offset,
                     self.angular_drag_pointer_angle,
                 ) {
@@ -246,6 +246,9 @@ impl SliderControl {
                 }
             }
             SliderInputStrategy::Horizontal | SliderInputStrategy::Vertical => {
+                if self.track_bounds.is_none() {
+                    self.track_bounds = Some(event.bounds);
+                }
                 self.set_value_from_position(event.event.position, true, cx);
             }
         }

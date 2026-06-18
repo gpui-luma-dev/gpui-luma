@@ -14,6 +14,14 @@ use crate::studio::overrides::{resolved_shadow_override, StudioOverrides};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 impl ThemeSidebar {
+    /// Full sidebar refresh for theme/template changes.
+    ///
+    /// Use this path when the active `ShadcnLook` changes or when control templates need to be
+    /// re-resolved from the current theme. Unlike the lightweight override sync below, this method
+    /// is allowed to rebuild accordion entities because structure/styling inputs may have changed.
+    ///
+    /// We capture and restore the expanded category ids before rebuilding so a theme change does
+    /// not collapse the user's working context in the sidebar.
     pub fn apply_theme_snapshot(
         &mut self,
         look: std::sync::Arc<ShadcnLook>,
@@ -104,16 +112,22 @@ impl ThemeSidebar {
         }
     }
 
+    /// Lightweight value sync for live override edits.
+    ///
+    /// This path is called frequently while the user types or drags controls. It intentionally
+    /// updates existing fields/sliders in place and does *not* rebuild the token/other accordions.
+    /// Replacing those entities during a drag can invalidate the active slider subtree mid-gesture,
+    /// which manifests as the thumb moving slightly and then "stopping" until the UI settles.
+    ///
+    /// In short:
+    /// - `apply_theme_snapshot` may rebuild structure when theme/template inputs change.
+    /// - `sync_global_overrides` must stay incremental so live interactions remain stable.
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
-        let expanded_token_categories = self.expanded_token_category_ids(cx);
-        let expanded_other_categories = self.expanded_other_category_ids(cx);
         self.vm.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.vm.look.clone();
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.sync_metric_controls_from(theme.as_ref(), overrides, cx);
         self.sync_shadow_controls_from(theme.as_ref(), overrides, cx);
-        self.token_accordion = Self::build_token_accordion(cx.entity(), theme.clone(), &expanded_token_categories, cx);
-        self.other_accordion = Self::build_other_accordion(cx.entity(), theme, &expanded_other_categories, cx);
         cx.notify();
     }
 
@@ -136,6 +150,10 @@ impl ThemeSidebar {
         }
     }
 
+    /// Keep metric text fields and sliders visually in lockstep with the resolved override state.
+    ///
+    /// These programmatic `set_value` calls refresh the controls without emitting another semantic
+    /// `Change` event, which avoids feedback loops while the app is synchronizing derived values.
     pub fn sync_metric_controls_from(
         &mut self,
         look: &ShadcnLook,
