@@ -78,8 +78,8 @@ impl ThemeSidebar {
                 AccordionItem::new(
                     id,
                     AccordionTrigger::new(*category),
-                    AccordionContent::custom(move |_window, cx| {
-                        other_category_content(sidebar.read(cx), category).into_any_element()
+                    AccordionContent::custom(move |window, cx| {
+                        other_category_content(sidebar.read(cx), category, window).into_any_element()
                     }),
                 )
                 .expanded(expanded),

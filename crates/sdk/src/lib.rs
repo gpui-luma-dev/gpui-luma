@@ -12,4 +12,4 @@ pub mod shell;
 pub mod theme;
 
 pub use init::init;
-pub use layout::DockPanel;
+pub use layout::{DockPanel, GridLayout, GridTrack};

@@ -62,8 +62,10 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   [`init.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/init.rs): Global SDK initialization (registers Lucide icon font bytes).
 *   [`focus.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/focus.rs): Focus scopes, key binders, and focus-traversal helpers.
 *   [`keyhandling.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/keyhandling.rs): Core key profile definitions and action bindings.
-*   [`layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layout.rs): `DockPanel` edge-docking layouts and constraints.
-*   [`macros.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/macros.rs): Layout convenience macros (`vstack!`, `hstack!`, `flow!`) and forms (`declare_form!`).
+*   [`layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layout.rs): Re-export surface for SDK layout primitives.
+*   [`layouts/dock_panel.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layouts/dock_panel.rs): `DockPanel` edge-docking layout and constraints.
+*   [`layouts/grid_layout.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/layouts/grid_layout.rs): `GridLayout` flex-compiled column-track layout.
+*   [`macros.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/macros.rs): Layout convenience macros (`vstack!`, `hstack!`, `grid_layout!`, `flow!`) and forms (`declare_form!`).
 *   [`theme/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/theme): Global layout caches (`cache.rs`), metric scales (`layout.rs`), and token structures.
 *   [`controls/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls): The control library:
     *   **Shared infra:** [`template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/template.rs) (modifiers), [`state.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/state.rs) (focus/composite states), [`value.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/value.rs) (numeric ranges).

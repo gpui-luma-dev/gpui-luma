@@ -280,6 +280,43 @@ macro_rules! dock_panel {
     };
 }
 
+/// Declarative builder sugar for [`GridLayout`](crate::GridLayout).
+#[macro_export]
+macro_rules! grid_layout {
+    (@colspan) => {
+        1usize
+    };
+    (@colspan $colspan:expr) => {
+        $colspan
+    };
+
+    (
+        rows: $rows:expr,
+        columns: [ $($col:expr),* $(,)? ]
+        $(, gap: $gap:expr )?
+        $(, gap_x: $gap_x:expr )?
+        $(, gap_y: $gap_y:expr )?
+        ;
+        $(
+            [ $r:expr, $c:expr $(, colspan: $cs:expr)? ] => $child:expr
+        ),* $(,)?
+    ) => {{
+        let mut grid = $crate::GridLayout::new()
+            .rows($rows)
+            .columns(vec![ $($col),* ]);
+
+        $( grid = grid.gap($gap as f32); )?
+        $( grid = grid.gap_x($gap_x as f32); )?
+        $( grid = grid.gap_y($gap_y as f32); )?
+
+        $(
+            grid = grid.child_with_span($child, $r, $c, $crate::grid_layout!(@colspan $($cs)?));
+        )*
+
+        grid
+    }};
+}
+
 /// Spawns a flow wrapping flex layout (similar to a WPF WrapPanel).
 #[macro_export]
 macro_rules! wrappanel {
