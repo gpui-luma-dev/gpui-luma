@@ -1,6 +1,7 @@
 mod app;
 mod content;
 mod content_tabs;
+mod controls;
 mod demo_controls;
 mod panel_layout;
 pub mod panel_layout_config;

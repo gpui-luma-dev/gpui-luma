@@ -5,10 +5,6 @@ use gpui::{
     AnyElement, Context, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size,
     Subscription, Window, div, prelude::*, px,
 };
-use gpui_luma::controls::resizable_panels::ResizablePanels;
-
-use gpui_luma::focus::LumaFocusScopeExt;
-use gpui_luma::resizable_panels;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
@@ -16,6 +12,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::StudioThemeChoice;
 
+use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
 use super::inspectable::InspectableId;
 use super::overrides::{
@@ -49,9 +46,7 @@ pub struct ThemeStudioApp {
     active_theme_id: String,
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
-    main_split: Entity<ResizablePanels>,
-    right_split: Entity<ResizablePanels>,
-    full_split: Entity<ResizablePanels>,
+    workbench: WorkbenchLayout,
     sidebar_collapsed: bool,
     right_sidebar_collapsed: bool,
     /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
@@ -87,102 +82,23 @@ impl ThemeStudioApp {
             overrides: overrides.clone(),
         };
         let content_pane = cx.new(|cx| ContentPaneHost::new(app.clone(), board_snapshot, cx));
-        let content_pane_for_left_split = content_pane.clone();
-        let content_pane_for_right_split = content_pane.clone();
-        let content_pane_for_full_split = content_pane.clone();
-        let sidebar_entity = theme_sidebar.clone();
+        let left_sidebar_entity = theme_sidebar.clone();
+        let content_pane_entity = content_pane.clone();
         let right_sidebar_look = look.clone();
-        let right_split = resizable_panels! {
+        let workbench = WorkbenchLayout::new(
+            "theme-studio",
+            look.clone(),
+            WorkbenchSidebar::new(move || left_sidebar_entity.clone().into_any_element())
+                .width(px(360.0))
+                .min(px(360.0))
+                .max(px(460.0)),
+            move || content_pane_entity.clone().into_any_element(),
+            WorkbenchSidebar::new(move || render_right_sidebar(right_sidebar_look.clone()))
+                .width(px(360.0))
+                .min(px(360.0))
+                .max(px(460.0)),
             cx,
-            theme = look.resizable_panels_theme(),
-            id: "theme-studio-right-split",
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || {
-                    div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .child(content_pane_for_right_split.clone())
-                        .into_any_element()
-                } => weight(1.0);
-                |
-                move || render_right_sidebar(right_sidebar_look.clone()) => px(360.0), min: px(360.0), max: px(460.0);
-            ]
-        };
-        let main_split = resizable_panels! {
-            cx,
-            theme = look.resizable_panels_theme(),
-            id: "theme-studio-main-split",
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || {
-                    div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .overflow_hidden()
-                        .child(div().flex_1().min_h_0().w_full().child(sidebar_entity.clone()))
-                        .into_any_element()
-                } => px(360.0), min: px(360.0), max: px(460.0);
-                |
-                move || {
-                    div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .child(content_pane_for_left_split.clone())
-                        .into_any_element()
-                } => weight(1.0);
-            ]
-        };
-        let sidebar_entity_for_full = theme_sidebar.clone();
-        let right_sidebar_look_for_full = look.clone();
-        let full_split = resizable_panels! {
-            cx,
-            theme = look.resizable_panels_theme(),
-            id: "theme-studio-full-split",
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || {
-                    div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .overflow_hidden()
-                        .child(div().flex_1().min_h_0().w_full().child(sidebar_entity_for_full.clone()))
-                        .into_any_element()
-                } => px(360.0), min: px(360.0), max: px(460.0);
-                |
-                move || {
-                    div()
-                        .size_full()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .child(content_pane_for_full_split.clone())
-                        .into_any_element()
-                } => weight(1.0);
-                |
-                move || render_right_sidebar(right_sidebar_look_for_full.clone()) => px(360.0), min: px(360.0), max: px(460.0);
-            ]
-        };
+        );
 
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
@@ -208,9 +124,7 @@ impl ThemeStudioApp {
             active_theme_id,
             theme_sidebar,
             content_pane,
-            main_split,
-            right_split,
-            full_split,
+            workbench,
             sidebar_collapsed: false,
             right_sidebar_collapsed: true,
             syncing_sidebar_tokens: false,
@@ -306,15 +220,11 @@ impl ThemeStudioApp {
 
     fn sync_split_themes(&self, cx: &mut Context<Self>) {
         let theme = self.look.resizable_panels_theme();
-        self.main_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
-        self.right_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
-        self.full_split.update(cx, |split, cx| split.set_theme(theme, cx));
+        self.workbench.sync_theme(theme, cx);
     }
 
     fn sync_split_measured_sizes(&self, size: Size<Pixels>, cx: &mut Context<Self>) {
-        self.main_split.update(cx, |split, cx| split.set_measured_size(size, cx));
-        self.right_split.update(cx, |split, cx| split.set_measured_size(size, cx));
-        self.full_split.update(cx, |split, cx| split.set_measured_size(size, cx));
+        self.workbench.sync_measured_size(size, cx);
     }
 
     pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
@@ -600,12 +510,8 @@ impl Render for ThemeStudioApp {
         } else {
             LucideIcon::PanelRight
         };
-        let main_shell = match (self.sidebar_collapsed, self.right_sidebar_collapsed) {
-            (false, false) => self.full_split.clone().into_any_element(),
-            (false, true) => self.main_split.clone().into_any_element(),
-            (true, false) => self.right_split.clone().into_any_element(),
-            (true, true) => render_content_shell(self.content_pane.clone()),
-        };
+
+        let main_shell = self.workbench.render_body(self.sidebar_collapsed, self.right_sidebar_collapsed);
 
         let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
@@ -730,33 +636,24 @@ impl Render for ThemeStudioApp {
                 ),
         );
 
-        div()
-            .luma_focus_scope(&self.focus_scope)
-            .size_full()
-            .min_h_0()
-            .flex()
-            .flex_col()
-            .font_family(sans)
-            .bg(chrome.app_background)
-            .child(title_bar)
-            .child(div().id("theme-studio-body").flex_1().min_h_0().w_full().overflow_hidden().child(main_shell))
-            .child(
-                div()
-                    .id("theme-studio-bottom-app-bar")
-                    .h(px(32.0))
-                    .w_full()
-                    .flex_shrink_0()
-                    .flex()
-                    .items_center()
-                    .bg(chrome.panel_background)
-                    .border_t_1()
-                    .border_color(chrome.border),
-            )
+        self.workbench.render_shell(
+            &self.focus_scope,
+            sans.into(),
+            chrome.app_background,
+            title_bar,
+            main_shell,
+            div()
+                .id("theme-studio-bottom-app-bar")
+                .h(px(32.0))
+                .w_full()
+                .flex_shrink_0()
+                .flex()
+                .items_center()
+                .bg(chrome.panel_background)
+                .border_t_1()
+                .border_color(chrome.border),
+        )
     }
-}
-
-fn render_content_shell(content_pane: Entity<ContentPaneHost>) -> AnyElement {
-    div().size_full().min_h_0().flex().flex_col().child(content_pane).into_any_element()
 }
 
 fn render_right_sidebar(look: Arc<ShadcnLook>) -> AnyElement {
