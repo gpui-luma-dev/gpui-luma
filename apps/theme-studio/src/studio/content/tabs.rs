@@ -5,6 +5,7 @@ pub enum ContentTab {
     #[default]
     Cards,
     Dashboard,
+    Typography,
     Palette,
 }
 
@@ -13,6 +14,7 @@ impl ContentTab {
         match id {
             "cards" => Some(Self::Cards),
             "dashboard" => Some(Self::Dashboard),
+            "typography" => Some(Self::Typography),
             "palette" => Some(Self::Palette),
             _ => None,
         }
@@ -22,6 +24,7 @@ impl ContentTab {
         match self {
             Self::Cards => Some(&InspectableId::CARDS),
             Self::Dashboard => Some(&InspectableId::DASHBOARD),
+            Self::Typography => None,
             Self::Palette => None,
         }
     }

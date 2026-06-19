@@ -14,6 +14,7 @@ mod report;
 mod system_preferences;
 mod team;
 mod tree_view;
+mod typography;
 mod upgrade;
 
 pub use account::AccountPanel;
@@ -27,4 +28,5 @@ pub use report::ReportPanel;
 pub use system_preferences::SystemPreferencesPanel;
 pub use team::TeamPanel;
 pub use tree_view::TreeViewPanel;
+pub use typography::TypographyPanel;
 pub use upgrade::UpgradePanel;
