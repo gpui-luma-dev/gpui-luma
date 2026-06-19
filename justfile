@@ -20,6 +20,9 @@ theme-studio:
     #cargo run -p gpui-luma-theme-studio -- elegent-luxury
 
 theme-studio-rel:
+    cargo run -p gpui-luma-theme-studio --release
+
+theme-studio-perf:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-theme-studio --release
 
 neumorphic-demo:

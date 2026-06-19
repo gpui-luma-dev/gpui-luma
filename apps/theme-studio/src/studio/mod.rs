@@ -6,6 +6,7 @@ mod demo_controls;
 mod panel_layout;
 pub mod panel_layout_config;
 mod export;
+mod hs_mixer;
 mod inspectable;
 mod overrides;
 mod panels;

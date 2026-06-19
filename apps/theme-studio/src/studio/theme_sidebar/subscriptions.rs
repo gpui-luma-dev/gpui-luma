@@ -7,6 +7,7 @@ use super::model::TOKEN_CATEGORIES;
 use super::parsing::{parse_metric_rem, parse_palette_hsl_number, parse_shadow_color_input};
 use super::ThemeSidebar;
 use crate::studio::app::ThemeStudioApp;
+use crate::studio::hs_mixer::{clamp_palette_temperature_amount, clamp_palette_vividness_amount};
 use crate::studio::overrides::{
     PALETTE_HUE_DEG_MAX, PALETTE_HUE_DEG_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX, PALETTE_LIGHTNESS_MULTIPLIER_MIN,
     PALETTE_SATURATION_MULTIPLIER_MAX, PALETTE_SATURATION_MULTIPLIER_MIN, RADIUS_REM_MAX, RADIUS_REM_MIN,
@@ -104,6 +105,18 @@ impl ThemeSidebar {
         subscriptions.push(cx.subscribe(&palette_lightness_slider, |app, _, event: &SliderEvent, cx| {
             let SliderEvent::Change { value } = event;
             app.set_palette_lightness_multiplier(*value, cx);
+        }));
+
+        let palette_vividness_slider = sidebar.read(cx).vm.palette_vividness_slider.clone();
+        subscriptions.push(cx.subscribe(&palette_vividness_slider, |app, _, event: &SliderEvent, cx| {
+            let SliderEvent::Change { value } = event;
+            app.set_palette_vividness_amount(clamp_palette_vividness_amount(*value), cx);
+        }));
+
+        let palette_temperature_slider = sidebar.read(cx).vm.palette_temperature_slider.clone();
+        subscriptions.push(cx.subscribe(&palette_temperature_slider, |app, _, event: &SliderEvent, cx| {
+            let SliderEvent::Change { value } = event;
+            app.set_palette_temperature_amount(clamp_palette_temperature_amount(*value), cx);
         }));
 
         let radius_field = sidebar.read(cx).vm.radius_field.clone();

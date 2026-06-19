@@ -6,6 +6,7 @@ use gpui_luma::controls::slider::Slider;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use crate::studio::hs_mixer::ThemePaletteHsOverride;
 use crate::studio::overrides::{ThemePaletteHslOverride, ThemeShadowOverride};
 
 pub(super) const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
@@ -43,7 +44,7 @@ pub(super) const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ),
 ];
 
-pub(super) const OTHER_CATEGORIES: &[&str] = &["HSL ADJUSTMENTS", "RADIUS", "SPACING", "SHADOW"];
+pub(super) const OTHER_CATEGORIES: &[&str] = &["HSL ADJUSTMENTS", "HS MIXER", "RADIUS", "SPACING", "SHADOW"];
 pub(super) const METRIC_STEP_REM: f32 = 0.01;
 pub(super) const METRIC_FIELD_WIDTH: f32 = 70.0;
 pub(super) const SHADOW_COLOR_SWATCH_SIZE: f32 = 28.0;
@@ -77,6 +78,7 @@ pub(super) struct ThemeSidebarViewModel {
     pub look: Arc<ShadcnLook>,
     pub global_overrides: HashMap<String, Hsla>,
     pub palette_hsl: ThemePaletteHslOverride,
+    pub palette_hs: ThemePaletteHsOverride,
     pub token_fields: HashMap<String, TextField>,
     pub palette_hue_field: TextField,
     pub palette_saturation_field: TextField,
@@ -84,6 +86,8 @@ pub(super) struct ThemeSidebarViewModel {
     pub palette_hue_slider: Slider,
     pub palette_saturation_slider: Slider,
     pub palette_lightness_slider: Slider,
+    pub palette_vividness_slider: Slider,
+    pub palette_temperature_slider: Slider,
     pub radius_field: TextField,
     pub spacing_field: TextField,
     pub radius_slider: Slider,

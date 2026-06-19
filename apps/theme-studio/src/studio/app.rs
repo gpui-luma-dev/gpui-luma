@@ -16,6 +16,10 @@ use crate::theme::StudioThemeChoice;
 
 use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
+use super::hs_mixer::{
+    ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount,
+    derive_palette_hs_color_overrides,
+};
 use super::inspectable::InspectableId;
 use super::overrides::{
     StudioOverrides, ThemePaletteHslOverride, ThemeShadowOverride, clamp_palette_hue_deg,
@@ -191,10 +195,17 @@ impl ThemeStudioApp {
     ) -> (HashMap<String, gpui::Hsla>, HashMap<String, gpui::Hsla>) {
         let derive_for_mode = |mode: ThemeMode| {
             let palette_hsl = self.overrides.palette_hsl(mode).clone();
+            let palette_hs = self.overrides.palette_hs(mode).clone();
             let mode_tokens = match mode {
                 ThemeMode::Light => base.light_tokens(),
                 ThemeMode::Dark => base.dark_tokens(),
             };
+            let primary = self
+                .overrides
+                .global_color_override("--primary")
+                .or_else(|| mode_tokens.catalog.color("primary").ok())
+                .unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.5, 1.0));
+            let hs_generated = derive_palette_hs_color_overrides(mode, primary, &palette_hs);
 
             palette_tokens()
                 .into_iter()
@@ -202,6 +213,7 @@ impl ThemeStudioApp {
                     let css_name = token_css_name(token);
                     self.overrides
                         .global_color_override(&css_name)
+                        .or_else(|| hs_generated.get(&css_name).copied())
                         .or_else(|| mode_tokens.catalog.color(token).ok())
                         .map(|color| (css_name, palette_hsl.apply(color)))
                 })
@@ -280,6 +292,26 @@ impl ThemeStudioApp {
     pub fn set_palette_lightness_multiplier(&mut self, multiplier: f32, cx: &mut Context<Self>) {
         self.update_palette_hsl_override(
             |palette_hsl| palette_hsl.lightness_multiplier = clamp_palette_lightness_multiplier(multiplier),
+            cx,
+        );
+    }
+
+    pub fn set_palette_vividness_amount(&mut self, amount: f32, cx: &mut Context<Self>) {
+        self.update_palette_hs_override(
+            |palette_hs| {
+                palette_hs.active = true;
+                palette_hs.vividness_amount = clamp_palette_vividness_amount(amount);
+            },
+            cx,
+        );
+    }
+
+    pub fn set_palette_temperature_amount(&mut self, amount: f32, cx: &mut Context<Self>) {
+        self.update_palette_hs_override(
+            |palette_hs| {
+                palette_hs.active = true;
+                palette_hs.temperature_amount = clamp_palette_temperature_amount(amount);
+            },
             cx,
         );
     }
@@ -378,6 +410,28 @@ impl ThemeStudioApp {
         }
 
         self.overrides.set_palette_hsl_override(mode, palette_hsl);
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
+    }
+
+    fn update_palette_hs_override(&mut self, update: impl FnOnce(&mut ThemePaletteHsOverride), cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let mode = self.look.mode();
+        let mut palette_hs = self.overrides.palette_hs(mode).clone();
+        update(&mut palette_hs);
+
+        if self.overrides.palette_hs(mode) == &palette_hs {
+            return;
+        }
+
+        self.overrides.set_palette_hs_override(mode, palette_hs);
         self.apply_theme_overrides(cx);
         self.syncing_sidebar_tokens = true;
         let overrides = self.overrides.clone();

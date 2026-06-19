@@ -4,6 +4,8 @@ use gpui::Hsla;
 use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use super::hs_mixer::{ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount};
+
 pub const RADIUS_REM_MIN: f32 = 0.0;
 pub const RADIUS_REM_MAX: f32 = 5.0;
 pub const SPACING_REM_MIN: f32 = 0.0;
@@ -87,6 +89,8 @@ pub struct StudioOverrides {
     pub global_color_overrides: HashMap<String, Hsla>,
     pub light_palette_hsl: ThemePaletteHslOverride,
     pub dark_palette_hsl: ThemePaletteHslOverride,
+    pub light_palette_hs: ThemePaletteHsOverride,
+    pub dark_palette_hs: ThemePaletteHsOverride,
     pub radius_rem: Option<f32>,
     pub spacing_rem: Option<f32>,
     pub shadow: Option<ThemeShadowOverride>,
@@ -101,6 +105,13 @@ impl StudioOverrides {
         match mode {
             ThemeMode::Light => &self.light_palette_hsl,
             ThemeMode::Dark => &self.dark_palette_hsl,
+        }
+    }
+
+    pub fn palette_hs(&self, mode: ThemeMode) -> &ThemePaletteHsOverride {
+        match mode {
+            ThemeMode::Light => &self.light_palette_hs,
+            ThemeMode::Dark => &self.dark_palette_hs,
         }
     }
 
@@ -130,6 +141,19 @@ impl StudioOverrides {
         match mode {
             ThemeMode::Light => self.light_palette_hsl = palette_hsl,
             ThemeMode::Dark => self.dark_palette_hsl = palette_hsl,
+        }
+    }
+
+    pub fn set_palette_hs_override(&mut self, mode: ThemeMode, palette_hs: ThemePaletteHsOverride) {
+        let palette_hs = ThemePaletteHsOverride {
+            active: palette_hs.active,
+            vividness_amount: clamp_palette_vividness_amount(palette_hs.vividness_amount),
+            temperature_amount: clamp_palette_temperature_amount(palette_hs.temperature_amount),
+        };
+
+        match mode {
+            ThemeMode::Light => self.light_palette_hs = palette_hs,
+            ThemeMode::Dark => self.dark_palette_hs = palette_hs,
         }
     }
 
@@ -164,6 +188,11 @@ impl StudioOverrides {
         self.dark_palette_hsl = ThemePaletteHslOverride::default();
     }
 
+    pub fn clear_palette_hs_overrides(&mut self) {
+        self.light_palette_hs = ThemePaletteHsOverride::default();
+        self.dark_palette_hs = ThemePaletteHsOverride::default();
+    }
+
     pub fn clear_metric_overrides(&mut self) {
         self.radius_rem = None;
         self.spacing_rem = None;
@@ -176,6 +205,7 @@ impl StudioOverrides {
     pub fn clear_all_overrides(&mut self) {
         self.global_color_overrides.clear();
         self.clear_palette_hsl_overrides();
+        self.clear_palette_hs_overrides();
         self.clear_metric_overrides();
         self.clear_shadow_override();
     }

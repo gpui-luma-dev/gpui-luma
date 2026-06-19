@@ -37,10 +37,12 @@ impl ThemeSidebar {
         self.sync_tabs_template(&theme, cx);
         self.sync_token_field_templates(&theme, cx);
         self.sync_palette_hsl_control_templates(&theme, cx);
+        self.sync_palette_hs_control_templates(&theme, cx);
         self.sync_metric_control_templates(&theme, cx);
         self.sync_shadow_control_templates(&theme, cx);
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.sync_palette_hsl_controls_from(overrides, cx);
+        self.sync_palette_hs_controls_from(overrides, cx);
         self.sync_metric_controls_from(theme.as_ref(), overrides, cx);
         self.sync_shadow_controls_from(theme.as_ref(), overrides, cx);
         self.token_accordion = Self::build_token_accordion(cx.entity(), theme.clone(), &expanded_token_categories, cx);
@@ -82,6 +84,14 @@ impl ThemeSidebar {
         for slider in
             [&self.vm.palette_hue_slider, &self.vm.palette_saturation_slider, &self.vm.palette_lightness_slider]
         {
+            slider.update(cx, |slider, cx| {
+                slider.set_template(theme.slider_template(), cx);
+            });
+        }
+    }
+
+    fn sync_palette_hs_control_templates(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        for slider in [&self.vm.palette_vividness_slider, &self.vm.palette_temperature_slider] {
             slider.update(cx, |slider, cx| {
                 slider.set_template(theme.slider_template(), cx);
             });
@@ -144,9 +154,11 @@ impl ThemeSidebar {
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
         self.vm.global_overrides = overrides.global_color_overrides.clone();
         self.vm.palette_hsl = overrides.palette_hsl(self.vm.look.mode()).clone();
+        self.vm.palette_hs = overrides.palette_hs(self.vm.look.mode()).clone();
         let theme = self.vm.look.clone();
         self.sync_token_fields_from(theme.as_ref(), overrides, cx);
         self.sync_palette_hsl_controls_from(overrides, cx);
+        self.sync_palette_hs_controls_from(overrides, cx);
         self.sync_metric_controls_from(theme.as_ref(), overrides, cx);
         self.sync_shadow_controls_from(theme.as_ref(), overrides, cx);
         cx.notify();
@@ -191,6 +203,18 @@ impl ThemeSidebar {
         self.vm
             .palette_lightness_slider
             .update(cx, |slider, cx| slider.set_value(palette_hsl.lightness_multiplier, cx));
+    }
+
+    pub fn sync_palette_hs_controls_from(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
+        let palette_hs = overrides.palette_hs(self.vm.look.mode()).clone();
+        self.vm.palette_hs = palette_hs.clone();
+
+        self.vm
+            .palette_vividness_slider
+            .update(cx, |slider, cx| slider.set_value(palette_hs.vividness_amount, cx));
+        self.vm
+            .palette_temperature_slider
+            .update(cx, |slider, cx| slider.set_value(palette_hs.temperature_amount, cx));
     }
 
     /// Keep metric text fields and sliders visually in lockstep with the resolved override state.

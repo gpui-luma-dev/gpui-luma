@@ -8,6 +8,8 @@ use super::super::ThemeSidebar;
 use super::super::model::{METRIC_FIELD_WIDTH, SHADOW_COLOR_FIELD_WIDTH, SHADOW_COLOR_SWATCH_SIZE, SHADOW_SECTION_GAP};
 
 const HSL_GRID_LABELS: [&str; 3] = ["Hue", "Saturation", "Lightness"];
+const HS_ADJUSTMENT_LEFT_LABELS: [&str; 2] = ["Neutral", "Warmer"];
+const HS_ADJUSTMENT_RIGHT_LABELS: [&str; 2] = ["Vivid", "Cooler"];
 const SHADOW_GRID_LABELS: [&str; 5] = ["Opacity", "Blur", "Spread", "Offset X", "Offset Y"];
 const SHADOW_GRID_UNIT_WIDTH: f32 = 24.0;
 const SLIDER_FIELD_GRID_GAP_X: f32 = 10.0;
@@ -29,6 +31,7 @@ pub(in crate::studio::theme_sidebar) fn other_category_content(
 ) -> AnyElement {
     match category {
         "HSL ADJUSTMENTS" => hsl_adjustments_category_content(sidebar, window),
+        "HS MIXER" => hs_adjustments_category_content(sidebar, window),
         "RADIUS" => metric_category_content(
             sidebar,
             "Radius",
@@ -91,8 +94,48 @@ fn hsl_adjustments_grid(sidebar: &ThemeSidebar, window: &mut Window) -> AnyEleme
     .into_any_element()
 }
 
+fn hs_adjustments_category_content(sidebar: &ThemeSidebar, window: &mut Window) -> AnyElement {
+    let left_label_width = max_label_width_for_size(sidebar, window, &HS_ADJUSTMENT_LEFT_LABELS, ShadcnTextSize::Sm);
+    let right_label_width = max_label_width_for_size(sidebar, window, &HS_ADJUSTMENT_RIGHT_LABELS, ShadcnTextSize::Sm);
+
+    div()
+        .w_full()
+        .min_w(px(0.0))
+        .child(grid_layout! {
+            rows: 2,
+            columns: [
+                GridTrack::Px(left_label_width),
+                GridTrack::Star(1.0),
+                GridTrack::Px(right_label_width),
+            ],
+            gap_x: 16.0,
+            gap_y: 0.0;
+            [0, 0] => hs_adjustment_label(sidebar, "Neutral", false),
+            [0, 1] => div().w_full().min_w(px(0.0)).child(sidebar.vm.palette_vividness_slider.clone()),
+            [0, 2] => hs_adjustment_label(sidebar, "Vivid", true),
+            [1, 0] => hs_adjustment_label(sidebar, "Warmer", false),
+            [1, 1] => div().w_full().min_w(px(0.0)).child(sidebar.vm.palette_temperature_slider.clone()),
+            [1, 2] => hs_adjustment_label(sidebar, "Cooler", true),
+        })
+        .into_any_element()
+}
+
 fn metric_category_content(sidebar: &ThemeSidebar, label: &str, slider: Slider, field: TextField) -> AnyElement {
     slider_field_row(sidebar, label, slider, field, "rem")
+}
+
+fn hs_adjustment_label(sidebar: &ThemeSidebar, label: &str, right_aligned: bool) -> AnyElement {
+    let theme = &sidebar.vm.look;
+    let chrome = theme.chrome();
+    let label_style = theme.typography_scale(ShadcnTextSize::Sm);
+
+    div()
+        .w_full()
+        .when(right_aligned, |this| this.text_right())
+        .typography_style(label_style)
+        .text_color(chrome.body_text)
+        .child(label.to_string())
+        .into_any_element()
 }
 
 fn shadow_category_content(sidebar: &ThemeSidebar, window: &mut Window) -> AnyElement {
@@ -158,8 +201,17 @@ fn shadow_slider_grid(sidebar: &ThemeSidebar, window: &mut Window) -> AnyElement
 }
 
 fn max_label_width(sidebar: &ThemeSidebar, window: &mut Window, labels: &[&str]) -> f32 {
+    max_label_width_for_size(sidebar, window, labels, ShadcnTextSize::Xs)
+}
+
+fn max_label_width_for_size(
+    sidebar: &ThemeSidebar,
+    window: &mut Window,
+    labels: &[&str],
+    text_size: ShadcnTextSize,
+) -> f32 {
     let theme = &sidebar.vm.look;
-    let row_label_typography = theme.typography_scale(ShadcnTextSize::Xs);
+    let row_label_typography = theme.typography_scale(text_size);
     let mut label_font = font(theme.mode_tokens().typography.font.sans.family.clone());
     label_font.weight = row_label_typography.weight;
     let mut max_width = 0.0_f32;

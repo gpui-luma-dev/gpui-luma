@@ -28,6 +28,10 @@ use self::panels::{render_colors_panel, render_other_panel, render_typography_pa
 use self::parsing::{effective_radius_rem, effective_spacing_rem, token_color_with_fallback, token_hex_value};
 use super::content_tabs::theme_studio_tabs_navigation_template;
 use crate::studio::app::ThemeStudioApp;
+use crate::studio::hs_mixer::{
+    PALETTE_TEMPERATURE_AMOUNT_MAX, PALETTE_TEMPERATURE_AMOUNT_MIN, PALETTE_VIVIDNESS_AMOUNT_MAX,
+    PALETTE_VIVIDNESS_AMOUNT_MIN,
+};
 use crate::studio::overrides::{
     PALETTE_HUE_DEG_MAX, PALETTE_HUE_DEG_MIN, PALETTE_LIGHTNESS_MULTIPLIER_MAX, PALETTE_LIGHTNESS_MULTIPLIER_MIN,
     PALETTE_SATURATION_MULTIPLIER_MAX, PALETTE_SATURATION_MULTIPLIER_MIN, RADIUS_REM_MAX, RADIUS_REM_MIN,
@@ -101,6 +105,7 @@ impl ThemeSidebar {
         }
 
         let palette_hsl = overrides.palette_hsl(look.mode()).clone();
+        let palette_hs = overrides.palette_hs(look.mode()).clone();
         let palette_hue_field = build_palette_hue_field(&look, palette_hsl.hue_deg, cx);
         let palette_saturation_field =
             build_palette_hsl_field(&look, "palette-saturation", palette_hsl.saturation_multiplier, cx);
@@ -131,6 +136,24 @@ impl ThemeSidebar {
             PALETTE_LIGHTNESS_MULTIPLIER_MAX,
             0.01,
             palette_hsl.lightness_multiplier,
+            cx,
+        );
+        let palette_vividness_slider = build_palette_slider(
+            &look,
+            "palette-vividness",
+            PALETTE_VIVIDNESS_AMOUNT_MIN,
+            PALETTE_VIVIDNESS_AMOUNT_MAX,
+            0.01,
+            palette_hs.vividness_amount,
+            cx,
+        );
+        let palette_temperature_slider = build_palette_slider(
+            &look,
+            "palette-temperature",
+            PALETTE_TEMPERATURE_AMOUNT_MIN,
+            PALETTE_TEMPERATURE_AMOUNT_MAX,
+            0.01,
+            palette_hs.temperature_amount,
             cx,
         );
 
@@ -179,6 +202,7 @@ impl ThemeSidebar {
                 look,
                 global_overrides,
                 palette_hsl,
+                palette_hs,
                 token_fields,
                 palette_hue_field,
                 palette_saturation_field,
@@ -186,6 +210,8 @@ impl ThemeSidebar {
                 palette_hue_slider,
                 palette_saturation_slider,
                 palette_lightness_slider,
+                palette_vividness_slider,
+                palette_temperature_slider,
                 radius_field,
                 spacing_field,
                 radius_slider,

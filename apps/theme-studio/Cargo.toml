@@ -12,6 +12,7 @@ gpui-luma = { path = "../../crates/sdk" }
 gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
 gpui_platform = { workspace = true }
 lucide-icons = { workspace = true }
+palette = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
 tracing = "0.1"
