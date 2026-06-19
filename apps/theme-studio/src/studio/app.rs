@@ -1,4 +1,6 @@
+use std::cell::Cell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
@@ -47,6 +49,8 @@ pub struct ThemeStudioApp {
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
     workbench: WorkbenchLayout,
+    left_sidebar_width_px: Rc<Cell<f32>>,
+    right_sidebar_width_px: Rc<Cell<f32>>,
     sidebar_collapsed: bool,
     right_sidebar_collapsed: bool,
     /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
@@ -85,18 +89,24 @@ impl ThemeStudioApp {
         let left_sidebar_entity = theme_sidebar.clone();
         let content_pane_entity = content_pane.clone();
         let right_sidebar_look = look.clone();
+        let left_sidebar_width_px = Rc::new(Cell::new(360.0));
+        let right_sidebar_width_px = Rc::new(Cell::new(360.0));
+        let left_sidebar_width_state = left_sidebar_width_px.clone();
+        let right_sidebar_width_state = right_sidebar_width_px.clone();
         let workbench = WorkbenchLayout::new(
             "theme-studio",
             look.clone(),
             WorkbenchSidebar::new(move || left_sidebar_entity.clone().into_any_element())
                 .width(px(360.0))
                 .min(px(360.0))
-                .max(px(460.0)),
+                .max(px(460.0))
+                .on_width_changed(move |width| left_sidebar_width_state.set(width.as_f32())),
             move || content_pane_entity.clone().into_any_element(),
             WorkbenchSidebar::new(move || render_right_sidebar(right_sidebar_look.clone()))
                 .width(px(360.0))
                 .min(px(360.0))
-                .max(px(460.0)),
+                .max(px(460.0))
+                .on_width_changed(move |width| right_sidebar_width_state.set(width.as_f32())),
             cx,
         );
 
@@ -125,6 +135,8 @@ impl ThemeStudioApp {
             theme_sidebar,
             content_pane,
             workbench,
+            left_sidebar_width_px,
+            right_sidebar_width_px,
             sidebar_collapsed: false,
             right_sidebar_collapsed: true,
             syncing_sidebar_tokens: false,
@@ -219,12 +231,8 @@ impl ThemeStudioApp {
     }
 
     fn sync_split_themes(&self, cx: &mut Context<Self>) {
-        let theme = self.look.resizable_panels_theme();
-        self.workbench.sync_theme(theme, cx);
-    }
-
-    fn sync_split_measured_sizes(&self, size: Size<Pixels>, cx: &mut Context<Self>) {
-        self.workbench.sync_measured_size(size, cx);
+        let theme = self.look.dock_splitter_theme();
+        self.workbench.sync_theme(&theme, cx);
     }
 
     pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
@@ -400,13 +408,12 @@ impl ThemeStudioApp {
         cx.notify();
     }
 
-    fn on_window_bounds_changed(&mut self, window: &Window, cx: &mut Context<Self>) {
+    fn on_window_bounds_changed(&mut self, window: &Window, _cx: &mut Context<Self>) {
         let size = window.bounds().size;
         if size == self.last_window_size {
             return;
         }
         self.last_window_size = size;
-        self.sync_split_measured_sizes(size, cx);
         self.persist_layout();
     }
 
@@ -474,13 +481,11 @@ impl ThemeStudioApp {
     }
 
     fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.sync_split_measured_sizes(self.last_window_size, cx);
         self.sidebar_collapsed = !self.sidebar_collapsed;
         cx.notify();
     }
 
     fn toggle_right_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.sync_split_measured_sizes(self.last_window_size, cx);
         self.right_sidebar_collapsed = !self.right_sidebar_collapsed;
         cx.notify();
     }
@@ -498,6 +503,7 @@ impl Render for ThemeStudioApp {
             ThemeMode::Dark => LucideIcon::Sun,
         };
         let size = self.control_size;
+        let _sidebar_widths = (self.left_sidebar_width_px.get(), self.right_sidebar_width_px.get());
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
         let toggle_label_style = self.look.typography_scale(ShadcnTextSize::Xs);
         let sidebar_toggle_icon = if self.sidebar_collapsed {
@@ -636,7 +642,7 @@ impl Render for ThemeStudioApp {
                 ),
         );
 
-        self.workbench.render_shell(
+        WorkbenchLayout::render_shell(
             &self.focus_scope,
             sans.into(),
             chrome.app_background,

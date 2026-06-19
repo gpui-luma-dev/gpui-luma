@@ -1,11 +1,16 @@
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, FocusHandle, Hsla, IntoElement, Pixels, SharedString, Size, div, px, prelude::*};
-use gpui_luma::controls::resizable_panels::{ResizablePanels, ResizablePanelsTheme};
+use gpui::{AnyElement, Context, FocusHandle, Hsla, IntoElement, Pixels, SharedString, div, px, prelude::*};
+use gpui_luma::controls::dock_splitter::{
+    DockSplitter, DockSplitterEvent, DockSplitterTheme, SplitterOrientation, ThemedDockSplitterTemplate,
+};
+use gpui_luma::dock_panel;
 use gpui_luma::focus::LumaFocusScopeExt;
-use gpui_luma::resizable_panels;
 use gpui_luma_look_shadcn::ShadcnLook;
+
+type SidebarWidthChanged = Rc<dyn Fn(Pixels)>;
 
 #[derive(Clone)]
 pub struct WorkbenchSidebar {
@@ -13,11 +18,12 @@ pub struct WorkbenchSidebar {
     width_px: f32,
     min_px: f32,
     max_px: f32,
+    on_width_changed: Option<SidebarWidthChanged>,
 }
 
 impl WorkbenchSidebar {
     pub fn new(render: impl Fn() -> AnyElement + 'static) -> Self {
-        Self { render: Rc::new(render), width_px: 360.0, min_px: 360.0, max_px: 460.0 }
+        Self { render: Rc::new(render), width_px: 360.0, min_px: 360.0, max_px: 460.0, on_width_changed: None }
     }
 
     pub fn width(mut self, width: Pixels) -> Self {
@@ -34,13 +40,21 @@ impl WorkbenchSidebar {
         self.max_px = max.as_f32();
         self
     }
+
+    pub fn on_width_changed(mut self, callback: impl Fn(Pixels) + 'static) -> Self {
+        self.on_width_changed = Some(Rc::new(callback));
+        self
+    }
 }
 
 pub struct WorkbenchLayout {
     content: Rc<dyn Fn() -> AnyElement>,
-    main_split: gpui::Entity<ResizablePanels>,
-    right_split: gpui::Entity<ResizablePanels>,
-    full_split: gpui::Entity<ResizablePanels>,
+    left_sidebar: WorkbenchSidebar,
+    right_sidebar: WorkbenchSidebar,
+    left_width_px: Rc<Cell<f32>>,
+    right_width_px: Rc<Cell<f32>>,
+    left_splitter: gpui::Entity<DockSplitter>,
+    right_splitter: gpui::Entity<DockSplitter>,
 }
 
 impl WorkbenchLayout {
@@ -54,90 +68,108 @@ impl WorkbenchLayout {
     ) -> Self {
         let id = id.into();
         let content: Rc<dyn Fn() -> AnyElement> = Rc::new(content);
+        let splitter_theme = look.dock_splitter_theme();
+        let splitter_template = Arc::new(ThemedDockSplitterTemplate::new(true));
 
-        let left_render = left_sidebar.render.clone();
-        let content_for_main = content.clone();
-        let main_split = resizable_panels! {
-            cx,
-            theme = look.resizable_panels_theme(),
-            id: format!("{id}-main-split"),
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || render_panel_slot(left_render.clone()) => px(left_sidebar.width_px), min: px(left_sidebar.min_px), max: px(left_sidebar.max_px);
-                |
-                move || render_panel_slot(content_for_main.clone()) => weight(1.0);
-            ]
-        };
+        let left_splitter = DockSplitter::new(format!("{id}-left-splitter"), SplitterOrientation::Vertical)
+            .template(splitter_template.clone())
+            .theme(splitter_theme.clone())
+            .spawn(cx);
+        let right_splitter = DockSplitter::new(format!("{id}-right-splitter"), SplitterOrientation::Vertical)
+            .template(splitter_template)
+            .theme(splitter_theme)
+            .spawn(cx);
 
-        let content_for_right = content.clone();
-        let right_render = right_sidebar.render.clone();
-        let right_split = resizable_panels! {
-            cx,
-            theme = look.resizable_panels_theme(),
-            id: format!("{id}-right-split"),
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || render_panel_slot(content_for_right.clone()) => weight(1.0);
-                |
-                move || render_panel_slot(right_render.clone()) => px(right_sidebar.width_px), min: px(right_sidebar.min_px), max: px(right_sidebar.max_px);
-            ]
-        };
+        let left_width_px = Rc::new(Cell::new(left_sidebar.width_px));
+        let left_drag_start_px = Rc::new(Cell::new(left_sidebar.width_px));
+        let right_width_px = Rc::new(Cell::new(right_sidebar.width_px));
+        let right_drag_start_px = Rc::new(Cell::new(right_sidebar.width_px));
 
-        let left_render_for_full = left_sidebar.render.clone();
-        let content_for_full = content.clone();
-        let right_render_for_full = right_sidebar.render.clone();
-        let full_split = resizable_panels! {
-            cx,
-            theme = look.resizable_panels_theme(),
-            id: format!("{id}-full-split"),
-            layout: Horizontal,
-            show_handle: true,
-            resize_handle: Sm,
-            handle_grip: true,
-            show_border: false,
-            panels: [
-                move || render_panel_slot(left_render_for_full.clone()) => px(left_sidebar.width_px), min: px(left_sidebar.min_px), max: px(left_sidebar.max_px);
-                |
-                move || render_panel_slot(content_for_full.clone()) => weight(1.0);
-                |
-                move || render_panel_slot(right_render_for_full.clone()) => px(right_sidebar.width_px), min: px(right_sidebar.min_px), max: px(right_sidebar.max_px);
-            ]
-        };
+        let left_min_px = left_sidebar.min_px;
+        let left_max_px = left_sidebar.max_px;
+        let left_width_changed = left_sidebar.on_width_changed.clone();
+        let left_width_px_for_events = left_width_px.clone();
+        let left_drag_start_px_for_events = left_drag_start_px.clone();
+        cx.subscribe(&left_splitter, move |_, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => {
+                left_drag_start_px_for_events.set(left_width_px_for_events.get());
+            }
+            DockSplitterEvent::Resize { total_delta } => {
+                let next = (left_drag_start_px_for_events.get() + *total_delta).clamp(left_min_px, left_max_px);
+                if (left_width_px_for_events.get() - next).abs() <= f32::EPSILON {
+                    return;
+                }
+                left_width_px_for_events.set(next);
+                if let Some(callback) = &left_width_changed {
+                    callback(px(next));
+                }
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
+        .detach();
 
-        Self { content, main_split, right_split, full_split }
+        let right_min_px = right_sidebar.min_px;
+        let right_max_px = right_sidebar.max_px;
+        let right_width_changed = right_sidebar.on_width_changed.clone();
+        let right_width_px_for_events = right_width_px.clone();
+        let right_drag_start_px_for_events = right_drag_start_px.clone();
+        cx.subscribe(&right_splitter, move |_, _, event: &DockSplitterEvent, cx| match event {
+            DockSplitterEvent::ResizeStart => {
+                right_drag_start_px_for_events.set(right_width_px_for_events.get());
+            }
+            DockSplitterEvent::Resize { total_delta } => {
+                let next = (right_drag_start_px_for_events.get() - *total_delta).clamp(right_min_px, right_max_px);
+                if (right_width_px_for_events.get() - next).abs() <= f32::EPSILON {
+                    return;
+                }
+                right_width_px_for_events.set(next);
+                if let Some(callback) = &right_width_changed {
+                    callback(px(next));
+                }
+                cx.notify();
+            }
+            DockSplitterEvent::ResizeEnd => {}
+        })
+        .detach();
+
+        Self { content, left_sidebar, right_sidebar, left_width_px, right_width_px, left_splitter, right_splitter }
     }
 
-    pub fn sync_theme<T>(&self, theme: Arc<dyn ResizablePanelsTheme>, cx: &mut Context<T>) {
-        self.main_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
-        self.right_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
-        self.full_split.update(cx, |split, cx| split.set_theme(theme, cx));
-    }
-
-    pub fn sync_measured_size<T>(&self, size: Size<Pixels>, cx: &mut Context<T>) {
-        self.main_split.update(cx, |split, cx| split.set_measured_size(size, cx));
-        self.right_split.update(cx, |split, cx| split.set_measured_size(size, cx));
-        self.full_split.update(cx, |split, cx| split.set_measured_size(size, cx));
+    pub fn sync_theme<T>(&self, theme: &Arc<dyn DockSplitterTheme>, cx: &mut Context<T>) {
+        self.left_splitter.update(cx, |splitter, cx| splitter.set_theme(theme.clone(), cx));
+        self.right_splitter.update(cx, |splitter, cx| splitter.set_theme(theme.clone(), cx));
     }
 
     pub fn render_body(&self, left_collapsed: bool, right_collapsed: bool) -> AnyElement {
+        let body = render_panel_slot(self.content.clone());
+
         match (left_collapsed, right_collapsed) {
-            (false, false) => self.full_split.clone().into_any_element(),
-            (false, true) => self.main_split.clone().into_any_element(),
-            (true, false) => self.right_split.clone().into_any_element(),
-            (true, true) => render_panel_slot(self.content.clone()),
+            (false, false) => dock_panel! {
+                left: render_sidebar(self.left_sidebar.render.clone(), self.left_width_px.get()),
+                left: self.left_splitter.clone(),
+                right: render_sidebar(self.right_sidebar.render.clone(), self.right_width_px.get()),
+                right: self.right_splitter.clone(),
+                fill: body
+            }
+            .into_any_element(),
+            (false, true) => dock_panel! {
+                left: render_sidebar(self.left_sidebar.render.clone(), self.left_width_px.get()),
+                left: self.left_splitter.clone(),
+                fill: body
+            }
+            .into_any_element(),
+            (true, false) => dock_panel! {
+                right: render_sidebar(self.right_sidebar.render.clone(), self.right_width_px.get()),
+                right: self.right_splitter.clone(),
+                fill: body
+            }
+            .into_any_element(),
+            (true, true) => body,
         }
     }
 
     pub fn render_shell(
-        &self,
         focus_scope: &FocusHandle,
         font_family: SharedString,
         app_background: Hsla,
@@ -145,8 +177,6 @@ impl WorkbenchLayout {
         body: impl IntoElement,
         bottom_bar: impl IntoElement,
     ) -> AnyElement {
-        let _ = self;
-
         div()
             .luma_focus_scope(focus_scope)
             .size_full()
@@ -164,4 +194,15 @@ impl WorkbenchLayout {
 
 fn render_panel_slot(render: Rc<dyn Fn() -> AnyElement>) -> AnyElement {
     div().size_full().min_h_0().flex().flex_col().overflow_hidden().child(render()).into_any_element()
+}
+
+fn render_sidebar(render: Rc<dyn Fn() -> AnyElement>, width_px: f32) -> AnyElement {
+    div()
+        .w(px(width_px))
+        .h_full()
+        .min_h_0()
+        .flex_shrink_0()
+        .overflow_hidden()
+        .child(render())
+        .into_any_element()
 }
