@@ -7,6 +7,7 @@ pub enum ContentTab {
     Dashboard,
     Typography,
     Palette,
+    ThemeUsage,
 }
 
 impl ContentTab {
@@ -16,6 +17,7 @@ impl ContentTab {
             "dashboard" => Some(Self::Dashboard),
             "typography" => Some(Self::Typography),
             "palette" => Some(Self::Palette),
+            "theme-usage" => Some(Self::ThemeUsage),
             _ => None,
         }
     }
@@ -26,6 +28,7 @@ impl ContentTab {
             Self::Dashboard => Some(&InspectableId::DASHBOARD),
             Self::Typography => None,
             Self::Palette => None,
+            Self::ThemeUsage => None,
         }
     }
 

@@ -15,9 +15,9 @@ use crate::gallery::control::GalleryApp;
 use super::{
     accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, color, combobox, context_menu,
     dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar, palette, popup_menu,
-    pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search, search_selector,
+    pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search_selector,
     selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
-    tabs_navigation, textarea, textfield, theme_usage, toggle, toggle_group, typography,
+    tabs_navigation, textarea, textfield, toggle, toggle_group, typography,
 };
 
 #[derive(Clone, Copy)]
@@ -31,10 +31,8 @@ struct GalleryPage {
 #[derive(Clone, Copy)]
 enum GalleryPageKind {
     Introduction,
-    Search,
     Palette,
     Typography,
-    ThemeUsage,
     Badge,
     Card,
     DockPanel,
@@ -125,8 +123,7 @@ const INTRODUCTION_PAGE: GalleryPage = GalleryPage {
     icon: Some(LucideIcon::BookOpenText),
     kind: GalleryPageKind::Introduction,
 };
-const SEARCH_PAGE: GalleryPage =
-    GalleryPage { id: "search", label: "Search", icon: Some(LucideIcon::Search), kind: GalleryPageKind::Search };
+
 const PALETTE_PAGE: GalleryPage =
     GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
 const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
@@ -135,12 +132,7 @@ const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
     icon: Some(LucideIcon::Type),
     kind: GalleryPageKind::Typography,
 };
-const THEME_USAGE_PAGE: GalleryPage = GalleryPage {
-    id: "theme-usage",
-    label: "Theme Usage",
-    icon: Some(LucideIcon::ListTree),
-    kind: GalleryPageKind::ThemeUsage,
-};
+
 const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
 const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
 const DOCK_PANEL_PAGE: GalleryPage =
@@ -309,8 +301,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] =
-    &[INTRODUCTION_PAGE, PALETTE_PAGE, TYPOGRAPHY_PAGE, SEARCH_PAGE, THEME_USAGE_PAGE];
+const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, PALETTE_PAGE, TYPOGRAPHY_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
@@ -704,11 +695,7 @@ impl GalleryPanes {
             | GalleryPageKind::SplitViewInset
             | GalleryPageKind::SplitViewIconRail
             | GalleryPageKind::SplitViewDetached => self.split_view.notify_controls(cx),
-            GalleryPageKind::Search
-            | GalleryPageKind::Palette
-            | GalleryPageKind::Typography
-            | GalleryPageKind::ThemeUsage
-            | GalleryPageKind::Settings => {}
+            GalleryPageKind::Palette | GalleryPageKind::Typography | GalleryPageKind::Settings => {}
         }
     }
 
@@ -732,10 +719,8 @@ impl GalleryPanes {
             GalleryPageKind::Selector => self.selector.render(&self.look),
             GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.look),
             GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.look),
-            GalleryPageKind::Search => search::render(&self.look),
             GalleryPageKind::Palette => palette::render(&self.look),
             GalleryPageKind::Typography => typography::render(&self.look),
-            GalleryPageKind::ThemeUsage => theme_usage::render(&self.look),
             GalleryPageKind::Button => self.button.render(&self.look),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
             GalleryPageKind::Toggle => self.toggle.render(&self.look),

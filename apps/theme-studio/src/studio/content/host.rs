@@ -20,7 +20,7 @@ use super::super::demo_controls::DemoControls;
 use super::super::inspectable::InspectableId;
 use super::super::overrides::StudioOverrides;
 use super::super::panel_layout::DemoPanelDrag;
-use super::super::panels::{PalettePanel, TypographyPanel};
+use super::super::panels::{PalettePanel, ThemeUsagePanel, TypographyPanel};
 
 /// Cached board state — `ContentPaneHost::render` must not read `ThemeStudioApp` (re-entrancy panic).
 #[derive(Clone)]
@@ -38,6 +38,7 @@ pub struct ContentPaneHost {
     tabs: Entity<TabsNavigation>,
     typography_panel: Entity<TypographyPanel>,
     palette_panel: Entity<PalettePanel>,
+    theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
     active_tab: ContentTab,
     _subscriptions: Vec<Subscription>,
@@ -56,6 +57,7 @@ impl ContentPaneHost {
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
                 TabsNavigationItem::new("typography").label("Typography"),
                 TabsNavigationItem::new("palette").label("Palette"),
+                TabsNavigationItem::new("theme-usage").label("Theme Usage"),
             ])
             .active("cards")
             .spawn(cx);
@@ -73,12 +75,14 @@ impl ContentPaneHost {
 
         let typography_panel = cx.new(|cx| TypographyPanel::new(cx, board.look.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
+        let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
         Self {
             app,
             tabs,
             typography_panel,
             palette_panel,
+            theme_usage_panel,
             board,
             active_tab: ContentTab::Cards,
             _subscriptions: subscriptions,
@@ -100,6 +104,11 @@ impl ContentPaneHost {
             let look = self.board.look.clone();
             let overrides = self.board.overrides.clone();
             self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look, overrides, cx));
+        }
+
+        if tab == ContentTab::ThemeUsage {
+            let look = self.board.look.clone();
+            self.theme_usage_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         }
 
         let clear_selection = self.board.selected.is_some_and(|id| !tab.contains(id));
@@ -127,7 +136,8 @@ impl ContentPaneHost {
             tabs.set_template(theme_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
         });
         self.typography_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
-        self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look, overrides, cx));
+        self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), overrides, cx));
+        self.theme_usage_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         cx.notify();
     }
 
@@ -188,6 +198,7 @@ impl Render for ContentPaneHost {
                 ContentTab::Dashboard => dashboard_viewport().child(board.demos.dashboard.clone()),
                 ContentTab::Typography => content_viewport().child(self.typography_panel.clone()),
                 ContentTab::Palette => content_viewport().child(self.palette_panel.clone()),
+                ContentTab::ThemeUsage => content_viewport().child(self.theme_usage_panel.clone()),
             })
     }
 }

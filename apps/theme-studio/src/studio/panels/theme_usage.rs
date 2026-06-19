@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
-use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
+use gpui::{AnyElement, Context, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
+use gpui_luma::declare_form;
 use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize, all_shadcn_theme_usages};
-
-use crate::gallery::panes::shared::format_compact_hsla;
-use crate::gallery::panes::shared::render_sparse_catalog_callout;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize, all_shadcn_theme_usages};
 
 type UsageRef = (&'static str, &'static ThemePartUsage);
 
@@ -15,72 +15,123 @@ struct CatalogToken {
     color: gpui::Hsla,
 }
 
-pub(in crate::gallery) fn render(look: &ShadcnLook) -> AnyElement {
-    let chrome = look.chrome();
-    let heading_style = look.typography_role(ShadcnTextRole::H3);
-    let body_style = look.typography_scale(ShadcnTextSize::Sm);
-    let section_style = look.typography_scale(ShadcnTextSize::Sm);
-    let detail_style = look.typography_scale(ShadcnTextSize::Sm);
-    let caption_style = look.typography_scale(ShadcnTextSize::Xs);
-    let catalog_tokens = catalog_tokens(look);
-    let usages = all_shadcn_theme_usages();
-    let by_token = usage_by_token(usages);
-    let sdk_token_count = catalog_tokens.iter().filter(|token| by_token.contains_key(token.token.as_str())).count();
-    let shared_value_count = shared_value_groups(&catalog_tokens).len();
+declare_form! {
+    pub struct ThemeUsagePanel {
+        controls: {},
+        args: {
+            look: Arc<ShadcnLook>,
+        },
+        fields: {}
+    }
+}
 
-    div()
-        .size_full()
-        .bg(chrome.content_background)
-        .text_color(chrome.body_text)
-        .p(px(28.0))
-        .overflow_hidden()
-        .child(
+impl ThemeUsagePanel {
+    pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look;
+        cx.notify();
+    }
+}
+
+impl Render for ThemeUsagePanel {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        with_look(&self.look, || {
+            let chrome = self.look.chrome();
+            let heading_style = self.look.typography_role(ShadcnTextRole::H3);
+            let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let section_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let detail_style = self.look.typography_scale(ShadcnTextSize::Sm);
+            let caption_style = self.look.typography_scale(ShadcnTextSize::Xs);
+            let catalog_tokens = catalog_tokens(self.look.as_ref());
+            let usages = all_shadcn_theme_usages();
+            let by_token = usage_by_token(usages);
+            let sdk_token_count =
+                catalog_tokens.iter().filter(|token| by_token.contains_key(token.token.as_str())).count();
+            let shared_value_count = shared_value_groups(&catalog_tokens).len();
+
             div()
-                .id("theme-usage-content")
+                .id("theme-studio-theme-usage")
                 .size_full()
+                .min_h_0()
                 .flex()
                 .flex_col()
-                .gap(px(18.0))
-                .overflow_y_scroll()
+                .overflow_hidden()
+                .bg(chrome.content_background)
+                .p(px(28.0))
                 .child(
                     div()
+                        .id("theme-usage-content")
+                        .size_full()
                         .flex()
                         .flex_col()
-                        .gap(px(4.0))
-                        .child(div().typography_style(heading_style).text_color(chrome.title_text).child("Theme Usage"))
-                        .child(div().typography_style(body_style).text_color(chrome.muted_text).child(
-                            if look.has_css_catalog() {
-                                "Shadcn CSS token usage metadata for migrated controls"
-                            } else {
-                                "SDK resolver metadata — CSS catalog empty on native default theme"
-                            },
+                        .gap(px(18.0))
+                        .overflow_y_scroll()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap(px(4.0))
+                                .child(
+                                    div()
+                                        .typography_style(heading_style)
+                                        .text_color(chrome.title_text)
+                                        .child("Theme Usage"),
+                                )
+                                .child(div().typography_style(body_style).text_color(chrome.muted_text).child(
+                                    if self.look.has_css_catalog() {
+                                        "Shadcn CSS token usage metadata for migrated controls"
+                                    } else {
+                                        "SDK resolver metadata — CSS catalog empty on native default theme"
+                                    },
+                                )),
+                        )
+                        .when_some(render_sparse_catalog_callout(self.look.as_ref()), |panel, callout| {
+                            panel.child(callout)
+                        })
+                        .child(div().flex().gap(px(8.0)).children([
+                            render_count_badge(
+                                "Components",
+                                usages.len().to_string(),
+                                self.look.as_ref(),
+                                caption_style,
+                            ),
+                            render_count_badge(
+                                "Catalog tokens",
+                                catalog_tokens.len().to_string(),
+                                self.look.as_ref(),
+                                caption_style,
+                            ),
+                            render_count_badge(
+                                "Used by SDK",
+                                sdk_token_count.to_string(),
+                                self.look.as_ref(),
+                                caption_style,
+                            ),
+                            render_count_badge(
+                                "Shared values",
+                                shared_value_count.to_string(),
+                                self.look.as_ref(),
+                                caption_style,
+                            ),
+                        ]))
+                        .child(
+                            div()
+                                .flex()
+                                .gap(px(20.0))
+                                .items_start()
+                                .child(render_by_token(&catalog_tokens, &by_token, self.look.as_ref(), detail_style))
+                                .child(render_by_component(usages, self.look.as_ref(), detail_style, caption_style)),
+                        )
+                        .child(render_shared_values(
+                            &catalog_tokens,
+                            &by_token,
+                            self.look.as_ref(),
+                            caption_style,
+                            detail_style,
+                            section_style,
                         )),
                 )
-                .when_some(render_sparse_catalog_callout(look), |panel, callout| panel.child(callout))
-                .child(div().flex().gap(px(8.0)).children([
-                    render_count_badge("Components", usages.len().to_string(), look, caption_style),
-                    render_count_badge("Catalog tokens", catalog_tokens.len().to_string(), look, caption_style),
-                    render_count_badge("Used by SDK", sdk_token_count.to_string(), look, caption_style),
-                    render_count_badge("Shared values", shared_value_count.to_string(), look, caption_style),
-                ]))
-                .child(
-                    div()
-                        .flex()
-                        .gap(px(20.0))
-                        .items_start()
-                        .child(render_by_token(&catalog_tokens, &by_token, look, detail_style))
-                        .child(render_by_component(usages, look, detail_style, caption_style)),
-                )
-                .child(render_shared_values(
-                    &catalog_tokens,
-                    &by_token,
-                    look,
-                    caption_style,
-                    detail_style,
-                    section_style,
-                )),
-        )
-        .into_any_element()
+        })
+    }
 }
 
 fn catalog_tokens(look: &ShadcnLook) -> Vec<CatalogToken> {
@@ -388,10 +439,60 @@ fn render_status_badge(status: &'static str, look: &ShadcnLook) -> AnyElement {
         .into_any_element()
 }
 
+fn render_sparse_catalog_callout(look: &ShadcnLook) -> Option<AnyElement> {
+    if look.has_css_catalog() {
+        return None;
+    }
+
+    let chrome = look.chrome();
+    let title = "Native default theme — sparse CSS catalog";
+    let body = "This view lists tweakcn `--*` custom properties from the active theme. The native default has no CSS catalog, so token swatches and cross-reference counts are empty. SDK controls still resolve colors from the embedded palette. Pick a tweakcn theme in the sidebar for full catalog data.";
+
+    Some(
+        div()
+            .w_full()
+            .max_w(px(860.0))
+            .flex()
+            .flex_col()
+            .gap(px(6.0))
+            .border_1()
+            .border_color(chrome.border)
+            .rounded(px(10.0))
+            .bg(chrome.panel_background)
+            .p(px(14.0))
+            .child(div().typography_sm().font_weight(FontWeight::SEMIBOLD).text_color(chrome.title_text).child(title))
+            .child(div().typography_xs().text_color(chrome.body_text).child(body))
+            .into_any_element(),
+    )
+}
+
 fn token_status(used_by_sdk: bool) -> &'static str {
     if used_by_sdk { "Used by SDK" } else { "No current usage" }
 }
 
 fn token_label(token: &CatalogToken) -> String {
     format!("--{}", token.token)
+}
+
+fn format_compact_hsla(color: gpui::Hsla) -> String {
+    format!(
+        "hsla({} {}% {}% / {})",
+        rounded_channel(color.h * 360.0),
+        rounded_channel(color.s * 100.0),
+        rounded_channel(color.l * 100.0),
+        compact_alpha(color.a)
+    )
+}
+
+fn rounded_channel(value: f32) -> i32 {
+    value.round() as i32
+}
+
+fn compact_alpha(alpha: f32) -> String {
+    let rounded = (alpha * 100.0).round() / 100.0;
+    if (rounded - rounded.round()).abs() <= f32::EPSILON {
+        format!("{}", rounded.round() as i32)
+    } else {
+        format!("{rounded:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
+    }
 }
