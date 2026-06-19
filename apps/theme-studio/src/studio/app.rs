@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use gpui::{
-    Context, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size,
+    AnyElement, Context, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size,
     Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::resizable_panels::ResizablePanels;
-use gpui_luma::dock_panel;
+
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::resizable_panels;
 use gpui_luma::shell::TitleBar;
@@ -50,6 +50,10 @@ pub struct ThemeStudioApp {
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
     main_split: Entity<ResizablePanels>,
+    right_split: Entity<ResizablePanels>,
+    full_split: Entity<ResizablePanels>,
+    sidebar_collapsed: bool,
+    right_sidebar_collapsed: bool,
     /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
     syncing_sidebar_tokens: bool,
     _subscriptions: Vec<Subscription>,
@@ -83,8 +87,34 @@ impl ThemeStudioApp {
             overrides: overrides.clone(),
         };
         let content_pane = cx.new(|cx| ContentPaneHost::new(app.clone(), board_snapshot, cx));
-        let content_pane_for_split = content_pane.clone();
+        let content_pane_for_left_split = content_pane.clone();
+        let content_pane_for_right_split = content_pane.clone();
+        let content_pane_for_full_split = content_pane.clone();
         let sidebar_entity = theme_sidebar.clone();
+        let right_sidebar_look = look.clone();
+        let right_split = resizable_panels! {
+            cx,
+            theme = look.resizable_panels_theme(),
+            id: "theme-studio-right-split",
+            layout: Horizontal,
+            show_handle: true,
+            resize_handle: Sm,
+            handle_grip: true,
+            show_border: false,
+            panels: [
+                move || {
+                    div()
+                        .size_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .child(content_pane_for_right_split.clone())
+                        .into_any_element()
+                } => weight(1.0);
+                |
+                move || render_right_sidebar(right_sidebar_look.clone()) => px(360.0), min: px(360.0), max: px(460.0);
+            ]
+        };
         let main_split = resizable_panels! {
             cx,
             theme = look.resizable_panels_theme(),
@@ -112,9 +142,45 @@ impl ThemeStudioApp {
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .child(content_pane_for_split.clone())
+                        .child(content_pane_for_left_split.clone())
                         .into_any_element()
                 } => weight(1.0);
+            ]
+        };
+        let sidebar_entity_for_full = theme_sidebar.clone();
+        let right_sidebar_look_for_full = look.clone();
+        let full_split = resizable_panels! {
+            cx,
+            theme = look.resizable_panels_theme(),
+            id: "theme-studio-full-split",
+            layout: Horizontal,
+            show_handle: true,
+            resize_handle: Sm,
+            handle_grip: true,
+            show_border: false,
+            panels: [
+                move || {
+                    div()
+                        .size_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .overflow_hidden()
+                        .child(div().flex_1().min_h_0().w_full().child(sidebar_entity_for_full.clone()))
+                        .into_any_element()
+                } => px(360.0), min: px(360.0), max: px(460.0);
+                |
+                move || {
+                    div()
+                        .size_full()
+                        .min_h_0()
+                        .flex()
+                        .flex_col()
+                        .child(content_pane_for_full_split.clone())
+                        .into_any_element()
+                } => weight(1.0);
+                |
+                move || render_right_sidebar(right_sidebar_look_for_full.clone()) => px(360.0), min: px(360.0), max: px(460.0);
             ]
         };
 
@@ -143,6 +209,10 @@ impl ThemeStudioApp {
             theme_sidebar,
             content_pane,
             main_split,
+            right_split,
+            full_split,
+            sidebar_collapsed: false,
+            right_sidebar_collapsed: true,
             syncing_sidebar_tokens: false,
             _subscriptions: subscriptions,
         }
@@ -185,7 +255,7 @@ impl ThemeStudioApp {
             tracing::warn!("failed to apply studio token overrides: {err:?}");
         }
         cx.bump_luma_theme_revision();
-        self.sync_main_split_theme(cx);
+        self.sync_split_themes(cx);
         self.refresh_content_pane(cx);
     }
 
@@ -234,9 +304,17 @@ impl ThemeStudioApp {
         });
     }
 
-    fn sync_main_split_theme(&self, cx: &mut Context<Self>) {
+    fn sync_split_themes(&self, cx: &mut Context<Self>) {
         let theme = self.look.resizable_panels_theme();
-        self.main_split.update(cx, |split, cx| split.set_theme(theme, cx));
+        self.main_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
+        self.right_split.update(cx, |split, cx| split.set_theme(theme.clone(), cx));
+        self.full_split.update(cx, |split, cx| split.set_theme(theme, cx));
+    }
+
+    fn sync_split_measured_sizes(&self, size: Size<Pixels>, cx: &mut Context<Self>) {
+        self.main_split.update(cx, |split, cx| split.set_measured_size(size, cx));
+        self.right_split.update(cx, |split, cx| split.set_measured_size(size, cx));
+        self.full_split.update(cx, |split, cx| split.set_measured_size(size, cx));
     }
 
     pub fn change_theme(&mut self, theme_id: &str, cx: &mut Context<Self>) {
@@ -418,8 +496,8 @@ impl ThemeStudioApp {
             return;
         }
         self.last_window_size = size;
+        self.sync_split_measured_sizes(size, cx);
         self.persist_layout();
-        let _ = cx;
     }
 
     fn persist_layout(&self) {
@@ -484,6 +562,18 @@ impl ThemeStudioApp {
         self.refresh_content_pane(cx);
         cx.notify();
     }
+
+    fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
+        self.sync_split_measured_sizes(self.last_window_size, cx);
+        self.sidebar_collapsed = !self.sidebar_collapsed;
+        cx.notify();
+    }
+
+    fn toggle_right_sidebar(&mut self, cx: &mut Context<Self>) {
+        self.sync_split_measured_sizes(self.last_window_size, cx);
+        self.right_sidebar_collapsed = !self.right_sidebar_collapsed;
+        cx.notify();
+    }
 }
 
 use super::export::token_css_name;
@@ -500,6 +590,22 @@ impl Render for ThemeStudioApp {
         let size = self.control_size;
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
         let toggle_label_style = self.look.typography_scale(ShadcnTextSize::Xs);
+        let sidebar_toggle_icon = if self.sidebar_collapsed {
+            LucideIcon::PanelLeftOpen
+        } else {
+            LucideIcon::PanelLeft
+        };
+        let right_sidebar_toggle_icon = if self.right_sidebar_collapsed {
+            LucideIcon::PanelRightOpen
+        } else {
+            LucideIcon::PanelRight
+        };
+        let main_shell = match (self.sidebar_collapsed, self.right_sidebar_collapsed) {
+            (false, false) => self.full_split.clone().into_any_element(),
+            (false, true) => self.main_split.clone().into_any_element(),
+            (true, false) => self.right_split.clone().into_any_element(),
+            (true, true) => render_content_shell(self.content_pane.clone()),
+        };
 
         let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
@@ -520,6 +626,50 @@ impl Render for ThemeStudioApp {
                         .items_center()
                         .gap(px(12.0))
                         .child(render_size_toggle(size, chrome, toggle_label_style, cx))
+                        .child(
+                            div()
+                                .id("theme-studio-sidebar-toggle")
+                                .size(px(28.0))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .rounded(px(6.0))
+                                .font_family("lucide")
+                                .text_size(px(14.0))
+                                .line_height(px(14.0))
+                                .text_color(chrome.title_text)
+                                .cursor_pointer()
+                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.toggle_sidebar(cx);
+                                }))
+                                .child(char::from(sidebar_toggle_icon).to_string()),
+                        )
+                        .child(
+                            div()
+                                .id("theme-studio-right-sidebar-toggle")
+                                .size(px(28.0))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .rounded(px(6.0))
+                                .font_family("lucide")
+                                .text_size(px(14.0))
+                                .line_height(px(14.0))
+                                .text_color(chrome.title_text)
+                                .cursor_pointer()
+                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                    cx.stop_propagation();
+                                })
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.toggle_right_sidebar(cx);
+                                }))
+                                .child(char::from(right_sidebar_toggle_icon).to_string()),
+                        )
                         .child(
                             div()
                                 .id("theme-studio-reset-theme")
@@ -571,7 +721,7 @@ impl Render for ThemeStudioApp {
                                     this.theme_sidebar.update(cx, |sidebar, cx| {
                                         sidebar.apply_theme_snapshot(theme, &overrides, cx);
                                     });
-                                    this.sync_main_split_theme(cx);
+                                    this.sync_split_themes(cx);
                                     this.refresh_content_pane(cx);
                                     cx.notify();
                                 }))
@@ -580,23 +730,63 @@ impl Render for ThemeStudioApp {
                 ),
         );
 
-        dock_panel! {
-            top: title_bar,
-            fill: div()
-                .luma_focus_scope(&self.focus_scope)
-                .size_full()
-                .font_family(sans)
-                .bg(chrome.app_background)
-                .child(
-                    div()
-                        .id("theme-studio-body")
-                        .size_full()
-                        .min_h_0()
-                        .overflow_hidden()
-                        .child(self.main_split.clone()),
-                )
-        }
+        div()
+            .luma_focus_scope(&self.focus_scope)
+            .size_full()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .font_family(sans)
+            .bg(chrome.app_background)
+            .child(title_bar)
+            .child(div().id("theme-studio-body").flex_1().min_h_0().w_full().overflow_hidden().child(main_shell))
+            .child(
+                div()
+                    .id("theme-studio-bottom-app-bar")
+                    .h(px(32.0))
+                    .w_full()
+                    .flex_shrink_0()
+                    .flex()
+                    .items_center()
+                    .bg(chrome.panel_background)
+                    .border_t_1()
+                    .border_color(chrome.border),
+            )
     }
+}
+
+fn render_content_shell(content_pane: Entity<ContentPaneHost>) -> AnyElement {
+    div().size_full().min_h_0().flex().flex_col().child(content_pane).into_any_element()
+}
+
+fn render_right_sidebar(look: Arc<ShadcnLook>) -> AnyElement {
+    let chrome = look.chrome();
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
+
+    div()
+        .id("theme-studio-right-sidebar")
+        .size_full()
+        .min_h_0()
+        .flex()
+        .flex_col()
+        .bg(chrome.panel_background)
+        .border_l_1()
+        .border_color(chrome.border)
+        .child(
+            div()
+                .id("theme-studio-right-sidebar-header")
+                .w_full()
+                .h(px(48.0))
+                .flex_shrink_0()
+                .flex()
+                .items_center()
+                .px(px(16.0))
+                .border_b_1()
+                .border_color(chrome.border)
+                .child(div().typography_style(title_style).text_color(chrome.title_text).child("Inspector")),
+        )
+        .child(div().flex_1().min_h_0().w_full())
+        .into_any_element()
 }
 
 fn render_size_toggle(

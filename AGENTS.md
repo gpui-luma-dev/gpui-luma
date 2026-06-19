@@ -1,5 +1,7 @@
 # AI coding instructions
 
+Always answer concisely. Prefer short bullets. Do not give long explanations unless I ask.
+
 Before making changes:
 - Read docs/architecture.md.
 - Inspect relevant Rust modules directly; do not rely only on summaries.
