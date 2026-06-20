@@ -24,7 +24,7 @@ The current SDK work is still useful and should remain:
 - SDK control/module organization,
 - templates and theme integration,
 - gallery panes and routing,
-- focus ring and appearance fixes,
+- focus ring and look fixes,
 - current event surface where it already matches expected SDK behavior.
 
 The current code to preserve as shell and presentation:

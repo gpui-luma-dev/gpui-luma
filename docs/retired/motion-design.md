@@ -17,7 +17,7 @@ Controls should not track animation start/end state.
 ```text
 avoid:
   control.previous_percentage
-  appearance.thumb_motion
+  look.thumb_motion
   animate_f32(...)
   per-control animation flags
 
@@ -979,7 +979,7 @@ A control using first-class motion should satisfy:
 ## Red flags
 
 ```text
-appearance.foo_motion
+look.foo_motion
 model.previous_foo
 format!("motion-{target}")
 animate_f32 in a control template

@@ -17,7 +17,7 @@ pub use theme::{
     default_textfield_theme,
 };
 #[allow(unused_imports)]
-pub(crate) use theme::compose_textfield_appearance;
+pub(crate) use theme::compose_textfield_look;
 
 use gpui::{Entity, SharedString};
 

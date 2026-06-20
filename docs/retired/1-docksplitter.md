@@ -38,10 +38,10 @@ pub struct DockSplitterRenderModel<'a> {
 }
 ```
 
-### B. The Theme & Appearance
+### B. The Theme & Look
 Defines style tokens resolved from the theme (such as `ShadcnLook` border colors and hover metrics):
 ```rust
-pub struct DockSplitterAppearance {
+pub struct DockSplitterLook {
     pub line_color: Hsla,
     pub hover_color: Hsla,
     pub hit_target_px: f32,      // Default hit zone (e.g., 8.0px)
@@ -49,7 +49,7 @@ pub struct DockSplitterAppearance {
 }
 
 pub trait DockSplitterTheme: Send + Sync {
-    fn resolve(&self, enabled: bool) -> DockSplitterAppearance;
+    fn resolve(&self, enabled: bool) -> DockSplitterLook;
 }
 ```
 

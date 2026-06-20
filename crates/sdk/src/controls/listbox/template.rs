@@ -46,14 +46,14 @@ impl ThemedListBoxTemplate {
             |metrics| ListRowScale::compute(self.size, metrics, scale_factor),
         );
 
-        let list_appearance = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
-        let focused_probe_list_appearance = if model.enabled {
+        let list_look = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
+        let focused_probe_list_look = if model.enabled {
             Some(self.theme.resolve_list(model.enabled, true, self.size))
         } else {
             None
         };
-        let list_oversize_extent = adorner_oversize_extent(list_appearance.adorner).max(
-            focused_probe_list_appearance
+        let list_oversize_extent = adorner_oversize_extent(list_look.adorner).max(
+            focused_probe_list_look
                 .as_ref()
                 .map(|probe| adorner_oversize_extent(probe.adorner))
                 .unwrap_or(0.0),
@@ -65,16 +65,16 @@ impl ThemedListBoxTemplate {
             .w_full()
             .flex()
             .flex_col()
-            .gap(px(list_appearance.row_gap))
+            .gap(px(list_look.row_gap))
             .overflow_hidden()
-            .px(px(list_appearance.padding_x))
-            .py(px(list_appearance.padding_y))
-            .rounded(px(list_appearance.radius))
-            .bg(list_appearance.background)
+            .px(px(list_look.padding_x))
+            .py(px(list_look.padding_y))
+            .rounded(px(list_look.radius))
+            .bg(list_look.background)
             .border_1()
-            .border_color(list_appearance.border);
+            .border_color(list_look.border);
 
-        if let Some(adorner) = render_optional_adorner(list_appearance.adorner, list_appearance.radius) {
+        if let Some(adorner) = render_optional_adorner(list_look.adorner, list_look.radius) {
             root = root.child(adorner);
         }
 
@@ -103,18 +103,18 @@ impl ThemedListBoxTemplate {
                 break;
             };
 
-            let row_appearance =
+            let row_look =
                 self.theme
-                    .resolve_row_appearance(item.selected, item.state.interaction_state(), self.size, &row_scale);
-            let focused_probe_row_appearance = if any_item_enabled && !item.state.disabled {
+                    .resolve_row_look(item.selected, item.state.interaction_state(), self.size, &row_scale);
+            let focused_probe_row_look = if any_item_enabled && !item.state.disabled {
                 let mut focused_state = item.state.interaction_state();
                 focused_state.focused = true;
-                Some(self.theme.resolve_row_appearance(item.selected, focused_state, self.size, &row_scale))
+                Some(self.theme.resolve_row_look(item.selected, focused_state, self.size, &row_scale))
             } else {
                 None
             };
-            let row_oversize_extent = adorner_oversize_extent(row_appearance.adorner).max(
-                focused_probe_row_appearance
+            let row_oversize_extent = adorner_oversize_extent(row_look.adorner).max(
+                focused_probe_row_look
                     .as_ref()
                     .map(|probe| adorner_oversize_extent(probe.adorner))
                     .unwrap_or(0.0),
@@ -130,7 +130,7 @@ impl ThemedListBoxTemplate {
                 ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.item.id()).into()),
                 item.state,
                 content,
-                row_appearance,
+                row_look,
             )
             .on_hover(item_hover)
             .on_mouse_down(MouseButton::Left, item_mouse_down)
@@ -185,25 +185,25 @@ fn render_listbox_row_visual(
     id: ElementId,
     state: crate::controls::state::CompositeItemState,
     content: gpui::AnyElement,
-    appearance: ListBoxRowLook,
+    look: ListBoxRowLook,
 ) -> Stateful<Div> {
     let mut root = div()
         .id(id)
         .relative()
         .w_full()
-        .min_h(px(appearance.height))
+        .min_h(px(look.height))
         .flex()
         .items_center()
-        .px(px(appearance.padding_x))
-        .py(px(appearance.padding_y))
-        .bg(appearance.background)
-        .text_color(appearance.label_color)
-        .text_size(px(appearance.label_typography.size))
-        .line_height(px(appearance.label_typography.line_height))
-        .font_weight(appearance.label_typography.weight)
-        .child(div().w_full().mt(px(appearance.label_baseline_shift)).child(content));
+        .px(px(look.padding_x))
+        .py(px(look.padding_y))
+        .bg(look.background)
+        .text_color(look.label_color)
+        .text_size(px(look.label_typography.size))
+        .line_height(px(look.label_typography.line_height))
+        .font_weight(look.label_typography.weight)
+        .child(div().w_full().mt(px(look.label_baseline_shift)).child(content));
 
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
         root = root.child(adorner);
     }
 

@@ -25,7 +25,7 @@ The canvas is a free-form board of **shadcn-style demo cards** (composite produc
 5. **Cookie Settings** — switches and save action  
 6. **Report an issue** — selectors, subject, description, actions  
 7. **Payments** — paged `ListView` with checkboxes, status/email/amount columns, and Previous/Next footer  
-8. **Navigation Sidebar** — collapsible properties sidebar (same tree as the gallery navigation sidebar pane: pinned items, Layout / Appearance / Behavior groups, footer actions)  
+8. **Navigation Sidebar** — collapsible properties sidebar (same tree as the gallery navigation sidebar pane: pinned items, Layout / Look / Behavior groups, footer actions)  
 
 Legacy spec sketch (superseded by demo cards):
 

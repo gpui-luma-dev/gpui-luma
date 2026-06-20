@@ -101,7 +101,7 @@ Where:
 - `open` / `enabled`
 - optional item template ref
 - popup geometry (`popup_bounds` or placement data)
-- panel appearance payload (or panel-theme provider)
+- panel look payload (or panel-theme provider)
 - pre-rendered `search_content` and `list_content` regions as needed
 
 ---
@@ -135,7 +135,7 @@ Where:
 ## Lessons learned from combobox refactor
 
 1. **Theme ownership must match visual ownership**
-   - If panel owns popup shell, panel must resolve panel appearance from live theme state.
+   - If panel owns popup shell, panel must resolve panel look from live theme state.
    - Avoid `ThemeTokens::default()` in control render paths for themed visuals.
 
 2. **Template preview panes must use real template pipeline**

@@ -21,12 +21,12 @@ To ensure uniform API style, all components must align with the following rules:
 * **`set_` Prefix Obligation**: Any runtime mutator method on a spawned control entity that updates a model field `x` must be named `set_x(...)` (e.g., `set_enabled(...)`, `set_value(...)`).
 * **`with_` Prefix Prohibition**: Spawned control entities must never use the `with_` prefix.
 
-### Rule C: Appearance & Style Override Naming
-* **Post-Resolution Appearance Overrides**:
-  * **Builder**: Standardize on `.appearance_override(override_fn)` for overriding post-resolution styles.
-  * **Control**: Standardize on `.set_appearance_override(override_fn, cx)` for runtime overrides.
-* **Full Appearance Resolvers/Sources**:
-  * For controls that supply a complete appearance resolver based on full render models (e.g. button-family controls), continue to use `.with_appearance(...)`.
+### Rule C: Look & Style Override Naming
+* **Post-Resolution Look Overrides**:
+  * **Builder**: Standardize on `.look_override(override_fn)` for overriding post-resolution styles.
+  * **Control**: Standardize on `.set_look_override(override_fn, cx)` for runtime overrides.
+* **Full Look Resolvers/Sources**:
+  * For controls that supply a complete look resolver based on full render models (e.g. button-family controls), continue to use `.with_look(...)`.
 
 ### Rule D: Value / Data Payload Naming
 * **Scalar/Text/Numeric Input Controls**: Standardize on the following for controls whose primary public payload is a scalar/text/numeric value (e.g., `textfield`, `textarea`, `slider`, `scrollbar`, `progress`):

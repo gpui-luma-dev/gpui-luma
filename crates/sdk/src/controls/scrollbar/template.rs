@@ -70,16 +70,16 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             drag_move,
             scroll_wheel,
         } = handlers;
-        let appearance = self.theme.resolve(model.state, model.orientation);
+        let look = self.theme.resolve(model.state, model.orientation);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let thumb_fraction = model.thumb_fraction.clamp(0.05, 1.0);
-        let thickness = if appearance.thickness.is_finite() && appearance.thickness > 0.0 {
-            appearance.thickness
+        let thickness = if look.thickness.is_finite() && look.thickness > 0.0 {
+            look.thickness
         } else {
             12.0
         };
-        let track_thickness = clamped_thickness(appearance.track_thickness, 1.0, thickness);
-        let thumb_thickness = clamped_thickness(appearance.thumb_thickness, track_thickness, thickness);
+        let track_thickness = clamped_thickness(look.track_thickness, 1.0, thickness);
+        let thumb_thickness = clamped_thickness(look.thumb_thickness, track_thickness, thickness);
         let track_cross_offset = (thickness - track_thickness) * 0.5;
         let thumb_cross_offset = (thickness - thumb_thickness) * 0.5;
 
@@ -96,8 +96,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             thumb_top,
         ) = match model.orientation {
             ScrollbarOrientation::Horizontal => {
-                let length = model.length.unwrap_or(appearance.length);
-                let thumb_length = (length * thumb_fraction).clamp(appearance.min_thumb_length.min(length), length);
+                let length = model.length.unwrap_or(look.length);
+                let thumb_length = (length * thumb_fraction).clamp(look.min_thumb_length.min(length), length);
                 let thumb_left = ((length - thumb_length).max(0.0) * percentage).clamp(0.0, length);
 
                 (
@@ -114,8 +114,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
                 )
             }
             ScrollbarOrientation::Vertical => {
-                let length = model.length.unwrap_or(appearance.length);
-                let thumb_length = (length * thumb_fraction).clamp(appearance.min_thumb_length.min(length), length);
+                let length = model.length.unwrap_or(look.length);
+                let thumb_length = (length * thumb_fraction).clamp(look.min_thumb_length.min(length), length);
                 let thumb_top = ((length - thumb_length).max(0.0) * percentage).clamp(0.0, length);
 
                 (
@@ -140,8 +140,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             .top(px(track_top))
             .w(px(track_width))
             .h(px(track_height))
-            .bg(appearance.track_background)
-            .rounded(px(appearance.radius));
+            .bg(look.track_background)
+            .rounded(px(look.radius));
 
         let thumb = div()
             .id(format!("{}-thumb", model.id))
@@ -150,8 +150,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             .top(px(thumb_top))
             .w(px(thumb_width))
             .h(px(thumb_height))
-            .bg(appearance.thumb_background)
-            .rounded(px(appearance.radius))
+            .bg(look.thumb_background)
+            .rounded(px(look.radius))
             .child(canvas(move |bounds, window, cx| thumb_bounds(&bounds, window, cx), |_, _, _, _| {}).size_full());
 
         let mut root = div()
@@ -183,9 +183,9 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             root = root
-                .child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(appearance.radius)));
+                .child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(look.radius)));
         }
 
         root

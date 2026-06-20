@@ -108,7 +108,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_appearance = model.trigger_theme.resolve_look(
+        let trigger_look = model.trigger_theme.resolve_look(
             TextFieldVariant::Standard,
             model.trigger_state,
             model.enabled,
@@ -139,16 +139,16 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                                 .id(format!("{}-trigger", model.id))
                                 .relative()
                                 .w_full()
-                                .h(px(trigger_appearance.min_height))
-                                .px(px(trigger_appearance.padding_x))
-                                .py(px(trigger_appearance.padding_y))
-                                .border(px(trigger_appearance.border_width))
-                                .border_color(trigger_appearance.border)
-                                .rounded(px(trigger_appearance.radius))
-                                .bg(trigger_appearance.background)
-                                .text_size(px(trigger_appearance.typography.size))
-                                .line_height(px(trigger_appearance.typography.line_height))
-                                .font_weight(trigger_appearance.typography.weight)
+                                .h(px(trigger_look.min_height))
+                                .px(px(trigger_look.padding_x))
+                                .py(px(trigger_look.padding_y))
+                                .border(px(trigger_look.border_width))
+                                .border_color(trigger_look.border)
+                                .rounded(px(trigger_look.radius))
+                                .bg(trigger_look.background)
+                                .text_size(px(trigger_look.typography.size))
+                                .line_height(px(trigger_look.typography.line_height))
+                                .font_weight(trigger_look.typography.weight)
                                 .when(model.enabled, |row| row.cursor_pointer())
                                 .on_hover(trigger_hover)
                                 .on_mouse_down(MouseButton::Left, trigger_mouse_down)
@@ -162,15 +162,15 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                                         .flex()
                                         .items_center()
                                         .justify_between()
-                                        .gap(px(trigger_appearance.gap))
+                                        .gap(px(trigger_look.gap))
                                         .child(
                                             div()
                                                 .min_w(px(0.0))
                                                 .truncate()
                                                 .text_color(if model.trigger_label_is_placeholder {
-                                                    trigger_appearance.placeholder
+                                                    trigger_look.placeholder
                                                 } else {
-                                                    trigger_appearance.foreground
+                                                    trigger_look.foreground
                                                 })
                                                 .child(model.trigger_label),
                                         )
@@ -181,16 +181,16 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                                                 .flex()
                                                 .items_center()
                                                 .justify_center()
-                                                .text_color(trigger_appearance.icon)
+                                                .text_color(trigger_look.icon)
                                                 .child(lucide_icon(
                                                     lucide_icons::Icon::Search,
-                                                    trigger_appearance.icon,
+                                                    trigger_look.icon,
                                                     12.0,
                                                 )),
                                         ),
                                 ),
-                            trigger_appearance.focus_ring,
-                            trigger_appearance.radius,
+                            trigger_look.focus_ring,
+                            trigger_look.radius,
                         )
                         .w_full(),
                     ),
@@ -241,15 +241,15 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
         cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.look.clone();
+        let look = model.look.clone();
 
         let mut root = div()
             .id(format!("{}-rows", model.menu_id))
             .relative()
             .flex()
             .flex_col()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding));
+            .min_w(px(look.min_width))
+            .p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -260,9 +260,9 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
 
             let enabled_item = model.enabled && item.enabled;
             let color = if enabled_item {
-                appearance.foreground
+                look.foreground
             } else {
-                appearance.item_disabled_foreground
+                look.item_disabled_foreground
             };
             let selected = model.selected_source_index == Some(source_index);
             let active = enabled_item && model.active_visible_index == Some(visible_index);
@@ -288,24 +288,24 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
                 .id(format!("{}-row-{}", model.menu_id, visible_index))
                 .flex()
                 .items_center()
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
                 .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
                 .child(content);
 
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
-                    let hover_background = appearance.item_hover_background;
-                    let hover_foreground = appearance.item_hover_foreground;
+                    let hover_background = look.item_hover_background;
+                    let hover_foreground = look.item_hover_foreground;
                     move |style| style.bg(hover_background).text_color(hover_foreground)
                 });
 
                 if active {
-                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
                 if let Some(click) = clicks.next() {
@@ -334,7 +334,7 @@ pub fn render_popup_rows(
     open: bool,
     enabled: bool,
     item_template: Option<&SearchSelectorItemTemplate<SelectionItem>>,
-    appearance: SelectorItemsPanelLook,
+    look: SelectorItemsPanelLook,
     item_hovers: Vec<SelectorPanelHoverHandler>,
     item_clicks: Vec<SelectorPanelClickHandler>,
     cx: &mut App,
@@ -350,7 +350,7 @@ pub fn render_popup_rows(
             open,
             enabled,
             item_template,
-            look: appearance,
+            look: look,
         },
         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
         cx,

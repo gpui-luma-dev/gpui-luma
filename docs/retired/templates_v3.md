@@ -1,8 +1,8 @@
-# GPUI-Luma Templates v3: Slot-Bound Templates with Internal Appearance
+# GPUI-Luma Templates v3: Slot-Bound Templates with Internal Look
 
 This document defines v3 of template customization for GPUI-Luma.
 
-v3 replaces "public appearance structs as the prominent customization surface" with a binding-style slot model inspired by WPF concepts (`TemplateBinding`, resource lookup), while preserving Rust ergonomics and type safety.
+v3 replaces "public look structs as the prominent customization surface" with a binding-style slot model inspired by WPF concepts (`TemplateBinding`, resource lookup), while preserving Rust ergonomics and type safety.
 
 ---
 
@@ -11,9 +11,9 @@ v3 replaces "public appearance structs as the prominent customization surface" w
 In v2, parameterization improved template customization, but exposed a boundary problem:
 
 - `Theme` risked becoming too control-specific.
-- `Appearance` risked becoming an external API contract.
+- `Look` risked becoming an external API contract.
 - Callers wanting one-off dramatic styling (e.g. emergency button) needed low-level internals.
-- New theme authors could feel pressure to provide control-specific appearance behavior.
+- New theme authors could feel pressure to provide control-specific look behavior.
 
 v3 resolves this by introducing **Template Slots** and a strict layering model.
 
@@ -22,7 +22,7 @@ v3 resolves this by introducing **Template Slots** and a strict layering model.
 ## Design Goals
 
 1. Keep `theme` focused on **themey primitives** (tokens, semantic roles, mode).
-2. Keep control-level rendering internals (`Appearance`) **internal**.
+2. Keep control-level rendering internals (`Look`) **internal**.
 3. Enable caller overrides without exposing internals as public API.
 4. Preserve "easy escape hatch": custom templates remain first-class.
 5. Support runtime tooling/introspection via metadata registries.
@@ -39,7 +39,7 @@ v3 standardizes these layers:
 2. **Template Slots (public, typed)**  
    Stable named values templates bind to at render time.
 
-3. **Appearance (internal)**  
+3. **Look (internal)**  
    Ephemeral computed render snapshot used by template implementation only.
 
 4. **Template Implementation (public trait, internal defaults)**  
@@ -69,7 +69,7 @@ Examples for `Button`:
 - `button.focus_ring.color`
 - `button.focus_ring.enabled`
 
-Templates bind to slots; they do not directly expose internal appearance fields.
+Templates bind to slots; they do not directly expose internal look fields.
 
 ### Typed Slots
 
@@ -111,7 +111,7 @@ Theme remains token/semantic-focused:
 - semantic roles (prominent/standard/ghost/etc)
 - mode (light/dark)
 
-Theme does **not** require callers to construct control-specific `Appearance`.
+Theme does **not** require callers to construct control-specific `Look`.
 
 ### Template API (public)
 
@@ -121,9 +121,9 @@ Templates expose:
 - optional slot overrides/preset hook
 - trait-based render entrypoint
 
-### Appearance API (internal)
+### Look API (internal)
 
-Control appearance structs are implementation detail:
+Control look structs are implementation detail:
 
 - may remain in codebase for clarity/perf
 - not intended as prominent external customization contract
@@ -137,7 +137,7 @@ v3 retains template parameterization but reframes it:
 
 - **Structural params**: layout/composition policy (gaps, offsets, icon placement policy)
 - **Slot overrides**: visual values and state mappings
-- **No requirement** to expose raw appearance patch structs publicly
+- **No requirement** to expose raw look patch structs publicly
 
 For callers:
 
@@ -171,14 +171,14 @@ This enables tooling/property editors to discover:
 ### Step 1: Introduce slots for one control (`Button`)
 - Define typed slot keys.
 - Update default button template to resolve slots.
-- Keep old appearance path internally for transition.
+- Keep old look path internally for transition.
 
 ### Step 2: Introduce resolver stack
 - Overrides -> preset -> theme mapping -> defaults.
 
-### Step 3: Deprecate direct appearance customization
+### Step 3: Deprecate direct look customization
 - Keep internal structs.
-- Remove/avoid new public APIs that patch raw appearance fields.
+- Remove/avoid new public APIs that patch raw look fields.
 
 ### Step 4: Expand to complex controls
 - `NavigationSidebar`, `PopupMenu`, `ContextMenu`, `NavView`.
@@ -225,7 +225,7 @@ v3 defines a cleaner contract:
 
 - Theme is themey.
 - Templates bind to typed slots.
-- Appearance is internal.
+- Look is internal.
 - Parameterization remains, but with stable boundaries.
 - Escape hatch remains simple: write your own template with SDK source as guide.
 

@@ -16,7 +16,7 @@ pub trait ResizablePanelsTemplate: Send + Sync {
     fn render(
         &self,
         model: &ResizablePanelsRenderModel<'_>,
-        appearance: &ResizablePanelsLook,
+        look: &ResizablePanelsLook,
         handle_focuses: &[FocusHandle],
         window: &mut Window,
         cx: &mut Context<ResizablePanels>,
@@ -47,7 +47,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
     fn render(
         &self,
         model: &ResizablePanelsRenderModel<'_>,
-        appearance: &ResizablePanelsLook,
+        look: &ResizablePanelsLook,
         handle_focuses: &[FocusHandle],
         _window: &mut Window,
         cx: &mut Context<ResizablePanels>,
@@ -88,7 +88,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         };
 
         if model.show_border {
-            root = root.border_1().border_color(appearance.border);
+            root = root.border_1().border_color(look.border);
         }
 
         let mut track = div().relative().flex_1().min_h_0().min_w_0().w_full();
@@ -100,7 +100,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         for (index, panel) in model.panels.iter().enumerate() {
             let main_axis_px = model.panel_sizes_px.get(index).copied().unwrap_or(0.0);
             let main_size = px(main_axis_px.max(0.0));
-            panels_row = panels_row.child(render_panel(model.orientation, panel, main_size, appearance));
+            panels_row = panels_row.child(render_panel(model.orientation, panel, main_size, look));
         }
 
         track = track.child(panels_row);
@@ -110,7 +110,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
                 track = track.child(render_overlay_handle(
                     index,
                     model,
-                    appearance,
+                    look,
                     &handle_focuses[index],
                     &handle_metrics,
                     split_px,
@@ -122,7 +122,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
                 track = track.child(render_overlay_handle_hidden(
                     index,
                     model,
-                    appearance,
+                    look,
                     &handle_focuses[index],
                     &handle_metrics,
                     split_px,
@@ -140,13 +140,13 @@ fn render_panel(
     orientation: ResizablePanelsOrientation,
     panel: &ResizablePanelSpec,
     main_size: Pixels,
-    appearance: &ResizablePanelsLook,
+    look: &ResizablePanelsLook,
 ) -> impl IntoElement {
     let mut panel_node = div().overflow_hidden().child((panel.render.clone())());
     if let Some(background) = panel.background {
         panel_node = panel_node.bg(background);
     } else {
-        panel_node = panel_node.bg(appearance.border);
+        panel_node = panel_node.bg(look.border);
     }
     match orientation {
         ResizablePanelsOrientation::Horizontal => panel_node.w(main_size).h_full().flex_shrink_0(),
@@ -158,7 +158,7 @@ fn render_panel(
 fn render_overlay_handle(
     index: usize,
     model: &ResizablePanelsRenderModel<'_>,
-    appearance: &ResizablePanelsLook,
+    look: &ResizablePanelsLook,
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
@@ -175,7 +175,7 @@ fn render_overlay_handle(
         .track_focus(focus)
         .tab_index(if enabled { 0 } else { -1 })
         .absolute()
-        .when(!enabled, |this| this.opacity(appearance.disabled_opacity))
+        .when(!enabled, |this| this.opacity(look.disabled_opacity))
         .when(enabled && orientation == ResizablePanelsOrientation::Horizontal, |this| this.cursor_col_resize())
         .on_key_down(cx.listener(move |this, event, window, cx| {
             this.handle_handle_key_down(index, event, window, cx);
@@ -208,9 +208,9 @@ fn render_overlay_handle(
     );
 
     let grip_color = if model.handle_grip {
-        appearance.grip_emphasis
+        look.grip_emphasis
     } else {
-        appearance.grip
+        look.grip
     };
 
     let (divider, grip) = match orientation {
@@ -221,7 +221,7 @@ fn render_overlay_handle(
                 .top(px(0.0))
                 .bottom(px(0.0))
                 .w(px(1.0))
-                .bg(appearance.divider);
+                .bg(look.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
             (divider, grip)
         }
@@ -232,7 +232,7 @@ fn render_overlay_handle(
                 .left(px(0.0))
                 .right(px(0.0))
                 .h(px(1.0))
-                .bg(appearance.divider);
+                .bg(look.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
             (divider, grip)
         }
@@ -245,7 +245,7 @@ fn render_overlay_handle(
 fn render_overlay_handle_hidden(
     index: usize,
     model: &ResizablePanelsRenderModel<'_>,
-    appearance: &ResizablePanelsLook,
+    look: &ResizablePanelsLook,
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
@@ -261,7 +261,7 @@ fn render_overlay_handle_hidden(
         .track_focus(focus)
         .tab_index(if enabled { 0 } else { -1 })
         .absolute()
-        .when(!enabled, |this| this.opacity(appearance.disabled_opacity));
+        .when(!enabled, |this| this.opacity(look.disabled_opacity));
 
     handle = match orientation {
         ResizablePanelsOrientation::Horizontal => handle
@@ -298,14 +298,14 @@ fn render_overlay_handle_hidden(
             .top(px(0.0))
             .bottom(px(0.0))
             .w(px(1.0))
-            .bg(appearance.divider),
+            .bg(look.divider),
         ResizablePanelsOrientation::Vertical => div()
             .absolute()
             .top(px(divider_local_px))
             .left(px(0.0))
             .right(px(0.0))
             .h(px(1.0))
-            .bg(appearance.divider),
+            .bg(look.divider),
     };
 
     handle.child(divider).child(interaction_layer).into_any_element()

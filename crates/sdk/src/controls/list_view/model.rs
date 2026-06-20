@@ -60,8 +60,8 @@ impl ListScrollMode {
 
 pub struct ListViewRenderModel<'a> {
     pub id: &'a SharedString,
-    pub appearance: ListViewLook,
-    pub row_appearance: ListViewRowLook,
+    pub look: ListViewLook,
+    pub row_look: ListViewRowLook,
     pub row_count: usize,
     pub selection_mode: ListSelectionMode,
     pub scroll_mode: ListScrollMode,
@@ -496,9 +496,9 @@ where
     }
 
     pub fn square_corners(self) -> Self {
-        self.look_override(|mut appearance| {
-            appearance.radius = 0.0;
-            appearance
+        self.look_override(|mut look| {
+            look.radius = 0.0;
+            look
         })
     }
 

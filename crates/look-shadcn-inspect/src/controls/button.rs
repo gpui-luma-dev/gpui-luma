@@ -277,7 +277,7 @@ mod tests {
     #[test]
     fn inspect_metrics_match_button_look_for_primary_default_md() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let appearance = gpui_luma_look_shadcn::paint::button_look(
+        let look = gpui_luma_look_shadcn::paint::button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -294,11 +294,11 @@ mod tests {
             InteractionState::default(),
         );
 
-        assert_eq!(metrics.height.value_px, appearance.height);
-        assert_eq!(metrics.padding_x.value_px, appearance.padding_x);
-        assert_eq!(metrics.padding_y.value_px, appearance.padding_y);
-        assert_eq!(metrics.gap.value_px, appearance.gap);
-        assert_eq!(metrics.radius.value_px, appearance.radius);
+        assert_eq!(metrics.height.value_px, look.height);
+        assert_eq!(metrics.padding_x.value_px, look.padding_x);
+        assert_eq!(metrics.padding_y.value_px, look.padding_y);
+        assert_eq!(metrics.gap.value_px, look.gap);
+        assert_eq!(metrics.radius.value_px, look.radius);
     }
 
     #[test]

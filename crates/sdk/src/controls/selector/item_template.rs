@@ -5,7 +5,7 @@ use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel}
 
 pub(super) fn render_item_content<T>(
     model: &SelectorRenderModel<'_, T>,
-    appearance: &SelectorLook,
+    look: &SelectorLook,
     cx: &mut App,
 ) -> AnyElement
 where
@@ -30,7 +30,7 @@ where
     div()
         .flex()
         .items_center()
-        .gap(px(appearance.trigger_gap))
+        .gap(px(look.trigger_gap))
         .child(model.label.clone())
         .into_any_element()
 }

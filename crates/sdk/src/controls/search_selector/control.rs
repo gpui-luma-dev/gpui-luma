@@ -68,13 +68,13 @@ impl SearchSelectorControl {
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
-            .look_override(|mut appearance| {
-                appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
-                appearance.focus_ring = None;
-                appearance.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
-                appearance.typography.line_height = appearance.typography.size;
-                appearance.min_height = (appearance.typography.line_height + (appearance.padding_y * 2.0)).max(18.0);
-                appearance
+            .look_override(|mut look| {
+                look.padding_y = (look.padding_y - 3.0).max(0.0);
+                look.focus_ring = None;
+                look.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+                look.typography.line_height = look.typography.size;
+                look.min_height = (look.typography.line_height + (look.padding_y * 2.0)).max(18.0);
+                look
             })
             .template(model.textfield_template.clone())
             .spawn(cx);
@@ -455,8 +455,8 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
-    pub fn set_popup_appearance_provider(&mut self, provider: SearchSelectorPopupLookProvider, cx: &mut Context<Self>) {
-        self.model.popup_appearance_provider = provider;
+    pub fn set_popup_look_provider(&mut self, provider: SearchSelectorPopupLookProvider, cx: &mut Context<Self>) {
+        self.model.popup_look_provider = provider;
         cx.notify();
     }
 
@@ -527,8 +527,8 @@ impl Render for SearchSelectorControl {
         self.sync_trigger_focus(window, cx);
 
         let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = (self.model.popup_appearance_provider)();
+        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
+        let look = (self.model.popup_look_provider)();
         let selected_label = self
             .committed_selection
             .and_then(|index| self.model.items.get(index))
@@ -536,7 +536,7 @@ impl Render for SearchSelectorControl {
 
         let minimum_trigger_width = {
             let textfield_theme = crate::controls::textfield::default_textfield_theme();
-            let textfield_appearance = textfield_theme.resolve_look(
+            let textfield_look = textfield_theme.resolve_look(
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
@@ -547,24 +547,24 @@ impl Render for SearchSelectorControl {
                 ),
             );
             let mut text_font = font(".SystemUIFont");
-            text_font.weight = textfield_appearance.typography.weight;
+            text_font.weight = textfield_look.typography.weight;
             let placeholder_run = TextRun {
                 len: self.model.placeholder.len(),
                 font: text_font,
-                color: autocomplete_appearance.muted_text_color,
+                color: autocomplete_look.muted_text_color,
                 background_color: None,
                 underline: None,
                 strikethrough: None,
             };
             let placeholder_line = window.text_system().shape_line(
                 self.model.placeholder.clone(),
-                px(textfield_appearance.typography.size),
+                px(textfield_look.typography.size),
                 &[placeholder_run],
                 None,
             );
             let placeholder_width = placeholder_line.width().as_f32();
 
-            let textfield_side_padding = (textfield_appearance.padding_x * 2.0) + textfield_appearance.border_width;
+            let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
             let search_icon_width = 18.0 + 10.0;
             let spacing = 8.0;
 
@@ -600,13 +600,13 @@ impl Render for SearchSelectorControl {
 
         let popup_content = if self.model.enabled && self.behavior.state.open {
             let list_id = SharedString::from("search-selector-menu");
-            let row_height = px(appearance.item_height);
-            let content_top_padding = px(appearance.padding);
+            let row_height = px(look.item_height);
+            let content_top_padding = px(look.padding);
             let item_count = visible_indices.len();
             let min_visible_rows = self.model.min_visible_rows.max(1);
             let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
             let visible_rows = item_count.max(1).clamp(min_visible_rows, max_visible_rows) as f32;
-            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * visible_rows));
+            let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
             let allow_scrolling = self.model.scrolling && item_count > max_visible_rows;
 
             self.popup_surface.set_scrolling_enabled(allow_scrolling);
@@ -617,12 +617,12 @@ impl Render for SearchSelectorControl {
                 div()
                     .flex()
                     .items_center()
-                    .min_h(px(appearance.item_height))
-                    .px(px(appearance.item_padding_x))
-                    .text_size(px(appearance.item_typography.size))
-                    .line_height(px(appearance.item_typography.line_height))
-                    .font_weight(appearance.item_typography.weight)
-                    .text_color(autocomplete_appearance.muted_text_color)
+                    .min_h(px(look.item_height))
+                    .px(px(look.item_padding_x))
+                    .text_size(px(look.item_typography.size))
+                    .line_height(px(look.item_typography.line_height))
+                    .font_weight(look.item_typography.weight)
+                    .text_color(autocomplete_look.muted_text_color)
                     .child("No matches")
                     .into_any_element()
             } else {
@@ -639,7 +639,7 @@ impl Render for SearchSelectorControl {
                             open: self.behavior.state.open,
                             enabled: self.model.enabled,
                             item_template: self.model.item_template.as_ref(),
-                            look: appearance.clone(),
+                            look: look.clone(),
                         },
                         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
                         cx,
@@ -658,7 +658,7 @@ impl Render for SearchSelectorControl {
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
-                    popup_look: appearance.clone(),
+                    popup_look: look.clone(),
                     search_content: Some(self.popup_search_textfield.clone().into_any_element()),
                     list_content: self.popup_surface.render(list_content),
                 },
@@ -698,8 +698,8 @@ impl Render for SearchSelectorControl {
             minimum_trigger_width,
             status_label,
             status_detail,
-            status_color: autocomplete_appearance.status_color,
-            muted_text_color: autocomplete_appearance.muted_text_color,
+            status_color: autocomplete_look.status_color,
+            muted_text_color: autocomplete_look.muted_text_color,
             popup_content,
         };
 

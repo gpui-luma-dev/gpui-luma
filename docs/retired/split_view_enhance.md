@@ -154,7 +154,7 @@ values captured at construction.
 
 Luma path (implemented):
 
-- `SplitViewTheme` trait with `resolve(hovered, enabled) -> SplitViewAppearance`
+- `SplitViewTheme` trait with `resolve(hovered, enabled) -> SplitViewLook`
 - `DefaultSplitViewTheme` for token-based apps
 - `SplitViewBuilder::theme(...)` and `SplitView::set_theme(...)`
 - Optional `.separator_color()` / `.separator_hover_color()` overrides for tests or fixed demos

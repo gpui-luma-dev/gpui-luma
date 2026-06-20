@@ -128,7 +128,7 @@ where
     pub enabled: bool,
     pub sibling_count: usize,
     pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
-    pub appearance: &'a SelectionPanelLook,
+    pub look: &'a SelectionPanelLook,
     pub show_selection_marker: bool,
 }
 
@@ -143,9 +143,9 @@ where
     let SelectionPanelItemRowHandlers { hover, mouse_down, mouse_up, mouse_up_out, click } = handlers;
 
     let color = if model.enabled {
-        model.appearance.foreground
+        model.look.foreground
     } else {
-        model.appearance.item_disabled_foreground
+        model.look.item_disabled_foreground
     };
 
     let content = if let Some(item_template) = model.item_template {
@@ -175,20 +175,20 @@ where
         .id(format!("{}-row-{}", model.panel_id, model.visible_index))
         .flex()
         .items_center()
-        .gap(px(model.appearance.item_gap))
-        .min_h(px(model.appearance.item_height))
-        .px(px(model.appearance.item_padding_x))
-        .rounded(px(model.appearance.item_radius))
+        .gap(px(model.look.item_gap))
+        .min_h(px(model.look.item_height))
+        .px(px(model.look.item_padding_x))
+        .rounded(px(model.look.item_radius))
         .text_color(color)
-        .text_size(px(model.appearance.item_typography.size))
-        .line_height(px(model.appearance.item_typography.line_height))
-        .font_weight(model.appearance.item_typography.weight)
+        .text_size(px(model.look.item_typography.size))
+        .line_height(px(model.look.item_typography.line_height))
+        .font_weight(model.look.item_typography.weight)
         .when_some(model.item.icon(), |row, icon| {
             if let Some(icon) = icon.lucide() {
-                row.child(lucide_icon(icon, color, model.appearance.item_icon_size))
+                row.child(lucide_icon(icon, color, model.look.item_icon_size))
             } else if let Some(path) = icon.svg_path() {
                 row.child(
-                    gpui::svg().external_path(path.clone()).size(px(model.appearance.item_icon_size)).text_color(color),
+                    gpui::svg().external_path(path.clone()).size(px(model.look.item_icon_size)).text_color(color),
                 )
             } else {
                 row
@@ -198,21 +198,21 @@ where
 
     if model.show_selection_marker {
         if model.selected {
-            row = row.child(lucide_icon(LucideIcon::Check, color, model.appearance.item_icon_size));
+            row = row.child(lucide_icon(LucideIcon::Check, color, model.look.item_icon_size));
         } else {
-            row = row.child(div().size(px(model.appearance.item_icon_size)));
+            row = row.child(div().size(px(model.look.item_icon_size)));
         }
     }
 
     if model.enabled {
         row = row.cursor_pointer().on_hover(hover).hover({
-            let hover_background = model.appearance.item_hover_background;
-            let hover_foreground = model.appearance.item_hover_foreground;
+            let hover_background = model.look.item_hover_background;
+            let hover_foreground = model.look.item_hover_foreground;
             move |style| style.bg(hover_background).text_color(hover_foreground)
         });
 
         if model.active || model.pressed {
-            row = row.bg(model.appearance.item_hover_background).text_color(model.appearance.item_hover_foreground);
+            row = row.bg(model.look.item_hover_background).text_color(model.look.item_hover_foreground);
         }
 
         if let Some(mouse_down) = mouse_down {

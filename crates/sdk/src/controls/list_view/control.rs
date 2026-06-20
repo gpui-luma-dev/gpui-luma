@@ -385,8 +385,8 @@ where
         }
     }
 
-    fn row_scroll_increment(&self, row_appearance: &super::theme::ListViewRowLook) -> f32 {
-        visible_row_height(row_appearance, self.model.visible_row_height)
+    fn row_scroll_increment(&self, row_look: &super::theme::ListViewRowLook) -> f32 {
+        visible_row_height(row_look, self.model.visible_row_height)
     }
 
     fn visible_row_capacity(&self) -> usize {
@@ -395,7 +395,7 @@ where
         }
 
         let viewport_height = self.list_state.viewport_bounds().size.height;
-        let row_height = self.row_scroll_increment(&self.resolve_row_appearance_for_metrics());
+        let row_height = self.row_scroll_increment(&self.resolve_row_look_for_metrics());
         if viewport_height > px(0.0) && row_height > 0.0 {
             ((viewport_height.as_f32() / row_height).floor() as usize).max(1)
         } else {
@@ -433,8 +433,8 @@ where
     }
 
     fn snap_scroll_position(&mut self) {
-        let row_appearance = self.resolve_row_appearance_for_metrics();
-        let row_height = self.row_scroll_increment(&row_appearance);
+        let row_look = self.resolve_row_look_for_metrics();
+        let row_height = self.row_scroll_increment(&row_look);
         let offset = self.list_state.logical_scroll_top();
         let mut item_ix = offset.item_ix;
         if row_height > 0.0 && offset.offset_in_item >= px(row_height * 0.5) {
@@ -445,14 +445,14 @@ where
 
     fn resolve_look(&self, window: &Window) -> ListViewLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
-        let mut appearance = self.model.theme.resolve_look(self.model.enabled, focus.focused, self.model.size);
+        let mut look = self.model.theme.resolve_look(self.model.enabled, focus.focused, self.model.size);
         if let Some(override_fn) = &self.model.look_override {
-            appearance = override_fn(appearance);
+            look = override_fn(look);
         }
-        appearance
+        look
     }
 
-    fn resolve_row_appearance(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowLook {
+    fn resolve_row_look(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
@@ -460,7 +460,7 @@ where
             LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
         );
-        self.model.theme.resolve_row_appearance(
+        self.model.theme.resolve_row_look(
             false,
             InteractionState { focused: focus.focused, ..Default::default() },
             self.model.size,
@@ -468,24 +468,24 @@ where
         )
     }
 
-    fn resolve_row_appearance_for_metrics(&self) -> super::theme::ListViewRowLook {
+    fn resolve_row_look_for_metrics(&self) -> super::theme::ListViewRowLook {
         let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), 1.0);
-        self.model.theme.resolve_row_appearance(false, InteractionState::default(), self.model.size, &scale)
+        self.model.theme.resolve_row_look(false, InteractionState::default(), self.model.size, &scale)
     }
 
     fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> ListViewRenderModel<'_> {
-        let appearance = self.resolve_look(window);
-        let row_appearance = self.resolve_row_appearance(window, cx);
+        let look = self.resolve_look(window);
+        let row_look = self.resolve_row_look(window, cx);
         let has_header = self.model.header_template.is_some();
         let visible_rows = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode);
-        let row_height = visible_row_height(&row_appearance, self.model.visible_row_height);
+        let row_height = visible_row_height(&row_look, self.model.visible_row_height);
         let body_rows_height = visible_rows.map(|count| super::layout::body_rows_height(count, row_height));
-        let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &appearance, has_header));
+        let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &look, has_header));
 
         ListViewRenderModel {
             id: &self.model.id,
-            appearance,
-            row_appearance,
+            look,
+            row_look,
             row_count: self.model.items.len(),
             selection_mode: self.model.selection_mode,
             scroll_mode: self.model.scroll_mode,
@@ -524,16 +524,16 @@ where
             LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
         );
-        let look = self.model.theme.resolve_row_appearance(selected, interaction, self.model.size, &scale);
-        let focused_probe_appearance = if enabled || active {
+        let look = self.model.theme.resolve_row_look(selected, interaction, self.model.size, &scale);
+        let focused_probe_look = if enabled || active {
             let mut focused_probe_state = interaction;
             focused_probe_state.focused = true;
-            Some(self.model.theme.resolve_row_appearance(selected, focused_probe_state, self.model.size, &scale))
+            Some(self.model.theme.resolve_row_look(selected, focused_probe_state, self.model.size, &scale))
         } else {
             None
         };
         let row_oversize_extent = adorner_oversize_extent(look.adorner)
-            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
         let row_model = ListViewRowRenderModel {
             list_id: &self.model.id,
@@ -763,7 +763,7 @@ where
         if viewport_height > px(0.0) {
             viewport_height * 0.9
         } else {
-            px(self.row_scroll_increment(&self.resolve_row_appearance_for_metrics()))
+            px(self.row_scroll_increment(&self.resolve_row_look_for_metrics()))
         }
     }
 

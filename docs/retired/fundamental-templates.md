@@ -7,7 +7,7 @@
 | Phase | State | Summary |
 |---|---|---|
 | **A — Theme import & gallery wiring** | **Closed (Radix/CSS path)** | Direct CSS → `RadixTheme`; TOML import toolchain removed |
-| **B — SDK/theme split** | **Next** | `Appearance`-only SDK; theme in separate crate(s); dev theme for control work |
+| **B — SDK/theme split** | **Next** | `Look`-only SDK; theme in separate crate(s); dev theme for control work |
 
 This doc is the **design record** for Phase B. It subsumes earlier “adapters / recipes” notes and the button `.kind` migration plan.
 
@@ -34,7 +34,7 @@ This doc is the **design record** for Phase B. It subsumes earlier “adapters /
 
 **Do not** keep iterating lexicon hover rules, golden diffs, or per-theme hand-fixes in the **married** SDK+theme model. That work identified the expected issues (derivation mismatch, recipe vs slot confusion, oklch themes, duplicate TOML names). **Phase B** addresses root cause: **the SDK should not own the design system.**
 
-**Next focus:** complete SDK **controls** with **complete `Appearance`** + **`gpui-luma-theme-dev`**; attach product themes (`shadcn`/tweakcn) as optional crates.
+**Next focus:** complete SDK **controls** with **complete `Look`** + **`gpui-luma-theme-dev`**; attach product themes (`shadcn`/tweakcn) as optional crates.
 
 ---
 
@@ -61,7 +61,7 @@ This doc is the **design record** for Phase B. It subsumes earlier “adapters /
 ## North star (Phase B)
 
 ```text
-gpui-luma (SDK)          →  controls + complete *Appearance + paint-only templates
+gpui-luma (SDK)          →  controls + complete *Look + paint-only templates
 gpui-luma-theme-dev      →  ugly, high-contrast functions — finish controls
 gpui-luma-theme-*        →  optional product look (shadcn/tweakcn/Radix) — attach when needed
 luma-theme (CLI)         →  feeds product theme crates only, not SDK
@@ -70,19 +70,19 @@ apps/gallery             →  dev theme by default; product theme for import dem
 
 ### Core principles
 
-1. **`Appearance` is the only cross-boundary contract** between theme and SDK.
+1. **`Look` is the only cross-boundary contract** between theme and SDK.
 2. **SDK does not care** where theme data lives (TOML path, embedded str, codegen, hard-coded dev colors).
-3. **Theme exposes functions**, not SDK enums — e.g. `theme.primary_button(role, size, state) -> ButtonFamilyAppearance`.
+3. **Theme exposes functions**, not SDK enums — e.g. `theme.primary_button(role, size, state) -> ButtonFamilyLook`.
 4. **Templates never read `palette` or `ButtonKind`** — they paint structs only.
-5. **Swift/Flutter layering, not Material in the framework** — `ThemeData`-style functions in a separate layer; avoid `LumaThemePack` + default resolvers hiding missing Appearance fields.
+5. **Swift/Flutter layering, not Material in the framework** — `ThemeData`-style functions in a separate layer; avoid `LumaThemePack` + default resolvers hiding missing Look fields.
 
 Target call site:
 
 ```rust
-let appearance = theme.primary_button(ButtonFamilyRole::Text, ControlSize::Md, state);
+let look = theme.primary_button(ButtonFamilyRole::Text, ControlSize::Md, state);
 
 Button::new("submit")
-    .appearance(appearance)   // or .template(themed_button_template(...))
+    .look(look)   // or .template(themed_button_template(...))
     .spawn(cx);
 ```
 
@@ -93,7 +93,7 @@ Button::new("submit")
 ```text
 App (gallery, product)
   → theme.primary_button(...) / theme.checkbox(...)
-       → Appearance
+       → Look
 gpui-luma SDK
   → Button::new, interaction state, paint template
 ```
@@ -104,7 +104,7 @@ gpui-luma SDK
 | `palette.action.prominent` | `gpui-luma` `tokens.rs` | Theme storage (opaque to SDK) |
 | `ButtonKind` + `DefaultButtonFamilyTheme::resolve` | `gpui-luma` | Theme functions |
 | `LumaThemePack` + `*Theme` traits | `gpui-luma` `pack.rs` | Theme layer; optional thin wrappers |
-| `set_active_theme_pack` | SDK defaults | App registers theme; SDK requires Appearance or dev wrapper |
+| `set_active_theme_pack` | SDK defaults | App registers theme; SDK requires Look or dev wrapper |
 | `luma-theme` import | Targets SDK-shaped TOML | Targets product theme crate storage |
 
 `LumaThemePack` is the marriage symbol — runtime mode + every control resolver in one type inside the SDK.
@@ -114,7 +114,7 @@ gpui-luma SDK
 **`gpui-luma-theme-dev`**
 
 - High-contrast, visually distinct states (hover ≠ pressed ≠ disabled ≠ focused).
-- Every `*Appearance` field populated — exposes SDK gaps, not beauty.
+- Every `*Look` field populated — exposes SDK gaps, not beauty.
 - No TOML/import dependency.
 - Default for gallery while building control panes.
 
@@ -131,8 +131,8 @@ Using **only `DevTheme`**, done when:
 1. Every gallery control pane shows all documented interaction states.
 2. Dev theme makes each state visibly different.
 3. No `palette.` or `ButtonKind` in `template.rs`.
-4. Builders use `.appearance(...)` or theme wrapper templates — no silent SDK resolve.
-5. `*Appearance` structs are stable for product themes to fill later.
+4. Builders use `.look(...)` or theme wrapper templates — no silent SDK resolve.
+5. `*Look` structs are stable for product themes to fill later.
 
 **Not required for SDK complete:** import golden parity, coral accuracy, Rajdhani/Outfit embedding.
 
@@ -141,10 +141,10 @@ Using **only `DevTheme`**, done when:
 After dev theme + paint-only SDK:
 
 - Fixed preview matrix (four button weights, one field, choice row).
-- Inspector: click control → **Appearance** + **theme function** + palette paths.
+- Inspector: click control → **Look** + **theme function** + palette paths.
 - Diff imported vs golden TOML; binding report from `luma-theme`.
 
-Studio inspects **appearance + provenance**, not labels like “Prominent.”
+Studio inspects **look + provenance**, not labels like “Prominent.”
 
 ---
 
@@ -189,10 +189,10 @@ Painting is fine; **`kind` only exists to call `resolve`:**
 
 ```47:49:crates/sdk/src/controls/command/button/template.rs
     fn render(&self, model: &ButtonRenderModel<D>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve(button_variant(model.kind), model.role, model.size, model.state);
+        let look = self.theme.resolve(button_variant(model.kind), model.role, model.size, model.state);
 ```
 
-`ButtonFamilyAppearance` is the right output type.
+`ButtonFamilyLook` is the right output type.
 
 ### Policy matrix (leaves SDK in Phase B)
 
@@ -204,7 +204,7 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-    ) -> ButtonFamilyAppearance {
+    ) -> ButtonFamilyLook {
         // ...
         let variant = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
             ButtonVariant::Subtle
@@ -222,12 +222,12 @@ impl ButtonFamilyTheme for DefaultButtonFamilyTheme {
 
 ## Button `.kind` → theme layer: migration (4 steps)
 
-Principle: **appearance-first alongside `kind`**, then **move resolve out of SDK**, then **delete `kind`**. No big-bang.
+Principle: **look-first alongside `kind`**, then **move resolve out of SDK**, then **delete `kind`**. No big-bang.
 
 ### Step 1 — SDK: dual path (no caller changes yet)
 
-- Add `appearance: Option<ButtonFamilyAppearance>` + builder `.appearance(...)`.
-- `DefaultButtonTemplate`: if `Some(appearance)` use it; else fallback `resolve(kind, …)`.
+- Add `look: Option<ButtonFamilyLook>` + builder `.look(...)`.
+- `DefaultButtonTemplate`: if `Some(look)` use it; else fallback `resolve(kind, …)`.
 
 **Exit:** One test button can ignore `kind`.
 
@@ -256,8 +256,8 @@ Migrate: button pane, icon_button, intro panels, toggle matrices first.
 ### Step 3 — SDK: paint-only; policy in theme
 
 - `PaintButtonTemplate` / slim default — no `ButtonFamilyTheme` in SDK.
-- `ButtonRenderModel` drops `kind` (or requires appearance).
-- Toggle unselected-outline policy in `theme.toggle_appearance(...)`, not inside SDK resolve.
+- `ButtonRenderModel` drops `kind` (or requires look).
+- Toggle unselected-outline policy in `theme.toggle_look(...)`, not inside SDK resolve.
 - `button_item_template` / `toggle_button_item_template` take theme callbacks, not `ButtonKind`.
 - Relocate `LumaThemePack::button_template()` to product theme crate.
 
@@ -289,7 +289,7 @@ App calls theme.primary_button(...)
   → named functions (product language)
   → optional recipe / slot tables
   → palette + TOML / import / codegen
-  → ButtonFamilyAppearance
+  → ButtonFamilyLook
   → gpui-luma paint template
 ```
 
@@ -299,7 +299,7 @@ App calls theme.primary_button(...)
 
 ```rust
 // Sketch
-fn toggle_appearance(theme: &Theme, model: &ButtonRenderModel<bool>) -> ButtonFamilyAppearance {
+fn toggle_look(theme: &Theme, model: &ButtonRenderModel<bool>) -> ButtonFamilyLook {
     if model.data {
         theme.primary_button(model.role, model.size, model.state)
     } else {
@@ -314,7 +314,7 @@ fn toggle_appearance(theme: &Theme, model: &ButtonRenderModel<bool>) -> ButtonFa
 
 | Layer | Today | Issue |
 |---|---|---|
-| **Render** | `*Template` + `*Appearance` | Keep |
+| **Render** | `*Template` + `*Look` | Keep |
 | **Resolve** | `*Theme::resolve(..., Kind/Variant)` | Policy in Rust; should be theme functions |
 | **Storage** | `palette.action.{prominent,…}` | Product-flavored; belongs in theme crate |
 | **App** | `.kind(ButtonKind::…)` | Forces SDK vocabulary for every label |
@@ -327,12 +327,12 @@ Renaming shadcn `primary` → `prominent` moved coupling into lexicon, gallery, 
 
 | Order | Work | Notes |
 |---|---|---|
-| 1 | Audit `*Appearance` per control vs interaction states | SDK-only; use dev theme to expose gaps |
+| 1 | Audit `*Look` per control vs interaction states | SDK-only; use dev theme to expose gaps |
 | 2 | Step 1–2 button migration | Pattern for all controls |
 | 3 | `gpui-luma-theme-dev` crate | Gallery defaults here |
-| 4 | Replicate to choice controls, text, menus | Same appearance-first pattern |
+| 4 | Replicate to choice controls, text, menus | Same look-first pattern |
 | 5 | Extract `LumaTheme` / pack / resolve out of SDK | Product theme crate + `luma-theme` output |
-| 6 | Theme studio + import QA | Against stable Appearance + theme functions |
+| 6 | Theme studio + import QA | Against stable Look + theme functions |
 
 **Anti-goals for Phase B:**
 
@@ -346,7 +346,7 @@ Renaming shadcn `primary` → `prominent` moved coupling into lexicon, gallery, 
 ## Open questions (Phase B)
 
 1. **Crate layout** — `gpui-luma-theme-dev` + `gpui-luma-theme-shadcn` vs single `gpui-luma-theme` with features?
-2. **SDK default when no appearance** — panic, neutral gray, or require explicit theme template?
+2. **SDK default when no look** — panic, neutral gray, or require explicit theme template?
 3. **`set_active_theme_pack`** — remove from SDK or keep during migration only?
 4. **Palette slot rename** — keep `action.prominent` as internal key (Option A) vs neutral `action.a` (Option B)?
 5. **Recipe ids** — `&'static str` in theme vs generated enums in app only?
@@ -361,7 +361,7 @@ Gallery product themes load from **`apps/gallery/tweakcn/*.css`** into `RadixThe
 | Layer | Path | Role |
 |---|---|---|
 | CSS catalog | `crates/sdk/src/theme/radix/catalog/` | Parse `:root` / `.dark`; `CssTokenMap::color("input")`; `--radius` / `--font-sans` → metrics & typography |
-| Control properties | `crates/sdk/src/theme/radix/` | Switch, checkbox, radio map token names → `*Appearance` fields (e.g. switch off: track `input`, track border `border`, thumb `background`, thumb border `border`) |
+| Control properties | `crates/sdk/src/theme/radix/` | Switch, checkbox, radio map token names → `*Look` fields (e.g. switch off: track `input`, track border `border`, thumb `background`, thumb border `border`) |
 | Cached palette | `crates/sdk/src/theme/radix/palette.rs` | Derived action roles for buttons/chrome; not the only source of truth |
 | Theme API | `RadixTheme::token()` / `token_color()` / `catalog()` | Introspect active mode catalog |
 

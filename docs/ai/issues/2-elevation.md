@@ -12,8 +12,8 @@ To solve this, we will model elevation and box-shadow styling as a first-class f
 ## Proposed Solution
 
 ### 1. Unified Elevation Model in the SDK
-We will integrate shadow support into the core appearance schemas of SDK controls, upgrading existing shadow-using controls first and integrating shadows into the base button template:
-* **Extend Control Appearance**: Add `shadow: Option<Vec<BoxShadow>>` to control appearance definitions (such as `ButtonFamilyAppearance` and `TextFieldAppearance`).
+We will integrate shadow support into the core look schemas of SDK controls, upgrading existing shadow-using controls first and integrating shadows into the base button template:
+* **Extend Control Look**: Add `shadow: Option<Vec<BoxShadow>>` to control look definitions (such as `ButtonFamilyLook` and `TextFieldLook`).
 * **Update Control Templates**: Modify template render paths (like `ButtonTemplate`) to draw the resolved shadows.
 * **Upgrade Existing Shadow Controls**: Update existing controls currently drawing hardcoded or manual shadows to resolve them dynamically via look-shadcn catalog metric rules and stylesheet configurations (`style.toml`). These include:
   * **Floating/Popup surfaces**: `floating_menu`, `combobox`, `selector_panel`, `search_selector`, and `autocomplete`.
@@ -86,16 +86,16 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
 ### 3. The Subpixel Rendering Seam (Anti-Aliasing Artifacts & Radian Mismatches)
 * **The Problem**: GPUI's box shadow shader renders rounded rectangle shadows. If the corner radius of the absolute-positioned shadow backing container does not *exactly* equal the radius of the front element, or if subpixel float rounding fails, anti-aliased jagged edges or background bleeds will occur.
 * **Blast Minimization**:
-  * The rendering template **must** enforce that the corner radius applied to the absolute shadow layer scales dynamically with the front-element's radius (e.g., `radius_override` or appearance radius).
+  * The rendering template **must** enforce that the corner radius applied to the absolute shadow layer scales dynamically with the front-element's radius (e.g., `radius_override` or look radius).
   * Always snap calculated pixel offsets cleanly via `snap_to_pixel(val, scale_factor)` to ensure the shadow backing coordinates align exactly with subpixel boundaries.
 
 ---
 
 ## Tasks
 
-### Phase 1: SDK Shared Layout & Appearance Updates (`crates/sdk`)
+### Phase 1: SDK Shared Layout & Look Updates (`crates/sdk`)
 - [ ] Implement `ShadowProjectionInsets` and associated bounding helpers inside `crates/sdk/src/theme/layout.rs`.
-- [ ] Add shadow configuration fields to `ButtonFamilyAppearance` (and other control appearance structs).
+- [ ] Add shadow configuration fields to `ButtonFamilyLook` (and other control look structs).
 - [ ] Update standard templates (like `ButtonTemplate`) to draw configured shadows using an absolute-positioned backing layer (matching the prototype's `render_shadow` structure).
 
 ### Phase 2: Downstream look-shadcn Resolution (`crates/look-shadcn`)

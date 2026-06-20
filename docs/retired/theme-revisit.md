@@ -10,9 +10,9 @@ The current SDK architecture relies on a decoupled, three-layer pattern (Control
 
 This design leads to two core issues:
 1. **Dumb Layouts**: Micro-metrics—such as checkbox checkmark stroke widths, internal paddings, and switch thumb ratios—cannot dynamically adapt to varying spatial or density contexts (`Compact`, `Normal`, `Large`).
-2. **Merged Concerns**: Component appearance structs combine layout dimensions and color palettes in the same theme-resolved contract. This forces theme implementations (like `RadixTheme`) to duplicate layout calculations (e.g., width/height scaling), making it difficult to write richer custom themes without duplicating structural scaling logic.
+2. **Merged Concerns**: Component look structs combine layout dimensions and color palettes in the same theme-resolved contract. This forces theme implementations (like `RadixTheme`) to duplicate layout calculations (e.g., width/height scaling), making it difficult to write richer custom themes without duplicating structural scaling logic.
 
-**Interim state (switch).** The codebase currently resolves geometry inside `SwitchAppearance` via `switch_track_metrics` in both `controls/switch/theme.rs` and `theme/radix/switch.rs`. Gallery size variants (`Sm` / `Md` / `Lg`) work, but layout math runs during theme resolution and is duplicated across theme backends. The target architecture below removes geometry from theme traits entirely.
+**Interim state (switch).** The codebase currently resolves geometry inside `SwitchLook` via `switch_track_metrics` in both `controls/switch/theme.rs` and `theme/radix/switch.rs`. Gallery size variants (`Sm` / `Md` / `Lg`) work, but layout math runs during theme resolution and is duplicated across theme backends. The target architecture below removes geometry from theme traits entirely.
 
 To solve this, the architecture separates **Structural Layout Scales** (managed by the SDK layout rules) from **Visual Theme Palettes** (managed by exchangeable themes).
 
@@ -75,9 +75,9 @@ pub fn snap_to_pixel(value: f32, scale_factor: f32) -> f32 {
 ### F. Cached Layout Resolution
 Template `render` runs whenever GPUI rebuilds the element tree—not on every paint frame—but layout math still repeats unnecessarily today:
 
-- **Focused-probe paths** resolve appearance twice (default + focused adorner probe) even though geometry is identical.
+- **Focused-probe paths** resolve look twice (default + focused adorner probe) even though geometry is identical.
 - **Virtual lists** (`ListView`) and gallery panes render many controls sharing the same `ControlSize`.
-- **Merged appearance structs** force themes (including Radix) to recompute `(42/36)` ratios inside color resolution.
+- **Merged look structs** force themes (including Radix) to recompute `(42/36)` ratios inside color resolution.
 
 `SwitchScale::compute` is pure in `(ControlSize, MetricTokens, scale_factor)` and does not depend on hover, pressed, or on/off state. Cache it.
 
@@ -305,7 +305,7 @@ When scaling complex vectors, define shapes relative to the computed indicator o
 3. **Stroke third** — set explicit `icon_stroke_width` (or `path_stroke_width`) per `ControlSize`; snap to physical pixels via `snap_to_pixel`.
 4. **Path coordinates last** — express SVG/path points as fractions of the inset rect (0.0–1.0), then multiply at render time. Do not bake absolute path data per size tier.
 
-**Interim state (checkbox).** The template today renders a Lucide `Check` font glyph sized by `appearance.checkmark_size`. The target model replaces implicit glyph sizing with an explicit `CheckboxScale` that carries `icon_stroke_width` and `icon_inset`, whether the checkmark is eventually drawn as a stroked path, Lucide icon, or GPUI `PathBuilder`.
+**Interim state (checkbox).** The template today renders a Lucide `Check` font glyph sized by `look.checkmark_size`. The target model replaces implicit glyph sizing with an explicit `CheckboxScale` that carries `icon_stroke_width` and `icon_inset`, whether the checkmark is eventually drawn as a stroked path, Lucide icon, or GPUI `PathBuilder`.
 
 ### C. Reference: `CheckboxScale`
 
@@ -437,7 +437,7 @@ Each implements `compute(size, metrics, scale_factor)` and caches via `use_cache
 ## 5. Potential Issues & Resolutions
 
 ### A. Eager Layout Re-Evaluation (Performance)
-* **Potential Issue**: If layout is resolved inside `theme.resolve` on every element rebuild—or twice per control for focused-probe adorner paths—GPUI runs the same math formulas and rebuilds layout objects unnecessarily. Today, merged `SwitchAppearance` structs and duplicated Radix `switch_track_metrics` calls exhibit this pattern.
+* **Potential Issue**: If layout is resolved inside `theme.resolve` on every element rebuild—or twice per control for focused-probe adorner paths—GPUI runs the same math formulas and rebuilds layout objects unnecessarily. Today, merged `SwitchLook` structs and duplicated Radix `switch_track_metrics` calls exhibit this pattern.
 * **Resolution**: Keep layout calculation entirely separate from theme color resolution. Templates evaluate cached geometry (`SwitchScale`) via `use_cached_layout`, keyed by `(ControlSize, scale_factor, TypeId)`. Interaction state (hover/press/focus) affects only `SwitchPalette`, not scale.
 
 ### B. Subpixel Rendering & Blur (Visuals)
@@ -466,10 +466,10 @@ Each implements `compute(size, metrics, scale_factor)` and caches via `use_cache
 
 Implement in small, reviewable steps:
 
-1. **`SwitchScale` + `snap_to_pixel`**: Add `controls/switch/layout.rs` and shared `snap_to_pixel`. Refactor switch template to compute scale from `window.scale_factor()`. Strip width/height/thumb/padding/gap from `SwitchAppearance`; introduce `SwitchPalette` on the theme trait.
+1. **`SwitchScale` + `snap_to_pixel`**: Add `controls/switch/layout.rs` and shared `snap_to_pixel`. Refactor switch template to compute scale from `window.scale_factor()`. Strip width/height/thumb/padding/gap from `SwitchLook`; introduce `SwitchPalette` on the theme trait.
 2. **Radix cleanup**: Delete duplicated `switch_track_metrics` from `theme/radix/switch.rs`; Radix themes resolve colors only.
 3. **`use_cached_layout`**: Add `theme/cache.rs` with `LayoutCacheKey` and invalidation on theme swap. Wire switch template to the cache hook.
-4. **`CheckboxScale` + vector fields**: Introduce `controls/checkbox/layout.rs` with `icon_stroke_width` and `icon_inset`. Strip indicator/checkmark dimensions from `CheckboxAppearance`. Migrate checkmark rendering to consume scale; keep Lucide glyph as interim backend.
+4. **`CheckboxScale` + vector fields**: Introduce `controls/checkbox/layout.rs` with `icon_stroke_width` and `icon_inset`. Strip indicator/checkmark dimensions from `CheckboxLook`. Migrate checkmark rendering to consume scale; keep Lucide glyph as interim backend.
 5. **Radio + path controls**: Apply `RadioScale` (dot diameter, ring width). Add `ChevronScale` / `TreeDisclosureScale` when accordion and tree controls land.
 6. **Generalize**: Reuse `snap_to_pixel`, cache infrastructure, and scale/palette split across remaining controls.
 

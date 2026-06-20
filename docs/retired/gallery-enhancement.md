@@ -16,7 +16,7 @@ The gallery should answer:
 
 - which semantic tokens exist in the active theme,
 - which component recipes consume each token,
-- which resolved appearance fields are populated by each token,
+- which resolved look fields are populated by each token,
 - which controls are affected by a token change,
 - which tokens currently share the same concrete value,
 - which tokens are active in the current SDK and which are reserved for future components.
@@ -28,7 +28,7 @@ metrics, radii, typography, and elevation.
 
 Today, theme decisions are encoded in Rust resolver code. For example, a resolver may decide that a
 checked checkbox indicator uses `action.prominent.background`, while the template only receives and
-applies `CheckboxAppearance.indicator_background`.
+applies `CheckboxLook.indicator_background`.
 
 Navigation sidebar styling is now part of the SDK theme layer through `NavigationSidebarTheme`. That
 means `navigation.*` tokens are real SDK-consumed theme roles, not gallery-only chrome values. The
@@ -41,11 +41,11 @@ resolver recipe:
   checked checkbox indicator background -> action.prominent.background
 
 template application:
-  CheckboxAppearance.indicator_background -> rendered indicator bg()
+  CheckboxLook.indicator_background -> rendered indicator bg()
 ```
 
 The gallery should document the resolver recipe first, because that is where semantic token choices
-are made. Template documentation can come later as an appearance-field inspector.
+are made. Template documentation can come later as an look-field inspector.
 
 ## Proposed Model
 
@@ -61,13 +61,13 @@ ThemeUsage {
             part: "standard background",
             token: "action.ghost.background",
             states: vec!["default"],
-            appearance_field: "ButtonFamilyAppearance.background",
+            look_field: "ButtonFamilyLook.background",
         },
         ThemePartUsage {
             part: "prominent background",
             token: "action.prominent.background",
             states: vec!["default"],
-            appearance_field: "ButtonFamilyAppearance.background",
+            look_field: "ButtonFamilyLook.background",
         },
     ],
 }
@@ -191,9 +191,9 @@ Add dedicated gallery pages or tabs for:
 - Elevation
 - Usage
 
-## Resolved Appearance Inspector
+## Resolved Look Inspector
 
-A later gallery enhancement should show the final resolved appearance structs for each component and
+A later gallery enhancement should show the final resolved look structs for each component and
 state.
 
 Example:
@@ -224,7 +224,7 @@ resolved inspector confirms the final values currently produced by the SDK.
 ## Implementation Notes
 
 - Keep semantic decisions in resolvers.
-- Keep templates focused on applying resolved appearance fields.
+- Keep templates focused on applying resolved look fields.
 - Treat navigation sidebar as a first-class SDK themed component.
 - Keep usage metadata close to resolver modules, not in gallery-only prose.
 - Avoid duplicating long hand-written explanations in docs and UI.

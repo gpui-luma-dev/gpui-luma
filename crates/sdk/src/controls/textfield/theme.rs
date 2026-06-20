@@ -60,7 +60,7 @@ pub trait TextFieldTheme: Send + Sync {
         enabled: bool,
         scale: &StandardBoxScale,
     ) -> TextFieldLook {
-        compose_textfield_appearance(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
+        compose_textfield_look(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
     }
 }
 
@@ -138,7 +138,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
     }
 }
 
-pub(crate) fn compose_textfield_appearance(
+pub(crate) fn compose_textfield_look(
     palette: &TextFieldPalette,
     scale: &StandardBoxScale,
     border_width: f32,

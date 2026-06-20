@@ -2,7 +2,7 @@
 
 This document records the migration to remove Shadcn/Radix-specific assumptions and naming conventions ("Shadcn-isms") from the core [gpui-luma SDK](../crates/sdk).
 
-**Related:** Concrete slice of Phase B in [`fundamental-templates.md`](fundamental-templates.md) — the SDK exposes structural tokens and complete `Appearance` types; product styling (`primary`, `secondary`, ghost buttons, etc.) belongs in `look-shadcn` and optional theme crates.
+**Related:** Concrete slice of Phase B in [`fundamental-templates.md`](fundamental-templates.md) — the SDK exposes structural tokens and complete `Look` types; product styling (`primary`, `secondary`, ghost buttons, etc.) belongs in `look-shadcn` and optional theme crates.
 
 ## Status (June 2026)
 
@@ -20,13 +20,13 @@ This document records the migration to remove Shadcn/Radix-specific assumptions 
 
 ## Background: SDK vs themes
 
-The SDK does **not** own product theming. Apps theme controls by injecting a look (`ShadcnLook::from_css_path(...)`) that resolves `*Appearance` at runtime. What remains in the SDK is:
+The SDK does **not** own product theming. Apps theme controls by injecting a look (`ShadcnLook::from_css_path(...)`) that resolves `*Look` at runtime. What remains in the SDK is:
 
 - **Structural token types** (`LumaPalette`, `MetricTokens`, …) — the vocabulary `Default*Theme` resolvers read when no look is attached.
 - **Default resolvers** (`DefaultButtonFamilyTheme`, etc.) — unthemed fallbacks so controls render in tests and bare builder paths without panicking.
-- **Templates** — paint `Appearance` structs; they never choose `primary` vs `secondary`.
+- **Templates** — paint `Look` structs; they never choose `primary` vs `secondary`.
 
-Product themes live in `look-shadcn` (CSS catalog → `ShadcnPalette` → control appearances). The SDK does not ship a polished, named theme file.
+Product themes live in `look-shadcn` (CSS catalog → `ShadcnPalette` → control looks). The SDK does not ship a polished, named theme file.
 
 ### Legacy `default-theme.toml` (removed)
 
@@ -102,7 +102,7 @@ Phase 5 — Docs, tests, apps           ◐ gallery + theme-studio updated; broa
 
 **Apps (done):**
 
-- [`textfield/pane.rs`](../apps/gallery/src/gallery/panes/textfield/pane.rs) — Surface / Soft state previews; removed `appearance_override` demo fields.
+- [`textfield/pane.rs`](../apps/gallery/src/gallery/panes/textfield/pane.rs) — Surface / Soft state previews; removed `look_override` demo fields.
 - [`textarea/pane.rs`](../apps/gallery/src/gallery/panes/textarea/pane.rs) — Surface / Soft state previews.
 
 **Search selector (done):** uses `TextFieldVariant::Standard` only ([`search_selector/control.rs`](../crates/sdk/src/controls/search_selector/control.rs)).

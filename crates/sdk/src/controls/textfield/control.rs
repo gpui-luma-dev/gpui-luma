@@ -29,7 +29,7 @@ const TEXTFIELD_SCROLL_REVEAL_PADDING: f32 = 24.0;
 #[derive(Clone)]
 struct TextFieldLayoutPreview {
     character_offsets: Vec<f32>,
-    appearance: TextFieldLook,
+    look: TextFieldLook,
 }
 
 #[derive(Clone, Debug)]
@@ -173,9 +173,9 @@ impl TextFieldControl {
 
     pub fn set_font_family(&mut self, family: SharedString, cx: &mut Context<Self>) {
         let family = family.clone();
-        self.model.look_override = Some(Arc::new(move |mut appearance| {
-            appearance.font_family = family.clone();
-            appearance
+        self.model.look_override = Some(Arc::new(move |mut look| {
+            look.font_family = family.clone();
+            look
         }));
         self.layout_cache = None;
         cx.notify();
@@ -191,8 +191,8 @@ impl TextFieldControl {
         cx.notify();
     }
 
-    fn resolved_appearance(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
-        let appearance = self.model.template.resolve_look_with_scale(
+    fn resolved_look(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
+        let look = self.model.template.resolve_look_with_scale(
             self.model.variant,
             self.state,
             self.model.enabled,
@@ -200,16 +200,16 @@ impl TextFieldControl {
             cx,
         );
         if let Some(override_fn) = &self.model.look_override {
-            override_fn(appearance)
+            override_fn(look)
         } else {
-            appearance
+            look
         }
     }
 
     fn render_model_with_offsets<'a>(
         &'a self,
         character_offsets: Vec<f32>,
-        appearance: TextFieldLook,
+        look: TextFieldLook,
     ) -> TextFieldRenderModel<'a> {
         TextFieldRenderModel {
             id: &self.model.id,
@@ -223,20 +223,20 @@ impl TextFieldControl {
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
             horizontal_scroll: self.horizontal_scroll.as_f32(),
             character_offsets,
-            look: appearance,
+            look: look,
         }
     }
 
     fn layout_preview(&self, window: &mut Window, cx: &mut Context<Self>) -> TextFieldLayoutPreview {
-        let appearance = self.resolved_appearance(window, cx);
+        let look = self.resolved_look(window, cx);
         let run = TextRun {
             len: self.model.value.len(),
             font: {
-                let mut font = font(appearance.font_family.clone());
-                font.weight = appearance.typography.weight;
+                let mut font = font(look.font_family.clone());
+                font.weight = look.typography.weight;
                 font
             },
-            color: appearance.foreground,
+            color: look.foreground,
             background_color: None,
             underline: None,
             strikethrough: None,
@@ -244,7 +244,7 @@ impl TextFieldControl {
         let line =
             window
                 .text_system()
-                .shape_line(self.model.value.clone(), px(appearance.typography.size), &[run], None);
+                .shape_line(self.model.value.clone(), px(look.typography.size), &[run], None);
         let chars = self.model.value.chars().count();
         let mut character_offsets = Vec::with_capacity(chars + 1);
         for char_offset in 0..=chars {
@@ -252,7 +252,7 @@ impl TextFieldControl {
             character_offsets.push(line.x_for_index(byte_offset).as_f32());
         }
 
-        TextFieldLayoutPreview { character_offsets, appearance }
+        TextFieldLayoutPreview { character_offsets, look }
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> TextFieldTemplateHandlers {
@@ -550,8 +550,8 @@ impl Render for TextFieldControl {
         let entity = cx.entity();
         let input_focus_handle = self.focus_handle.clone();
         let value = self.model.value.clone();
-        let appearance = layout_preview.appearance.clone();
-        let canvas_appearance = appearance.clone();
+        let look = layout_preview.look.clone();
+        let canvas_look = look.clone();
         let has_prefix_icon = self.model.prefix_icon.is_some();
         let horizontal_scroll = self.horizontal_scroll;
 
@@ -562,7 +562,7 @@ impl Render for TextFieldControl {
                 self.model
                     .template
                     .render(
-                        &self.render_model_with_offsets(layout_preview.character_offsets.clone(), appearance),
+                        &self.render_model_with_offsets(layout_preview.character_offsets.clone(), look),
                         self.template_handlers(cx),
                         window,
                         cx,
@@ -576,30 +576,30 @@ impl Render for TextFieldControl {
                         let run = TextRun {
                             len: value.len(),
                             font: {
-                                let mut font = font(canvas_appearance.font_family.clone());
-                                font.weight = canvas_appearance.typography.weight;
+                                let mut font = font(canvas_look.font_family.clone());
+                                font.weight = canvas_look.typography.weight;
                                 font
                             },
-                            color: canvas_appearance.foreground,
+                            color: canvas_look.foreground,
                             background_color: None,
                             underline: None,
                             strikethrough: None,
                         };
                         let line = window.text_system().shape_line(
                             value.clone(),
-                            px(canvas_appearance.typography.size),
+                            px(canvas_look.typography.size),
                             &[run],
                             None,
                         );
-                        let x_offset = canvas_appearance.padding_x
+                        let x_offset = canvas_look.padding_x
                             + if has_prefix_icon {
-                                canvas_appearance.icon_size + canvas_appearance.gap
+                                canvas_look.icon_size + canvas_look.gap
                             } else {
                                 0.0
                             };
                         let text_viewport = Bounds::from_corners(
                             point(bounds.left() + px(x_offset), bounds.top()),
-                            point(bounds.right() - px(canvas_appearance.padding_x), bounds.bottom()),
+                            point(bounds.right() - px(canvas_look.padding_x), bounds.bottom()),
                         );
                         TextFieldLayoutCache {
                             bounds,

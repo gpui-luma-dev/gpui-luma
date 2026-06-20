@@ -112,12 +112,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = model.look.clone();
+        let look = model.look.clone();
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());
         let selection = model.state.selection_range();
-        let caret_height = appearance.typography.size + TEXTFIELD_CARET_HEIGHT_EXTRA;
+        let caret_height = look.typography.size + TEXTFIELD_CARET_HEIGHT_EXTRA;
 
         let mut text_viewport = if show_placeholder {
             div()
@@ -126,20 +126,20 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .flex()
                 .items_center()
                 .overflow_hidden()
-                .text_color(appearance.placeholder)
-                .text_size(px(appearance.typography.size))
-                .line_height(px(appearance.typography.line_height))
-                .font_family(appearance.font_family.clone())
-                .font_weight(appearance.typography.weight)
+                .text_color(look.placeholder)
+                .text_size(px(look.typography.size))
+                .line_height(px(look.typography.line_height))
+                .font_family(look.font_family.clone())
+                .font_weight(look.typography.weight)
                 .child(
                     div()
                         .h(px(caret_height))
                         .flex()
                         .items_center()
-                        .text_size(px(appearance.typography.size))
-                        .line_height(px(appearance.typography.line_height))
-                        .font_family(appearance.font_family.clone())
-                        .font_weight(appearance.typography.weight)
+                        .text_size(px(look.typography.size))
+                        .line_height(px(look.typography.line_height))
+                        .font_family(look.font_family.clone())
+                        .font_weight(look.typography.weight)
                         .child(model.placeholder.clone()),
                 )
         } else {
@@ -147,18 +147,18 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .min_w(px(0.0))
                 .flex()
                 .items_center()
-                .text_color(appearance.foreground)
-                .text_size(px(appearance.typography.size))
-                .line_height(px(appearance.typography.line_height))
-                .font_family(appearance.font_family.clone())
-                .font_weight(appearance.typography.weight);
+                .text_color(look.foreground)
+                .text_size(px(look.typography.size))
+                .line_height(px(look.typography.line_height))
+                .font_family(look.font_family.clone())
+                .font_weight(look.typography.weight);
 
             for caret_ix in 0..=chars.len() {
                 let in_selection = selection.map(|(start, end)| caret_ix >= start && caret_ix < end).unwrap_or(false);
                 let char_color = if in_selection {
-                    appearance.selection_foreground
+                    look.selection_foreground
                 } else {
-                    appearance.foreground
+                    look.foreground
                 };
 
                 if let Some(ch) = chars.get(caret_ix) {
@@ -189,7 +189,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                                             .top(px(CARET_EDGE_OFFSET))
                                             .w(px(TEXTFIELD_CARET_WIDTH))
                                             .h(px(caret_height))
-                                            .bg(appearance.caret),
+                                            .bg(look.caret),
                                     )
                                 },
                             ),
@@ -206,7 +206,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                                         .top(px(CARET_EDGE_OFFSET))
                                         .w(px(TEXTFIELD_CARET_WIDTH))
                                         .h(px(caret_height))
-                                        .bg(appearance.caret),
+                                        .bg(look.caret),
                                 )
                             },
                         ),
@@ -225,7 +225,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                         .top(px(0.0))
                         .w(px(width))
                         .h(px(caret_height))
-                        .bg(appearance.selection_background)
+                        .bg(look.selection_background)
                 })
             });
 
@@ -246,34 +246,34 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .flex_1()
                 .flex()
                 .items_center()
-                .gap(px(appearance.gap))
-                .child(render_prefix_icon(icon, appearance.icon, appearance.icon_size))
+                .gap(px(look.gap))
+                .child(render_prefix_icon(icon, look.icon, look.icon_size))
                 .child(text_viewport);
         }
 
         let control = div()
             .id(format!("{}-control", model.id))
             .relative()
-            .h(px(appearance.min_height))
+            .h(px(look.min_height))
             .flex()
             .items_center()
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .bg(appearance.background)
-            .border(px(appearance.border_width))
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_family(appearance.font_family.clone())
-            .font_weight(appearance.typography.weight)
+            .px(px(look.padding_x))
+            .py(px(look.padding_y))
+            .bg(look.background)
+            .border(px(look.border_width))
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_family(look.font_family.clone())
+            .font_weight(look.typography.weight)
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
             .child(text_viewport);
 
         let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
+            render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
 
         if model.full_width {
             root = root.w_full();

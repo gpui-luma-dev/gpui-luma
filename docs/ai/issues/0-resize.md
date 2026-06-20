@@ -1,7 +1,7 @@
 # Issue #0: Slider Layout Sizing and Responsive Resizing
 
 ## Description
-The standard horizontal [Slider](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/mod.rs#L21) control in the SDK is designed with a fixed track width resolved from the active theme/stylesheet (`appearance.width` / `long_axis`). 
+The standard horizontal [Slider](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/mod.rs#L21) control in the SDK is designed with a fixed track width resolved from the active theme/stylesheet (`look.width` / `long_axis`). 
 
 When placed inside layout containers that scale dynamically as the window or sidebar width changes (such as the Luma Theme Studio sidebar), the slider does not dynamically resize its track or position its thumb knob. Instead:
 - The track remains locked at the theme's resolved pixel width (e.g. `260px` in [DefaultSliderTheme::resolve](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/theme.rs#L44-L81)).
@@ -41,14 +41,14 @@ The primary motivation for this layout correction is the **Other** tab in the Lu
 
 ## Proposed Solution (Fluid Layout via Relative/Percentage Sizing)
 
-To resolve this issue cleanly and support fluid sizing, the [ThemedSliderTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/template.rs#L38) should be updated to size and position its inner track and thumb relative to the actual width allocated by the layout engine (Taffy), rather than hardcoding the theme's `appearance.width`.
+To resolve this issue cleanly and support fluid sizing, the [ThemedSliderTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/slider/template.rs#L38) should be updated to size and position its inner track and thumb relative to the actual width allocated by the layout engine (Taffy), rather than hardcoding the theme's `look.width`.
 
 ### 1. Relative Template Rendering
 For a horizontal orientation:
 * **Track**: Render the track container using `.w_full()` instead of a fixed `.w(px(track_width))`.
 * **Fill**: Render the colored fill bar using relative width `.w(relative(percentage))` instead of `.w(px(track_width * percentage))`.
-* **Thumb**: Position the thumb knob using `.left(relative(percentage))` combined with a negative left margin `.margin_left(px(-appearance.thumb_size / 2.0))` to center the thumb over its actual value.
-* **Padding**: Add horizontal padding of `.px(px(appearance.thumb_size / 2.0))` to the slider root container to ensure the thumb does not overflow or clip when positioned at the extreme ends (`0%` and `100%`).
+* **Thumb**: Position the thumb knob using `.left(relative(percentage))` combined with a negative left margin `.margin_left(px(-look.thumb_size / 2.0))` to center the thumb over its actual value.
+* **Padding**: Add horizontal padding of `.px(px(look.thumb_size / 2.0))` to the slider root container to ensure the thumb does not overflow or clip when positioned at the extreme ends (`0%` and `100%`).
 * **Precise Interaction Bounds**: Position the hit-testing canvas exactly over the track bounds (e.g. by making it a child of the track rather than the full root container), so that `percentage_from_position` maps inputs precisely to the active track length.
 
 ---

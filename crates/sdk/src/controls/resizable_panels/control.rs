@@ -378,11 +378,11 @@ impl ResizablePanels {
 impl Render for ResizablePanels {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.refresh_panel_sizes_px();
-        let appearance =
+        let look =
             self.model.theme.resolve(InteractionState { disabled: !self.model.enabled, ..Default::default() });
         let model = self.render_model();
         let template = self.model.template.clone();
 
-        div().size_full().child(template.render(&model, &appearance, &self.handle_focuses, window, cx))
+        div().size_full().child(template.render(&model, &look, &self.handle_focuses, window, cx))
     }
 }

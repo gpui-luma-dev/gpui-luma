@@ -1,13 +1,13 @@
 use gpui::{Div, Hsla, div, px, prelude::*};
 
-/// Adorner policy (current): controls support at most one adorner per appearance.
+/// Adorner policy (current): controls support at most one adorner per look.
 ///
-/// We intentionally use `Option<AdornerSpec>` in control appearance structs today
+/// We intentionally use `Option<AdornerSpec>` in control look structs today
 /// to match the current capability (`FocusRing`) and avoid speculative multi-adorner
 /// composition paths.
 ///
 /// If additional adorner kinds are introduced in the future (for example validation
-/// or status adorners), revisit this module and control appearance contracts together
+/// or status adorners), revisit this module and control look contracts together
 /// so composition/ordering is designed explicitly rather than incrementally.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

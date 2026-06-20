@@ -78,9 +78,9 @@ mod tests {
     #[test]
     fn disabled_theme_does_not_panic_with_default_tokens() {
         let theme = DefaultSplitViewTheme::default();
-        let appearance = theme.resolve(false, false);
-        assert!(appearance.separator.a >= 0.0);
-        assert!(appearance.separator_hover.a >= 0.0);
-        let _ = hsla(0.0, 0.0, 0.0, appearance.separator.a);
+        let look = theme.resolve(false, false);
+        assert!(look.separator.a >= 0.0);
+        assert!(look.separator_hover.a >= 0.0);
+        let _ = hsla(0.0, 0.0, 0.0, look.separator.a);
     }
 }

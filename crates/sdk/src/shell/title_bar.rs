@@ -16,7 +16,7 @@ const TITLE_BAR_LEFT_PADDING: Pixels = px(12.0);
 
 type CloseWindowHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 
-/// TitleBar used to customize the appearance of the title bar.
+/// TitleBar used to customize the look of the title bar.
 ///
 /// You can put arbitrary elements inside the title bar.
 pub struct TitleBar {

@@ -40,7 +40,7 @@ pub trait PopupMenuTheme: Send + Sync {
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuLook {
-        compose_popup_menu_appearance(&self.resolve(state), scale)
+        compose_popup_menu_look(&self.resolve(state), scale)
     }
 }
 
@@ -94,7 +94,7 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
     }
 }
 
-pub(crate) fn compose_popup_menu_appearance(palette: &PopupMenuPalette, scale: &StandardBoxScale) -> PopupMenuLook {
+pub(crate) fn compose_popup_menu_look(palette: &PopupMenuPalette, scale: &StandardBoxScale) -> PopupMenuLook {
     PopupMenuLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,

@@ -9,7 +9,7 @@ Implemented so far:
 - Button family templates use a **host + visual control** structure.
 - Focus decoration for button family is now resolved as **theme-driven adorner specs**.
 - Adorner rendering primitives live under `theme/adorner.rs`.
-- Button family appearance now carries `adorners` instead of a single `focus_ring` color.
+- Button family look now carries `adorners` instead of a single `focus_ring` color.
 
 Still in progress:
 
@@ -34,11 +34,11 @@ The wrapper strategy caused the main geometry issue: decoration consumed layout 
 
 ## 1) Theme decides decoration intent
 
-Theme resolution returns decoration intent as a list of adorner specs on appearance types.
+Theme resolution returns decoration intent as a list of adorner specs on look types.
 
 For button family this is now:
 
-- `ButtonFamilyAppearance.adorners: Vec<AdornerSpec>`
+- `ButtonFamilyLook.adorners: Vec<AdornerSpec>`
 
 This allows theme policy to vary by control state/variant/role without template branching on decoration semantics.
 

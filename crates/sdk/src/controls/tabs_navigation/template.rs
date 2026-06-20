@@ -70,7 +70,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
-        let list_appearance = self.theme.resolve_list(model.enabled, model.size);
+        let list_look = self.theme.resolve_list(model.enabled, model.size);
         let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), window);
 
         let mut root = div()
@@ -79,15 +79,15 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             .flex()
             .flex_row()
             .items_center()
-            .gap(px(list_appearance.gap))
-            .p(px(list_appearance.padding))
-            .rounded(px(list_appearance.radius));
+            .gap(px(list_look.gap))
+            .p(px(list_look.padding))
+            .rounded(px(list_look.radius));
 
-        if let Some(background) = list_appearance.background {
+        if let Some(background) = list_look.background {
             root = root.bg(background);
         }
 
-        if let Some(border) = list_appearance.border {
+        if let Some(border) = list_look.border {
             root = root.border_1().border_color(border);
         }
 
@@ -114,14 +114,14 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
                 break;
             };
 
-            let appearance = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
+            let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
             let mut tab = render_tabs_navigation_item_visual(
                 TabsNavigationItemVisualModel {
                     id: ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("tab-{}", item.id).into()),
                     label: item.label,
                     state: item.state,
                 },
-                appearance,
+                look,
             )
             .on_hover(item_hover)
             .on_mouse_down(MouseButton::Left, item_mouse_down)
@@ -157,15 +157,15 @@ fn resolve_uniform_tab_width(
     let mut max_width = 0.0_f32;
 
     for item in &model.items {
-        let appearance = theme.resolve_item(item.active, item.state.interaction_state(), model.size);
+        let look = theme.resolve_item(item.active, item.state.interaction_state(), model.size);
         let run = TextRun {
             len: item.label.len(),
             font: {
                 let mut font = font(font_family.clone());
-                font.weight = appearance.label_typography.weight;
+                font.weight = look.label_typography.weight;
                 font
             },
-            color: appearance.label_color,
+            color: look.label_color,
             background_color: None,
             underline: None,
             strikethrough: None,
@@ -173,8 +173,8 @@ fn resolve_uniform_tab_width(
         let line =
             window
                 .text_system()
-                .shape_line(item.label.clone(), px(appearance.label_typography.size), &[run], None);
-        let width = line.x_for_index(item.label.len()).as_f32() + appearance.padding_x * 2.0;
+                .shape_line(item.label.clone(), px(look.label_typography.size), &[run], None);
+        let width = line.x_for_index(item.label.len()).as_f32() + look.padding_x * 2.0;
         max_width = max_width.max(width);
     }
 
@@ -183,7 +183,7 @@ fn resolve_uniform_tab_width(
 
 fn render_tabs_navigation_item_visual(
     model: TabsNavigationItemVisualModel<'_>,
-    appearance: TabsNavigationItemLook,
+    look: TabsNavigationItemLook,
 ) -> Stateful<Div> {
     let mut root = div()
         .id(model.id)
@@ -191,24 +191,24 @@ fn render_tabs_navigation_item_visual(
         .flex()
         .items_center()
         .justify_center()
-        .min_h(px(appearance.height))
-        .px(px(appearance.padding_x))
-        .rounded(px(appearance.radius))
-        .text_color(appearance.label_color)
-        .text_size(px(appearance.label_typography.size))
-        .line_height(px(appearance.label_typography.line_height))
-        .font_weight(appearance.label_typography.weight)
+        .min_h(px(look.height))
+        .px(px(look.padding_x))
+        .rounded(px(look.radius))
+        .text_color(look.label_color)
+        .text_size(px(look.label_typography.size))
+        .line_height(px(look.label_typography.line_height))
+        .font_weight(look.label_typography.weight)
         .child(model.label.clone());
 
-    if let Some(indicator) = appearance.indicator {
+    if let Some(indicator) = look.indicator {
         root = root.child(
             div()
                 .absolute()
-                .left(px(appearance.padding_x))
-                .right(px(appearance.padding_x))
+                .left(px(look.padding_x))
+                .right(px(look.padding_x))
                 .bottom(px(0.0))
-                .h(px(appearance.indicator_height))
-                .rounded(px(appearance.indicator_height))
+                .h(px(look.indicator_height))
+                .rounded(px(look.indicator_height))
                 .bg(indicator),
         );
     }

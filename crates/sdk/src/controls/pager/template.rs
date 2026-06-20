@@ -53,11 +53,11 @@ impl PagerTemplate for ThemedPagerTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> AnyElement {
-        let appearance = self.theme.resolve(model.enabled, model.style);
+        let look = self.theme.resolve(model.enabled, model.style);
         let body = match model.style {
-            PagerStyle::Minimal => render_minimal_pager(model, &appearance, &handlers),
-            PagerStyle::MinimalEdge => render_minimal_edge_pager(model, &appearance, &handlers),
-            PagerStyle::Numeric => render_numeric_pager(model, &appearance, &handlers),
+            PagerStyle::Minimal => render_minimal_pager(model, &look, &handlers),
+            PagerStyle::MinimalEdge => render_minimal_edge_pager(model, &look, &handlers),
+            PagerStyle::Numeric => render_numeric_pager(model, &look, &handlers),
         };
 
         body.into_any_element()
@@ -107,7 +107,7 @@ pub fn numeric_page_items(current_page: usize, page_count: usize, slot_count: us
 
 fn render_minimal_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -115,17 +115,17 @@ fn render_minimal_pager(
         .flex()
         .items_center()
         .justify_end()
-        .gap(px(appearance.group_gap))
-        .py(px(appearance.padding_y))
-        .text_size(px(appearance.typography.size))
-        .line_height(px(appearance.typography.line_height))
-        .child(render_page_indicator(model, appearance))
-        .child(render_nav_group(model, appearance, handlers, false))
+        .gap(px(look.group_gap))
+        .py(px(look.padding_y))
+        .text_size(px(look.typography.size))
+        .line_height(px(look.typography.line_height))
+        .child(render_page_indicator(model, look))
+        .child(render_nav_group(model, look, handlers, false))
 }
 
 fn render_minimal_edge_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -133,17 +133,17 @@ fn render_minimal_edge_pager(
         .flex()
         .items_center()
         .justify_end()
-        .gap(px(appearance.group_gap))
-        .py(px(appearance.padding_y))
-        .text_size(px(appearance.typography.size))
-        .line_height(px(appearance.typography.line_height))
-        .child(render_page_indicator(model, appearance))
-        .child(render_nav_group(model, appearance, handlers, true))
+        .gap(px(look.group_gap))
+        .py(px(look.padding_y))
+        .text_size(px(look.typography.size))
+        .line_height(px(look.typography.line_height))
+        .child(render_page_indicator(model, look))
+        .child(render_nav_group(model, look, handlers, true))
 }
 
 fn render_numeric_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     let items = numeric_page_items(model.current_page, model.page_count.max(1), model.numeric_slot_count());
@@ -152,33 +152,33 @@ fn render_numeric_pager(
         .flex()
         .items_center()
         .justify_end()
-        .gap(px(appearance.gap))
-        .py(px(appearance.padding_y))
-        .child(render_nav_group_leading(model, appearance, handlers, true))
+        .gap(px(look.gap))
+        .py(px(look.padding_y))
+        .child(render_nav_group_leading(model, look, handlers, true))
         .child(
             div()
                 .flex()
                 .items_center()
-                .gap(px(appearance.gap))
+                .gap(px(look.gap))
                 .children(items.into_iter().map(|item| match item {
                     PagerPageItem::Page(page) => {
-                        render_page_button(model, appearance, page, handlers).into_any_element()
+                        render_page_button(model, look, page, handlers).into_any_element()
                     }
                     PagerPageItem::Gap { target } => {
-                        render_gap_button(model, appearance, target, handlers).into_any_element()
+                        render_gap_button(model, look, target, handlers).into_any_element()
                     }
                 })),
         )
-        .child(render_nav_group_trailing(model, appearance, handlers, true))
+        .child(render_nav_group_trailing(model, look, handlers, true))
 }
 
 pub(crate) fn render_page_indicator(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
 ) -> Div {
     div()
         .flex_none()
-        .text_color(appearance.body_text)
+        .text_color(look.body_text)
         .font_weight(gpui::FontWeight::MEDIUM)
         .child(model.page_indicator())
 }
@@ -195,7 +195,7 @@ pub(crate) fn render_info_slot(model: &PagerRenderModel<'_>, window: &mut Window
 
 pub(crate) fn render_page_size_select(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -210,22 +210,22 @@ pub(crate) fn render_page_size_select(
             div()
                 .id(format!("{}-page-size-trigger", model.id))
                 .w_full()
-                .h(px(appearance.control_height))
+                .h(px(look.control_height))
                 .flex()
                 .items_center()
                 .justify_between()
-                .gap(px(appearance.gap))
-                .px(px(appearance.padding_x))
-                .rounded(px(appearance.radius))
+                .gap(px(look.gap))
+                .px(px(look.padding_x))
+                .rounded(px(look.radius))
                 .border_1()
-                .border_color(appearance.border)
-                .bg(appearance.panel_background)
-                .text_color(appearance.body_text)
-                .text_size(px(appearance.typography.size))
-                .line_height(px(appearance.typography.line_height))
+                .border_color(look.border)
+                .bg(look.panel_background)
+                .text_color(look.body_text)
+                .text_size(px(look.typography.size))
+                .line_height(px(look.typography.line_height))
                 .when(model.enabled, |slot| slot.cursor_pointer())
                 .child(format!("{}", model.page_size))
-                .child(div().text_color(appearance.muted_text).child(lucide_glyph(if model.page_size_open {
+                .child(div().text_color(look.muted_text).child(lucide_glyph(if model.page_size_open {
                     LucideIcon::ChevronUp
                 } else {
                     LucideIcon::ChevronDown
@@ -241,7 +241,7 @@ pub(crate) fn render_page_size_select(
             slot.child(
                 div()
                     .absolute()
-                    .top(px(appearance.control_height + 4.0))
+                    .top(px(look.control_height + 4.0))
                     .left(px(0.0))
                     .occlude()
                     .flex()
@@ -249,24 +249,24 @@ pub(crate) fn render_page_size_select(
                     .gap(px(2.0))
                     .p(px(4.0))
                     .min_w(px(model.page_size_trigger_width()))
-                    .rounded(px(appearance.radius))
+                    .rounded(px(look.radius))
                     .border_1()
-                    .border_color(appearance.border)
-                    .bg(appearance.panel_background)
-                    .shadow(appearance.shadow.clone())
+                    .border_color(look.border)
+                    .bg(look.panel_background)
+                    .shadow(look.shadow.clone())
                     .children(model.page_size_options.iter().copied().map(|option| {
                         let selected = option == model.page_size;
                         div()
                             .id(format!("{}-page-size-{option}", model.id))
-                            .px(px(appearance.padding_x))
+                            .px(px(look.padding_x))
                             .py(px(4.0))
-                            .rounded(px((appearance.radius - 2.0).max(0.0)))
+                            .rounded(px((look.radius - 2.0).max(0.0)))
                             .when(selected, |slot| {
-                                slot.bg(appearance.selected_background).text_color(appearance.selected_foreground)
+                                slot.bg(look.selected_background).text_color(look.selected_foreground)
                             })
-                            .when(!selected, |slot| slot.text_color(appearance.body_text))
-                            .text_size(px(appearance.typography.size))
-                            .line_height(px(appearance.typography.line_height))
+                            .when(!selected, |slot| slot.text_color(look.body_text))
+                            .text_size(px(look.typography.size))
+                            .line_height(px(look.typography.line_height))
                             .when(model.enabled, |slot| slot.cursor_pointer())
                             .child(format!("{option}"))
                             .when(model.enabled, |slot| {
@@ -282,29 +282,29 @@ pub(crate) fn render_page_size_select(
 
 pub(crate) fn render_nav_group(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
     div()
         .flex()
         .items_center()
-        .gap(px(appearance.gap))
-        .child(render_nav_group_leading(model, appearance, handlers, include_edges))
-        .child(render_nav_group_trailing(model, appearance, handlers, include_edges))
+        .gap(px(look.gap))
+        .child(render_nav_group_leading(model, look, handlers, include_edges))
+        .child(render_nav_group_trailing(model, look, handlers, include_edges))
 }
 
 fn render_nav_group_leading(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
-    let mut group = div().flex().items_center().gap(px(appearance.gap));
+    let mut group = div().flex().items_center().gap(px(look.gap));
     if include_edges {
         group = group.child(render_nav_button(
             model,
-            appearance,
+            look,
             NavButtonSpec {
                 icon: LucideIcon::ChevronsLeft,
                 label: model.first_label(),
@@ -317,7 +317,7 @@ fn render_nav_group_leading(
     }
     group.child(render_nav_button(
         model,
-        appearance,
+        look,
         NavButtonSpec {
             icon: LucideIcon::ChevronLeft,
             label: model.previous_label(),
@@ -331,14 +331,14 @@ fn render_nav_group_leading(
 
 fn render_nav_group_trailing(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
     let last_page = model.page_count.saturating_sub(1);
-    let mut group = div().flex().items_center().gap(px(appearance.gap)).child(render_nav_button(
+    let mut group = div().flex().items_center().gap(px(look.gap)).child(render_nav_button(
         model,
-        appearance,
+        look,
         NavButtonSpec {
             icon: LucideIcon::ChevronRight,
             label: model.next_label(),
@@ -351,7 +351,7 @@ fn render_nav_group_trailing(
     if include_edges {
         group = group.child(render_nav_button(
             model,
-            appearance,
+            look,
             NavButtonSpec {
                 icon: LucideIcon::ChevronsRight,
                 label: model.last_label(),
@@ -381,19 +381,19 @@ struct NavButtonSpec<'a> {
 
 fn render_nav_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     spec: NavButtonSpec<'_>,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
     let has_label = spec.label.is_some();
-    let mut button = button_shell(model, appearance, spec.disabled, false)
-        .min_w(px(appearance.button_min_width))
-        .h(px(appearance.button_size));
+    let mut button = button_shell(model, look, spec.disabled, false)
+        .min_w(px(look.button_min_width))
+        .h(px(look.button_size));
 
     if has_label {
-        button = button.px(px(appearance.padding_x));
+        button = button.px(px(look.padding_x));
     } else {
-        button = button.size(px(appearance.button_size));
+        button = button.size(px(look.button_size));
     }
 
     let icon_element = lucide_glyph(spec.icon).into_any_element();
@@ -402,14 +402,14 @@ fn render_nav_button(
         (NavLabelPosition::BeforeIcon, Some(label_element)) => div()
             .flex()
             .items_center()
-            .gap(px(appearance.gap))
+            .gap(px(look.gap))
             .child(label_element)
             .child(icon_element)
             .into_any_element(),
         (NavLabelPosition::AfterIcon, Some(label_element)) => div()
             .flex()
             .items_center()
-            .gap(px(appearance.gap))
+            .gap(px(look.gap))
             .child(icon_element)
             .child(label_element)
             .into_any_element(),
@@ -430,15 +430,15 @@ fn render_nav_button(
 
 fn render_page_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     page: usize,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
     let selected = page == model.current_page.min(model.page_count.saturating_sub(1));
-    let button = button_shell(model, appearance, false, selected)
-        .h(px(appearance.button_size))
-        .min_w(px(appearance.button_min_width.max(32.0)))
-        .px(px(appearance.padding_x))
+    let button = button_shell(model, look, false, selected)
+        .h(px(look.button_size))
+        .min_w(px(look.button_min_width.max(32.0)))
+        .px(px(look.padding_x))
         .child(format!("{}", page + 1));
 
     if model.enabled && !selected {
@@ -455,14 +455,14 @@ fn render_page_button(
 
 fn render_gap_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     target: usize,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
-    let button = button_shell(model, appearance, false, false)
-        .h(px(appearance.button_size))
-        .min_w(px(appearance.button_min_width.max(32.0)))
-        .px(px(appearance.padding_x))
+    let button = button_shell(model, look, false, false)
+        .h(px(look.button_size))
+        .min_w(px(look.button_min_width.max(32.0)))
+        .px(px(look.padding_x))
         .child(lucide_glyph(LucideIcon::Ellipsis));
 
     if model.enabled {
@@ -479,36 +479,36 @@ fn render_gap_button(
 
 fn button_shell(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerLook,
+    look: &crate::controls::pager::PagerLook,
     disabled: bool,
     selected: bool,
 ) -> Div {
     div()
-        .rounded(px(appearance.radius))
+        .rounded(px(look.radius))
         .border_1()
-        .border_color(appearance.border)
+        .border_color(look.border)
         .bg(if selected {
-            appearance.selected_background
+            look.selected_background
         } else {
-            appearance.panel_background
+            look.panel_background
         })
         .text_color(if selected {
-            appearance.selected_foreground
+            look.selected_foreground
         } else {
-            appearance.body_text
+            look.body_text
         })
-        .text_size(px(appearance.typography.size))
-        .line_height(px(appearance.typography.line_height))
+        .text_size(px(look.typography.size))
+        .line_height(px(look.typography.line_height))
         .font_weight(if selected {
             gpui::FontWeight::SEMIBOLD
         } else {
-            appearance.typography.weight
+            look.typography.weight
         })
         .flex()
         .items_center()
         .justify_center()
         .when(model.enabled && !disabled, |slot| slot.cursor_pointer())
-        .when(!model.enabled || disabled, |slot| slot.opacity(appearance.disabled_opacity))
+        .when(!model.enabled || disabled, |slot| slot.opacity(look.disabled_opacity))
 }
 
 #[cfg(test)]

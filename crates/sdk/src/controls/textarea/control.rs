@@ -51,7 +51,7 @@ fn colored_runs_for_text(
     text: &str,
     global_offset: usize,
     selection: Option<(usize, usize)>,
-    appearance: &crate::controls::textarea::TextAreaLook,
+    look: &crate::controls::textarea::TextAreaLook,
     font_family: String,
     font_weight: gpui::FontWeight,
 ) -> Vec<TextRun> {
@@ -71,7 +71,7 @@ fn colored_runs_for_text(
     }
 
     let Some((sel_start, sel_end)) = selection else {
-        return vec![run(text, appearance.foreground)];
+        return vec![run(text, look.foreground)];
     };
 
     let mut runs = Vec::new();
@@ -90,9 +90,9 @@ fn colored_runs_for_text(
                 runs.push(run(
                     &chunk,
                     if current {
-                        appearance.selection_foreground
+                        look.selection_foreground
                     } else {
-                        appearance.foreground
+                        look.foreground
                     },
                 ));
                 chunk.clear();
@@ -106,9 +106,9 @@ fn colored_runs_for_text(
         runs.push(run(
             &chunk,
             if current {
-                appearance.selection_foreground
+                look.selection_foreground
             } else {
-                appearance.foreground
+                look.foreground
             },
         ));
     }
@@ -334,12 +334,12 @@ impl TextArea {
         cx.notify();
     }
 
-    fn resolved_appearance(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaLook {
-        let appearance = self.model.theme.resolve_look(self.state, self.model.enabled, scale);
+    fn resolved_look(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaLook {
+        let look = self.model.theme.resolve_look(self.state, self.model.enabled, scale);
         if let Some(override_fn) = &self.model.look_override {
-            override_fn(appearance)
+            override_fn(look)
         } else {
-            appearance
+            look
         }
     }
 
@@ -1025,13 +1025,13 @@ impl gpui::Element for TextAreaElement {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let mut appearance = theme.resolve_look(state, enabled, &scale);
+        let mut look = theme.resolve_look(state, enabled, &scale);
         if let Some(override_fn) = &look_override {
-            appearance = override_fn(appearance);
+            look = override_fn(look);
         }
         let mut style = Style::default();
         style.size.width = relative(1.0).into();
-        style.size.height = px(appearance.typography.line_height * rows as f32).into();
+        style.size.height = px(look.typography.line_height * rows as f32).into();
         (window.request_layout(style, [], cx), ())
     }
 
@@ -1055,20 +1055,20 @@ impl gpui::Element for TextAreaElement {
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
         let input = self.input.read(cx);
-        let mut appearance = theme.resolve_look(state, enabled, &scale);
+        let mut look = theme.resolve_look(state, enabled, &scale);
         if let Some(override_fn) = &look_override {
-            appearance = override_fn(appearance);
+            look = override_fn(look);
         }
-        let line_height = px(appearance.typography.line_height);
-        let font_size = px(appearance.typography.size);
+        let line_height = px(look.typography.line_height);
+        let font_size = px(look.typography.size);
         let mut lines = Vec::new();
         let mut selection_quads = Vec::new();
         let mut caret_quad = None;
         let selection = input.state.selection_range();
         let cursor = input.state.cursor.min(input.model.value.chars().count());
         let show_placeholder = input.model.value.is_empty() && !input.state.focused;
-        let font_family = appearance.font_family.clone();
-        let font_weight = appearance.typography.weight;
+        let font_family = look.font_family.clone();
+        let font_weight = look.typography.weight;
         let run_for = move |len: usize, color| TextRun {
             len,
             font: {
@@ -1083,7 +1083,7 @@ impl gpui::Element for TextAreaElement {
         };
 
         let placeholder_line = if show_placeholder {
-            let run = run_for(input.model.placeholder.len(), appearance.placeholder);
+            let run = run_for(input.model.placeholder.len(), look.placeholder);
             Some(window.text_system().shape_line(input.model.placeholder.clone(), font_size, &[run], None))
         } else {
             None
@@ -1093,7 +1093,7 @@ impl gpui::Element for TextAreaElement {
         let wrap_width = bounds.size.width.max(px(1.0));
 
         for (hard_start, _hard_end, text) in logical_lines.into_iter() {
-            let full_run = run_for(text.len(), appearance.foreground);
+            let full_run = run_for(text.len(), look.foreground);
             let full_shaped = window.text_system().shape_line(text.clone().into(), font_size, &[full_run], None);
             let line_chars = text.chars().collect::<Vec<_>>();
             let char_count = line_chars.len();
@@ -1142,8 +1142,8 @@ impl gpui::Element for TextAreaElement {
                     &segment_text,
                     hard_start + local_start,
                     selection,
-                    &appearance,
-                    appearance.font_family.clone(),
+                    &look,
+                    look.font_family.clone(),
                     font_weight,
                 );
                 let shaped = window.text_system().shape_line(segment_text.clone().into(), font_size, &runs, None);
@@ -1182,7 +1182,7 @@ impl gpui::Element for TextAreaElement {
                                 point(bounds.left() + x1, top),
                                 point(bounds.left() + x2.max(x1), bottom),
                             ),
-                            appearance.selection_background,
+                            look.selection_background,
                         ));
                     }
                 }
@@ -1192,7 +1192,7 @@ impl gpui::Element for TextAreaElement {
                     let x = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_cursor));
                     caret_quad = Some(fill(
                         Bounds::new(point(bounds.left() + x, top), size(px(1.5), line_height)),
-                        appearance.caret,
+                        look.caret,
                     ));
                 }
             }
@@ -1263,7 +1263,7 @@ impl Render for TextArea {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.resolved_appearance(&scale);
+        let look = self.resolved_look(&scale);
         let show_scrollbar = self.is_scrollable();
         let scrollbar_width = px(12.0);
         let resize_handle = div()
@@ -1291,7 +1291,7 @@ impl Render for TextArea {
                     .font_family("lucide")
                     .text_size(px(TEXTAREA_RESIZE_ICON_SIZE))
                     .line_height(px(TEXTAREA_RESIZE_ICON_SIZE))
-                    .text_color(appearance.border.opacity(0.75))
+                    .text_color(look.border.opacity(0.75))
                     .child(char::from(LucideIcon::Scaling).to_string()),
             );
 
@@ -1300,18 +1300,18 @@ impl Render for TextArea {
             .relative()
             .flex()
             .items_start()
-            .pl(px(appearance.padding_x))
-            .pr(px(appearance.padding_x) + if show_scrollbar { scrollbar_width } else { px(0.0) })
-            .py(px(appearance.padding_y))
-            .bg(appearance.background)
-            .border(px(appearance.border_width))
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
+            .pl(px(look.padding_x))
+            .pr(px(look.padding_x) + if show_scrollbar { scrollbar_width } else { px(0.0) })
+            .py(px(look.padding_y))
+            .bg(look.background)
+            .border(px(look.border_width))
+            .border_color(look.border)
+            .rounded(px(look.radius))
             .overflow_hidden()
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_family(appearance.font_family.clone())
-            .font_weight(appearance.typography.weight)
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_family(look.font_family.clone())
+            .font_weight(look.typography.weight)
             .when(self.model.full_width, |root| root.w_full())
             .when(self.model.enabled, |root| root.cursor_text())
             .when(!self.model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
@@ -1332,7 +1332,7 @@ impl Render for TextArea {
             .when(self.model.enabled, |root| root.child(resize_handle));
 
         let mut root =
-            render_button_family_focus_ring(self.model.id.clone(), control, appearance.focus_ring, appearance.radius);
+            render_button_family_focus_ring(self.model.id.clone(), control, look.focus_ring, look.radius);
         if self.model.full_width {
             root = root.w_full();
         }

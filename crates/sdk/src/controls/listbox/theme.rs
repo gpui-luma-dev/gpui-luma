@@ -45,14 +45,14 @@ pub trait ListBoxTheme: Send + Sync {
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListBoxRowPalette;
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_row_appearance(
+    fn resolve_row_look(
         &self,
         selected: bool,
         state: InteractionState,
         size: ControlSize,
         scale: &ListRowScale,
     ) -> ListBoxRowLook {
-        compose_listbox_row_appearance(&self.resolve_row(selected, state, size), scale)
+        compose_listbox_row_look(&self.resolve_row(selected, state, size), scale)
     }
 }
 
@@ -135,7 +135,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
     }
 }
 
-pub(crate) fn compose_listbox_row_appearance(
+pub(crate) fn compose_listbox_row_look(
     palette: &ListBoxRowPalette,
     scale: &ListRowScale,
 ) -> ListBoxRowLook {

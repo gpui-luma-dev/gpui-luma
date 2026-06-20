@@ -40,16 +40,16 @@ Most common inconsistency patterns found:
 
 ---
 
-## 3. `ListView` has builder-side `appearance_override(...)` but no runtime parity
+## 3. `ListView` has builder-side `look_override(...)` but no runtime parity
 
 - **Control Name:** `ListView`
 - **Layer:** `builder`, `runtime`
-- **Current API:** `ListViewBuilder` exposes `appearance_override(...)`, but `ListViewControl` does not expose `set_appearance_override(...)`.
-- **Expected API / Violated Rule:** Rule C. Post-resolution appearance overrides should standardize on builder `appearance_override(...)` plus runtime `set_appearance_override(..., cx)` parity.
+- **Current API:** `ListViewBuilder` exposes `look_override(...)`, but `ListViewControl` does not expose `set_look_override(...)`.
+- **Expected API / Violated Rule:** Rule C. Post-resolution look overrides should standardize on builder `look_override(...)` plus runtime `set_look_override(..., cx)` parity.
 - **File Path:**
   - `crates/sdk/src/controls/list_view/model.rs`
   - `crates/sdk/src/controls/list_view/control.rs`
-- **Downstream Usages:** builder-side appearance override is part of the public API; no runtime usage exists because no runtime setter exists.
+- **Downstream Usages:** builder-side look override is part of the public API; no runtime usage exists because no runtime setter exists.
 - **Migration Impact:** Low. Additive runtime API.
 
 ---
@@ -191,17 +191,17 @@ Most common inconsistency patterns found:
 
 ---
 
-## 11. `TextArea` lacks `appearance_override` parity and runtime theme/template mutation
+## 11. `TextArea` lacks `look_override` parity and runtime theme/template mutation
 
 - **Control Name:** `TextArea`
 - **Layer:** `builder`, `runtime`, `look-factory`, `app-usage`
 - **Current API:**
   - `TextAreaBuilder` exposes `.template(...)` and `.theme(...)`
   - `TextArea` exposes `set_enabled`, `set_value`, `set_placeholder`, `set_clean_on_escape`, and `set_validator`
-  - unlike `TextField`, there is no builder `appearance_override(...)` and no runtime `set_appearance_override(...)`
+  - unlike `TextField`, there is no builder `look_override(...)` and no runtime `set_look_override(...)`
   - there is also no `set_template(...)` or `set_theme(...)`
 - **Expected API / Violated Rule:**
-  - Rule C for post-resolution appearance override parity on text-input controls
+  - Rule C for post-resolution look override parity on text-input controls
   - Step 3 parity for builder/runtime theme/template mutation
 - **File Path:**
   - `crates/sdk/src/controls/textarea/model.rs`
@@ -211,7 +211,7 @@ Most common inconsistency patterns found:
   - `apps/gallery/src/gallery/panes/textarea/pane.rs`
   - `apps/theme-studio/src/studio/panels/report.rs`
   - `apps/theme-studio/src/studio/panels/upgrade.rs`
-  - contrast: `apps/theme-studio/src/studio/theme_sidebar.rs` actively uses `TextField::set_template(...)` and `TextField::set_appearance_override(...)`
+  - contrast: `apps/theme-studio/src/studio/theme_sidebar.rs` actively uses `TextField::set_template(...)` and `TextField::set_look_override(...)`
 - **Migration Impact:** Medium. Mostly additive, but parity with `TextField` implies more than one new API.
 
 ---
@@ -249,4 +249,4 @@ Most common inconsistency patterns found:
 
 A few positive checks from this pass:
 - public builder `set_...` methods were not found in `crates/sdk/src/controls/**/model.rs`
-- `TextField` already matches the strongest form of the appearance override rule with both builder `appearance_override(...)` and runtime `set_appearance_override(...)`
+- `TextField` already matches the strongest form of the look override rule with both builder `look_override(...)` and runtime `set_look_override(...)`

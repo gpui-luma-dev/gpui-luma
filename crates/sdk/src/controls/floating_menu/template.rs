@@ -15,7 +15,7 @@ pub struct FloatingMenuRenderModel<'a> {
     pub items: &'a [MenuItem],
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
-    pub appearance: FloatingMenuLook,
+    pub look: FloatingMenuLook,
 }
 
 pub struct FloatingMenuTemplateHandlers {
@@ -32,18 +32,18 @@ pub struct ThemedFloatingMenuTemplate;
 impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
     fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div> {
         let FloatingMenuTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.appearance.clone();
+        let look = model.look.clone();
 
         let mut menu = div()
             .id(format!("{}-menu", model.id))
             .relative()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding))
-            .bg(appearance.background)
+            .min_w(px(look.min_width))
+            .p(px(look.padding))
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow.clone())
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow.clone())
             .occlude();
 
         let mut item_clicks = item_clicks.into_iter();
@@ -52,23 +52,23 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
         for ((index, item), item_hover) in model.items.iter().enumerate().zip(item_hovers) {
             let enabled = item.is_enabled();
             let color = if enabled {
-                appearance.foreground
+                look.foreground
             } else {
-                appearance.item_disabled_foreground
+                look.item_disabled_foreground
             };
             let mut row = div()
                 .id(format!("{}-item-{}", model.id, item.id()))
                 .flex()
                 .items_center()
-                .gap(px(appearance.item_gap))
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
+                .gap(px(look.item_gap))
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
                 .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
-                .child(render_item_icon(item.icon_ref(), appearance.item_icon_size))
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
+                .child(render_item_icon(item.icon_ref(), look.item_icon_size))
                 .child(div().flex_1().child(item.label_text().clone()));
 
             if enabled {
@@ -76,14 +76,14 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     .cursor_pointer()
                     .on_hover(item_hover)
                     .hover({
-                        let hover_background = appearance.item_hover_background;
-                        let hover_foreground = appearance.item_hover_foreground;
+                        let hover_background = look.item_hover_background;
+                        let hover_foreground = look.item_hover_foreground;
                         move |style| style.bg(hover_background).text_color(hover_foreground)
                     })
-                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), appearance.item_icon_size));
+                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
 
                 if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
-                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
                 if item.submenu_items().is_empty() {
@@ -94,7 +94,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
                     submenu = Some(render_floating_submenu(
                         model.id,
                         item,
-                        &appearance,
+                        &look,
                         &mut item_clicks,
                         index,
                         model.active_path,
@@ -103,7 +103,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             } else {
                 row = row
                     .opacity(0.56)
-                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), appearance.item_icon_size));
+                    .child(render_submenu_affordance(!item.submenu_items().is_empty(), look.item_icon_size));
             }
 
             menu = menu.child(row);
@@ -128,7 +128,7 @@ pub fn render_floating_menu(
     items: &[MenuItem],
     open_submenu: Option<usize>,
     active_path: Option<MenuPath>,
-    appearance: FloatingMenuLook,
+    look: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
@@ -138,7 +138,7 @@ pub fn render_floating_menu(
         items,
         open_submenu,
         active_path,
-        appearance,
+        look,
         item_hovers,
         item_clicks,
     )
@@ -151,12 +151,12 @@ pub fn render_floating_menu_with_template(
     items: &[MenuItem],
     open_submenu: Option<usize>,
     active_path: Option<MenuPath>,
-    appearance: FloatingMenuLook,
+    look: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
     template.render(
-        &FloatingMenuRenderModel { id, items, open_submenu, active_path, appearance },
+        &FloatingMenuRenderModel { id, items, open_submenu, active_path, look },
         FloatingMenuTemplateHandlers { item_hovers, item_clicks },
     )
 }
@@ -164,7 +164,7 @@ pub fn render_floating_menu_with_template(
 fn render_floating_submenu(
     menu_id: &SharedString,
     item: &MenuItem,
-    appearance: &FloatingMenuLook,
+    look: &FloatingMenuLook,
     item_clicks: &mut std::vec::IntoIter<FloatingMenuClickHandler>,
     index: usize,
     active_path: Option<MenuPath>,
@@ -172,37 +172,37 @@ fn render_floating_submenu(
     let mut submenu = div()
         .id(format!("{menu_id}-submenu-{}", item.id()))
         .absolute()
-        .top(px(appearance.padding + (index as f32 * appearance.item_height)))
-        .left(px(appearance.min_width + appearance.submenu_offset_x))
-        .min_w(px(appearance.min_width))
-        .p(px(appearance.padding))
-        .bg(appearance.background)
+        .top(px(look.padding + (index as f32 * look.item_height)))
+        .left(px(look.min_width + look.submenu_offset_x))
+        .min_w(px(look.min_width))
+        .p(px(look.padding))
+        .bg(look.background)
         .border_1()
-        .border_color(appearance.border)
-        .rounded(px(appearance.radius))
-        .shadow(appearance.shadow.clone())
+        .border_color(look.border)
+        .rounded(px(look.radius))
+        .shadow(look.shadow.clone())
         .occlude();
 
     for (submenu_index, submenu_item) in item.submenu_items().iter().enumerate() {
         let enabled = submenu_item.is_enabled();
         let color = if enabled {
-            appearance.foreground
+            look.foreground
         } else {
-            appearance.item_disabled_foreground
+            look.item_disabled_foreground
         };
         let mut row = div()
             .id(format!("{menu_id}-submenu-item-{}", submenu_item.id()))
             .flex()
             .items_center()
-            .gap(px(appearance.item_gap))
-            .min_h(px(appearance.item_height))
-            .px(px(appearance.item_padding_x))
-            .rounded(px(appearance.item_radius))
+            .gap(px(look.item_gap))
+            .min_h(px(look.item_height))
+            .px(px(look.item_padding_x))
+            .rounded(px(look.item_radius))
             .text_color(color)
-            .text_size(px(appearance.item_typography.size))
-            .line_height(px(appearance.item_typography.line_height))
-            .font_weight(appearance.item_typography.weight)
-            .child(render_item_icon(submenu_item.icon_ref(), appearance.item_icon_size))
+            .text_size(px(look.item_typography.size))
+            .line_height(px(look.item_typography.line_height))
+            .font_weight(look.item_typography.weight)
+            .child(render_item_icon(submenu_item.icon_ref(), look.item_icon_size))
             .child(div().flex_1().child(submenu_item.label_text().clone()));
 
         if enabled && submenu_item.submenu_items().is_empty() {
@@ -210,15 +210,15 @@ fn render_floating_submenu(
                 row = row
                     .cursor_pointer()
                     .hover({
-                        let hover_background = appearance.item_hover_background;
-                        let hover_foreground = appearance.item_hover_foreground;
+                        let hover_background = look.item_hover_background;
+                        let hover_foreground = look.item_hover_foreground;
                         move |style| style.bg(hover_background).text_color(hover_foreground)
                     })
                     .on_click(item_click);
             }
 
             if active_path.is_some_and(|path| path.is_submenu(index, submenu_index)) {
-                row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
             }
         } else if !enabled {
             row = row.opacity(0.56);

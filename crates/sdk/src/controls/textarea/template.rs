@@ -84,12 +84,12 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_look(model.state, model.enabled, &scale);
+        let look = self.theme.resolve_look(model.state, model.enabled, &scale);
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());
-        let caret_height = appearance.typography.size + TEXTAREA_CARET_HEIGHT_EXTRA;
-        let row_height = appearance.typography.line_height;
+        let caret_height = look.typography.size + TEXTAREA_CARET_HEIGHT_EXTRA;
+        let row_height = look.typography.line_height;
         let viewport_height = row_height * model.rows.max(1) as f32;
 
         let text_viewport = if show_placeholder {
@@ -98,7 +98,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                 .w_full()
                 .h(px(viewport_height))
                 .overflow_hidden()
-                .text_color(appearance.placeholder)
+                .text_color(look.placeholder)
                 .child(model.placeholder.clone())
         } else {
             let mut lines = div().relative().top(px(-model.vertical_scroll)).flex().flex_col();
@@ -106,7 +106,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             for line in &model.line_metrics {
                 let line_chars = line.text.chars().collect::<Vec<_>>();
                 let mut row =
-                    div().relative().h(px(line.height)).flex().items_center().text_color(appearance.foreground);
+                    div().relative().h(px(line.height)).flex().items_center().text_color(look.foreground);
 
                 for local_ix in 0..=line_chars.len() {
                     let global_ix = line.start + local_ix;
@@ -129,7 +129,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                 .flex()
                                 .items_center()
                                 .when(selected, |cell| {
-                                    cell.bg(appearance.selection_background).text_color(appearance.selection_foreground)
+                                    cell.bg(look.selection_background).text_color(look.selection_foreground)
                                 })
                                 .child(ch.to_string())
                                 .when(
@@ -142,7 +142,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                                 .top(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .w(px(TEXTAREA_CARET_WIDTH))
                                                 .h(px(caret_height))
-                                                .bg(appearance.caret),
+                                                .bg(look.caret),
                                         )
                                     },
                                 ),
@@ -164,7 +164,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
                                                 .top(px(TEXTAREA_CARET_EDGE_OFFSET))
                                                 .w(px(TEXTAREA_CARET_WIDTH))
                                                 .h(px(caret_height))
-                                                .bg(appearance.caret),
+                                                .bg(look.caret),
                                         )
                                     },
                                 ),
@@ -181,26 +181,26 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         let control = div()
             .id(format!("{}-control", model.id))
             .relative()
-            .h(px(appearance.padding_y * 2.0 + viewport_height))
+            .h(px(look.padding_y * 2.0 + viewport_height))
             .flex()
             .items_start()
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .bg(appearance.background)
-            .border(px(appearance.border_width))
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_family(appearance.font_family.clone())
-            .font_weight(appearance.typography.weight)
+            .px(px(look.padding_x))
+            .py(px(look.padding_y))
+            .bg(look.background)
+            .border(px(look.border_width))
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_family(look.font_family.clone())
+            .font_weight(look.typography.weight)
             .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(TEXTAREA_DISABLED_OPACITY))
             .child(text_viewport);
 
         let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, appearance.focus_ring, appearance.radius);
+            render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
 
         if model.full_width {
             root = root.w_full();

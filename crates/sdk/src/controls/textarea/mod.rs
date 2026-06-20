@@ -14,4 +14,4 @@ pub use template::{
 };
 pub use theme::{DefaultTextAreaTheme, TextAreaLook, TextAreaPalette, TextAreaTheme, default_textarea_theme};
 #[allow(unused_imports)]
-pub(crate) use theme::compose_textarea_appearance;
+pub(crate) use theme::compose_textarea_look;

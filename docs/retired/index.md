@@ -45,7 +45,7 @@ Each retired document is listed below with a summary of its scope, status, and a
 | Document | Description | Recommendation | Rationale |
 | :--- | :--- | :---: | :--- |
 | [theme-studio.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/theme-studio.md) | Spec sheet and card layout outline for the native customizer tool. | **DELETE** | Completed. The Theme Studio app (`theme-studio`) is fully implemented. |
-| [appearance.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/appearance.md) | Design proposal for consolidating appearance parameter signatures. | **KEEP** | Useful reference for signature patterns if we perform another SDK-wide refactoring. |
+| [look.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/look.md) | Design proposal for consolidating look parameter signatures. | **KEEP** | Useful reference for signature patterns if we perform another SDK-wide refactoring. |
 | [closures.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/closures.md) | Argument for stateless visual elements to avoid double storage and synchronization code. | **KEEP** | Represents a major potential architectural direction that could still be revisited. |
 | [form-binding-ideas.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/form-binding-ideas.md) | Exploration of macros vs dispatcher state-sync frameworks. | **KEEP** | Serves as design context for how `declare_form!` was chosen over other patterns. |
 | [nav_tree.md](file:///Users/scg/Developer/GitHub/gpui-luma/docs/retired/nav_tree.md) | Proposal for an visual `nav_tree!` shorthand macro. | **DELETE** | Unused; builder syntax is readable enough for current hierarchies. |

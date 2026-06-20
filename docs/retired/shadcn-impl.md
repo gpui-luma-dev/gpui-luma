@@ -1,6 +1,6 @@
-# Implementation Plan: Exhaustive Scaffolding of Shadcn Control Appearances
+# Implementation Plan: Exhaustive Scaffolding of Shadcn Control Looks
 
-To achieve full visual parity with `gpui-luma-theme-radix` and ensure that downstream applications (`theme-studio` and `gallery`) can compile with `ShadcnLook` templates, the `crates/look-shadcn` crate must implement the complete set of 31 control appearance files.
+To achieve full visual parity with `gpui-luma-theme-radix` and ensure that downstream applications (`theme-studio` and `gallery`) can compile with `ShadcnLook` templates, the `crates/look-shadcn` crate must implement the complete set of 31 control look files.
 
 ---
 
@@ -16,30 +16,30 @@ Each file maps `ShadcnLook` parsed CSS variables and layout configurations to th
 | :--- | :--- | :--- |
 | **`accordion.rs`** | `AccordionPalette` & Trigger/Content | Styles expand/collapse sections. |
 | **`action.rs`** | Style Token Mapping | Translates `ShadcnButtonStyle` to semantic token pairs. |
-| **`autocomplete.rs`** | `AutocompleteTextBoxAppearance` | Styles search selection inputs. |
-| **`button.rs`** | `ButtonFamilyPalette` & Appearance | Styles primary, secondary, outline, ghost, and destructive buttons. |
+| **`autocomplete.rs`** | `AutocompleteTextBoxLook` | Styles search selection inputs. |
+| **`button.rs`** | `ButtonFamilyPalette` & Look | Styles primary, secondary, outline, ghost, and destructive buttons. |
 | **`checkbox.rs`** | `CheckboxPalette` | Styles checked, unchecked, and disabled checkboxes. |
-| **`context_menu.rs`** | `ContextMenuAppearance` | Styles desktop-style context popup overlays. |
-| **`control_group.rs`** | `ControlGroupListAppearance` | Styles grouped buttons and selections. |
+| **`context_menu.rs`** | `ContextMenuLook` | Styles desktop-style context popup overlays. |
+| **`control_group.rs`** | `ControlGroupListLook` | Styles grouped buttons and selections. |
 | **`controls.rs`** | `ShadcnLookControlExt` | Builder extension traits matching `RadixThemeControlExt` (e.g., `look.primary_button("id")`). |
 | **`elevation.rs`** | Shadow Elevation Mappings | Resolves elevations to shadow arrays. |
-| **`floating_menu.rs`** | `FloatingMenuAppearance` | Styles floating popovers and tooltips. |
+| **`floating_menu.rs`** | `FloatingMenuLook` | Styles floating popovers and tooltips. |
 | **`focus.rs`** | `FocusRingAdornerSpec` | Styles active ring outlines. |
-| **`list_view.rs`** | `ListViewAppearance` & Rows | Styles tables and flat list content. |
-| **`listbox.rs`** | `ListBoxListAppearance` & Rows | Styles flat select options. |
+| **`list_view.rs`** | `ListViewLook` & Rows | Styles tables and flat list content. |
+| **`listbox.rs`** | `ListBoxListLook` & Rows | Styles flat select options. |
 | **`navigation_sidebar.rs`**| Sidebar Navigation Themes | Styles item lists, triggers, and panel container chrome. |
 | **`popup_menu.rs`** | `PopupMenuPalette` | Styles popover menus. |
-| **`progress.rs`** | `ProgressAppearance` | Styles progress bar rails and fills. |
+| **`progress.rs`** | `ProgressLook` | Styles progress bar rails and fills. |
 | **`radio.rs`** | `RadioButtonPalette` | Styles choice selector buttons. |
-| **`resizable_panels.rs`** | `ResizablePanelsAppearance` | Styles layout split bars. |
+| **`resizable_panels.rs`** | `ResizablePanelsLook` | Styles layout split bars. |
 | **`resolve.rs`** | Custom Palette Helpers | Lookup methods with HSL/OKLCH color fallback maps. |
-| **`scrollbar.rs`** | `ScrollbarAppearance` | Styles scroll tracks and handles. |
-| **`selection_panel.rs`** | `SelectionPanelAppearance` | Styles gallery/studio tweak parameter lists. |
+| **`scrollbar.rs`** | `ScrollbarLook` | Styles scroll tracks and handles. |
+| **`selection_panel.rs`** | `SelectionPanelLook` | Styles gallery/studio tweak parameter lists. |
 | **`selector.rs`** | `SelectorPalette` | Styles select inputs. |
 | **`selector_items_panel.rs`**| Selector Dropdown Panel | Styles standard select panels. |
-| **`slider.rs`** | `SliderAppearance` | Styles value slider tracks and thumbs. |
+| **`slider.rs`** | `SliderLook` | Styles value slider tracks and thumbs. |
 | **`switch.rs`** | `SwitchPalette` | Styles toggle switch tracks and thumbs. |
-| **`tabs_navigation.rs`** | Tab Layout Appearance | Styles horizontal navigation tab bars. |
+| **`tabs_navigation.rs`** | Tab Layout Look | Styles horizontal navigation tab bars. |
 | **`templates.rs`** | SDK Generic Trait Implementations | Exposes template hooks (`ButtonTemplate`, `SwitchTheme`, etc.). |
 | **`textarea.rs`** | `TextAreaPalette` | Styles multi-line text input fields. |
 | **`textfield.rs`** | `TextFieldPalette` | Styles standard single-line text inputs. |

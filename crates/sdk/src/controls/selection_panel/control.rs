@@ -233,7 +233,7 @@ where
     }
 
     pub fn set_look_provider(&mut self, provider: SelectionPanelLookProvider, cx: &mut Context<Self>) {
-        self.model.appearance_provider = provider;
+        self.model.look_provider = provider;
         cx.notify();
     }
 
@@ -557,15 +557,15 @@ where
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.clamp_state();
 
-        let appearance = (self.model.appearance_provider)(self.model.size);
-        let panel_min_width = appearance.min_width;
+        let look = (self.model.look_provider)(self.model.size);
+        let panel_min_width = look.min_width;
 
         let item_count = self.model.visible_indices.len();
         let min_visible_rows = self.model.min_visible_rows.max(1);
         let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
         let visible_rows = item_count.max(1).clamp(min_visible_rows, max_visible_rows) as f32;
-        let viewport_height = px(appearance.item_height * visible_rows);
-        let row_height = px(appearance.item_height);
+        let viewport_height = px(look.item_height * visible_rows);
+        let row_height = px(look.item_height);
         let content_top_padding = px(0.0);
         let allow_scrolling = self.model.scrolling && item_count > max_visible_rows;
 
@@ -592,7 +592,7 @@ where
                 enabled: self.model.enabled,
                 focus,
                 item_template: self.model.item_template.as_ref(),
-                look: appearance.clone(),
+                look: look.clone(),
                 show_selection_marker: self.model.show_selection_marker,
                 show_panel_chrome: false,
             },
@@ -614,12 +614,12 @@ where
 
         let panel_shell = div()
             .min_w(px(content_width))
-            .p(px(appearance.padding))
-            .bg(appearance.background)
+            .p(px(look.padding))
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow.clone())
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow.clone())
             .occlude()
             .child(rows_content);
 

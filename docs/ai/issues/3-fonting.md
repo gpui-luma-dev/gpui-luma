@@ -57,7 +57,7 @@ The core objective is to upgrade the Luma SDK theme system so that components dy
 ### Phase 2: Menus (Priority 2)
 * **Objective**: Add `ControlSize` context to Floating Menus, Context Menus, and Popup Menus.
 * **Why**: Menus represent primary commands and navigation overlays; when they appear in compact/dense viewports (like sidebar popouts), the text size must shrink alongside padding.
-* **Design Pattern**: Pass `ControlSize` through `floating_menu_appearance` to scale the `item_typography` between `caption`, `label`, and `body`.
+* **Design Pattern**: Pass `ControlSize` through `floating_menu_look` to scale the `item_typography` between `caption`, `label`, and `body`.
 
 ### Phase 3: Selectors (Priority 3)
 * **Objective**: Upgrade Selector, Autocomplete, Combobox, and Search Selector triggers and popovers.
@@ -75,7 +75,7 @@ The core objective is to upgrade the Luma SDK theme system so that components dy
 To ensure consistency, we will resolve sizes inside [crates/look-shadcn/src/controls/templates.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/templates.rs) and the lookless templates.
 
 1. **Theme Signature Updates**:
-   Update `resolve` and `resolve_appearance` traits in the SDK to accept a `ControlSize` context if they don't already.
+   Update `resolve` and `resolve_look` traits in the SDK to accept a `ControlSize` context if they don't already.
    
 2. **Typography Role Matching**:
    Use matching `LumaTextStyle` mappings based on control sizes:
@@ -89,13 +89,13 @@ To ensure consistency, we will resolve sizes inside [crates/look-shadcn/src/cont
 
 ### Phase 1: TextField & TextArea Upgrades
 - [ ] Add `size: ControlSize` field to `TextField` and `TextArea` models and builders.
-- [ ] Update [TextFieldTheme](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/textfield/theme.rs) to accept `ControlSize` in `resolve` or `resolve_appearance`.
+- [ ] Update [TextFieldTheme](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/textfield/theme.rs) to accept `ControlSize` in `resolve` or `resolve_look`.
 - [ ] Modify [textfield_palette](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/textfield.rs) to map typography size according to `ControlSize`.
 - [ ] Verify that Text Field font sizing and icon heights scale uniformly in the gallery.
 
 ### Phase 2: Menu Sizing Upgrades
 - [ ] Allow passing `ControlSize` to `FloatingMenu`, `PopupMenu`, and `ContextMenu`.
-- [ ] Update `floating_menu_appearance` in [floating_menu.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/floating_menu.rs) to map `item_typography` dynamically (e.g., small uses caption/label, large uses body).
+- [ ] Update `floating_menu_look` in [floating_menu.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/floating_menu.rs) to map `item_typography` dynamically (e.g., small uses caption/label, large uses body).
 - [ ] Connect trigger size contexts so popups automatically inherits the triggers' sizes.
 
 ### Phase 3: Selector & Dropdown Upgrades

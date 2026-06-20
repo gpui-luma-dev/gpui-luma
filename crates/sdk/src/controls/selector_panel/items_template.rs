@@ -103,17 +103,17 @@ where
         cx: &mut App,
     ) -> Stateful<Div> {
         let SelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.look.clone();
+        let look = model.look.clone();
         let mut menu = div()
             .id(format!("{}-menu", model.menu_id))
             .relative()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding))
-            .bg(appearance.background)
+            .min_w(px(look.min_width))
+            .p(px(look.padding))
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow.clone())
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow.clone())
             .occlude();
 
         let mut clicks = item_clicks.into_iter();
@@ -121,9 +121,9 @@ where
         for ((index, item), hover) in model.items.iter().enumerate().zip(item_hovers) {
             let enabled_item = item.is_enabled();
             let color = if enabled_item {
-                appearance.foreground
+                look.foreground
             } else {
-                appearance.item_disabled_foreground
+                look.item_disabled_foreground
             };
             let selected = model.selected_index == Some(index);
             let active = model.active_path.is_some_and(|path| path.is_item(index));
@@ -142,7 +142,7 @@ where
                 div()
                     .flex()
                     .items_center()
-                    .gap(px(appearance.item_gap))
+                    .gap(px(look.item_gap))
                     .child(div().flex_1().child(item.label().clone()))
                     .into_any_element()
             };
@@ -151,26 +151,26 @@ where
                 .id(format!("{}-item-{}", model.menu_id, item.id()))
                 .flex()
                 .items_center()
-                .gap(px(appearance.item_gap))
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
+                .gap(px(look.item_gap))
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
                 .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
                 .child(div().flex_1().child(content))
-                .child(render_selection_checkmark(selected, color, appearance.item_icon_size));
+                .child(render_selection_checkmark(selected, color, look.item_icon_size));
 
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
-                    let hover_background = appearance.item_hover_background;
-                    let hover_foreground = appearance.item_hover_foreground;
+                    let hover_background = look.item_hover_background;
+                    let hover_foreground = look.item_hover_foreground;
                     move |style| style.bg(hover_background).text_color(hover_foreground)
                 });
 
                 if active {
-                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
                 if let Some(click) = clicks.next() {

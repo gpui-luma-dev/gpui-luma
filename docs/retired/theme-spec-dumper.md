@@ -174,7 +174,7 @@ pub fn generate_spec_dump(theme: &RadixTheme, scale_factor: f32) -> serde_json::
                 "token": format!("--{}", part.token),
                 "states": part.states,
                 "color": resolved_color, // Actual HSL resolved at export time
-                "target_fields": part.appearance_fields,
+                "target_fields": part.look_fields,
             }));
         }
         comp_data.insert("usages".to_string(), serde_json::Value::Array(resolved_usages));

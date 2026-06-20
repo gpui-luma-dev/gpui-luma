@@ -35,13 +35,13 @@ pub fn default_search_selector_panel_template() -> Arc<dyn SearchSelectorPanelTe
 
 impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
     fn render(&self, model: SearchSelectorPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
-        let appearance = model.popup_look;
+        let look = model.popup_look;
 
         let panel_content = div()
             .id(format!("{}-panel-content", model.id))
             .w_full()
             .when_some(model.search_content, |panel, search| {
-                panel.child(div().p(px(8.0)).child(search)).child(div().h(px(1.0)).bg(appearance.border))
+                panel.child(div().p(px(8.0)).child(search)).child(div().h(px(1.0)).bg(look.border))
             })
             .child(model.list_content);
 
@@ -56,11 +56,11 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
                         div()
                             .id(format!("{}-popup-shell", model.id))
                             .w(bounds.size.width)
-                            .bg(appearance.background)
+                            .bg(look.background)
                             .border_1()
-                            .border_color(appearance.border)
-                            .rounded(px(appearance.radius))
-                            .shadow(appearance.shadow)
+                            .border_color(look.border)
+                            .rounded(px(look.radius))
+                            .shadow(look.shadow)
                             .overflow_hidden()
                             .occlude()
                             .child(panel_content),
@@ -73,11 +73,11 @@ impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
         div()
             .id(format!("{}-panel", model.id))
             .w_full()
-            .bg(appearance.background)
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow)
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow)
             .overflow_hidden()
             .occlude()
             .child(panel_content)

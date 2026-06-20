@@ -106,16 +106,16 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
     }
 
     fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
-        let mut appearance = self.base_item(state, size);
+        let mut look = self.base_item(state, size);
         let palette = &self.tokens.palette;
 
-        appearance.background = match state.layer() {
+        look.background = match state.layer() {
             InteractionLayer::Disabled | InteractionLayer::Default => None,
             InteractionLayer::Hovered => Some(palette.navigation.hover_background),
             InteractionLayer::Pressed => Some(palette.state.pressed.background),
         };
 
-        appearance
+        look
     }
 
     fn resolve_item(
@@ -124,10 +124,10 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         state: InteractionState,
         size: ControlSize,
     ) -> NavigationSidebarItemLook {
-        let mut appearance = self.base_item(state, size);
+        let mut look = self.base_item(state, size);
         let palette = &self.tokens.palette;
 
-        appearance.background = match (selected, state.layer()) {
+        look.background = match (selected, state.layer()) {
             (_, InteractionLayer::Disabled) => None,
             (true, InteractionLayer::Pressed) => Some(palette.state.pressed.background),
             (true, InteractionLayer::Hovered) => Some(palette.navigation.hover_background),
@@ -138,10 +138,10 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         };
 
         if selected && !state.disabled {
-            appearance.foreground = palette.navigation.selected_foreground;
-            appearance.icon_color = palette.navigation.selected_foreground;
+            look.foreground = palette.navigation.selected_foreground;
+            look.icon_color = palette.navigation.selected_foreground;
         }
 
-        appearance
+        look
     }
 }

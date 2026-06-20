@@ -21,7 +21,7 @@ pub trait DockSplitterTemplate: Send + Sync {
     fn render(
         &self,
         model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterLook,
+        look: &DockSplitterLook,
         handlers: DockSplitterTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
@@ -54,12 +54,12 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
     fn render(
         &self,
         model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterLook,
+        look: &DockSplitterLook,
         handlers: DockSplitterTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, self.show_thumb)
+        render_splitter(model, look, handlers, self.show_thumb)
     }
 }
 

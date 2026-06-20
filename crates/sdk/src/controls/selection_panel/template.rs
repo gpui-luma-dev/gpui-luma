@@ -135,19 +135,19 @@ where
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
-        let appearance = model.look.clone();
+        let look = model.look.clone();
 
         let mut root = div().id(format!("{}-rows", model.panel_id)).relative().flex().flex_col().w_full();
 
         if model.show_panel_chrome {
             root = root
-                .min_w(px(appearance.min_width))
-                .p(px(appearance.padding))
-                .bg(appearance.background)
+                .min_w(px(look.min_width))
+                .p(px(look.padding))
+                .bg(look.background)
                 .border_1()
-                .border_color(appearance.border)
-                .rounded(px(appearance.radius))
-                .shadow(appearance.shadow.clone())
+                .border_color(look.border)
+                .rounded(px(look.radius))
+                .shadow(look.shadow.clone())
                 .occlude();
         }
 
@@ -184,7 +184,7 @@ where
                     enabled: row_enabled,
                     sibling_count: model.visible_indices.len(),
                     item_template: model.item_template,
-                    appearance: &appearance,
+                    look: &look,
                     show_selection_marker: model.show_selection_marker,
                 },
                 SelectionPanelItemRowHandlers {

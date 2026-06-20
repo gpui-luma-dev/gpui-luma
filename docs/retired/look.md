@@ -2,9 +2,9 @@
 
 > [!IMPORTANT]
 > **Core Architectural Philosophy**
-> We are not proving that “the SDK supports many themes.” We are proving that **“the SDK supports multiple appearance systems, each with their own theme sources and specializations.”**
+> We are not proving that “the SDK supports many themes.” We are proving that **“the SDK supports multiple look systems, each with their own theme sources and specializations.”**
 > 
-> The `shadcn` styling system introduces a **Look** (the runtime appearance system) called `ShadcnLook` that parses theme data files (such as `CssTokenCatalog`) and applies a Tailwind/shadcn utility-based layout system to elements. The legacy `RadixTheme` / `gpui-luma-theme-radix` crate has been removed; `ShadcnLook` is the sole downstream look crate.
+> The `shadcn` styling system introduces a **Look** (the runtime look system) called `ShadcnLook` that parses theme data files (such as `CssTokenCatalog`) and applies a Tailwind/shadcn utility-based layout system to elements. The legacy `RadixTheme` / `gpui-luma-theme-radix` crate has been removed; `ShadcnLook` is the sole downstream look crate.
 > 
 > **Important Constraint**: `ShadcnLook` lives in the downstream crate `gpui-luma-look-shadcn` to keep the core SDK (`crates/sdk`) completely look-agnostic.
 
@@ -17,7 +17,7 @@ To keep the architecture clear, we distinguish between the raw data configuratio
 | Term | Target Concept | Role in Codebase |
 | :--- | :--- | :--- |
 | **Theme / Tokens** | `CssTokenCatalog`, `ThemeTokens` | **The Static Data**: Raw key-value values parsed from CSS (e.g. `claude.css`) or TOML configurations. |
-| **Look** | `ShadcnLook` | **The Appearance System**: The new runtime engine that takes theme tokens and resolves them into layout heights, font sizes, colors, and shadows. |
+| **Look** | `ShadcnLook` | **The Look System**: The new runtime engine that takes theme tokens and resolves them into layout heights, font sizes, colors, and shadows. |
 | **Look Controls** | `ShadcnLookControlExt` | **The Control Spawn APIs**: Extension traits that bind SDK elements to templates defined by the Shadcn Look. |
 
 ---

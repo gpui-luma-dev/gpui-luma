@@ -44,7 +44,7 @@ pub trait TextAreaTheme: Send + Sync {
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_look(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaLook {
-        compose_textarea_appearance(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
+        compose_textarea_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
     }
 }
 
@@ -119,7 +119,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
     }
 }
 
-pub(crate) fn compose_textarea_appearance(
+pub(crate) fn compose_textarea_look(
     palette: &TextAreaPalette,
     scale: &StandardBoxScale,
     border_width: f32,

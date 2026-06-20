@@ -1,18 +1,18 @@
-# Design Proposal: Unifying Appearance Function Signatures (`AppearanceContext`)
+# Design Proposal: Unifying Look Function Signatures (`LookContext`)
 
-This document describes a code organization refactoring to simplify and unify the verbose parameter signatures used throughout the SDK's Radix/tweakcn theme appearance modules (`crates/sdk/src/theme/radix/*`).
+This document describes a code organization refactoring to simplify and unify the verbose parameter signatures used throughout the SDK's Radix/tweakcn theme look modules (`crates/sdk/src/theme/radix/*`).
 
 ---
 
 ## 1. The Problem: Verbose Parameter Signatures
 
-Currently, the style/appearance resolution functions for each control require passing numerous styling catalog references, metric tokens, typographic maps, color modes, and interaction states as individual parameters. 
+Currently, the style/look resolution functions for each control require passing numerous styling catalog references, metric tokens, typographic maps, color modes, and interaction states as individual parameters. 
 
-For example, the **Switch** and **Checkbox** catalog-based appearance resolvers have highly complex, verbose signatures:
+For example, the **Switch** and **Checkbox** catalog-based look resolvers have highly complex, verbose signatures:
 
 ```rust
 // crates/sdk/src/theme/radix/switch.rs
-pub(crate) fn switch_appearance_from_catalog(
+pub(crate) fn switch_look_from_catalog(
     catalog: &CssTokenMap,
     metrics: &crate::theme::MetricTokens,
     typography: &crate::theme::LumaTypography,
@@ -25,7 +25,7 @@ pub(crate) fn switch_appearance_from_catalog(
 
 ```rust
 // crates/sdk/src/theme/radix/checkbox.rs
-pub(crate) fn checkbox_appearance_from_catalog(
+pub(crate) fn checkbox_look_from_catalog(
     catalog: &CssTokenMap,
     metrics: &crate::theme::MetricTokens,
     typography: &crate::theme::LumaTypography,
@@ -39,9 +39,9 @@ Passing 6 to 7 arguments down to helper functions creates heavy boilerplate, inc
 
 ---
 
-## 2. Proposed Solution: `AppearanceContext`
+## 2. Proposed Solution: `LookContext`
 
-To streamline the interface and organize control themes cleanly, we propose grouping the standard, shared theme dependencies and active state parameters into a single unified context struct: `AppearanceContext`.
+To streamline the interface and organize control themes cleanly, we propose grouping the standard, shared theme dependencies and active state parameters into a single unified context struct: `LookContext`.
 
 ### Context Definition
 
@@ -56,8 +56,8 @@ use super::catalog::CssTokenMap;
 use super::mode::RadixModeTokens;
 use super::palette::RadixPalette;
 
-/// Bundles styling dependencies and interactive state for control appearance resolution.
-pub struct AppearanceContext<'a> {
+/// Bundles styling dependencies and interactive state for control look resolution.
+pub struct LookContext<'a> {
     /// Active mode-specific tokens (palette, metrics, typography, catalog)
     pub tokens: &'a RadixModeTokens,
     /// Active color mode (Light/Dark)
@@ -66,7 +66,7 @@ pub struct AppearanceContext<'a> {
     pub state: InteractionState,
 }
 
-impl<'a> AppearanceContext<'a> {
+impl<'a> LookContext<'a> {
     pub fn new(tokens: &'a RadixModeTokens, theme_mode: ThemeMode, state: InteractionState) -> Self {
         Self { tokens, theme_mode, state }
     }
@@ -97,12 +97,12 @@ impl<'a> AppearanceContext<'a> {
 
 ## 3. Comparison of Signature Refactoring
 
-By passing a reference to `AppearanceContext`, the signatures of every component's appearance resolvers collapse down to a clean, consistent model:
+By passing a reference to `LookContext`, the signatures of every component's look resolvers collapse down to a clean, consistent model:
 
-### Switch Appearance
+### Switch Look
 * **Before (7 parameters):**
   ```rust
-  pub(crate) fn switch_appearance_from_catalog(
+  pub(crate) fn switch_look_from_catalog(
       catalog: &CssTokenMap,
       metrics: &MetricTokens,
       typography: &LumaTypography,
@@ -114,17 +114,17 @@ By passing a reference to `AppearanceContext`, the signatures of every component
   ```
 * **After (3 parameters):**
   ```rust
-  pub(crate) fn switch_appearance_from_catalog(
-      ctx: &AppearanceContext,
+  pub(crate) fn switch_look_from_catalog(
+      ctx: &LookContext,
       style: RadixButtonStyle,
       on: bool,
   ) -> anyhow::Result<SwitchPalette>
   ```
 
-### Checkbox Appearance
+### Checkbox Look
 * **Before (6 parameters):**
   ```rust
-  pub(crate) fn checkbox_appearance_from_catalog(
+  pub(crate) fn checkbox_look_from_catalog(
       catalog: &CssTokenMap,
       metrics: &MetricTokens,
       typography: &LumaTypography,
@@ -135,8 +135,8 @@ By passing a reference to `AppearanceContext`, the signatures of every component
   ```
 * **After (3 parameters):**
   ```rust
-  pub(crate) fn checkbox_appearance_from_catalog(
-      ctx: &AppearanceContext,
+  pub(crate) fn checkbox_look_from_catalog(
+      ctx: &LookContext,
       style: RadixButtonStyle,
       checked: bool,
   ) -> anyhow::Result<CheckboxPalette>
@@ -153,8 +153,8 @@ Here is how the catalog-based switch resolver simplifies:
 ```rust
 // crates/sdk/src/theme/radix/switch.rs
 
-pub(crate) fn switch_appearance_from_catalog(
-    ctx: &AppearanceContext,
+pub(crate) fn switch_look_from_catalog(
+    ctx: &LookContext,
     style: RadixButtonStyle,
     on: bool,
 ) -> anyhow::Result<SwitchPalette> {
@@ -199,4 +199,4 @@ pub(crate) fn switch_appearance_from_catalog(
 
 1. **A Single Consistent Contract**: Every module under `crates/sdk/src/theme/radix/*` adopts the exact same structural approach. The function parameters only differ by the component's unique configuration keys (e.g., `checked: bool`, `variant: TextFieldVariant`).
 2. **Boilerplate Reduction**: Drastically reduces parameter passing, making signature changes and code reviews much easier to parse.
-3. **Decoupled Extensions**: If the GPUI-Luma SDK introduces new global styling configurations (e.g., animation settings, density settings) in the future, we only add them to `AppearanceContext`. Individual resolver signatures remain fully decoupled and untouched.
+3. **Decoupled Extensions**: If the GPUI-Luma SDK introduces new global styling configurations (e.g., animation settings, density settings) in the future, we only add them to `LookContext`. Individual resolver signatures remain fully decoupled and untouched.

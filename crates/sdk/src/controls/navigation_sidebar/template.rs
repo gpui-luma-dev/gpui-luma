@@ -462,16 +462,16 @@ fn render_row(input: RowRenderInput, handlers: RowHandlers, theme: &Arc<dyn Navi
 }
 
 fn render_section_row(label: SharedString, theme: &Arc<dyn NavigationSidebarTheme>) -> Div {
-    let appearance = theme.resolve_section();
+    let look = theme.resolve_section();
 
     div()
-        .min_h(px(appearance.height))
+        .min_h(px(look.height))
         .pt(px(SECTION_PADDING_TOP))
-        .text_size(px(appearance.typography.size))
-        .line_height(px(appearance.typography.line_height))
-        .font_weight(appearance.typography.weight)
+        .text_size(px(look.typography.size))
+        .line_height(px(look.typography.line_height))
+        .font_weight(look.typography.weight)
         .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
-        .text_color(appearance.label_color)
+        .text_color(look.label_color)
         .child(label)
 }
 
@@ -487,39 +487,39 @@ fn render_item_row(
         focused: state.focused,
         disabled: !state.enabled,
     };
-    let appearance = if has_children {
+    let look = if has_children {
         theme.resolve_branch(interaction, ControlSize::Md)
     } else {
         theme.resolve_item(state.selected, interaction, ControlSize::Md)
     };
-    let depth_indent = (appearance.icon_size + appearance.gap) * CHILD_DEPTH_INDENT_MULTIPLIER;
-    let padding_left = appearance.padding_x + state.depth as f32 * depth_indent;
+    let depth_indent = (look.icon_size + look.gap) * CHILD_DEPTH_INDENT_MULTIPLIER;
+    let padding_left = look.padding_x + state.depth as f32 * depth_indent;
     let mut row = div()
         .id(format!("{id}-row"))
         .w_full()
-        .min_h(px(appearance.height))
+        .min_h(px(look.height))
         .flex()
         .items_center()
-        .gap(px(appearance.gap))
+        .gap(px(look.gap))
         .pl(px(padding_left))
-        .pr(px(appearance.padding_x))
-        .rounded(px(appearance.radius))
-        .text_size(px(appearance.typography.size))
-        .line_height(px(appearance.typography.line_height))
-        .text_color(appearance.foreground)
-        .font_weight(appearance.typography.weight);
+        .pr(px(look.padding_x))
+        .rounded(px(look.radius))
+        .text_size(px(look.typography.size))
+        .line_height(px(look.typography.line_height))
+        .text_color(look.foreground)
+        .font_weight(look.typography.weight);
 
     if let Some(icon) = icon {
-        row = row.child(render_lucide_icon(icon, appearance.icon_color, appearance.icon_size));
+        row = row.child(render_lucide_icon(icon, look.icon_color, look.icon_size));
     }
 
     row = row.child(div().flex_1().child(label.unwrap_or(id)));
 
     if has_children {
-        row = row.child(render_disclosure_icon(state.expanded, appearance.icon_color));
+        row = row.child(render_disclosure_icon(state.expanded, look.icon_color));
     }
 
-    if let Some(background) = appearance.background {
+    if let Some(background) = look.background {
         row = row.bg(background);
     }
 
@@ -529,7 +529,7 @@ fn render_item_row(
         row = row.opacity(DISABLED_ROW_OPACITY);
     }
 
-    if let Some(focus_ring) = appearance.focus_ring {
+    if let Some(focus_ring) = look.focus_ring {
         row = row.border_1().border_color(focus_ring);
     }
 
@@ -571,60 +571,60 @@ fn render_collapsed_rail_node(
         focused: state.focused,
         disabled: !state.enabled,
     };
-    let appearance = if has_children {
+    let look = if has_children {
         theme.resolve_branch(interaction, ControlSize::Md)
     } else {
         theme.resolve_item(state.selected, interaction, ControlSize::Md)
     };
     let row_width = if has_children {
-        rail_branch_button_width(appearance.height)
+        rail_branch_button_width(look.height)
     } else {
-        appearance.height
+        look.height
     };
     let mut row = div()
         .id(format!("{id}-rail-row"))
         .w(px(row_width))
-        .h(px(appearance.height))
+        .h(px(look.height))
         .flex_none()
         .flex()
         .relative()
         .items_center()
         .justify_center()
-        .rounded(px(appearance.radius))
-        .text_color(appearance.foreground);
+        .rounded(px(look.radius))
+        .text_color(look.foreground);
 
     if has_children {
         row = row.child(
             div()
                 .absolute()
-                .left(px(centered_icon_left(appearance.height, appearance.icon_size)))
-                .top(px(centered_icon_left(appearance.height, appearance.icon_size)))
+                .left(px(centered_icon_left(look.height, look.icon_size)))
+                .top(px(centered_icon_left(look.height, look.icon_size)))
                 .child(render_lucide_icon(
                     icon.expect("collapsed rail nodes always have icons"),
-                    appearance.icon_color,
-                    appearance.icon_size,
+                    look.icon_color,
+                    look.icon_size,
                 )),
         );
         row = row.child(
             div()
                 .absolute()
-                .left(px(rail_branch_indicator_left(appearance.height)))
-                .top(px(centered_icon_left(appearance.height, RAIL_BRANCH_INDICATOR_SIZE)))
+                .left(px(rail_branch_indicator_left(look.height)))
+                .top(px(centered_icon_left(look.height, RAIL_BRANCH_INDICATOR_SIZE)))
                 .child(render_lucide_icon(
                     RAIL_BRANCH_INDICATOR_ICON,
-                    appearance.icon_color,
+                    look.icon_color,
                     RAIL_BRANCH_INDICATOR_SIZE,
                 )),
         );
     } else {
         row = row.child(render_lucide_icon(
             icon.expect("collapsed rail nodes always have icons"),
-            appearance.icon_color,
-            appearance.icon_size,
+            look.icon_color,
+            look.icon_size,
         ));
     }
 
-    if let Some(background) = appearance.background {
+    if let Some(background) = look.background {
         row = row.bg(background);
     }
 
@@ -634,7 +634,7 @@ fn render_collapsed_rail_node(
         row = row.opacity(DISABLED_ROW_OPACITY);
     }
 
-    if let Some(focus_ring) = appearance.focus_ring {
+    if let Some(focus_ring) = look.focus_ring {
         row = row.border_1().border_color(focus_ring);
     }
 
@@ -685,7 +685,7 @@ fn render_collapse_trigger(
         focused: trigger.focused,
         disabled: !trigger.enabled,
     };
-    let appearance = theme.resolve_item(false, interaction, ControlSize::Md);
+    let look = theme.resolve_item(false, interaction, ControlSize::Md);
     let icon = if trigger.collapsed {
         COLLAPSE_COLLAPSED_ICON
     } else {
@@ -693,22 +693,22 @@ fn render_collapse_trigger(
     };
     let mut row = div()
         .id(trigger.id)
-        .size(px(appearance.height))
+        .size(px(look.height))
         .flex_none()
         .flex()
         .items_center()
         .justify_center()
-        .rounded(px(appearance.radius))
-        .text_color(appearance.foreground)
+        .rounded(px(look.radius))
+        .text_color(look.foreground)
         .when(trigger.enabled, |row| row.cursor_pointer())
         .track_focus(&trigger.focus_handle)
-        .child(render_lucide_icon(icon, appearance.icon_color, appearance.icon_size));
+        .child(render_lucide_icon(icon, look.icon_color, look.icon_size));
 
-    if let Some(background) = appearance.background {
+    if let Some(background) = look.background {
         row = row.bg(background);
     }
 
-    if let Some(focus_ring) = appearance.focus_ring {
+    if let Some(focus_ring) = look.focus_ring {
         row = row.border_1().border_color(focus_ring);
     }
 
@@ -734,7 +734,7 @@ fn render_collapse_trigger(
 
 fn render_rail_submenu_overlay(
     submenu: RenderedRailSubmenu,
-    appearance: FloatingMenuLook,
+    look: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> impl IntoElement {
@@ -743,7 +743,7 @@ fn render_rail_submenu_overlay(
         &submenu.items,
         submenu.open_submenu,
         submenu.active_path,
-        appearance.clone(),
+        look.clone(),
         item_hovers,
         item_clicks,
     );

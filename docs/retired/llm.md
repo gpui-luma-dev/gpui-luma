@@ -1,7 +1,7 @@
 # GPUI-Luma Task Context
 
 Use the existing SDK architecture. Controls own behavior, templates own GPUI
-structure, and themes own appearance policy.
+structure, and themes own look policy.
 
 Before changing controls, read the relevant implementation under
 `crates/sdk/src/controls`, the matching theme under `crates/sdk/src/theme`, and

@@ -7,17 +7,17 @@ use super::theme::{ListViewLook, ListViewRowLook};
 pub const ROW_DIVIDER_WIDTH: f32 = 1.0;
 
 /// Per-row layout height for [`ListViewRowLook::min_height`] rows (see module comment).
-pub fn default_row_height(row_appearance: &ListViewRowLook) -> f32 {
-    row_appearance.min_height
+pub fn default_row_height(row_look: &ListViewRowLook) -> f32 {
+    row_look.min_height
 }
 
-pub fn visible_row_height(row_appearance: &ListViewRowLook, override_height: Option<f32>) -> f32 {
-    override_height.unwrap_or_else(|| default_row_height(row_appearance))
+pub fn visible_row_height(row_look: &ListViewRowLook, override_height: Option<f32>) -> f32 {
+    override_height.unwrap_or_else(|| default_row_height(row_look))
 }
 
 /// Matches [`DefaultListViewShellTemplate::paint_shell`] header slot padding.
-pub fn header_height(list_appearance: &ListViewLook) -> f32 {
-    list_appearance.header_typography.line_height + list_appearance.padding_y + (list_appearance.padding_y * 0.75)
+pub fn header_height(list_look: &ListViewLook) -> f32 {
+    list_look.header_typography.line_height + list_look.padding_y + (list_look.padding_y * 0.75)
 }
 
 /// Total scroll-body height for `visible_rows` data rows, including inter-row dividers.
@@ -30,13 +30,13 @@ pub fn body_rows_height(visible_rows: usize, row_height: f32) -> f32 {
 pub fn compute_shell_height(
     visible_rows: usize,
     row_height: f32,
-    list_appearance: &ListViewLook,
+    list_look: &ListViewLook,
     has_header: bool,
 ) -> f32 {
     let mut total_height = body_rows_height(visible_rows, row_height);
 
     if has_header {
-        total_height += header_height(list_appearance);
+        total_height += header_height(list_look);
     }
 
     total_height + (2.0 * SHELL_BORDER_WIDTH)
@@ -81,7 +81,7 @@ mod tests {
     use super::*;
     use crate::theme::LumaTextStyle;
 
-    fn sample_row_appearance() -> ListViewRowLook {
+    fn sample_row_look() -> ListViewRowLook {
         ListViewRowLook {
             background: gpui::transparent_black(),
             label_color: gpui::black(),
@@ -96,7 +96,7 @@ mod tests {
         }
     }
 
-    fn sample_list_appearance() -> ListViewLook {
+    fn sample_list_look() -> ListViewLook {
         ListViewLook {
             background: gpui::white(),
             border: gpui::black(),
@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn default_row_height_matches_gpui_min_h_layout() {
-        let row = sample_row_appearance();
+        let row = sample_row_look();
         assert_eq!(default_row_height(&row), 36.0);
     }
 
@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn header_height_matches_shell_header_slot() {
-        let list = sample_list_appearance();
+        let list = sample_list_look();
         assert_eq!(header_height(&list), 14.0 + 4.0 + 3.0);
     }
 

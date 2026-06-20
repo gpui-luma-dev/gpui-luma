@@ -1,6 +1,6 @@
 # Implementation Plan: Structural Density & Theme Decoupling
 
-This document outlines a phased strategy to refactor the GPUI-Luma component SDK. It shifts the architecture from flat appearance models to decoupled **Layout Scales** (SDK-owned) and **Visual Palettes** (Theme-owned), referencing the design spec in [`theme-revisit.md`](theme-revisit.md).
+This document outlines a phased strategy to refactor the GPUI-Luma component SDK. It shifts the architecture from flat look models to decoupled **Layout Scales** (SDK-owned) and **Visual Palettes** (Theme-owned), referencing the design spec in [`theme-revisit.md`](theme-revisit.md).
 
 To keep the refactoring surface manageable, we adopt the **Pragmatic Compromise**: grouping the 30+ controls under three shared layout contracts rather than creating 30 separate scale structs.
 
@@ -39,7 +39,7 @@ Refactor the two reference controls to validate the decoupling and caching patte
   * [`crates/sdk/src/controls/switch/theme.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/switch/theme.rs)
   * [`crates/sdk/src/controls/switch/template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/switch/template.rs)
 * **Tasks:**
-  * Remove layout variables (`width`, `height`, `thumb_size`, etc.) from `SwitchAppearance` (rename to `SwitchPalette`).
+  * Remove layout variables (`width`, `height`, `thumb_size`, etc.) from `SwitchLook` (rename to `SwitchPalette`).
   * Modify `SwitchTheme` trait to resolve `SwitchPalette` (no size parameter needed).
   * Wire `ThemedSwitchTemplate` to fetch cached layout metrics via `cx.use_cached_layout(..., |metrics| SwitchScale::compute(...))`.
   * Update default switch theme and Radix switch theme mappings.
@@ -49,7 +49,7 @@ Refactor the two reference controls to validate the decoupling and caching patte
   * [`crates/sdk/src/controls/checkbox/theme.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/checkbox/theme.rs)
   * [`crates/sdk/src/controls/checkbox/template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/checkbox/template.rs)
 * **Tasks:**
-  * Replace flat sizing metrics in `CheckboxAppearance` with `GlyphIndicatorScale`.
+  * Replace flat sizing metrics in `CheckboxLook` with `GlyphIndicatorScale`.
   * Update `CheckboxTheme::resolve` to return visual `CheckboxPalette`.
   * Adapt `ThemedCheckboxTemplate` to apply the `label_baseline_shift` top-margin nudge on the label node.
 

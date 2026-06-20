@@ -17,7 +17,7 @@ graph TD
 
 1. **Behavior (`model.rs` & `control.rs`)**: Manages the backing items, selection state (single/multiple/none), scrolling, keyboard navigation (roving focus), and coordinates the `gpui::ListState` virtualization handle.
 2. **Presentation (`template.rs`)**: Controls the layout container structure, grid headers (if columns are used), and maps raw items to interactive row elements.
-3. **Appearance (`theme.rs`)**: Governs list background, border tokens, active item focus-ring appearance, and row hover/selected states.
+3. **Look (`theme.rs`)**: Governs list background, border tokens, active item focus-ring look, and row hover/selected states.
 
 ## 2. Virtualization Constraints & Delegate Engine
 
@@ -137,33 +137,33 @@ pub type ListViewItemTemplate<T> = Arc<
 
 ---
 
-### 3.3 The Appearance Layer (`ListViewTheme`)
+### 3.3 The Look Layer (`ListViewTheme`)
 
 The theme resolves states into visual attributes:
 
 ```rust
-pub struct ListViewAppearance {
+pub struct ListViewLook {
     pub background: Hsla,
     pub border: Hsla,
     pub radius: f32,
     pub padding: f32,
 }
 
-pub struct ListViewRowAppearance {
+pub struct ListViewRowLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub focus_ring: Option<Hsla>,
 }
 
 pub trait ListViewTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool, focused: bool) -> ListViewAppearance;
+    fn resolve_list(&self, enabled: bool, focused: bool) -> ListViewLook;
     
     fn resolve_row(
         &self,
         selected: bool,
         hovered: bool,
         focused: bool,
-    ) -> ListViewRowAppearance;
+    ) -> ListViewRowLook;
 }
 ```
 

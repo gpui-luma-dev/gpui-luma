@@ -19,7 +19,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
         let palette = self.theme.resolve(model.data, model.state);
 
-        let focused_probe_appearance = if model.state.disabled {
+        let focused_probe_look = if model.state.disabled {
             None
         } else {
             Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
@@ -45,7 +45,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             .child(render_dot(model.data, scale.dot_size, palette.dot_color));
 
         let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {

@@ -6,7 +6,7 @@ use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 pub(crate) fn render_list_view_row(
     id: impl Into<gpui::ElementId>,
     content: AnyElement,
-    appearance: ListViewRowLook,
+    look: ListViewRowLook,
     enabled: bool,
     show_top_divider: bool,
     is_custom: bool,
@@ -17,21 +17,21 @@ pub(crate) fn render_list_view_row(
         row = row.child(div().flex_1().min_w(px(0.0)).child(content));
     } else {
         row = row
-            .min_h(px(appearance.min_height))
+            .min_h(px(look.min_height))
             .flex()
             .items_center()
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .bg(appearance.background)
-            .text_color(appearance.label_color)
-            .text_size(px(appearance.label_typography.size))
-            .line_height(px(appearance.label_typography.line_height))
-            .font_weight(appearance.label_typography.weight)
-            .child(div().flex_1().min_w(px(0.0)).mt(px(appearance.label_baseline_shift)).child(content));
+            .px(px(look.padding_x))
+            .py(px(look.padding_y))
+            .bg(look.background)
+            .text_color(look.label_color)
+            .text_size(px(look.label_typography.size))
+            .line_height(px(look.label_typography.line_height))
+            .font_weight(look.label_typography.weight)
+            .child(div().flex_1().min_w(px(0.0)).mt(px(look.label_baseline_shift)).child(content));
     }
 
     if show_top_divider {
-        row = row.border_t_1().border_color(appearance.divider);
+        row = row.border_t_1().border_color(look.divider);
     }
 
     if enabled {
@@ -40,7 +40,7 @@ pub(crate) fn render_list_view_row(
         row = row.opacity(0.56);
     }
 
-    if let Some(adorner) = render_optional_adorner_with_focus_radius(appearance.adorner, appearance.radius) {
+    if let Some(adorner) = render_optional_adorner_with_focus_radius(look.adorner, look.radius) {
         row = row.child(adorner);
     }
 

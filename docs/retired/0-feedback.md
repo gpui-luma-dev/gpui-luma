@@ -79,8 +79,8 @@ By contrast, there are also `with_` methods that do fit the intended rule well:
 ### 4. Rule C conflates two different concepts
 
 The document standardizes on:
-- builder: `.appearance_override(...)`
-- runtime: `.set_appearance_override(...)`
+- builder: `.look_override(...)`
+- runtime: `.set_look_override(...)`
 
 That already matches some controls:
 - `crates/sdk/src/controls/textfield/model.rs`
@@ -88,18 +88,18 @@ That already matches some controls:
 
 But button-family controls currently expose a different concept:
 - `crates/sdk/src/controls/command/button/model.rs`
-  - `with_appearance(...)`
+  - `with_look(...)`
 
-That API is not just a post-resolution override; it supplies an appearance resolver based on full `ButtonRenderModel<D>`.
+That API is not just a post-resolution override; it supplies an look resolver based on full `ButtonRenderModel<D>`.
 
 There is also parity drift today:
-- `TextField` has `set_appearance_override(...)`
-- `ListViewBuilder` has `appearance_override(...)` in `crates/sdk/src/controls/list_view/model.rs`
-- but `ListViewControl` does not appear to expose matching runtime `set_appearance_override(...)`
+- `TextField` has `set_look_override(...)`
+- `ListViewBuilder` has `look_override(...)` in `crates/sdk/src/controls/list_view/model.rs`
+- but `ListViewControl` does not appear to expose matching runtime `set_look_override(...)`
 
 **Recommendation:** split this rule into two categories:
-1. post-resolution appearance overrides
-2. full appearance resolvers/sources
+1. post-resolution look overrides
+2. full look resolvers/sources
 
 Otherwise the audit will group unlike APIs together.
 
@@ -210,7 +210,7 @@ These look like legitimate findings if the proposed rules stand:
   - `crates/sdk/src/controls/selection_panel/control.rs`
   - These appear to violate the proposed runtime naming rule.
 
-- `ListViewBuilder::appearance_override(...)` without matching runtime `set_appearance_override(...)`
+- `ListViewBuilder::look_override(...)` without matching runtime `set_look_override(...)`
   - builder: `crates/sdk/src/controls/list_view/model.rs`
   - runtime parity appears missing in `crates/sdk/src/controls/list_view/control.rs`
 
@@ -227,5 +227,5 @@ I did not find public builder `set_...` methods in `crates/sdk/src/controls/**/m
 1. Inventory from exported public modules, not only subdirectories.
 2. Account for wrapper controls built on shared runtimes.
 3. Narrow Rule D so `value` only applies where it genuinely fits.
-4. Split Rule C’s appearance override concept from appearance resolver/source APIs.
+4. Split Rule C’s look override concept from look resolver/source APIs.
 5. Expand Step 5 to include `ShadcnLook` factories and wrapper consumption patterns.

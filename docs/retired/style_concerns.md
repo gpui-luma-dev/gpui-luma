@@ -9,9 +9,9 @@
 
 ## Summary
 
-`style.toml` plus shared loader/resolver code will **significantly simplify** control appearance processing by eliminating duplicated rule definitions (`declare_look_table!` matrices, parallel `_from_palette` / `_from_catalog` paths, per-control color structs).
+`style.toml` plus shared loader/resolver code will **significantly simplify** control look processing by eliminating duplicated rule definitions (`declare_look_table!` matrices, parallel `_from_palette` / `_from_catalog` paths, per-control color structs).
 
-The goal is **zero duplicated rule definitions**, not zero Rust in appearance functions. Control files become thin shells whose job is to translate state, invoke the stylesheet, and hand resolved values to GPUI paint APIs.
+The goal is **zero duplicated rule definitions**, not zero Rust in look functions. Control files become thin shells whose job is to translate state, invoke the stylesheet, and hand resolved values to GPUI paint APIs.
 
 ---
 
@@ -76,7 +76,7 @@ pub trait AsSelectorState {
 stylesheet.query(component_name, state.to_selector_map())
 ```
 
-Each control implements `AsSelectorState` once; appearance functions stop repeating manual string/key assembly.
+Each control implements `AsSelectorState` once; look functions stop repeating manual string/key assembly.
 
 **Stays in Rust permanently:** Mapping SDK types to selector keys. The stylesheet never sees `ButtonFamilyRole` directly.
 
@@ -134,7 +134,7 @@ thumb_border = "@thumb_background"
 
 ### 3. Focus Rings and Adorners
 
-**Current state:** Focus geometry is hardcoded in `focus.rs` and per-control appearance functions. Ghost buttons use inset placement; others use oversize with `border_width + focus.width`.
+**Current state:** Focus geometry is hardcoded in `focus.rs` and per-control look functions. Ghost buttons use inset placement; others use oversize with `border_width + focus.width`.
 
 **Evaluation:** **Needs separation.** Painting focus rings is GPUI-specific, but **visual styling** (thickness, distance, color, placement) is theme-dependent. A retro-pixel theme may want a thick square outer border; a material theme may want a thin inset ring.
 
@@ -167,7 +167,7 @@ color = "first(sidebar-ring, ring)"
 
 ### 4. Layout Composition (Box Model)
 
-**Current state:** Role-based metric overrides live in `compose_button_family_appearance` — icon buttons get zero padding and pill radius regardless of TOML metrics.
+**Current state:** Role-based metric overrides live in `compose_button_family_look` — icon buttons get zero padding and pill radius regardless of TOML metrics.
 
 **Evaluation:** **Correct that composition stays in Rust**, but override rules should be formalized in the stylesheet rather than hardcoded in the SDK compositor.
 
@@ -187,7 +187,7 @@ aspect_ratio = "square"
 corner_radius = "radius.pill"
 ```
 
-Rust reads base metrics + applicable override (matched by role selector), then passes the merged scale to `compose_button_family_appearance`. The compositor becomes a pure geometry merge, not a policy holder.
+Rust reads base metrics + applicable override (matched by role selector), then passes the merged scale to `compose_button_family_look`. The compositor becomes a pure geometry merge, not a policy holder.
 
 Navigation sidebar layout constants (`height`, `padding_x`, `icon_size`) migrate the same way — into `[navigation_sidebar.item.metrics]` rather than literals in Rust.
 
@@ -196,7 +196,7 @@ Navigation sidebar layout constants (`height`, `padding_x`, `icon_size`) migrate
 - `StandardBoxScale::compute` and scale-factor application
 - Pixel snapping and high-DPI alignment
 - Typography baseline offset math (font size + line height + control height)
-- `compose_button_family_appearance` as geometry merge (inputs come from TOML, logic stays generic)
+- `compose_button_family_look` as geometry merge (inputs come from TOML, logic stays generic)
 
 See [`style.md` §4](style.md#4-the-complexity-of-metrics-the-box-model-seams) for `calc()`, rem conversion, and typographic centering seams.
 
@@ -336,7 +336,7 @@ The **large deletion** is duplicated rule data and hardcoded theme choices. The 
 The migration does **not** aim to:
 
 - Move control **behavior** (events, focus traversal, keyboard handling) into TOML
-- Replace SDK palette/appearance **types** with dynamic maps
+- Replace SDK palette/look **types** with dynamic maps
 - Remove the inspect/provenance path — provenance attaches to the shared resolver and cites matching TOML rules
 - Eliminate `LookResolver` token syntax — it moves into the shared engine (`input/50`, `first(...)`, `@action_layer`, `@field`)
 
@@ -349,7 +349,7 @@ The migration is successful when:
 1. Every color/metric rule in `declare_look_table!` has a corresponding entry in `style.toml` (already largely true — see [`style.toml`](style.toml)).
 2. No control file contains an imperative re-implementation of the same rules in `_from_palette`.
 3. Style changes for mapped properties require editing `style.toml`, not touching 25 Rust files.
-4. Remaining Rust in each `controls/*.rs` appearance function is a **thin shell** — state translation, spec construction, runtime math — readable in one screenful.
+4. Remaining Rust in each `controls/*.rs` look function is a **thin shell** — state translation, spec construction, runtime math — readable in one screenful.
 5. Gallery/Theme Studio inspectors cite the matching TOML rule (rule index or selector) as provenance.
 6. Theme designers can override borders, focus geometry, shadows, typography, and role metrics without Rust changes.
 

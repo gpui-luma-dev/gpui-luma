@@ -10,7 +10,7 @@ Obsolete drafts live under `docs/retired/` and `docs/out-of-date-do-not-read/`.
 
 ## Target example (complete `list_view!`)
 
-One macro invocation: **columns** for all cell UI (including a real checkbox in column 0), optional **`row_template`** for row padding and row background only. No separate “chrome” concept for rows — use **row**, **row template**, and **`ListViewRowAppearance`** from theme.
+One macro invocation: **columns** for all cell UI (including a real checkbox in column 0), optional **`row_template`** for row padding and row background only. No separate “chrome” concept for rows — use **row**, **row template**, and **`ListViewRowLook`** from theme.
 
 ```rust
 use std::sync::Arc;
@@ -115,13 +115,13 @@ impl ListViewPane {
                     .w_full()
                     .flex()
                     .items_center()
-                    .min_h(px(model.appearance.min_height))
+                    .min_h(px(model.look.min_height))
                     .py(px(10.0))
-                    .bg(model.appearance.background)
-                    .text_color(model.appearance.label_color)
-                    .text_size(px(model.appearance.label_typography.size))
-                    .line_height(px(model.appearance.label_typography.line_height))
-                    .font_weight(model.appearance.label_typography.weight)
+                    .bg(model.look.background)
+                    .text_color(model.look.label_color)
+                    .text_size(px(model.look.label_typography.size))
+                    .line_height(px(model.look.label_typography.line_height))
+                    .font_weight(model.look.label_typography.weight)
                     .child(cells)
             };
         }
@@ -242,7 +242,7 @@ fn status_cell(status: &'static str) -> impl IntoElement {
 | `selection`, `selected_index`, `active_index` | Selection mode and initial state |
 | `row_label`, `row_enabled` | Accessibility / keyboard labeling and disabled rows |
 | `grid_view = { … }` | Column strip: `column!` (fully custom), `column_text!` / `column_emphasis!` / … (built-ins), or `ListViewColumn` values (e.g. `email_column()`) |
-| `row_template = \|model, cells, …\|` | **Row wrapper only** — use `model.appearance` (resolved row theme); `cells` is the column strip from `grid_view` |
+| `row_template = \|model, cells, …\|` | **Row wrapper only** — use `model.look` (resolved row theme); `cells` is the column strip from `grid_view` |
 
 ### Design rules (from this example)
 
@@ -256,19 +256,19 @@ fn status_cell(status: &'static str) -> impl IntoElement {
 
 ## Agreed technical decisions
 
-### 1. `ListViewRowRenderModel` includes resolved row appearance (required)
+### 1. `ListViewRowRenderModel` includes resolved row look (required)
 
-The control resolves `ListViewRowAppearance` from `ListViewTheme::resolve_row` when building each row and sets **`model.appearance`** on `ListViewRowRenderModel` before calling `row_template`. Users must not capture `list_theme` or call `resolve_row` manually.
+The control resolves `ListViewRowLook` from `ListViewTheme::resolve_row` when building each row and sets **`model.look`** on `ListViewRowRenderModel` before calling `row_template`. Users must not capture `list_theme` or call `resolve_row` manually.
 
 ```rust
 // control.rs (sketch)
 ListViewRowRenderModel {
     // ...
-    appearance: self.model.theme.resolve_row(selected, interaction, self.model.size),
+    look: self.model.theme.resolve_row(selected, interaction, self.model.size),
 }
 ```
 
-`row_template` then reads `model.appearance.background`, `min_height`, typography, etc. This is **tranche 1**, not a follow-up.
+`row_template` then reads `model.look.background`, `min_height`, typography, etc. This is **tranche 1**, not a follow-up.
 
 ### 2. Interactive columns stop propagation to the row
 
@@ -380,7 +380,7 @@ let list = gpui_luma::list_view! {
 | Fill column in `grid_view` arm | `column!` supports fill; `list_view!` grid arm only accepts `width = …` | Accept `column!("Title" => \|row\| …)` |
 | Built-in column templates | None — every column is a raw `column!` closure | `column_text!`, `column_muted!`, `column_emphasis!`, `column_numeric!`, `column_template_with_modifier` |
 | `ListViewColumn` expressions in macro | Not supported | `grid_view = { $($col:expr),* }` → `vec![…]` + `.grid_view(columns)` |
-| `model.appearance` on row template | Not on `ListViewRowRenderModel` | Control resolves `ListViewRowAppearance` per row before `row_template` |
+| `model.look` on row template | Not on `ListViewRowRenderModel` | Control resolves `ListViewRowLook` per row before `row_template` |
 | Gallery | `apps/gallery/.../list_view/pane.rs` — 10k `DemoUser` text columns | Replace with tasks example above |
 
 ---
@@ -392,7 +392,7 @@ let list = gpui_luma::list_view! {
 | Layer | File | Role |
 |-------|------|------|
 | Control | `control.rs` | Virtualization, selection, pointer, keyboard; calls row template then `render_list_view_row_chrome` |
-| Theme | `theme.rs`, `theme/radix/list_view.rs` | `resolve_appearance`, `resolve_row` → `ListViewAppearance`, `ListViewRowAppearance` |
+| Theme | `theme.rs`, `theme/radix/list_view.rs` | `resolve_look`, `resolve_row` → `ListViewLook`, `ListViewRowLook` |
 | Shell template | `template.rs` | List border, header slot, body slot |
 | Row wrapper | `row_chrome.rs` | Default row padding, divider, adorner, min-height (internal name; public docs say **row**) |
 | Columns | `model.rs` | `ListViewColumn`, `render_grid_view_cells`, fixed 12px `px` + `.truncate()` per slot |
@@ -408,8 +408,8 @@ let list = gpui_luma::list_view! {
    - Built-ins apply typography and truncation inside the column slot (eventually share slot layout with `render_grid_view_column_slot`).
 
 2. **`ListViewRowRenderModel` + `control.rs` (required, first)**
-   - Add `appearance: ListViewRowAppearance` to `ListViewRowRenderModel`.
-   - In `render_row`, resolve row appearance once (same `selected` / interaction inputs as today) and pass on the model before invoking `row_template`.
+   - Add `look: ListViewRowLook` to `ListViewRowRenderModel`.
+   - In `render_row`, resolve row look once (same `selected` / interaction inputs as today) and pass on the model before invoking `row_template`.
 
 3. **Macro (`macros.rs`)**
    - `column_text!`, `column_muted!`, `column_emphasis!`, `column_numeric!` — each expands to a `ListViewColumn<T>` expression (not parsed inside `list_view!`).
@@ -443,7 +443,7 @@ let list = gpui_luma::list_view! {
 - `column!` macro (fixed + fill)
 - `row_template` / `with_row_template` for **full** row replacement (plain list or grid-only internal use)
 - `row_label`, `row_enabled`, `ListSelectionMode`, Radix theme via `radix =`
-- `appearance_override`, `square_corners()` on builder
+- `look_override`, `square_corners()` on builder
 - Tests: selection/active normalization in `control.rs`
 
 ---
@@ -461,7 +461,7 @@ let list = gpui_luma::list_view! {
 
 ## Success criteria for this tranche
 
-1. `ListViewRowRenderModel::appearance` populated in `render_row`; target `row_template` compiles without captured theme.
+1. `ListViewRowRenderModel::look` populated in `render_row`; target `row_template` compiles without captured theme.
 2. `list_view!` uses `grid_view = { $($col:expr),* }`; example compiles with `column!`, built-in column macros, and `email_column()`.
 3. Gallery tasks pane: built-in column + modified column + checkbox column with propagation stopped on row handlers.
 4. Manual or automated check: toggling checkbox does not change row selection.

@@ -183,7 +183,7 @@ impl DockSplitterBuilder {
 #### 3. [template.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/dock_splitter/template.rs)
 - Update `DockSplitterTemplateHandlers` and the `DockSplitterTemplate` trait's signature.
 - Apply `.track_focus()`, `.tab_index()`, and `.on_key_down()` hooks to the splitter hit target.
-- When `focused`, render the default visible line using the active highlight theme (`appearance.hover_color`).
+- When `focused`, render the default visible line using the active highlight theme (`look.hover_color`).
 
 ```rust
 pub type DockSplitterKeyDownHandler = Box<dyn Fn(&gpui::KeyDownEvent, &mut Window, &mut App) + 'static>;
@@ -204,7 +204,7 @@ let hit_target = match model.orientation {
         .left(px(-half_inset))
         .top(px(0.0))
         .bottom(px(0.0))
-        .w(px(appearance.hit_target_px))
+        .w(px(look.hit_target_px))
         .track_focus(model.focus_handle) // NEW: register for focus ring tabbing
         .tab_index(if model.enabled { 0 } else { -1 }) // NEW
         .on_key_down(model.focus_handle.clone(), handlers.key_down) // NEW: wire keys
@@ -250,36 +250,36 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
     fn render(
         &self,
         model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterAppearance,
+        look: &DockSplitterLook,
         handlers: DockSplitterTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, appearance, handlers, self.thumb_color)
+        render_splitter(model, look, handlers, self.thumb_color)
     }
 }
 
 fn render_splitter(
     model: &DockSplitterRenderModel<'_>,
-    appearance: &DockSplitterAppearance,
+    look: &DockSplitterLook,
     handlers: DockSplitterTemplateHandlers,
     thumb_color: Option<Hsla>,
 ) -> Stateful<Div> {
     let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out, key_down } = handlers;
     
     let line_color = if model.dragging || model.hovered || model.focused {
-        appearance.hover_color
+        look.hover_color
     } else {
-        appearance.line_color
+        look.line_color
     };
     
-    let accent = thumb_color.unwrap_or(appearance.hover_color);
-    let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
+    let accent = thumb_color.unwrap_or(look.hover_color);
+    let half_inset = ((look.hit_target_px - look.visible_line_px) * 0.5).max(0.0);
     
     let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
     root = match model.orientation {
-        SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
-        SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
+        SplitterOrientation::Vertical => root.w(px(look.visible_line_px)).h_full(),
+        SplitterOrientation::Horizontal => root.h(px(look.visible_line_px)).w_full(),
     };
 
     // Custom grip overlay (pill shape), rendered only if thumb_color is enabled
@@ -331,7 +331,7 @@ fn render_splitter(
                 .left(px(-half_inset))
                 .top(px(0.0))
                 .bottom(px(0.0))
-                .w(px(appearance.hit_target_px))
+                .w(px(look.hit_target_px))
                 .track_focus(model.focus_handle)
                 .tab_index(if model.enabled { 0 } else { -1 })
                 .on_key_down(model.focus_handle.clone(), key_down)
@@ -346,7 +346,7 @@ fn render_splitter(
                         .left(px(half_inset))
                         .top(px(0.0))
                         .bottom(px(0.0))
-                        .w(px(appearance.visible_line_px))
+                        .w(px(look.visible_line_px))
                         .bg(line_color),
                 )
                 .children(grip)
@@ -357,7 +357,7 @@ fn render_splitter(
                 .top(px(-half_inset))
                 .left(px(0.0))
                 .right(px(0.0))
-                .h(px(appearance.hit_target_px))
+                .h(px(look.hit_target_px))
                 .track_focus(model.focus_handle)
                 .tab_index(if model.enabled { 0 } else { -1 })
                 .on_key_down(model.focus_handle.clone(), key_down)
@@ -372,7 +372,7 @@ fn render_splitter(
                         .top(px(half_inset))
                         .left(px(0.0))
                         .right(px(0.0))
-                        .h(px(appearance.visible_line_px))
+                        .h(px(look.visible_line_px))
                         .bg(line_color),
                 )
                 .children(grip)

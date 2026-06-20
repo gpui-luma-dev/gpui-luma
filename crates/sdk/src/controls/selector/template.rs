@@ -125,48 +125,48 @@ where
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_look(model.state, &scale);
-        let trigger_content = render_item_content(model, &appearance, cx);
+        let look = self.theme.resolve_look(model.state, &scale);
+        let trigger_content = render_item_content(model, &look, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
             .items_center()
             .justify_between()
-            .gap(px(appearance.trigger_gap))
-            .px(px(appearance.trigger_padding_x))
-            .py(px(appearance.trigger_padding_y))
-            .h(px(appearance.trigger_height))
+            .gap(px(look.trigger_gap))
+            .px(px(look.trigger_padding_x))
+            .py(px(look.trigger_padding_y))
+            .h(px(look.trigger_height))
             .w_full()
-            .bg(appearance.trigger_background)
-            .text_color(appearance.trigger_foreground)
+            .bg(look.trigger_background)
+            .text_color(look.trigger_foreground)
             .border_1()
-            .border_color(appearance.trigger_border)
-            .rounded(px(appearance.trigger_radius))
-            .text_size(px(appearance.trigger_typography.size))
-            .line_height(px(appearance.trigger_typography.line_height))
-            .font_weight(appearance.trigger_typography.weight)
+            .border_color(look.trigger_border)
+            .rounded(px(look.trigger_radius))
+            .text_size(px(look.trigger_typography.size))
+            .line_height(px(look.trigger_typography.line_height))
+            .font_weight(look.trigger_typography.weight)
             .cursor_pointer()
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
             .on_click(trigger_click)
-            .child(div().flex().items_center().gap(px(appearance.trigger_gap)).child(trigger_content))
+            .child(div().flex().items_center().gap(px(look.trigger_gap)).child(trigger_content))
             .child(render_lucide_icon(
                 if model.open {
                     LucideIcon::ChevronUp
                 } else {
                     LucideIcon::ChevronDown
                 },
-                appearance.trigger_foreground,
-                appearance.trigger_icon_size,
+                look.trigger_foreground,
+                look.trigger_icon_size,
             ));
 
         if model.state.disabled {
             trigger = trigger.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             trigger = trigger.border_1().border_color(focus_ring);
         }
 
@@ -188,7 +188,7 @@ where
             let placement = resolve_selector_placement(
                 model.trigger_bounds,
                 model.placement,
-                &appearance,
+                &look,
                 model.items.len(),
                 window.viewport_size(),
             );
@@ -220,7 +220,7 @@ where
                     enabled: model.enabled,
                     focus: model.focus,
                     item_template: model.item_template,
-                    look: appearance.items_panel,
+                    look: look.items_panel,
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,
@@ -249,15 +249,15 @@ struct ResolvedSelectorPlacement {
 fn resolve_selector_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: SelectorPlacement,
-    appearance: &SelectorLook,
+    look: &SelectorLook,
     item_count: usize,
     viewport_size: Size<Pixels>,
 ) -> ResolvedSelectorPlacement {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
-        Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(appearance.trigger_height) })
+        Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(look.trigger_height) })
     });
-    let menu_size = estimated_menu_size(appearance, item_count, trigger_bounds.size.width);
-    let offset_y = px(appearance.menu_offset_y);
+    let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
+    let offset_y = px(look.menu_offset_y);
     let resolved = match placement {
         SelectorPlacement::Smart => {
             let viewport_bottom = viewport_size.height - px(8.0);
@@ -294,15 +294,15 @@ fn resolve_selector_placement(
     }
 }
 
-fn estimated_menu_size(appearance: &SelectorLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
-    let menu_min_width = px(appearance.items_panel.min_width);
+fn estimated_menu_size(look: &SelectorLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+    let menu_min_width = px(look.items_panel.min_width);
     Size {
         width: if trigger_width > menu_min_width {
             trigger_width
         } else {
             menu_min_width
         },
-        height: px(appearance.items_panel.padding * 2.0) + px(appearance.items_panel.item_height) * item_count,
+        height: px(look.items_panel.padding * 2.0) + px(look.items_panel.item_height) * item_count,
     }
 }
 
@@ -317,7 +317,7 @@ mod tests {
     use super::*;
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
-    fn appearance() -> SelectorLook {
+    fn look() -> SelectorLook {
         let theme = default_selector_theme();
         theme.resolve_look(
             InteractionState::default(),
@@ -327,12 +327,12 @@ mod tests {
 
     #[test]
     fn smart_placement_uses_below_when_it_fits() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
         let placement = resolve_selector_placement(
             Some(trigger),
             SelectorPlacement::Smart,
-            &appearance,
+            &look,
             3,
             size(px(320.0), px(360.0)),
         );
@@ -343,12 +343,12 @@ mod tests {
 
     #[test]
     fn overlay_placement_anchors_to_trigger_origin() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(30.0), px(70.0)), size(px(150.0), px(30.0)));
         let placement = resolve_selector_placement(
             Some(trigger),
             SelectorPlacement::OverlayOnTrigger,
-            &appearance,
+            &look,
             6,
             size(px(320.0), px(360.0)),
         );

@@ -51,7 +51,7 @@ const LAYOUT_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "grid", label: "Grid", icon: None, enabled: true },
 ];
 
-const APPEARANCE_PROPERTIES: &[PropertyLeaf] = &[
+const LOOK_PROPERTIES: &[PropertyLeaf] = &[
     PropertyLeaf { id: "fill", label: "Fill", icon: None, enabled: true },
     PropertyLeaf { id: "stroke", label: "Stroke", icon: None, enabled: true },
     PropertyLeaf { id: "typography", label: "Typography", icon: None, enabled: true },
@@ -67,13 +67,7 @@ const BEHAVIOR_PROPERTIES: &[PropertyLeaf] = &[
 
 const PROPERTY_GROUPS: &[PropertyGroup] = &[
     PropertyGroup { id: "layout", label: "Layout", icon: LucideIcon::Ruler, expanded: true, leaves: LAYOUT_PROPERTIES },
-    PropertyGroup {
-        id: "appearance",
-        label: "Look",
-        icon: LucideIcon::Palette,
-        expanded: true,
-        leaves: APPEARANCE_PROPERTIES,
-    },
+    PropertyGroup { id: "look", label: "Look", icon: LucideIcon::Palette, expanded: true, leaves: LOOK_PROPERTIES },
     PropertyGroup {
         id: "behavior",
         label: "Behavior",

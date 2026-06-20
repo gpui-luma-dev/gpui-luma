@@ -40,7 +40,7 @@ pub trait SelectorTheme: Send + Sync {
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorLook {
-        compose_selector_appearance(&self.resolve(state), scale)
+        compose_selector_look(&self.resolve(state), scale)
     }
 }
 
@@ -94,7 +94,7 @@ impl SelectorTheme for DefaultSelectorTheme {
     }
 }
 
-pub(crate) fn compose_selector_appearance(palette: &SelectorPalette, scale: &StandardBoxScale) -> SelectorLook {
+pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardBoxScale) -> SelectorLook {
     SelectorLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,

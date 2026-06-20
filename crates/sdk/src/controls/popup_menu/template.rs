@@ -80,24 +80,24 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_look(model.state, &scale);
+        let look = self.theme.resolve_look(model.state, &scale);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
             .items_center()
             .justify_between()
-            .gap(px(appearance.trigger_gap))
-            .px(px(appearance.trigger_padding_x))
-            .py(px(appearance.trigger_padding_y))
-            .h(px(appearance.trigger_height))
-            .bg(appearance.trigger_background)
-            .text_color(appearance.trigger_foreground)
+            .gap(px(look.trigger_gap))
+            .px(px(look.trigger_padding_x))
+            .py(px(look.trigger_padding_y))
+            .h(px(look.trigger_height))
+            .bg(look.trigger_background)
+            .text_color(look.trigger_foreground)
             .border_1()
-            .border_color(appearance.trigger_border)
-            .rounded(px(appearance.trigger_radius))
-            .text_size(px(appearance.trigger_typography.size))
-            .line_height(px(appearance.trigger_typography.line_height))
-            .font_weight(appearance.trigger_typography.weight)
+            .border_color(look.trigger_border)
+            .rounded(px(look.trigger_radius))
+            .text_size(px(look.trigger_typography.size))
+            .line_height(px(look.trigger_typography.line_height))
+            .font_weight(look.trigger_typography.weight)
             .cursor_pointer()
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
@@ -111,15 +111,15 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 } else {
                     LucideIcon::ChevronDown
                 },
-                appearance.trigger_foreground,
-                appearance.trigger_icon_size,
+                look.trigger_foreground,
+                look.trigger_icon_size,
             ));
 
         if model.state.disabled {
             trigger = trigger.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             trigger = trigger.border_1().border_color(focus_ring);
         }
 
@@ -141,7 +141,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             let placement = resolve_popup_menu_placement(
                 model.trigger_bounds,
                 model.placement,
-                &appearance,
+                &look,
                 model.items.len(),
                 window.viewport_size(),
             );
@@ -150,7 +150,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 model.items,
                 model.open_submenu,
                 model.active_path,
-                appearance.floating_menu,
+                look.floating_menu,
                 item_hovers,
                 item_clicks,
             );
@@ -178,15 +178,15 @@ struct ResolvedPopupMenuPlacement {
 fn resolve_popup_menu_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: PopupMenuPlacement,
-    appearance: &PopupMenuLook,
+    look: &PopupMenuLook,
     item_count: usize,
     viewport_size: Size<Pixels>,
 ) -> ResolvedPopupMenuPlacement {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
-        Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(appearance.trigger_height) })
+        Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(look.trigger_height) })
     });
-    let menu_size = estimated_menu_size(appearance, item_count, trigger_bounds.size.width);
-    let offset_y = px(appearance.menu_offset_y);
+    let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
+    let offset_y = px(look.menu_offset_y);
     let resolved = match placement {
         PopupMenuPlacement::Smart => {
             let viewport_bottom = viewport_size.height - px(8.0);
@@ -218,15 +218,15 @@ fn resolve_popup_menu_placement(
     }
 }
 
-fn estimated_menu_size(appearance: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
-    let menu_min_width = px(appearance.floating_menu.min_width);
+fn estimated_menu_size(look: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+    let menu_min_width = px(look.floating_menu.min_width);
     Size {
         width: if trigger_width > menu_min_width {
             trigger_width
         } else {
             menu_min_width
         },
-        height: px(appearance.floating_menu.padding * 2.0) + px(appearance.floating_menu.item_height) * item_count,
+        height: px(look.floating_menu.padding * 2.0) + px(look.floating_menu.item_height) * item_count,
     }
 }
 
@@ -252,7 +252,7 @@ mod tests {
     use super::*;
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
-    fn appearance() -> PopupMenuLook {
+    fn look() -> PopupMenuLook {
         let theme = default_popup_menu_theme();
         theme.resolve_look(
             InteractionState::default(),
@@ -262,46 +262,46 @@ mod tests {
 
     #[test]
     fn smart_placement_uses_below_when_it_fits() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
             Some(trigger),
             PopupMenuPlacement::Smart,
-            &appearance,
+            &look,
             3,
             size(px(320.0), px(360.0)),
         );
 
         assert_eq!(placement.anchor, Corner::TopLeft);
         assert_eq!(placement.position, point(trigger.left(), trigger.bottom()));
-        assert_eq!(placement.offset, point(px(0.0), px(appearance.menu_offset_y)));
+        assert_eq!(placement.offset, point(px(0.0), px(look.menu_offset_y)));
     }
 
     #[test]
     fn smart_placement_uses_above_when_below_is_constrained() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(12.0), px(300.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
             Some(trigger),
             PopupMenuPlacement::Smart,
-            &appearance,
+            &look,
             4,
             size(px(320.0), px(360.0)),
         );
 
         assert_eq!(placement.anchor, Corner::BottomLeft);
         assert_eq!(placement.position, point(trigger.left(), trigger.top()));
-        assert_eq!(placement.offset, point(px(0.0), -px(appearance.menu_offset_y)));
+        assert_eq!(placement.offset, point(px(0.0), -px(look.menu_offset_y)));
     }
 
     #[test]
     fn explicit_above_ignores_available_space() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
         let placement = resolve_popup_menu_placement(
             Some(trigger),
             PopupMenuPlacement::AboveStart,
-            &appearance,
+            &look,
             3,
             size(px(320.0), px(360.0)),
         );
@@ -312,13 +312,13 @@ mod tests {
 
     #[test]
     fn centered_placement_anchors_to_trigger_center() {
-        let appearance = appearance();
+        let look = look();
         let trigger = Bounds::new(point(px(40.0), px(80.0)), size(px(160.0), px(32.0)));
-        let menu_size = estimated_menu_size(&appearance, 5, trigger.size.width);
+        let menu_size = estimated_menu_size(&look, 5, trigger.size.width);
         let placement = resolve_popup_menu_placement(
             Some(trigger),
             PopupMenuPlacement::CenteredOnTrigger,
-            &appearance,
+            &look,
             5,
             size(px(320.0), px(360.0)),
         );

@@ -22,7 +22,7 @@ pub struct SelectionPanelLook {
     pub item_radius: f32,
 }
 
-pub fn default_selection_panel_appearance(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelLook {
+pub fn default_selection_panel_look(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelLook {
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;

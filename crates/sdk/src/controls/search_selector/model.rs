@@ -36,7 +36,7 @@ pub struct SearchSelectorModel {
     pub(crate) items_template: Arc<dyn SearchSelectorItemsTemplate>,
     pub(crate) panel_template: Arc<dyn SearchSelectorPanelTemplate>,
     pub(crate) item_template: Option<SearchSelectorItemTemplate<SelectionItem>>,
-    pub(crate) popup_appearance_provider: SearchSelectorPopupLookProvider,
+    pub(crate) popup_look_provider: SearchSelectorPopupLookProvider,
 }
 
 pub struct SearchSelectorBuilder {
@@ -64,7 +64,7 @@ impl SearchSelectorBuilder {
                 items_template: default_search_selector_items_template(),
                 panel_template: default_search_selector_panel_template(),
                 item_template: None,
-                popup_appearance_provider: Arc::new(|| {
+                popup_look_provider: Arc::new(|| {
                     default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
                 }),
             },
@@ -157,7 +157,7 @@ impl SearchSelectorBuilder {
     }
 
     pub fn popup_look_provider(mut self, provider: SearchSelectorPopupLookProvider) -> Self {
-        self.model.popup_appearance_provider = provider;
+        self.model.popup_look_provider = provider;
         self
     }
 

@@ -1,6 +1,6 @@
 # shadcn / tweakcn CSS variables → control parts
 
-Reference for mapping tweakcn/shadcn `:root` / `.dark` custom properties to GPUI-Luma control appearance. Radix UI documents component behavior, not this token layer; shadcn implies it via Tailwind classes (`bg-primary`, `border-input`) but does not tabulate it.
+Reference for mapping tweakcn/shadcn `:root` / `.dark` custom properties to GPUI-Luma control look. Radix UI documents component behavior, not this token layer; shadcn implies it via Tailwind classes (`bg-primary`, `border-input`) but does not tabulate it.
 
 **Living source of truth in code:** `crates/sdk/src/theme/radix/usage.rs` (`all_radix_theme_usages()`). Gallery **Theme Usage** and per-pane **Theme Parts** sidebars render the same data against the active tweakcn CSS.
 
@@ -9,7 +9,7 @@ Reference for mapping tweakcn/shadcn `:root` / `.dark` custom properties to GPUI
 | Doc / path | Role |
 |---|---|
 | [`plan-theme.md`](plan-theme.md) | Theme roadmap and gallery wiring |
-| [`fundamental-templates.md`](fundamental-templates.md) | Appearance-only contract, CSS import path |
+| [`fundamental-templates.md`](fundamental-templates.md) | Look-only contract, CSS import path |
 | `apps/gallery/tweakcn/*.css` | Sample tweakcn theme exports |
 | `crates/sdk/src/theme/radix/*.rs` | Per-control resolver tables (module doc comments) |
 

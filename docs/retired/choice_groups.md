@@ -81,7 +81,7 @@ For toolbar/icon use, Ghost style can hide selected state unless explicitly mapp
 
 ### Template requirement
 `ChoiceGroupTemplate` must communicate selected state to child/item visuals with an explicit semantic signal:
-- `item.state.selected == true` must map to **Active appearance** in toolbar mode.
+- `item.state.selected == true` must map to **Active look** in toolbar mode.
 - `item.state.active` remains focus/navigation state.
 - Selected visual should persist even when not keyboard-focused.
 
@@ -89,9 +89,9 @@ For toolbar/icon use, Ghost style can hide selected state unless explicitly mapp
 - Include both in render model:
   - `selected` (persistent selection)
   - `active/focus_visible` (interaction/focus)
-- For Ghost-like variants, resolve appearance using role semantics, e.g.:
+- For Ghost-like variants, resolve look using role semantics, e.g.:
   - `role = ToolbarItem { selected: true }` => active background/border/fg
-  - `role = ToolbarItem { selected: false }` => ghost resting appearance
+  - `role = ToolbarItem { selected: false }` => ghost resting look
 - Ensure hover/pressed layers compose on top of selected baseline (not replacing it).
 
 ## Phase Plan
@@ -136,7 +136,7 @@ For toolbar/icon use, Ghost style can hide selected state unless explicitly mapp
 - Add layout-aware rendering in template:
   - horizontal for toolbar
   - vertical ready for later use cases
-- Add selected->active appearance mapping contract for Ghost toolbar variant.
+- Add selected->active look mapping contract for Ghost toolbar variant.
 
 ### Phase 4 — Icon Toolbar Milestone (M1)
 - Build first integration using icon actions (bold/italic/underline/code).
@@ -168,7 +168,7 @@ For toolbar/icon use, Ghost style can hide selected state unless explicitly mapp
   - `content(...)` icon rendering
   - template styling/modifiers
   - keyboard + pointer interaction
-  - clear selected visual in Ghost style (active appearance semantics)
+  - clear selected visual in Ghost style (active look semantics)
 - `.selected(...)` works as initial value in unmanaged mode and as fallback/default in managed mode.
 - `Change` event supports single-source-of-truth parent updates.
 - At least one gallery integration demonstrates replacement viability for toolbar scenario.
@@ -183,6 +183,6 @@ For toolbar/icon use, Ghost style can hide selected state unless explicitly mapp
 ## Next Steps
 1. Finalize M1 API surface (single-select toolbar-first + managed/unmanaged contract).
 2. Implement skeleton + core logic.
-3. Implement template/presenter integration with selected->active appearance mapping.
+3. Implement template/presenter integration with selected->active look mapping.
 4. Integrate icon-toolbar example and validate.
 5. Start parity planning for M2 (multi-select + broader migration).

@@ -209,7 +209,7 @@ mod tests {
     fn with_look_overrides_style_resolution() {
         let template: DefaultButtonTemplate<()> = DefaultButtonTemplate::new(default_button_family_theme());
         let model = ButtonRenderModel {
-            id: "appearance-test".into(),
+            id: "look-test".into(),
             data: (),
             content: Arc::new(|_, _| div().into_any_element()),
             role: ButtonFamilyRole::Text,
@@ -221,8 +221,8 @@ mod tests {
         };
 
         let scale = StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0 };
-        let appearance = resolve_look(&template.theme, &model, &scale);
-        assert_eq!(appearance.background, lime_look().background);
+        let look = resolve_look(&template.theme, &model, &scale);
+        assert_eq!(look.background, lime_look().background);
     }
 
     #[test]
@@ -237,11 +237,11 @@ mod tests {
         };
         let scale = StandardBoxScale { height: 36.0, padding_x: 14.0, padding_y: 8.0, gap: 8.0, radius: 6.0 };
 
-        let appearance = compose_button_family_look(&palette, ButtonFamilyRole::Text, &scale, 999.0);
-        assert_eq!(appearance.height, 36.0);
-        assert_eq!(appearance.padding_x, 14.0);
-        assert_eq!(appearance.padding_y, 8.0);
-        assert_eq!(appearance.gap, 8.0);
-        assert_eq!(appearance.radius, 6.0);
+        let look = compose_button_family_look(&palette, ButtonFamilyRole::Text, &scale, 999.0);
+        assert_eq!(look.height, 36.0);
+        assert_eq!(look.padding_x, 14.0);
+        assert_eq!(look.padding_y, 8.0);
+        assert_eq!(look.gap, 8.0);
+        assert_eq!(look.radius, 6.0);
     }
 }

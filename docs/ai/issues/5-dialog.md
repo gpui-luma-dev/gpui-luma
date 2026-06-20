@@ -109,10 +109,10 @@ pub trait DialogTemplate<T>: Send + Sync {
 }
 ```
 
-* **`DialogAppearance`**:
+* **`DialogLook`**:
   Contains theme-aware visual rules for shadows, background, and dimming backdrops:
   ```rust
-  pub struct DialogAppearance {
+  pub struct DialogLook {
       pub background: Hsla,
       pub border: Hsla,
       pub radius: f32,
@@ -158,7 +158,7 @@ We will provide standard, pre-built templates to easily instantiate common varia
 - [ ] Implement the runtime control, event handlers, positioning layouts (flex layout bounds for semantic positions and absolute offsets for `Absolute`), and keyboard/focus trap in `control.rs`.
 - [ ] Implement **Focus Restoration** tracking (saving and restoring the previously focused handle) in `control.rs`.
 - [ ] Implement **Draggability mouse event handlers** for modeless dialog headers in `control.rs`.
-- [ ] Implement the baseline appearance metrics and palette rules in `theme.rs` (including `backdrop_background` and `backdrop_blur`).
+- [ ] Implement the baseline look metrics and palette rules in `theme.rs` (including `backdrop_background` and `backdrop_blur`).
 - [ ] Implement `DialogTemplate` and the pre-built templates (`MessageDialogTemplate`, `ConfirmationDialogTemplate`, `ModelessPanelTemplate`) in `template.rs`.
 - [ ] Register `dialog` in `crates/sdk/src/controls/mod.rs`.
 

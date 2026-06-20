@@ -1,14 +1,14 @@
-# Next step: appearance codegen
+# Next step: look codegen
 
 **Status:** Proposed — not implemented.
 
-**Scope:** Appearance matrices, per-control variant support, default choice weights, and build-time validation/code generation. Templates stay responsible for structure (layout, geometry, interaction wiring); themes stay responsible for values and policy.
+**Scope:** Look matrices, per-control variant support, default choice weights, and build-time validation/code generation. Templates stay responsible for structure (layout, geometry, interaction wiring); themes stay responsible for values and policy.
 
 ---
 
 ## The actual problem
 
-The hardest appearance constructor in the tree is **`theme/radix/button.rs`**, not the choice controls in `properties/`. It builds `ButtonFamilyAppearance` from four coupled axes:
+The hardest look constructor in the tree is **`theme/radix/button.rs`**, not the choice controls in `properties/`. It builds `ButtonFamilyLook` from four coupled axes:
 
 | Axis | Values | Effect |
 |---|---|---|
@@ -31,24 +31,24 @@ let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
 // button_background: 19 arms on (style, selected, layer)
 ```
 
-Simpler controls (checkbox, switch, radio) mostly call shared primitives (`resolve_action_layer`, `outline`) with one style axis. **Button is the reference implementation** — if we can represent button appearance declaratively, the rest compose from the same resolver vocabulary.
+Simpler controls (checkbox, switch, radio) mostly call shared primitives (`resolve_action_layer`, `outline`) with one style axis. **Button is the reference implementation** — if we can represent button look declaratively, the rest compose from the same resolver vocabulary.
 
-Today the matrix lives only as Rust matches. `usage.rs` documents button tokens separately and still drifts. There is no validated data layer between “what we intend” and “what `button_appearance` does”.
+Today the matrix lives only as Rust matches. `usage.rs` documents button tokens separately and still drifts. There is no validated data layer between “what we intend” and “what `button_look` does”.
 
-**This is not a palette-import problem.** Colors come from tweakcn CSS → `RadixPalette`. No `lexicon.toml`, no `default-theme.toml`, no theme TOML stems. Codegen targets **how `ButtonFamilyAppearance` (and siblings) get constructed**, not where palette values are stored.
+**This is not a palette-import problem.** Colors come from tweakcn CSS → `RadixPalette`. No `lexicon.toml`, no `default-theme.toml`, no theme TOML stems. Codegen targets **how `ButtonFamilyLook` (and siblings) get constructed**, not where palette values are stored.
 
 ---
 
 ## What we want instead
 
-A **declarative appearance matrix** for button-family: for each colored field on `ButtonFamilyAppearance`, declare the token/palette source for each `(style, role, selected, layer)` cell — including **style rewrite rules** and **selection branches**.
+A **declarative look matrix** for button-family: for each colored field on `ButtonFamilyLook`, declare the token/palette source for each `(style, role, selected, layer)` cell — including **style rewrite rules** and **selection branches**.
 
 ```text
 tweakcn CSS  →  RadixPalette (runtime)
                       ↓
-button appearance matrix (build-time data)
+button look matrix (build-time data)
                       ↓
-generated lookups  →  ButtonFamilyAppearance
+generated lookups  →  ButtonFamilyLook
                       ↓
 ButtonTemplate / toggle segments  →  paint only
 ```
@@ -59,7 +59,7 @@ Checkbox, switch, and radio matrices should **reuse the same style/action primit
 
 | Concern | Owner | Button example |
 |---|---|---|
-| **Color slot policy** | Appearance matrix | `background` when toggle selected + primary style + hovered → `primary.hover` |
+| **Color slot policy** | Look matrix | `background` when toggle selected + primary style + hovered → `primary.hover` |
 | **Style rewrite / pairing** | Matrix `rewrite` or `when.role` rules | toggle unselected → effective style `outline` |
 | **Selection semantics** | Matrix rows keyed on `selected` | selected toggle + non-secondary → `palette.selected_background` |
 | **Resolver primitives** | Rust (`palette.action`, layer hover/press) | Map matrix `source` strings to `RadixActionRole` fields |
@@ -71,7 +71,7 @@ Checkbox, switch, and radio matrices should **reuse the same style/action primit
 
 ## Button matrix (conceptual shape)
 
-Pilot file: button-family appearance recipe — **not** a theme pack.
+Pilot file: button-family look recipe — **not** a theme pack.
 
 ```toml
 [controls.button_family]
@@ -133,7 +133,7 @@ source = "action:foreground"       # all unselected styles
 source = "action:border"           # from effective style's action role
 ```
 
-Generated code replaces `button_background(...)` and the foreground `match`. A thin `assemble_button_appearance(...)` keeps metrics, adorner placement, and the style-rewrite prelude (or that prelude is also generated from `rewrite` rules).
+Generated code replaces `button_background(...)` and the foreground `match`. A thin `assemble_button_look(...)` keeps metrics, adorner placement, and the style-rewrite prelude (or that prelude is also generated from `rewrite` rules).
 
 ---
 
@@ -152,7 +152,7 @@ Once button is data-driven, checkbox/switch/radio matrices become short composit
 
 | Check | Why |
 |---|---|
-| Every slot name ∈ `ButtonFamilyAppearance` | No typos |
+| Every slot name ∈ `ButtonFamilyLook` | No typos |
 | Every `when` clause uses known `(style, role, selected, layer)` combos | Matches `ButtonFamilyRole` capabilities |
 | Every `source` references a valid palette field or action primitive | Dead paths fail at build |
 | Rewrite rules cover toggle unselected (and any future pairing) | No hidden Rust overrides |
@@ -191,7 +191,7 @@ No runtime TOML. Palette still loaded from CSS only.
 - Button **metrics** by role and size — height, padding, radius, typography
 - Focus **adorner placement** (inset vs oversize) — geometry policy
 - `RadixTheme` loading, mode toggle
-- Control templates — paint `ButtonFamilyAppearance` fields only
+- Control templates — paint `ButtonFamilyLook` fields only
 
 ---
 
@@ -200,7 +200,7 @@ No runtime TOML. Palette still loaded from CSS only.
 | Phase | Deliverable |
 |---|---|
 | **0 (now)** | Treat `button.rs` matches as the spec; stop adding arms by hand |
-| **1** | Appearance matrix + codegen for **button-family**; delete `button_background` / foreground matches |
+| **1** | Look matrix + codegen for **button-family**; delete `button_background` / foreground matches |
 | **2** | Express checkbox, switch, radio as compositions of button action primitives |
 | **3** | Remaining `properties/*` controls (slider, textfield, navigation_sidebar, …) |
 | **4** | Generate or verify `usage.rs` from matrices |
@@ -211,10 +211,10 @@ No runtime TOML. Palette still loaded from CSS only.
 
 | Role | Path |
 |---|---|
-| **Pilot — appearance construction** | `crates/sdk/src/theme/radix/button.rs` |
+| **Pilot — look construction** | `crates/sdk/src/theme/radix/button.rs` |
 | Style enum + palette action lookup | `crates/sdk/src/theme/radix/palette.rs` |
 | CSS token pairs for catalog path | `crates/sdk/src/theme/radix/action.rs` |
-| `ButtonFamilyAppearance` definition | `crates/sdk/src/controls/button_family/theme.rs` |
+| `ButtonFamilyLook` definition | `crates/sdk/src/controls/button_family/theme.rs` |
 | Theme factories / toggle binding | `crates/sdk/src/theme/radix/templates.rs` |
 | CSS palette (runtime) | `apps/gallery/tweakcn/*.css` → `RadixTheme::from_css_path` |
 | Simpler controls (follow button) | `crates/sdk/src/theme/radix/{checkbox,switch,radio}.rs` |
@@ -226,4 +226,4 @@ No runtime TOML. Palette still loaded from CSS only.
 - `lexicon.toml`, `default-theme.toml`, imported theme TOML, or palette-import CLI
 - Replacing tweakcn CSS as the palette source
 - Moving button metrics or focus-ring geometry into data files
-- Runtime-reloaded appearance matrices
+- Runtime-reloaded look matrices

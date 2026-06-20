@@ -72,7 +72,7 @@ fn member_row(
 
 ## 2. Crate Isolation Migration Strategy
 
-To maintain a strict separation of concerns and avoid namespace pollution in the core SDK, we adopt a Crate Isolation Strategy. Both appearance systems are defined as downstream crates depending on the core SDK:
+To maintain a strict separation of concerns and avoid namespace pollution in the core SDK, we adopt a Crate Isolation Strategy. Both look systems are defined as downstream crates depending on the core SDK:
 
                            ┌─────────────────────────┐
                            │   crates/sdk (Core)     │
@@ -87,7 +87,7 @@ To maintain a strict separation of concerns and avoid namespace pollution in the
 ### 1. Crate Partitioning [COMPLETED]
 The new downstream look crate `crates/look-shadcn` has been successfully created with a library structure and declared in `Cargo.toml`. 
 
-All 31 control appearance templates, shadow resolvers, and base styling extension methods have been ported from the legacy radix code and successfully compiled and tested under the `gpui-luma-look-shadcn` package.
+All 31 control look templates, shadow resolvers, and base styling extension methods have been ported from the legacy radix code and successfully compiled and tested under the `gpui-luma-look-shadcn` package.
 
 ### 2. Phase A: Migrate Theme Studio Panels [COMPLETED]
 

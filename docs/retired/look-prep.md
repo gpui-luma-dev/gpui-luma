@@ -87,7 +87,7 @@ To make the crate boundary compile, the core SDK must not reference any radix-sp
 1. **Move Extension Traits**:
    * Ensure extension traits like `RadixThemeControlExt` and builder modifiers (e.g. `RadixButtonStyleExt`) live entirely inside the new `gpui-luma-theme-radix` crate.
 2. **Abstract Core Templates**:
-   * Controls inside `crates/sdk/src/controls/` should only require generic appearance configs (like `ButtonFamilyAppearance` or `SwitchPalette`). They should have no knowledge of `RadixTheme`.
+   * Controls inside `crates/sdk/src/controls/` should only require generic look configs (like `ButtonFamilyLook` or `SwitchPalette`). They should have no knowledge of `RadixTheme`.
 
 ---
 

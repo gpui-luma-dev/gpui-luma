@@ -22,8 +22,8 @@ Gallery panes show live controls on the left and a **Theme Parts** panel on the 
 Today that panel is **misleading** for most controls because:
 
 1. **Metadata drifts from resolvers** — `usage.rs` is hand-maintained and lags `look-shadcn` control code (e.g. outline/ghost button mode splits, opacity composites, hover foreground).
-2. **Schema is too coarse** — `ThemePartUsage` has only `part`, `token`, `states`, `appearance_fields`. It cannot express variants (outline vs ghost), theme mode (light vs dark), opacity (`input/30`, `accent/50`), conditional logic, or non-catalog sources (`transparent`, `palette.accent_foreground`).
-3. **Swatches show catalog defaults, not computed appearance** — the sidebar calls `ShadcnLook::token_color(name)`, which reads the raw CSS catalog. It never runs the same resolver path as the control, so composites and state-specific colors are wrong or absent.
+2. **Schema is too coarse** — `ThemePartUsage` has only `part`, `token`, `states`, `look_fields`. It cannot express variants (outline vs ghost), theme mode (light vs dark), opacity (`input/30`, `accent/50`), conditional logic, or non-catalog sources (`transparent`, `palette.accent_foreground`).
+3. **Swatches show catalog defaults, not computed look** — the sidebar calls `ShadcnLook::token_color(name)`, which reads the raw CSS catalog. It never runs the same resolver path as the control, so composites and state-specific colors are wrong or absent.
 4. **Naming is legacy** — entries still use pre-cleanup SDK labels (`prominent`, `standard`, `subtle`) instead of shadcn variant names (`primary`, `secondary`, `outline`, `ghost`).
 5. **Pane demos and metadata are loosely coupled** — a pane may show state matrices or variant rows that expose more truth than Theme Parts lists (button pane is the clearest example), with no link between them.
 
@@ -50,7 +50,7 @@ ShadcnLook::from_css_str / from_css_path
 look-shadcn control resolvers (button.rs, checkbox.rs, …)
         │
         ▼
-*Appearance / *Palette structs (SDK types)
+*Look / *Palette structs (SDK types)
         │
         ▼
 SDK templates paint GPUI elements
@@ -77,7 +77,7 @@ usage.rs  ──►  ThemePartUsage[]  ──►  gallery Theme Parts sidebar
 ## Design goals
 
 1. **Truth** — Every row in Theme Parts must match what the resolver returns for the active theme, mode, and interaction state.
-2. **Completeness** — Cover variants, states, and appearance fields developers care about (including opacity and mode splits).
+2. **Completeness** — Cover variants, states, and look fields developers care about (including opacity and mode splits).
 3. **Stability** — Metadata must not drift when resolvers change; prefer generation or co-location over hand-edited lists.
 4. **Simplicity** — No full CSS inspector; readable cards in the sidebar are enough.
 5. **Scope** — Look-shadcn owns product token mapping; SDK keeps generic `ThemeUsage` types and gallery rendering.
@@ -92,7 +92,7 @@ Non-goals:
 
 ## Proposed model: `ThemeBinding`
 
-Replace the flat `ThemePartUsage` row with a richer **binding** that describes one slice of resolved appearance.
+Replace the flat `ThemePartUsage` row with a richer **binding** that describes one slice of resolved look.
 
 ### Suggested fields
 
@@ -102,7 +102,7 @@ Replace the flat `ThemePartUsage` row with a richer **binding** that describes o
 | `variant` | Product variant or sub-style | `"outline"`, `"ghost"`, `"standard"`, `"checked"` |
 | `interaction` | Normalized interaction layer | `default`, `hover`, `pressed`, `focused`, `disabled` |
 | `mode` | Light/dark applicability | `light`, `dark`, `both` |
-| `appearance_field` | SDK struct field | `ButtonFamilyAppearance.foreground` |
+| `look_field` | SDK struct field | `ButtonFamilyLook.foreground` |
 | `source` | How the color is obtained | See `ThemeSource` below |
 | `note` | Optional human hint | `"shadcn: hover:text-accent-foreground"` |
 
@@ -145,7 +145,7 @@ Pick one primary strategy per control; mix tiers during migration.
 
 ### Tier A — **Derived bindings** (preferred)
 
-At compile time or in tests, enumerate `(variant, interaction, mode)` tuples, call the public resolver (`resolve_outline_button`, `checkbox_appearance`, …), and **diff** the resulting appearance against catalog tokens to emit bindings.
+At compile time or in tests, enumerate `(variant, interaction, mode)` tuples, call the public resolver (`resolve_outline_button`, `checkbox_look`, …), and **diff** the resulting look against catalog tokens to emit bindings.
 
 **Pros:** Cannot drift; swatches always match demo.  
 **Cons:** Upfront harness; naming/variant enumeration must be curated.
@@ -251,7 +251,7 @@ Extend the global pane to:
 - Show **derived vs catalog** columns for each token
 - List **opacity composites** (`input/30`, `accent/50`) explicitly
 - Flag **resolver-only** colors (`transparent`, algorithmic hover)
-- Report **coverage**: N bindings / M appearance fields for component
+- Report **coverage**: N bindings / M look fields for component
 
 ---
 

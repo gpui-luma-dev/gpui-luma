@@ -60,11 +60,11 @@ impl SliderTemplate for ThemedSliderTemplate {
         _cx: &mut App,
     ) -> Stateful<Div> {
         let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
-        let appearance = self.theme.resolve(model.state);
+        let look = self.theme.resolve(model.state);
         let percentage = model.percentage.clamp(0.0, 1.0);
-        let long_axis = appearance.width;
-        let short_axis = appearance.height;
-        let cross_axis = appearance.track_height;
+        let long_axis = look.width;
+        let short_axis = look.height;
+        let cross_axis = look.track_height;
         let root_height = match model.orientation {
             SliderOrientation::Horizontal => short_axis,
             SliderOrientation::Vertical => long_axis,
@@ -78,7 +78,7 @@ impl SliderTemplate for ThemedSliderTemplate {
             .items_center()
             .justify_center()
             .when(model.orientation == SliderOrientation::Horizontal, |this| {
-                this.w_full().min_w(px(0.0)).h(px(root_height)).px(px(appearance.thumb_size * 0.5))
+                this.w_full().min_w(px(0.0)).h(px(root_height)).px(px(look.thumb_size * 0.5))
             })
             .when(model.orientation == SliderOrientation::Vertical, |this| this.w(px(root_width)).h(px(root_height)))
             .on_hover(hover)
@@ -94,8 +94,8 @@ impl SliderTemplate for ThemedSliderTemplate {
         root = match model.orientation {
             SliderOrientation::Horizontal => {
                 let track_top = (short_axis - cross_axis) * 0.5;
-                let thumb_top = (short_axis - appearance.thumb_size) * 0.5 - thumb_focus_offset();
-                let thumb_center_offset = -(appearance.thumb_size * 0.5 + thumb_focus_offset());
+                let thumb_top = (short_axis - look.thumb_size) * 0.5 - thumb_focus_offset();
+                let thumb_center_offset = -(look.thumb_size * 0.5 + thumb_focus_offset());
 
                 let track = div()
                     .id(format!("{}-track", model.id))
@@ -104,8 +104,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .right(px(0.0))
                     .top(px(track_top))
                     .h(px(cross_axis))
-                    .bg(appearance.track_background)
-                    .rounded(px(appearance.radius))
+                    .bg(look.track_background)
+                    .rounded(px(look.radius))
                     .overflow_hidden()
                     .child(
                         div()
@@ -114,8 +114,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                             .top(px(0.0))
                             .h_full()
                             .w(relative(percentage))
-                            .bg(appearance.fill_background)
-                            .rounded(px(appearance.radius)),
+                            .bg(look.fill_background)
+                            .rounded(px(look.radius)),
                     )
                     .child(
                         canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
@@ -134,24 +134,24 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .justify_center()
                     .p(px(THUMB_FOCUS_GAP))
                     .border(px(THUMB_FOCUS_WIDTH))
-                    .border_color(focus_ring_color(appearance.focus_ring))
-                    .rounded(px(appearance.radius + thumb_focus_offset()))
+                    .border_color(focus_ring_color(look.focus_ring))
+                    .rounded(px(look.radius + thumb_focus_offset()))
                     .child(
                         div()
-                            .size(px(appearance.thumb_size))
-                            .bg(appearance.thumb_background)
+                            .size(px(look.thumb_size))
+                            .bg(look.thumb_background)
                             .border_1()
-                            .border_color(appearance.thumb_border)
-                            .rounded(px(appearance.radius))
-                            .shadow(appearance.thumb_shadow.clone()),
+                            .border_color(look.thumb_border)
+                            .rounded(px(look.radius))
+                            .shadow(look.thumb_shadow.clone()),
                     );
 
                 root.child(track).child(thumb)
             }
             SliderOrientation::Vertical => {
                 let track_left = (short_axis - cross_axis) * 0.5;
-                let thumb_left = (short_axis - appearance.thumb_size) * 0.5;
-                let thumb_top = (long_axis - appearance.thumb_size).max(0.0) * (1.0 - percentage);
+                let thumb_left = (short_axis - look.thumb_size) * 0.5;
+                let thumb_top = (long_axis - look.thumb_size).max(0.0) * (1.0 - percentage);
 
                 let track = div()
                     .id(format!("{}-track", model.id))
@@ -160,8 +160,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .top(px(0.0))
                     .w(px(cross_axis))
                     .h(px(long_axis))
-                    .bg(appearance.track_background)
-                    .rounded(px(appearance.radius))
+                    .bg(look.track_background)
+                    .rounded(px(look.radius))
                     .overflow_hidden()
                     .child(
                         div()
@@ -170,8 +170,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                             .bottom(px(0.0))
                             .w_full()
                             .h(px(long_axis * percentage))
-                            .bg(appearance.fill_background)
-                            .rounded(px(appearance.radius)),
+                            .bg(look.fill_background)
+                            .rounded(px(look.radius)),
                     )
                     .child(
                         canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
@@ -189,16 +189,16 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .justify_center()
                     .p(px(THUMB_FOCUS_GAP))
                     .border(px(THUMB_FOCUS_WIDTH))
-                    .border_color(focus_ring_color(appearance.focus_ring))
-                    .rounded(px(appearance.radius + thumb_focus_offset()))
+                    .border_color(focus_ring_color(look.focus_ring))
+                    .rounded(px(look.radius + thumb_focus_offset()))
                     .child(
                         div()
-                            .size(px(appearance.thumb_size))
-                            .bg(appearance.thumb_background)
+                            .size(px(look.thumb_size))
+                            .bg(look.thumb_background)
                             .border_1()
-                            .border_color(appearance.thumb_border)
-                            .rounded(px(appearance.radius))
-                            .shadow(appearance.thumb_shadow.clone()),
+                            .border_color(look.thumb_border)
+                            .rounded(px(look.radius))
+                            .shadow(look.thumb_shadow.clone()),
                     );
 
                 root.child(track).child(thumb)

@@ -255,7 +255,7 @@ This produces a fixed-row baseline with user-adjustable row count.
 
 ## Theme
 
-`TextAreaTheme` resolves `TextAreaAppearance` with fields for:
+`TextAreaTheme` resolves `TextAreaLook` with fields for:
 
 - background/foreground/border/placeholder
 - selection background/caret/focus ring

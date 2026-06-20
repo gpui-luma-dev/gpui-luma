@@ -1,7 +1,7 @@
 # Issue #0: Compact Text Field Sizing via Template Parameters
 
 ## Description
-Instead of using custom closures/hacks via `appearance_override` which bypass the model-driven design of the SDK controls, we should implement a structured **`TextFieldTemplateParameters`** configuration pattern. This is consistent with other SDK controls (such as `PagerTemplateParameters`) and preserves theme-aware scale caching.
+Instead of using custom closures/hacks via `look_override` which bypass the model-driven design of the SDK controls, we should implement a structured **`TextFieldTemplateParameters`** configuration pattern. This is consistent with other SDK controls (such as `PagerTemplateParameters`) and preserves theme-aware scale caching.
 
 ---
 
@@ -97,10 +97,10 @@ impl TextFieldControl {
 ---
 
 ### 4. Integrate with `TextFieldTemplate` Resolution
-Update `TextFieldTemplate::resolve_appearance_with_scale` in `crates/sdk/src/controls/textfield/template.rs` to consume these parameters:
+Update `TextFieldTemplate::resolve_look_with_scale` in `crates/sdk/src/controls/textfield/template.rs` to consume these parameters:
 
 ```rust
-fn resolve_appearance_with_scale(
+fn resolve_look_with_scale(
     &self,
     variant: TextFieldVariant,
     state: TextFieldState,
@@ -108,7 +108,7 @@ fn resolve_appearance_with_scale(
     params: &TextFieldTemplateParameters,
     scale_factor: f32,
     cx: &mut App,
-) -> TextFieldAppearance {
+) -> TextFieldLook {
     // Resolve the Cached standard box scale using params.size instead of hardcoded ControlSize::Md
     let scale = cx.use_cached_layout(
         self.theme.metrics(),
@@ -116,17 +116,17 @@ fn resolve_appearance_with_scale(
         |metrics| StandardBoxScale::compute(params.size, metrics, scale_factor),
     );
     
-    let mut appearance = self.theme.resolve_appearance(variant, state, enabled, &scale);
+    let mut look = self.theme.resolve_look(variant, state, enabled, &scale);
     
     // Apply optional visual overrides
     if let Some(py) = params.padding_y_override {
-        appearance.padding_y = py;
+        look.padding_y = py;
     }
     if let Some(h) = params.min_height_override {
-        appearance.min_height = h;
+        look.min_height = h;
     }
     
-    appearance
+    look
 }
 ```
 

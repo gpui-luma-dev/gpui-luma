@@ -55,14 +55,14 @@ pub trait ListViewTheme: Send + Sync {
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette;
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_row_appearance(
+    fn resolve_row_look(
         &self,
         selected: bool,
         state: InteractionState,
         size: ControlSize,
         scale: &ListRowScale,
     ) -> ListViewRowLook {
-        compose_list_view_row_appearance(&self.resolve_row(selected, state, size), scale)
+        compose_list_view_row_look(&self.resolve_row(selected, state, size), scale)
     }
 }
 
@@ -157,7 +157,7 @@ impl ListViewTheme for DefaultListViewTheme {
     }
 }
 
-pub(crate) fn compose_list_view_row_appearance(
+pub(crate) fn compose_list_view_row_look(
     palette: &ListViewRowPalette,
     scale: &ListRowScale,
 ) -> ListViewRowLook {
