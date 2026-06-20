@@ -8,10 +8,11 @@ use gpui::{
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::textfield::{TextField, TextFieldBuilder, TextFieldEvent, TextFieldLook, TextFieldLookOverride};
 use gpui_luma::vstack;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::super::model::TOKEN_CATEGORIES;
 use super::super::parsing::{effective_token_color, token_hex_value};
+use super::{category_item_id, expanded_category_ids, spawn_compact_textfield};
 use crate::studio::app::ThemeStudioApp;
 use crate::studio::overrides::StudioOverrides;
 use crate::studio::panels::parse_hex_color;
@@ -237,32 +238,9 @@ fn build_token_fields(
     for (_, tokens) in TOKEN_CATEGORIES {
         for (token, _) in *tokens {
             let initial = token_hex_value(look, global_overrides, token);
-            let field = apply_token_field_style(look.textfield(format!("theme-studio-token-{token}")))
-                .value(initial)
-                .full_width(true)
-                .spawn(cx);
+            let field = spawn_compact_textfield(look, &format!("token-{token}"), initial, cx);
             token_fields.insert(token.to_string(), field);
         }
     }
     token_fields
-}
-
-fn category_item_id(prefix: &str, category: &str) -> String {
-    format!("{prefix}-{}", category.to_lowercase().replace(' ', "-").replace('&', "and"))
-}
-
-fn expanded_category_ids<'a>(
-    accordion: &Entity<AccordionControl>,
-    categories: impl IntoIterator<Item = &'a str>,
-    prefix: &str,
-    cx: &App,
-) -> HashSet<String> {
-    let accordion = accordion.read(cx);
-    categories
-        .into_iter()
-        .filter_map(|category| {
-            let id = category_item_id(prefix, category);
-            accordion.is_expanded(&id.clone().into()).then_some(id)
-        })
-        .collect()
 }

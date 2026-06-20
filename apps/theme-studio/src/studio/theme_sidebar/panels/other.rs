@@ -9,9 +9,9 @@ use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, Accordi
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextSize};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
-use super::colors::{apply_token_field_style, token_field_look_override_arc};
+use super::colors::token_field_look_override_arc;
 use super::super::model::{
     METRIC_FIELD_WIDTH, OTHER_CATEGORIES, SHADOW_COLOR_FIELD_WIDTH, SHADOW_COLOR_SWATCH_SIZE, SHADOW_SECTION_GAP,
 };
@@ -32,6 +32,7 @@ use crate::studio::overrides::{
     clamp_shadow_offset_x, clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, clamp_spacing_rem,
     resolved_shadow_override,
 };
+use super::{category_item_id, expanded_category_ids, spawn_compact_textfield, spawn_slider};
 
 const HSL_GRID_LABELS: [&str; 3] = ["Hue", "Saturation", "Lightness"];
 const HS_ADJUSTMENT_LEFT_LABELS: [&str; 2] = ["Neutral", "Warmer"];
@@ -744,10 +745,7 @@ fn build_number_field(
     value: impl Into<SharedString>,
     cx: &mut Context<OtherPanel>,
 ) -> TextField {
-    apply_token_field_style(look.textfield(format!("theme-studio-{id}-field")))
-        .value(value)
-        .full_width(true)
-        .spawn(cx)
+    spawn_compact_textfield(look, id, value, cx)
 }
 
 fn build_slider(
@@ -759,7 +757,7 @@ fn build_slider(
     value: f32,
     cx: &mut Context<OtherPanel>,
 ) -> Slider {
-    look.slider(format!("theme-studio-{id}-slider")).range(min..max).step(step).value(value).spawn(cx)
+    spawn_slider(look, id, min, max, step, value, cx)
 }
 
 fn metric_category_content(panel: &OtherPanel, label: &str, slider: Slider, field: TextField) -> AnyElement {
@@ -916,24 +914,4 @@ fn slider_field_row_with_padding(
     .pt(px(padding_top))
     .pb(px(padding_bottom))
     .into_any_element()
-}
-
-fn category_item_id(prefix: &str, category: &str) -> String {
-    format!("{prefix}-{}", category.to_lowercase().replace(' ', "-").replace('&', "and"))
-}
-
-fn expanded_category_ids<'a>(
-    accordion: &Entity<AccordionControl>,
-    categories: impl IntoIterator<Item = &'a str>,
-    prefix: &str,
-    cx: &App,
-) -> HashSet<String> {
-    let accordion = accordion.read(cx);
-    categories
-        .into_iter()
-        .filter_map(|category| {
-            let id = category_item_id(prefix, category);
-            accordion.is_expanded(&id.clone().into()).then_some(id)
-        })
-        .collect()
 }
