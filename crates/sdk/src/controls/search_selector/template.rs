@@ -350,7 +350,7 @@ pub fn render_popup_rows(
             open,
             enabled,
             item_template,
-            look: look,
+            look,
         },
         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
         cx,

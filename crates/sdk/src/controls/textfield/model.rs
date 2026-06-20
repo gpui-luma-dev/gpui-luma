@@ -17,6 +17,7 @@ pub struct TextFieldModel {
     pub(crate) prefix_icon: Option<ControlIcon>,
     pub(crate) variant: TextFieldVariant,
     pub(crate) enabled: bool,
+    pub(crate) compact: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
@@ -55,6 +56,7 @@ impl TextFieldBuilder {
                 prefix_icon: None,
                 variant: TextFieldVariant::Standard,
                 enabled: true,
+                compact: false,
                 full_width: false,
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
@@ -88,6 +90,11 @@ impl TextFieldBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn compact(mut self) -> Self {
+        self.model.compact = true;
         self
     }
 

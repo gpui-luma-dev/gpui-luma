@@ -44,8 +44,6 @@ fn apply_token_field_look(mut look: TextFieldLook) -> TextFieldLook {
     look.font_family = token_field_mono_font();
     look.typography.size = TOKEN_FIELD_FONT_SIZE;
     look.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
-    look.padding_y = 2.0;
-    look.min_height = 22.0;
     look
 }
 
@@ -59,7 +57,7 @@ pub(super) trait TokenFieldBuilderExt {
 
 impl TokenFieldBuilderExt for TextFieldBuilder {
     fn token_style(self) -> Self {
-        self.look_override(apply_token_field_look)
+        self.compact().look_override(apply_token_field_look)
     }
 }
 

@@ -192,13 +192,17 @@ impl TextFieldControl {
     }
 
     fn resolved_look(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
-        let look = self.model.template.resolve_look_with_scale(
+        let mut look = self.model.template.resolve_look_with_scale(
             self.model.variant,
             self.state,
             self.model.enabled,
             window.scale_factor(),
             cx,
         );
+        if self.model.compact {
+            look.padding_y = 2.0;
+            look.min_height = 22.0;
+        }
         if let Some(override_fn) = &self.model.look_override {
             override_fn(look)
         } else {
@@ -223,7 +227,7 @@ impl TextFieldControl {
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
             horizontal_scroll: self.horizontal_scroll.as_f32(),
             character_offsets,
-            look: look,
+            look,
         }
     }
 
