@@ -8,7 +8,7 @@ use gpui::{
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::{GridTrack, dock_panel, grid_layout, hstack, vstack};
+use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::colors::token_field_look_override_arc;
@@ -41,7 +41,6 @@ const SHADOW_GRID_LABELS: [&str; 5] = ["Opacity", "Blur", "Spread", "Offset X", 
 const SHADOW_GRID_UNIT_WIDTH: f32 = 24.0;
 const SLIDER_FIELD_GRID_GAP_X: f32 = 10.0;
 const PANEL_SLIDER_STEP: f32 = 0.01;
-const SLIDER_FIELD_ROW_HEIGHT: f32 = 22.0;
 
 pub struct OtherPanel {
     look: Arc<ShadcnLook>,
@@ -628,10 +627,16 @@ impl OtherPanel {
         match category {
             "HSL ADJUSTMENTS" => self.hsl_adjustments_grid(window),
             "HS MIXER" => self.hs_adjustments_category_content(window),
-            "RADIUS" => metric_category_content(self, "Radius", self.radius_slider.clone(), self.radius_field.clone()),
-            "SPACING" => {
-                metric_category_content(self, "Spacing", self.spacing_slider.clone(), self.spacing_field.clone())
+            "RADIUS" => {
+                metric_category_content(self, window, "Radius", self.radius_slider.clone(), self.radius_field.clone())
             }
+            "SPACING" => metric_category_content(
+                self,
+                window,
+                "Spacing",
+                self.spacing_slider.clone(),
+                self.spacing_field.clone(),
+            ),
             "SHADOW" => self.shadow_category_content(window),
             _ => self.category_placeholder_content(category),
         }
@@ -761,8 +766,32 @@ fn build_slider(
     spawn_slider(look, id, min, max, step, value, cx)
 }
 
-fn metric_category_content(panel: &OtherPanel, label: &str, slider: Slider, field: TextField) -> AnyElement {
-    slider_field_row(panel, label, slider, field, "rem")
+fn metric_category_content(
+    panel: &OtherPanel,
+    window: &mut Window,
+    label: &'static str,
+    slider: Slider,
+    field: TextField,
+) -> AnyElement {
+    div()
+        .w_full()
+        .min_w(px(0.0))
+        .child(grid_layout! {
+            rows: 1,
+            columns: [
+                GridTrack::Px(max_label_width_for_size(panel, window, &[label], ShadcnTextSize::Xs)),
+                GridTrack::Star(1.0),
+                GridTrack::Px(METRIC_FIELD_WIDTH),
+                GridTrack::Px(SHADOW_GRID_UNIT_WIDTH),
+            ],
+            gap_x: SLIDER_FIELD_GRID_GAP_X,
+            gap_y: 0.0;
+            [0, 0] => slider_field_grid_label(panel, label),
+            [0, 1] => div().w_full().min_w(px(0.0)).child(slider),
+            [0, 2] => field,
+            [0, 3] => slider_field_grid_unit(panel, "rem"),
+        })
+        .into_any_element()
 }
 
 fn hs_adjustment_label(panel: &OtherPanel, label: &str, right_aligned: bool) -> AnyElement {
@@ -866,65 +895,4 @@ fn slider_field_grid_unit(panel: &OtherPanel, unit: &'static str) -> AnyElement 
     let unit_style = panel.look.typography_scale(ShadcnTextSize::Sm);
 
     div().typography_style(unit_style).text_color(chrome.muted_text).child(unit).into_any_element()
-}
-
-fn slider_field_row(
-    panel: &OtherPanel,
-    label: &str,
-    slider: Slider,
-    field: TextField,
-    unit: &'static str,
-) -> AnyElement {
-    slider_field_row_with_padding(panel, label, slider, field, unit, 6.0, 8.0)
-}
-
-fn slider_field_row_with_padding(
-    panel: &OtherPanel,
-    label: &str,
-    slider: Slider,
-    field: TextField,
-    unit: &'static str,
-    padding_top: f32,
-    padding_bottom: f32,
-) -> AnyElement {
-    let chrome = panel.look.chrome();
-    let row_label_typography = panel.look.typography_scale(ShadcnTextSize::Xs);
-    let unit_style = panel.look.typography_scale(ShadcnTextSize::Sm);
-    let label = label.to_string();
-
-    div()
-        .w_full()
-        .min_w(px(0.0))
-        .h(px(SLIDER_FIELD_ROW_HEIGHT))
-        .pt(px(padding_top))
-        .pb(px(padding_bottom))
-        .child(dock_panel! {
-            left: div()
-                .h_full()
-                .flex()
-                .items_center()
-                .typography_style(row_label_typography)
-                .text_color(chrome.body_text)
-                .child(label),
-            right: hstack! {
-                gap=10 align=center;
-                div()
-                    .w(px(METRIC_FIELD_WIDTH))
-                    .child(field),
-                div()
-                    .h_full()
-                    .flex()
-                    .items_center()
-                    .typography_style(unit_style)
-                    .text_color(chrome.muted_text)
-                    .child(unit),
-            },
-            fill: div()
-                .h_full()
-                .flex()
-                .items_center()
-                .min_w(px(0.0))
-                .child(slider),
-        })
-        .into_any_element()
 }

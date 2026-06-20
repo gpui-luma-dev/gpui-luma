@@ -6,89 +6,72 @@ The workspace currently has two slider families with overlapping responsibilitie
 - `crates/sdk/src/controls/slider/*`
   - newer LMTP-style control family
   - look-integrated via `ShadcnLookControlExt`
-  - used by app surfaces like theme studio
 - `crates/sdk/src/controls/color/color_slider/*`
   - stronger color-spectrum behavior
   - better event semantics for interactive color work
   - older, separate control architecture
 
-We should rationalize this by upgrading the main SDK slider model so it can support both:
-
-- normal semantic sliders
-- color-spectrum / gradient sliders
-
-The immediate validation target is:
-
-1. gallery app coverage for the upgraded control
-2. replacing the two `HS MIXER` sliders in theme studio with color-spectrum sliders
-
-Related mixer module:
-
-- `apps/theme-studio/src/studio/hs_mixer.rs`
-
-That file already makes OKLCH-based hue/chroma palette generation first-class for the theme studio mixer. The slider upgrade should treat OKLCH as a first-class color model for color controls as well.
+We should rationalize this by aligning their control interfaces and builder APIs to be as parallel as possible, unifying their sizing and styling systems, while keeping their underlying implementations decoupled.
 
 ## Goals
-- Keep `controls::slider` as the canonical SDK slider family.
-- Port the useful behavior from `controls::color::color_slider` into the main slider architecture.
-- Make OKLCH a first-class option in color slider tracks and delegates.
-- Avoid leaving the product with two unrelated slider stacks long-term.
-- Preserve the current SDK architecture principles from `docs/architecture.md`.
+- Align the public API and builder interfaces of both `Slider` and `ColorSlider` for SDK consistency.
+- Port the useful event behavior (like `Release` events) to the main `Slider` architecture.
+- Share a unified semantic sizing system (`ControlSize`) and a custom corner radius override system across both semantic sliders and color sliders.
+- Keep their internal control structures independent to avoid complex wrapping/orchestration boilerplate.
 
 ## Non-Goals
-- Do not rewrite all color controls in one pass.
+- Do not add color interpolation or color-space specific features directly to the base `Slider` control.
+- Do not wrap `SliderControl` inside `ColorSlider`, and do not share templates between them. Keep them as separate, parallel controls.
+- Do not add thumb shape enums (like Circle, Square, Bar) to the core `SliderModel`.
+- Do not migrate or replace the Theme Studio HS mixer sliders in this pass; validation in the gallery is sufficient.
 - Do not remove `color_slider` immediately.
-- Do not block the gallery or theme-studio work on perfect final deprecation.
 
-## Current State
+---
 
-### Main slider strengths
-Files:
-- `crates/sdk/src/controls/slider/model.rs`
-- `crates/sdk/src/controls/slider/control.rs`
-- `crates/sdk/src/controls/slider/template.rs`
-- `crates/sdk/src/controls/slider/theme.rs`
+## Current Sizing & Styling Analysis
 
-Pros:
-- follows LMTP split
-- look-themed
-- already used in apps cleanly
-- good default product control foundation
+Currently, the two slider families have disconnected sizing and styling systems:
 
-Weaknesses:
-- event model is too simple for color editing
-- no built-in gradient / spectrum track model
-- no first-class color interpolation / track delegate abstraction
+### 1. Sizing Systems
+* **Semantic `Slider`**: Has no size options. It hardcodes standard dimensions in `DefaultSliderTheme` (width: 260px, height: 32px, track: 8px, thumb: 18px).
+* **`ColorSlider`**: Defines a custom size enum (`XSmall`, `Small`, `Medium`, `Large`, `Size(Pixels)`) and maps them to custom track thicknesses and thumb sizes.
 
-### Color slider strengths
-Files:
-- `crates/sdk/src/controls/color/color_slider/model.rs`
-- `crates/sdk/src/controls/color/color_slider/slider.rs`
-- `crates/sdk/src/controls/color/color_slider/delegates.rs`
-- `crates/sdk/src/controls/color/color_slider/visual.rs`
+### 2. Corner Radii Systems
+* **Semantic `Slider`**: Resolves a single static corner radius (`look.radius`) from the theme (usually `radius.pill`). Callers cannot override specific corners (e.g. to make a square-edged track).
+* **`ColorSlider`**: Supports setting explicit corner radii overrides on the control and state:
+  ```rust
+  pub fn set_corner_radius(&mut self, radius: AbsoluteLength, cx: &mut Context<Self>);
+  pub fn clear_corner_radius(&mut self, cx: &mut Context<Self>);
+  ```
+  This is useful for creating sharp block-style gradients or custom edge designs.
 
-Pros:
-- `Change` and `Release` events
-- track delegates
-- hue spectrum support
-- arbitrary gradient support
-- interpolation modes: RGB / HSL / Lab
+### Harmonization Plan
+We will align both sliders to share `ControlSize` and custom corner radius overrides:
 
-Weaknesses:
-- separate control family
-- not aligned with the newer standard slider architecture
-- not naturally look-integrated the same way the main slider is
-- OKLCH is not first-class in the slider API today
+1. **Unify Sizing under `ControlSize`**:
+   * Add `.size(ControlSize)` to `SliderBuilder`.
+   * Update `SliderTheme` to resolve size-specific dimensions:
+     * `Sm`: height: `24px`, track_height: `4px`, thumb_size: `12px`
+     * `Md` (Default): height: `32px`, track_height: `6px`, thumb_size: `16px`
+     * `Lg`: height: `40px`, track_height: `8px`, thumb_size: `20px`
+   * Harmonize `ColorSlider` to use `ControlSize` but preserve its thicker tracks designed to display gradients:
+     * `Sm`: track: `12px`, thumb: `16px`
+     * `Md` (Default): track: `20px`, thumb: `24px`
+     * `Lg`: track: `30px`, thumb: `32px`
 
-## Proposed Direction: Layered Composition
+2. **Unify Corner Radii**:
+   * Port the corner radius override properties into `SliderModel` and `SliderBuilder`.
+   * Expose `.corner_radius(...)` and `.clear_corner_radius()` on both `SliderBuilder` / `SliderControl` and `ColorSliderModel` / `ColorSliderState`.
+   * Update the standard `ThemedSliderTemplate` to apply these overrides when drawing the track.
 
-To prevent polluting the generic `Slider` with color-specific logic (e.g. color interpolation, spaces like OKLCH/Lab, checkerboard rendering, etc.), we adopt a **layered composition architecture**.
+---
 
-1. **Keep `Slider` color-blind**: The core `Slider` will remain completely unaware of colors. We will upgrade it with the minimum generic capabilities needed to support advanced template overrides:
-   - Add `Release` events.
-   - Accept arbitrary custom template configurations (or hooks for custom track rendering).
-2. **Re-implement `ColorSlider` as a facade/custom template**: Keep `ColorSlider` as a distinct control API under `crates/sdk/src/controls/color/color_slider`. Under the hood, it wraps or configures a generic `Slider` but sets a specialized `ColorSliderTemplate` to handle the rendering of spectrums, checkerboards, gradients, and custom colored thumbs.
-3. **OKLCH and Color Math encapsulation**: Keep all color interpolation algorithms, color specification models, and delegates isolated in the color sub-module.
+## Proposed Direction: Parallel Independent Controls
+
+Rather than wrapping the generic slider or sharing templates, `ColorSlider` and `Slider` will remain separate control architectures. This avoids wrapping overhead while ensuring they present a unified user-facing API:
+
+1. **Parallel Builders**: Both controls will follow the standard builder-to-spawn pattern, exposing parallel sizing and corner styling methods.
+2. **Parallel Event Models**: Both controls will emit comparable semantic events (`Change` and `Release`), allowing downstream apps to consume them interchangeably.
 
 ---
 
@@ -104,35 +87,23 @@ pub enum SliderEvent {
 }
 ```
 
-### 2. Custom Track/Thumb Hooks in `Slider`
-To allow color spectrum rendering without making `Slider` color-aware, the slider's layout & templates should allow custom track backgrounds and thumb customizations.
-
-Possible approach:
-- Enhance `SliderTemplate` (or introduce a track-rendering delegate slot in `SliderModel`) so that custom visual templates (like `ColorSliderTemplate`) can take control of painting the track background, track overlays, and thumb color/shape while relying on `SliderControl` for input bounds, drag-movement, and keyboard focus.
-
-### 3. First-class Color Interpolation in `ColorSlider`
-The `ColorSlider` delegates and templates will support OKLCH alongside existing HSL, RGB, and Lab modes:
-
+### 2. Sizing configuration
+Expose standard sizing builders on both controls:
 ```rust
-pub enum ColorInterpolation {
-    Rgb,
-    Hsl,
-    Lab,
-    Oklch,
-}
+// On SliderBuilder and ColorSliderModel
+pub fn size(mut self, size: ControlSize) -> Self;
 ```
 
-### 4. Gradient Stop and Checkerboard Support
-Implement these purely within the custom `ColorSliderTemplate` and delegates:
-- Checkerboards for alpha/opacity channels.
-- Multicolored stops and spectrum segments with sub-pixel overlapping drawing.
+### 3. Corner Radii overrides
+Expose corner radius overrides on both controls:
+```rust
+// On SliderBuilder and ColorSliderModel
+pub fn corner_radius(mut self, radius: gpui::CornerRadius) -> Self;
 
----
-
-## OKLCH First-Class Work
-- Port the OKLCH interpolation algorithm to `color_spec` in the color module.
-- Allow the theme studio mixer (`hs_mixer.rs`) to drive the color slider templates with OKLCH spectrum tracks.
-- Show an OKLCH-based spectrum comparison in the gallery.
+// On SliderControl and ColorSliderState
+pub fn set_corner_radius(&mut self, radius: gpui::CornerRadius, cx: &mut Context<Self>);
+pub fn clear_corner_radius(&mut self, cx: &mut Context<Self>);
+```
 
 ---
 
@@ -143,58 +114,41 @@ Files touched:
 - `crates/sdk/src/controls/slider/model.rs`
 - `crates/sdk/src/controls/slider/control.rs`
 - `crates/sdk/src/controls/slider/template.rs`
+- `crates/sdk/src/controls/slider/theme.rs`
 
 Tasks:
 - [ ] Add `Release` event support to `SliderEvent`.
-- [ ] Add custom track / custom template hooks to allow full visual control of the track and thumb.
+- [ ] Implement `ControlSize` handling and update `SliderTheme` to resolve size-specific metrics.
+- [ ] Add custom track corner radii override properties and methods (`corner_radius`, `clear_corner_radius`).
 - [ ] Verify that default themed slider behavior is unchanged for existing consumers.
 
-### Phase 2: Refactor `ColorSlider` Internals
+### Phase 2: Refactor `ColorSlider`
 Files touched:
 - `crates/sdk/src/controls/color/color_slider/*`
 
 Tasks:
-- [ ] Create `ColorSliderTemplate` implementing `SliderTemplate` to handle the color drawing.
-- [ ] Re-implement `ColorSliderState` / `ColorSlider` to compose a nested `SliderControl` configured with the new template.
-- [ ] Keep the public API of `ColorSlider` backward-compatible.
-- [ ] Add `Oklch` to `ColorInterpolation` and implement its interpolation algorithm.
+- [ ] Replace `color::style::Size` with `ControlSize` and map sizes accordingly.
+- [ ] Implement the unified corner radius override interfaces in `ColorSliderModel` and `ColorSliderState`.
+- [ ] Align helper builder methods to match the SDK conventions used in the generic slider.
 
 ### Phase 3: Gallery Validation
 Tasks:
-- [ ] Add gallery examples showing:
-  - [ ] Default slider still works perfectly.
-  - [ ] Composed `ColorSlider` rendering a Hue spectrum.
-  - [ ] Composed `ColorSlider` rendering a checkerboard alpha spectrum.
-  - [ ] Composed `ColorSlider` using OKLCH interpolation.
-
-### Phase 4: Replace Theme Studio HS Mixer Sliders
-Target files:
-- `apps/theme-studio/src/studio/hs_mixer.rs`
-- `apps/theme-studio/src/studio/theme_sidebar/panels/other.rs` (and related sync code)
-
-Tasks:
-- [ ] Replace the two old mixer sliders with the composed `ColorSlider`.
-- [ ] Temperature slider uses warm ↔ cool spectrum driven by `hs_mixer.rs`.
-- [ ] Vividness slider uses neutral ↔ vivid spectrum driven by `hs_mixer.rs`.
+- [ ] Update the current slider pane ([pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/slider/pane.rs)) to display coordinated size comparisons:
+  - [ ] Render both standard `Slider` and `ColorSlider` side-by-side (or stacked) in `Sm`, `Md`, and `Lg` sizes, demonstrating coordinated visual alignments.
+  - [ ] Show custom corner radius overrides (e.g. rounded vs sharp) on both controls.
+  - [ ] Show a checkerboard alpha color slider.
 
 ---
 
 ## Design Constraints
-- **Separation of concerns**: The core `Slider` must not have any dependencies on color spaces, checkerboards, or color conversion libraries.
-- **Maintain LMTP split**: The templates should remain stateless GPUI renderers, resolving styles from themes/delegates.
-- Keep app-level custom spectrum calculations in `hs_mixer.rs`.
-
----
-
-## Risks
-- Sub-pixel overlapping drawing trickiness needs to translate cleanly into the custom `ColorSliderTemplate`.
-- Custom track bounds and dragging mechanics in `SliderControl` must properly align with the track insets of the color slider.
+- **Separation of concerns**: Keep the two control codebases fully decoupled to avoid wrapping/orchestration boilerplate.
+- **Unified API conventions**: Ensure the control interfaces and methods are named and typed identically.
 
 ---
 
 ## Acceptance Criteria
-- Core `Slider` supports `Release` events and custom templates.
-- `ColorSlider` wraps `Slider` and renders checkerboards, hue spectrums, and OKLCH gradients.
-- Theme studio mixer uses the composed OKLCH color sliders.
-- Gallery validates both normal and color sliders.
+- Core `Slider` supports `Release` events, `ControlSize` sizing, and custom corner radius overrides.
+- `ColorSlider` supports `ControlSize` sizing and custom corner radius overrides.
+- Sizing and corner radius configuration interfaces match across both controls.
+- Gallery validates both normal and color sliders across all size and radius variants.
 - All code formats and clippy checks pass.

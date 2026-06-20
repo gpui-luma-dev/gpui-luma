@@ -1,12 +1,12 @@
 # Issue #0-oklch: Migrate Color Representation to Native OKLCH
 
 ## Description
-Migrate the internal color representation, state calculators, and theme studio serialization in the `gpui-luma` workspace from HSL/RGB to native OKLCH. 
+Migrate the internal color representation, state calculators, and theme studio serialization in the `gpui-luma` workspace from HSL/RGB to native OKLCH.
 
 ## Rationale
 * **Precision & Consistency**: Avoid precision loss and rounding shifts caused by continuous HSL $\leftrightarrow$ OKLCH round-trip conversions when computing dynamic state highlights (e.g., hover/pressed states) or updating studio overrides.
 * **Unified State Calculations**: Lightness adjustments during hover/pressed transitions can be done directly on the lightness (`L`) parameter of OKLCH without complex conversions.
-* **Preparation for Color Sliders**: Prepares the codebase for Issue #1, which introduces first-class OKLCH track rendering and interpolation.
+* **Non-Linear Color Mixing**: Support high-fidelity color mixing inside the gallery app using OKLCH, constrained by sRGB/P3 gamut limits.
 
 ---
 
@@ -35,6 +35,16 @@ In [look.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src
 ### 5. Standardize Theme Assets
 * Convert HSL color tokens in [native.css](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/assets/native.css) and key built-in theme files to `oklch(...)`.
 
+### 6. Implement OKLCH Color Mixer using RangeSliders
+In `apps/gallery/src/gallery/panes/color/color_mixer_pane.rs` (or a new color-mixer pane):
+* Implement an interactive OKLCH color mixer containing Lightness ($L$), Chroma ($C$), Hue ($H$), and Alpha ($A$) sliders.
+* Coordinate the sliders dynamically to prevent out-of-gamut selections:
+  * When $L$ or $H$ changes, calculate the maximum displayable Chroma under sRGB/P3 limits and set it as the upper bound of the Chroma slider.
+  * When $L$ and $C$ are set, compute the valid, in-gamut intervals of Hue ($0.0 \dots 360.0$).
+  * Set these intervals as the `allowed_intervals` on the Hue slider (which will be a `RangeSlider`), so that out-of-gamut hues are visually grayed out (gaps) and cannot be selected by the user.
+  * When $C$ and $H$ are set, compute the valid range of Lightness and constrain it.
+* Render custom gradients on the tracks that represent the true OKLCH slice, showing the grey gaps where colors clip.
+
 ---
 
 ## Verification Plan
@@ -46,8 +56,10 @@ In [look.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src
   ```
 
 ### Manual Verification
-* Run the Theme Studio application:
+* Run the Gallery application:
   ```bash
-  cargo run -p gpui-luma-theme-studio
+  cargo run -p gpui-luma-gallery
   ```
-* Verify adjusting temperature/vividness sliders works smoothly and does not trigger visual regressions or assertions.
+* Open the **Color Mixer** pane.
+* Verify adjusting Lightness or Chroma dynamically updates the Hue `RangeSlider` track gaps.
+* Verify dragging the Hue slider snaps over the gaps and never permits selecting an unrenderable/clipped color.
