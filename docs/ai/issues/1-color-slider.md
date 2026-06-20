@@ -80,27 +80,23 @@ Weaknesses:
 - not naturally look-integrated the same way the main slider is
 - OKLCH is not first-class in the slider API today
 
-## Proposed Direction
-Upgrade `crates/sdk/src/controls/slider/*` so it absorbs the capabilities needed for color-spectrum sliders.
+## Proposed Direction: Layered Composition
 
-### Principle
-Do **not** make `color_slider` the new universal base control.
+To prevent polluting the generic `Slider` with color-specific logic (e.g. color interpolation, spaces like OKLCH/Lab, checkerboard rendering, etc.), we adopt a **layered composition architecture**.
 
-Instead:
-- keep `controls::slider` as the canonical slider primitive
-- port over the missing capabilities from `color_slider`
-- later migrate app usage and possibly deprecate the old color slider family
+1. **Keep `Slider` color-blind**: The core `Slider` will remain completely unaware of colors. We will upgrade it with the minimum generic capabilities needed to support advanced template overrides:
+   - Add `Release` events.
+   - Accept arbitrary custom template configurations (or hooks for custom track rendering).
+2. **Re-implement `ColorSlider` as a facade/custom template**: Keep `ColorSlider` as a distinct control API under `crates/sdk/src/controls/color/color_slider`. Under the hood, it wraps or configures a generic `Slider` but sets a specialized `ColorSliderTemplate` to handle the rendering of spectrums, checkerboards, gradients, and custom colored thumbs.
+3. **OKLCH and Color Math encapsulation**: Keep all color interpolation algorithms, color specification models, and delegates isolated in the color sub-module.
+
+---
 
 ## Proposed API Additions
 
 ### 1. Richer slider events
-Current:
-- `SliderEvent::Change { value }`
+Add release / commit semantics to the core `Slider` to support live preview on drag and state-sync/commit on release.
 
-Target:
-- add release / commit semantics
-
-Possible shape:
 ```rust
 pub enum SliderEvent {
     Change { value: f32 },
@@ -108,41 +104,17 @@ pub enum SliderEvent {
 }
 ```
 
-Or a phased event shape if preferred.
+### 2. Custom Track/Thumb Hooks in `Slider`
+To allow color spectrum rendering without making `Slider` color-aware, the slider's layout & templates should allow custom track backgrounds and thumb customizations.
 
-Why:
-- color editing often wants live preview on drag
-- some sync/export work should happen on release only
-- this matches the current color slider behavior
+Possible approach:
+- Enhance `SliderTemplate` (or introduce a track-rendering delegate slot in `SliderModel`) so that custom visual templates (like `ColorSliderTemplate`) can take control of painting the track background, track overlays, and thumb color/shape while relying on `SliderControl` for input bounds, drag-movement, and keyboard focus.
 
-### 2. Track delegate / track renderer model
-Add a track abstraction to the main slider.
+### 3. First-class Color Interpolation in `ColorSlider`
+The `ColorSlider` delegates and templates will support OKLCH alongside existing HSL, RGB, and Lab modes:
 
-Possible concepts:
-- `SliderTrackDelegate`
-- `SliderTrackVisual`
-- `SliderTrackMode`
-
-Required capabilities:
-- plain themed rail/fill
-- arbitrary gradient track
-- hue spectrum track
-- computed color-at-position
-
-This should live in the main slider control family rather than in ad-hoc app code.
-
-### 3. First-class color interpolation
-Current color slider supports:
-- RGB
-- HSL
-- Lab
-
-Upgrade target should add:
-- OKLCH
-
-Possible enum:
 ```rust
-pub enum SliderColorInterpolation {
+pub enum ColorInterpolation {
     Rgb,
     Hsl,
     Lab,
@@ -150,125 +122,79 @@ pub enum SliderColorInterpolation {
 }
 ```
 
-Reason:
-- `hs_mixer.rs` already derives palette behavior from OKLCH-like hue/chroma thinking
-- future color controls should not treat OKLCH as a second-class conversion step
+### 4. Gradient Stop and Checkerboard Support
+Implement these purely within the custom `ColorSliderTemplate` and delegates:
+- Checkerboards for alpha/opacity channels.
+- Multicolored stops and spectrum segments with sub-pixel overlapping drawing.
 
-### 4. Gradient stop model
-The main slider should support explicit color stops.
-
-Possible shape:
-```rust
-pub struct SliderColorStop {
-    pub position: f32,
-    pub color: Hsla,
-}
-```
-
-Needed for:
-- warm ↔ cool tracks
-- neutral ↔ vivid tracks
-- arbitrary palette ramps
-- color controls beyond hue sliders
-
-### 5. Optional built-in spectrum modes
-Convenience helpers on the main slider would reduce app wiring.
-
-Examples:
-- hue spectrum
-- custom gradient
-- alpha-over-checkerboard
-
-These should still compile down to the same delegate/track system.
+---
 
 ## OKLCH First-Class Work
-This should be added now while upgrading the slider.
+- Port the OKLCH interpolation algorithm to `color_spec` in the color module.
+- Allow the theme studio mixer (`hs_mixer.rs`) to drive the color slider templates with OKLCH spectrum tracks.
+- Show an OKLCH-based spectrum comparison in the gallery.
 
-### Requirements
-- track interpolation mode supports OKLCH
-- helper constructors can derive gradient stops in OKLCH
-- any future color-spec system should be able to expose OKLCH channels directly
-- avoid baking HSL-only assumptions into the upgraded slider API
-
-### Minimum OKLCH scope for this issue
-- add OKLCH interpolation support in upgraded slider track logic
-- allow `hs_mixer.rs`-driven sliders to generate visually meaningful spectrum tracks
-- ensure gallery has at least one OKLCH-based example or comparison pane
+---
 
 ## Migration Plan
 
-### Phase 1: Upgrade main slider internals
-Files likely touched:
+### Phase 1: Upgrade main slider internals (Color-Blind)
+Files touched:
 - `crates/sdk/src/controls/slider/model.rs`
 - `crates/sdk/src/controls/slider/control.rs`
 - `crates/sdk/src/controls/slider/template.rs`
-- `crates/sdk/src/controls/slider/theme.rs`
-- possibly new helper files under `crates/sdk/src/controls/slider/`
 
 Tasks:
-- [ ] add `Release` event support
-- [ ] add track delegate / gradient support
-- [ ] add color interpolation enum with OKLCH
-- [ ] add gradient stop model
-- [ ] keep default themed slider behavior unchanged for non-color consumers
+- [ ] Add `Release` event support to `SliderEvent`.
+- [ ] Add custom track / custom template hooks to allow full visual control of the track and thumb.
+- [ ] Verify that default themed slider behavior is unchanged for existing consumers.
 
-### Phase 2: Gallery validation
-Use the gallery as the primary proving ground.
+### Phase 2: Refactor `ColorSlider` Internals
+Files touched:
+- `crates/sdk/src/controls/color/color_slider/*`
 
 Tasks:
-- [ ] add gallery examples showing:
-  - [ ] default slider behavior still works
-  - [ ] hue spectrum slider in upgraded main slider
-  - [ ] arbitrary gradient slider in upgraded main slider
-  - [ ] OKLCH interpolation example
-- [ ] compare old `color_slider` behavior versus upgraded `slider` where useful
-- [ ] verify drag, release, keyboard, and focus behavior
+- [ ] Create `ColorSliderTemplate` implementing `SliderTemplate` to handle the color drawing.
+- [ ] Re-implement `ColorSliderState` / `ColorSlider` to compose a nested `SliderControl` configured with the new template.
+- [ ] Keep the public API of `ColorSlider` backward-compatible.
+- [ ] Add `Oklch` to `ColorInterpolation` and implement its interpolation algorithm.
 
-Good existing references:
-- `apps/gallery/src/gallery/panes/color/hsv_plane_pane.rs`
-- `apps/gallery/src/gallery/panes/color/multi_mixer_pane.rs`
-- `apps/gallery/src/gallery/panes/slider/*`
+### Phase 3: Gallery Validation
+Tasks:
+- [ ] Add gallery examples showing:
+  - [ ] Default slider still works perfectly.
+  - [ ] Composed `ColorSlider` rendering a Hue spectrum.
+  - [ ] Composed `ColorSlider` rendering a checkerboard alpha spectrum.
+  - [ ] Composed `ColorSlider` using OKLCH interpolation.
 
-### Phase 3: Replace theme studio HS mixer sliders
+### Phase 4: Replace Theme Studio HS Mixer Sliders
 Target files:
-- `apps/theme-studio/src/studio/theme_sidebar/model.rs`
-- `apps/theme-studio/src/studio/theme_sidebar/mod.rs`
-- `apps/theme-studio/src/studio/theme_sidebar/subscriptions.rs`
-- `apps/theme-studio/src/studio/theme_sidebar/sync.rs`
-- `apps/theme-studio/src/studio/theme_sidebar/panels/other.rs`
 - `apps/theme-studio/src/studio/hs_mixer.rs`
+- `apps/theme-studio/src/studio/theme_sidebar/panels/other.rs` (and related sync code)
 
 Tasks:
-- [ ] replace the two `HS MIXER` generic sliders with upgraded spectrum sliders
-- [ ] temperature slider should show warm ↔ cool color track
-- [ ] vividness slider should show neutral ↔ vivid track
-- [ ] track generation should be driven from `hs_mixer.rs`
-- [ ] preserve the current layout and width behavior already tuned in the sidebar
+- [ ] Replace the two old mixer sliders with the composed `ColorSlider`.
+- [ ] Temperature slider uses warm ↔ cool spectrum driven by `hs_mixer.rs`.
+- [ ] Vividness slider uses neutral ↔ vivid spectrum driven by `hs_mixer.rs`.
 
-### Phase 4: Evaluate deprecation path
-Tasks:
-- [ ] decide whether `controls/color/color_slider` remains for advanced picker workflows only
-- [ ] or start migrating it behind the main slider model
-- [ ] document the intended long-term ownership boundary
+---
 
 ## Design Constraints
-- Maintain LMTP split.
-- Do not push app-specific palette math into the base slider control.
-- `hs_mixer.rs` should remain the theme-studio-specific source of hue/chroma spectrum generation.
-- The main slider should expose generic track/delegate primitives, not hardcode theme-studio logic.
-- Keep app usage on SDK controls; do not invent raw div-based sliders in apps.
+- **Separation of concerns**: The core `Slider` must not have any dependencies on color spaces, checkerboards, or color conversion libraries.
+- **Maintain LMTP split**: The templates should remain stateless GPUI renderers, resolving styles from themes/delegates.
+- Keep app-level custom spectrum calculations in `hs_mixer.rs`.
+
+---
 
 ## Risks
-- Event compatibility changes may affect existing slider consumers.
-- Rendering custom gradients in the main slider template may complicate the simple themed fill rail path.
-- OKLCH interpolation may need careful gamut handling to avoid ugly transitions.
-- There may be overlap with existing `color_slider` delegate concepts that should be unified deliberately, not duplicated.
+- Sub-pixel overlapping drawing trickiness needs to translate cleanly into the custom `ColorSliderTemplate`.
+- Custom track bounds and dragging mechanics in `SliderControl` must properly align with the track insets of the color slider.
+
+---
 
 ## Acceptance Criteria
-- Upgraded `controls::slider` supports release/commit-style events.
-- Upgraded `controls::slider` supports spectrum / gradient tracks.
-- OKLCH is a first-class interpolation option in the upgraded slider path.
-- Gallery demonstrates the upgraded control clearly.
-- Theme studio `HS MIXER` uses the upgraded color-spectrum slider for its two rows.
-- Existing non-color slider behavior remains intact.
-- `cargo fmt`, `cargo clippy`, and relevant gallery/theme-studio validation pass.
+- Core `Slider` supports `Release` events and custom templates.
+- `ColorSlider` wraps `Slider` and renders checkerboards, hue spectrums, and OKLCH gradients.
+- Theme studio mixer uses the composed OKLCH color sliders.
+- Gallery validates both normal and color sliders.
+- All code formats and clippy checks pass.
