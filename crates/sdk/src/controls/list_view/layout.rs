@@ -27,12 +27,7 @@ pub fn body_rows_height(visible_rows: usize, row_height: f32) -> f32 {
     row_count * row_height + dividers
 }
 
-pub fn compute_shell_height(
-    visible_rows: usize,
-    row_height: f32,
-    list_look: &ListViewLook,
-    has_header: bool,
-) -> f32 {
+pub fn compute_shell_height(visible_rows: usize, row_height: f32, list_look: &ListViewLook, has_header: bool) -> f32 {
     let mut total_height = body_rows_height(visible_rows, row_height);
 
     if has_header {

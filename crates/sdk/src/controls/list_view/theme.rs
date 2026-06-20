@@ -157,10 +157,7 @@ impl ListViewTheme for DefaultListViewTheme {
     }
 }
 
-pub(crate) fn compose_list_view_row_look(
-    palette: &ListViewRowPalette,
-    scale: &ListRowScale,
-) -> ListViewRowLook {
+pub(crate) fn compose_list_view_row_look(palette: &ListViewRowPalette, scale: &ListRowScale) -> ListViewRowLook {
     ListViewRowLook {
         background: palette.background,
         label_color: palette.label_color,

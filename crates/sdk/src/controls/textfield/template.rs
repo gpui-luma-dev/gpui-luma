@@ -272,8 +272,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
             .child(text_viewport);
 
-        let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
+        let mut root = render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
 
         if model.full_width {
             root = root.w_full();

@@ -27,10 +27,5 @@ where
         return item_template(&item_model, cx);
     }
 
-    div()
-        .flex()
-        .items_center()
-        .gap(px(look.trigger_gap))
-        .child(model.label.clone())
-        .into_any_element()
+    div().flex().items_center().gap(px(look.trigger_gap)).child(model.label.clone()).into_any_element()
 }

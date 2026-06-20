@@ -187,9 +187,7 @@ where
             if let Some(icon) = icon.lucide() {
                 row.child(lucide_icon(icon, color, model.look.item_icon_size))
             } else if let Some(path) = icon.svg_path() {
-                row.child(
-                    gpui::svg().external_path(path.clone()).size(px(model.look.item_icon_size)).text_color(color),
-                )
+                row.child(gpui::svg().external_path(path.clone()).size(px(model.look.item_icon_size)).text_color(color))
             } else {
                 row
             }

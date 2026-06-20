@@ -29,8 +29,7 @@ pub use template::{
     list_view_template_with_modifier, list_view_template_with_theme,
 };
 pub use theme::{
-    DefaultListViewTheme, ListViewLook, ListViewRowLook, ListViewRowPalette, ListViewTheme,
-    default_list_view_theme,
+    DefaultListViewTheme, ListViewLook, ListViewRowLook, ListViewRowPalette, ListViewTheme, default_list_view_theme,
 };
 
 use gpui::{Entity, SharedString};

@@ -36,12 +36,7 @@ pub trait NavigationSidebarTheme: Send + Sync {
     fn resolve_container(&self) -> NavigationSidebarContainerLook;
     fn resolve_section(&self) -> NavigationSidebarSectionLook;
     fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook;
-    fn resolve_item(
-        &self,
-        selected: bool,
-        state: InteractionState,
-        size: ControlSize,
-    ) -> NavigationSidebarItemLook;
+    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -118,12 +113,7 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         look
     }
 
-    fn resolve_item(
-        &self,
-        selected: bool,
-        state: InteractionState,
-        size: ControlSize,
-    ) -> NavigationSidebarItemLook {
+    fn resolve_item(&self, selected: bool, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
         let mut look = self.base_item(state, size);
         let palette = &self.tokens.palette;
 

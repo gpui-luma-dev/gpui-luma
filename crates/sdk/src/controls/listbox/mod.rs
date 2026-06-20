@@ -7,8 +7,7 @@ pub use model::ListBoxItem;
 pub use item_template::default_listbox_item_template;
 pub use template::{ThemedListBoxTemplate, default_listbox_template, listbox_template_with_theme, shared_listbox_template};
 pub use theme::{
-    DefaultListBoxTheme, ListBoxListLook, ListBoxRowLook, ListBoxRowPalette, ListBoxTheme,
-    default_listbox_theme,
+    DefaultListBoxTheme, ListBoxListLook, ListBoxRowLook, ListBoxRowPalette, ListBoxTheme, default_listbox_theme,
 };
 
 pub use crate::controls::control_group::{

@@ -52,12 +52,8 @@ impl ThemedListBoxTemplate {
         } else {
             None
         };
-        let list_oversize_extent = adorner_oversize_extent(list_look.adorner).max(
-            focused_probe_list_look
-                .as_ref()
-                .map(|probe| adorner_oversize_extent(probe.adorner))
-                .unwrap_or(0.0),
-        );
+        let list_oversize_extent = adorner_oversize_extent(list_look.adorner)
+            .max(focused_probe_list_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
         let mut root = div()
             .id(model.id.clone())
@@ -104,8 +100,7 @@ impl ThemedListBoxTemplate {
             };
 
             let row_look =
-                self.theme
-                    .resolve_row_look(item.selected, item.state.interaction_state(), self.size, &row_scale);
+                self.theme.resolve_row_look(item.selected, item.state.interaction_state(), self.size, &row_scale);
             let focused_probe_row_look = if any_item_enabled && !item.state.disabled {
                 let mut focused_state = item.state.interaction_state();
                 focused_state.focused = true;
@@ -114,10 +109,7 @@ impl ThemedListBoxTemplate {
                 None
             };
             let row_oversize_extent = adorner_oversize_extent(row_look.adorner).max(
-                focused_probe_row_look
-                    .as_ref()
-                    .map(|probe| adorner_oversize_extent(probe.adorner))
-                    .unwrap_or(0.0),
+                focused_probe_row_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0),
             );
 
             let content = if let Some(item_template) = model.item_template {

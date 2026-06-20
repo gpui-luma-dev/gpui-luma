@@ -184,8 +184,8 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
         }
 
         if let Some(focus_ring) = look.focus_ring {
-            root = root
-                .child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(look.radius)));
+            root =
+                root.child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(look.radius)));
         }
 
         root

@@ -329,13 +329,8 @@ mod tests {
     fn smart_placement_uses_below_when_it_fits() {
         let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
-        let placement = resolve_selector_placement(
-            Some(trigger),
-            SelectorPlacement::Smart,
-            &look,
-            3,
-            size(px(320.0), px(360.0)),
-        );
+        let placement =
+            resolve_selector_placement(Some(trigger), SelectorPlacement::Smart, &look, 3, size(px(320.0), px(360.0)));
 
         assert_eq!(placement.anchor, Corner::TopLeft);
         assert_eq!(placement.position, point(px(12.0), px(112.0)));

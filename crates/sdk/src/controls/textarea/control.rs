@@ -1190,10 +1190,8 @@ impl gpui::Element for TextAreaElement {
                 if selection.is_none() && cursor >= start && cursor <= end {
                     let local_cursor = cursor.saturating_sub(start);
                     let x = line.line.x_for_index(TextArea::char_to_byte_offset(&line.text, local_cursor));
-                    caret_quad = Some(fill(
-                        Bounds::new(point(bounds.left() + x, top), size(px(1.5), line_height)),
-                        look.caret,
-                    ));
+                    caret_quad =
+                        Some(fill(Bounds::new(point(bounds.left() + x, top), size(px(1.5), line_height)), look.caret));
                 }
             }
         }
@@ -1331,8 +1329,7 @@ impl Render for TextArea {
             })
             .when(self.model.enabled, |root| root.child(resize_handle));
 
-        let mut root =
-            render_button_family_focus_ring(self.model.id.clone(), control, look.focus_ring, look.radius);
+        let mut root = render_button_family_focus_ring(self.model.id.clone(), control, look.focus_ring, look.radius);
         if self.model.full_width {
             root = root.w_full();
         }

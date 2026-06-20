@@ -215,24 +215,14 @@ fn render_overlay_handle(
 
     let (divider, grip) = match orientation {
         ResizablePanelsOrientation::Horizontal => {
-            let divider = div()
-                .absolute()
-                .left(px(divider_local_px))
-                .top(px(0.0))
-                .bottom(px(0.0))
-                .w(px(1.0))
-                .bg(look.divider);
+            let divider =
+                div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
             (divider, grip)
         }
         ResizablePanelsOrientation::Vertical => {
-            let divider = div()
-                .absolute()
-                .top(px(divider_local_px))
-                .left(px(0.0))
-                .right(px(0.0))
-                .h(px(1.0))
-                .bg(look.divider);
+            let divider =
+                div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider);
             let grip = render_handle_grip(orientation, grip_color, handle_metrics);
             (divider, grip)
         }
@@ -292,20 +282,12 @@ fn render_overlay_handle_hidden(
     );
 
     let divider = match orientation {
-        ResizablePanelsOrientation::Horizontal => div()
-            .absolute()
-            .left(px(divider_local_px))
-            .top(px(0.0))
-            .bottom(px(0.0))
-            .w(px(1.0))
-            .bg(look.divider),
-        ResizablePanelsOrientation::Vertical => div()
-            .absolute()
-            .top(px(divider_local_px))
-            .left(px(0.0))
-            .right(px(0.0))
-            .h(px(1.0))
-            .bg(look.divider),
+        ResizablePanelsOrientation::Horizontal => {
+            div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider)
+        }
+        ResizablePanelsOrientation::Vertical => {
+            div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider)
+        }
     };
 
     handle.child(divider).child(interaction_layer).into_any_element()

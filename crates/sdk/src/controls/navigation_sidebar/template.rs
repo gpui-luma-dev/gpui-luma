@@ -610,11 +610,7 @@ fn render_collapsed_rail_node(
                 .absolute()
                 .left(px(rail_branch_indicator_left(look.height)))
                 .top(px(centered_icon_left(look.height, RAIL_BRANCH_INDICATOR_SIZE)))
-                .child(render_lucide_icon(
-                    RAIL_BRANCH_INDICATOR_ICON,
-                    look.icon_color,
-                    RAIL_BRANCH_INDICATOR_SIZE,
-                )),
+                .child(render_lucide_icon(RAIL_BRANCH_INDICATOR_ICON, look.icon_color, RAIL_BRANCH_INDICATOR_SIZE)),
         );
     } else {
         row = row.child(render_lucide_icon(

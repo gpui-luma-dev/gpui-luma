@@ -241,10 +241,7 @@ impl TextFieldControl {
             underline: None,
             strikethrough: None,
         };
-        let line =
-            window
-                .text_system()
-                .shape_line(self.model.value.clone(), px(look.typography.size), &[run], None);
+        let line = window.text_system().shape_line(self.model.value.clone(), px(look.typography.size), &[run], None);
         let chars = self.model.value.chars().count();
         let mut character_offsets = Vec::with_capacity(chars + 1);
         for char_offset in 0..=chars {

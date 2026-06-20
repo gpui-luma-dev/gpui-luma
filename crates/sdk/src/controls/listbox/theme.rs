@@ -135,10 +135,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
     }
 }
 
-pub(crate) fn compose_listbox_row_look(
-    palette: &ListBoxRowPalette,
-    scale: &ListRowScale,
-) -> ListBoxRowLook {
+pub(crate) fn compose_listbox_row_look(palette: &ListBoxRowPalette, scale: &ListRowScale) -> ListBoxRowLook {
     ListBoxRowLook {
         background: palette.background,
         label_color: palette.label_color,

@@ -170,10 +170,7 @@ fn resolve_uniform_tab_width(
             underline: None,
             strikethrough: None,
         };
-        let line =
-            window
-                .text_system()
-                .shape_line(item.label.clone(), px(look.label_typography.size), &[run], None);
+        let line = window.text_system().shape_line(item.label.clone(), px(look.label_typography.size), &[run], None);
         let width = line.x_for_index(item.label.len()).as_f32() + look.padding_x * 2.0;
         max_width = max_width.max(width);
     }

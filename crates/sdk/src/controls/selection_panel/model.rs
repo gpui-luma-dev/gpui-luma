@@ -103,8 +103,7 @@ impl SelectionPanelPath {
     }
 }
 
-pub type SelectionPanelLookProvider =
-    Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
+pub type SelectionPanelLookProvider = Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct SelectionPanelModel<T>

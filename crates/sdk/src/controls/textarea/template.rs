@@ -105,8 +105,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
 
             for line in &model.line_metrics {
                 let line_chars = line.text.chars().collect::<Vec<_>>();
-                let mut row =
-                    div().relative().h(px(line.height)).flex().items_center().text_color(look.foreground);
+                let mut row = div().relative().h(px(line.height)).flex().items_center().text_color(look.foreground);
 
                 for local_ix in 0..=line_chars.len() {
                     let global_ix = line.start + local_ix;
@@ -199,8 +198,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(TEXTAREA_DISABLED_OPACITY))
             .child(text_viewport);
 
-        let mut root =
-            render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
+        let mut root = render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
 
         if model.full_width {
             root = root.w_full();

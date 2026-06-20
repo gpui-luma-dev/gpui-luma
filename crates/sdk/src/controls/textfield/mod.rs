@@ -13,8 +13,7 @@ pub use template::{
     ThemedTextFieldTemplate, default_textfield_template,
 };
 pub use theme::{
-    DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, TextFieldVariant,
-    default_textfield_theme,
+    DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, TextFieldVariant, default_textfield_theme,
 };
 #[allow(unused_imports)]
 pub(crate) use theme::compose_textfield_look;

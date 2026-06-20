@@ -15,6 +15,4 @@ pub use template::{
     ResizablePanelsTemplate, ThemedResizablePanelsTemplate, MIN_HIDDEN_HANDLE_HIT_TARGET_PX,
     default_resizable_panels_template,
 };
-pub use theme::{
-    DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanelsTheme, default_resizable_panels_theme,
-};
+pub use theme::{DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanelsTheme, default_resizable_panels_theme};

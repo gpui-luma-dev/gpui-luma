@@ -155,27 +155,14 @@ fn render_numeric_pager(
         .gap(px(look.gap))
         .py(px(look.padding_y))
         .child(render_nav_group_leading(model, look, handlers, true))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .gap(px(look.gap))
-                .children(items.into_iter().map(|item| match item {
-                    PagerPageItem::Page(page) => {
-                        render_page_button(model, look, page, handlers).into_any_element()
-                    }
-                    PagerPageItem::Gap { target } => {
-                        render_gap_button(model, look, target, handlers).into_any_element()
-                    }
-                })),
-        )
+        .child(div().flex().items_center().gap(px(look.gap)).children(items.into_iter().map(|item| match item {
+            PagerPageItem::Page(page) => render_page_button(model, look, page, handlers).into_any_element(),
+            PagerPageItem::Gap { target } => render_gap_button(model, look, target, handlers).into_any_element(),
+        })))
         .child(render_nav_group_trailing(model, look, handlers, true))
 }
 
-pub(crate) fn render_page_indicator(
-    model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
-) -> Div {
+pub(crate) fn render_page_indicator(model: &PagerRenderModel<'_>, look: &crate::controls::pager::PagerLook) -> Div {
     div()
         .flex_none()
         .text_color(look.body_text)
