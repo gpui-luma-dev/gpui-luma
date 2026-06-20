@@ -8,7 +8,7 @@ use gpui::{
 use gpui_luma::controls::accordion::{AccordionContent, AccordionControl, AccordionItem, AccordionTrigger};
 use gpui_luma::controls::slider::{Slider, SliderEvent};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
-use gpui_luma::{GridTrack, grid_layout, hstack, vstack};
+use gpui_luma::{GridTrack, dock_panel, grid_layout, hstack, vstack};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use super::colors::token_field_look_override_arc;
@@ -41,6 +41,7 @@ const SHADOW_GRID_LABELS: [&str; 5] = ["Opacity", "Blur", "Spread", "Offset X", 
 const SHADOW_GRID_UNIT_WIDTH: f32 = 24.0;
 const SLIDER_FIELD_GRID_GAP_X: f32 = 10.0;
 const PANEL_SLIDER_STEP: f32 = 0.01;
+const SLIDER_FIELD_ROW_HEIGHT: f32 = 22.0;
 
 pub struct OtherPanel {
     look: Arc<ShadcnLook>,
@@ -891,27 +892,39 @@ fn slider_field_row_with_padding(
     let unit_style = panel.look.typography_scale(ShadcnTextSize::Sm);
     let label = label.to_string();
 
-    hstack! {
-        gap=10 align=center;
-        div()
-            .typography_style(row_label_typography)
-            .text_color(chrome.body_text)
-            .child(label),
-        div()
-            .flex_1()
-            .min_w(px(0.0))
-            .child(slider),
-        div()
-            .w(px(METRIC_FIELD_WIDTH))
-            .child(field),
-        div()
-            .typography_style(unit_style)
-            .text_color(chrome.muted_text)
-            .child(unit),
-    }
-    .w_full()
-    .min_w(px(0.0))
-    .pt(px(padding_top))
-    .pb(px(padding_bottom))
-    .into_any_element()
+    div()
+        .w_full()
+        .min_w(px(0.0))
+        .h(px(SLIDER_FIELD_ROW_HEIGHT))
+        .pt(px(padding_top))
+        .pb(px(padding_bottom))
+        .child(dock_panel! {
+            left: div()
+                .h_full()
+                .flex()
+                .items_center()
+                .typography_style(row_label_typography)
+                .text_color(chrome.body_text)
+                .child(label),
+            right: hstack! {
+                gap=10 align=center;
+                div()
+                    .w(px(METRIC_FIELD_WIDTH))
+                    .child(field),
+                div()
+                    .h_full()
+                    .flex()
+                    .items_center()
+                    .typography_style(unit_style)
+                    .text_color(chrome.muted_text)
+                    .child(unit),
+            },
+            fill: div()
+                .h_full()
+                .flex()
+                .items_center()
+                .min_w(px(0.0))
+                .child(slider),
+        })
+        .into_any_element()
 }
