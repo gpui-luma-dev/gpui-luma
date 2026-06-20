@@ -10,10 +10,10 @@
 //! Track uses `border` rather than `muted` because many tweakcn light themes
 //! set `--muted` near white (e.g. 98% lightness), which disappears on card panels.
 
-use gpui_luma::controls::slider::SliderAppearance;
+use gpui_luma::controls::slider::SliderLook;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
@@ -66,8 +66,8 @@ pub fn resolve_slider_colors_with_stylesheet(
     })
 }
 
-pub fn slider_appearance(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SliderAppearance {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+pub fn slider_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SliderLook {
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -96,7 +96,7 @@ pub fn slider_appearance(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: 
         .transpose()
         .unwrap_or_else(|err| panic!("slider properties: {err}"));
 
-    SliderAppearance {
+    SliderLook {
         track_background: colors.track_background.hsla(),
         fill_background: colors.fill_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
@@ -121,7 +121,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::slider_appearance;
+    use super::slider_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -163,27 +163,27 @@ mod tests {
     fn default_slider_uses_border_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = slider_appearance(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
+        let look = slider_look(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
 
-        assert_eq!(appearance.track_background, catalog.color("border").expect("border"));
-        assert_eq!(appearance.fill_background, catalog.color("primary").expect("primary"));
-        assert_eq!(appearance.thumb_background, catalog.color("background").expect("background"));
-        assert_ne!(appearance.track_background, catalog.color("secondary").expect("secondary"));
+        assert_eq!(look.track_background, catalog.color("border").expect("border"));
+        assert_eq!(look.fill_background, catalog.color("primary").expect("primary"));
+        assert_eq!(look.thumb_background, catalog.color("background").expect("background"));
+        assert_ne!(look.track_background, catalog.color("secondary").expect("secondary"));
     }
 
     #[test]
     fn astrovista_light_track_is_border_not_white_muted() {
         let catalog = astrovista_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = slider_appearance(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
+        let look = slider_look(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
 
         let border = catalog.color("border").expect("border");
         let muted = catalog.color("muted").expect("muted");
         let card = catalog.color("card").expect("card");
 
-        assert_eq!(appearance.track_background, border);
-        assert_eq!(appearance.fill_background, catalog.color("primary").expect("primary"));
-        assert_ne!(appearance.track_background, catalog.color("secondary").expect("secondary"));
+        assert_eq!(look.track_background, border);
+        assert_eq!(look.fill_background, catalog.color("primary").expect("primary"));
+        assert_ne!(look.track_background, catalog.color("secondary").expect("secondary"));
         assert!(border.l > muted.l || (border.l - muted.l).abs() > 0.05);
         assert!(border.l < card.l - 0.05);
     }

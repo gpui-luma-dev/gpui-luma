@@ -14,6 +14,6 @@ pub use template::{
     default_navigation_sidebar_template,
 };
 pub use theme::{
-    DefaultNavigationSidebarTheme, NavigationSidebarContainerAppearance, NavigationSidebarSectionAppearance,
-    NavigationSidebarItemAppearance, NavigationSidebarTheme, default_navigation_sidebar_theme,
+    DefaultNavigationSidebarTheme, NavigationSidebarContainerLook, NavigationSidebarSectionLook,
+    NavigationSidebarItemLook, NavigationSidebarTheme, default_navigation_sidebar_theme,
 };

@@ -7,7 +7,7 @@ use gpui::{
     div, hsla, prelude::*, px,
 };
 use gpui_luma::controls::selection_panel::{
-    SelectionPanelAppearance, SelectionPanelClickHandler, SelectionPanelControl, SelectionPanelEvent,
+    SelectionPanelLook, SelectionPanelClickHandler, SelectionPanelControl, SelectionPanelEvent,
     SelectionPanelHoverHandler, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelMouseDownHandler,
     SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate, item_template_with_modifier,
     make_selection_panel_item_template, template_with_modifier, default_selection_panel_template,
@@ -107,13 +107,13 @@ impl SelectionPanelPane {
                 cx,
             );
             panel.set_scrolling(true, cx);
-            panel.set_appearance_provider(
+            panel.set_look_provider(
                 std::sync::Arc::new({
                     let radix = look.clone();
                     move |size| {
-                        let mut appearance = radix.selection_panel_appearance(size);
-                        appearance.min_width = 320.0;
-                        appearance
+                        let mut look = radix.selection_panel_look(size);
+                        look.min_width = 320.0;
+                        look
                     }
                 }),
                 cx,
@@ -143,13 +143,13 @@ impl SelectionPanelPane {
                 cx,
             );
             panel.set_scrolling(true, cx);
-            panel.set_appearance_provider(
+            panel.set_look_provider(
                 std::sync::Arc::new({
                     let radix = look.clone();
                     move |size| {
-                        let mut appearance = radix.selection_panel_appearance(size);
-                        appearance.min_width = 320.0;
-                        appearance
+                        let mut look = radix.selection_panel_look(size);
+                        look.min_width = 320.0;
+                        look
                     }
                 }),
                 cx,
@@ -273,9 +273,9 @@ impl SelectionPanelTemplatePreview {
 impl Render for SelectionPanelTemplatePreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let mut appearance = self.look.selection_panel_appearance(ControlSize::Md);
-        appearance.min_width = 220.0;
-        appearance.padding = 7.0;
+        let mut look = self.look.selection_panel_look(ControlSize::Md);
+        look.min_width = 220.0;
+        look.padding = 7.0;
 
         let standard_items = vec![
             SelectionPanelItem::new("draft-note").label("Draft note").icon(LucideIcon::FilePenLine),
@@ -304,7 +304,7 @@ impl Render for SelectionPanelTemplatePreview {
             .child(render_template_sample(
                 "Standard",
                 &self.template,
-                &appearance,
+                &look,
                 chrome.muted_text,
                 "selection-panel-standard",
                 &standard_items,
@@ -315,7 +315,7 @@ impl Render for SelectionPanelTemplatePreview {
             .child(render_template_sample(
                 "Hover / active item",
                 &self.template,
-                &appearance,
+                &look,
                 chrome.muted_text,
                 "selection-panel-active",
                 &active_items,
@@ -326,7 +326,7 @@ impl Render for SelectionPanelTemplatePreview {
             .child(render_template_sample(
                 "Disabled item",
                 &self.template,
-                &appearance,
+                &look,
                 chrome.muted_text,
                 "selection-panel-disabled",
                 &disabled_items,
@@ -521,7 +521,7 @@ fn render_event_count(label: &'static str, count: usize, style: EventDemoStyle) 
 fn render_template_sample(
     label: &'static str,
     template: &Arc<dyn SelectionPanelTemplate<SelectionPanelItem>>,
-    appearance: &SelectionPanelAppearance,
+    look: &SelectionPanelLook,
     label_color: gpui::Hsla,
     sample_id: &'static str,
     items: &[SelectionPanelItem],
@@ -554,7 +554,7 @@ fn render_template_sample(
                 enabled: true,
                 focus: ControlFocusState::default(),
                 item_template: None,
-                appearance: appearance.clone(),
+                look: look.clone(),
                 show_selection_marker: true,
                 show_panel_chrome: true,
             },

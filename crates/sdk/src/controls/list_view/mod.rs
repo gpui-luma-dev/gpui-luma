@@ -19,7 +19,7 @@ pub use layout::{
     visible_row_height,
 };
 pub use model::{
-    IntoListViewColumnCellTemplate, ListScrollMode, ListSelectionMode, ListViewAppearanceOverride, ListViewBuilder,
+    IntoListViewColumnCellTemplate, ListScrollMode, ListSelectionMode, ListViewLookOverride, ListViewBuilder,
     ListViewColumn, ListViewColumnCellLayout, ListViewColumnCellTemplate, ListViewColumnWidth, ListViewEnabledFn,
     ListViewHeaderTemplate, ListViewGridColumnsBuilder, ListViewLabel, ListViewLabelFn, ListViewRenderModel,
     ListViewRowRenderModel, ListViewRowTemplate, make_list_view_header_template, make_list_view_row_template,
@@ -29,7 +29,7 @@ pub use template::{
     list_view_template_with_modifier, list_view_template_with_theme,
 };
 pub use theme::{
-    DefaultListViewTheme, ListViewAppearance, ListViewRowAppearance, ListViewRowPalette, ListViewTheme,
+    DefaultListViewTheme, ListViewLook, ListViewRowLook, ListViewRowPalette, ListViewTheme,
     default_list_view_theme,
 };
 

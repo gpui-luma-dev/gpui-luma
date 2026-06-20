@@ -13,7 +13,7 @@
 use gpui_luma::controls::accordion::{AccordionContentPalette, AccordionPalette};
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -103,7 +103,7 @@ pub fn accordion_trigger_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> AccordionPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_trigger");
@@ -127,7 +127,7 @@ pub fn accordion_content_palette(
     theme_mode: ThemeMode,
     expanded: bool,
 ) -> AccordionContentPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "accordion_content");
     let colors = resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| AccordionContentColorTable::fallback());

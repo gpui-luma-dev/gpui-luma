@@ -446,7 +446,7 @@ fn render_state_sample(
     let id = SharedString::from(format!("textfield-preview-{}", sample.id));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview");
-    let appearance = preview_textfield_appearance(&theme, sample.state, sample.enabled, window);
+    let look = preview_textfield_look(&theme, sample.state, sample.enabled, window);
     let character_offsets = textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, window);
     let model = TextFieldRenderModel {
         id: &id,
@@ -460,7 +460,7 @@ fn render_state_sample(
         caret_visible: sample.state.focused && sample.enabled,
         horizontal_scroll: 0.0,
         character_offsets,
-        appearance,
+        look,
     };
 
     div()
@@ -481,25 +481,23 @@ fn textfield_character_offsets(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = preview_textfield_appearance(&theme, state, enabled, window);
+    let look = preview_textfield_look(&theme, state, enabled, window);
     let run = TextRun {
         len: value.len(),
         font: {
             let mut font = font(".SystemUIFont");
-            font.weight = appearance.typography.weight;
+            font.weight = look.typography.weight;
             font
         },
-        color: appearance.foreground,
+        color: look.foreground,
         background_color: None,
         underline: None,
         strikethrough: None,
     };
-    let line = window.text_system().shape_line(
-        SharedString::from(value.to_owned()),
-        px(appearance.typography.size),
-        &[run],
-        None,
-    );
+    let line =
+        window
+            .text_system()
+            .shape_line(SharedString::from(value.to_owned()), px(look.typography.size), &[run], None);
     let chars = value.chars().count();
     let mut character_offsets = Vec::with_capacity(chars + 1);
     for char_offset in 0..=chars {
@@ -532,14 +530,14 @@ fn noop_mouse_up(_: &gpui::MouseUpEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &gpui::ClickEvent, _: &mut Window, _: &mut App) {}
 
-fn preview_textfield_appearance(
+fn preview_textfield_look(
     theme: &Arc<dyn TextFieldTheme>,
     state: TextFieldState,
     enabled: bool,
     window: &Window,
-) -> gpui_luma::controls::textfield::TextFieldAppearance {
+) -> gpui_luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_appearance(TextFieldVariant::Standard, state, enabled, &scale)
+    theme.resolve_look(TextFieldVariant::Standard, state, enabled, &scale)
 }
 
 fn noop_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}

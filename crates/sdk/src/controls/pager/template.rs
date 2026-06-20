@@ -107,7 +107,7 @@ pub fn numeric_page_items(current_page: usize, page_count: usize, slot_count: us
 
 fn render_minimal_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -125,7 +125,7 @@ fn render_minimal_pager(
 
 fn render_minimal_edge_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -143,7 +143,7 @@ fn render_minimal_edge_pager(
 
 fn render_numeric_pager(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     let items = numeric_page_items(model.current_page, model.page_count.max(1), model.numeric_slot_count());
@@ -174,7 +174,7 @@ fn render_numeric_pager(
 
 pub(crate) fn render_page_indicator(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
 ) -> Div {
     div()
         .flex_none()
@@ -195,7 +195,7 @@ pub(crate) fn render_info_slot(model: &PagerRenderModel<'_>, window: &mut Window
 
 pub(crate) fn render_page_size_select(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -282,7 +282,7 @@ pub(crate) fn render_page_size_select(
 
 pub(crate) fn render_nav_group(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
@@ -296,7 +296,7 @@ pub(crate) fn render_nav_group(
 
 fn render_nav_group_leading(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
@@ -331,7 +331,7 @@ fn render_nav_group_leading(
 
 fn render_nav_group_trailing(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
 ) -> Div {
@@ -381,7 +381,7 @@ struct NavButtonSpec<'a> {
 
 fn render_nav_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     spec: NavButtonSpec<'_>,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
@@ -430,7 +430,7 @@ fn render_nav_button(
 
 fn render_page_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     page: usize,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
@@ -455,7 +455,7 @@ fn render_page_button(
 
 fn render_gap_button(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     target: usize,
     handlers: &PagerTemplateHandlers,
 ) -> AnyElement {
@@ -479,7 +479,7 @@ fn render_gap_button(
 
 fn button_shell(
     model: &PagerRenderModel<'_>,
-    appearance: &crate::controls::pager::PagerAppearance,
+    appearance: &crate::controls::pager::PagerLook,
     disabled: bool,
     selected: bool,
 ) -> Div {

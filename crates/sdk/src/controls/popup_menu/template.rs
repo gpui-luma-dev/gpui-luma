@@ -8,7 +8,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::floating_menu::render_floating_menu;
-use crate::controls::popup_menu::{PopupMenuAppearance, PopupMenuTheme, default_popup_menu_theme};
+use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, default_popup_menu_theme};
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
@@ -80,7 +80,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_appearance(model.state, &scale);
+        let appearance = self.theme.resolve_look(model.state, &scale);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
@@ -178,7 +178,7 @@ struct ResolvedPopupMenuPlacement {
 fn resolve_popup_menu_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: PopupMenuPlacement,
-    appearance: &PopupMenuAppearance,
+    appearance: &PopupMenuLook,
     item_count: usize,
     viewport_size: Size<Pixels>,
 ) -> ResolvedPopupMenuPlacement {
@@ -218,7 +218,7 @@ fn resolve_popup_menu_placement(
     }
 }
 
-fn estimated_menu_size(appearance: &PopupMenuAppearance, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+fn estimated_menu_size(appearance: &PopupMenuLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
     let menu_min_width = px(appearance.floating_menu.min_width);
     Size {
         width: if trigger_width > menu_min_width {
@@ -252,9 +252,9 @@ mod tests {
     use super::*;
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
-    fn appearance() -> PopupMenuAppearance {
+    fn appearance() -> PopupMenuLook {
         let theme = default_popup_menu_theme();
-        theme.resolve_appearance(
+        theme.resolve_look(
             InteractionState::default(),
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )

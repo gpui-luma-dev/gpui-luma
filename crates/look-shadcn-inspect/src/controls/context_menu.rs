@@ -1,7 +1,7 @@
 //! Inspect metadata for `context_menu`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, ShadcnModeTokens};
 
 pub struct ContextMenuInspectPalette {
     pub target_background: gpui_luma_look_shadcn::ResolvedColor,
@@ -28,7 +28,7 @@ pub fn inspect_context_menu_color_palette(
 ) -> ContextMenuInspectPalette {
     use gpui_luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "context_menu_inspect");
@@ -54,16 +54,15 @@ pub fn inspect_context_menu_metrics(
     use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance =
-        gpui_luma_look_shadcn::paint::context_menu_appearance(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let look = gpui_luma_look_shadcn::paint::context_menu_look(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
 
     ContextMenuInspectMetrics {
-        target_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, appearance.target_padding_x),
-        target_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, appearance.target_padding_y),
-        target_radius: radius_metric(catalog, size, appearance.target_radius),
-        target_min_width: derived_metric("context menu target min width", appearance.target_min_width),
+        target_padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.target_padding_x),
+        target_padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.target_padding_y),
+        target_radius: radius_metric(catalog, size, look.target_radius),
+        target_min_width: derived_metric("context menu target min width", look.target_min_width),
         menu: crate::controls::floating_menu::inspect_floating_menu_metrics(mode, theme_mode, size),
     }
 }

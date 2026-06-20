@@ -1,24 +1,24 @@
 //! Selector / combobox dropdown panel — same surface as floating menu (`popover` + accent item hover).
 
-use gpui_luma::controls::selector_panel::SelectorItemsPanelAppearance;
+use gpui_luma::controls::selector_panel::SelectorItemsPanelLook;
 use gpui_luma::theme::{ControlSize, ThemeMode};
 
-use super::floating_menu::floating_menu_appearance;
+use super::floating_menu::floating_menu_look;
 use crate::mode::ShadcnModeTokens;
 
-pub fn selector_items_panel_appearance(
+pub fn selector_items_panel_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
-) -> SelectorItemsPanelAppearance {
-    let menu = floating_menu_appearance(mode, theme_mode, size);
+) -> SelectorItemsPanelLook {
+    let menu = floating_menu_look(mode, theme_mode, size);
     selector_items_panel_from_floating_menu(menu)
 }
 
 pub fn selector_items_panel_from_floating_menu(
-    menu: gpui_luma::controls::floating_menu::FloatingMenuAppearance,
-) -> SelectorItemsPanelAppearance {
-    SelectorItemsPanelAppearance {
+    menu: gpui_luma::controls::floating_menu::FloatingMenuLook,
+) -> SelectorItemsPanelLook {
+    SelectorItemsPanelLook {
         background: menu.background,
         foreground: menu.foreground,
         border: menu.border,
@@ -48,7 +48,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::selector_items_panel_appearance;
+    use super::selector_items_panel_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -75,10 +75,10 @@ mod tests {
     fn selector_items_panel_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = selector_items_panel_appearance(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+        let look = selector_items_panel_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
 
-        assert_eq!(appearance.background, catalog.color("popover").expect("popover"));
-        assert_eq!(appearance.item_hover_background, catalog.color("accent").expect("accent"));
-        assert_eq!(appearance.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+        assert_eq!(look.background, catalog.color("popover").expect("popover"));
+        assert_eq!(look.item_hover_background, catalog.color("accent").expect("accent"));
+        assert_eq!(look.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
 }

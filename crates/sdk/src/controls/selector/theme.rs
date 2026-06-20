@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::selector_panel::{SelectorItemsPanelAppearance, default_selector_items_panel_appearance};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
@@ -14,11 +14,11 @@ pub struct SelectorPalette {
     pub trigger_border: Hsla,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
-    pub items_panel: SelectorItemsPanelAppearance,
+    pub items_panel: SelectorItemsPanelLook,
 }
 
 #[derive(Clone, Debug)]
-pub struct SelectorAppearance {
+pub struct SelectorLook {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_border: Hsla,
@@ -31,7 +31,7 @@ pub struct SelectorAppearance {
     pub trigger_height: f32,
     pub trigger_icon_size: f32,
     pub menu_offset_y: f32,
-    pub items_panel: SelectorItemsPanelAppearance,
+    pub items_panel: SelectorItemsPanelLook,
 }
 
 pub trait SelectorTheme: Send + Sync {
@@ -39,7 +39,7 @@ pub trait SelectorTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorAppearance {
+    fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorLook {
         compose_selector_appearance(&self.resolve(state), scale)
     }
 }
@@ -85,7 +85,7 @@ impl SelectorTheme for DefaultSelectorTheme {
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            items_panel: default_selector_items_panel_appearance(&self.tokens, size),
+            items_panel: default_selector_items_panel_look(&self.tokens, size),
         }
     }
 
@@ -94,8 +94,8 @@ impl SelectorTheme for DefaultSelectorTheme {
     }
 }
 
-pub(crate) fn compose_selector_appearance(palette: &SelectorPalette, scale: &StandardBoxScale) -> SelectorAppearance {
-    SelectorAppearance {
+pub(crate) fn compose_selector_appearance(palette: &SelectorPalette, scale: &StandardBoxScale) -> SelectorLook {
+    SelectorLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,
         trigger_border: palette.trigger_border,

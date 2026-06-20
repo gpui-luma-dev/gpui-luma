@@ -5,7 +5,7 @@ use gpui::{
     prelude::*,
 };
 
-use super::{TextFieldAppearance, TextFieldRenderModel, TextFieldState, TextFieldVariant};
+use super::{TextFieldLook, TextFieldRenderModel, TextFieldState, TextFieldVariant};
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::command::button::ControlIcon;
 use crate::controls::textfield::{TextFieldTheme, default_textfield_theme};
@@ -34,13 +34,8 @@ pub struct TextFieldTemplateHandlers {
 }
 
 pub trait TextFieldTemplate: Send + Sync {
-    fn resolve_appearance(
-        &self,
-        variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> TextFieldAppearance {
-        default_textfield_theme().resolve_appearance(
+    fn resolve_look(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldLook {
+        default_textfield_theme().resolve_look(
             variant,
             state,
             enabled,
@@ -48,15 +43,15 @@ pub trait TextFieldTemplate: Send + Sync {
         )
     }
 
-    fn resolve_appearance_with_scale(
+    fn resolve_look_with_scale(
         &self,
         variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         _scale_factor: f32,
         _cx: &mut App,
-    ) -> TextFieldAppearance {
-        self.resolve_appearance(variant, state, enabled)
+    ) -> TextFieldLook {
+        self.resolve_look(variant, state, enabled)
     }
 
     fn render(
@@ -85,13 +80,8 @@ pub fn default_textfield_template() -> Arc<dyn TextFieldTemplate> {
 }
 
 impl TextFieldTemplate for ThemedTextFieldTemplate {
-    fn resolve_appearance(
-        &self,
-        variant: TextFieldVariant,
-        state: TextFieldState,
-        enabled: bool,
-    ) -> TextFieldAppearance {
-        self.theme.resolve_appearance(
+    fn resolve_look(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldLook {
+        self.theme.resolve_look(
             variant,
             state,
             enabled,
@@ -99,20 +89,20 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         )
     }
 
-    fn resolve_appearance_with_scale(
+    fn resolve_look_with_scale(
         &self,
         variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         scale_factor: f32,
         cx: &mut App,
-    ) -> TextFieldAppearance {
+    ) -> TextFieldLook {
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        self.theme.resolve_appearance(variant, state, enabled, &scale)
+        self.theme.resolve_look(variant, state, enabled, &scale)
     }
 
     fn render(
@@ -122,7 +112,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let appearance = model.appearance.clone();
+        let appearance = model.look.clone();
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let chars = model.value.chars().collect::<Vec<_>>();
         let cursor = model.state.cursor.min(chars.len());

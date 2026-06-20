@@ -50,7 +50,7 @@ const PROPERTY_GROUPS: &[PropertyGroup] = &[
     PropertyGroup { id: "layout", label: "Layout", icon: LucideIcon::Ruler, expanded: true, leaves: LAYOUT_PROPERTIES },
     PropertyGroup {
         id: "appearance",
-        label: "Appearance",
+        label: "Look",
         icon: LucideIcon::Palette,
         expanded: true,
         leaves: APPEARANCE_PROPERTIES,

@@ -11,7 +11,7 @@ use super::{NavNodeKind, NavigationSidebarRenderModel, RenderedCollapseTrigger, 
 use crate::controls::floating_menu::{FloatingMenuClickHandler, FloatingMenuHoverHandler, render_floating_menu};
 use crate::controls::scroll_container::ScrollContainer;
 use crate::theme::{ControlSize, InteractionState, LumaTextStyle, LumaTypography};
-use crate::controls::floating_menu::{FloatingMenuAppearance, FloatingMenuTheme, default_floating_menu_theme};
+use crate::controls::floating_menu::{FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
 use crate::controls::navigation_sidebar::{NavigationSidebarTheme, default_navigation_sidebar_theme};
 
 const CONTAINER_GAP: f32 = 8.0;
@@ -734,7 +734,7 @@ fn render_collapse_trigger(
 
 fn render_rail_submenu_overlay(
     submenu: RenderedRailSubmenu,
-    appearance: FloatingMenuAppearance,
+    appearance: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> impl IntoElement {

@@ -6,7 +6,7 @@ pub use model::{
     make_selector_item_template, normalize_selector_items,
 };
 pub use items_template::{
-    DefaultSelectorItemsTemplate, SelectorItemsPanelAppearance, SelectorItemsRenderModel, SelectorItemsTemplate,
+    DefaultSelectorItemsTemplate, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplate,
     SelectorItemsTemplateHandlers, SelectorPanelClickHandler, SelectorPanelHoverHandler,
-    default_selector_items_panel_appearance, default_selector_items_template,
+    default_selector_items_panel_look, default_selector_items_template,
 };

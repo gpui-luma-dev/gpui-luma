@@ -1,22 +1,22 @@
 use super::model::ListScrollMode;
 use super::template::SHELL_BORDER_WIDTH;
-use super::theme::{ListViewAppearance, ListViewRowAppearance};
+use super::theme::{ListViewLook, ListViewRowLook};
 
 /// GPUI row elements use `min_h(min_height)` with `py(padding_y)` on the same node, so the
-/// laid-out row height is [`ListViewRowAppearance::min_height`], not min_height + padding.
+/// laid-out row height is [`ListViewRowLook::min_height`], not min_height + padding.
 pub const ROW_DIVIDER_WIDTH: f32 = 1.0;
 
-/// Per-row layout height for [`ListViewRowAppearance::min_height`] rows (see module comment).
-pub fn default_row_height(row_appearance: &ListViewRowAppearance) -> f32 {
+/// Per-row layout height for [`ListViewRowLook::min_height`] rows (see module comment).
+pub fn default_row_height(row_appearance: &ListViewRowLook) -> f32 {
     row_appearance.min_height
 }
 
-pub fn visible_row_height(row_appearance: &ListViewRowAppearance, override_height: Option<f32>) -> f32 {
+pub fn visible_row_height(row_appearance: &ListViewRowLook, override_height: Option<f32>) -> f32 {
     override_height.unwrap_or_else(|| default_row_height(row_appearance))
 }
 
 /// Matches [`DefaultListViewShellTemplate::paint_shell`] header slot padding.
-pub fn header_height(list_appearance: &ListViewAppearance) -> f32 {
+pub fn header_height(list_appearance: &ListViewLook) -> f32 {
     list_appearance.header_typography.line_height + list_appearance.padding_y + (list_appearance.padding_y * 0.75)
 }
 
@@ -30,7 +30,7 @@ pub fn body_rows_height(visible_rows: usize, row_height: f32) -> f32 {
 pub fn compute_shell_height(
     visible_rows: usize,
     row_height: f32,
-    list_appearance: &ListViewAppearance,
+    list_appearance: &ListViewLook,
     has_header: bool,
 ) -> f32 {
     let mut total_height = body_rows_height(visible_rows, row_height);
@@ -81,8 +81,8 @@ mod tests {
     use super::*;
     use crate::theme::LumaTextStyle;
 
-    fn sample_row_appearance() -> ListViewRowAppearance {
-        ListViewRowAppearance {
+    fn sample_row_appearance() -> ListViewRowLook {
+        ListViewRowLook {
             background: gpui::transparent_black(),
             label_color: gpui::black(),
             divider: gpui::black(),
@@ -96,8 +96,8 @@ mod tests {
         }
     }
 
-    fn sample_list_appearance() -> ListViewAppearance {
-        ListViewAppearance {
+    fn sample_list_appearance() -> ListViewLook {
+        ListViewLook {
             background: gpui::white(),
             border: gpui::black(),
             header_background: gpui::white(),

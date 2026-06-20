@@ -2,7 +2,7 @@
 
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::catalog::SpacingField;
-use gpui_luma_look_shadcn::{AppearanceContext, ResolvedMetric, ShadcnLook, ShadcnRadius};
+use gpui_luma_look_shadcn::{LookContext, ResolvedMetric, ShadcnLook, ShadcnRadius};
 
 use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
 
@@ -18,7 +18,7 @@ pub struct CardInspectMetrics {
 pub fn inspect_card_metrics(look: &ShadcnLook, size: ControlSize) -> CardInspectMetrics {
     let theme_mode = look.mode();
     let mode = look.mode_tokens();
-    let ctx = AppearanceContext::new(mode.as_ref(), theme_mode, Default::default());
+    let ctx = LookContext::new(mode.as_ref(), theme_mode, Default::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let base_gap = metrics.gap(size);

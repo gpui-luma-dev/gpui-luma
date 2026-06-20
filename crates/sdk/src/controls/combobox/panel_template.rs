@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, Bounds, Pixels, SharedString, anchored, deferred, div, point, prelude::*, px};
 
-use crate::controls::selector_panel::SelectorItemsPanelAppearance;
+use crate::controls::selector_panel::SelectorItemsPanelLook;
 
 use super::behavior::SelectionItem;
 use super::item_template::ComboBoxItemTemplate;
@@ -17,7 +17,7 @@ pub struct ComboBoxPanelRenderModel<'a> {
     pub enabled: bool,
     pub item_template: Option<&'a ComboBoxItemTemplate<SelectionItem>>,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: SelectorItemsPanelAppearance,
+    pub popup_look: SelectorItemsPanelLook,
     pub list_content: AnyElement,
 }
 
@@ -35,7 +35,7 @@ pub fn default_combobox_panel_template() -> Arc<dyn ComboBoxPanelTemplate> {
 impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
     fn render(&self, model: ComboBoxPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
         if let Some(bounds) = model.popup_bounds {
-            let appearance = model.popup_appearance;
+            let look = model.popup_look;
 
             return deferred(
                 anchored()
@@ -47,11 +47,11 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
                         div()
                             .id(format!("{}-popup-shell", model.id))
                             .w(bounds.size.width)
-                            .bg(appearance.background)
+                            .bg(look.background)
                             .border_1()
-                            .border_color(appearance.border)
-                            .rounded(px(appearance.radius))
-                            .shadow(appearance.shadow)
+                            .border_color(look.border)
+                            .rounded(px(look.radius))
+                            .shadow(look.shadow)
                             .overflow_hidden()
                             .occlude()
                             .child(model.list_content),
@@ -61,15 +61,15 @@ impl ComboBoxPanelTemplate for DefaultComboBoxPanelTemplate {
             .into_any_element();
         }
 
-        let appearance = model.popup_appearance;
+        let look = model.popup_look;
         div()
             .id(format!("{}-panel", model.id))
             .w_full()
-            .bg(appearance.background)
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow)
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow)
             .overflow_hidden()
             .occlude()
             .child(model.list_content)

@@ -54,7 +54,7 @@ pub struct BadgeColorTable {
 }
 
 #[derive(Clone, Debug)]
-pub struct BadgeAppearance {
+pub struct BadgeLook {
     pub background: gpui::Hsla,
     pub foreground: gpui::Hsla,
     pub border: Option<gpui::Hsla>,
@@ -178,14 +178,14 @@ pub fn resolve_badge_colors_with_stylesheet(
     Ok(BadgeColorTable { background: colors.background, foreground: colors.foreground, border: colors.border })
 }
 
-pub fn badge_appearance(theme: &ShadcnLook, variant: BadgeVariant, size: ControlSize) -> BadgeAppearance {
+pub fn badge_look(theme: &ShadcnLook, variant: BadgeVariant, size: ControlSize) -> BadgeLook {
     let tokens = theme.mode_tokens();
     let metrics = &tokens.metrics;
     let typography = badge_typography(tokens.as_ref(), size);
     let min_height = typography.line_height + metrics.padding_y(size);
     let colors = resolve_badge_colors(theme, variant).unwrap_or_else(|_| BadgeColorTable::fallback(theme, variant));
 
-    BadgeAppearance {
+    BadgeLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.map(|border| border.hsla()),
@@ -204,26 +204,26 @@ impl IntoElement for Badge {
     type Element = Div;
 
     fn into_element(self) -> Self::Element {
-        let appearance = badge_appearance(&self.look, self.variant, self.size);
+        let look = badge_look(&self.look, self.variant, self.size);
         let mut root = div()
             .flex()
             .items_center()
             .justify_center()
-            .gap(px(appearance.gap))
-            .min_h(px(appearance.min_height))
-            .px(px(appearance.padding_x))
-            .py(px(appearance.padding_y))
-            .rounded(px(appearance.radius))
-            .bg(appearance.background)
-            .text_color(appearance.foreground)
-            .font_family(appearance.font_family)
-            .font_weight(appearance.typography.weight)
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .when_some(appearance.border, |root, border| root.border_1().border_color(border));
+            .gap(px(look.gap))
+            .min_h(px(look.min_height))
+            .px(px(look.padding_x))
+            .py(px(look.padding_y))
+            .rounded(px(look.radius))
+            .bg(look.background)
+            .text_color(look.foreground)
+            .font_family(look.font_family)
+            .font_weight(look.typography.weight)
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .when_some(look.border, |root, border| root.border_1().border_color(border));
 
         if let Some(icon) = self.icon.as_ref() {
-            let rendered = render_badge_icon(icon, appearance.foreground, appearance.icon_size);
+            let rendered = render_badge_icon(icon, look.foreground, look.icon_size);
             if self.icon_placement == BadgeIconPlacement::Start {
                 root = root.child(rendered).child(self.label);
             } else {
@@ -278,28 +278,28 @@ mod tests {
     #[test]
     fn default_badge_uses_primary_tokens() {
         let look = sample_look();
-        let appearance = badge_appearance(&look, BadgeVariant::Default, ControlSize::Md);
+        let look = badge_look(&look, BadgeVariant::Default, ControlSize::Md);
 
-        assert_eq!(appearance.background, look.color(ShadcnToken::Primary));
-        assert_eq!(appearance.foreground, look.color(ShadcnToken::PrimaryForeground));
+        assert_eq!(look.background, look.color(ShadcnToken::Primary));
+        assert_eq!(look.foreground, look.color(ShadcnToken::PrimaryForeground));
     }
 
     #[test]
     fn outline_badge_uses_border_in_dark_mode() {
         let look = sample_look();
         look.set_mode(gpui_luma::theme::ThemeMode::Dark);
-        let appearance = badge_appearance(&look, BadgeVariant::Outline, ControlSize::Md);
+        let look = badge_look(&look, BadgeVariant::Outline, ControlSize::Md);
 
-        assert_eq!(appearance.foreground, look.color(ShadcnToken::Foreground));
-        assert_eq!(appearance.border, Some(look.token_color("input").expect("input")));
+        assert_eq!(look.foreground, look.color(ShadcnToken::Foreground));
+        assert_eq!(look.border, Some(look.token_color("input").expect("input")));
     }
 
     #[test]
     fn ghost_badge_is_transparent() {
         let look = sample_look();
-        let appearance = badge_appearance(&look, BadgeVariant::Ghost, ControlSize::Md);
+        let look = badge_look(&look, BadgeVariant::Ghost, ControlSize::Md);
 
-        assert_eq!(appearance.background.a, 0.0);
-        assert!(appearance.border.is_none());
+        assert_eq!(look.background.a, 0.0);
+        assert!(look.border.is_none());
     }
 }

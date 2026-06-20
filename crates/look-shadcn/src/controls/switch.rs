@@ -12,7 +12,7 @@
 use gpui_luma::controls::switch::SwitchPalette;
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -67,14 +67,14 @@ pub fn resolve_switch_colors_with_stylesheet(
     })
 }
 
-pub fn switch_appearance(
+pub fn switch_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
     on: bool,
     state: InteractionState,
 ) -> SwitchPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
@@ -122,7 +122,7 @@ mod tests {
     use crate::controls::button::ShadcnButtonStyle;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::switch_appearance;
+    use super::switch_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -146,38 +146,36 @@ mod tests {
     fn off_switch_uses_input_track_and_background_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance =
-            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
 
         let input = catalog.color("input").expect("input");
         let border = catalog.color("border").expect("border");
         let background = catalog.color("background").expect("background");
-        assert_eq!(appearance.track_background, input);
-        assert_eq!(appearance.track_border, border);
-        assert_eq!(appearance.thumb_background, background);
-        assert_eq!(appearance.thumb_border, border);
+        assert_eq!(look.track_background, input);
+        assert_eq!(look.track_border, border);
+        assert_eq!(look.thumb_background, background);
+        assert_eq!(look.thumb_border, border);
     }
 
     #[test]
     fn on_switch_uses_style_track_and_card_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance =
-            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
 
         let primary = catalog.color("primary").expect("primary");
         let primary_foreground = catalog.color("primary-foreground").expect("primary-foreground");
-        assert_eq!(appearance.track_background, primary);
-        assert_eq!(appearance.track_border, primary);
-        assert_eq!(appearance.thumb_background, primary_foreground);
-        assert!(appearance.thumb_background.l > appearance.track_background.l);
+        assert_eq!(look.track_background, primary);
+        assert_eq!(look.track_border, primary);
+        assert_eq!(look.thumb_background, primary_foreground);
+        assert!(look.thumb_background.l > look.track_background.l);
     }
 
     #[test]
     fn astrovista_light_off_switch_uses_background_thumb_and_border_track() {
         let theme = crate::ShadcnLook::from_built_in_theme("astrovista").expect("astrovista css");
         let mode_tokens = theme.mode_tokens();
-        let appearance = switch_appearance(
+        let look = switch_look(
             mode_tokens.as_ref(),
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -190,12 +188,12 @@ mod tests {
         let border = catalog.color("border").expect("border");
         let background = catalog.color("background").expect("background");
         let card = catalog.color("card").expect("card");
-        assert_eq!(appearance.track_background, input);
-        assert_eq!(appearance.track_border, border);
-        assert_eq!(appearance.thumb_background, background);
-        assert_eq!(appearance.thumb_border, border);
-        assert_ne!(appearance.thumb_background, card);
-        assert!(appearance.thumb_background.l < appearance.track_background.l);
+        assert_eq!(look.track_background, input);
+        assert_eq!(look.track_border, border);
+        assert_eq!(look.thumb_background, background);
+        assert_eq!(look.thumb_border, border);
+        assert_ne!(look.thumb_background, card);
+        assert!(look.thumb_background.l < look.track_background.l);
     }
 
     #[test]
@@ -203,7 +201,7 @@ mod tests {
         let theme = crate::ShadcnLook::from_built_in_theme("astrovista").expect("astrovista css");
         theme.set_mode(ThemeMode::Dark);
         let mode_tokens = theme.mode_tokens();
-        let appearance = switch_appearance(
+        let look = switch_look(
             mode_tokens.as_ref(),
             ThemeMode::Dark,
             ShadcnButtonStyle::Primary,
@@ -214,8 +212,8 @@ mod tests {
         let catalog = &theme.mode_tokens().catalog;
         let input = catalog.color("input").expect("input");
         let background = catalog.color("background").expect("background");
-        assert_eq!(appearance.track_background, input);
-        assert_eq!(appearance.thumb_background, background);
+        assert_eq!(look.track_background, input);
+        assert_eq!(look.thumb_background, background);
     }
 
     #[test]
@@ -223,15 +221,15 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default =
-            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
-        let hovered = switch_appearance(
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let hovered = switch_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { hovered: true, ..InteractionState::default() },
         );
-        let pressed = switch_appearance(
+        let pressed = switch_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -245,18 +243,13 @@ mod tests {
     }
 
     #[test]
-    fn primary_and_secondary_share_off_appearance() {
+    fn primary_and_secondary_share_off_look() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let primary =
-            switch_appearance(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
-        let secondary = switch_appearance(
-            &mode,
-            ThemeMode::Light,
-            ShadcnButtonStyle::Secondary,
-            false,
-            InteractionState::default(),
-        );
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let secondary =
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, false, InteractionState::default());
 
         assert_eq!(primary.track_background, secondary.track_background);
         assert_eq!(primary.thumb_background, secondary.thumb_background);

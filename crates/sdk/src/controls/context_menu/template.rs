@@ -74,23 +74,23 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             item_hovers,
             item_clicks,
         } = handlers;
-        let appearance = self.theme.resolve(model.state);
+        let look = self.theme.resolve(model.state);
         let mut target = div()
             .id(format!("{}-target", model.id))
             .flex()
             .items_center()
             .justify_center()
-            .min_w(px(appearance.target_min_width))
-            .px(px(appearance.target_padding_x))
-            .py(px(appearance.target_padding_y))
-            .bg(appearance.target_background)
-            .text_color(appearance.target_foreground)
+            .min_w(px(look.target_min_width))
+            .px(px(look.target_padding_x))
+            .py(px(look.target_padding_y))
+            .bg(look.target_background)
+            .text_color(look.target_foreground)
             .border_1()
-            .border_color(appearance.target_border)
-            .rounded(px(appearance.target_radius))
-            .text_size(px(appearance.target_typography.size))
-            .line_height(px(appearance.target_typography.line_height))
-            .font_weight(appearance.target_typography.weight)
+            .border_color(look.target_border)
+            .rounded(px(look.target_radius))
+            .text_size(px(look.target_typography.size))
+            .line_height(px(look.target_typography.line_height))
+            .font_weight(look.target_typography.weight)
             .cursor_pointer()
             .on_hover(target_hover)
             .on_mouse_down(MouseButton::Right, target_mouse_down)
@@ -103,7 +103,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             target = target.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             target = target.border_1().border_color(focus_ring);
         }
 
@@ -124,7 +124,7 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
                 model.items,
                 model.open_submenu,
                 model.active_path,
-                appearance.floating_menu,
+                look.floating_menu,
                 item_hovers,
                 item_clicks,
             );

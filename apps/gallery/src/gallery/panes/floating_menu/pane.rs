@@ -5,8 +5,8 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::floating_menu::{
-    FloatingMenuAppearance, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuState,
-    FloatingMenuStepDirection, FloatingMenuTheme, render_floating_menu,
+    FloatingMenuLook, FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuState, FloatingMenuStepDirection,
+    FloatingMenuTheme, render_floating_menu,
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::state::MenuPath;
@@ -51,7 +51,7 @@ impl FloatingMenuPane {
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
-        let appearance = self.menu_theme.resolve();
+        let menu_look = self.menu_theme.resolve();
 
         gallery_pane_with_inspector(
             "Floating Menu",
@@ -67,24 +67,24 @@ impl FloatingMenuPane {
                         .items_start()
                         .justify_center()
                         .gap(px(16.0))
-                        .child(render_state_sample("Standard", &appearance, chrome.muted_text, &default_items(), None))
+                        .child(render_state_sample("Standard", &menu_look, chrome.muted_text, &default_items(), None))
                         .child(render_state_sample(
                             "Hover / active item",
-                            &appearance,
+                            &menu_look,
                             chrome.muted_text,
                             &default_items(),
                             Some(MenuPath::Root(1)),
                         ))
                         .child(render_state_sample(
                             "Disabled item",
-                            &appearance,
+                            &menu_look,
                             chrome.muted_text,
                             &disabled_items(),
                             None,
                         ))
                         .child(render_state_sample(
                             "Submenu affordance",
-                            &appearance,
+                            &menu_look,
                             chrome.muted_text,
                             &submenu_items(),
                             None,
@@ -107,7 +107,7 @@ impl FloatingMenuPane {
 
 fn render_state_sample(
     label: &'static str,
-    appearance: &FloatingMenuAppearance,
+    look: &FloatingMenuLook,
     label_color: gpui::Hsla,
     items: &[MenuItem],
     active_path: Option<MenuPath>,
@@ -125,7 +125,7 @@ fn render_state_sample(
             items,
             None,
             active_path,
-            appearance.clone(),
+            look.clone(),
             noop_hovers(root_count),
             noop_clicks(root_count),
         ))

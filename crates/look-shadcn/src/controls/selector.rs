@@ -3,15 +3,15 @@
 use gpui_luma::controls::selector::SelectorPalette;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::LookResolver;
 
 use super::floating_menu::{resolve_ghost_trigger_colors};
-use super::selector_items_panel::selector_items_panel_appearance;
+use super::selector_items_panel::selector_items_panel_look;
 
 pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SelectorPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "selector_trigger");
@@ -32,7 +32,7 @@ pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: I
             .unwrap_or_else(|err| panic!("selector properties: {err}"))
             .map(|color| color.hsla()),
         trigger_typography: typography.text.label,
-        items_panel: selector_items_panel_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
+        items_panel: selector_items_panel_look(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     }
 }
 

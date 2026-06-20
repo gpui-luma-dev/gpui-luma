@@ -58,7 +58,7 @@ pub struct CheckboxPalette {
     pub label_font_family: SharedString,
 }
 
-pub type CheckboxAppearance = CheckboxPalette;
+pub type CheckboxLook = CheckboxPalette;
 
 pub trait CheckboxTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxPalette;

@@ -49,15 +49,15 @@ To ensure uniform API styles across all widgets, all core and custom controls mu
 * **`set_` Prefix Obligation:** Any runtime mutator method on a spawned control entity that updates a model field `x` must be named `set_x(...)` (e.g., `set_enabled(...)`, `set_value(...)`).
 * **`with_` Prefix Prohibition:** Spawned control entities must **never** use the `with_` prefix.
 
-### Rule C: Appearance & Style Override Naming
-* **Builder-side Override:** Standardize on `.appearance_override(override_fn)` for overriding resolved styles:
+### Rule C: Look & Style Override Naming Style Override Naming
+* **Builder-side Override:** Standardize on `.look_override(override_fn)` for overriding resolved styles:
   ```rust
-  pub fn appearance_override<F>(mut self, appearance_override: F) -> Self
+  pub fn look_override<F>(mut self, look_override: F) -> Self
   where
-      F: Fn(Appearance) -> Appearance + Send + Sync + 'static
+      F: Fn(Look) -> Look + Send + Sync + 'static
   ```
-* **Runtime Control Override:** Standardize on `.set_appearance_override(override_fn, cx)` for runtime changes.
-* **Full Appearance Resolvers:** For controls that supply a complete appearance resolver based on full render models (e.g., button-family controls), continue to use `.with_appearance(...)`.
+* **Runtime Control Override:** Standardize on `.set_look_override(override_fn, cx)` for runtime changes.
+* **Full Look Resolvers:** For controls that supply a complete look resolver based on full render models (e.g., button-family controls), continue to use `.with_look(...)`.
 
 ### Rule D: Value / Data Payload Naming
 * **Input Controls:** Standardize on `.value(val)` (builder), `.value()` (getter), and `.set_value(val, cx)` (runtime setter) for scalar/text/numeric inputs (e.g. text fields, text areas, sliders, scrollbars, progress bars).
@@ -72,7 +72,7 @@ To ensure uniform API styles across all widgets, all core and custom controls mu
 
 ---
 
-## 3. The "Why" Behind Appearance Overrides
+## 3. The "Why" Behind Look Overrides
 
 During early design phases, Luma prototyped a state-aware template parameterization system (e.g., `ProtoButtonTemplateParams`). This was designed to allow explicit state overrides for colors, margins, and sizes at compile-time.
 
@@ -80,12 +80,12 @@ During early design phases, Luma prototyped a state-aware template parameterizat
 * **Boilerplate & Compile-Time Weight:** It required massive macro support (`#[derive(ProtoComponent)]` via `darling`) to map metadata strings safely, which slowed down build cycles.
 * **UX Fallback Confusion:** Centralizing state-fallback resolution (base override vs. hover override vs. theme fallback) was difficult to explain and debug during customization.
 
-### The Role of `appearance_override`
-To avoid over-engineering, Luma consolidated around the closure-based `appearance_override` model. It serves two distinct purposes:
+### The Role of `look_override`
+To avoid over-engineering, Luma consolidated around the closure-based `look_override` model. It serves two distinct purposes:
 
 1. **The Escape Hatch:**
    It provides a simple, zero-boilerplate escape hatch for downstream apps to modify resolved layouts after the theme resolver finishes.
 2. **Design Discovery:**
-   Using `appearance_override` in production app code signals a gap where the theme system wasn't fully configured to support a specific variation. 
+   Using `look_override` in production app code signals a gap where the theme system wasn't fully configured to support a specific variation. 
    * **Prototyping:** Hack layout adjustments inline using the override to maintain speed.
    * **Promotion:** Once an override pattern is repeated across different files or apps (e.g. compact, monospace inputs for tokens), refactor it into standard `ControlSize` presets or `TextFieldVariant` options mapped directly through the look crate's stylesheet config (`style.toml`).

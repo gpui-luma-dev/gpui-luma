@@ -7,7 +7,7 @@ use gpui::{
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
-    SelectorItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+    SelectorItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
 use crate::theme::LumaTypography;
 
@@ -48,7 +48,7 @@ pub struct AutocompleteTextBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: SelectorItemsPanelAppearance,
+    pub popup_look: SelectorItemsPanelLook,
     pub popup_content: Option<AnyElement>,
 }
 
@@ -155,11 +155,11 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                                     div()
                                         .id("prototype-autocomplete-popup-shell")
                                         .w(model.popup_width)
-                                        .bg(model.popup_appearance.background)
+                                        .bg(model.popup_look.background)
                                         .border_1()
-                                        .border_color(model.popup_appearance.border)
-                                        .rounded(px(model.popup_appearance.radius))
-                                        .shadow(model.popup_appearance.shadow.clone())
+                                        .border_color(model.popup_look.border)
+                                        .rounded(px(model.popup_look.radius))
+                                        .shadow(model.popup_look.shadow.clone())
                                         .overflow_hidden()
                                         .occlude()
                                         .child(popup_content),
@@ -176,7 +176,7 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
 pub struct AutocompleteItemsRenderModel<'a> {
     pub id: &'a SharedString,
     pub items: &'a [SelectorItem],
-    pub appearance: SelectorItemsPanelAppearance,
+    pub look: SelectorItemsPanelLook,
     pub highlighted_index: Option<usize>,
 }
 
@@ -207,46 +207,46 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
         handlers: AutocompleteItemsTemplateHandlers,
     ) -> Stateful<gpui::Div> {
         let AutocompleteItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.appearance.clone();
+        let look = model.look.clone();
 
         let mut root = div()
             .id(format!("{}-rows", model.id))
             .relative()
             .flex()
             .flex_col()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding));
+            .min_w(px(look.min_width))
+            .p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (index, (item, hover)) in model.items.iter().zip(item_hovers).enumerate() {
             let enabled_item = item.is_enabled();
             let color = if enabled_item {
-                appearance.foreground
+                look.foreground
             } else {
-                appearance.item_disabled_foreground
+                look.item_disabled_foreground
             };
             let mut row = div()
                 .id(format!("{}-row-{}", model.id, index))
                 .flex()
                 .items_center()
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
                 .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
                 .child(div().flex_1().min_w(px(0.0)).truncate().child(item.label_text().clone()));
 
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
-                    let hover_background = appearance.item_hover_background;
-                    let hover_foreground = appearance.item_hover_foreground;
+                    let hover_background = look.item_hover_background;
+                    let hover_foreground = look.item_hover_foreground;
                     move |style| style.bg(hover_background).text_color(hover_foreground)
                 });
 
                 if model.highlighted_index.is_some_and(|active| active == index) {
-                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
                 if let Some(click) = clicks.next() {

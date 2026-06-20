@@ -16,5 +16,5 @@ pub use template::{
     default_resizable_panels_template,
 };
 pub use theme::{
-    DefaultResizablePanelsTheme, ResizablePanelsAppearance, ResizablePanelsTheme, default_resizable_panels_theme,
+    DefaultResizablePanelsTheme, ResizablePanelsLook, ResizablePanelsTheme, default_resizable_panels_theme,
 };

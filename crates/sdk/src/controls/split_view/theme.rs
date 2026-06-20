@@ -5,13 +5,13 @@ use gpui::Hsla;
 use crate::theme::ThemeTokens;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SplitViewAppearance {
+pub struct SplitViewLook {
     pub separator: Hsla,
     pub separator_hover: Hsla,
 }
 
 pub trait SplitViewTheme: Send + Sync {
-    fn resolve(&self, hovered: bool, enabled: bool) -> SplitViewAppearance;
+    fn resolve(&self, hovered: bool, enabled: bool) -> SplitViewLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -32,7 +32,7 @@ impl DefaultSplitViewTheme {
 }
 
 impl SplitViewTheme for DefaultSplitViewTheme {
-    fn resolve(&self, _hovered: bool, enabled: bool) -> SplitViewAppearance {
+    fn resolve(&self, _hovered: bool, enabled: bool) -> SplitViewLook {
         let palette = &self.tokens.palette;
         let separator = if enabled {
             palette.border.default
@@ -45,7 +45,7 @@ impl SplitViewTheme for DefaultSplitViewTheme {
             palette.state.disabled.foreground
         };
 
-        SplitViewAppearance { separator, separator_hover }
+        SplitViewLook { separator, separator_hover }
     }
 }
 

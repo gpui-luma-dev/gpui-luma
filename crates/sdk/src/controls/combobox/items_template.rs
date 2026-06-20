@@ -4,7 +4,7 @@ use gpui::{App, SharedString, Stateful, div, prelude::*, px};
 
 use super::behavior::SelectionItem;
 use super::item_template::ComboBoxItemTemplate;
-use crate::controls::selector_panel::{SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 
 pub struct ComboBoxItemsRenderModel<'a> {
     pub menu_id: &'a SharedString,
@@ -16,7 +16,7 @@ pub struct ComboBoxItemsRenderModel<'a> {
     pub open: bool,
     pub enabled: bool,
     pub item_template: Option<&'a ComboBoxItemTemplate<SelectionItem>>,
-    pub appearance: SelectorItemsPanelAppearance,
+    pub look: SelectorItemsPanelLook,
 }
 
 pub struct ComboBoxItemsTemplateHandlers {
@@ -48,15 +48,15 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
         cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.appearance.clone();
+        let look = model.look.clone();
 
         let mut root = div()
             .id(format!("{}-rows", model.menu_id))
             .relative()
             .flex()
             .flex_col()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding));
+            .min_w(px(look.min_width))
+            .p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -67,9 +67,9 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
 
             let enabled_item = model.enabled && item.enabled;
             let color = if enabled_item {
-                appearance.foreground
+                look.foreground
             } else {
-                appearance.item_disabled_foreground
+                look.item_disabled_foreground
             };
             let selected = model.selected_source_index == Some(source_index);
             let active = enabled_item && model.active_visible_index == Some(visible_index);
@@ -95,24 +95,24 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
                 .id(format!("{}-row-{}", model.menu_id, visible_index))
                 .flex()
                 .items_center()
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
                 .text_color(color)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
                 .child(content);
 
             if enabled_item {
                 row = row.cursor_pointer().on_hover(hover).hover({
-                    let hover_background = appearance.item_hover_background;
-                    let hover_foreground = appearance.item_hover_foreground;
+                    let hover_background = look.item_hover_background;
+                    let hover_foreground = look.item_hover_foreground;
                     move |style| style.bg(hover_background).text_color(hover_foreground)
                 });
 
                 if active {
-                    row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                    row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
                 if let Some(click) = clicks.next() {

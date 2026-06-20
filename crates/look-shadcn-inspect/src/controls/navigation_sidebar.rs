@@ -1,7 +1,7 @@
 //! Inspect metadata for `navigation_sidebar`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::catalog::SpacingField;
 
@@ -38,7 +38,7 @@ pub fn inspect_navigation_sidebar_container_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
 ) -> NavigationSidebarContainerInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_container_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_container_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarContainerColorTable::fallback());
@@ -53,7 +53,7 @@ pub fn inspect_navigation_sidebar_section_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
 ) -> NavigationSidebarSectionInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_section_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_section_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::NavigationSidebarSectionColorTable::fallback());
@@ -65,7 +65,7 @@ pub fn inspect_navigation_sidebar_branch_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> NavigationSidebarItemInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_branch_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_branch_colors(
         &resolver,
@@ -94,7 +94,7 @@ pub fn inspect_navigation_sidebar_item_color_palette(
     selected: bool,
     state: InteractionState,
 ) -> NavigationSidebarItemInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "navigation_sidebar_item_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_navigation_sidebar_item_colors(
         &resolver,
@@ -125,7 +125,7 @@ pub fn inspect_navigation_sidebar_metrics(
 ) -> NavigationSidebarInspectMetrics {
     use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let size_metrics = metrics.for_size(size);

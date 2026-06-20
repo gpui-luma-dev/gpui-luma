@@ -2,7 +2,7 @@ use gpui::Context;
 use gpui_luma::theme::ControlSize;
 use gpui_luma::controls::tabs_navigation::TabsNavigationWidthMode;
 
-use super::controls::token_field_appearance_override_arc;
+use super::controls::token_field_look_override_arc;
 use super::model::TOKEN_CATEGORIES;
 use super::parsing::{
     effective_radius_rem, effective_spacing_rem, format_metric_rem, format_palette_hsl_multiplier,
@@ -68,7 +68,7 @@ impl ThemeSidebar {
         for field in self.vm.token_fields.values() {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc()), cx);
             });
         }
     }
@@ -77,7 +77,7 @@ impl ThemeSidebar {
         for field in [&self.vm.palette_hue_field, &self.vm.palette_saturation_field, &self.vm.palette_lightness_field] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc()), cx);
             });
         }
 
@@ -102,7 +102,7 @@ impl ThemeSidebar {
         for field in [&self.vm.radius_field, &self.vm.spacing_field] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc()), cx);
             });
         }
 
@@ -124,7 +124,7 @@ impl ThemeSidebar {
         ] {
             field.update(cx, |field, cx| {
                 field.set_template(theme.textfield_template(), cx);
-                field.set_appearance_override(Some(token_field_appearance_override_arc()), cx);
+                field.set_look_override(Some(token_field_look_override_arc()), cx);
             });
         }
 

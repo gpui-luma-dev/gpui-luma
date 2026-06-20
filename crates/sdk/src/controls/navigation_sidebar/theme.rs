@@ -5,21 +5,21 @@ use gpui::Hsla;
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarContainerAppearance {
+pub struct NavigationSidebarContainerLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarSectionAppearance {
+pub struct NavigationSidebarSectionLook {
     pub label_color: Hsla,
     pub typography: LumaTextStyle,
     pub height: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct NavigationSidebarItemAppearance {
+pub struct NavigationSidebarItemLook {
     pub background: Option<Hsla>,
     pub foreground: Hsla,
     pub icon_color: Hsla,
@@ -33,15 +33,15 @@ pub struct NavigationSidebarItemAppearance {
 }
 
 pub trait NavigationSidebarTheme: Send + Sync {
-    fn resolve_container(&self) -> NavigationSidebarContainerAppearance;
-    fn resolve_section(&self) -> NavigationSidebarSectionAppearance;
-    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemAppearance;
+    fn resolve_container(&self) -> NavigationSidebarContainerLook;
+    fn resolve_section(&self) -> NavigationSidebarSectionLook;
+    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook;
     fn resolve_item(
         &self,
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> NavigationSidebarItemAppearance;
+    ) -> NavigationSidebarItemLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -60,7 +60,7 @@ impl DefaultNavigationSidebarTheme {
         Self { tokens }
     }
 
-    fn base_item(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemAppearance {
+    fn base_item(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -71,7 +71,7 @@ impl DefaultNavigationSidebarTheme {
             palette.navigation.foreground
         };
 
-        NavigationSidebarItemAppearance {
+        NavigationSidebarItemLook {
             background: None,
             foreground,
             icon_color: foreground,
@@ -87,25 +87,25 @@ impl DefaultNavigationSidebarTheme {
 }
 
 impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
-    fn resolve_container(&self) -> NavigationSidebarContainerAppearance {
+    fn resolve_container(&self) -> NavigationSidebarContainerLook {
         let navigation = &self.tokens.palette.navigation;
 
-        NavigationSidebarContainerAppearance {
+        NavigationSidebarContainerLook {
             background: navigation.background,
             foreground: navigation.foreground,
             border: navigation.border,
         }
     }
 
-    fn resolve_section(&self) -> NavigationSidebarSectionAppearance {
-        NavigationSidebarSectionAppearance {
+    fn resolve_section(&self) -> NavigationSidebarSectionLook {
+        NavigationSidebarSectionLook {
             label_color: self.tokens.palette.navigation.muted_foreground,
             typography: self.tokens.typography.text.caption,
             height: 20.0,
         }
     }
 
-    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemAppearance {
+    fn resolve_branch(&self, state: InteractionState, size: ControlSize) -> NavigationSidebarItemLook {
         let mut appearance = self.base_item(state, size);
         let palette = &self.tokens.palette;
 
@@ -123,7 +123,7 @@ impl NavigationSidebarTheme for DefaultNavigationSidebarTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> NavigationSidebarItemAppearance {
+    ) -> NavigationSidebarItemLook {
         let mut appearance = self.base_item(state, size);
         let palette = &self.tokens.palette;
 

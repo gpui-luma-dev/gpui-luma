@@ -1,7 +1,7 @@
 //! Inspect metadata for `selector`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
 
@@ -25,7 +25,7 @@ pub fn inspect_selector_color_palette(
     state: InteractionState,
     size: ControlSize,
 ) -> SelectorInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "selector_inspect");

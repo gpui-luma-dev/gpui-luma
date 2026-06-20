@@ -5,7 +5,7 @@ use gpui::{BoxShadow, Hsla};
 use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct SliderAppearance {
+pub struct SliderLook {
     pub track_background: Hsla,
     pub fill_background: Hsla,
     pub thumb_background: Hsla,
@@ -20,7 +20,7 @@ pub struct SliderAppearance {
 }
 
 pub trait SliderTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> SliderAppearance;
+    fn resolve(&self, state: InteractionState) -> SliderLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -41,7 +41,7 @@ impl DefaultSliderTheme {
 }
 
 impl SliderTheme for DefaultSliderTheme {
-    fn resolve(&self, state: InteractionState) -> SliderAppearance {
+    fn resolve(&self, state: InteractionState) -> SliderLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let elevation = &self.tokens.elevation;
@@ -53,7 +53,7 @@ impl SliderTheme for DefaultSliderTheme {
             InteractionLayer::Default => selected.background,
         };
 
-        SliderAppearance {
+        SliderLook {
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else {

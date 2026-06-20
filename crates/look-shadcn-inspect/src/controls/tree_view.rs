@@ -1,7 +1,7 @@
 //! Inspect metadata for `tree_view`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct TreeViewRowInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -26,7 +26,7 @@ pub fn inspect_tree_view_row_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> TreeViewRowInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tree_view_row_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TreeViewRowColorTable::fallback());
@@ -48,7 +48,7 @@ pub fn inspect_tree_view_metrics(
     use gpui_luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{control_size_key, derived_metric, radius_metric, spacing_control_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let scale = TreeViewScale::compute(size, metrics, 1.0);

@@ -34,7 +34,7 @@ impl SelectorPanelPreview {
 impl Render for SelectorPanelPreview {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
+        let look = self.look.selector_items_panel_look(ControlSize::Md);
 
         let samples = vec![
             SelectorPanelSample {
@@ -80,18 +80,20 @@ impl Render for SelectorPanelPreview {
                     .text_color(chrome.muted_text)
                     .child("Selector Panel preview"),
             )
-            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_sample(sample, self.template.clone(), appearance.clone(), chrome.muted_text, cx)
-                }),
-            ))
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    samples.into_iter().map(|sample| {
+                        render_sample(sample, self.template.clone(), look.clone(), chrome.muted_text, cx)
+                    }),
+                ),
+            )
     }
 }
 
 fn render_sample(
     sample: SelectorPanelSample,
     template: Arc<dyn SelectorItemsTemplate<SelectorItem>>,
-    appearance: gpui_luma::controls::selector_panel::SelectorItemsPanelAppearance,
+    look: gpui_luma::controls::selector_panel::SelectorItemsPanelLook,
     label_color: gpui::Hsla,
     cx: &mut App,
 ) -> AnyElement {
@@ -115,7 +117,7 @@ fn render_sample(
                 enabled: true,
                 focus: ControlFocusState::default(),
                 item_template: None,
-                appearance,
+                look,
             },
             SelectorItemsTemplateHandlers { item_hovers: noop_hovers(count), item_clicks: noop_clicks(count) },
             cx,

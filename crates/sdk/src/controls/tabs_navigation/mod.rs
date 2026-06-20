@@ -15,7 +15,7 @@ pub use template::{
 };
 
 pub use theme::{
-    DefaultTabsNavigationTheme, TabsNavigationListAppearance, TabsNavigationItemAppearance, TabsNavigationTheme,
+    DefaultTabsNavigationTheme, TabsNavigationListLook, TabsNavigationItemLook, TabsNavigationTheme,
     default_tabs_navigation_theme,
 };
 

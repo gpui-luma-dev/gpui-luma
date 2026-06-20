@@ -1,9 +1,9 @@
 use gpui_luma::controls::button_family::{
-    ButtonFamilyAppearance, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_appearance,
+    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, compose_button_family_look,
 };
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, StandardBoxScale, ThemeMode, snap_to_pixel};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -11,7 +11,7 @@ use crate::stylesheet::{
     resolve_button_metrics_rule,
 };
 
-/// Radix-style button appearance.
+/// Radix-style button look.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ShadcnButtonStyle {
     Primary,
@@ -62,23 +62,23 @@ pub fn resolve_button_colors_with_stylesheet(
     Ok(ButtonColorPalette { background: colors.background, foreground: colors.foreground, border: colors.border })
 }
 
-pub fn button_appearance(
+pub fn button_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     style: ShadcnButtonStyle,
     role: ButtonFamilyRole,
     size: ControlSize,
     state: InteractionState,
-) -> ButtonFamilyAppearance {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+) -> ButtonFamilyLook {
+    let ctx = LookContext::new(mode, theme_mode, state);
     let stylesheet = embedded_stylesheet();
     let palette = button_palette(&ctx, stylesheet, style, role, size);
     let scale = button_box_scale(&ctx, stylesheet, size, 1.0);
-    compose_button_family_appearance(&palette, role, &scale, ctx.metrics().radius.pill)
+    compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill)
 }
 
 pub fn button_box_scale(
-    ctx: &AppearanceContext,
+    ctx: &LookContext,
     stylesheet: &StylesheetConfig,
     size: ControlSize,
     scale_factor: f32,
@@ -99,7 +99,7 @@ pub fn button_box_scale(
 }
 
 pub fn button_palette(
-    ctx: &AppearanceContext,
+    ctx: &LookContext,
     stylesheet: &StylesheetConfig,
     style: ShadcnButtonStyle,
     role: ButtonFamilyRole,
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn primary_hover_background_differs_from_default() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let default = button_appearance(
+        let default = button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -192,7 +192,7 @@ mod tests {
             ControlSize::Md,
             InteractionState::default(),
         );
-        let hovered = button_appearance(
+        let hovered = button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
@@ -208,7 +208,7 @@ mod tests {
     fn ghost_light_hover_pairs_accent_fill_with_accent_foreground() {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let hovered = button_appearance(
+        let hovered = button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Ghost,
@@ -226,7 +226,7 @@ mod tests {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
         let accent = catalog.color("accent").expect("accent");
-        let hovered = button_appearance(
+        let hovered = button_look(
             &mode,
             ThemeMode::Dark,
             ShadcnButtonStyle::Ghost,
@@ -244,7 +244,7 @@ mod tests {
     fn outline_light_hover_uses_accent_fill_and_accent_foreground() {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let hovered = button_appearance(
+        let hovered = button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Outline,
@@ -262,7 +262,7 @@ mod tests {
         let catalog = retro_arcade_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
         let input = catalog.color("input").expect("input");
-        let hovered = button_appearance(
+        let hovered = button_look(
             &mode,
             ThemeMode::Dark,
             ShadcnButtonStyle::Outline,
@@ -284,7 +284,7 @@ mod tests {
         let dark = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Dark).expect("dark");
 
         for (mode, theme_mode) in [(&light, ThemeMode::Light), (&dark, ThemeMode::Dark)] {
-            let default = button_appearance(
+            let default = button_look(
                 mode,
                 theme_mode,
                 ShadcnButtonStyle::Primary,
@@ -292,7 +292,7 @@ mod tests {
                 ControlSize::Md,
                 InteractionState::default(),
             );
-            let hovered = button_appearance(
+            let hovered = button_look(
                 mode,
                 theme_mode,
                 ShadcnButtonStyle::Primary,
@@ -307,7 +307,7 @@ mod tests {
     #[test]
     fn palette_typography_uses_stylesheet_font_size() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let ctx = AppearanceContext::new(&mode, ThemeMode::Light, InteractionState::default());
+        let ctx = LookContext::new(&mode, ThemeMode::Light, InteractionState::default());
         let palette = button_palette(
             &ctx,
             embedded_stylesheet(),

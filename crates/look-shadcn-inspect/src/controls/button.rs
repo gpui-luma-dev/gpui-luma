@@ -2,8 +2,8 @@
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography,
-    ShadcnButtonStyle, ShadcnModeTokens, TypographySource,
+    LookContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle,
+    ShadcnModeTokens, TypographySource,
 };
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
@@ -23,7 +23,7 @@ pub fn inspect_button_color_palette(
     role: ButtonFamilyRole,
     state: InteractionState,
 ) -> ButtonInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let style = if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
         ShadcnButtonStyle::Outline
     } else {
@@ -61,19 +61,19 @@ pub fn inspect_button_metrics(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonInspectMetrics {
-    let appearance = gpui_luma_look_shadcn::paint::button_appearance(mode, theme_mode, style, role, size, state);
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let look = gpui_luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, size, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
 
     let size_key = control_size_key(size);
 
     ButtonInspectMetrics {
-        height: scaffold_control_metric(size_key, "control_height", appearance.height),
-        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, appearance.padding_x),
-        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, appearance.padding_y),
-        gap: spacing_control_metric(catalog, size, SpacingField::Gap, appearance.gap),
-        radius: radius_metric(catalog, size, appearance.radius),
+        height: scaffold_control_metric(size_key, "control_height", look.height),
+        padding_x: spacing_control_metric(catalog, size, SpacingField::PaddingX, look.padding_x),
+        padding_y: spacing_control_metric(catalog, size, SpacingField::PaddingY, look.padding_y),
+        gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.gap),
+        radius: radius_metric(catalog, size, look.radius),
         border_width: ResolvedMetric {
             value_px: metrics.border_width.default,
             source: MetricSource::Scaffold { path: "MetricTokens.border_width.default".into() },
@@ -83,7 +83,7 @@ pub fn inspect_button_metrics(
             source: MetricSource::Scaffold { path: "MetricTokens.focus.width".into() },
         },
         focus_ring_offset: focus_ring_offset_metric(
-            gpui_luma::controls::button_family::button_family_effective_border(appearance.border),
+            gpui_luma::controls::button_family::button_family_effective_border(look.border),
             metrics,
         ),
     }
@@ -98,7 +98,7 @@ pub struct ButtonInspectTypography {
 }
 
 pub fn inspect_button_typography(mode: &ShadcnModeTokens, theme_mode: ThemeMode) -> ButtonInspectTypography {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let typography = ctx.typography();
     let catalog = ctx.catalog();
     let label = &typography.text.label;
@@ -275,9 +275,9 @@ mod tests {
     }
 
     #[test]
-    fn inspect_metrics_match_button_appearance_for_primary_default_md() {
+    fn inspect_metrics_match_button_look_for_primary_default_md() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let appearance = gpui_luma_look_shadcn::paint::button_appearance(
+        let appearance = gpui_luma_look_shadcn::paint::button_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,

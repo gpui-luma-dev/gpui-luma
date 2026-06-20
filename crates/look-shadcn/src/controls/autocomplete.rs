@@ -1,16 +1,16 @@
 //! Autocomplete / combobox chrome — textfield + floating menu tokens.
 
-use gpui_luma::controls::autocomplete::AutocompleteTextBoxAppearance;
+use gpui_luma::controls::autocomplete::AutocompleteTextBoxLook;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_autocomplete_chrome_color_rule, resolve_autocomplete_chrome_color_rule,
 };
 
-use super::floating_menu::floating_menu_appearance;
+use super::floating_menu::floating_menu_look;
 
 #[derive(Clone, Debug)]
 pub struct AutocompleteChromeColorTable {
@@ -53,22 +53,22 @@ pub fn resolve_autocomplete_chrome_colors_with_stylesheet(
     })
 }
 
-pub fn autocomplete_textbox_appearance(
+pub fn autocomplete_textbox_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     size: ControlSize,
-) -> AutocompleteTextBoxAppearance {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+) -> AutocompleteTextBoxLook {
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "autocomplete_chrome");
     let colors = resolve_autocomplete_chrome_colors(&resolver, true)
         .unwrap_or_else(|_| AutocompleteChromeColorTable::fallback());
 
-    AutocompleteTextBoxAppearance {
+    AutocompleteTextBoxLook {
         status_color: colors.status_color.hsla(),
         muted_text_color: colors.muted_text_color.hsla(),
         clear_icon_color: colors.clear_icon_color.hsla(),
         clear_icon_hover_color: colors.clear_icon_hover_color.hsla(),
-        menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, size),
+        menu: floating_menu_look(ctx.tokens, ctx.theme_mode, size),
     }
 }
 
@@ -83,7 +83,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::autocomplete_textbox_appearance;
+    use super::autocomplete_textbox_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -110,8 +110,8 @@ mod tests {
     fn autocomplete_chrome_uses_primary_and_muted_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = autocomplete_textbox_appearance(&mode, ThemeMode::Light, ControlSize::Md);
-        assert_eq!(appearance.status_color, catalog.color("primary").expect("primary"));
-        assert_eq!(appearance.muted_text_color, catalog.color("muted-foreground").expect("muted-foreground"));
+        let look = autocomplete_textbox_look(&mode, ThemeMode::Light, ControlSize::Md);
+        assert_eq!(look.status_color, catalog.color("primary").expect("primary"));
+        assert_eq!(look.muted_text_color, catalog.color("muted-foreground").expect("muted-foreground"));
     }
 }

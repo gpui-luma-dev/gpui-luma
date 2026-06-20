@@ -1,9 +1,9 @@
 //! Card surface resolved from shadcn `card` tokens.
 
-use gpui_luma::controls::card::CardAppearance;
+use gpui_luma::controls::card::CardLook;
 use gpui_luma::theme::ControlSize;
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::look::ShadcnLook;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{embedded_stylesheet, find_card_color_rule, resolve_card_color_rule};
@@ -37,7 +37,7 @@ pub fn resolve_card_colors_with_stylesheet(
     stylesheet: &crate::stylesheet::StylesheetConfig,
 ) -> anyhow::Result<CardColorTable> {
     let tokens = theme.mode_tokens();
-    let ctx = AppearanceContext::new(tokens.as_ref(), theme.mode(), Default::default());
+    let ctx = LookContext::new(tokens.as_ref(), theme.mode(), Default::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "card");
     let rule = find_card_color_rule(stylesheet).ok_or_else(|| anyhow::anyhow!("no card color rule configured"))?;
     let colors = resolve_card_color_rule(&resolver, rule)?;
@@ -49,13 +49,13 @@ pub fn resolve_card_colors_with_stylesheet(
     })
 }
 
-pub fn card_appearance(theme: &ShadcnLook, size: ControlSize) -> CardAppearance {
+pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
     let tokens = theme.mode_tokens();
     let colors = resolve_card_colors(theme).unwrap_or_else(|_| CardColorTable::fallback());
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
 
-    CardAppearance {
+    CardLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         title_color: colors.foreground.hsla(),
@@ -84,7 +84,7 @@ mod tests {
 
     use crate::look::ShadcnLook;
 
-    use super::card_appearance;
+    use super::card_look;
 
     fn sample_look() -> ShadcnLook {
         ShadcnLook::from_css_str(
@@ -129,9 +129,9 @@ mod tests {
     #[test]
     fn card_uses_card_tokens() {
         let look = sample_look();
-        let appearance = card_appearance(&look, ControlSize::Md);
+        let look = card_look(&look, ControlSize::Md);
 
-        assert_eq!(appearance.background, look.color(crate::tokens::ShadcnToken::Card));
-        assert_eq!(appearance.title_color, look.color(crate::tokens::ShadcnToken::CardForeground));
+        assert_eq!(look.background, look.color(crate::tokens::ShadcnToken::Card));
+        assert_eq!(look.title_color, look.color(crate::tokens::ShadcnToken::CardForeground));
     }
 }

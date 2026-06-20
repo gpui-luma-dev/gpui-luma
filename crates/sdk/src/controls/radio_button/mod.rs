@@ -3,7 +3,7 @@ mod theme;
 
 pub use template::{ThemedRadioButtonTemplate, default_template as default_radio_button_template};
 pub use theme::{
-    DefaultRadioButtonTheme, RadioButtonAppearance, RadioButtonPalette, RadioButtonTheme, RadioScale,
+    DefaultRadioButtonTheme, RadioButtonLook, RadioButtonPalette, RadioButtonTheme, RadioScale,
     default_radio_button_theme,
 };
 

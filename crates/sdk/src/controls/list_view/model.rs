@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, AppContext, Div, Entity, ListAlignment, SharedString
 
 use super::control::ListViewControl;
 use super::template::{ListViewTemplate, default_list_view_template, list_view_template_with_modifier};
-use super::theme::{ListViewAppearance, ListViewRowAppearance, ListViewTheme, default_list_view_theme};
+use super::theme::{ListViewLook, ListViewRowLook, ListViewTheme, default_list_view_theme};
 use crate::controls::state::ControlFocusState;
 use crate::theme::ControlSize;
 
@@ -60,8 +60,8 @@ impl ListScrollMode {
 
 pub struct ListViewRenderModel<'a> {
     pub id: &'a SharedString,
-    pub appearance: ListViewAppearance,
-    pub row_appearance: ListViewRowAppearance,
+    pub appearance: ListViewLook,
+    pub row_appearance: ListViewRowLook,
     pub row_count: usize,
     pub selection_mode: ListSelectionMode,
     pub scroll_mode: ListScrollMode,
@@ -78,7 +78,7 @@ pub struct ListViewRenderModel<'a> {
     pub focus: ControlFocusState,
 }
 
-pub type ListViewAppearanceOverride = Arc<dyn Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static>;
+pub type ListViewLookOverride = Arc<dyn Fn(ListViewLook) -> ListViewLook + Send + Sync + 'static>;
 
 pub type ListViewHeaderTemplate =
     Arc<dyn for<'a> Fn(&ListViewRenderModel<'a>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static>;
@@ -107,7 +107,7 @@ where
     pub focused: bool,
     pub focus_visible: bool,
     pub enabled: bool,
-    pub appearance: ListViewRowAppearance,
+    pub look: ListViewRowLook,
 }
 
 pub type ListViewRowTemplate<T> = Arc<
@@ -285,7 +285,7 @@ where
     pub(crate) header_template: Option<ListViewHeaderTemplate>,
     pub(crate) row_template: Option<ListViewRowTemplate<T>>,
     pub(crate) theme: Arc<dyn ListViewTheme>,
-    pub(crate) appearance_override: Option<ListViewAppearanceOverride>,
+    pub(crate) look_override: Option<ListViewLookOverride>,
     pub(crate) columns: Vec<ListViewColumn<T>>,
     pub(crate) scroll_mode: ListScrollMode,
     pub(crate) visible_rows: Option<usize>,
@@ -349,7 +349,7 @@ where
                 header_template: None,
                 row_template: None,
                 theme: default_list_view_theme(),
-                appearance_override: None,
+                look_override: None,
                 columns: Vec::new(),
                 scroll_mode: ListScrollMode::ScrollSmooth,
                 visible_rows: None,
@@ -487,16 +487,16 @@ where
         self
     }
 
-    pub fn appearance_override<F>(mut self, override_fn: F) -> Self
+    pub fn look_override<F>(mut self, override_fn: F) -> Self
     where
-        F: Fn(ListViewAppearance) -> ListViewAppearance + Send + Sync + 'static,
+        F: Fn(ListViewLook) -> ListViewLook + Send + Sync + 'static,
     {
-        self.model.appearance_override = Some(Arc::new(override_fn));
+        self.model.look_override = Some(Arc::new(override_fn));
         self
     }
 
     pub fn square_corners(self) -> Self {
-        self.appearance_override(|mut appearance| {
+        self.look_override(|mut appearance| {
             appearance.radius = 0.0;
             appearance
         })

@@ -2,11 +2,11 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct ContextMenuAppearance {
+pub struct ContextMenuLook {
     pub target_background: Hsla,
     pub target_foreground: Hsla,
     pub target_border: Hsla,
@@ -16,11 +16,11 @@ pub struct ContextMenuAppearance {
     pub target_padding_x: f32,
     pub target_padding_y: f32,
     pub target_min_width: f32,
-    pub floating_menu: FloatingMenuAppearance,
+    pub floating_menu: FloatingMenuLook,
 }
 
 pub trait ContextMenuTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> ContextMenuAppearance;
+    fn resolve(&self, state: InteractionState) -> ContextMenuLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -41,7 +41,7 @@ impl DefaultContextMenuTheme {
 }
 
 impl ContextMenuTheme for DefaultContextMenuTheme {
-    fn resolve(&self, state: InteractionState) -> ContextMenuAppearance {
+    fn resolve(&self, state: InteractionState) -> ContextMenuLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -59,7 +59,7 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
             palette.app.foreground
         };
 
-        ContextMenuAppearance {
+        ContextMenuLook {
             target_background,
             target_foreground,
             target_border: palette.border.default,
@@ -69,7 +69,7 @@ impl ContextMenuTheme for DefaultContextMenuTheme {
             target_padding_x: metrics.padding_x(size),
             target_padding_y: metrics.padding_y(size),
             target_min_width: 200.0,
-            floating_menu: default_floating_menu_appearance(&self.tokens, size),
+            floating_menu: default_floating_menu_look(&self.tokens, size),
         }
     }
 }

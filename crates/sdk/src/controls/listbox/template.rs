@@ -6,7 +6,7 @@ use super::ListBoxItem;
 use crate::controls::control_group::{
     ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
 };
-use crate::controls::listbox::{ListBoxRowAppearance, ListBoxTheme, default_listbox_theme};
+use crate::controls::listbox::{ListBoxRowLook, ListBoxTheme, default_listbox_theme};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
 use crate::theme::{ControlSize, LayoutCacheKey, ListRowScale, LumaLayoutCacheExt};
 
@@ -185,7 +185,7 @@ fn render_listbox_row_visual(
     id: ElementId,
     state: crate::controls::state::CompositeItemState,
     content: gpui::AnyElement,
-    appearance: ListBoxRowAppearance,
+    appearance: ListBoxRowLook,
 ) -> Stateful<Div> {
     let mut root = div()
         .id(id)

@@ -462,20 +462,20 @@ fn textarea_line_metrics(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<TextAreaLineMetric> {
-    let appearance = preview_textarea_appearance(&theme, state, enabled, window);
+    let look = preview_textarea_look(&theme, state, enabled, window);
     let mut metrics = Vec::new();
     let mut start = 0usize;
     let mut current = String::new();
 
     for (ix, ch) in value.chars().enumerate() {
         if ch == '\n' {
-            metrics.push(shape_metric(start, ix, std::mem::take(&mut current), metrics.len(), &appearance, window));
+            metrics.push(shape_metric(start, ix, std::mem::take(&mut current), metrics.len(), &look, window));
             start = ix + 1;
         } else {
             current.push(ch);
         }
     }
-    metrics.push(shape_metric(start, value.chars().count(), current, metrics.len(), &appearance, window));
+    metrics.push(shape_metric(start, value.chars().count(), current, metrics.len(), &look, window));
 
     metrics
 }
@@ -485,27 +485,25 @@ fn shape_metric(
     end: usize,
     text: String,
     line_ix: usize,
-    appearance: &gpui_luma::controls::textarea::TextAreaAppearance,
+    look: &gpui_luma::controls::textarea::TextAreaLook,
     window: &mut Window,
 ) -> TextAreaLineMetric {
     let run = TextRun {
         len: text.len(),
         font: {
             let mut font = font(".SystemUIFont");
-            font.weight = appearance.typography.weight;
+            font.weight = look.typography.weight;
             font
         },
-        color: appearance.foreground,
+        color: look.foreground,
         background_color: None,
         underline: None,
         strikethrough: None,
     };
-    let line = window.text_system().shape_line(
-        SharedString::from(text.to_owned()),
-        px(appearance.typography.size),
-        &[run],
-        None,
-    );
+    let line =
+        window
+            .text_system()
+            .shape_line(SharedString::from(text.to_owned()), px(look.typography.size), &[run], None);
     let chars = text.chars().count();
     let mut character_offsets = Vec::with_capacity(chars + 1);
     for char_offset in 0..=chars {
@@ -517,20 +515,20 @@ fn shape_metric(
         start,
         end,
         text,
-        y: line_ix as f32 * appearance.typography.line_height,
-        height: appearance.typography.line_height,
+        y: line_ix as f32 * look.typography.line_height,
+        height: look.typography.line_height,
         character_offsets,
     }
 }
 
-fn preview_textarea_appearance(
+fn preview_textarea_look(
     theme: &Arc<dyn TextAreaTheme>,
     state: TextAreaState,
     enabled: bool,
     window: &Window,
-) -> gpui_luma::controls::textarea::TextAreaAppearance {
+) -> gpui_luma::controls::textarea::TextAreaLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_appearance(state, enabled, &scale)
+    theme.resolve_look(state, enabled, &scale)
 }
 
 fn textarea_preview_handlers() -> TextAreaTemplateHandlers {

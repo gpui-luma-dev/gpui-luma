@@ -5,7 +5,7 @@ use gpui::Hsla;
 use crate::theme::ThemeTokens;
 
 #[derive(Clone, Copy, Debug)]
-pub struct DockSplitterAppearance {
+pub struct DockSplitterLook {
     pub line_color: Hsla,
     pub hover_color: Hsla,
     pub thumb_color: Hsla,
@@ -14,7 +14,7 @@ pub struct DockSplitterAppearance {
 }
 
 pub trait DockSplitterTheme: Send + Sync {
-    fn resolve(&self, enabled: bool) -> DockSplitterAppearance;
+    fn resolve(&self, enabled: bool) -> DockSplitterLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -35,10 +35,10 @@ impl DefaultDockSplitterTheme {
 }
 
 impl DockSplitterTheme for DefaultDockSplitterTheme {
-    fn resolve(&self, enabled: bool) -> DockSplitterAppearance {
+    fn resolve(&self, enabled: bool) -> DockSplitterLook {
         let palette = &self.tokens.palette;
 
-        DockSplitterAppearance {
+        DockSplitterLook {
             line_color: if enabled {
                 palette.border.default
             } else {

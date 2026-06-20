@@ -10,4 +10,4 @@ pub use model::{
 pub use template::{
     DockSplitterTemplate, DockSplitterTemplateHandlers, ThemedDockSplitterTemplate, default_dock_splitter_template,
 };
-pub use theme::{DockSplitterAppearance, DockSplitterTheme, DefaultDockSplitterTheme, default_dock_splitter_theme};
+pub use theme::{DockSplitterLook, DockSplitterTheme, DefaultDockSplitterTheme, default_dock_splitter_theme};

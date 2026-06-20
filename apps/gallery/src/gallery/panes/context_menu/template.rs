@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{App, ClickEvent, Corner, Div, Stateful, Window, anchored, deferred, div, px, prelude::*};
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::floating_menu::render_floating_menu;
-use gpui_luma::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme};
+use gpui_luma::controls::context_menu::{ContextMenuLook, ContextMenuTheme};
 
 type ContextMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
@@ -36,8 +36,8 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
             item_hovers,
             item_clicks,
         } = handlers;
-        let appearance = self.theme.resolve(model.state);
-        let mut target = render_gallery_target(model, &appearance, target_aux_click);
+        let look = self.theme.resolve(model.state);
+        let mut target = render_gallery_target(model, &look, target_aux_click);
 
         if !model.enabled {
             target = target.opacity(0.56);
@@ -60,7 +60,7 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
                 model.items,
                 model.open_submenu,
                 model.active_path,
-                appearance.floating_menu,
+                look.floating_menu,
                 item_hovers,
                 item_clicks,
             );
@@ -79,7 +79,7 @@ impl ContextMenuTemplate for GalleryContextMenuTemplate {
 
 pub(super) fn render_gallery_target(
     model: &ContextMenuRenderModel<'_>,
-    appearance: &ContextMenuAppearance,
+    look: &ContextMenuLook,
     target_aux_click: ContextMenuClickHandler,
 ) -> Stateful<Div> {
     div()
@@ -91,7 +91,7 @@ pub(super) fn render_gallery_target(
         .items_center()
         .justify_center()
         .gap_2()
-        .text_color(appearance.target_foreground)
+        .text_color(look.target_foreground)
         .on_aux_click(target_aux_click)
         .child(model.label.clone())
 }

@@ -114,11 +114,11 @@ impl DashboardPanel {
                     .w_full()
                     .flex()
                     .items_center()
-                    .min_h(px(model.appearance.min_height))
-                    .py(px(model.appearance.padding_y))
-                    .bg(model.appearance.background)
-                    .text_color(model.appearance.label_color)
-                    .typography_style(model.appearance.label_typography)
+                    .min_h(px(model.look.min_height))
+                    .py(px(model.look.padding_y))
+                    .bg(model.look.background)
+                    .text_color(model.look.label_color)
+                    .typography_style(model.look.label_typography)
                     .child(cells)
             };
         }

@@ -2,7 +2,7 @@
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
+    LookContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
     format_inspect_css_key,
 };
 
@@ -22,7 +22,7 @@ pub fn inspect_switch_color_palette(
     on: bool,
     state: InteractionState,
 ) -> SwitchInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let catalog = ctx.catalog();
     let resolver = LookResolver::new(catalog, theme_mode, "switch_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_switch_colors(&resolver, style, on, state.disabled)
@@ -78,7 +78,7 @@ pub fn inspect_switch_metrics(
         pill_radius_metric, spacing_control_metric,
     };
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let scale = SwitchScale::compute(size, metrics, 1.0);

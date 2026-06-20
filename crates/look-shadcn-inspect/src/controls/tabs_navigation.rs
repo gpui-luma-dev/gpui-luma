@@ -1,7 +1,7 @@
 //! Inspect metadata for `tabs_navigation`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct TabsNavigationItemInspectPalette {
     pub label_color: ResolvedColor,
@@ -30,7 +30,7 @@ pub fn inspect_tabs_navigation_item_color_palette(
     active: bool,
     state: InteractionState,
 ) -> TabsNavigationItemInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tabs_navigation_item_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_item_colors(
         &resolver,
@@ -48,7 +48,7 @@ pub fn inspect_tabs_navigation_list_color_palette(
     theme_mode: ThemeMode,
     enabled: bool,
 ) -> TabsNavigationListInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "tabs_navigation_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_tabs_navigation_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::TabsNavigationListColorTable::fallback());
@@ -69,11 +69,10 @@ pub fn inspect_tabs_navigation_metrics(
     use crate::metrics::{derived_metric, radius_metric, spacing_control_metric};
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let list = gpui_luma_look_shadcn::paint::tabs_navigation_list_appearance(mode, true, size);
-    let item =
-        gpui_luma_look_shadcn::paint::tabs_navigation_item_appearance(mode, true, InteractionState::default(), size);
+    let list = gpui_luma_look_shadcn::paint::tabs_navigation_list_look(mode, true, size);
+    let item = gpui_luma_look_shadcn::paint::tabs_navigation_item_look(mode, true, InteractionState::default(), size);
 
     TabsNavigationInspectMetrics {
         list_radius: radius_metric(catalog, size, list.radius),

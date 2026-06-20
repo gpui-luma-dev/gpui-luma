@@ -1,16 +1,16 @@
-use gpui_luma::controls::pager::{PagerAppearance, PagerStyle};
+use gpui_luma::controls::pager::{PagerLook, PagerStyle};
 use gpui_luma::theme::ControlSize;
 
 use crate::look::ShadcnLook;
 
-pub fn pager_appearance(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> PagerAppearance {
+pub fn pager_look(theme: &ShadcnLook, enabled: bool, style: PagerStyle) -> PagerLook {
     let tokens = theme.mode_tokens();
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = theme.typography_scale(crate::ShadcnTextSize::Xs);
     let compact = matches!(style, PagerStyle::Minimal);
 
-    PagerAppearance {
+    PagerLook {
         panel_background: if enabled {
             palette.panel_background
         } else {

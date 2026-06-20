@@ -13,8 +13,8 @@ use super::model::{
 };
 use super::row::render_list_view_row;
 use super::template::ListViewTemplate;
-use super::theme::{ListViewAppearance, ListViewTheme};
-use super::model::ListViewAppearanceOverride;
+use super::theme::{ListViewLook, ListViewTheme};
+use super::model::ListViewLookOverride;
 use crate::controls::state::ControlFocusState;
 use crate::keyhandling::{
     ActivateControl, ControlKeyProfile, DecreaseValueLarge, IncreaseValueLarge, SelectFirstItem, SelectLastItem,
@@ -294,12 +294,8 @@ where
         cx.notify();
     }
 
-    pub fn set_appearance_override(
-        &mut self,
-        appearance_override: Option<ListViewAppearanceOverride>,
-        cx: &mut Context<Self>,
-    ) {
-        self.model.appearance_override = appearance_override;
+    pub fn set_look_override(&mut self, look_override: Option<ListViewLookOverride>, cx: &mut Context<Self>) {
+        self.model.look_override = look_override;
         self.list_state.remeasure();
         cx.notify();
     }
@@ -389,7 +385,7 @@ where
         }
     }
 
-    fn row_scroll_increment(&self, row_appearance: &super::theme::ListViewRowAppearance) -> f32 {
+    fn row_scroll_increment(&self, row_appearance: &super::theme::ListViewRowLook) -> f32 {
         visible_row_height(row_appearance, self.model.visible_row_height)
     }
 
@@ -447,16 +443,16 @@ where
         self.list_state.scroll_to(ListOffset { item_ix, offset_in_item: px(0.0) });
     }
 
-    fn resolve_appearance(&self, window: &Window) -> ListViewAppearance {
+    fn resolve_look(&self, window: &Window) -> ListViewLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
-        let mut appearance = self.model.theme.resolve_appearance(self.model.enabled, focus.focused, self.model.size);
-        if let Some(override_fn) = &self.model.appearance_override {
+        let mut appearance = self.model.theme.resolve_look(self.model.enabled, focus.focused, self.model.size);
+        if let Some(override_fn) = &self.model.look_override {
             appearance = override_fn(appearance);
         }
         appearance
     }
 
-    fn resolve_row_appearance(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowAppearance {
+    fn resolve_row_appearance(&self, window: &Window, cx: &mut Context<Self>) -> super::theme::ListViewRowLook {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
@@ -472,13 +468,13 @@ where
         )
     }
 
-    fn resolve_row_appearance_for_metrics(&self) -> super::theme::ListViewRowAppearance {
+    fn resolve_row_appearance_for_metrics(&self) -> super::theme::ListViewRowLook {
         let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), 1.0);
         self.model.theme.resolve_row_appearance(false, InteractionState::default(), self.model.size, &scale)
     }
 
     fn render_model(&self, window: &Window, cx: &mut Context<Self>) -> ListViewRenderModel<'_> {
-        let appearance = self.resolve_appearance(window);
+        let appearance = self.resolve_look(window);
         let row_appearance = self.resolve_row_appearance(window, cx);
         let has_header = self.model.header_template.is_some();
         let visible_rows = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode);
@@ -528,7 +524,7 @@ where
             LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
         );
-        let appearance = self.model.theme.resolve_row_appearance(selected, interaction, self.model.size, &scale);
+        let look = self.model.theme.resolve_row_appearance(selected, interaction, self.model.size, &scale);
         let focused_probe_appearance = if enabled || active {
             let mut focused_probe_state = interaction;
             focused_probe_state.focused = true;
@@ -536,7 +532,7 @@ where
         } else {
             None
         };
-        let row_oversize_extent = adorner_oversize_extent(appearance.adorner)
+        let row_oversize_extent = adorner_oversize_extent(look.adorner)
             .max(focused_probe_appearance.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
 
         let row_model = ListViewRowRenderModel {
@@ -551,7 +547,7 @@ where
             focused: focus.focused,
             focus_visible: focus.focus_visible,
             enabled,
-            appearance: appearance.clone(),
+            look: look.clone(),
         };
 
         let cells = if !self.model.columns.is_empty() {
@@ -570,7 +566,7 @@ where
         let row = render_list_view_row(
             format!("{}-row-{}", self.model.id, index),
             content,
-            appearance,
+            look,
             enabled,
             local_index > 0,
             is_custom,

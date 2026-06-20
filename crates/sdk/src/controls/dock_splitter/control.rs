@@ -4,8 +4,8 @@ use gpui::{
 };
 
 use super::{
-    DockSplitterAppearance, DockSplitterBuilder, DockSplitterModel, DockSplitterRenderModel,
-    DockSplitterTemplateHandlers, SplitterOrientation,
+    DockSplitterLook, DockSplitterBuilder, DockSplitterModel, DockSplitterRenderModel, DockSplitterTemplateHandlers,
+    SplitterOrientation,
 };
 use crate::controls::state::ControlFocusState;
 use crate::theme::observe_theme_revision;
@@ -93,7 +93,7 @@ impl DockSplitter {
         }
     }
 
-    fn appearance(&self) -> DockSplitterAppearance {
+    fn look(&self) -> DockSplitterLook {
         self.model.theme.resolve(self.model.enabled)
     }
 
@@ -209,7 +209,7 @@ impl Focusable for DockSplitter {
 impl Render for DockSplitter {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
-        let appearance = self.appearance();
+        let look = self.look();
         let handlers = self.template_handlers(cx);
 
         div()
@@ -217,7 +217,7 @@ impl Render for DockSplitter {
             .on_drag_move(cx.listener(Self::handle_drag_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-            .child(self.model.template.render(&model, &appearance, handlers, window, cx))
+            .child(self.model.template.render(&model, &look, handlers, window, cx))
             .into_any_element()
     }
 }

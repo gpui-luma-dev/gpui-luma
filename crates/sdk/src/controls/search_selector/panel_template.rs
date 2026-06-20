@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{AnyElement, App, Bounds, Pixels, SharedString, anchored, deferred, div, point, prelude::*, px};
 
-use crate::controls::selector_panel::SelectorItemsPanelAppearance;
+use crate::controls::selector_panel::SelectorItemsPanelLook;
 
 use super::behavior::SelectionItem;
 use super::item_template::SearchSelectorItemTemplate;
@@ -17,7 +17,7 @@ pub struct SearchSelectorPanelRenderModel<'a> {
     pub enabled: bool,
     pub item_template: Option<&'a SearchSelectorItemTemplate<SelectionItem>>,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: SelectorItemsPanelAppearance,
+    pub popup_look: SelectorItemsPanelLook,
     pub search_content: Option<AnyElement>,
     pub list_content: AnyElement,
 }
@@ -35,7 +35,7 @@ pub fn default_search_selector_panel_template() -> Arc<dyn SearchSelectorPanelTe
 
 impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {
     fn render(&self, model: SearchSelectorPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
-        let appearance = model.popup_appearance;
+        let appearance = model.popup_look;
 
         let panel_content = div()
             .id(format!("{}-panel-content", model.id))

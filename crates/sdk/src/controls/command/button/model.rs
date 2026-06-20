@@ -7,7 +7,7 @@ use super::control::Button;
 use super::template::ButtonTemplate;
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{
-    ButtonFamilyAppearance, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
+    ButtonFamilyLook, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -23,7 +23,7 @@ impl From<LucideIcon> for ControlIcon {
     }
 }
 
-pub type ButtonAppearanceSource<D> = Arc<dyn Fn(&ButtonRenderModel<D>) -> ButtonFamilyAppearance + Send + Sync>;
+pub type ButtonLookSource<D> = Arc<dyn Fn(&ButtonRenderModel<D>) -> ButtonFamilyLook + Send + Sync>;
 
 #[derive(Clone)]
 pub struct ButtonModel<D = ()> {
@@ -35,7 +35,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
     pub(crate) round: bool,
-    pub(crate) appearance: Option<ButtonAppearanceSource<D>>,
+    pub(crate) look: Option<ButtonLookSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
 
@@ -48,7 +48,7 @@ pub struct ButtonRenderModel<D> {
     pub state: ButtonState,
     pub round: bool,
     pub radius_override: Cell<Option<f32>>,
-    pub appearance: Option<ButtonAppearanceSource<D>>,
+    pub look: Option<ButtonLookSource<D>>,
 }
 
 pub struct ButtonBuilder<D = ()> {
@@ -69,7 +69,7 @@ impl ButtonBuilder<()> {
                 enabled: true,
                 tab_stop: true,
                 round: false,
-                appearance: None,
+                look: None,
                 template: super::template::default_button_template(),
             },
         }
@@ -110,7 +110,7 @@ impl ButtonBuilder<()> {
                 enabled: old.enabled,
                 tab_stop: old.tab_stop,
                 round: old.round,
-                appearance: None,
+                look: None,
                 template: super::template::default_button_template(),
             },
         }
@@ -128,11 +128,11 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
-    pub fn with_appearance<F>(mut self, resolve: F) -> Self
+    pub fn with_look<F>(mut self, resolve: F) -> Self
     where
-        F: Fn(&ButtonRenderModel<D>) -> ButtonFamilyAppearance + Send + Sync + 'static,
+        F: Fn(&ButtonRenderModel<D>) -> ButtonFamilyLook + Send + Sync + 'static,
     {
-        self.model.appearance = Some(Arc::new(resolve));
+        self.model.look = Some(Arc::new(resolve));
         self
     }
 

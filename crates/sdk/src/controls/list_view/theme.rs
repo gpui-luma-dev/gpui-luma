@@ -10,7 +10,7 @@ use crate::theme::{
 const ROW_HOVER_ACCENT_ALPHA: f32 = 0.4;
 
 #[derive(Clone, Debug)]
-pub struct ListViewAppearance {
+pub struct ListViewLook {
     pub background: Hsla,
     pub border: Hsla,
     pub header_background: Hsla,
@@ -21,7 +21,7 @@ pub struct ListViewAppearance {
     pub padding_y: f32,
 }
 
-impl ListViewAppearance {
+impl ListViewLook {
     pub fn inner_radius(&self, border_width: f32) -> f32 {
         (self.radius - border_width).max(0.0)
     }
@@ -37,7 +37,7 @@ pub struct ListViewRowPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct ListViewRowAppearance {
+pub struct ListViewRowLook {
     pub background: Hsla,
     pub label_color: Hsla,
     pub divider: Hsla,
@@ -51,7 +51,7 @@ pub struct ListViewRowAppearance {
 }
 
 pub trait ListViewTheme: Send + Sync {
-    fn resolve_appearance(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewAppearance;
+    fn resolve_look(&self, enabled: bool, focused: bool, size: ControlSize) -> ListViewLook;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette;
     fn metrics(&self) -> MetricTokens;
 
@@ -61,7 +61,7 @@ pub trait ListViewTheme: Send + Sync {
         state: InteractionState,
         size: ControlSize,
         scale: &ListRowScale,
-    ) -> ListViewRowAppearance {
+    ) -> ListViewRowLook {
         compose_list_view_row_appearance(&self.resolve_row(selected, state, size), scale)
     }
 }
@@ -84,11 +84,11 @@ impl DefaultListViewTheme {
 }
 
 impl ListViewTheme for DefaultListViewTheme {
-    fn resolve_appearance(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListViewAppearance {
+    fn resolve_look(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListViewLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        ListViewAppearance {
+        ListViewLook {
             background: if enabled {
                 palette.form.input.background
             } else {
@@ -160,8 +160,8 @@ impl ListViewTheme for DefaultListViewTheme {
 pub(crate) fn compose_list_view_row_appearance(
     palette: &ListViewRowPalette,
     scale: &ListRowScale,
-) -> ListViewRowAppearance {
-    ListViewRowAppearance {
+) -> ListViewRowLook {
+    ListViewRowLook {
         background: palette.background,
         label_color: palette.label_color,
         divider: palette.divider,

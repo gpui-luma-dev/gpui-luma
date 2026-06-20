@@ -8,7 +8,7 @@ use crate::theme::{
 };
 
 #[derive(Clone, Debug)]
-pub struct ListBoxListAppearance {
+pub struct ListBoxListLook {
     pub background: Hsla,
     pub border: Hsla,
     pub adorner: Option<AdornerSpec>,
@@ -28,7 +28,7 @@ pub struct ListBoxRowPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct ListBoxRowAppearance {
+pub struct ListBoxRowLook {
     pub background: Hsla,
     pub label_color: Hsla,
     pub adorner: Option<AdornerSpec>,
@@ -41,7 +41,7 @@ pub struct ListBoxRowAppearance {
 }
 
 pub trait ListBoxTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListAppearance;
+    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListLook;
     fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListBoxRowPalette;
     fn metrics(&self) -> MetricTokens;
 
@@ -51,7 +51,7 @@ pub trait ListBoxTheme: Send + Sync {
         state: InteractionState,
         size: ControlSize,
         scale: &ListRowScale,
-    ) -> ListBoxRowAppearance {
+    ) -> ListBoxRowLook {
         compose_listbox_row_appearance(&self.resolve_row(selected, state, size), scale)
     }
 }
@@ -74,7 +74,7 @@ impl DefaultListBoxTheme {
 }
 
 impl ListBoxTheme for DefaultListBoxTheme {
-    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListAppearance {
+    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
@@ -89,7 +89,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
             None
         };
 
-        ListBoxListAppearance {
+        ListBoxListLook {
             background: if enabled {
                 palette.form.input.background
             } else {
@@ -138,8 +138,8 @@ impl ListBoxTheme for DefaultListBoxTheme {
 pub(crate) fn compose_listbox_row_appearance(
     palette: &ListBoxRowPalette,
     scale: &ListRowScale,
-) -> ListBoxRowAppearance {
-    ListBoxRowAppearance {
+) -> ListBoxRowLook {
+    ListBoxRowLook {
         background: palette.background,
         label_color: palette.label_color,
         adorner: palette.adorner,

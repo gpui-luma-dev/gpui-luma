@@ -393,7 +393,7 @@ fn render_density_group(
             state: item.state.interaction_state(),
             round: false,
             radius_override: Cell::new(None),
-            appearance: None,
+            look: None,
         };
 
         let mut button = button_template

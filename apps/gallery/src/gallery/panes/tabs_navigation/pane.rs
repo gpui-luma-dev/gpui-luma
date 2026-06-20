@@ -171,7 +171,7 @@ impl TabsNavigationTheme for LocalTabsNavigationTheme {
         &self,
         enabled: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListLook {
         self.inner.resolve_list(enabled, size)
     }
 
@@ -180,7 +180,7 @@ impl TabsNavigationTheme for LocalTabsNavigationTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemLook {
         self.inner.resolve_item(active, InteractionState { focused: false, ..state }, size)
     }
 

@@ -34,25 +34,20 @@ pub fn inspect_badge_metrics(
     size: ControlSize,
     _theme_mode: ThemeMode,
 ) -> BadgeInspectMetrics {
-    let appearance = gpui_luma_look_shadcn::badge_appearance(look, variant, size);
+    let look = gpui_luma_look_shadcn::badge_look(look, variant, size);
 
     BadgeInspectMetrics {
-        min_height: derived_metric("badge min height", appearance.min_height),
+        min_height: derived_metric("badge min height", look.min_height),
         padding_x: spacing_control_metric(
             &mode.catalog,
             size,
             gpui_luma_look_shadcn::catalog::SpacingField::PaddingX,
-            appearance.padding_x,
+            look.padding_x,
         ),
-        padding_y: derived_metric("badge vertical inset from typography", appearance.padding_y),
-        gap: spacing_control_metric(
-            &mode.catalog,
-            size,
-            gpui_luma_look_shadcn::catalog::SpacingField::Gap,
-            appearance.gap,
-        ),
-        icon_size: derived_metric("badge icon size follows typography size", appearance.icon_size),
-        radius: pill_radius_metric(metrics_catalog(mode), appearance.radius),
+        padding_y: derived_metric("badge vertical inset from typography", look.padding_y),
+        gap: spacing_control_metric(&mode.catalog, size, gpui_luma_look_shadcn::catalog::SpacingField::Gap, look.gap),
+        icon_size: derived_metric("badge icon size follows typography size", look.icon_size),
+        radius: pill_radius_metric(metrics_catalog(mode), look.radius),
     }
 }
 

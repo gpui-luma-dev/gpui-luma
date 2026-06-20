@@ -9,5 +9,5 @@ pub struct ThemePartUsage {
     pub part: &'static str,
     pub token: &'static str,
     pub states: &'static [&'static str],
-    pub appearance_fields: &'static [&'static str],
+    pub look_fields: &'static [&'static str],
 }

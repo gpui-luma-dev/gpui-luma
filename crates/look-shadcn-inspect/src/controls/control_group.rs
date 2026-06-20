@@ -1,7 +1,7 @@
 //! Inspect metadata for `control_group`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct ControlGroupListInspectPalette {
     pub background: ResolvedColor,
@@ -21,7 +21,7 @@ pub fn inspect_control_group_list_color_palette(
     theme_mode: ThemeMode,
     enabled: bool,
 ) -> ControlGroupListInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "control_group_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ControlGroupListColorTable::fallback());
@@ -35,15 +35,15 @@ pub fn inspect_control_group_metrics(
 ) -> ControlGroupInspectMetrics {
     use crate::metrics::{derived_metric, radius_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
-    let appearance = gpui_luma_look_shadcn::paint::control_group_list_appearance(mode, true);
+    let look = gpui_luma_look_shadcn::paint::control_group_list_look(mode, true);
 
     ControlGroupInspectMetrics {
-        radius: radius_metric(catalog, size, appearance.radius),
-        padding_x: derived_metric("control group padding x", appearance.padding_x),
-        padding_y: derived_metric("control group padding y", appearance.padding_y),
-        gap: derived_metric("control group gap", appearance.gap),
+        radius: radius_metric(catalog, size, look.radius),
+        padding_x: derived_metric("control group padding x", look.padding_x),
+        padding_y: derived_metric("control group padding y", look.padding_y),
+        gap: derived_metric("control group gap", look.gap),
     }
 }
 

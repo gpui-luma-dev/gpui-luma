@@ -1,7 +1,7 @@
 //! Inspect metadata for `popup_menu`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, ShadcnModeTokens};
 
 pub struct PopupMenuInspectPalette {
     pub trigger_background: gpui_luma_look_shadcn::ResolvedColor,
@@ -25,7 +25,7 @@ pub fn inspect_popup_menu_color_palette(
 ) -> PopupMenuInspectPalette {
     use gpui_luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
 
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "popup_menu_inspect");

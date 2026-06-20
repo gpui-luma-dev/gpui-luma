@@ -1,7 +1,7 @@
 //! Inspect metadata for `floating_menu`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct FloatingMenuInspectPalette {
     pub background: ResolvedColor,
@@ -30,7 +30,7 @@ pub fn inspect_floating_menu_color_palette(
     theme_mode: ThemeMode,
     _size: ControlSize,
 ) -> FloatingMenuInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "floating_menu_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_floating_menu_colors(&resolver, true)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::FloatingMenuColorTable::fallback());
@@ -52,19 +52,19 @@ pub fn inspect_floating_menu_metrics(
     use crate::metrics::{derived_metric, scaffold_control_metric, spacing_control_metric};
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance = gpui_luma_look_shadcn::paint::floating_menu_appearance(mode, theme_mode, size);
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let look = gpui_luma_look_shadcn::paint::floating_menu_look(mode, theme_mode, size);
     let catalog = ctx.catalog();
 
     FloatingMenuInspectMetrics {
-        radius: derived_metric("lg = --radius", appearance.radius),
-        padding: derived_metric("padding_y × 0.5", appearance.padding),
-        min_width: derived_metric("floating menu min width", appearance.min_width),
-        item_height: derived_metric("control_height × 0.9", appearance.item_height),
-        item_padding_x: derived_metric("padding_x × 0.75", appearance.item_padding_x),
-        item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, appearance.item_gap),
-        item_icon_size: derived_metric("control_height × 0.44", appearance.item_icon_size),
-        item_radius: scaffold_control_metric("sm", "radius", appearance.item_radius),
-        submenu_offset_x: derived_metric("gap × 0.5", appearance.submenu_offset_x),
+        radius: derived_metric("lg = --radius", look.radius),
+        padding: derived_metric("padding_y × 0.5", look.padding),
+        min_width: derived_metric("floating menu min width", look.min_width),
+        item_height: derived_metric("control_height × 0.9", look.item_height),
+        item_padding_x: derived_metric("padding_x × 0.75", look.item_padding_x),
+        item_gap: spacing_control_metric(catalog, size, SpacingField::Gap, look.item_gap),
+        item_icon_size: derived_metric("control_height × 0.44", look.item_icon_size),
+        item_radius: scaffold_control_metric("sm", "radius", look.item_radius),
+        submenu_offset_x: derived_metric("gap × 0.5", look.submenu_offset_x),
     }
 }

@@ -129,7 +129,7 @@ fn render_copy_icon_button<M: 'static>(
         state: InteractionState { disabled, ..InteractionState::default() },
         round: true,
         radius_override: std::cell::Cell::new(None),
-        appearance: None,
+        look: None,
     };
     let button = look.button_template(ShadcnButtonStyle::Ghost).render(&model, window, cx);
 

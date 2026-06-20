@@ -417,7 +417,7 @@ fn render_component_part(
         .child(div().pl(px(180.0)).typography_style(caption_style).text_color(chrome.muted_text).child(format!(
             "{} -> {}",
             part.states.join(", "),
-            part.appearance_fields.join(", ")
+            part.look_fields.join(", ")
         )))
         .into_any_element()
 }

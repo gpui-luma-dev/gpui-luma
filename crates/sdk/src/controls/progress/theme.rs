@@ -5,7 +5,7 @@ use gpui::Hsla;
 use crate::theme::ThemeTokens;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ProgressAppearance {
+pub struct ProgressLook {
     pub track_color: Hsla,
     pub progress_color: Hsla,
     pub size: f32,
@@ -13,7 +13,7 @@ pub struct ProgressAppearance {
 }
 
 pub trait ProgressTheme: Send + Sync {
-    fn resolve(&self, enabled: bool) -> ProgressAppearance;
+    fn resolve(&self, enabled: bool) -> ProgressLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -34,10 +34,10 @@ impl DefaultProgressTheme {
 }
 
 impl ProgressTheme for DefaultProgressTheme {
-    fn resolve(&self, enabled: bool) -> ProgressAppearance {
+    fn resolve(&self, enabled: bool) -> ProgressLook {
         let palette = &self.tokens.palette;
 
-        ProgressAppearance {
+        ProgressLook {
             track_color: if enabled {
                 palette.surface.subtle.background
             } else {

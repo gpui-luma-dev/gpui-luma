@@ -51,7 +51,7 @@ fn colored_runs_for_text(
     text: &str,
     global_offset: usize,
     selection: Option<(usize, usize)>,
-    appearance: &crate::controls::textarea::TextAreaAppearance,
+    appearance: &crate::controls::textarea::TextAreaLook,
     font_family: String,
     font_weight: gpui::FontWeight,
 ) -> Vec<TextRun> {
@@ -324,19 +324,19 @@ impl TextArea {
         cx.notify();
     }
 
-    pub fn set_appearance_override(
+    pub fn set_look_override(
         &mut self,
-        appearance_override: Option<super::model::TextAreaAppearanceOverride>,
+        look_override: Option<super::model::TextAreaLookOverride>,
         cx: &mut Context<Self>,
     ) {
-        self.model.appearance_override = appearance_override;
+        self.model.look_override = look_override;
         self.layout_cache = None;
         cx.notify();
     }
 
-    fn resolved_appearance(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaAppearance {
-        let appearance = self.model.theme.resolve_appearance(self.state, self.model.enabled, scale);
-        if let Some(override_fn) = &self.model.appearance_override {
+    fn resolved_appearance(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaLook {
+        let appearance = self.model.theme.resolve_look(self.state, self.model.enabled, scale);
+        if let Some(override_fn) = &self.model.look_override {
             override_fn(appearance)
         } else {
             appearance
@@ -1009,14 +1009,14 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
-        let (theme, state, enabled, rows, appearance_override) = {
+        let (theme, state, enabled, rows, look_override) = {
             let input = self.input.read(cx);
             (
                 input.model.theme.clone(),
                 input.state,
                 input.model.enabled,
                 input.model.rows.max(1),
-                input.model.appearance_override.clone(),
+                input.model.look_override.clone(),
             )
         };
         let scale_factor = window.scale_factor();
@@ -1025,8 +1025,8 @@ impl gpui::Element for TextAreaElement {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let mut appearance = theme.resolve_appearance(state, enabled, &scale);
-        if let Some(override_fn) = &appearance_override {
+        let mut appearance = theme.resolve_look(state, enabled, &scale);
+        if let Some(override_fn) = &look_override {
             appearance = override_fn(appearance);
         }
         let mut style = Style::default();
@@ -1044,9 +1044,9 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
-        let (theme, state, enabled, appearance_override) = {
+        let (theme, state, enabled, look_override) = {
             let input = self.input.read(cx);
-            (input.model.theme.clone(), input.state, input.model.enabled, input.model.appearance_override.clone())
+            (input.model.theme.clone(), input.state, input.model.enabled, input.model.look_override.clone())
         };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
@@ -1055,8 +1055,8 @@ impl gpui::Element for TextAreaElement {
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
         let input = self.input.read(cx);
-        let mut appearance = theme.resolve_appearance(state, enabled, &scale);
-        if let Some(override_fn) = &appearance_override {
+        let mut appearance = theme.resolve_look(state, enabled, &scale);
+        if let Some(override_fn) = &look_override {
             appearance = override_fn(appearance);
         }
         let line_height = px(appearance.typography.line_height);

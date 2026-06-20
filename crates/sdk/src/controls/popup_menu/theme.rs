@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
@@ -14,11 +14,11 @@ pub struct PopupMenuPalette {
     pub trigger_border: Hsla,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
-    pub floating_menu: FloatingMenuAppearance,
+    pub floating_menu: FloatingMenuLook,
 }
 
 #[derive(Clone, Debug)]
-pub struct PopupMenuAppearance {
+pub struct PopupMenuLook {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_border: Hsla,
@@ -31,7 +31,7 @@ pub struct PopupMenuAppearance {
     pub trigger_height: f32,
     pub trigger_icon_size: f32,
     pub menu_offset_y: f32,
-    pub floating_menu: FloatingMenuAppearance,
+    pub floating_menu: FloatingMenuLook,
 }
 
 pub trait PopupMenuTheme: Send + Sync {
@@ -39,7 +39,7 @@ pub trait PopupMenuTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_appearance(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuAppearance {
+    fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuLook {
         compose_popup_menu_appearance(&self.resolve(state), scale)
     }
 }
@@ -85,7 +85,7 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            floating_menu: default_floating_menu_appearance(&self.tokens, size),
+            floating_menu: default_floating_menu_look(&self.tokens, size),
         }
     }
 
@@ -94,11 +94,8 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
     }
 }
 
-pub(crate) fn compose_popup_menu_appearance(
-    palette: &PopupMenuPalette,
-    scale: &StandardBoxScale,
-) -> PopupMenuAppearance {
-    PopupMenuAppearance {
+pub(crate) fn compose_popup_menu_appearance(palette: &PopupMenuPalette, scale: &StandardBoxScale) -> PopupMenuLook {
+    PopupMenuLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,
         trigger_border: palette.trigger_border,

@@ -9,7 +9,7 @@ pub use template::{
     ContextMenuTemplate, ContextMenuTemplateHandlers, ThemedContextMenuTemplate, default_context_menu_template,
 };
 
-pub use theme::{DefaultContextMenuTheme, ContextMenuAppearance, ContextMenuTheme, default_context_menu_theme};
+pub use theme::{DefaultContextMenuTheme, ContextMenuLook, ContextMenuTheme, default_context_menu_theme};
 
 pub use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 pub use crate::theme::InteractionState as ContextMenuState;

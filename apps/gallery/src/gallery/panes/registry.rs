@@ -818,17 +818,17 @@ fn controls_label_presenter(
     _: &mut App,
     theme: Arc<dyn NavigationSidebarTheme>,
 ) -> NavHostedContent {
-    let appearance = theme.resolve_section();
+    let look = theme.resolve_section();
 
     NavHostedContent {
         element: div()
-            .min_h(gpui::px(appearance.height))
+            .min_h(gpui::px(look.height))
             .pt(gpui::px(8.0))
-            .text_size(gpui::px(appearance.typography.size))
-            .line_height(gpui::px(appearance.typography.line_height))
-            .font_weight(appearance.typography.weight)
+            .text_size(gpui::px(look.typography.size))
+            .line_height(gpui::px(look.typography.line_height))
+            .font_weight(look.typography.weight)
             .font_features(FontFeatures(Arc::new(vec![("smcp".into(), 1)])))
-            .text_color(appearance.label_color)
+            .text_color(look.label_color)
             .child("Controls")
             .into_any_element(),
         focus_handle: None,
@@ -842,7 +842,7 @@ struct SidebarDisclosureTemplate {
 
 impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve_branch(model.state, model.size);
+        let look = self.theme.resolve_branch(model.state, model.size);
         let disclosure_icon = if model.data {
             LucideIcon::ChevronDown
         } else {
@@ -851,21 +851,21 @@ impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
         let mut root = div()
             .id(model.id.clone())
             .w_full()
-            .min_h(px(appearance.height))
+            .min_h(px(look.height))
             .flex()
             .items_center()
-            .gap(px(appearance.gap))
-            .px(px(appearance.padding_x))
-            .rounded(px(appearance.radius))
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .text_color(appearance.foreground)
-            .font_weight(appearance.typography.weight)
-            .child(render_lucide_icon(self.icon, appearance.icon_color, appearance.icon_size))
+            .gap(px(look.gap))
+            .px(px(look.padding_x))
+            .rounded(px(look.radius))
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .text_color(look.foreground)
+            .font_weight(look.typography.weight)
+            .child(render_lucide_icon(self.icon, look.icon_color, look.icon_size))
             .child(div().flex_1().child((model.content)(model, cx)))
-            .child(render_lucide_icon(disclosure_icon, appearance.icon_color, appearance.icon_size));
+            .child(render_lucide_icon(disclosure_icon, look.icon_color, look.icon_size));
 
-        if let Some(background) = appearance.background {
+        if let Some(background) = look.background {
             root = root.bg(background);
         }
 
@@ -875,7 +875,7 @@ impl ButtonTemplate<bool> for SidebarDisclosureTemplate {
             root = root.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             root = root.border_1().border_color(focus_ring);
         }
 
@@ -898,38 +898,34 @@ struct SidebarLeafTemplate {
 
 impl ButtonTemplate<bool> for SidebarLeafTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, _window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = self.theme.resolve_item(model.data, model.state, model.size);
+        let look = self.theme.resolve_item(model.data, model.state, model.size);
         let padding_left = if self.reserve_icon_space {
-            appearance.padding_x + appearance.icon_size + appearance.gap
+            look.padding_x + look.icon_size + look.gap
         } else {
-            appearance.padding_x
+            look.padding_x
         };
-        let placeholder_size = if self.reserve_icon_space {
-            appearance.icon_size
-        } else {
-            0.0
-        };
+        let placeholder_size = if self.reserve_icon_space { look.icon_size } else { 0.0 };
         let mut row = div()
             .id(model.id.clone())
             .w_full()
             .flex()
             .items_center()
-            .gap(px(appearance.gap))
-            .min_h(px(appearance.height))
+            .gap(px(look.gap))
+            .min_h(px(look.height))
             .pl(px(padding_left))
-            .pr(px(appearance.padding_x))
-            .rounded(px(appearance.radius))
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_weight(appearance.typography.weight)
-            .text_color(appearance.foreground)
+            .pr(px(look.padding_x))
+            .rounded(px(look.radius))
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_weight(look.typography.weight)
+            .text_color(look.foreground)
             .child(match self.icon {
-                Some(icon) => render_lucide_icon(icon, appearance.icon_color, appearance.icon_size),
+                Some(icon) => render_lucide_icon(icon, look.icon_color, look.icon_size),
                 None => div().size(px(placeholder_size)).into_any_element(),
             })
             .child(div().flex_1().child((model.content)(model, cx)));
 
-        if let Some(background) = appearance.background {
+        if let Some(background) = look.background {
             row = row.bg(background);
         }
 
@@ -939,7 +935,7 @@ impl ButtonTemplate<bool> for SidebarLeafTemplate {
             row = row.opacity(0.56);
         }
 
-        if let Some(focus_ring) = appearance.focus_ring {
+        if let Some(focus_ring) = look.focus_ring {
             row = row.border_1().border_color(focus_ring);
         }
 

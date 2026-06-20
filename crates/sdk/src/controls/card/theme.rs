@@ -5,7 +5,7 @@ use gpui::{BoxShadow, Hsla, SharedString};
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct CardAppearance {
+pub struct CardLook {
     pub background: Hsla,
     pub border: Hsla,
     pub title_color: Hsla,
@@ -24,7 +24,7 @@ pub struct CardAppearance {
 }
 
 pub trait CardTheme: Send + Sync {
-    fn resolve(&self, size: ControlSize) -> CardAppearance;
+    fn resolve(&self, size: ControlSize) -> CardLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -45,13 +45,13 @@ impl DefaultCardTheme {
 }
 
 impl CardTheme for DefaultCardTheme {
-    fn resolve(&self, size: ControlSize) -> CardAppearance {
+    fn resolve(&self, size: ControlSize) -> CardLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
         let elevation = &self.tokens.elevation;
 
-        CardAppearance {
+        CardLook {
             background: palette.surface.panel.background,
             border: palette.surface.panel.border,
             title_color: palette.surface.panel.foreground,

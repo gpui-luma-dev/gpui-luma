@@ -6,13 +6,13 @@ use std::sync::{
 };
 
 use gpui::{BoxShadow, Hsla, SharedString};
-use gpui_luma::controls::button_family::{ButtonFamilyAppearance, ButtonFamilyRole};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyRole};
 use gpui_luma::theme::pack::LumaChrome;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeMode};
 
 use crate::catalog::{CssTokenCatalog, CssTokenMap, parse_css_catalog};
 use crate::controls::ShadcnButtonStyle;
-use crate::controls::{button_appearance, selection_panel_appearance, selector_items_panel_appearance, templates};
+use crate::controls::{button_look, selection_panel::selection_panel_look, selector_items_panel_look, templates};
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{
     StylesheetConfig, find_typography_scale_rule, find_typography_semantic_rule, resolve_typography_rule,
@@ -35,7 +35,7 @@ const GENERIC_FAMILIES: &[&str] = &[
     "fantasy",
 ];
 
-/// Runtime shadcn appearance resolver backed by parsed CSS token catalogs.
+/// Runtime shadcn look resolver backed by parsed CSS token catalogs.
 #[derive(Clone)]
 pub struct ShadcnLook {
     state: Arc<ShadcnLookState>,
@@ -365,9 +365,9 @@ impl ShadcnLook {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-    ) -> ButtonFamilyAppearance {
+    ) -> ButtonFamilyLook {
         let tokens = self.mode_tokens();
-        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Primary, role, size, state)
+        button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Primary, role, size, state)
     }
 
     pub fn resolve_secondary_button(
@@ -375,9 +375,9 @@ impl ShadcnLook {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-    ) -> ButtonFamilyAppearance {
+    ) -> ButtonFamilyLook {
         let tokens = self.mode_tokens();
-        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Secondary, role, size, state)
+        button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Secondary, role, size, state)
     }
 
     pub fn resolve_outline_button(
@@ -385,9 +385,9 @@ impl ShadcnLook {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-    ) -> ButtonFamilyAppearance {
+    ) -> ButtonFamilyLook {
         let tokens = self.mode_tokens();
-        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Outline, role, size, state)
+        button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Outline, role, size, state)
     }
 
     pub fn resolve_ghost_button(
@@ -395,9 +395,9 @@ impl ShadcnLook {
         role: ButtonFamilyRole,
         size: ControlSize,
         state: InteractionState,
-    ) -> ButtonFamilyAppearance {
+    ) -> ButtonFamilyLook {
         let tokens = self.mode_tokens();
-        button_appearance(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
+        button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
     }
 
     pub fn switch_template(
@@ -486,26 +486,23 @@ impl ShadcnLook {
         templates::autocomplete_textbox_theme(Arc::clone(self))
     }
 
-    pub fn selector_items_panel_appearance(
+    pub fn selector_items_panel_look(
         &self,
         size: ControlSize,
-    ) -> gpui_luma::controls::selector_panel::SelectorItemsPanelAppearance {
+    ) -> gpui_luma::controls::selector_panel::SelectorItemsPanelLook {
         let tokens = self.mode_tokens();
-        selector_items_panel_appearance(tokens.as_ref(), self.mode(), size)
+        selector_items_panel_look(tokens.as_ref(), self.mode(), size)
     }
 
-    pub fn selection_panel_appearance(
-        &self,
-        size: ControlSize,
-    ) -> gpui_luma::controls::selection_panel::SelectionPanelAppearance {
+    pub fn selection_panel_look(&self, size: ControlSize) -> gpui_luma::controls::selection_panel::SelectionPanelLook {
         let tokens = self.mode_tokens();
-        selection_panel_appearance(tokens.as_ref(), self.mode(), size)
+        selection_panel_look(tokens.as_ref(), self.mode(), size)
     }
 
-    pub fn selection_panel_appearance_provider(
+    pub fn selection_panel_look_provider(
         self: &Arc<Self>,
-    ) -> gpui_luma::controls::selection_panel::SelectionPanelAppearanceProvider {
-        templates::selection_panel_appearance_provider(Arc::clone(self))
+    ) -> gpui_luma::controls::selection_panel::SelectionPanelLookProvider {
+        templates::selection_panel_look_provider(Arc::clone(self))
     }
 
     pub fn tabs_navigation_template(

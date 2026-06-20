@@ -20,7 +20,7 @@ pub struct TextAreaPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct TextAreaAppearance {
+pub struct TextAreaLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -43,7 +43,7 @@ pub trait TextAreaTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_appearance(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaAppearance {
+    fn resolve_look(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaLook {
         compose_textarea_appearance(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
     }
 }
@@ -123,8 +123,8 @@ pub(crate) fn compose_textarea_appearance(
     palette: &TextAreaPalette,
     scale: &StandardBoxScale,
     border_width: f32,
-) -> TextAreaAppearance {
-    TextAreaAppearance {
+) -> TextAreaLook {
+    TextAreaLook {
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

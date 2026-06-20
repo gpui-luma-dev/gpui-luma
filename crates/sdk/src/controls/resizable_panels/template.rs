@@ -6,7 +6,7 @@ use super::{
     control::{ResizablePanels, ResizablePanelsHandleDrag},
     math::{handle_hit_target_main_axis_px, handle_overlay_geometry, split_positions_px},
     model::{ResizeHandleMetrics, ResizablePanelSpec, ResizablePanelsOrientation, ResizablePanelsRenderModel},
-    theme::ResizablePanelsAppearance,
+    theme::ResizablePanelsLook,
 };
 
 /// Back-compat alias for [`super::math::MIN_HANDLE_LANE_PX`].
@@ -16,7 +16,7 @@ pub trait ResizablePanelsTemplate: Send + Sync {
     fn render(
         &self,
         model: &ResizablePanelsRenderModel<'_>,
-        appearance: &ResizablePanelsAppearance,
+        appearance: &ResizablePanelsLook,
         handle_focuses: &[FocusHandle],
         window: &mut Window,
         cx: &mut Context<ResizablePanels>,
@@ -47,7 +47,7 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
     fn render(
         &self,
         model: &ResizablePanelsRenderModel<'_>,
-        appearance: &ResizablePanelsAppearance,
+        appearance: &ResizablePanelsLook,
         handle_focuses: &[FocusHandle],
         _window: &mut Window,
         cx: &mut Context<ResizablePanels>,
@@ -140,7 +140,7 @@ fn render_panel(
     orientation: ResizablePanelsOrientation,
     panel: &ResizablePanelSpec,
     main_size: Pixels,
-    appearance: &ResizablePanelsAppearance,
+    appearance: &ResizablePanelsLook,
 ) -> impl IntoElement {
     let mut panel_node = div().overflow_hidden().child((panel.render.clone())());
     if let Some(background) = panel.background {
@@ -158,7 +158,7 @@ fn render_panel(
 fn render_overlay_handle(
     index: usize,
     model: &ResizablePanelsRenderModel<'_>,
-    appearance: &ResizablePanelsAppearance,
+    appearance: &ResizablePanelsLook,
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
@@ -245,7 +245,7 @@ fn render_overlay_handle(
 fn render_overlay_handle_hidden(
     index: usize,
     model: &ResizablePanelsRenderModel<'_>,
-    appearance: &ResizablePanelsAppearance,
+    appearance: &ResizablePanelsLook,
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,

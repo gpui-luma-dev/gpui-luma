@@ -16,7 +16,7 @@ use crate::controls::selector_panel::{
 };
 use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
-use super::theme::{SelectorAppearance, SelectorTheme, default_selector_theme};
+use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
 pub type SelectorBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type SelectorClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -125,7 +125,7 @@ where
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_appearance(model.state, &scale);
+        let appearance = self.theme.resolve_look(model.state, &scale);
         let trigger_content = render_item_content(model, &appearance, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
@@ -220,7 +220,7 @@ where
                     enabled: model.enabled,
                     focus: model.focus,
                     item_template: model.item_template,
-                    appearance: appearance.items_panel,
+                    look: appearance.items_panel,
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,
@@ -249,7 +249,7 @@ struct ResolvedSelectorPlacement {
 fn resolve_selector_placement(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: SelectorPlacement,
-    appearance: &SelectorAppearance,
+    appearance: &SelectorLook,
     item_count: usize,
     viewport_size: Size<Pixels>,
 ) -> ResolvedSelectorPlacement {
@@ -294,7 +294,7 @@ fn resolve_selector_placement(
     }
 }
 
-fn estimated_menu_size(appearance: &SelectorAppearance, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
+fn estimated_menu_size(appearance: &SelectorLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
     let menu_min_width = px(appearance.items_panel.min_width);
     Size {
         width: if trigger_width > menu_min_width {
@@ -317,9 +317,9 @@ mod tests {
     use super::*;
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
-    fn appearance() -> SelectorAppearance {
+    fn appearance() -> SelectorLook {
         let theme = default_selector_theme();
-        theme.resolve_appearance(
+        theme.resolve_look(
             InteractionState::default(),
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )

@@ -1,7 +1,7 @@
 //! Inspect metadata for `slider`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {
     pub track_background: ResolvedColor,
@@ -25,7 +25,7 @@ pub fn inspect_slider_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> SliderInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let layer = state.layer();
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "slider_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_slider_colors(&resolver, layer)
@@ -44,14 +44,14 @@ pub fn inspect_slider_color_palette(
 pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) -> SliderInspectMetrics {
     use crate::metrics::{derived_metric, pill_radius_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
-    let appearance = gpui_luma_look_shadcn::paint::slider_appearance(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let look = gpui_luma_look_shadcn::paint::slider_look(mode, theme_mode, InteractionState::default());
 
     SliderInspectMetrics {
-        width: derived_metric("slider demo width", appearance.width),
-        height: derived_metric("slider control height", appearance.height),
-        track_height: derived_metric("track rail height", appearance.track_height),
-        thumb_size: derived_metric("thumb diameter", appearance.thumb_size),
-        radius: pill_radius_metric(ctx.catalog(), appearance.radius),
+        width: derived_metric("slider demo width", look.width),
+        height: derived_metric("slider control height", look.height),
+        track_height: derived_metric("track rail height", look.track_height),
+        thumb_size: derived_metric("thumb diameter", look.thumb_size),
+        radius: pill_radius_metric(ctx.catalog(), look.radius),
     }
 }

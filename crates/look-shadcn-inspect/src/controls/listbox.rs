@@ -1,7 +1,7 @@
 //! Inspect metadata for `listbox`.
 
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, ColorSource, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::paint::focus_ring_color;
 
@@ -35,7 +35,7 @@ pub fn inspect_listbox_list_color_palette(
     enabled: bool,
     focused: bool,
 ) -> ListBoxListInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_list_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_listbox_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ListBoxListColorTable::fallback());
@@ -59,7 +59,7 @@ pub fn inspect_listbox_row_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> ListBoxRowInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "listbox_row_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_listbox_row_colors(
         &resolver,
@@ -81,7 +81,7 @@ pub fn inspect_listbox_metrics(
     use gpui_luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let list_scale = ListRowScale::compute(size, metrics, 1.0);

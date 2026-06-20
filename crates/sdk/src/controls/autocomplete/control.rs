@@ -3,7 +3,7 @@ use gpui::{
     SharedString, Subscription, TextRun, Window, font, px,
 };
 use crate::controls::selector_panel::{
-    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_appearance,
+    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_look,
 };
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
@@ -306,8 +306,8 @@ impl AutocompleteTextBoxControl {
 impl Render for AutocompleteTextBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = default_selector_items_panel_appearance(&tokens, ControlSize::Md);
+        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
+        let look = default_selector_items_panel_look(&tokens, ControlSize::Md);
         let selected_label = self
             .behavior
             .state
@@ -356,7 +356,7 @@ impl Render for AutocompleteTextBoxControl {
         let trigger_width = self.trigger_bounds.map(|bounds| bounds.size.width).unwrap_or(px(240.0));
         let popup_width = {
             let mut text_font = font(".SystemUIFont");
-            text_font.weight = appearance.item_typography.weight;
+            text_font.weight = look.item_typography.weight;
             let max_label_width = menu_items
                 .iter()
                 .map(|item| {
@@ -364,31 +364,28 @@ impl Render for AutocompleteTextBoxControl {
                     let run = TextRun {
                         len: label.len(),
                         font: text_font.clone(),
-                        color: appearance.foreground,
+                        color: look.foreground,
                         background_color: None,
                         underline: None,
                         strikethrough: None,
                     };
-                    window
-                        .text_system()
-                        .shape_line(label.clone(), px(appearance.item_typography.size), &[run], None)
-                        .width()
+                    window.text_system().shape_line(label.clone(), px(look.item_typography.size), &[run], None).width()
                 })
                 .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
                 .unwrap_or(px(0.0));
 
-            let horizontal_chrome = px((appearance.padding * 2.0) + (appearance.item_padding_x * 2.0) + 24.0);
+            let horizontal_chrome = px((look.padding * 2.0) + (look.item_padding_x * 2.0) + 24.0);
             trigger_width.max(max_label_width + horizontal_chrome)
         };
 
         let popup_content = if self.model.enabled && self.behavior.state.open && !menu_items.is_empty() {
             let menu_id = SharedString::from("autocomplete-menu");
-            let row_height = px(appearance.item_height);
-            let content_top_padding = px(appearance.padding);
+            let row_height = px(look.item_height);
+            let content_top_padding = px(look.padding);
             let min_visible_rows = 7.0;
             let max_visible_rows = 14.0;
             let visible_rows = (menu_items.len() as f32).clamp(min_visible_rows, max_visible_rows);
-            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * visible_rows));
+            let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
 
             self.popup_surface.configure(menu_items.len(), row_height, content_top_padding, viewport_height);
             self.popup_surface.sync(cx);
@@ -397,7 +394,7 @@ impl Render for AutocompleteTextBoxControl {
                 &AutocompleteItemsRenderModel {
                     id: &menu_id,
                     items: &menu_items,
-                    appearance: appearance.clone(),
+                    look: look.clone(),
                     highlighted_index: self.behavior.state.highlighted_filtered,
                 },
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
@@ -421,10 +418,10 @@ impl Render for AutocompleteTextBoxControl {
             popup_width,
             status_label,
             status_detail,
-            status_color: autocomplete_appearance.status_color,
-            muted_text_color: autocomplete_appearance.muted_text_color,
+            status_color: autocomplete_look.status_color,
+            muted_text_color: autocomplete_look.muted_text_color,
             popup_bounds: self.trigger_bounds,
-            popup_appearance: appearance,
+            popup_look: look,
             popup_content,
         };
 

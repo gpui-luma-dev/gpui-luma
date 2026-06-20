@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::SelectorItemsPanelAppearance;
+use crate::controls::selector_panel::SelectorItemsPanelLook;
 
 pub type ComboBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type ComboBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -55,7 +55,7 @@ pub struct ComboBoxRenderModel {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub popup_bounds: Option<Bounds<Pixels>>,
-    pub popup_appearance: SelectorItemsPanelAppearance,
+    pub popup_look: SelectorItemsPanelLook,
     pub popup_content: Option<AnyElement>,
 }
 

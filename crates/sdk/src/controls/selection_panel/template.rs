@@ -11,7 +11,7 @@ use crate::controls::selection_panel::item_template::{
     render_selection_panel_item_row,
 };
 use crate::controls::selection_panel::model::SelectionPanelItemLike;
-use crate::controls::selection_panel::theme::SelectionPanelAppearance;
+use crate::controls::selection_panel::theme::SelectionPanelLook;
 use crate::controls::state::ControlFocusState;
 
 pub struct SelectionPanelTemplateHandlers {
@@ -41,7 +41,7 @@ where
     pub enabled: bool,
     pub focus: ControlFocusState,
     pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
-    pub appearance: SelectionPanelAppearance,
+    pub look: SelectionPanelLook,
     pub show_selection_marker: bool,
     pub show_panel_chrome: bool,
 }
@@ -135,7 +135,7 @@ where
             item_mouse_up_outs,
             item_clicks,
         } = handlers;
-        let appearance = model.appearance.clone();
+        let appearance = model.look.clone();
 
         let mut root = div().id(format!("{}-rows", model.panel_id)).relative().flex().flex_col().w_full();
 

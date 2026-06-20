@@ -8,14 +8,14 @@
 use gpui_luma::controls::popup_menu::PopupMenuPalette;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
-use super::floating_menu::floating_menu_appearance;
+use crate::look_context::LookContext;
+use super::floating_menu::floating_menu_look;
 use crate::focus::focus_ring_color;
 use crate::resolve::{resolve_color, resolve_ghost_trigger_background, resolve_ghost_trigger_foreground};
 use crate::mode::ShadcnModeTokens;
 
 pub fn popup_menu_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> PopupMenuPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let typography = ctx.typography();
@@ -33,7 +33,7 @@ pub fn popup_menu_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state:
             .transpose()
             .unwrap_or_else(|err| panic!("popup menu properties: {err}")),
         trigger_typography: typography.text.label,
-        floating_menu: floating_menu_appearance(ctx.tokens, ctx.theme_mode, ControlSize::Md),
+        floating_menu: floating_menu_look(ctx.tokens, ctx.theme_mode, ControlSize::Md),
     }
 }
 

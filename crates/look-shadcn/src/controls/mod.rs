@@ -34,6 +34,5 @@ pub use ext::{
     ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
 };
 
-pub(crate) use button::button_appearance;
-pub(crate) use selection_panel::selection_panel_appearance;
-pub(crate) use selector_items_panel::selector_items_panel_appearance;
+pub(crate) use button::button_look;
+pub(crate) use selector_items_panel::selector_items_panel_look;

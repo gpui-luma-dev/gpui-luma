@@ -5,7 +5,7 @@ use gpui::Hsla;
 use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct ResizablePanelsAppearance {
+pub struct ResizablePanelsLook {
     pub border: Hsla,
     pub divider: Hsla,
     pub grip: Hsla,
@@ -14,7 +14,7 @@ pub struct ResizablePanelsAppearance {
 }
 
 pub trait ResizablePanelsTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> ResizablePanelsAppearance;
+    fn resolve(&self, state: InteractionState) -> ResizablePanelsLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -35,11 +35,11 @@ impl DefaultResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for DefaultResizablePanelsTheme {
-    fn resolve(&self, state: InteractionState) -> ResizablePanelsAppearance {
+    fn resolve(&self, state: InteractionState) -> ResizablePanelsLook {
         let palette = &self.tokens.palette;
         let disabled = state.layer() == InteractionLayer::Disabled;
 
-        ResizablePanelsAppearance {
+        ResizablePanelsLook {
             border: palette.border.default,
             divider: if disabled {
                 palette.state.disabled.background

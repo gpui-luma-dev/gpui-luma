@@ -12,11 +12,11 @@ use crate::gallery::panes::shared::inspector::{
 pub(in crate::gallery) fn build_resizable_panels_inspect_tree(
     look: &ShadcnLook,
 ) -> Vec<TreeNode<ColorInspectTreeData>> {
-    vec![appearance_branch(look), handle_layout_branch(look)]
+    vec![look_branch(look), handle_layout_branch(look)]
 }
 
-fn appearance_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
-    let id = "inspect-appearance";
+fn look_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
+    let id = "inspect-look";
     let matrix_states = [
         ("default", InteractionState::default()),
         ("hover", InteractionState { hovered: true, ..InteractionState::default() }),
@@ -28,7 +28,7 @@ fn appearance_branch(look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
         .map(|(state_label, state)| state_branch(id, state_label, state, look, state_label == "default"))
         .collect();
 
-    TreeNode::new(id.to_owned(), "appearance", ColorInspectTreeData::Branch)
+    TreeNode::new(id.to_owned(), "look", ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(true)
         .children(state_nodes)
@@ -68,13 +68,10 @@ fn state_branch(
     TreeNode::new(id.clone(), state_label.to_owned(), ColorInspectTreeData::Branch)
         .branch(true)
         .expanded(expand)
-        .children(appearance_color_nodes(&id, &palette))
+        .children(look_color_nodes(&id, &palette))
 }
 
-fn appearance_color_nodes(
-    prefix: &str,
-    palette: &ResizablePanelsInspectPalette,
-) -> Vec<TreeNode<ColorInspectTreeData>> {
+fn look_color_nodes(prefix: &str, palette: &ResizablePanelsInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {
     color_field_nodes_optional(
         prefix,
         &[

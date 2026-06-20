@@ -26,7 +26,7 @@ use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTempl
 use gpui_luma::controls::scrollbar::{ScrollbarTheme, ThemedScrollbarTemplate};
 use gpui_luma::controls::selector::{SelectorTheme, ThemedSelectorTemplate};
 use gpui_luma::controls::selector_panel::default_selector_items_template;
-use gpui_luma::controls::selection_panel::SelectionPanelAppearanceProvider;
+use gpui_luma::controls::selection_panel::SelectionPanelLookProvider;
 use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
 use gpui_luma::controls::split_view::SplitViewTheme;
 use gpui_luma::controls::slider::{SliderTheme, ThemedSliderTemplate};
@@ -40,32 +40,32 @@ use gpui::Styled;
 
 use gpui_luma::theme::{ControlSize, InteractionState};
 
-use super::autocomplete::autocomplete_textbox_appearance;
-use super::checkbox::checkbox_appearance;
-use super::card::card_appearance;
-use super::control_group::control_group_list_appearance;
-use super::context_menu::context_menu_appearance;
-use super::floating_menu::floating_menu_appearance;
-use super::list_view::{list_view_appearance, list_view_row_palette};
+use super::autocomplete::autocomplete_textbox_look;
+use super::checkbox::checkbox_look;
+use super::card::card_look;
+use super::control_group::control_group_list_look;
+use super::context_menu::context_menu_look;
+use super::floating_menu::floating_menu_look;
+use super::list_view::{list_view_look, list_view_row_palette};
 use super::navigation_sidebar::{
-    navigation_sidebar_branch_appearance, navigation_sidebar_container_appearance, navigation_sidebar_item_appearance,
-    navigation_sidebar_section_appearance,
+    navigation_sidebar_branch_look, navigation_sidebar_container_look, navigation_sidebar_item_look,
+    navigation_sidebar_section_look,
 };
-use super::listbox::{listbox_list_appearance, listbox_row_palette};
-use super::pager::pager_appearance;
-use super::progress::progress_appearance;
-use super::radio::radio_button_appearance;
-use super::scrollbar::scrollbar_appearance;
-use super::selection_panel::selection_panel_appearance;
-use super::slider::slider_appearance;
-use super::switch::switch_appearance;
+use super::listbox::{listbox_list_look, listbox_row_palette};
+use super::pager::pager_look;
+use super::progress::progress_look;
+use super::radio::radio_button_look;
+use super::scrollbar::scrollbar_look;
+use super::selection_panel::selection_panel_look;
+use super::slider::slider_look;
+use super::switch::switch_look;
 use super::accordion::{accordion_content_palette, accordion_trigger_palette};
-use super::resizable_panels::resizable_panels_appearance;
-use super::split_view::split_view_appearance;
+use super::resizable_panels::resizable_panels_look;
+use super::split_view::split_view_look;
 use super::tree_view::tree_view_row_palette;
-use super::tabs_navigation::{tabs_navigation_item_appearance, tabs_navigation_list_appearance};
+use super::tabs_navigation::{tabs_navigation_item_look, tabs_navigation_list_look};
 use super::button::button_palette;
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use super::button::ShadcnButtonStyle;
 use crate::look::ShadcnLook;
 
@@ -78,7 +78,7 @@ impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
         let tokens = self.theme.mode_tokens();
         let stylesheet = self.theme.stylesheet();
-        let ctx = AppearanceContext::new(tokens.as_ref(), self.theme.mode(), state);
+        let ctx = LookContext::new(tokens.as_ref(), self.theme.mode(), state);
         button_palette(&ctx, stylesheet.as_ref(), self.style, role, size)
     }
 
@@ -107,7 +107,7 @@ struct RadixStyledSwitchTheme {
 impl SwitchTheme for RadixStyledSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState) -> gpui_luma::controls::switch::SwitchPalette {
         let tokens = self.theme.mode_tokens();
-        switch_appearance(tokens.as_ref(), self.theme.mode(), self.style, on, state)
+        switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -123,7 +123,7 @@ struct RadixStyledCheckboxTheme {
 impl CheckboxTheme for RadixStyledCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState) -> gpui_luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
-        checkbox_appearance(tokens.as_ref(), self.style, checked, state)
+        checkbox_look(tokens.as_ref(), self.style, checked, state)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -143,7 +143,7 @@ impl RadioButtonTheme for RadixStyledRadioButtonTheme {
         state: InteractionState,
     ) -> gpui_luma::controls::radio_button::RadioButtonPalette {
         let tokens = self.theme.mode_tokens();
-        radio_button_appearance(tokens.as_ref(), self.style, selected, state)
+        radio_button_look(tokens.as_ref(), self.style, selected, state)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -220,12 +220,12 @@ struct RadixDockSplitterTheme {
 }
 
 impl DockSplitterTheme for RadixDockSplitterTheme {
-    fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterAppearance {
+    fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterLook {
         let tokens = self.theme.mode_tokens();
         let border = tokens.palette.border_default;
         let disabled = tokens.palette.disabled_foreground;
 
-        gpui_luma::controls::dock_splitter::DockSplitterAppearance {
+        gpui_luma::controls::dock_splitter::DockSplitterLook {
             line_color: if enabled { border } else { disabled },
             hover_color: if enabled { border } else { disabled },
             thumb_color: if enabled {
@@ -244,9 +244,9 @@ struct RadixResizablePanelsTheme {
 }
 
 impl ResizablePanelsTheme for RadixResizablePanelsTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsAppearance {
+    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsLook {
         let tokens = self.theme.mode_tokens();
-        resizable_panels_appearance(tokens.as_ref(), self.theme.mode(), state)
+        resizable_panels_look(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -255,9 +255,9 @@ struct RadixSplitViewTheme {
 }
 
 impl SplitViewTheme for RadixSplitViewTheme {
-    fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewAppearance {
+    fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewLook {
         let tokens = self.theme.mode_tokens();
-        split_view_appearance(tokens.as_ref(), self.theme.mode(), hovered, enabled)
+        split_view_look(tokens.as_ref(), self.theme.mode(), hovered, enabled)
     }
 }
 
@@ -266,9 +266,9 @@ struct RadixSliderTheme {
 }
 
 impl SliderTheme for RadixSliderTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::slider::SliderAppearance {
+    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
-        slider_appearance(tokens.as_ref(), self.theme.mode(), state)
+        slider_look(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -281,9 +281,9 @@ impl ScrollbarTheme for RadixScrollbarTheme {
         &self,
         state: InteractionState,
         orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
-    ) -> gpui_luma::controls::scrollbar::ScrollbarAppearance {
+    ) -> gpui_luma::controls::scrollbar::ScrollbarLook {
         let tokens = self.theme.mode_tokens();
-        scrollbar_appearance(tokens.as_ref(), state, orientation)
+        scrollbar_look(tokens.as_ref(), state, orientation)
     }
 }
 
@@ -300,9 +300,9 @@ struct RadixFloatingMenuTheme {
 }
 
 impl FloatingMenuTheme for RadixFloatingMenuTheme {
-    fn resolve(&self) -> gpui_luma::controls::floating_menu::FloatingMenuAppearance {
+    fn resolve(&self) -> gpui_luma::controls::floating_menu::FloatingMenuLook {
         let tokens = self.theme.mode_tokens();
-        floating_menu_appearance(tokens.as_ref(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
+        floating_menu_look(tokens.as_ref(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
     }
 }
 
@@ -326,9 +326,9 @@ struct RadixContextMenuTheme {
 }
 
 impl ContextMenuTheme for RadixContextMenuTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuAppearance {
+    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuLook {
         let tokens = self.theme.mode_tokens();
-        context_menu_appearance(tokens.as_ref(), self.theme.mode(), state)
+        context_menu_look(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
@@ -396,9 +396,9 @@ struct RadixAutocompleteTextBoxTheme {
 }
 
 impl AutocompleteTextBoxTheme for RadixAutocompleteTextBoxTheme {
-    fn resolve(&self) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxAppearance {
+    fn resolve(&self) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxLook {
         let tokens = self.theme.mode_tokens();
-        autocomplete_textbox_appearance(tokens.as_ref(), self.theme.mode(), ControlSize::Md)
+        autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), ControlSize::Md)
     }
 }
 
@@ -513,10 +513,10 @@ pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn Autocomplet
     Arc::new(RadixAutocompleteTextBoxTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn selection_panel_appearance_provider(theme: Arc<ShadcnLook>) -> SelectionPanelAppearanceProvider {
+pub fn selection_panel_look_provider(theme: Arc<ShadcnLook>) -> SelectionPanelLookProvider {
     Arc::new(move |size| {
         let tokens = theme.mode_tokens();
-        selection_panel_appearance(tokens.as_ref(), theme.mode(), size)
+        selection_panel_look(tokens.as_ref(), theme.mode(), size)
     })
 }
 
@@ -564,9 +564,9 @@ impl TabsNavigationTheme for RadixTabsNavigationTheme {
         &self,
         enabled: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListAppearance {
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationListLook {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_list_appearance(tokens.as_ref(), enabled, size)
+        tabs_navigation_list_look(tokens.as_ref(), enabled, size)
     }
 
     fn resolve_item(
@@ -574,9 +574,9 @@ impl TabsNavigationTheme for RadixTabsNavigationTheme {
         active: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemAppearance {
+    ) -> gpui_luma::controls::tabs_navigation::TabsNavigationItemLook {
         let tokens = self.theme.mode_tokens();
-        tabs_navigation_item_appearance(tokens.as_ref(), active, state, size)
+        tabs_navigation_item_look(tokens.as_ref(), active, state, size)
     }
 
     fn font_family(&self) -> gpui::SharedString {
@@ -589,21 +589,21 @@ struct RadixNavigationSidebarTheme {
 }
 
 impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
-    fn resolve_container(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarContainerAppearance {
+    fn resolve_container(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarContainerLook {
         let tokens = self.theme.mode_tokens();
-        navigation_sidebar_container_appearance(tokens.as_ref())
+        navigation_sidebar_container_look(tokens.as_ref())
     }
 
-    fn resolve_section(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarSectionAppearance {
-        navigation_sidebar_section_appearance(&self.theme)
+    fn resolve_section(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarSectionLook {
+        navigation_sidebar_section_look(&self.theme)
     }
 
     fn resolve_branch(
         &self,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        navigation_sidebar_branch_appearance(&self.theme, state, size)
+    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemLook {
+        navigation_sidebar_branch_look(&self.theme, state, size)
     }
 
     fn resolve_item(
@@ -611,8 +611,8 @@ impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
         selected: bool,
         state: InteractionState,
         size: ControlSize,
-    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemAppearance {
-        navigation_sidebar_item_appearance(&self.theme, selected, state, size)
+    ) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarItemLook {
+        navigation_sidebar_item_look(&self.theme, selected, state, size)
     }
 }
 
@@ -660,9 +660,9 @@ struct RadixControlGroupTheme {
 }
 
 impl ControlGroupTheme for RadixControlGroupTheme {
-    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::control_group::ControlGroupListAppearance {
+    fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::control_group::ControlGroupListLook {
         let tokens = self.theme.mode_tokens();
-        control_group_list_appearance(tokens.as_ref(), enabled)
+        control_group_list_look(tokens.as_ref(), enabled)
     }
 }
 
@@ -687,9 +687,9 @@ impl ListBoxTheme for RadixListBoxTheme {
         enabled: bool,
         focused: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::listbox::ListBoxListAppearance {
+    ) -> gpui_luma::controls::listbox::ListBoxListLook {
         let tokens = self.theme.mode_tokens();
-        listbox_list_appearance(tokens.as_ref(), enabled, focused, size)
+        listbox_list_look(tokens.as_ref(), enabled, focused, size)
     }
 
     fn resolve_row(
@@ -720,14 +720,14 @@ struct RadixListViewTheme {
 }
 
 impl ListViewTheme for RadixListViewTheme {
-    fn resolve_appearance(
+    fn resolve_look(
         &self,
         enabled: bool,
         focused: bool,
         size: ControlSize,
-    ) -> gpui_luma::controls::list_view::ListViewAppearance {
+    ) -> gpui_luma::controls::list_view::ListViewLook {
         let tokens = self.theme.mode_tokens();
-        list_view_appearance(tokens.as_ref(), enabled, focused, size)
+        list_view_look(tokens.as_ref(), enabled, focused, size)
     }
 
     fn resolve_row(
@@ -762,8 +762,8 @@ impl PagerTheme for RadixPagerTheme {
         &self,
         enabled: bool,
         style: gpui_luma::controls::pager::PagerStyle,
-    ) -> gpui_luma::controls::pager::PagerAppearance {
-        pager_appearance(&self.theme, enabled, style)
+    ) -> gpui_luma::controls::pager::PagerLook {
+        pager_look(&self.theme, enabled, style)
     }
 }
 
@@ -791,9 +791,9 @@ struct RadixProgressTheme {
 }
 
 impl ProgressTheme for RadixProgressTheme {
-    fn resolve(&self, enabled: bool) -> gpui_luma::controls::progress::ProgressAppearance {
+    fn resolve(&self, enabled: bool) -> gpui_luma::controls::progress::ProgressLook {
         let tokens = self.theme.mode_tokens();
-        progress_appearance(tokens.as_ref(), enabled)
+        progress_look(tokens.as_ref(), enabled)
     }
 }
 
@@ -818,23 +818,22 @@ struct RadixCardTheme {
 }
 
 impl CardTheme for RadixCardTheme {
-    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::card::CardAppearance {
-        card_appearance(&self.theme, size)
+    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::card::CardLook {
+        card_look(&self.theme, size)
     }
 }
 
 pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
     let button_theme = styled_button_family_theme(theme, style);
     Arc::new(DefaultButtonTemplate::new(button_theme.clone()).with_modifier(move |element, model| {
-        if model.appearance.is_some() {
+        if model.look.is_some() {
             return element;
         }
 
-        let appearance =
-            button_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
+        let look = button_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
         element
-            .bg(appearance.background)
-            .text_color(appearance.foreground)
-            .border_color(button_family_effective_border(appearance.border))
+            .bg(look.background)
+            .text_color(look.foreground)
+            .border_color(button_family_effective_border(look.border))
     }))
 }

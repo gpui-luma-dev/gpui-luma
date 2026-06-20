@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{App, BoxShadow, Div, Hsla, SharedString, Stateful, Window, div, point, prelude::*, px};
-use gpui_luma::controls::button_family::{
-    ButtonFamilyAppearance, button_family_effective_border, button_family_focus_adorner,
-};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, button_family_effective_border, button_family_focus_adorner};
 use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use gpui_luma::theme::{AdornerPlacement, AdornerSpec, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -98,42 +96,42 @@ struct PrototypeShadowButtonTemplate {
 
 impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
     fn render(&self, model: &ButtonRenderModel<()>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let appearance = self.resolve_appearance(model);
-        let focused_probe_appearance = self.resolve_focus_probe_appearance(model);
-        let border = button_family_effective_border(appearance.border);
+        let look = self.resolve_look(model);
+        let focused_probe_look = self.resolve_focus_probe_look(model);
+        let border = button_family_effective_border(look.border);
 
         let mut control = div()
             .id(format!("{}-control", model.id))
             .flex()
             .items_center()
             .justify_center()
-            .gap(px(appearance.gap))
-            .bg(appearance.background)
-            .text_color(appearance.foreground)
-            .text_size(px(appearance.typography.size))
-            .line_height(px(appearance.typography.line_height))
-            .font_family(appearance.font_family.clone())
-            .font_weight(appearance.typography.weight)
-            .h(px(appearance.height));
+            .gap(px(look.gap))
+            .bg(look.background)
+            .text_color(look.foreground)
+            .text_size(px(look.typography.size))
+            .line_height(px(look.typography.line_height))
+            .font_family(look.font_family.clone())
+            .font_weight(look.typography.weight)
+            .h(px(look.height));
 
         if border.a > 0.0 {
             control = control.border_1().border_color(border);
         }
 
         if model.round {
-            control = control.w(px(appearance.height)).p_0().rounded_full();
+            control = control.w(px(look.height)).p_0().rounded_full();
         } else {
-            control = control.px(px(appearance.padding_x)).py(px(appearance.padding_y)).rounded(px(appearance.radius));
+            control = control.px(px(look.padding_x)).py(px(look.padding_y)).rounded(px(look.radius));
         }
 
-        control = control.child(div().text_color(appearance.foreground).child((model.content)(model, cx)));
+        control = control.child(div().text_color(look.foreground).child((model.content)(model, cx)));
 
         let radius = if let Some(radius_override) = model.radius_override.get() {
             radius_override
         } else if model.round {
-            appearance.height / 2.0
+            look.height / 2.0
         } else {
-            appearance.radius
+            look.radius
         };
 
         let state = ButtonVisualState::from(model.state);
@@ -145,9 +143,8 @@ impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
         let shadow_insets = shadow_spec.map(shadow_projection_insets).unwrap_or_default();
 
         let metrics = &self.look.mode_tokens().metrics;
-        let adorner =
-            button_family_focus_adorner(model.state.focused, appearance.border, appearance.focus_ring, metrics);
-        let focused_adorner = focused_probe_appearance
+        let adorner = button_family_focus_adorner(model.state.focused, look.border, look.focus_ring, metrics);
+        let focused_adorner = focused_probe_look
             .as_ref()
             .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, metrics));
         let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
@@ -185,20 +182,20 @@ impl ButtonTemplate<()> for PrototypeShadowButtonTemplate {
 }
 
 impl PrototypeShadowButtonTemplate {
-    fn resolve_appearance(&self, model: &ButtonRenderModel<()>) -> ButtonFamilyAppearance {
-        if let Some(resolve) = &model.appearance {
+    fn resolve_look(&self, model: &ButtonRenderModel<()>) -> ButtonFamilyLook {
+        if let Some(resolve) = &model.look {
             resolve(model)
         } else {
             self.look.resolve_primary_button(model.role, model.size, model.state)
         }
     }
 
-    fn resolve_focus_probe_appearance(&self, model: &ButtonRenderModel<()>) -> Option<ButtonFamilyAppearance> {
+    fn resolve_focus_probe_look(&self, model: &ButtonRenderModel<()>) -> Option<ButtonFamilyLook> {
         if model.state.disabled {
             return None;
         }
 
-        if let Some(resolve) = &model.appearance {
+        if let Some(resolve) = &model.look {
             let focused_state = InteractionState { focused: true, ..model.state };
             let focused_model = ButtonRenderModel {
                 id: model.id.clone(),
@@ -209,7 +206,7 @@ impl PrototypeShadowButtonTemplate {
                 state: focused_state,
                 round: model.round,
                 radius_override: std::cell::Cell::new(model.radius_override.get()),
-                appearance: model.appearance.clone(),
+                look: model.look.clone(),
             };
             return Some(resolve(&focused_model));
         }

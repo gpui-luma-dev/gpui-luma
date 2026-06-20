@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use super::{
-    TextFieldAppearance, TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers,
+    TextFieldLook, TextFieldBuilder, TextFieldRenderModel, TextFieldState, TextFieldTemplateHandlers,
     model::TextFieldModel,
 };
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
@@ -29,7 +29,7 @@ const TEXTFIELD_SCROLL_REVEAL_PADDING: f32 = 24.0;
 #[derive(Clone)]
 struct TextFieldLayoutPreview {
     character_offsets: Vec<f32>,
-    appearance: TextFieldAppearance,
+    appearance: TextFieldLook,
 }
 
 #[derive(Clone, Debug)]
@@ -173,7 +173,7 @@ impl TextFieldControl {
 
     pub fn set_font_family(&mut self, family: SharedString, cx: &mut Context<Self>) {
         let family = family.clone();
-        self.model.appearance_override = Some(Arc::new(move |mut appearance| {
+        self.model.look_override = Some(Arc::new(move |mut appearance| {
             appearance.font_family = family.clone();
             appearance
         }));
@@ -181,25 +181,25 @@ impl TextFieldControl {
         cx.notify();
     }
 
-    pub fn set_appearance_override(
+    pub fn set_look_override(
         &mut self,
-        override_fn: Option<super::model::TextFieldAppearanceOverride>,
+        override_fn: Option<super::model::TextFieldLookOverride>,
         cx: &mut Context<Self>,
     ) {
-        self.model.appearance_override = override_fn;
+        self.model.look_override = override_fn;
         self.layout_cache = None;
         cx.notify();
     }
 
-    fn resolved_appearance(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldAppearance {
-        let appearance = self.model.template.resolve_appearance_with_scale(
+    fn resolved_appearance(&self, window: &Window, cx: &mut Context<Self>) -> TextFieldLook {
+        let appearance = self.model.template.resolve_look_with_scale(
             self.model.variant,
             self.state,
             self.model.enabled,
             window.scale_factor(),
             cx,
         );
-        if let Some(override_fn) = &self.model.appearance_override {
+        if let Some(override_fn) = &self.model.look_override {
             override_fn(appearance)
         } else {
             appearance
@@ -209,7 +209,7 @@ impl TextFieldControl {
     fn render_model_with_offsets<'a>(
         &'a self,
         character_offsets: Vec<f32>,
-        appearance: TextFieldAppearance,
+        appearance: TextFieldLook,
     ) -> TextFieldRenderModel<'a> {
         TextFieldRenderModel {
             id: &self.model.id,
@@ -223,7 +223,7 @@ impl TextFieldControl {
             caret_visible: self.state.focused && self.model.enabled && self.caret_visible,
             horizontal_scroll: self.horizontal_scroll.as_f32(),
             character_offsets,
-            appearance,
+            look: appearance,
         }
     }
 

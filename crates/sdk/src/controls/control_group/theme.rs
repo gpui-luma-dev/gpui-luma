@@ -5,7 +5,7 @@ use gpui::Hsla;
 use crate::theme::{ControlSize, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct ControlGroupListAppearance {
+pub struct ControlGroupListLook {
     pub background: Hsla,
     pub border: Hsla,
     pub radius: f32,
@@ -15,7 +15,7 @@ pub struct ControlGroupListAppearance {
 }
 
 pub trait ControlGroupTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool) -> ControlGroupListAppearance;
+    fn resolve_list(&self, enabled: bool) -> ControlGroupListLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -36,11 +36,11 @@ impl DefaultControlGroupTheme {
 }
 
 impl ControlGroupTheme for DefaultControlGroupTheme {
-    fn resolve_list(&self, enabled: bool) -> ControlGroupListAppearance {
+    fn resolve_list(&self, enabled: bool) -> ControlGroupListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        ControlGroupListAppearance {
+        ControlGroupListLook {
             background: if enabled {
                 palette.surface.subtle.background
             } else {

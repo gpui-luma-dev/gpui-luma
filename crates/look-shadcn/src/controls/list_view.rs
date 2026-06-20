@@ -7,10 +7,10 @@
 //! | Selected    | `muted`               |
 //! | Keyboard active | `muted`           |
 
-use gpui_luma::controls::list_view::{ListViewAppearance, ListViewRowPalette};
+use gpui_luma::controls::list_view::{ListViewLook, ListViewRowPalette};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -105,19 +105,14 @@ pub fn resolve_list_view_row_colors_with_stylesheet(
     })
 }
 
-pub fn list_view_appearance(
-    mode: &ShadcnModeTokens,
-    enabled: bool,
-    _focused: bool,
-    size: ControlSize,
-) -> ListViewAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
+pub fn list_view_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> ListViewLook {
+    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "list_view");
     let colors =
         resolve_list_view_surface_colors(&resolver, enabled).unwrap_or_else(|_| ListViewSurfaceColorTable::fallback());
 
-    ListViewAppearance {
+    ListViewLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         header_background: colors.header_background.hsla(),
@@ -135,7 +130,7 @@ pub fn list_view_row_palette(
     state: InteractionState,
     _size: ControlSize,
 ) -> ListViewRowPalette {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "list_view_row");
     let colors = resolve_list_view_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())

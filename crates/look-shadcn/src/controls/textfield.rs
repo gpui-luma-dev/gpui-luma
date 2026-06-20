@@ -8,7 +8,7 @@
 use gpui_luma::controls::textfield::{TextFieldPalette, TextFieldState};
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -95,7 +95,7 @@ pub fn textfield_palette(
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
@@ -158,36 +158,36 @@ mod tests {
     fn surface_textfield_light_uses_transparent_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance =
+        let look =
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
 
-        assert_eq!(appearance.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
-        assert_eq!(appearance.border, catalog.color("border").expect("border"));
-        assert_eq!(appearance.foreground, catalog.color("foreground").expect("foreground"));
-        assert_eq!(appearance.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
+        assert_eq!(look.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
+        assert_eq!(look.foreground, catalog.color("foreground").expect("foreground"));
+        assert_eq!(look.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
     }
 
     #[test]
     fn surface_textfield_dark_uses_input_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
-        let appearance =
+        let look =
             textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let input = catalog.color("input").expect("input");
 
-        assert_eq!(appearance.background, with_alpha(input, 0.30));
-        assert_eq!(appearance.border, catalog.color("border").expect("border"));
+        assert_eq!(look.background, with_alpha(input, 0.30));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
     }
 
     #[test]
     fn soft_textfield_uses_muted_fill_and_no_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance =
+        let look =
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true);
 
-        assert_eq!(appearance.background, catalog.color("muted").expect("muted"));
-        assert_eq!(appearance.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
+        assert_eq!(look.background, catalog.color("muted").expect("muted"));
+        assert_eq!(look.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
     }
 
     #[test]
@@ -198,8 +198,8 @@ mod tests {
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let mut hovered = TextFieldState::default();
         hovered.hovered = true;
-        let appearance = textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, hovered, true);
+        let look = textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, hovered, true);
 
-        assert_eq!(appearance.background, default.background);
+        assert_eq!(look.background, default.background);
     }
 }

@@ -1,7 +1,7 @@
 //! Inspect metadata for `accordion`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct AccordionTriggerInspectPalette {
     pub background: Option<ResolvedColor>,
@@ -34,7 +34,7 @@ pub fn inspect_accordion_trigger_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> AccordionTriggerInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_trigger_inspect");
     let colors =
         gpui_luma_look_shadcn::tables::resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
@@ -53,7 +53,7 @@ pub fn inspect_accordion_content_color_palette(
     theme_mode: ThemeMode,
     expanded: bool,
 ) -> AccordionContentInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "accordion_content_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_accordion_content_colors(&resolver, expanded)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::AccordionContentColorTable::fallback());
@@ -70,7 +70,7 @@ pub fn inspect_accordion_metrics(
     use gpui_luma_look_shadcn::catalog::SpacingField;
     use crate::metrics::{control_size_key, derived_metric, radius_metric, scaffold_control_metric, spacing_control_metric};
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let scale = AccordionScale::compute(size, metrics, 1.0);

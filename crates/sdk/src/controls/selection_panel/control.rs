@@ -7,7 +7,7 @@ use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
 use crate::controls::selection_panel::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
 use crate::controls::selection_panel::model::{
-    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
     default_selection_panel_model,
 };
 use crate::controls::selection_panel::template::SelectionPanelTemplate;
@@ -232,7 +232,7 @@ where
         cx.notify();
     }
 
-    pub fn set_appearance_provider(&mut self, provider: SelectionPanelAppearanceProvider, cx: &mut Context<Self>) {
+    pub fn set_look_provider(&mut self, provider: SelectionPanelLookProvider, cx: &mut Context<Self>) {
         self.model.appearance_provider = provider;
         cx.notify();
     }
@@ -592,7 +592,7 @@ where
                 enabled: self.model.enabled,
                 focus,
                 item_template: self.model.item_template.as_ref(),
-                appearance: appearance.clone(),
+                look: appearance.clone(),
                 show_selection_marker: self.model.show_selection_marker,
                 show_panel_chrome: false,
             },

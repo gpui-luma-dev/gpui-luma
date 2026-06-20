@@ -46,7 +46,7 @@ pub struct SwitchPalette {
     pub label_font_family: SharedString,
 }
 
-pub type SwitchAppearance = SwitchPalette;
+pub type SwitchLook = SwitchPalette;
 
 pub trait SwitchTheme: Send + Sync {
     fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette;

@@ -6,7 +6,7 @@ use gpui::{
 };
 
 use super::{TabsNavigationRenderModel, model::TabsNavigationWidthMode};
-use crate::controls::tabs_navigation::{TabsNavigationItemAppearance, TabsNavigationTheme, default_tabs_navigation_theme};
+use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
 
 pub type TabsNavigationClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type TabsNavigationHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -183,7 +183,7 @@ fn resolve_uniform_tab_width(
 
 fn render_tabs_navigation_item_visual(
     model: TabsNavigationItemVisualModel<'_>,
-    appearance: TabsNavigationItemAppearance,
+    appearance: TabsNavigationItemLook,
 ) -> Stateful<Div> {
     let mut root = div()
         .id(model.id)

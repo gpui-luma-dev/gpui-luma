@@ -291,7 +291,7 @@ fn render_control_cell(
         state: state_sample.state,
         round: control.round(),
         radius_override: std::cell::Cell::new(None),
-        appearance: None,
+        look: None,
     };
 
     div()

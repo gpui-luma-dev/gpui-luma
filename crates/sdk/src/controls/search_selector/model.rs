@@ -11,11 +11,11 @@ use super::template::{
     default_search_selector_template,
 };
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
-use crate::controls::selector_panel::{SelectorItemsPanelAppearance, default_selector_items_panel_appearance};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::textfield::{TextFieldTemplate, TextFieldTheme, default_textfield_template, default_textfield_theme};
 use crate::theme::{ControlSize, ThemeTokens};
 
-pub type SearchSelectorPopupAppearanceProvider = Arc<dyn Fn() -> SelectorItemsPanelAppearance + Send + Sync + 'static>;
+pub type SearchSelectorPopupLookProvider = Arc<dyn Fn() -> SelectorItemsPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct SearchSelectorModel {
@@ -36,7 +36,7 @@ pub struct SearchSelectorModel {
     pub(crate) items_template: Arc<dyn SearchSelectorItemsTemplate>,
     pub(crate) panel_template: Arc<dyn SearchSelectorPanelTemplate>,
     pub(crate) item_template: Option<SearchSelectorItemTemplate<SelectionItem>>,
-    pub(crate) popup_appearance_provider: SearchSelectorPopupAppearanceProvider,
+    pub(crate) popup_appearance_provider: SearchSelectorPopupLookProvider,
 }
 
 pub struct SearchSelectorBuilder {
@@ -65,7 +65,7 @@ impl SearchSelectorBuilder {
                 panel_template: default_search_selector_panel_template(),
                 item_template: None,
                 popup_appearance_provider: Arc::new(|| {
-                    default_selector_items_panel_appearance(&ThemeTokens::default(), ControlSize::Md)
+                    default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
                 }),
             },
         }
@@ -156,7 +156,7 @@ impl SearchSelectorBuilder {
         self
     }
 
-    pub fn popup_appearance_provider(mut self, provider: SearchSelectorPopupAppearanceProvider) -> Self {
+    pub fn popup_look_provider(mut self, provider: SearchSelectorPopupLookProvider) -> Self {
         self.model.popup_appearance_provider = provider;
         self
     }

@@ -8,7 +8,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
 use crate::controls::selection_panel::model::SelectionPanelItemLike;
-use crate::controls::selection_panel::theme::SelectionPanelAppearance;
+use crate::controls::selection_panel::theme::SelectionPanelLook;
 
 #[derive(Clone, Debug)]
 pub struct SelectionPanelItemRenderModel<'a, T>
@@ -128,7 +128,7 @@ where
     pub enabled: bool,
     pub sibling_count: usize,
     pub item_template: Option<&'a SelectionPanelItemTemplate<T>>,
-    pub appearance: &'a SelectionPanelAppearance,
+    pub appearance: &'a SelectionPanelLook,
     pub show_selection_marker: bool,
 }
 

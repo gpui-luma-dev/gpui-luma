@@ -2,20 +2,20 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::controls::floating_menu::{FloatingMenuAppearance, default_floating_menu_appearance};
+use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{ControlSize, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct AutocompleteTextBoxAppearance {
+pub struct AutocompleteTextBoxLook {
     pub status_color: Hsla,
     pub muted_text_color: Hsla,
     pub clear_icon_color: Hsla,
     pub clear_icon_hover_color: Hsla,
-    pub menu: FloatingMenuAppearance,
+    pub menu: FloatingMenuLook,
 }
 
 pub trait AutocompleteTextBoxTheme: Send + Sync {
-    fn resolve(&self) -> AutocompleteTextBoxAppearance;
+    fn resolve(&self) -> AutocompleteTextBoxLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -36,20 +36,17 @@ impl DefaultAutocompleteTextBoxTheme {
 }
 
 impl AutocompleteTextBoxTheme for DefaultAutocompleteTextBoxTheme {
-    fn resolve(&self) -> AutocompleteTextBoxAppearance {
-        default_autocomplete_textbox_appearance(&self.tokens, ControlSize::Md)
+    fn resolve(&self) -> AutocompleteTextBoxLook {
+        default_autocomplete_textbox_look(&self.tokens, ControlSize::Md)
     }
 }
 
-pub(crate) fn default_autocomplete_textbox_appearance(
-    tokens: &ThemeTokens,
-    size: ControlSize,
-) -> AutocompleteTextBoxAppearance {
-    AutocompleteTextBoxAppearance {
+pub(crate) fn default_autocomplete_textbox_look(tokens: &ThemeTokens, size: ControlSize) -> AutocompleteTextBoxLook {
+    AutocompleteTextBoxLook {
         status_color: tokens.palette.state.selected.background,
         muted_text_color: tokens.palette.surface.floating.foreground,
         clear_icon_color: tokens.palette.surface.floating.foreground,
         clear_icon_hover_color: tokens.palette.form.input.foreground,
-        menu: default_floating_menu_appearance(tokens, size),
+        menu: default_floating_menu_look(tokens, size),
     }
 }

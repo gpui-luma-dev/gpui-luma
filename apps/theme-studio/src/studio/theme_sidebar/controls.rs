@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, SharedString};
 use gpui::Hsla;
 use gpui_luma::controls::slider::Slider;
-use gpui_luma::controls::textfield::{TextField, TextFieldAppearance, TextFieldAppearanceOverride, TextFieldBuilder};
+use gpui_luma::controls::textfield::{TextField, TextFieldLook, TextFieldLookOverride, TextFieldBuilder};
 use gpui_luma::controls::selector::SelectorItem;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
@@ -40,17 +40,17 @@ fn token_field_mono_font() -> SharedString {
 const TOKEN_FIELD_FONT_SIZE: f32 = 12.0;
 const TOKEN_FIELD_LINE_HEIGHT: f32 = 16.0;
 
-fn apply_token_field_appearance(mut appearance: TextFieldAppearance) -> TextFieldAppearance {
-    appearance.font_family = token_field_mono_font();
-    appearance.typography.size = TOKEN_FIELD_FONT_SIZE;
-    appearance.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
-    appearance.padding_y = 2.0;
-    appearance.min_height = 22.0;
-    appearance
+fn apply_token_field_look(mut look: TextFieldLook) -> TextFieldLook {
+    look.font_family = token_field_mono_font();
+    look.typography.size = TOKEN_FIELD_FONT_SIZE;
+    look.typography.line_height = TOKEN_FIELD_LINE_HEIGHT;
+    look.padding_y = 2.0;
+    look.min_height = 22.0;
+    look
 }
 
-pub(super) fn token_field_appearance_override_arc() -> TextFieldAppearanceOverride {
-    Arc::new(apply_token_field_appearance)
+pub(super) fn token_field_look_override_arc() -> TextFieldLookOverride {
+    Arc::new(apply_token_field_look)
 }
 
 pub(super) trait TokenFieldBuilderExt {
@@ -59,7 +59,7 @@ pub(super) trait TokenFieldBuilderExt {
 
 impl TokenFieldBuilderExt for TextFieldBuilder {
     fn token_style(self) -> Self {
-        self.appearance_override(apply_token_field_appearance)
+        self.look_override(apply_token_field_look)
     }
 }
 

@@ -1,7 +1,7 @@
 //! Inspect metadata for `textfield`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma_look_shadcn::ShadcnTextFieldStyle;
 use gpui_luma::controls::textfield::TextFieldState;
@@ -25,7 +25,7 @@ pub fn inspect_textfield_color_palette(
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "textfield_inspect");
     let colors =
         gpui_luma_look_shadcn::tables::resolve_textfield_colors(&resolver, style, enabled, state.invalid, theme_mode)
@@ -69,7 +69,7 @@ pub fn inspect_textfield_metrics(
     };
     use gpui_luma_look_shadcn::catalog::SpacingField;
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let scale = StandardBoxScale::compute(size, metrics, 1.0);

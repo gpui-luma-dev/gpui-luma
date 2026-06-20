@@ -5,7 +5,7 @@ mod template;
 mod theme;
 
 pub use control::TextFieldEvent;
-pub use model::{TextFieldAppearanceOverride, TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
+pub use model::{TextFieldLookOverride, TextFieldBuilder, TextFieldModel, TextFieldRenderModel, Validator};
 pub use state::TextFieldState;
 pub use template::{
     TextFieldClickHandler, TextFieldHoverHandler, TextFieldKeyDownHandler, TextFieldMouseDownHandler,
@@ -13,7 +13,7 @@ pub use template::{
     ThemedTextFieldTemplate, default_textfield_template,
 };
 pub use theme::{
-    DefaultTextFieldTheme, TextFieldAppearance, TextFieldPalette, TextFieldTheme, TextFieldVariant,
+    DefaultTextFieldTheme, TextFieldLook, TextFieldPalette, TextFieldTheme, TextFieldVariant,
     default_textfield_theme,
 };
 #[allow(unused_imports)]

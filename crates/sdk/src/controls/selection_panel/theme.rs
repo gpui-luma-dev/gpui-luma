@@ -3,7 +3,7 @@ use gpui::{BoxShadow, Hsla};
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct SelectionPanelAppearance {
+pub struct SelectionPanelLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -22,13 +22,13 @@ pub struct SelectionPanelAppearance {
     pub item_radius: f32,
 }
 
-pub fn default_selection_panel_appearance(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelAppearance {
+pub fn default_selection_panel_appearance(tokens: &ThemeTokens, size: ControlSize) -> SelectionPanelLook {
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
 
-    SelectionPanelAppearance {
+    SelectionPanelLook {
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,
         border: palette.surface.floating.border,

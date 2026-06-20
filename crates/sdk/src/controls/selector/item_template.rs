@@ -1,11 +1,11 @@
 use gpui::{AnyElement, App, div, prelude::*, px};
 
-use super::{SelectorRenderModel, theme::SelectorAppearance};
+use super::{SelectorRenderModel, theme::SelectorLook};
 use crate::controls::selector_panel::{SelectorItemLike, SelectorItemRenderModel};
 
 pub(super) fn render_item_content<T>(
     model: &SelectorRenderModel<'_, T>,
-    appearance: &SelectorAppearance,
+    appearance: &SelectorLook,
     cx: &mut App,
 ) -> AnyElement
 where

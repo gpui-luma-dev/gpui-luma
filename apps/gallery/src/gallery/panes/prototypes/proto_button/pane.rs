@@ -208,7 +208,7 @@ impl ButtonPane {
     }
 
     fn render_demo_column(&self, chrome: GalleryChrome) -> AnyElement {
-        let theme_appearance = default_button_family_theme().resolve(
+        let theme_look = default_button_family_theme().resolve(
             ButtonFamilyRole::Text,
             ButtonSize::Md,
             interaction_state_for_visual_state(self.selected_visual_state),
@@ -216,12 +216,12 @@ impl ButtonPane {
         let (effective_background, background_source) = resolve_color_with_source(
             &self.demo_background_overrides,
             self.selected_visual_state,
-            theme_appearance.background,
+            theme_look.background,
         );
         let (effective_foreground, foreground_source) = resolve_color_with_source(
             &self.demo_foreground_overrides,
             self.selected_visual_state,
-            theme_appearance.foreground,
+            theme_look.foreground,
         );
 
         div()
@@ -556,7 +556,7 @@ fn render_button_state_sample(
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(radius),
-        appearance: None,
+        look: None,
     };
 
     div()

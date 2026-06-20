@@ -84,7 +84,7 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
         );
-        let appearance = self.theme.resolve_appearance(model.state, model.enabled, &scale);
+        let appearance = self.theme.resolve_look(model.state, model.enabled, &scale);
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());

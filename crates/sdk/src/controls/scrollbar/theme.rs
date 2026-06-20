@@ -7,7 +7,7 @@ use crate::controls::scrollbar::ScrollbarOrientation;
 use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct ScrollbarAppearance {
+pub struct ScrollbarLook {
     pub track_background: Hsla,
     pub thumb_background: Hsla,
     pub focus_ring: Option<Hsla>,
@@ -20,7 +20,7 @@ pub struct ScrollbarAppearance {
 }
 
 pub trait ScrollbarTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarAppearance;
+    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -41,7 +41,7 @@ impl DefaultScrollbarTheme {
 }
 
 impl ScrollbarTheme for DefaultScrollbarTheme {
-    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarAppearance {
+    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let thumb_background = match state.layer() {
@@ -56,7 +56,7 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
             ScrollbarOrientation::Vertical => 180.0,
         };
 
-        ScrollbarAppearance {
+        ScrollbarLook {
             track_background: if state.disabled {
                 palette.state.disabled.background
             } else {

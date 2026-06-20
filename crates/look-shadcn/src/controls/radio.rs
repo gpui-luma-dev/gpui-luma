@@ -9,7 +9,7 @@
 use gpui_luma::controls::radio_button::RadioButtonPalette;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
@@ -63,13 +63,13 @@ pub fn resolve_radio_colors_with_stylesheet(
     })
 }
 
-pub fn radio_button_appearance(
+pub fn radio_button_look(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
     selected: bool,
     state: InteractionState,
 ) -> RadioButtonPalette {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();

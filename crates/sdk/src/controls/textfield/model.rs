@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{TextFieldAppearance, TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
+use super::{TextFieldLook, TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
 use super::control::TextFieldControl;
 use crate::controls::command::button::ControlIcon;
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
-pub type TextFieldAppearanceOverride = Arc<dyn Fn(TextFieldAppearance) -> TextFieldAppearance + Send + Sync + 'static>;
+pub type TextFieldLookOverride = Arc<dyn Fn(TextFieldLook) -> TextFieldLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct TextFieldModel {
@@ -22,7 +22,7 @@ pub struct TextFieldModel {
     pub(crate) select_all_on_tab_focus: bool,
     pub(crate) propagate_home_end_to_parent: bool,
     pub(crate) validator: Option<Validator>,
-    pub(crate) appearance_override: Option<TextFieldAppearanceOverride>,
+    pub(crate) look_override: Option<TextFieldLookOverride>,
     pub(crate) template: Arc<dyn TextFieldTemplate>,
 }
 
@@ -38,7 +38,7 @@ pub struct TextFieldRenderModel<'a> {
     pub caret_visible: bool,
     pub horizontal_scroll: f32,
     pub character_offsets: Vec<f32>,
-    pub appearance: TextFieldAppearance,
+    pub look: TextFieldLook,
 }
 
 pub struct TextFieldBuilder {
@@ -60,7 +60,7 @@ impl TextFieldBuilder {
                 select_all_on_tab_focus: false,
                 propagate_home_end_to_parent: false,
                 validator: None,
-                appearance_override: None,
+                look_override: None,
                 template: default_textfield_template(),
             },
         }
@@ -116,11 +116,11 @@ impl TextFieldBuilder {
         self
     }
 
-    pub fn appearance_override<F>(mut self, appearance_override: F) -> Self
+    pub fn look_override<F>(mut self, look_override: F) -> Self
     where
-        F: Fn(TextFieldAppearance) -> TextFieldAppearance + Send + Sync + 'static,
+        F: Fn(TextFieldLook) -> TextFieldLook + Send + Sync + 'static,
     {
-        self.model.appearance_override = Some(Arc::new(appearance_override));
+        self.model.look_override = Some(Arc::new(look_override));
         self
     }
 

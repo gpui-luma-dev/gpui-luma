@@ -439,7 +439,7 @@ fn render_state_sample(
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!("button-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
-    let appearance = appearance_for_style(look.clone(), style);
+    let look = look_for_style(look.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: (),
@@ -453,7 +453,7 @@ fn render_state_sample(
         state: sample.state,
         round: variant.round(),
         radius_override: std::cell::Cell::new(None),
-        appearance: Some(appearance),
+        look: Some(look),
     };
 
     let active_template = if use_uniform_sizing && !matches!(variant, ButtonTemplateVariant::IconButton) {
@@ -472,10 +472,10 @@ fn render_state_sample(
     div().w(px(116.0)).flex().justify_center().items_center().child(rendered).into_any_element()
 }
 
-fn appearance_for_style(
+fn look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> gpui_luma::controls::command::button::ButtonAppearanceSource<()> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<()> {
     Arc::new(move |model| match style {
         ShadcnButtonStyle::Primary => theme.as_ref().resolve_primary_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),

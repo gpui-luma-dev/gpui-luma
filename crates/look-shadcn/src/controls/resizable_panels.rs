@@ -8,10 +8,10 @@
 //! | Grip emphasis | `accent` (layer)   |
 //! | Disabled      | `muted-foreground` |
 
-use gpui_luma::controls::resizable_panels::ResizablePanelsAppearance;
+use gpui_luma::controls::resizable_panels::ResizablePanelsLook;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -62,18 +62,18 @@ pub fn resolve_resizable_panels_colors_with_stylesheet(
     })
 }
 
-pub fn resizable_panels_appearance(
+pub fn resizable_panels_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
-) -> ResizablePanelsAppearance {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+) -> ResizablePanelsLook {
+    let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "resizable_panels");
     let colors = resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| ResizablePanelsColorTable::fallback());
 
-    ResizablePanelsAppearance {
+    ResizablePanelsLook {
         border: colors.border.hsla(),
         divider: colors.divider.hsla(),
         grip: colors.grip.hsla(),
@@ -91,7 +91,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::resizable_panels_appearance;
+    use super::resizable_panels_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -115,8 +115,8 @@ mod tests {
     fn enabled_resizable_panels_use_border_and_accent_grip() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = resizable_panels_appearance(&mode, ThemeMode::Light, Default::default());
-        assert_eq!(appearance.border, catalog.color("border").expect("border"));
-        assert_eq!(appearance.grip_emphasis, catalog.color("accent").expect("accent"));
+        let look = resizable_panels_look(&mode, ThemeMode::Light, Default::default());
+        assert_eq!(look.border, catalog.color("border").expect("border"));
+        assert_eq!(look.grip_emphasis, catalog.color("accent").expect("accent"));
     }
 }

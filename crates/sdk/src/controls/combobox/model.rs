@@ -8,11 +8,11 @@ use super::item_template::{ComboBoxItemRenderModel, ComboBoxItemTemplate, make_c
 use super::panel_template::{ComboBoxPanelTemplate, default_combobox_panel_template};
 use super::template::{ComboBoxItemsTemplate, ComboBoxTemplate, default_combobox_items_template, default_combobox_template};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
-use crate::controls::selector_panel::{SelectorItemsPanelAppearance, default_selector_items_panel_appearance};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 use crate::theme::{ControlSize, ThemeTokens};
 
-pub type ComboBoxPopupAppearanceProvider = Arc<dyn Fn() -> SelectorItemsPanelAppearance + Send + Sync + 'static>;
+pub type ComboBoxPopupLookProvider = Arc<dyn Fn() -> SelectorItemsPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
 pub enum TypingPolicy {
@@ -41,7 +41,7 @@ pub struct ComboBoxModel {
     pub(crate) items_template: Arc<dyn ComboBoxItemsTemplate>,
     pub(crate) panel_template: Arc<dyn ComboBoxPanelTemplate>,
     pub(crate) item_template: Option<ComboBoxItemTemplate<SelectionItem>>,
-    pub(crate) popup_appearance_provider: ComboBoxPopupAppearanceProvider,
+    pub(crate) popup_look_provider: ComboBoxPopupLookProvider,
 }
 
 pub struct ComboBoxBuilder {
@@ -70,8 +70,8 @@ impl ComboBoxBuilder {
                 items_template: default_combobox_items_template(),
                 panel_template: default_combobox_panel_template(),
                 item_template: None,
-                popup_appearance_provider: Arc::new(|| {
-                    default_selector_items_panel_appearance(&ThemeTokens::default(), ControlSize::Md)
+                popup_look_provider: Arc::new(|| {
+                    default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
                 }),
             },
         }
@@ -166,8 +166,8 @@ impl ComboBoxBuilder {
         self
     }
 
-    pub fn popup_appearance_provider(mut self, provider: ComboBoxPopupAppearanceProvider) -> Self {
-        self.model.popup_appearance_provider = provider;
+    pub fn popup_look_provider(mut self, provider: ComboBoxPopupLookProvider) -> Self {
+        self.model.popup_look_provider = provider;
         self
     }
 

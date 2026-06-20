@@ -9,10 +9,10 @@
 //! | Item hover fg | `accent-foreground`                |
 //! | Item disabled | `muted-foreground`               |
 
-use gpui_luma::controls::floating_menu::FloatingMenuAppearance;
+use gpui_luma::controls::floating_menu::FloatingMenuLook;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::elevation::menu_shadow;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -102,12 +102,8 @@ pub fn resolve_ghost_trigger_colors_with_stylesheet(
     Ok(GhostTriggerColorTable { background: colors.background, foreground: colors.foreground })
 }
 
-pub fn floating_menu_appearance(
-    mode: &ShadcnModeTokens,
-    theme_mode: ThemeMode,
-    size: ControlSize,
-) -> FloatingMenuAppearance {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: ControlSize) -> FloatingMenuLook {
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
@@ -115,7 +111,7 @@ pub fn floating_menu_appearance(
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
     let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
 
-    FloatingMenuAppearance {
+    FloatingMenuLook {
         background: colors.background.hsla(),
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
@@ -146,7 +142,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::floating_menu_appearance;
+    use super::floating_menu_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -173,11 +169,11 @@ mod tests {
     fn floating_menu_uses_popover_surface_and_accent_item_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = floating_menu_appearance(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+        let look = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
 
-        assert_eq!(appearance.background, catalog.color("popover").expect("popover"));
-        assert_eq!(appearance.foreground, catalog.color("popover-foreground").expect("popover-foreground"));
-        assert_eq!(appearance.item_hover_background, catalog.color("accent").expect("accent"));
-        assert_eq!(appearance.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+        assert_eq!(look.background, catalog.color("popover").expect("popover"));
+        assert_eq!(look.foreground, catalog.color("popover-foreground").expect("popover-foreground"));
+        assert_eq!(look.item_hover_background, catalog.color("accent").expect("accent"));
+        assert_eq!(look.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
     }
 }

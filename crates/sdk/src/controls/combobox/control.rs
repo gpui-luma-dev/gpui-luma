@@ -486,8 +486,8 @@ impl ComboBoxControl {
 impl Render for ComboBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_appearance = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let appearance = (self.model.popup_appearance_provider)();
+        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
+        let look = (self.model.popup_look_provider)();
         let selected_label = self
             .behavior
             .state
@@ -497,7 +497,7 @@ impl Render for ComboBoxControl {
 
         let minimum_trigger_width = {
             let textfield_theme = crate::controls::textfield::default_textfield_theme();
-            let textfield_appearance = textfield_theme.resolve_appearance(
+            let textfield_look = textfield_theme.resolve_look(
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
@@ -508,24 +508,24 @@ impl Render for ComboBoxControl {
                 ),
             );
             let mut text_font = font(".SystemUIFont");
-            text_font.weight = textfield_appearance.typography.weight;
+            text_font.weight = textfield_look.typography.weight;
             let placeholder_run = TextRun {
                 len: self.model.placeholder.len(),
                 font: text_font,
-                color: autocomplete_appearance.muted_text_color,
+                color: autocomplete_look.muted_text_color,
                 background_color: None,
                 underline: None,
                 strikethrough: None,
             };
             let placeholder_line = window.text_system().shape_line(
                 self.model.placeholder.clone(),
-                px(textfield_appearance.typography.size),
+                px(textfield_look.typography.size),
                 &[placeholder_run],
                 None,
             );
             let placeholder_width = placeholder_line.width().as_f32();
 
-            let textfield_side_padding = (textfield_appearance.padding_x * 2.0) + textfield_appearance.border_width;
+            let textfield_side_padding = (textfield_look.padding_x * 2.0) + textfield_look.border_width;
             let prefix_width = if self.model.show_down_arrow { 18.0 + 10.0 } else { 0.0 };
             let clear_width = if self.model.show_clear_button { 18.0 + 10.0 } else { 0.0 };
             let spacing = 8.0;
@@ -561,13 +561,13 @@ impl Render for ComboBoxControl {
 
         let popup_content = if self.model.enabled && self.behavior.state.open && !visible_indices.is_empty() {
             let menu_id = SharedString::from("combobox-menu");
-            let row_height = px(appearance.item_height);
-            let content_top_padding = px(appearance.padding);
+            let row_height = px(look.item_height);
+            let content_top_padding = px(look.padding);
             let item_count = visible_indices.len();
             let min_visible_rows = self.model.min_visible_rows.max(1);
             let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
             let visible_rows = item_count.clamp(min_visible_rows, max_visible_rows) as f32;
-            let viewport_height = px((appearance.padding * 2.0) + (appearance.item_height * visible_rows));
+            let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
             let allow_scrolling = self.model.scrolling && item_count > max_visible_rows;
 
             self.popup_surface.set_scrolling_enabled(allow_scrolling);
@@ -585,7 +585,7 @@ impl Render for ComboBoxControl {
                     open: self.behavior.state.open,
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
-                    appearance: appearance.clone(),
+                    look: look.clone(),
                 },
                 ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,
@@ -602,7 +602,7 @@ impl Render for ComboBoxControl {
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
-                    popup_appearance: appearance.clone(),
+                    popup_look: look.clone(),
                     list_content: self.popup_surface.render(list_content.into_any_element()),
                 },
                 cx,
@@ -631,10 +631,10 @@ impl Render for ComboBoxControl {
             minimum_trigger_width,
             status_label,
             status_detail,
-            status_color: autocomplete_appearance.status_color,
-            muted_text_color: autocomplete_appearance.muted_text_color,
+            status_color: autocomplete_look.status_color,
+            muted_text_color: autocomplete_look.muted_text_color,
             popup_bounds: self.trigger_bounds,
-            popup_appearance: appearance,
+            popup_look: look,
             popup_content,
         };
 

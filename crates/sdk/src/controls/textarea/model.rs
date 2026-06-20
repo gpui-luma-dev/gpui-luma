@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::{TextArea, TextAreaAppearance, TextAreaState, TextAreaTemplate, default_textarea_template};
+use super::{TextArea, TextAreaLook, TextAreaState, TextAreaTemplate, default_textarea_template};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 
 pub type Validator = Arc<dyn Fn(&str) -> bool + Send + Sync>;
-pub type TextAreaAppearanceOverride = Arc<dyn Fn(TextAreaAppearance) -> TextAreaAppearance + Send + Sync + 'static>;
+pub type TextAreaLookOverride = Arc<dyn Fn(TextAreaLook) -> TextAreaLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct TextAreaModel {
@@ -19,7 +19,7 @@ pub struct TextAreaModel {
     pub(crate) clean_on_escape: bool,
     pub(crate) select_all_on_tab_focus: bool,
     pub(crate) validator: Option<Validator>,
-    pub(crate) appearance_override: Option<TextAreaAppearanceOverride>,
+    pub(crate) look_override: Option<TextAreaLookOverride>,
     pub(crate) template: Arc<dyn TextAreaTemplate>,
     pub(crate) theme: Arc<dyn TextAreaTheme>,
 }
@@ -64,7 +64,7 @@ impl TextAreaBuilder {
                 clean_on_escape: false,
                 select_all_on_tab_focus: false,
                 validator: None,
-                appearance_override: None,
+                look_override: None,
                 template: default_textarea_template(),
                 theme: default_textarea_theme(),
             },
@@ -111,11 +111,11 @@ impl TextAreaBuilder {
         self
     }
 
-    pub fn appearance_override<F>(mut self, appearance_override: F) -> Self
+    pub fn look_override<F>(mut self, look_override: F) -> Self
     where
-        F: Fn(TextAreaAppearance) -> TextAreaAppearance + Send + Sync + 'static,
+        F: Fn(TextAreaLook) -> TextAreaLook + Send + Sync + 'static,
     {
-        self.model.appearance_override = Some(Arc::new(appearance_override));
+        self.model.look_override = Some(Arc::new(look_override));
         self
     }
 

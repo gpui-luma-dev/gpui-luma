@@ -11,7 +11,7 @@
 use gpui_luma::controls::tree_view::TreeViewPalette;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -63,7 +63,7 @@ pub fn resolve_tree_view_row_colors_with_stylesheet(
 }
 
 pub fn tree_view_row_palette(mode: &ShadcnModeTokens, _selected: bool, state: InteractionState) -> TreeViewPalette {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row");
     let colors = resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())

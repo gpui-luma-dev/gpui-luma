@@ -92,7 +92,7 @@ impl<D: Clone + 'static> Button<D> {
             state: self.command.render_state(self.model.enabled, window),
             round: self.model.round,
             radius_override: std::cell::Cell::new(None),
-            appearance: self.model.appearance.clone(),
+            look: self.model.look.clone(),
         }
     }
 

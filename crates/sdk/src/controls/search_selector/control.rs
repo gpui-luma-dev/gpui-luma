@@ -15,7 +15,7 @@ use crate::theme::observe_theme_revision;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::item_template::SearchSelectorItemTemplate;
-use super::model::{SearchSelectorBuilder, SearchSelectorPopupAppearanceProvider};
+use super::model::{SearchSelectorBuilder, SearchSelectorPopupLookProvider};
 use super::panel_template::{SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate};
 use super::template::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
@@ -68,7 +68,7 @@ impl SearchSelectorControl {
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
-            .appearance_override(|mut appearance| {
+            .look_override(|mut appearance| {
                 appearance.padding_y = (appearance.padding_y - 3.0).max(0.0);
                 appearance.focus_ring = None;
                 appearance.background = gpui::hsla(0.0, 0.0, 0.0, 0.0);
@@ -455,11 +455,7 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
-    pub fn set_popup_appearance_provider(
-        &mut self,
-        provider: SearchSelectorPopupAppearanceProvider,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn set_popup_appearance_provider(&mut self, provider: SearchSelectorPopupLookProvider, cx: &mut Context<Self>) {
         self.model.popup_appearance_provider = provider;
         cx.notify();
     }
@@ -540,7 +536,7 @@ impl Render for SearchSelectorControl {
 
         let minimum_trigger_width = {
             let textfield_theme = crate::controls::textfield::default_textfield_theme();
-            let textfield_appearance = textfield_theme.resolve_appearance(
+            let textfield_appearance = textfield_theme.resolve_look(
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
@@ -643,7 +639,7 @@ impl Render for SearchSelectorControl {
                             open: self.behavior.state.open,
                             enabled: self.model.enabled,
                             item_template: self.model.item_template.as_ref(),
-                            appearance: appearance.clone(),
+                            look: appearance.clone(),
                         },
                         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
                         cx,
@@ -662,7 +658,7 @@ impl Render for SearchSelectorControl {
                     enabled: self.model.enabled,
                     item_template: self.model.item_template.as_ref(),
                     popup_bounds: self.trigger_bounds,
-                    popup_appearance: appearance.clone(),
+                    popup_look: appearance.clone(),
                     search_content: Some(self.popup_search_textfield.clone().into_any_element()),
                     list_content: self.popup_surface.render(list_content),
                 },

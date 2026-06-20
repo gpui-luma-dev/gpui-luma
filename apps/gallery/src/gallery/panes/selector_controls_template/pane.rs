@@ -324,7 +324,7 @@ fn render_autocomplete_trigger(
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
     let status_theme = preview.look.autocomplete_textbox_theme().resolve();
-    let popup_appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
+    let popup_look = preview.look.selector_items_panel_look(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
         textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
@@ -335,7 +335,7 @@ fn render_autocomplete_trigger(
         status_color: status_theme.status_color,
         muted_text_color: status_theme.muted_text_color,
         popup_bounds: None,
-        popup_appearance,
+        popup_look,
         popup_content: None,
     };
 
@@ -360,7 +360,7 @@ fn render_combobox_trigger(
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
     let status_theme = preview.look.autocomplete_textbox_theme().resolve();
-    let popup_appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
+    let popup_look = preview.look.selector_items_panel_look(ControlSize::Md);
 
     let popup_bounds = (state.id == "pressed")
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
@@ -377,7 +377,7 @@ fn render_combobox_trigger(
         status_color: status_theme.status_color,
         muted_text_color: status_theme.muted_text_color,
         popup_bounds,
-        popup_appearance,
+        popup_look,
         popup_content: None,
     };
 
@@ -405,7 +405,7 @@ fn render_preview_textfield(
         window,
     );
 
-    let appearance = preview_textfield_appearance(
+    let look = preview_textfield_look(
         &preview.textfield_theme,
         TextFieldVariant::Standard,
         state.textfield_state,
@@ -424,7 +424,7 @@ fn render_preview_textfield(
         caret_visible: false,
         horizontal_scroll: 0.0,
         character_offsets,
-        appearance,
+        look,
     };
 
     preview
@@ -506,7 +506,7 @@ fn render_popup_preview(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let appearance = preview.look.selector_items_panel_appearance(ControlSize::Md);
+    let look = preview.look.selector_items_panel_look(ControlSize::Md);
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = popup_items_for_control(control);
     let item_hovers = (0..items.len()).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect::<Vec<_>>();
@@ -519,7 +519,7 @@ fn render_popup_preview(
                 &AutocompleteItemsRenderModel {
                     id: &popup_id,
                     items: &items,
-                    appearance: appearance.clone(),
+                    look: look.clone(),
                     highlighted_index: Some(0),
                 },
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
@@ -528,7 +528,7 @@ fn render_popup_preview(
         SelectorTemplateControl::ComboBox => render_combobox_popup_preview_from_templates(
             &popup_id,
             &items,
-            appearance.clone(),
+            look.clone(),
             &preview.combobox_items_template,
             &preview.combobox_panel_template,
             item_hovers,
@@ -548,7 +548,7 @@ fn render_popup_preview(
                     enabled: true,
                     focus: ControlFocusState { focused: true, focus_visible: true },
                     item_template: None,
-                    appearance: appearance.clone(),
+                    look: look.clone(),
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,
@@ -568,7 +568,7 @@ fn render_popup_preview(
             );
 
             let search_state = TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() };
-            let search_appearance = preview_textfield_appearance(
+            let search_look = preview_textfield_look(
                 &preview.textfield_theme,
                 TextFieldVariant::Standard,
                 search_state,
@@ -587,7 +587,7 @@ fn render_popup_preview(
                 caret_visible: false,
                 horizontal_scroll: 0.0,
                 character_offsets: search_offsets,
-                appearance: search_appearance,
+                look: search_look,
             };
 
             let search_content = preview
@@ -598,7 +598,7 @@ fn render_popup_preview(
             render_search_selector_popup_preview_from_templates(
                 &popup_id,
                 &items,
-                appearance.clone(),
+                look.clone(),
                 &preview.search_selector_items_template,
                 &preview.search_selector_panel_template,
                 search_content,
@@ -685,21 +685,21 @@ fn textfield_character_offsets(
     enabled: bool,
     window: &mut Window,
 ) -> Vec<f32> {
-    let appearance = preview_textfield_appearance(&theme, variant, state, enabled, window);
+    let look = preview_textfield_look(&theme, variant, state, enabled, window);
     let value_shared = SharedString::from(value.to_string());
     let run = TextRun {
         len: value_shared.len(),
         font: {
             let mut font = font(".SystemUIFont");
-            font.weight = appearance.typography.weight;
+            font.weight = look.typography.weight;
             font
         },
-        color: appearance.foreground,
+        color: look.foreground,
         background_color: None,
         underline: None,
         strikethrough: None,
     };
-    let line = window.text_system().shape_line(value_shared, px(appearance.typography.size), &[run], None);
+    let line = window.text_system().shape_line(value_shared, px(look.typography.size), &[run], None);
     let chars = value.chars().count();
 
     let mut offsets = Vec::with_capacity(chars + 1);
@@ -731,15 +731,15 @@ fn textfield_preview_handlers() -> TextFieldTemplateHandlers {
     }
 }
 
-fn preview_textfield_appearance(
+fn preview_textfield_look(
     theme: &Arc<dyn TextFieldTheme>,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
     window: &Window,
-) -> gpui_luma::controls::textfield::TextFieldAppearance {
+) -> gpui_luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_appearance(variant, state, enabled, &scale)
+    theme.resolve_look(variant, state, enabled, &scale)
 }
 
 fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}

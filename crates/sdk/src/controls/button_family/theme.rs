@@ -29,7 +29,7 @@ pub struct ButtonFamilyPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct ButtonFamilyAppearance {
+pub struct ButtonFamilyLook {
     pub background: Hsla,
     pub foreground: Hsla,
     /// Explicit border color from the theme. `None` means borderless.
@@ -118,7 +118,7 @@ pub fn button_family_effective_border(border: Option<Hsla>) -> Hsla {
     border.unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.0, 0.0))
 }
 
-/// Builds a focus-ring adorner from resolved appearance colors and scaffold metrics.
+/// Builds a focus-ring adorner from resolved look colors and scaffold metrics.
 ///
 /// Borderless controls (`border.a == 0`) use an inset ring flush with the edge; bordered
 /// controls use an oversize ring outside the border box.
@@ -148,13 +148,13 @@ pub fn button_family_focus_adorner(
     }))
 }
 
-pub fn compose_button_family_appearance(
+pub fn compose_button_family_look(
     palette: &ButtonFamilyPalette,
     role: ButtonFamilyRole,
     scale: &StandardBoxScale,
     pill_radius: f32,
-) -> ButtonFamilyAppearance {
-    ButtonFamilyAppearance {
+) -> ButtonFamilyLook {
+    ButtonFamilyLook {
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

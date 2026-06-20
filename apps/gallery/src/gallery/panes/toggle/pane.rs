@@ -428,7 +428,7 @@ fn render_state_sample(
 ) -> AnyElement {
     let selected = variant.selected();
     let id = SharedString::from(format!("toggle-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
-    let appearance = appearance_for_style(look.clone(), style);
+    let look = look_for_style(look.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: selected,
@@ -438,7 +438,7 @@ fn render_state_sample(
         state: sample.state,
         round: variant.round(),
         radius_override: std::cell::Cell::new(None),
-        appearance: Some(appearance),
+        look: Some(look),
     };
 
     div()
@@ -450,10 +450,10 @@ fn render_state_sample(
         .into_any_element()
 }
 
-fn appearance_for_style(
+fn look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-) -> gpui_luma::controls::command::button::ButtonAppearanceSource<bool> {
+) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
     Arc::new(move |model| {
         let role = ButtonFamilyRole::Toggle { selected: model.data };
         match style {

@@ -34,24 +34,19 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
 ];
 
 const BUTTON_PARTS: &[ThemePartUsage] = &[
-    part("primary background", "primary", &["prominent default"], &["ButtonFamilyAppearance.background"]),
-    part(
-        "primary foreground",
-        "primary-foreground",
-        &["prominent default"],
-        &["ButtonFamilyAppearance.foreground"],
-    ),
-    part("secondary background", "secondary", &["standard default"], &["ButtonFamilyAppearance.background"]),
+    part("primary background", "primary", &["prominent default"], &["ButtonFamilyLook.background"]),
+    part("primary foreground", "primary-foreground", &["prominent default"], &["ButtonFamilyLook.foreground"]),
+    part("secondary background", "secondary", &["standard default"], &["ButtonFamilyLook.background"]),
     part(
         "secondary foreground",
         "secondary-foreground",
         &["standard default"],
-        &["ButtonFamilyAppearance.foreground"],
+        &["ButtonFamilyLook.foreground"],
     ),
-    part("outline border", "border", &["subtle default"], &["ButtonFamilyAppearance.border"]),
-    part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyAppearance.background"]),
-    part("disabled", "muted", &["disabled"], &["ButtonFamilyAppearance.background"]),
-    part("focus ring", "ring", &["focused"], &["ButtonFamilyAppearance.focus_ring"]),
+    part("outline border", "border", &["subtle default"], &["ButtonFamilyLook.border"]),
+    part("ghost hover", "accent", &["ghost hovered"], &["ButtonFamilyLook.background"]),
+    part("disabled", "muted", &["disabled"], &["ButtonFamilyLook.background"]),
+    part("focus ring", "ring", &["focused"], &["ButtonFamilyLook.focus_ring"]),
 ];
 
 const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
@@ -98,17 +93,17 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Slider",
         parts: &[
-            part("track", "border", &["default"], &["SliderAppearance.track_background"]),
-            part("fill", "primary", &["default"], &["SliderAppearance.fill_background"]),
-            part("thumb border", "primary", &["default"], &["SliderAppearance.thumb_border"]),
-            part("focus ring", "ring", &["focused"], &["SliderAppearance.focus_ring"]),
+            part("track", "border", &["default"], &["SliderLook.track_background"]),
+            part("fill", "primary", &["default"], &["SliderLook.fill_background"]),
+            part("thumb border", "primary", &["default"], &["SliderLook.thumb_border"]),
+            part("focus ring", "ring", &["focused"], &["SliderLook.focus_ring"]),
         ],
     },
     &ThemeUsage {
         label: "Scrollbar",
         parts: &[
-            part("track", "background", &["default"], &["ScrollbarAppearance.track_color"]),
-            part("thumb", "border", &["default", "hovered"], &["ScrollbarAppearance.thumb_color"]),
+            part("track", "background", &["default"], &["ScrollbarLook.track_color"]),
+            part("thumb", "border", &["default", "hovered"], &["ScrollbarLook.thumb_color"]),
         ],
     },
     &ThemeUsage { label: "TextField", parts: TEXTFIELD_PARTS },
@@ -116,53 +111,48 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "ComboBox",
         parts: &[
-            part("textbox", "background", &["default"], &["TextFieldAppearance.background"]),
-            part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
-            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelAppearance.item_hover_background"]),
+            part("textbox", "background", &["default"], &["TextFieldLook.background"]),
+            part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
+            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelLook.item_hover_background"]),
             part(
                 "item hover fg",
                 "accent-foreground",
                 &["hovered"],
-                &["SelectorItemsPanelAppearance.item_hover_foreground"],
+                &["SelectorItemsPanelLook.item_hover_foreground"],
             ),
         ],
     },
     &ThemeUsage {
         label: "AutocompleteTextField",
         parts: &[
-            part("textbox background", "background", &["default"], &["AutocompleteTextBoxAppearance.background"]),
-            part("textbox border", "input", &["default"], &["AutocompleteTextBoxAppearance.border"]),
-            part("panel surface", "popover", &["open"], &["FloatingMenuAppearance.background"]),
+            part("textbox background", "background", &["default"], &["AutocompleteTextBoxLook.background"]),
+            part("textbox border", "input", &["default"], &["AutocompleteTextBoxLook.border"]),
+            part("panel surface", "popover", &["open"], &["FloatingMenuLook.background"]),
         ],
     },
     &ThemeUsage {
         label: "SearchSelector",
         parts: &[
-            part("textbox", "background", &["default"], &["TextFieldAppearance.background"]),
-            part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
+            part("textbox", "background", &["default"], &["TextFieldLook.background"]),
+            part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
         ],
     },
     &ThemeUsage {
         label: "Floating Menu",
         parts: &[
-            part("surface", "popover", &["default"], &["FloatingMenuAppearance.background"]),
-            part("foreground", "popover-foreground", &["default"], &["FloatingMenuAppearance.foreground"]),
-            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
-            part(
-                "item hover fg",
-                "accent-foreground",
-                &["hovered"],
-                &["FloatingMenuAppearance.item_hover_foreground"],
-            ),
-            part("border", "border", &["default"], &["FloatingMenuAppearance.border"]),
+            part("surface", "popover", &["default"], &["FloatingMenuLook.background"]),
+            part("foreground", "popover-foreground", &["default"], &["FloatingMenuLook.foreground"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuLook.item_hover_background"]),
+            part("item hover fg", "accent-foreground", &["hovered"], &["FloatingMenuLook.item_hover_foreground"]),
+            part("border", "border", &["default"], &["FloatingMenuLook.border"]),
         ],
     },
     &ThemeUsage {
         label: "Popup Menu",
         parts: &[
             part("trigger hover fg", "accent-foreground", &["hovered"], &["PopupMenuPalette.trigger_foreground"]),
-            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
-            part("menu surface", "popover", &["open"], &["FloatingMenuAppearance.background"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuLook.item_hover_background"]),
+            part("menu surface", "popover", &["open"], &["FloatingMenuLook.background"]),
         ],
     },
     &ThemeUsage {
@@ -171,15 +161,15 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
             part("trigger background", "background", &["default"], &["SelectorPalette.trigger_background"]),
             part("trigger hover fg", "accent-foreground", &["hovered"], &["SelectorPalette.trigger_foreground"]),
             part("trigger border", "input", &["default"], &["SelectorPalette.trigger_border"]),
-            part("panel surface", "popover", &["open"], &["SelectorItemsPanelAppearance.background"]),
-            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelAppearance.item_hover_background"]),
+            part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
+            part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelLook.item_hover_background"]),
         ],
     },
     &ThemeUsage {
         label: "Context Menu",
         parts: &[
-            part("target hover fg", "accent-foreground", &["hovered"], &["ContextMenuAppearance.target_foreground"]),
-            part("item hover bg", "accent", &["hovered"], &["FloatingMenuAppearance.item_hover_background"]),
+            part("target hover fg", "accent-foreground", &["hovered"], &["ContextMenuLook.target_foreground"]),
+            part("item hover bg", "accent", &["hovered"], &["FloatingMenuLook.item_hover_background"]),
         ],
     },
     &ThemeUsage {
@@ -196,20 +186,20 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Tabs Navigation",
         parts: &[
-            part("inactive label", "foreground", &["inactive"], &["TabsNavigationItemAppearance.foreground"]),
-            part("active label", "primary", &["active"], &["TabsNavigationItemAppearance.foreground"]),
-            part("focus ring", "ring", &["focused"], &["TabsNavigationItemAppearance.adorner"]),
+            part("inactive label", "foreground", &["inactive"], &["TabsNavigationItemLook.foreground"]),
+            part("active label", "primary", &["active"], &["TabsNavigationItemLook.foreground"]),
+            part("focus ring", "ring", &["focused"], &["TabsNavigationItemLook.adorner"]),
         ],
     },
     &ThemeUsage {
         label: "Navigation Sidebar",
         parts: &[
-            part("surface", "sidebar", &["default"], &["NavigationSidebarContainerAppearance.background"]),
-            part("foreground", "sidebar-foreground", &["default"], &["NavigationSidebarItemAppearance.foreground"]),
-            part("active", "sidebar-primary", &["selected"], &["NavigationSidebarItemAppearance.foreground"]),
-            part("hover bg", "accent", &["hovered"], &["NavigationSidebarItemAppearance.background"]),
-            part("hover fg", "accent-foreground", &["hovered"], &["NavigationSidebarItemAppearance.foreground"]),
-            part("border", "sidebar-border", &["default"], &["NavigationSidebarContainerAppearance.border"]),
+            part("surface", "sidebar", &["default"], &["NavigationSidebarContainerLook.background"]),
+            part("foreground", "sidebar-foreground", &["default"], &["NavigationSidebarItemLook.foreground"]),
+            part("active", "sidebar-primary", &["selected"], &["NavigationSidebarItemLook.foreground"]),
+            part("hover bg", "accent", &["hovered"], &["NavigationSidebarItemLook.background"]),
+            part("hover fg", "accent-foreground", &["hovered"], &["NavigationSidebarItemLook.foreground"]),
+            part("border", "sidebar-border", &["default"], &["NavigationSidebarContainerLook.border"]),
         ],
     },
     &ThemeUsage {
@@ -226,26 +216,26 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Control Group",
         parts: &[
-            part("list background", "muted", &["enabled"], &["ControlGroupListAppearance.background"]),
-            part("list border", "border", &["enabled"], &["ControlGroupListAppearance.border"]),
+            part("list background", "muted", &["enabled"], &["ControlGroupListLook.background"]),
+            part("list border", "border", &["enabled"], &["ControlGroupListLook.border"]),
         ],
     },
     &ThemeUsage {
         label: "ListBox",
         parts: &[
-            part("list background", "background", &["enabled"], &["ListBoxListAppearance.background"]),
-            part("list border", "input", &["enabled"], &["ListBoxListAppearance.border"]),
+            part("list background", "background", &["enabled"], &["ListBoxListLook.background"]),
+            part("list border", "input", &["enabled"], &["ListBoxListLook.border"]),
             part("row hover", "accent", &["hovered"], &["ListBoxRowPalette.background"]),
-            part("focus ring", "ring", &["focused"], &["ListBoxListAppearance.adorner"]),
+            part("focus ring", "ring", &["focused"], &["ListBoxListLook.adorner"]),
         ],
     },
     &ThemeUsage {
         label: "ListView",
         parts: &[
-            part("list background", "background", &["enabled"], &["ListViewAppearance.background"]),
-            part("list border", "input", &["enabled"], &["ListViewAppearance.border"]),
-            part("header background", "muted", &["enabled"], &["ListViewAppearance.header_background"]),
-            part("header label", "muted-foreground", &["enabled"], &["ListViewAppearance.header_label_color"]),
+            part("list background", "background", &["enabled"], &["ListViewLook.background"]),
+            part("list border", "input", &["enabled"], &["ListViewLook.border"]),
+            part("header background", "muted", &["enabled"], &["ListViewLook.header_background"]),
+            part("header label", "muted-foreground", &["enabled"], &["ListViewLook.header_label_color"]),
             part("row hover", "accent", &["hovered"], &["ListViewRowPalette.background"]),
             part("row active", "muted", &["focused"], &["ListViewRowPalette.background"]),
             part("row divider", "border", &["enabled"], &["ListViewRowPalette.divider"]),
@@ -256,39 +246,39 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "ResizablePanels",
         parts: &[
-            part("panel border", "border", &["enabled"], &["ResizablePanelsAppearance.border"]),
-            part("divider line", "border", &["enabled"], &["ResizablePanelsAppearance.divider"]),
-            part("handle grip", "border", &["enabled"], &["ResizablePanelsAppearance.grip"]),
-            part("grip emphasis", "accent", &["enabled"], &["ResizablePanelsAppearance.grip_emphasis"]),
-            part("disabled divider", "muted-foreground", &["disabled"], &["ResizablePanelsAppearance.divider"]),
+            part("panel border", "border", &["enabled"], &["ResizablePanelsLook.border"]),
+            part("divider line", "border", &["enabled"], &["ResizablePanelsLook.divider"]),
+            part("handle grip", "border", &["enabled"], &["ResizablePanelsLook.grip"]),
+            part("grip emphasis", "accent", &["enabled"], &["ResizablePanelsLook.grip_emphasis"]),
+            part("disabled divider", "muted-foreground", &["disabled"], &["ResizablePanelsLook.divider"]),
         ],
     },
     &ThemeUsage {
         label: "SplitView",
         parts: &[
-            part("separator", "border", &["default"], &["SplitViewAppearance.separator"]),
-            part("separator hover", "border", &["hovered"], &["SplitViewAppearance.separator_hover"]),
+            part("separator", "border", &["default"], &["SplitViewLook.separator"]),
+            part("separator hover", "border", &["hovered"], &["SplitViewLook.separator_hover"]),
             part(
                 "disabled separator",
                 "muted-foreground",
                 &["disabled"],
-                &["SplitViewAppearance.separator", "SplitViewAppearance.separator_hover"],
+                &["SplitViewLook.separator", "SplitViewLook.separator_hover"],
             ),
         ],
     },
     &ThemeUsage {
         label: "Progress",
         parts: &[
-            part("track", "muted", &["enabled"], &["ProgressAppearance.track_color"]),
-            part("fill", "primary", &["enabled"], &["ProgressAppearance.progress_color"]),
+            part("track", "muted", &["enabled"], &["ProgressLook.track_color"]),
+            part("fill", "primary", &["enabled"], &["ProgressLook.progress_color"]),
         ],
     },
     &ThemeUsage {
         label: "Selection Panel",
         parts: &[
-            part("surface", "popover", &["default"], &["SelectionPanelAppearance.background"]),
-            part("border", "border", &["default"], &["SelectionPanelAppearance.border"]),
-            part("item hover", "accent", &["hovered"], &["SelectionPanelAppearance.item_hover_background"]),
+            part("surface", "popover", &["default"], &["SelectionPanelLook.background"]),
+            part("border", "border", &["default"], &["SelectionPanelLook.border"]),
+            part("item hover", "accent", &["hovered"], &["SelectionPanelLook.item_hover_background"]),
         ],
     },
 ];
@@ -297,9 +287,9 @@ const fn part(
     part: &'static str,
     token: &'static str,
     states: &'static [&'static str],
-    appearance_fields: &'static [&'static str],
+    look_fields: &'static [&'static str],
 ) -> ThemePartUsage {
-    ThemePartUsage { part, token, states, appearance_fields }
+    ThemePartUsage { part, token, states, look_fields }
 }
 
 #[cfg(test)]

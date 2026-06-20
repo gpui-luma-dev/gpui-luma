@@ -1,7 +1,7 @@
 //! Inspect metadata for `split_view`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 pub struct SplitViewInspectPalette {
     pub separator: ResolvedColor,
@@ -34,7 +34,7 @@ pub fn inspect_split_view_color_palette(
     theme_mode: ThemeMode,
     enabled: bool,
 ) -> SplitViewInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "split_view_inspect");
     let colors = gpui_luma_look_shadcn::tables::resolve_split_view_colors(&resolver, enabled)
         .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::SplitViewColorTable::fallback());

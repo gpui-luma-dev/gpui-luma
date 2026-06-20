@@ -1,6 +1,6 @@
 mod action;
-mod appearance_context;
 mod built_in;
+mod look_context;
 pub mod catalog;
 mod color;
 mod context;
@@ -31,15 +31,13 @@ pub use look::ShadcnLook;
 pub use mode::ShadcnModeTokens;
 pub use palette::{ShadcnActionRole, ShadcnPalette};
 pub use tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
-pub use appearance_context::AppearanceContext;
+pub use look_context::LookContext;
 pub use built_in::{BuiltInTheme, built_in_theme, built_in_themes};
 pub use stylesheet::{
     ColorRuleMetadataSection, StylesheetConfig, all_color_rule_metadata, embedded_color_rule_metadata,
     embedded_stylesheet,
 };
-pub use elements::{
-    Badge, BadgeAppearance, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_appearance, resolve_badge_colors,
-};
+pub use elements::{Badge, BadgeLook, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_look, resolve_badge_colors};
 pub use controls::{
     ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,
     ShadcnTextFieldExt, ShadcnTextFieldStyle,

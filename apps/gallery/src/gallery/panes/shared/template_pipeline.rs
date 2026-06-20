@@ -14,14 +14,13 @@ use gpui_luma::controls::search_selector::{
     SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SelectionItem as SearchSelectorSelectionItem,
 };
 use gpui_luma::controls::selector_panel::{
-    SelectorItem as SelectorPanelItem, SelectorItemsPanelAppearance, SelectorPanelClickHandler,
-    SelectorPanelHoverHandler,
+    SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler,
 };
 
 pub(in crate::gallery) fn render_combobox_popup_preview_from_templates(
     popup_id: &SharedString,
     items: &[SelectorPanelItem],
-    appearance: SelectorItemsPanelAppearance,
+    look: SelectorItemsPanelLook,
     items_template: &Arc<dyn ComboBoxItemsTemplate>,
     panel_template: &Arc<dyn ComboBoxPanelTemplate>,
     item_hovers: Vec<SelectorPanelHoverHandler>,
@@ -48,7 +47,7 @@ pub(in crate::gallery) fn render_combobox_popup_preview_from_templates(
             open: true,
             enabled: true,
             item_template: None,
-            appearance: appearance.clone(),
+            look: look.clone(),
         },
         ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
         cx,
@@ -65,7 +64,7 @@ pub(in crate::gallery) fn render_combobox_popup_preview_from_templates(
             enabled: true,
             item_template: None,
             popup_bounds: None,
-            popup_appearance: appearance,
+            popup_look: look,
             list_content: list.into_any_element(),
         },
         cx,
@@ -75,7 +74,7 @@ pub(in crate::gallery) fn render_combobox_popup_preview_from_templates(
 pub(in crate::gallery) fn render_search_selector_popup_preview_from_templates(
     popup_id: &SharedString,
     items: &[SelectorPanelItem],
-    appearance: SelectorItemsPanelAppearance,
+    look: SelectorItemsPanelLook,
     items_template: &Arc<dyn SearchSelectorItemsTemplate>,
     panel_template: &Arc<dyn SearchSelectorPanelTemplate>,
     search_content: AnyElement,
@@ -104,7 +103,7 @@ pub(in crate::gallery) fn render_search_selector_popup_preview_from_templates(
                 open: true,
                 enabled: true,
                 item_template: None,
-                appearance: appearance.clone(),
+                look: look.clone(),
             },
             SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
             cx,
@@ -122,7 +121,7 @@ pub(in crate::gallery) fn render_search_selector_popup_preview_from_templates(
             enabled: true,
             item_template: None,
             popup_bounds: None,
-            popup_appearance: appearance,
+            popup_look: look,
             search_content: Some(search_content),
             list_content: rows,
         },

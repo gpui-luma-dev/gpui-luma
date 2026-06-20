@@ -716,7 +716,7 @@ fn render_button_state_sample(
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(None),
-        appearance: None,
+        look: None,
     };
 
     vstack! {

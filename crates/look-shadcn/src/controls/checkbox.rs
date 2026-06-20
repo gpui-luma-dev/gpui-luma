@@ -9,7 +9,7 @@
 use gpui_luma::controls::checkbox::CheckboxPalette;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
@@ -60,13 +60,13 @@ pub fn resolve_checkbox_colors_with_stylesheet(
     })
 }
 
-pub fn checkbox_appearance(
+pub fn checkbox_look(
     mode: &ShadcnModeTokens,
     style: ShadcnButtonStyle,
     checked: bool,
     state: InteractionState,
 ) -> CheckboxPalette {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();

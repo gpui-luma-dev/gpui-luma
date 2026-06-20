@@ -6,8 +6,8 @@ use gpui::{
 };
 use gpui_luma::controls::context_menu::{ContextMenuRenderModel, ContextMenuTemplate, ContextMenuTemplateHandlers};
 use gpui_luma::controls::menu_item::{MenuItem, MenuItemIcon};
-use gpui_luma::controls::context_menu::{ContextMenuAppearance, ContextMenuTheme};
-use gpui_luma::controls::floating_menu::FloatingMenuAppearance;
+use gpui_luma::controls::context_menu::{ContextMenuLook, ContextMenuTheme};
+use gpui_luma::controls::floating_menu::FloatingMenuLook;
 use lucide_icons::Icon as LucideIcon;
 
 const RADIAL_ITEM_COUNT: usize = 5;
@@ -51,8 +51,8 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
             item_hovers,
             item_clicks,
         } = handlers;
-        let appearance = self.theme.resolve(model.state);
-        let mut target = render_target(model, &appearance, target_aux_click);
+        let look = self.theme.resolve(model.state);
+        let mut target = render_target(model, &look, target_aux_click);
 
         if !model.enabled {
             target = target.opacity(0.56);
@@ -70,7 +70,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
             .child(target);
 
         if let Some(position) = model.menu_position {
-            let radial_menu = render_radial_menu(model, appearance.floating_menu, item_hovers, item_clicks);
+            let radial_menu = render_radial_menu(model, look.floating_menu, item_hovers, item_clicks);
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
                 .anchor(Corner::TopLeft)
@@ -87,7 +87,7 @@ impl ContextMenuTemplate for GalleryRadialContextMenuTemplate {
 
 fn render_target(
     model: &ContextMenuRenderModel<'_>,
-    appearance: &ContextMenuAppearance,
+    look: &ContextMenuLook,
     target_aux_click: ContextMenuClickHandler,
 ) -> Stateful<Div> {
     div()
@@ -99,14 +99,14 @@ fn render_target(
         .items_center()
         .justify_center()
         .gap_2()
-        .text_color(appearance.target_foreground)
+        .text_color(look.target_foreground)
         .on_aux_click(target_aux_click)
         .child(model.label.clone())
 }
 
 fn render_radial_menu(
     model: &ContextMenuRenderModel<'_>,
-    appearance: FloatingMenuAppearance,
+    look: FloatingMenuLook,
     item_hovers: Vec<ContextMenuHoverHandler>,
     item_clicks: Vec<ContextMenuClickHandler>,
 ) -> Stateful<Div> {
@@ -116,7 +116,7 @@ fn render_radial_menu(
         .relative()
         .size(px(RADIAL_DIAMETER))
         .occlude()
-        .child(render_radial_backdrop(&appearance))
+        .child(render_radial_backdrop(&look))
         .child(
             div()
                 .absolute()
@@ -124,11 +124,11 @@ fn render_radial_menu(
                 .top(px(RADIAL_RADIUS - (RADIAL_CENTER_MARKER_SIZE * 0.5)))
                 .size(px(RADIAL_CENTER_MARKER_SIZE))
                 .rounded(px(RADIAL_CENTER_MARKER_SIZE))
-                .bg(with_alpha(appearance.border, 0.72)),
+                .bg(with_alpha(look.border, 0.72)),
         );
 
     for ((index, item), item_hover) in model.items.iter().take(RADIAL_ITEM_COUNT).enumerate().zip(item_hovers) {
-        let mut button = render_radial_item(model.id, index, item, &appearance).on_hover(item_hover);
+        let mut button = render_radial_item(model.id, index, item, &look).on_hover(item_hover);
 
         if item.is_enabled()
             && item.submenu_items().is_empty()
@@ -138,7 +138,7 @@ fn render_radial_menu(
         }
 
         if model.active_path.is_some_and(|active_path| active_path.is_root(index)) {
-            button = button.bg(appearance.item_hover_background).border_color(appearance.foreground);
+            button = button.bg(look.item_hover_background).border_color(look.foreground);
         }
 
         menu = menu.child(button);
@@ -151,13 +151,13 @@ fn render_radial_item(
     menu_id: &gpui::SharedString,
     index: usize,
     item: &MenuItem,
-    appearance: &FloatingMenuAppearance,
+    look: &FloatingMenuLook,
 ) -> Stateful<Div> {
     let (left, top) = radial_item_position(index);
     let foreground = if item.is_enabled() {
-        appearance.foreground
+        look.foreground
     } else {
-        appearance.item_disabled_foreground
+        look.item_disabled_foreground
     };
 
     let mut button = div()
@@ -169,18 +169,18 @@ fn render_radial_item(
         .flex()
         .items_center()
         .justify_center()
-        .bg(appearance.background)
+        .bg(look.background)
         .border_1()
-        .border_color(appearance.border)
+        .border_color(look.border)
         .rounded(px(RADIAL_BUTTON_SIZE))
-        .shadow(appearance.shadow.clone())
+        .shadow(look.shadow.clone())
         .text_color(foreground)
-        .child(render_item_icon(item.icon_ref(), foreground, appearance.item_icon_size));
+        .child(render_item_icon(item.icon_ref(), foreground, look.item_icon_size));
 
     if item.is_enabled() && item.submenu_items().is_empty() {
         button = button
             .cursor_pointer()
-            .hover(move |style| style.bg(appearance.item_hover_background).border_color(appearance.foreground));
+            .hover(move |style| style.bg(look.item_hover_background).border_color(look.foreground));
     } else {
         button = button.opacity(0.56);
     }
@@ -188,7 +188,7 @@ fn render_radial_item(
     button
 }
 
-fn render_radial_backdrop(appearance: &FloatingMenuAppearance) -> Stateful<Div> {
+fn render_radial_backdrop(look: &FloatingMenuLook) -> Stateful<Div> {
     let outer_offset = (RADIAL_DIAMETER - RADIAL_BACKDROP_DIAMETER) * 0.5;
     let inner_offset = (RADIAL_DIAMETER - RADIAL_BACKDROP_INNER_DIAMETER) * 0.5;
 
@@ -199,9 +199,9 @@ fn render_radial_backdrop(appearance: &FloatingMenuAppearance) -> Stateful<Div> 
         .top(px(outer_offset))
         .size(px(RADIAL_BACKDROP_DIAMETER))
         .rounded(px(RADIAL_BACKDROP_DIAMETER))
-        .bg(with_alpha(appearance.background, 0.58))
+        .bg(with_alpha(look.background, 0.58))
         .border_1()
-        .border_color(with_alpha(appearance.border, 0.44))
+        .border_color(with_alpha(look.border, 0.44))
         .child(
             div()
                 .absolute()
@@ -209,7 +209,7 @@ fn render_radial_backdrop(appearance: &FloatingMenuAppearance) -> Stateful<Div> 
                 .top(px(inner_offset - outer_offset))
                 .size(px(RADIAL_BACKDROP_INNER_DIAMETER))
                 .rounded(px(RADIAL_BACKDROP_INNER_DIAMETER))
-                .bg(with_alpha(appearance.background, 0.32)),
+                .bg(with_alpha(look.background, 0.32)),
         )
 }
 

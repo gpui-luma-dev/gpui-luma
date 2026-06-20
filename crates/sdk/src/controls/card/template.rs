@@ -26,7 +26,7 @@ pub fn default_card_template() -> Arc<dyn CardTemplate> {
 
 impl CardTemplate for ThemedCardTemplate {
     fn render(&self, model: &CardRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<gpui::Div> {
-        let appearance = self.theme.resolve(model.size);
+        let look = self.theme.resolve(model.size);
 
         let mut root = div()
             .id(model.id.clone())
@@ -34,21 +34,21 @@ impl CardTemplate for ThemedCardTemplate {
             .w_full()
             .flex()
             .flex_col()
-            .gap(px(appearance.section_gap))
-            .rounded(px(appearance.radius))
+            .gap(px(look.section_gap))
+            .rounded(px(look.radius))
             .border_1()
-            .border_color(appearance.border)
+            .border_color(look.border)
             .overflow_hidden()
-            .bg(appearance.background)
-            .p(px(appearance.padding))
-            .text_color(appearance.body_color)
-            .font_family(appearance.font_family.clone())
-            .text_size(px(appearance.body.size))
-            .line_height(px(appearance.body.line_height))
-            .font_weight(appearance.body.weight);
+            .bg(look.background)
+            .p(px(look.padding))
+            .text_color(look.body_color)
+            .font_family(look.font_family.clone())
+            .text_size(px(look.body.size))
+            .line_height(px(look.body.line_height))
+            .font_weight(look.body.weight);
 
         if model.elevated {
-            root = root.shadow(appearance.shadow.clone());
+            root = root.shadow(look.shadow.clone());
         }
 
         if model.full_height {
@@ -58,15 +58,15 @@ impl CardTemplate for ThemedCardTemplate {
         if let Some(header) = model.header {
             root = root.child(header(window, cx));
         } else if model.title.is_some() || model.description.is_some() {
-            let mut header = div().w_full().flex().flex_col().gap(px(appearance.header_gap));
+            let mut header = div().w_full().flex().flex_col().gap(px(look.header_gap));
 
             if let Some(title) = model.title {
                 header = header.child(
                     div()
-                        .text_size(px(appearance.title.size))
-                        .line_height(px(appearance.title.line_height))
-                        .font_weight(appearance.title.weight)
-                        .text_color(appearance.title_color)
+                        .text_size(px(look.title.size))
+                        .line_height(px(look.title.line_height))
+                        .font_weight(look.title.weight)
+                        .text_color(look.title_color)
                         .child(title.clone()),
                 );
             }
@@ -74,10 +74,10 @@ impl CardTemplate for ThemedCardTemplate {
             if let Some(description) = model.description {
                 header = header.child(
                     div()
-                        .text_size(px(appearance.description.size))
-                        .line_height(px(appearance.description.line_height))
-                        .font_weight(appearance.description.weight)
-                        .text_color(appearance.description_color)
+                        .text_size(px(look.description.size))
+                        .line_height(px(look.description.line_height))
+                        .font_weight(look.description.weight)
+                        .text_color(look.description_color)
                         .child(description.clone()),
                 );
             }
@@ -86,7 +86,7 @@ impl CardTemplate for ThemedCardTemplate {
         }
 
         if !model.body.is_empty() {
-            let mut body = div().w_full().flex().flex_col().gap(px(appearance.body_gap));
+            let mut body = div().w_full().flex().flex_col().gap(px(look.body_gap));
 
             if model.body_fill {
                 body = body.flex_1().min_h(px(0.0));
@@ -106,7 +106,7 @@ impl CardTemplate for ThemedCardTemplate {
                     .flex()
                     .items_center()
                     .justify_end()
-                    .text_color(appearance.body_color)
+                    .text_color(look.body_color)
                     .child(footer(window, cx)),
             );
         }

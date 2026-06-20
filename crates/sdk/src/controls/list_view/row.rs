@@ -1,12 +1,12 @@
 use gpui::{AnyElement, Stateful, div, prelude::*, px};
 
-use super::theme::ListViewRowAppearance;
+use super::theme::ListViewRowLook;
 use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 
 pub(crate) fn render_list_view_row(
     id: impl Into<gpui::ElementId>,
     content: AnyElement,
-    appearance: ListViewRowAppearance,
+    appearance: ListViewRowLook,
     enabled: bool,
     show_top_divider: bool,
     is_custom: bool,

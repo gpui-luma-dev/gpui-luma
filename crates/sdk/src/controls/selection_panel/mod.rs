@@ -10,7 +10,7 @@ pub use item_template::{
     SelectionPanelItemTemplateModifier, item_template_with_modifier, make_selection_panel_item_template,
 };
 pub use model::{
-    SelectionPanelAppearanceProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
     SelectionPanelPath,
 };
 pub use template::{
@@ -19,4 +19,4 @@ pub use template::{
     SelectionPanelRenderModel, SelectionPanelTemplate, SelectionPanelTemplateHandlers,
     default_selection_panel_template, render_selection_panel, template_with_modifier,
 };
-pub use theme::{SelectionPanelAppearance, default_selection_panel_appearance};
+pub use theme::{SelectionPanelLook, default_selection_panel_appearance};

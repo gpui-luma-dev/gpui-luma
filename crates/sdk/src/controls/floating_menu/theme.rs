@@ -5,7 +5,7 @@ use gpui::{BoxShadow, Hsla};
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct FloatingMenuAppearance {
+pub struct FloatingMenuLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -26,7 +26,7 @@ pub struct FloatingMenuAppearance {
 }
 
 pub trait FloatingMenuTheme: Send + Sync {
-    fn resolve(&self) -> FloatingMenuAppearance;
+    fn resolve(&self) -> FloatingMenuLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -47,18 +47,18 @@ impl DefaultFloatingMenuTheme {
 }
 
 impl FloatingMenuTheme for DefaultFloatingMenuTheme {
-    fn resolve(&self) -> FloatingMenuAppearance {
-        default_floating_menu_appearance(&self.tokens, ControlSize::Md)
+    fn resolve(&self) -> FloatingMenuLook {
+        default_floating_menu_look(&self.tokens, ControlSize::Md)
     }
 }
 
-pub(crate) fn default_floating_menu_appearance(tokens: &ThemeTokens, size: ControlSize) -> FloatingMenuAppearance {
+pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize) -> FloatingMenuLook {
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
 
-    FloatingMenuAppearance {
+    FloatingMenuLook {
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,
         border: palette.surface.floating.border,

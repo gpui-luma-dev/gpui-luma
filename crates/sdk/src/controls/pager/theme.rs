@@ -7,7 +7,7 @@ use crate::theme::{LumaTextStyle, ThemeTokens};
 use super::PagerStyle;
 
 #[derive(Clone, Debug)]
-pub struct PagerAppearance {
+pub struct PagerLook {
     pub panel_background: Hsla,
     pub border: Hsla,
     pub body_text: Hsla,
@@ -29,7 +29,7 @@ pub struct PagerAppearance {
 }
 
 pub trait PagerTheme: Send + Sync {
-    fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerAppearance;
+    fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -50,13 +50,13 @@ impl DefaultPagerTheme {
 }
 
 impl PagerTheme for DefaultPagerTheme {
-    fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerAppearance {
+    fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = self.tokens.typography.text.caption;
         let compact = matches!(style, PagerStyle::Minimal);
 
-        PagerAppearance {
+        PagerLook {
             panel_background: if enabled {
                 palette.surface.panel.background
             } else {

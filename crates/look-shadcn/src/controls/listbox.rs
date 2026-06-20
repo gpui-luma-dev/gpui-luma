@@ -10,10 +10,10 @@
 //! | Focused row    | `accent`           |
 //! | Disabled label | `muted-foreground` |
 
-use gpui_luma::controls::listbox::{ListBoxListAppearance, ListBoxRowPalette};
+use gpui_luma::controls::listbox::{ListBoxListLook, ListBoxRowPalette};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -91,20 +91,15 @@ pub fn resolve_listbox_row_colors_with_stylesheet(
     Ok(ListBoxRowColorTable { label_color: colors.label_color, background: colors.background })
 }
 
-pub fn listbox_list_appearance(
-    mode: &ShadcnModeTokens,
-    enabled: bool,
-    focused: bool,
-    size: ControlSize,
-) -> ListBoxListAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
+pub fn listbox_list_look(mode: &ShadcnModeTokens, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListLook {
+    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
     let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
     let adorner =
         focus_adorner(ctx.catalog(), metrics, focused).unwrap_or_else(|err| panic!("listbox list properties: {err}"));
 
-    ListBoxListAppearance {
+    ListBoxListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         adorner,
@@ -122,7 +117,7 @@ pub fn listbox_row_palette(
     state: InteractionState,
     _size: ControlSize,
 ) -> ListBoxRowPalette {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_row");
     let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
@@ -146,7 +141,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::provenance::LookResolver;
-    use super::{listbox_list_appearance, listbox_row_palette, resolve_listbox_row_colors};
+    use super::{listbox_list_look, listbox_row_palette, resolve_listbox_row_colors};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -170,7 +165,7 @@ mod tests {
     fn listbox_uses_input_border_and_accent_hover() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let list = listbox_list_appearance(&mode, true, false, ControlSize::Md);
+        let list = listbox_list_look(&mode, true, false, ControlSize::Md);
         let row = listbox_row_palette(
             &mode,
             false,

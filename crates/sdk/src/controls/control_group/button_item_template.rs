@@ -32,7 +32,7 @@ where
             state: item.state.interaction_state(),
             round,
             radius_override: std::cell::Cell::new(None),
-            appearance: None,
+            look: None,
         };
 
         button_template.render(&render_model, window, cx).into_any_element()

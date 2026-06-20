@@ -5,14 +5,14 @@ use super::mode::ShadcnModeTokens;
 use super::palette::ShadcnPalette;
 use super::tokens::ShadcnToken;
 
-/// Bundles styling dependencies and interactive state for control appearance resolution.
-pub struct AppearanceContext<'a> {
+/// Bundles styling dependencies and interactive state for control look resolution.
+pub struct LookContext<'a> {
     pub tokens: &'a ShadcnModeTokens,
     pub theme_mode: ThemeMode,
     pub state: InteractionState,
 }
 
-impl<'a> AppearanceContext<'a> {
+impl<'a> LookContext<'a> {
     pub fn new(tokens: &'a ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> Self {
         Self { tokens, theme_mode, state }
     }

@@ -22,7 +22,7 @@ impl Toggle {
 pub fn default_toggle_template() -> Arc<dyn ButtonTemplate<bool>> {
     let button_family_theme = default_button_family_theme();
     Arc::new(DefaultButtonTemplate::new(button_family_theme.clone()).with_modifier(move |element, model| {
-        if model.appearance.is_some() {
+        if model.look.is_some() {
             return element;
         }
 

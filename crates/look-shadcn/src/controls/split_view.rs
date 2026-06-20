@@ -6,10 +6,10 @@
 //! | Separator (hover) | `border-hover`     |
 //! | Disabled          | `muted-foreground` |
 
-use gpui_luma::controls::split_view::SplitViewAppearance;
+use gpui_luma::controls::split_view::SplitViewLook;
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_split_view_color_rule, resolve_split_view_color_rule};
@@ -41,22 +41,17 @@ pub fn resolve_split_view_colors_with_stylesheet(
     Ok(SplitViewColorTable { separator: colors.separator, separator_hover: colors.separator_hover })
 }
 
-pub fn split_view_appearance(
-    mode: &ShadcnModeTokens,
-    theme_mode: ThemeMode,
-    _hovered: bool,
-    enabled: bool,
-) -> SplitViewAppearance {
+pub fn split_view_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, _hovered: bool, enabled: bool) -> SplitViewLook {
     let state = if enabled {
         InteractionState::default()
     } else {
         InteractionState { disabled: true, ..InteractionState::default() }
     };
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "split_view");
     let colors = resolve_split_view_colors(&resolver, enabled).unwrap_or_else(|_| SplitViewColorTable::fallback());
 
-    SplitViewAppearance { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() }
+    SplitViewLook { separator: colors.separator.hsla(), separator_hover: colors.separator_hover.hsla() }
 }
 
 #[cfg(test)]
@@ -68,7 +63,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::split_view_appearance;
+    use super::split_view_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -92,7 +87,7 @@ mod tests {
     fn enabled_split_view_uses_border_tokens() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = split_view_appearance(&mode, ThemeMode::Light, false, true);
-        assert_eq!(appearance.separator, catalog.color("border").expect("border"));
+        let look = split_view_look(&mode, ThemeMode::Light, false, true);
+        assert_eq!(look.separator, catalog.color("border").expect("border"));
     }
 }

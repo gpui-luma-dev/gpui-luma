@@ -377,7 +377,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         combobox::new(id, items)
             .textfield_template(self.textfield_template())
             .scrollbar_template(self.scrollbar_template())
-            .popup_appearance_provider(Arc::new(move || theme.selector_items_panel_appearance(ControlSize::Md)))
+            .popup_look_provider(Arc::new(move || theme.selector_items_panel_look(ControlSize::Md)))
     }
 
     fn search_selector(
@@ -390,7 +390,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
             .textfield_template(self.textfield_template())
             .textfield_theme(self.textfield_theme())
             .scrollbar_template(self.scrollbar_template())
-            .popup_appearance_provider(Arc::new(move || theme.selector_items_panel_appearance(ControlSize::Md)))
+            .popup_look_provider(Arc::new(move || theme.selector_items_panel_look(ControlSize::Md)))
     }
 
     fn button_group<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
@@ -423,7 +423,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         let panel = SelectionPanelControl::new(id, cx);
         panel.update(cx, |panel, cx| {
             panel.set_scrollbar_template(theme.scrollbar_template(), cx);
-            panel.set_appearance_provider(Arc::new(move |size| theme.selection_panel_appearance(size)), cx);
+            panel.set_look_provider(Arc::new(move |size| theme.selection_panel_look(size)), cx);
         });
         panel
     }

@@ -5,7 +5,7 @@ mod theme;
 
 pub use model::{CardBuilder, CardElementRenderer, CardModel, CardRenderModel};
 pub use template::{CardTemplate, ThemedCardTemplate, default_card_template};
-pub use theme::{CardAppearance, CardTheme, DefaultCardTheme, default_card_theme};
+pub use theme::{CardLook, CardTheme, DefaultCardTheme, default_card_theme};
 
 use gpui::{Entity, SharedString};
 

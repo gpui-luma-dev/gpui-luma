@@ -19,7 +19,7 @@ pub use template::{
     control_group_template_with_theme, make_control_group_item_template, shared_control_group_template,
     template_with_modifier,
 };
-pub use theme::{DefaultControlGroupTheme, ControlGroupListAppearance, ControlGroupTheme, default_control_group_theme};
+pub use theme::{DefaultControlGroupTheme, ControlGroupListLook, ControlGroupTheme, default_control_group_theme};
 pub use themed_template::ThemedControlGroupTemplate;
 
 pub use crate::controls::state::{CompositeItemState as ControlGroupItemState, ControlFocusState};

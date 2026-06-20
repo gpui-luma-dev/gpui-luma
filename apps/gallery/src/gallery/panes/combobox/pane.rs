@@ -107,7 +107,7 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
         handlers: ComboBoxItemsTemplateHandlers,
         cx: &mut App,
     ) -> gpui::Stateful<gpui::Div> {
-        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
+        let look = self.look.selector_items_panel_look(ControlSize::Md);
         let ComboBoxItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
 
         let mut root = div()
@@ -115,8 +115,8 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
             .relative()
             .flex()
             .flex_col()
-            .min_w(px(appearance.min_width))
-            .p(px(appearance.padding));
+            .min_w(px(look.min_width))
+            .p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
         for (visible_index, (source_index, hover)) in model.visible_indices.iter().copied().zip(item_hovers).enumerate()
@@ -149,23 +149,23 @@ impl ComboBoxItemsTemplate for GalleryComboboxItemsTemplate {
                 .id(format!("{}-row-{}", model.menu_id, visible_index))
                 .flex()
                 .items_center()
-                .min_h(px(appearance.item_height))
-                .px(px(appearance.item_padding_x))
-                .rounded(px(appearance.item_radius))
-                .text_color(appearance.foreground)
-                .text_size(px(appearance.item_typography.size))
-                .line_height(px(appearance.item_typography.line_height))
-                .font_weight(appearance.item_typography.weight)
+                .min_h(px(look.item_height))
+                .px(px(look.item_padding_x))
+                .rounded(px(look.item_radius))
+                .text_color(look.foreground)
+                .text_size(px(look.item_typography.size))
+                .line_height(px(look.item_typography.line_height))
+                .font_weight(look.item_typography.weight)
                 .child(content);
 
             row = row.cursor_pointer().on_hover(hover).hover({
-                let hover_background = appearance.item_hover_background;
-                let hover_foreground = appearance.item_hover_foreground;
+                let hover_background = look.item_hover_background;
+                let hover_foreground = look.item_hover_foreground;
                 move |style| style.bg(hover_background).text_color(hover_foreground)
             });
 
             if active {
-                row = row.bg(appearance.item_hover_background).text_color(appearance.item_hover_foreground);
+                row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
             }
 
             if let Some(click) = clicks.next() {
@@ -192,7 +192,7 @@ impl GalleryComboboxPanelTemplate {
 
 impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
     fn render(&self, model: ComboBoxPanelRenderModel<'_>, _cx: &mut App) -> AnyElement {
-        let appearance = self.look.selector_items_panel_appearance(ControlSize::Md);
+        let look = self.look.selector_items_panel_look(ControlSize::Md);
 
         if let Some(bounds) = model.popup_bounds {
             return deferred(
@@ -205,11 +205,11 @@ impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
                         div()
                             .id(format!("{}-popup-shell", model.id))
                             .w(bounds.size.width)
-                            .bg(appearance.background)
+                            .bg(look.background)
                             .border_1()
-                            .border_color(appearance.border)
-                            .rounded(px(appearance.radius))
-                            .shadow(appearance.shadow)
+                            .border_color(look.border)
+                            .rounded(px(look.radius))
+                            .shadow(look.shadow)
                             .overflow_hidden()
                             .occlude()
                             .child(model.list_content),
@@ -222,11 +222,11 @@ impl ComboBoxPanelTemplate for GalleryComboboxPanelTemplate {
         div()
             .id(format!("{}-panel", model.id))
             .w_full()
-            .bg(appearance.background)
+            .bg(look.background)
             .border_1()
-            .border_color(appearance.border)
-            .rounded(px(appearance.radius))
-            .shadow(appearance.shadow)
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow)
             .overflow_hidden()
             .occlude()
             .child(model.list_content)

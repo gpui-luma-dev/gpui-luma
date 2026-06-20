@@ -7,7 +7,7 @@ use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 
 use crate::controls::selection_panel::item_template::SelectionPanelItemTemplate;
 use crate::controls::selection_panel::template::{SelectionPanelTemplate, default_selection_panel_template};
-use crate::controls::selection_panel::theme::{SelectionPanelAppearance, default_selection_panel_appearance};
+use crate::controls::selection_panel::theme::{SelectionPanelLook, default_selection_panel_appearance};
 use crate::theme::{ControlSize, ThemeTokens};
 
 pub trait SelectionPanelItemLike {
@@ -103,8 +103,8 @@ impl SelectionPanelPath {
     }
 }
 
-pub type SelectionPanelAppearanceProvider =
-    Arc<dyn Fn(ControlSize) -> SelectionPanelAppearance + Send + Sync + 'static>;
+pub type SelectionPanelLookProvider =
+    Arc<dyn Fn(ControlSize) -> SelectionPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct SelectionPanelModel<T>
@@ -126,7 +126,7 @@ where
     pub(crate) item_template: Option<SelectionPanelItemTemplate<T>>,
     pub(crate) template: Arc<dyn SelectionPanelTemplate<T>>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
-    pub(crate) appearance_provider: SelectionPanelAppearanceProvider,
+    pub(crate) appearance_provider: SelectionPanelLookProvider,
 }
 
 pub(crate) fn default_selection_panel_model<T>(id: impl Into<SharedString>) -> SelectionPanelModel<T>

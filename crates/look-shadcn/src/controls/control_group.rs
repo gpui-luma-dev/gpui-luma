@@ -6,10 +6,10 @@
 //! | Disabled bg     | `muted-foreground`   |
 //! | Border          | `border`             |
 
-use gpui_luma::controls::control_group::ControlGroupListAppearance;
+use gpui_luma::controls::control_group::ControlGroupListLook;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -46,14 +46,14 @@ pub fn resolve_control_group_list_colors_with_stylesheet(
     Ok(ControlGroupListColorTable { background: colors.background, border: colors.border })
 }
 
-pub fn control_group_list_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
+pub fn control_group_list_look(mode: &ShadcnModeTokens, enabled: bool) -> ControlGroupListLook {
+    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "control_group_list");
     let colors = resolve_control_group_list_colors(&resolver, enabled)
         .unwrap_or_else(|_| ControlGroupListColorTable::fallback());
 
-    ControlGroupListAppearance {
+    ControlGroupListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
         radius: metrics.radius(ControlSize::Md),
@@ -72,7 +72,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::control_group_list_appearance;
+    use super::control_group_list_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -95,9 +95,9 @@ mod tests {
     fn control_group_uses_muted_surface_and_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = control_group_list_appearance(&mode, true);
+        let look = control_group_list_look(&mode, true);
 
-        assert_eq!(appearance.background, catalog.color("muted").expect("muted"));
-        assert_eq!(appearance.border, catalog.color("border").expect("border"));
+        assert_eq!(look.background, catalog.color("muted").expect("muted"));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
     }
 }

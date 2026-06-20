@@ -5,7 +5,7 @@ use gpui::{Hsla, SharedString};
 use crate::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
-pub struct TabsNavigationListAppearance {
+pub struct TabsNavigationListLook {
     pub background: Option<Hsla>,
     pub border: Option<Hsla>,
     pub radius: f32,
@@ -14,7 +14,7 @@ pub struct TabsNavigationListAppearance {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct TabsNavigationItemAppearance {
+pub struct TabsNavigationItemLook {
     pub label_color: Hsla,
     pub indicator: Option<Hsla>,
     pub label_typography: LumaTextStyle,
@@ -25,8 +25,8 @@ pub struct TabsNavigationItemAppearance {
 }
 
 pub trait TabsNavigationTheme: Send + Sync {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListAppearance;
-    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemAppearance;
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListLook;
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemLook;
     fn font_family(&self) -> SharedString;
 }
 
@@ -48,11 +48,11 @@ impl DefaultTabsNavigationTheme {
 }
 
 impl TabsNavigationTheme for DefaultTabsNavigationTheme {
-    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListAppearance {
+    fn resolve_list(&self, enabled: bool, size: ControlSize) -> TabsNavigationListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
 
-        TabsNavigationListAppearance {
+        TabsNavigationListLook {
             background: (!enabled).then_some(palette.state.disabled.background),
             border: None,
             radius: metrics.radius(size),
@@ -61,7 +61,7 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
         }
     }
 
-    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemAppearance {
+    fn resolve_item(&self, active: bool, state: InteractionState, size: ControlSize) -> TabsNavigationItemLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -79,7 +79,7 @@ impl TabsNavigationTheme for DefaultTabsNavigationTheme {
             InteractionLayer::Default => palette.state.selected.background,
         };
 
-        TabsNavigationItemAppearance {
+        TabsNavigationItemLook {
             label_color: match (active, state.disabled) {
                 (_, true) => palette.state.disabled.foreground,
                 (true, false) => active_color,

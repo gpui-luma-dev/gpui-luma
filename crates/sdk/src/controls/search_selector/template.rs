@@ -7,7 +7,7 @@ use gpui::{
 
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::icon::lucide_icon;
-use crate::controls::selector_panel::{SelectorItemsPanelAppearance, SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
@@ -108,7 +108,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_appearance = model.trigger_theme.resolve_appearance(
+        let trigger_appearance = model.trigger_theme.resolve_look(
             TextFieldVariant::Standard,
             model.trigger_state,
             model.enabled,
@@ -209,7 +209,7 @@ pub struct SearchSelectorItemsRenderModel<'a> {
     pub open: bool,
     pub enabled: bool,
     pub item_template: Option<&'a SearchSelectorItemTemplate<SelectionItem>>,
-    pub appearance: SelectorItemsPanelAppearance,
+    pub look: SelectorItemsPanelLook,
 }
 
 pub struct SearchSelectorItemsTemplateHandlers {
@@ -241,7 +241,7 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
         cx: &mut App,
     ) -> Stateful<gpui::Div> {
         let SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.appearance.clone();
+        let appearance = model.look.clone();
 
         let mut root = div()
             .id(format!("{}-rows", model.menu_id))
@@ -334,7 +334,7 @@ pub fn render_popup_rows(
     open: bool,
     enabled: bool,
     item_template: Option<&SearchSelectorItemTemplate<SelectionItem>>,
-    appearance: SelectorItemsPanelAppearance,
+    appearance: SelectorItemsPanelLook,
     item_hovers: Vec<SelectorPanelHoverHandler>,
     item_clicks: Vec<SelectorPanelClickHandler>,
     cx: &mut App,
@@ -350,7 +350,7 @@ pub fn render_popup_rows(
             open,
             enabled,
             item_template,
-            appearance,
+            look: appearance,
         },
         SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
         cx,

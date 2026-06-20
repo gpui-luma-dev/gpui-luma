@@ -1,9 +1,9 @@
 //! Progress — muted track + primary fill.
 
-use gpui_luma::controls::progress::ProgressAppearance;
+use gpui_luma::controls::progress::ProgressLook;
 use gpui_luma::theme::{InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -44,8 +44,8 @@ pub fn resolve_progress_colors_with_stylesheet(
     Ok(ProgressColorTable { track_color: colors.track_color, progress_color: colors.progress_color })
 }
 
-pub fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, InteractionState::default());
+pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool) -> ProgressLook {
+    let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
     let stylesheet = embedded_stylesheet();
@@ -57,7 +57,7 @@ pub fn progress_appearance(mode: &ShadcnModeTokens, enabled: bool) -> ProgressAp
         .map(|metrics| (metrics.size, metrics.stroke_width))
         .unwrap_or((DEFAULT_PROGRESS_SIZE, DEFAULT_PROGRESS_STROKE_WIDTH));
 
-    ProgressAppearance {
+    ProgressLook {
         track_color: colors.track_color.hsla(),
         progress_color: colors.progress_color.hsla(),
         size,
@@ -73,7 +73,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::progress_appearance;
+    use super::progress_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -96,9 +96,9 @@ mod tests {
     fn progress_uses_muted_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = progress_appearance(&mode, true);
+        let look = progress_look(&mode, true);
 
-        assert_eq!(appearance.track_color, catalog.color("muted").expect("muted"));
-        assert_eq!(appearance.progress_color, catalog.color("primary").expect("primary"));
+        assert_eq!(look.track_color, catalog.color("muted").expect("muted"));
+        assert_eq!(look.progress_color, catalog.color("primary").expect("primary"));
     }
 }

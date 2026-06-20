@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div, px, prelude::*};
 
-use super::{DockSplitterAppearance, DockSplitterDrag, DockSplitterRenderModel, SplitterOrientation};
+use super::{DockSplitterLook, DockSplitterDrag, DockSplitterRenderModel, SplitterOrientation};
 
 pub type DockSplitterHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type DockSplitterMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -21,7 +21,7 @@ pub trait DockSplitterTemplate: Send + Sync {
     fn render(
         &self,
         model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterAppearance,
+        appearance: &DockSplitterLook,
         handlers: DockSplitterTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
@@ -54,7 +54,7 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
     fn render(
         &self,
         model: &DockSplitterRenderModel<'_>,
-        appearance: &DockSplitterAppearance,
+        appearance: &DockSplitterLook,
         handlers: DockSplitterTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
@@ -65,23 +65,23 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
 
 fn render_splitter(
     model: &DockSplitterRenderModel<'_>,
-    appearance: &DockSplitterAppearance,
+    look: &DockSplitterLook,
     handlers: DockSplitterTemplateHandlers,
     show_thumb: bool,
 ) -> Stateful<Div> {
     let DockSplitterTemplateHandlers { hover, mouse_down, mouse_up, mouse_up_out, key_down } = handlers;
     let line_color = if model.dragging || model.hovered || model.focused {
-        appearance.hover_color
+        look.hover_color
     } else {
-        appearance.line_color
+        look.line_color
     };
-    let half_inset = ((appearance.hit_target_px - appearance.visible_line_px) * 0.5).max(0.0);
+    let half_inset = ((look.hit_target_px - look.visible_line_px) * 0.5).max(0.0);
 
     let mut root = div().id(format!("{}-layout", model.id)).relative().flex_shrink_0();
 
     root = match model.orientation {
-        SplitterOrientation::Vertical => root.w(px(appearance.visible_line_px)).h_full(),
-        SplitterOrientation::Horizontal => root.h(px(appearance.visible_line_px)).w_full(),
+        SplitterOrientation::Vertical => root.w(px(look.visible_line_px)).h_full(),
+        SplitterOrientation::Horizontal => root.h(px(look.visible_line_px)).w_full(),
     };
 
     let drag_payload = DockSplitterDrag { id: model.id.clone() };
@@ -92,7 +92,7 @@ fn render_splitter(
             .left(px(-half_inset))
             .top(px(0.0))
             .bottom(px(0.0))
-            .w(px(appearance.hit_target_px))
+            .w(px(look.hit_target_px))
             .track_focus(model.focus_handle)
             .tab_index(if model.enabled { 0 } else { -1 })
             .on_hover(hover)
@@ -114,7 +114,7 @@ fn render_splitter(
                     .left(px(half_inset))
                     .top(px(0.0))
                     .bottom(px(0.0))
-                    .w(px(appearance.visible_line_px))
+                    .w(px(look.visible_line_px))
                     .bg(line_color),
             ),
         SplitterOrientation::Horizontal => div()
@@ -123,7 +123,7 @@ fn render_splitter(
             .top(px(-half_inset))
             .left(px(0.0))
             .right(px(0.0))
-            .h(px(appearance.hit_target_px))
+            .h(px(look.hit_target_px))
             .track_focus(model.focus_handle)
             .tab_index(if model.enabled { 0 } else { -1 })
             .on_hover(hover)
@@ -142,7 +142,7 @@ fn render_splitter(
                     .top(px(half_inset))
                     .left(px(0.0))
                     .right(px(0.0))
-                    .h(px(appearance.visible_line_px))
+                    .h(px(look.visible_line_px))
                     .bg(line_color),
             ),
     };
@@ -153,9 +153,9 @@ fn render_splitter(
                 div()
                     .rounded(px(8.0))
                     .bg(if model.hovered || model.dragging || model.focused {
-                        appearance.thumb_color
+                        look.thumb_color
                     } else {
-                        appearance.thumb_color.opacity(0.4)
+                        look.thumb_color.opacity(0.4)
                     })
                     .w(px(4.0))
                     .h(px(36.0)),

@@ -55,7 +55,7 @@ pub struct RadioButtonPalette {
     pub label_font_family: SharedString,
 }
 
-pub type RadioButtonAppearance = RadioButtonPalette;
+pub type RadioButtonLook = RadioButtonPalette;
 
 pub trait RadioButtonTheme: Send + Sync {
     fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonPalette;

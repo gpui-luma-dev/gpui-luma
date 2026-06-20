@@ -27,7 +27,7 @@ pub struct TextFieldPalette {
 }
 
 #[derive(Clone, Debug)]
-pub struct TextFieldAppearance {
+pub struct TextFieldLook {
     pub background: Hsla,
     pub foreground: Hsla,
     pub border: Hsla,
@@ -53,13 +53,13 @@ pub trait TextFieldTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_appearance(
+    fn resolve_look(
         &self,
         variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
         scale: &StandardBoxScale,
-    ) -> TextFieldAppearance {
+    ) -> TextFieldLook {
         compose_textfield_appearance(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
     }
 }
@@ -142,8 +142,8 @@ pub(crate) fn compose_textfield_appearance(
     palette: &TextFieldPalette,
     scale: &StandardBoxScale,
     border_width: f32,
-) -> TextFieldAppearance {
-    TextFieldAppearance {
+) -> TextFieldLook {
+    TextFieldLook {
         background: palette.background,
         foreground: palette.foreground,
         border: palette.border,

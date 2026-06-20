@@ -1,7 +1,7 @@
 //! Inspect metadata for `resizable_panels`.
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnModeTokens};
 
 use gpui_luma::controls::resizable_panels::ResizeHandleSize;
 
@@ -25,7 +25,7 @@ pub fn inspect_resizable_panels_color_palette(
     theme_mode: ThemeMode,
     state: InteractionState,
 ) -> ResizablePanelsInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "resizable_panels_inspect");
     let colors =
         gpui_luma_look_shadcn::tables::resolve_resizable_panels_colors(&resolver, state.disabled, state.layer())

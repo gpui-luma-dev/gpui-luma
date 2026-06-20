@@ -8,5 +8,5 @@ pub use template::{
     FloatingMenuTemplateHandlers, ThemedFloatingMenuTemplate, default_floating_menu_template, render_floating_menu,
     render_floating_menu_with_template,
 };
-pub use theme::{DefaultFloatingMenuTheme, FloatingMenuAppearance, FloatingMenuTheme, default_floating_menu_theme};
-pub(crate) use theme::default_floating_menu_appearance;
+pub use theme::{DefaultFloatingMenuTheme, FloatingMenuLook, FloatingMenuTheme, default_floating_menu_theme};
+pub(crate) use theme::default_floating_menu_look;

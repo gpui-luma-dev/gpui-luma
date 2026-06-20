@@ -7,11 +7,11 @@
 //! | Hover | `border` (no change) |
 //! | Press | `border` (darkened)  |
 
-use gpui_luma::controls::scrollbar::ScrollbarAppearance;
+use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
-use crate::appearance_context::AppearanceContext;
+use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -62,12 +62,12 @@ pub fn resolve_scrollbar_colors_with_stylesheet(
     Ok(ScrollbarColorTable { track_background: colors.track_background, thumb_background: colors.thumb_background })
 }
 
-pub fn scrollbar_appearance(
+pub fn scrollbar_look(
     mode: &ShadcnModeTokens,
     state: InteractionState,
     orientation: ScrollbarOrientation,
-) -> ScrollbarAppearance {
-    let ctx = AppearanceContext::new(mode, ThemeMode::Light, state);
+) -> ScrollbarLook {
+    let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
@@ -98,7 +98,7 @@ pub fn scrollbar_appearance(
         None
     };
 
-    ScrollbarAppearance {
+    ScrollbarLook {
         track_background: colors.track_background.hsla(),
         thumb_background: colors.thumb_background.hsla(),
         focus_ring,
@@ -122,7 +122,7 @@ mod tests {
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::scrollbar_appearance;
+    use super::scrollbar_look;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -146,10 +146,10 @@ mod tests {
     fn default_scrollbar_uses_border_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let appearance = scrollbar_appearance(&mode, InteractionState::default(), ScrollbarOrientation::Vertical);
+        let look = scrollbar_look(&mode, InteractionState::default(), ScrollbarOrientation::Vertical);
 
-        assert_eq!(appearance.thumb_background, catalog.color("border").expect("border"));
-        assert_eq!(appearance.track_background.a, 0.0);
+        assert_eq!(look.thumb_background, catalog.color("border").expect("border"));
+        assert_eq!(look.track_background.a, 0.0);
     }
 
     #[test]
@@ -158,12 +158,12 @@ mod tests {
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let border = catalog.color("border").expect("border");
 
-        let hovered = scrollbar_appearance(
+        let hovered = scrollbar_look(
             &mode,
             InteractionState { hovered: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,
         );
-        let focused = scrollbar_appearance(
+        let focused = scrollbar_look(
             &mode,
             InteractionState { focused: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,

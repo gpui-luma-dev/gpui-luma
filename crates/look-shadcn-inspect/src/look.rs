@@ -45,7 +45,7 @@ use crate::controls::{
     inspect_tree_view_row_color_palette,
 };
 
-/// Inspect-time wrapper around a [`ShadcnLook`] appearance resolver.
+/// Inspect-time wrapper around a [`ShadcnLook`] look resolver.
 pub struct ShadcnInspect<'a> {
     look: &'a ShadcnLook,
 }

@@ -2,7 +2,7 @@
 
 use gpui_luma::theme::{InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
-    AppearanceContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
+    LookContext, LookResolver, ResolvedColor, ResolvedMetric, ShadcnButtonStyle, ShadcnModeTokens,
 };
 
 pub struct RadioButtonInspectPalette {
@@ -20,7 +20,7 @@ pub fn inspect_radio_button_color_palette(
     selected: bool,
     state: InteractionState,
 ) -> RadioButtonInspectPalette {
-    let ctx = AppearanceContext::new(mode, theme_mode, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
     let catalog = ctx.catalog();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, theme_mode, "radio_inspect");
@@ -67,7 +67,7 @@ pub fn inspect_radio_button_metrics(
         radius_metric, scaffold_control_metric, spacing_control_metric,
     };
 
-    let ctx = AppearanceContext::new(mode, theme_mode, InteractionState::default());
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
     let scale = RadioScale::compute(size, metrics, 1.0);

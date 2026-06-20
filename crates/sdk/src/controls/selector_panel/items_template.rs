@@ -9,7 +9,7 @@ use crate::controls::state::ControlFocusState;
 use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
 
 #[derive(Clone, Debug)]
-pub struct SelectorItemsPanelAppearance {
+pub struct SelectorItemsPanelLook {
     pub background: gpui::Hsla,
     pub foreground: gpui::Hsla,
     pub border: gpui::Hsla,
@@ -28,16 +28,13 @@ pub struct SelectorItemsPanelAppearance {
     pub item_radius: f32,
 }
 
-pub fn default_selector_items_panel_appearance(
-    tokens: &ThemeTokens,
-    size: ControlSize,
-) -> SelectorItemsPanelAppearance {
+pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize) -> SelectorItemsPanelLook {
     let palette = &tokens.palette;
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
 
-    SelectorItemsPanelAppearance {
+    SelectorItemsPanelLook {
         background: palette.surface.floating.background,
         foreground: palette.surface.floating.foreground,
         border: palette.surface.floating.border,
@@ -78,7 +75,7 @@ where
     pub enabled: bool,
     pub focus: ControlFocusState,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
-    pub appearance: SelectorItemsPanelAppearance,
+    pub look: SelectorItemsPanelLook,
 }
 
 pub trait SelectorItemsTemplate<T>: Send + Sync
@@ -106,7 +103,7 @@ where
         cx: &mut App,
     ) -> Stateful<Div> {
         let SelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
-        let appearance = model.appearance.clone();
+        let appearance = model.look.clone();
         let mut menu = div()
             .id(format!("{}-menu", model.menu_id))
             .relative()

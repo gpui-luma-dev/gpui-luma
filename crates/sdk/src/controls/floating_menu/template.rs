@@ -5,7 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::state::MenuPath;
-use crate::controls::floating_menu::FloatingMenuAppearance;
+use crate::controls::floating_menu::FloatingMenuLook;
 
 pub type FloatingMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type FloatingMenuHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
@@ -15,7 +15,7 @@ pub struct FloatingMenuRenderModel<'a> {
     pub items: &'a [MenuItem],
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
-    pub appearance: FloatingMenuAppearance,
+    pub appearance: FloatingMenuLook,
 }
 
 pub struct FloatingMenuTemplateHandlers {
@@ -128,7 +128,7 @@ pub fn render_floating_menu(
     items: &[MenuItem],
     open_submenu: Option<usize>,
     active_path: Option<MenuPath>,
-    appearance: FloatingMenuAppearance,
+    appearance: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
@@ -151,7 +151,7 @@ pub fn render_floating_menu_with_template(
     items: &[MenuItem],
     open_submenu: Option<usize>,
     active_path: Option<MenuPath>,
-    appearance: FloatingMenuAppearance,
+    appearance: FloatingMenuLook,
     item_hovers: Vec<FloatingMenuHoverHandler>,
     item_clicks: Vec<FloatingMenuClickHandler>,
 ) -> Stateful<Div> {
@@ -164,7 +164,7 @@ pub fn render_floating_menu_with_template(
 fn render_floating_submenu(
     menu_id: &SharedString,
     item: &MenuItem,
-    appearance: &FloatingMenuAppearance,
+    appearance: &FloatingMenuLook,
     item_clicks: &mut std::vec::IntoIter<FloatingMenuClickHandler>,
     index: usize,
     active_path: Option<MenuPath>,
