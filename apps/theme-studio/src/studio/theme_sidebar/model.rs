@@ -1,14 +1,3 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
-use gpui::Hsla;
-use gpui_luma::controls::slider::Slider;
-use gpui_luma::controls::textfield::TextField;
-use gpui_luma_look_shadcn::ShadcnLook;
-
-use crate::studio::hs_mixer::ThemePaletteHsOverride;
-use crate::studio::overrides::{ThemePaletteHslOverride, ThemeShadowOverride};
-
 pub(super) const TOKEN_CATEGORIES: &[(&str, &[(&str, &str)])] = &[
     ("BASE", &[("background", "Background"), ("foreground", "Foreground")]),
     ("PRIMARY", &[("primary", "Background"), ("primary-foreground", "Foreground")]),
@@ -70,37 +59,4 @@ impl SidebarTab {
             _ => None,
         }
     }
-}
-
-/// Theme token editing state owned by the sidebar (selectors, fields, overrides).
-pub(super) struct ThemeSidebarViewModel {
-    pub look: Arc<ShadcnLook>,
-    pub global_overrides: HashMap<String, Hsla>,
-    pub palette_hsl: ThemePaletteHslOverride,
-    pub palette_hs: ThemePaletteHsOverride,
-    pub token_fields: HashMap<String, TextField>,
-    pub palette_hue_field: TextField,
-    pub palette_saturation_field: TextField,
-    pub palette_lightness_field: TextField,
-    pub palette_hue_slider: Slider,
-    pub palette_saturation_slider: Slider,
-    pub palette_lightness_slider: Slider,
-    pub palette_vividness_slider: Slider,
-    pub palette_temperature_slider: Slider,
-    pub radius_field: TextField,
-    pub spacing_field: TextField,
-    pub radius_slider: Slider,
-    pub spacing_slider: Slider,
-    pub shadow_override: ThemeShadowOverride,
-    pub shadow_color_field: TextField,
-    pub shadow_opacity_field: TextField,
-    pub shadow_blur_field: TextField,
-    pub shadow_spread_field: TextField,
-    pub shadow_offset_x_field: TextField,
-    pub shadow_offset_y_field: TextField,
-    pub shadow_opacity_slider: Slider,
-    pub shadow_blur_slider: Slider,
-    pub shadow_spread_slider: Slider,
-    pub shadow_offset_x_slider: Slider,
-    pub shadow_offset_y_slider: Slider,
 }

@@ -1,7 +1,7 @@
 use gpui::{Context, Entity, Subscription};
 use gpui_luma::controls::selector::SelectorEvent;
 
-use super::panels::{wire_color_subscriptions, wire_other_subscriptions};
+use super::panels::{ColorsPanel, OtherPanel};
 use super::ThemeSidebar;
 use crate::studio::app::ThemeStudioApp;
 
@@ -21,7 +21,10 @@ impl ThemeSidebar {
             app.change_theme(item_id.as_ref(), cx);
         }));
 
-        wire_color_subscriptions(sidebar, cx, subscriptions);
-        wire_other_subscriptions(sidebar, cx, subscriptions);
+        let colors_panel = sidebar.read(cx).colors_panel.clone();
+        ColorsPanel::wire_subscriptions(&colors_panel, cx, subscriptions);
+
+        let other_panel = sidebar.read(cx).other_panel.clone();
+        OtherPanel::wire_subscriptions(&other_panel, cx, subscriptions);
     }
 }

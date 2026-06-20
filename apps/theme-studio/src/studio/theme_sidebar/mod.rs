@@ -1,14 +1,10 @@
-mod accordion;
 mod model;
 mod panels;
 mod parsing;
 mod subscriptions;
 mod sync;
 
-use std::collections::HashSet;
-
 use gpui::{Context, Entity, Render, Subscription, Window, div, prelude::*, px};
-use gpui_luma::controls::accordion::AccordionControl;
 use gpui_luma::controls::selector::{Selector, SelectorItem};
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
@@ -17,24 +13,22 @@ use gpui_luma::controls::tabs_navigation::{
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
-use self::model::{SidebarTab, ThemeSidebarViewModel, TOKEN_CATEGORIES};
-use self::panels::{
-    OtherPanelControls, build_other_panel_controls, build_token_fields, render_colors_panel, render_other_panel,
-    render_typography_panel,
-};
+use self::model::{SidebarTab, TOKEN_CATEGORIES};
+use self::panels::{ColorsPanel, OtherPanel, render_typography_panel};
 use self::parsing::token_color_with_fallback;
 use super::content_tabs::theme_studio_tabs_navigation_template;
 use crate::studio::app::ThemeStudioApp;
-use crate::studio::overrides::{StudioOverrides};
+use crate::studio::overrides::StudioOverrides;
 use crate::theme::available_themes;
 
 pub struct ThemeSidebar {
-    vm: ThemeSidebarViewModel,
+    look: std::sync::Arc<ShadcnLook>,
+    global_overrides: std::collections::HashMap<String, gpui::Hsla>,
     theme_selector: Entity<Selector>,
     tabs: Entity<TabsNavigation>,
     active_tab: SidebarTab,
-    pub(super) token_accordion: Entity<AccordionControl>,
-    pub(super) other_accordion: Entity<AccordionControl>,
+    colors_panel: Entity<ColorsPanel>,
+    other_panel: Entity<OtherPanel>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -48,6 +42,8 @@ impl ThemeSidebar {
     ) -> Self {
         let active_theme_id = active_theme_id.into();
         let global_overrides = overrides.global_color_overrides.clone();
+        let colors_panel = cx.new(|cx| ColorsPanel::new(look.clone(), overrides, cx));
+        let other_panel = cx.new(|cx| OtherPanel::new(look.clone(), overrides, cx));
         let theme_items = theme_selector_items();
         let theme_selector = look
             .selector("theme-studio-theme-selector")
@@ -78,76 +74,14 @@ impl ThemeSidebar {
             }
         }));
 
-        let token_fields = build_token_fields(&look, &global_overrides, cx);
-        let OtherPanelControls {
-            palette_hsl,
-            palette_hs,
-            palette_hue_field,
-            palette_saturation_field,
-            palette_lightness_field,
-            palette_hue_slider,
-            palette_saturation_slider,
-            palette_lightness_slider,
-            palette_vividness_slider,
-            palette_temperature_slider,
-            radius_field,
-            spacing_field,
-            radius_slider,
-            spacing_slider,
-            shadow_override,
-            shadow_color_field,
-            shadow_opacity_field,
-            shadow_blur_field,
-            shadow_spread_field,
-            shadow_offset_x_field,
-            shadow_offset_y_field,
-            shadow_opacity_slider,
-            shadow_blur_slider,
-            shadow_spread_slider,
-            shadow_offset_x_slider,
-            shadow_offset_y_slider,
-        } = build_other_panel_controls(&look, overrides, cx);
-
-        let token_accordion = Self::build_token_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
-        let other_accordion = Self::build_other_accordion(cx.entity(), look.clone(), &HashSet::new(), cx);
-
         Self {
-            vm: ThemeSidebarViewModel {
-                look,
-                global_overrides,
-                palette_hsl,
-                palette_hs,
-                token_fields,
-                palette_hue_field,
-                palette_saturation_field,
-                palette_lightness_field,
-                palette_hue_slider,
-                palette_saturation_slider,
-                palette_lightness_slider,
-                palette_vividness_slider,
-                palette_temperature_slider,
-                radius_field,
-                spacing_field,
-                radius_slider,
-                spacing_slider,
-                shadow_override,
-                shadow_color_field,
-                shadow_opacity_field,
-                shadow_blur_field,
-                shadow_spread_field,
-                shadow_offset_x_field,
-                shadow_offset_y_field,
-                shadow_opacity_slider,
-                shadow_blur_slider,
-                shadow_spread_slider,
-                shadow_offset_x_slider,
-                shadow_offset_y_slider,
-            },
+            look,
+            global_overrides,
             theme_selector,
             tabs,
             active_tab: SidebarTab::Colors,
-            token_accordion,
-            other_accordion,
+            colors_panel,
+            other_panel,
             _subscriptions: subscriptions,
         }
     }
@@ -167,14 +101,14 @@ pub(crate) fn palette_tokens() -> Vec<&'static str> {
 
 impl Render for ThemeSidebar {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let chrome = self.vm.look.chrome();
+        let chrome = self.look.chrome();
         let sidebar_bg =
-            token_color_with_fallback(&self.vm.look, &self.vm.global_overrides, "sidebar", chrome.panel_background);
+            token_color_with_fallback(&self.look, &self.global_overrides, "sidebar", chrome.panel_background);
 
         let tab_body = match self.active_tab {
-            SidebarTab::Colors => render_colors_panel(self),
+            SidebarTab::Colors => self.colors_panel.clone().into_any_element(),
             SidebarTab::Typography => render_typography_panel(),
-            SidebarTab::Other => render_other_panel(self),
+            SidebarTab::Other => self.other_panel.clone().into_any_element(),
         };
 
         div()

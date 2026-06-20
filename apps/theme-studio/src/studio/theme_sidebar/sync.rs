@@ -22,19 +22,13 @@ impl ThemeSidebar {
         overrides: &StudioOverrides,
         cx: &mut Context<Self>,
     ) {
-        let expanded_token_categories = self.expanded_token_category_ids(cx);
-        let expanded_other_categories = self.expanded_other_category_ids(cx);
-        self.vm.look = look;
-        self.vm.global_overrides = overrides.global_color_overrides.clone();
-        let theme = self.vm.look.clone();
+        self.look = look;
+        self.global_overrides = overrides.global_color_overrides.clone();
+        let theme = self.look.clone();
         self.sync_theme_selector_template(&theme, cx);
         self.sync_tabs_template(&theme, cx);
-        self.sync_color_panel_templates(&theme, cx);
-        self.sync_other_panel_templates(&theme, cx);
-        self.sync_color_panel_values(theme.as_ref(), overrides, cx);
-        self.sync_other_panel_values(theme.as_ref(), overrides, cx);
-        self.token_accordion = Self::build_token_accordion(cx.entity(), theme.clone(), &expanded_token_categories, cx);
-        self.other_accordion = Self::build_other_accordion(cx.entity(), theme, &expanded_other_categories, cx);
+        self.colors_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme.clone(), overrides, cx));
+        self.other_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme, overrides, cx));
         cx.notify();
     }
 
@@ -63,10 +57,9 @@ impl ThemeSidebar {
     /// - `apply_theme_snapshot` may rebuild structure when theme/template inputs change.
     /// - `sync_global_overrides` must stay incremental so live interactions remain stable.
     pub fn sync_global_overrides(&mut self, overrides: &StudioOverrides, cx: &mut Context<Self>) {
-        self.vm.global_overrides = overrides.global_color_overrides.clone();
-        let theme = self.vm.look.clone();
-        self.sync_color_panel_values(theme.as_ref(), overrides, cx);
-        self.sync_other_panel_values(theme.as_ref(), overrides, cx);
+        self.global_overrides = overrides.global_color_overrides.clone();
+        self.colors_panel.update(cx, |panel, cx| panel.sync_global_overrides(overrides, cx));
+        self.other_panel.update(cx, |panel, cx| panel.sync_global_overrides(overrides, cx));
         cx.notify();
     }
 
