@@ -149,7 +149,6 @@ impl ColorArcPane {
             "Split-out arc demos from the original project: half arcs, 270-degree arcs, renderer comparison, and thickness variants.",
             div()
                 .w_full()
-                .max_w(px(1120.0))
                 .flex()
                 .flex_col()
                 .gap(px(28.0))

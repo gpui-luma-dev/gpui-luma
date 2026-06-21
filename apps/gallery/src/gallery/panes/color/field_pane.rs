@@ -67,7 +67,6 @@ impl ColorFieldPane {
             "Original Opal field demos split out as a dedicated gallery page: rectangular planes, alternate domains, and vector or raster rendering.",
             div()
                 .w_full()
-                .max_w(px(1120.0))
                 .flex()
                 .flex_col()
                 .gap(px(28.0))

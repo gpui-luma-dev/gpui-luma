@@ -138,7 +138,6 @@ impl ColorRingPane {
             "Dedicated ring demos from the original gallery: hue, saturation, lightness, renderer comparison, and scale variants.",
             div()
                 .w_full()
-                .max_w(px(1120.0))
                 .flex()
                 .flex_col()
                 .gap(px(28.0))
