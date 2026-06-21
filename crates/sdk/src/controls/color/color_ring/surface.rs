@@ -34,12 +34,7 @@ impl ColorRing {
         let value_position = state.effective_position();
         let theta = position_to_theta(value_position, state.rotation_turns());
 
-        let current_size = if state.bounds.size.width > px(0.0) {
-            state.bounds.size
-        } else {
-            size(px(side_px), px(side_px))
-        };
-        let local_bounds = Bounds { origin: point(px(0.0), px(0.0)), size: current_size };
+        let local_bounds = Bounds { origin: point(px(0.0), px(0.0)), size: size(px(side_px), px(side_px)) };
         let (thumb_left, thumb_top) = ring_geometry(local_bounds, ring_thickness)
             .map(|geometry| thumb_top_left(geometry, theta, thumb_size))
             .unwrap_or((0.0, 0.0));
@@ -47,12 +42,17 @@ impl ColorRing {
         RingLayout { side_px, ring_thickness, thumb_size, thumb_left, thumb_top }
     }
 
-    fn border_layer(color: Hsla) -> Div {
-        div().absolute().inset_0().rounded_full().border_1().border_color(color)
+    fn frame_layer(layout: RingLayout) -> Div {
+        div().absolute().left(px(0.0)).top(px(0.0)).size(px(layout.side_px))
     }
 
-    fn inner_border_layer(ring_thickness: f32, color: Hsla) -> Div {
-        div().absolute().inset(px(ring_thickness)).rounded_full().border_1().border_color(color)
+    fn border_layer(layout: RingLayout, color: Hsla) -> Div {
+        Self::frame_layer(layout).rounded_full().border_1().border_color(color)
+    }
+
+    fn inner_border_layer(layout: RingLayout, color: Hsla) -> Div {
+        Self::frame_layer(layout)
+            .child(div().absolute().inset(px(layout.ring_thickness)).rounded_full().border_1().border_color(color))
     }
 
     fn thumb_layer(layout: RingLayout, thumb_color: Hsla) -> Div {
@@ -64,9 +64,7 @@ impl ColorRing {
     }
 
     fn disabled_layer(layout: RingLayout, overlay_color: Hsla, center_hole_color: Hsla) -> Div {
-        div()
-            .absolute()
-            .inset_0()
+        Self::frame_layer(layout)
             .rounded_full()
             .bg(overlay_color)
             .child(div().absolute().inset(px(layout.ring_thickness)).rounded_full().bg(center_hole_color))
@@ -214,7 +212,7 @@ impl RenderOnce for ColorRing {
 
         let background = state.delegate.style_background(
             state,
-            div().absolute().inset_0().rounded_full().overflow_hidden(),
+            Self::frame_layer(layout).rounded_full().overflow_hidden(),
             window,
             cx,
         );
@@ -222,12 +220,13 @@ impl RenderOnce for ColorRing {
         let mut root = div()
             .id(control_id)
             .size(px(layout.side_px))
+            .flex_shrink_0()
             .relative()
             .rounded_full()
             .refine_style(&style)
             .child(background)
-            .when(ring_outer_border, |this| this.child(Self::border_layer(border_color)))
-            .when(ring_inner_border, |this| this.child(Self::inner_border_layer(layout.ring_thickness, border_color)))
+            .when(ring_outer_border, |this| this.child(Self::border_layer(layout, border_color)))
+            .when(ring_inner_border, |this| this.child(Self::inner_border_layer(layout, border_color)))
             .when(!disabled, |this| this.child(Self::thumb_layer(layout, thumb_color)))
             .when(disabled, |this| this.child(Self::disabled_layer(layout, disabled_overlay_color, center_hole_color)))
             .track_focus(&state.focus_handle)

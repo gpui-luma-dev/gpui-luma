@@ -1,5 +1,10 @@
 # Issue #0-oklch: Migrate Color Representation to Native OKLCH
 
+> [!IMPORTANT]
+> **Status & Sequencing**: This issue is **blocked** and will not be considered until [Issue #2: Range-Constrained Slider Control](file:///Users/scg/Developer/GitHub/gpui-luma/docs/ai/issues/2-range-slider.md) is fully completed and verified. The interactive color mixer's gamut-clamping and non-contiguous hue track require the `RangeSlider` component.
+> 
+> **Color Library Decision**: All native color representation, parsing, and color-space conversions must leverage the standard `palette` crate (already configured in `Cargo.toml`). Avoid handwritten mathematical conversions, matrix multipliers, or custom bisection gamut clamps in the look or SDK layers.
+
 ## Description
 Migrate the internal color representation, state calculators, and theme studio serialization in the `gpui-luma` workspace from HSL/RGB to native OKLCH.
 

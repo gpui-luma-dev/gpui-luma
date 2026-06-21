@@ -12,8 +12,10 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
 
 use super::common::{color_gallery_pane, demo_card, demo_section, detail_row};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnTextSize};
 
 const RING_CARD_WIDTH: f32 = 320.0;
+const RING_COMPARISON_CARD_WIDTH: f32 = 760.0;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ColorRingPane {
@@ -22,7 +24,9 @@ pub(in crate::gallery) struct ColorRingPane {
     lightness_ring: Entity<ColorRingState>,
     vector_ring: Entity<ColorRingState>,
     raster_ring: Entity<ColorRingState>,
+    size_xsmall_ring: Entity<ColorRingState>,
     size_small_ring: Entity<ColorRingState>,
+    size_medium_ring: Entity<ColorRingState>,
     size_large_ring: Entity<ColorRingState>,
     thickness_small_ring: Entity<ColorRingState>,
     thickness_large_ring: Entity<ColorRingState>,
@@ -80,9 +84,17 @@ impl ColorRingPane {
             )
             .size(Size::Medium)
         });
+        let size_xsmall_ring = cx.new(|cx| {
+            ColorRingState::hue("color-ring-size-xsmall", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+                .size(Size::XSmall)
+        });
         let size_small_ring = cx.new(|cx| {
             ColorRingState::hue("color-ring-size-small", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
                 .size(Size::Small)
+        });
+        let size_medium_ring = cx.new(|cx| {
+            ColorRingState::hue("color-ring-size-medium", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+                .size(Size::Medium)
         });
         let size_large_ring = cx.new(|cx| {
             ColorRingState::hue("color-ring-size-large", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
@@ -115,7 +127,9 @@ impl ColorRingPane {
             lightness_ring,
             vector_ring,
             raster_ring,
+            size_xsmall_ring,
             size_small_ring,
+            size_medium_ring,
             size_large_ring,
             thickness_small_ring,
             thickness_large_ring,
@@ -219,22 +233,25 @@ impl ColorRingPane {
                     vec![
                         demo_card(
                             "Sizes",
-                            "Small and large ring footprints.",
-                            RING_CARD_WIDTH,
+                            "XSmall through Large ring footprints.",
+                            RING_COMPARISON_CARD_WIDTH,
                             div()
                                 .w_full()
                                 .flex()
-                                .items_center()
+                                .flex_wrap()
+                                .items_start()
                                 .justify_center()
-                                .gap(px(16.0))
-                                .child(self.size_small_ring.clone())
-                                .child(self.size_large_ring.clone()),
+                                .gap(px(20.0))
+                                .child(labeled_ring("XSmall", self.size_xsmall_ring.clone(), look))
+                                .child(labeled_ring("Small", self.size_small_ring.clone(), look))
+                                .child(labeled_ring("Medium", self.size_medium_ring.clone(), look))
+                                .child(labeled_ring("Large", self.size_large_ring.clone(), look)),
                             look,
                         ),
                         demo_card(
                             "Thickness",
                             "Medium ring with thinner and thicker track sizes.",
-                            RING_CARD_WIDTH,
+                            RING_COMPARISON_CARD_WIDTH,
                             div()
                                 .w_full()
                                 .flex()
@@ -259,7 +276,9 @@ impl ColorRingPane {
         notify_entity(&self.lightness_ring, cx);
         notify_entity(&self.vector_ring, cx);
         notify_entity(&self.raster_ring, cx);
+        notify_entity(&self.size_xsmall_ring, cx);
         notify_entity(&self.size_small_ring, cx);
+        notify_entity(&self.size_medium_ring, cx);
         notify_entity(&self.size_large_ring, cx);
         notify_entity(&self.thickness_small_ring, cx);
         notify_entity(&self.thickness_large_ring, cx);
@@ -302,7 +321,15 @@ impl ColorRingPane {
             ring.set_delegate(Box::new(HueRingDelegate { saturation, lightness }), cx);
             ring.set_value(hue, cx);
         });
+        self.size_xsmall_ring.update(cx, |ring, cx| {
+            ring.set_delegate(Box::new(HueRingDelegate { saturation, lightness }), cx);
+            ring.set_value(hue, cx);
+        });
         self.size_small_ring.update(cx, |ring, cx| {
+            ring.set_delegate(Box::new(HueRingDelegate { saturation, lightness }), cx);
+            ring.set_value(hue, cx);
+        });
+        self.size_medium_ring.update(cx, |ring, cx| {
             ring.set_delegate(Box::new(HueRingDelegate { saturation, lightness }), cx);
             ring.set_value(hue, cx);
         });
@@ -323,4 +350,20 @@ impl ColorRingPane {
 
 fn centered(content: impl gpui::IntoElement) -> AnyElement {
     div().w_full().flex().items_center().justify_center().child(content).into_any_element()
+}
+
+fn labeled_ring(label: &'static str, ring: Entity<ColorRingState>, look: &ShadcnLook) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(8.0))
+        .child(ring)
+        .child(
+            div()
+                .typography_style(look.typography_scale(ShadcnTextSize::Xs))
+                .text_color(look.chrome().muted_text)
+                .child(label),
+        )
+        .into_any_element()
 }

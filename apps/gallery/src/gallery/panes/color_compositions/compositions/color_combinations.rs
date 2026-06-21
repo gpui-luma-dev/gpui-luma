@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, AppContext, Context, Entity, FontWeight, Hsla, IntoElement, ParentElement, Rgba, Styled, Subscription,
-    div, hsla, px, rgb,
+    AnyElement, AppContext, Context, Entity, FontWeight, Hsla, IntoElement, ParentElement, Styled, Subscription, div,
+    hsla, px, rgb,
 };
 use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, WhiteMixHueWheelModel};
@@ -16,7 +16,7 @@ use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::panes::shared::{format_hex_color, format_inspector_hsl};
+use crate::gallery::panes::shared::format_inspector_hsl;
 
 use crate::gallery::panes::color::common::notify_control;
 
@@ -77,8 +77,8 @@ impl ColorCombinationsState {
             .spawn(cx);
         let color_input = look
             .textfield("color-combinations-input")
-            .value(format_rgb_hex(color))
-            .placeholder("#RRGGBB")
+            .value(format_hsl_label(color))
+            .placeholder("hsl(120 50% 40%)")
             .full_width(true)
             .spawn(cx);
 
@@ -111,7 +111,7 @@ impl ColorCombinationsState {
                 }
 
                 if let TextFieldEvent::Change { value } | TextFieldEvent::Submit { value } = event
-                    && let Some(color) = parse_rgb_hex(value)
+                    && let Some(color) = parse_hsl(value)
                 {
                     this.color = color;
                     this.sync_wheel(cx);
@@ -160,7 +160,7 @@ impl ColorCombinationsState {
     }
 
     fn sync_color_input(&mut self, cx: &mut Context<Self>) {
-        let value = format_rgb_hex(self.color);
+        let value = format_hsl_label(self.color);
         if self.color_input.read(cx).value() == value {
             return;
         }
@@ -484,14 +484,23 @@ fn field_label(label: &'static str, color: Hsla) -> gpui::Div {
     div().text_sm().font_weight(FontWeight::MEDIUM).text_color(color).child(label)
 }
 
-fn format_rgb_hex(color: Hsla) -> String {
-    format_hex_color(color).to_ascii_uppercase()
-}
-
 fn format_hsl_label(color: Hsla) -> String {
     format!("hsl({})", format_inspector_hsl(color))
 }
 
-fn parse_rgb_hex(value: &str) -> Option<Hsla> {
-    Rgba::try_from(value.trim()).ok().map(Into::into)
+fn parse_hsl(value: &str) -> Option<Hsla> {
+    let trimmed = value.trim();
+    let inner = trimmed.strip_prefix("hsl(").and_then(|s| s.strip_suffix(')')).unwrap_or(trimmed);
+
+    let normalized = inner.replace(',', " ");
+    let parts: Vec<&str> = normalized.split_whitespace().collect();
+    if parts.len() != 3 {
+        return None;
+    }
+
+    let hue = parts[0].parse::<f32>().ok()?.rem_euclid(360.0) / 360.0;
+    let saturation = parts[1].strip_suffix('%')?.parse::<f32>().ok()?.clamp(0.0, 100.0) / 100.0;
+    let lightness = parts[2].strip_suffix('%')?.parse::<f32>().ok()?.clamp(0.0, 100.0) / 100.0;
+
+    Some(hsla(hue, saturation, lightness, 1.0))
 }

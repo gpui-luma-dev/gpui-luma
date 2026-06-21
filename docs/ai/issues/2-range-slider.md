@@ -23,14 +23,64 @@ To prevent the user from selecting unrenderable colors and to visually communica
 * If `allowed_intervals` is empty, it behaves as a standard slider with a single continuous range.
 
 ### 2. Interaction & Snapping Logic
-* **Dragging/Clicking**: When the user drags or clicks the mouse, the computed track percentage is mapped to the slider's coordinate space. If the target value falls into a gap:
-  * Snap the value to the closest boundary (`start` or `end`) of the nearest valid interval.
-* **Keyboard Navigation**: Arrow keys skip over the gaps, jumping directly from the end of one valid interval to the start of the next.
+
+#### Inside Allowed Ranges (Active Segments)
+* **Interaction**: The thumb moves continuously and smoothly along the track, following the mouse cursor or stepping by the configured `step` interval.
+* **Value & State**: Standard active state. The value updates continuously, and semantic `Change` events are emitted normally.
+* **Visuals**: The track is rendered with full color, gradients, or the standard active background.
+
+#### Outside Allowed Ranges (Gaps / Dead Zones)
+* **Visuals**: The gap segments are styled as inactive or disabled (e.g., a muted grey or pattern), showing they are unselectable.
+* **Mouse Clicks/Dragging**:
+  * If a user clicks or drags the cursor over a gap, the thumb **snaps instantly** to the nearest boundary of the closest valid segment.
+  * The thumb never visually rests or stops inside a gap.
+* **Keyboard Steps**:
+  * If the thumb is at the edge of a valid range (e.g., `120.0`) and you press the right arrow key, it **jumps over the gap** directly to the start of the next valid range (e.g., `180.0`).
+  * The step size is dynamically adjusted to bridge the gap.
+* **Initial/Programmatic Value**:
+  * If the slider is initialized or programmatically set to a value inside a gap, it is automatically snapped to the nearest valid interval edge upon model configuration.
+* **Dynamic Range Changes**:
+  * If the allowed intervals are updated dynamically (e.g., when another channel like Lightness changes in an OKLCH color mixer) and the current value falls into a newly formed gap, the control must instantly migrate/snap its value to the closest available valid interval boundary, even if the control is not active or currently being interacted with.
 
 ### 3. Track Visual Template
 * The track is rendered (via Canvas or sub-segmented divs) to show:
   * **Active segments**: rendered with the normal track fill, gradient, or color spectrum.
   * **Gap segments**: rendered with a disabled/inactive style (e.g., dark grey background, no gradient).
+
+---
+
+## Value Snapping & Constraint Strategy
+
+To prevent ad-hoc snapping, stepping, and gap-jumping math from cluttering `RangeSliderControl` and event handlers, all value-constraint logic is encapsulated in a dedicated **Constraint Strategy**:
+
+```rust
+pub trait SliderConstraintStrategy: Send + Sync {
+    /// Constrains a raw target value (e.g. from mouse click/drag or setter)
+    /// to the allowed intervals, snapping it to the nearest valid point.
+    fn clamp_and_snap(
+        &self,
+        value: f32,
+        allowed_intervals: &[std::ops::RangeInclusive<f32>],
+        range: std::ops::RangeInclusive<f32>,
+        step: Option<f32>,
+    ) -> f32;
+
+    /// Computes the new value when stepping (e.g. via keyboard arrow keys),
+    /// skipping entirely over gaps to land on the next valid interval boundary.
+    fn step_value(
+        &self,
+        current: f32,
+        step_delta: f32,
+        allowed_intervals: &[std::ops::RangeInclusive<f32>],
+        range: std::ops::RangeInclusive<f32>,
+        step: Option<f32>,
+    ) -> f32;
+}
+```
+
+### Strategy Implementations
+* **`IntervalConstraintStrategy`**: The default strategy for `RangeSlider`. It implements interval snapping (finding the closest range, clamping bounds, and stepping across dead zones).
+* **`ContinuousConstraintStrategy`**: A fallback strategy used when `allowed_intervals` is empty, behaving like a standard continuous slider.
 
 ---
 
