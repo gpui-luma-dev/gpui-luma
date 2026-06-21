@@ -7,6 +7,7 @@ mod card;
 mod combobox;
 mod checkbox;
 mod color;
+mod color_compositions;
 mod choice_controls_template;
 mod context_menu;
 mod dock_panel;

@@ -1,46 +1,17 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, hsla, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Subscription, div, hsla, prelude::*, px};
 use gpui_luma::controls::color::color_arc::{ColorArcEvent, ColorArcRenderer, ColorArcState};
 use gpui_luma::controls::color::color_arc::raster::RasterArcDelegate;
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
-use super::common::{color_gallery_pane, detail_row, notify_control};
+use crate::gallery::panes::color::common::{detail_row, notify_control};
 
-#[derive(Clone)]
-pub(in crate::gallery) struct SplitRingPane {
-    state: Entity<SplitRingState>,
-}
-
-impl SplitRingPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| SplitRingState::new(look, cx));
-        Self { state }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "Split Ring",
-            "The Pixagram-style split-ring composition with a hue ring plus separate saturation and lightness arcs.",
-            self.state.clone(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
-        notify_entity(&self.state, cx);
-    }
-}
-
-struct SplitRingState {
+pub(in crate::gallery) struct SplitRingState {
     look: Arc<ShadcnLook>,
     saturation_arc: Entity<ColorArcState>,
     lightness_arc: Entity<ColorArcState>,
@@ -88,7 +59,7 @@ impl SplitRingState {
         swatch_radius * 2.0
     }
 
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let init_color = hsla(18.0 / 360.0, 0.85, 0.49, 1.0);
         let hue_degrees = init_color.h * 360.0;
         let saturation = init_color.s;
@@ -177,7 +148,7 @@ impl SplitRingState {
         this
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.saturation_arc, cx);
         notify_control(&self.lightness_arc, cx);
         notify_control(&self.hue_ring, cx);

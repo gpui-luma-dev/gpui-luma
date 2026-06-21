@@ -1,46 +1,17 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Hsla, IntoElement, Subscription, div, prelude::*, px};
+use gpui::{Context, Entity, Hsla, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
-use super::common::{color_gallery_pane, detail_row, notify_control};
+use crate::gallery::panes::color::common::{detail_row, notify_control};
 
-#[derive(Clone)]
-pub(in crate::gallery) struct SvTrianglePane {
-    state: Entity<SvTriangleState>,
-}
-
-impl SvTrianglePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| SvTriangleState::new(look, cx));
-        Self { state }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "SV Triangle",
-            "Hue ring with an embedded Photoshop-style saturation/value triangle.",
-            self.state.clone(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
-        notify_entity(&self.state, cx);
-    }
-}
-
-struct SvTriangleState {
+pub(in crate::gallery) struct SvTriangleState {
     look: Arc<ShadcnLook>,
     hsv: Hsv,
     ring: Entity<ColorRingState>,
@@ -49,7 +20,7 @@ struct SvTriangleState {
 }
 
 impl SvTriangleState {
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 317.0, s: 0.83, v: 0.84, a: 1.0 };
 
         let ring = cx.new(|cx| {
@@ -106,7 +77,7 @@ impl SvTriangleState {
         Self { look, hsv: initial_hsv, ring, triangle, _subscriptions: subscriptions }
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.ring, cx);
         notify_control(&self.triangle, cx);
     }

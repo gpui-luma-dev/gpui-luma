@@ -1,24 +1,22 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{
     ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec,
 };
 use gpui_luma::controls::color::ColorSwatch;
-use gpui_luma::wrappanel;
 use gpui_luma::controls::color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorSliderDelegate, ColorSliderEvent, ColorSliderState, HueDelegate,
 };
 use gpui_luma::theme::ControlSize;
+use gpui_luma::wrappanel;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
+use crate::gallery::panes::color::common::{control_label, demo_card, detail_row, notify_control};
 
-use super::common::{color_gallery_pane, control_label, demo_card, detail_row, notify_control};
-
-#[derive(Clone)]
-pub(in crate::gallery) struct MultiMixerPane {
+pub(in crate::gallery) struct MultiMixerState {
+    look: Arc<ShadcnLook>,
     hue_alpha: Entity<ColorSpaceMixerState<HueAlpha>>,
     rgb: Entity<ColorSpaceMixerState<RgbaSpec>>,
     hsla: Entity<ColorSpaceMixerState<Hsl>>,
@@ -28,8 +26,8 @@ pub(in crate::gallery) struct MultiMixerPane {
     lab_dynamic: Entity<ColorSpaceMixerState<Lab>>,
 }
 
-impl MultiMixerPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+impl MultiMixerState {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial = gpui::hsla(0.55, 1.0, 0.5, 1.0);
         let hue_alpha =
             cx.new(|cx| ColorSpaceMixerState::new("Hue + Alpha", None, look.clone(), HueAlpha::from_hsla(initial), cx));
@@ -49,67 +47,10 @@ impl MultiMixerPane {
             ColorSpaceMixerState::new("Lab", Some("Dynamic range"), look.clone(), spec, cx)
         });
 
-        Self { hue_alpha, rgb, hsla, hsva, lab, lab_auto, lab_dynamic }
+        Self { look, hue_alpha, rgb, hsla, hsva, lab, lab_auto, lab_dynamic }
     }
 
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "Multi Mixer",
-            "The original mixer page explored multiple color spaces. This port keeps each space as its own interactive card so you can compare the slider primitives directly.",
-            div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .gap(px(28.0))
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(12.0))
-                        .child(
-                            div()
-                                .flex()
-                                .flex_col()
-                                .gap(px(2.0))
-                                .child(
-                                    div()
-                                        .typography_style(
-                                            look.typography_role(gpui_luma_look_shadcn::ShadcnTextRole::H4),
-                                        )
-                                        .text_color(look.chrome().title_text)
-                                        .child("Mixer Modes"),
-                                )
-                                .child(
-                                    div()
-                                        .typography_style(
-                                            look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Sm),
-                                        )
-                                        .text_color(look.chrome().muted_text)
-                                        .child("Representative mixers for the upstream mode set."),
-                                ),
-                        )
-                        .child(
-                            wrappanel! {
-                                orientation=horizontal gap=16.0 align=start;
-                                mixer_card("Hue + Alpha", self.hue_alpha.clone(), look),
-                                mixer_card("RGB", self.rgb.clone(), look),
-                                mixer_card("HSLA", self.hsla.clone(), look),
-                                mixer_card("HSVA", self.hsva.clone(), look),
-                                mixer_card("Lab", self.lab.clone(), look),
-                                mixer_card("Lab Auto-clamped", self.lab_auto.clone(), look),
-                                mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), look)
-                            }
-                            .w_full(),
-                        ),
-                )
-                .into_any_element(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         self.hue_alpha.update(cx, |state, cx| state.notify_controls(cx));
         self.rgb.update(cx, |state, cx| state.notify_controls(cx));
         self.hsla.update(cx, |state, cx| state.notify_controls(cx));
@@ -117,18 +58,52 @@ impl MultiMixerPane {
         self.lab.update(cx, |state, cx| state.notify_controls(cx));
         self.lab_auto.update(cx, |state, cx| state.notify_controls(cx));
         self.lab_dynamic.update(cx, |state, cx| state.notify_controls(cx));
-
-        notify_entity(&self.hue_alpha, cx);
-        notify_entity(&self.rgb, cx);
-        notify_entity(&self.hsla, cx);
-        notify_entity(&self.hsva, cx);
-        notify_entity(&self.lab, cx);
-        notify_entity(&self.lab_auto, cx);
-        notify_entity(&self.lab_dynamic, cx);
     }
 }
 
-fn mixer_card(title: &'static str, mixer: impl IntoElement, look: &ShadcnLook) -> AnyElement {
+impl gpui::Render for MultiMixerState {
+    fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div().w_full().flex().flex_col().gap(px(28.0)).child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(12.0))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(2.0))
+                        .child(
+                            div()
+                                .typography_style(self.look.typography_role(gpui_luma_look_shadcn::ShadcnTextRole::H4))
+                                .text_color(self.look.chrome().title_text)
+                                .child("Mixer Modes"),
+                        )
+                        .child(
+                            div()
+                                .typography_style(self.look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Sm))
+                                .text_color(self.look.chrome().muted_text)
+                                .child("Representative mixers for the upstream mode set."),
+                        ),
+                )
+                .child(
+                    wrappanel! {
+                        orientation=horizontal gap=16.0 align=start;
+                        mixer_card("Hue + Alpha", self.hue_alpha.clone(), &self.look),
+                        mixer_card("RGB", self.rgb.clone(), &self.look),
+                        mixer_card("HSLA", self.hsla.clone(), &self.look),
+                        mixer_card("HSVA", self.hsva.clone(), &self.look),
+                        mixer_card("Lab", self.lab.clone(), &self.look),
+                        mixer_card("Lab Auto-clamped", self.lab_auto.clone(), &self.look),
+                        mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), &self.look)
+                    }
+                    .w_full(),
+                ),
+        )
+    }
+}
+
+fn mixer_card(title: &'static str, mixer: impl IntoElement, look: &ShadcnLook) -> gpui::AnyElement {
     demo_card(title, "Interactive per-space channel mixer.", 340.0, mixer, look)
 }
 
@@ -232,7 +207,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
     }
 }
 
-fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> AnyElement {
+fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> gpui::AnyElement {
     ColorSwatch::new(color).checkerboard(true).height(px(44.0)).rounded(px(12.0)).into_any_element()
 }
 

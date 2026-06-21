@@ -8,40 +8,11 @@ use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
-use super::common::{color_gallery_pane, detail_row, notify_control};
+use crate::gallery::panes::color::common::{detail_row, notify_control};
 
-#[derive(Clone)]
-pub(in crate::gallery) struct HsvPlanePane {
-    state: Entity<HsvPlaneState>,
-}
-
-impl HsvPlanePane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| HsvPlaneState::new(look, cx));
-        Self { state }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "HSV Plane",
-            "The Photoshop-style HSV plane composition with dedicated H, S, and V sliders.",
-            self.state.clone(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
-        notify_entity(&self.state, cx);
-    }
-}
-
-struct HsvPlaneState {
+pub(in crate::gallery) struct HsvPlaneState {
     look: Arc<ShadcnLook>,
     hsv: Hsv,
     plane: Entity<ColorFieldState>,
@@ -52,7 +23,7 @@ struct HsvPlaneState {
 }
 
 impl HsvPlaneState {
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 266.0, s: 0.78, v: 0.76, a: 1.0 };
 
         let plane = cx.new(|_| {
@@ -139,7 +110,7 @@ impl HsvPlaneState {
         Self { look, hsv: initial_hsv, plane, slider_h, slider_s, slider_v, _subscriptions: subscriptions }
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.plane, cx);
         notify_control(&self.slider_h, cx);
         notify_control(&self.slider_s, cx);

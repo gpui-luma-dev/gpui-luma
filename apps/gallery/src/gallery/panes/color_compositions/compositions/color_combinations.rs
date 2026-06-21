@@ -16,10 +16,9 @@ use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_hex_color, format_inspector_hsl};
 
-use super::common::{color_gallery_pane, notify_control};
+use crate::gallery::panes::color::common::notify_control;
 
 const RING_SIZE: f32 = 300.0;
 const RING_CANVAS_PADDING: f32 = 20.0;
@@ -32,35 +31,7 @@ const ROW_GAP_PX: f32 = 16.0;
 const COLOR_SWATCH_SIZE: f32 = 48.0;
 const RESULT_SWATCH_HEIGHT: f32 = 112.0;
 
-#[derive(Clone)]
-pub(in crate::gallery) struct ColorCombinationsPane {
-    state: Entity<ColorCombinationsState>,
-}
-
-impl ColorCombinationsPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| ColorCombinationsState::new(look, cx));
-        Self { state }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "Combinations",
-            "The original harmony-combination composition page: a base color wheel plus generated harmony palettes.",
-            self.state.clone(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
-        notify_entity(&self.state, cx);
-    }
-}
-
-struct ColorCombinationsState {
+pub(in crate::gallery) struct ColorCombinationsState {
     look: Arc<ShadcnLook>,
     wheel: Entity<ColorFieldState>,
     lightness_ring: Entity<ColorRingState>,
@@ -73,7 +44,7 @@ struct ColorCombinationsState {
 }
 
 impl ColorCombinationsState {
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let color: Hsla = rgb(0x47c424).into();
         let wheel = cx.new(|_| {
             ColorFieldState::new(
@@ -163,7 +134,7 @@ impl ColorCombinationsState {
         }
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.wheel, cx);
         notify_control(&self.lightness_ring, cx);
         notify_control(&self.harmony_menu, cx);
@@ -499,7 +470,7 @@ fn render_combinations_card_body(
             vstack! {
                 gap=10.0;
                 div().h(px(RESULT_SWATCH_HEIGHT)).rounded(px(14.0)).bg(swatch.color),
-                div().text_lg().font_weight(FontWeight::MEDIUM).text_color(body_text).child(format_rgb_hex(swatch.color)),
+                div().text_xs().font_weight(FontWeight::MEDIUM).text_color(body_text).child(format_hsl_label(swatch.color)),
             }
             .flex_1()
             .min_w(px(0.0))
@@ -510,11 +481,15 @@ fn render_combinations_card_body(
 }
 
 fn field_label(label: &'static str, color: Hsla) -> gpui::Div {
-    div().text_xl().font_weight(FontWeight::MEDIUM).text_color(color).child(label)
+    div().text_sm().font_weight(FontWeight::MEDIUM).text_color(color).child(label)
 }
 
 fn format_rgb_hex(color: Hsla) -> String {
     format_hex_color(color).to_ascii_uppercase()
+}
+
+fn format_hsl_label(color: Hsla) -> String {
+    format!("hsl({})", format_inspector_hsl(color))
 }
 
 fn parse_rgb_hex(value: &str) -> Option<Hsla> {

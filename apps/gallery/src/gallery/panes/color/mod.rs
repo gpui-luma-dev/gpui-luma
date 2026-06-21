@@ -1,26 +1,12 @@
 mod arc_pane;
-mod combinations_pane;
-mod common;
+pub(super) mod common;
 mod field_pane;
-mod hsv_plane_pane;
-mod hsv_wheel_pane;
-mod multi_mixer_pane;
-mod picker_pane;
 mod ring_pane;
 mod slider_pane;
 mod slider_revealed_pane;
-mod split_ring_pane;
-mod sv_triangle_pane;
 
 pub(in crate::gallery) use arc_pane::ColorArcPane;
-pub(in crate::gallery) use combinations_pane::ColorCombinationsPane;
 pub(in crate::gallery) use field_pane::ColorFieldPane;
-pub(in crate::gallery) use hsv_plane_pane::HsvPlanePane;
-pub(in crate::gallery) use hsv_wheel_pane::HsvWheelPane;
-pub(in crate::gallery) use multi_mixer_pane::MultiMixerPane;
-pub(in crate::gallery) use picker_pane::ColorPickerPane;
 pub(in crate::gallery) use ring_pane::ColorRingPane;
 pub(in crate::gallery) use slider_pane::ColorSliderPane;
 pub(in crate::gallery) use slider_revealed_pane::ColorSliderRevealedPane;
-pub(in crate::gallery) use split_ring_pane::SplitRingPane;
-pub(in crate::gallery) use sv_triangle_pane::SvTrianglePane;

@@ -1,7 +1,7 @@
 use std::f32::consts::SQRT_2;
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
@@ -9,40 +9,11 @@ use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-use crate::gallery::control::GalleryApp;
-use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
+use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
-use super::common::{color_gallery_pane, detail_row, notify_control};
+use crate::gallery::panes::color::common::{detail_row, notify_control};
 
-#[derive(Clone)]
-pub(in crate::gallery) struct HsvWheelPane {
-    state: Entity<HsvWheelState>,
-}
-
-impl HsvWheelPane {
-    pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| HsvWheelState::new(look, cx));
-        Self { state }
-    }
-
-    pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
-
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        color_gallery_pane(
-            "HSV Wheel",
-            "Hue ring with an embedded saturation/value square, mirroring the upstream wheel composition page.",
-            self.state.clone(),
-            look,
-        )
-    }
-
-    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        self.state.update(cx, |state, cx| state.notify_controls(cx));
-        notify_entity(&self.state, cx);
-    }
-}
-
-struct HsvWheelState {
+pub(in crate::gallery) struct HsvWheelState {
     look: Arc<ShadcnLook>,
     color_ring: Entity<ColorRingState>,
     plane_sv: Entity<ColorFieldState>,
@@ -53,7 +24,7 @@ struct HsvWheelState {
 impl HsvWheelState {
     const RING_OUTER_SIZE_PX: f32 = 300.0;
 
-    fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+    pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let hsv = Hsv { h: 220.0, s: 0.88, v: 0.6, a: 1.0 };
         let color_ring = cx.new(|cx| {
             ColorRingState::hue(
@@ -98,7 +69,7 @@ impl HsvWheelState {
         Self { look, color_ring, plane_sv, hsv, _subscriptions: subscriptions }
     }
 
-    fn notify_controls(&self, cx: &mut Context<Self>) {
+    pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.color_ring, cx);
         notify_control(&self.plane_sv, cx);
     }

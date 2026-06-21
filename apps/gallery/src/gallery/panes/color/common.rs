@@ -1,7 +1,7 @@
 use gpui::{AnyElement, Context, Entity, FontWeight, IntoElement, div, prelude::*, px};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 
-pub(super) fn color_gallery_pane(
+pub(in crate::gallery::panes) fn color_gallery_pane(
     title: &'static str,
     description: &'static str,
     content: impl IntoElement,
@@ -43,7 +43,7 @@ pub(super) fn color_gallery_pane(
         .into_any_element()
 }
 
-pub(super) fn demo_section(
+pub(in crate::gallery::panes) fn demo_section(
     title: &'static str,
     description: &'static str,
     cards: Vec<AnyElement>,
@@ -75,7 +75,7 @@ pub(super) fn demo_section(
         .into_any_element()
 }
 
-pub(super) fn demo_card(
+pub(in crate::gallery::panes) fn demo_card(
     title: &'static str,
     description: &'static str,
     width_px: f32,
@@ -116,7 +116,7 @@ pub(super) fn demo_card(
         .into_any_element()
 }
 
-pub(super) fn control_label(label: &'static str, look: &ShadcnLook) -> AnyElement {
+pub(in crate::gallery::panes) fn control_label(label: &'static str, look: &ShadcnLook) -> AnyElement {
     div()
         .typography_style(look.typography_scale(ShadcnTextSize::Xs))
         .font_weight(FontWeight::MEDIUM)
@@ -125,7 +125,7 @@ pub(super) fn control_label(label: &'static str, look: &ShadcnLook) -> AnyElemen
         .into_any_element()
 }
 
-pub(super) fn detail_row(label: &'static str, value: String, look: &ShadcnLook) -> AnyElement {
+pub(in crate::gallery::panes) fn detail_row(label: &'static str, value: String, look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
     let label_style = look.typography_scale(ShadcnTextSize::Xs);
 
@@ -145,6 +145,6 @@ pub(super) fn detail_row(label: &'static str, value: String, look: &ShadcnLook) 
         .into_any_element()
 }
 
-pub(super) fn notify_control<T: 'static, V: 'static>(entity: &Entity<T>, cx: &mut Context<V>) {
+pub(in crate::gallery::panes) fn notify_control<T: 'static, V: 'static>(entity: &Entity<T>, cx: &mut Context<V>) {
     entity.update(cx, |_, cx| cx.notify());
 }
