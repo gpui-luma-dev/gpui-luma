@@ -4,6 +4,7 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{ChannelDelegate, ColorSliderEvent, ColorSliderState, sizing};
+use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -192,15 +193,7 @@ impl gpui::Render for HsvPlaneState {
                     .flex_col()
                     .items_center()
                     .gap(px(8.0))
-                    .child(
-                        div()
-                            .w(px(plane_size))
-                            .h(px(40.0))
-                            .rounded(px(12.0))
-                            .bg(hsla)
-                            .border_1()
-                            .border_color(self.look.chrome().border),
-                    )
+                    .child(ColorSwatch::new(hsla).height(px(40.0)).rounded(px(12.0)).disable_checkerboard())
                     .child(detail_row("Hex", format_hex_color(hsla), &self.look))
                     .child(detail_row("HSLA", format_compact_hsla(hsla), &self.look)),
             )

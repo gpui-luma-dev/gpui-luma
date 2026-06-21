@@ -5,6 +5,7 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
+use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::style::Size;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -153,14 +154,7 @@ impl gpui::Render for HsvWheelState {
                     .flex()
                     .flex_col()
                     .gap(px(8.0))
-                    .child(
-                        div()
-                            .h(px(40.0))
-                            .rounded(px(12.0))
-                            .border_1()
-                            .border_color(self.look.chrome().border)
-                            .bg(color),
-                    )
+                    .child(ColorSwatch::new(color).height(px(40.0)).rounded(px(12.0)).disable_checkerboard())
                     .child(detail_row("Hex", format_hex_color(color), &self.look))
                     .child(detail_row("HSLA", format_compact_hsla(color), &self.look)),
             )

@@ -4,6 +4,7 @@ use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{AlphaDelegate, ColorSliderEvent, ColorSliderState, sizing};
+use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -60,7 +61,6 @@ impl ColorPickerPane {
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let selected = self.hsv.to_hsla_ext();
-        let chrome = look.chrome();
 
         gallery_pane_with_description(
             "Color Picker",
@@ -90,14 +90,7 @@ impl ColorPickerPane {
                                 .flex()
                                 .flex_col()
                                 .gap(px(10.0))
-                                .child(
-                                    div()
-                                        .h(px(SWATCH_HEIGHT))
-                                        .rounded(px(12.0))
-                                        .border_1()
-                                        .border_color(chrome.border)
-                                        .bg(selected),
-                                )
+                                .child(ColorSwatch::new(selected).height(px(SWATCH_HEIGHT)).rounded(px(12.0)))
                                 .child(detail_row("Hex", format_hex_color(selected)))
                                 .child(detail_row("HSLA", format_compact_hsla(selected))),
                         ),

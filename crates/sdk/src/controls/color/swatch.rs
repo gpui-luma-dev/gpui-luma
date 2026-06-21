@@ -28,6 +28,7 @@ pub struct ColorSwatch {
     size: ControlSize,
     custom_height: Option<Pixels>,
     corner_radius: Option<Pixels>,
+    checkerboard: bool,
 }
 
 impl ColorSwatch {
@@ -36,7 +37,13 @@ impl ColorSwatch {
     /// The default sizing is `ControlSize::Md`, but callers can override the
     /// height or rounded radius after construction.
     pub fn new(color: impl Into<Hsla>) -> Self {
-        Self { color: color.into(), size: ControlSize::Md, custom_height: None, corner_radius: None }
+        Self {
+            color: color.into(),
+            size: ControlSize::Md,
+            custom_height: None,
+            corner_radius: None,
+            checkerboard: true,
+        }
     }
 
     /// Sets the semantic swatch size.
@@ -64,6 +71,15 @@ impl ColorSwatch {
     /// swatch does not exhibit corner seams or background bleed.
     pub fn rounded(mut self, radius: impl Into<Pixels>) -> Self {
         self.corner_radius = Some(radius.into());
+        self
+    }
+
+    /// Disables the checkerboard underlay.
+    ///
+    /// Use this for opaque previews where the alpha indicator would be visual
+    /// noise, or when the caller wants a pure solid swatch fill.
+    pub fn disable_checkerboard(mut self) -> Self {
+        self.checkerboard = false;
         self
     }
 
@@ -115,7 +131,8 @@ impl RenderOnce for ColorSwatch {
                     let inner_bounds = bounds.inset(border_width);
                     let inner_r = (radius - border_width).max(px(0.0));
 
-                    if color.a < 0.999
+                    if self.checkerboard
+                        && color.a < 0.999
                         && inner_bounds.size.width.as_f32() > 0.0
                         && inner_bounds.size.height.as_f32() > 0.0
                     {
