@@ -157,7 +157,7 @@ impl ColorSliderPane {
                             .child(slider_row("Hue", self.hue_slider.clone(), look))
                             .child(slider_row("Saturation", self.saturation_slider.clone(), look))
                             .child(slider_row("Alpha", self.alpha_slider.clone(), look))
-                            .child(ColorSwatch::new(selected).height(px(44.0)).rounded(px(12.0)).into_any_element())
+                            .child(ColorSwatch::new(selected).checkerboard(true).height(px(44.0)).rounded(px(12.0)).into_any_element())
                             .child(detail_row("Hex", format_hex_color(selected), look))
                             .child(detail_row("HSLA", format_compact_hsla(selected), look))
                             .child(detail_row("Last Event", self.last_event.to_string(), look)),

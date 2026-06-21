@@ -20,8 +20,9 @@ use crate::theme::ControlSize;
 /// - The outer swatch is drawn in a single canvas pass.
 /// - The color fill and border are painted together in one `PaintQuad` to avoid
 ///   haloing at the edge.
-/// - When the color has alpha, the checkerboard is drawn inside an inset inner
-///   bounds so the border occludes any checkerboard edge antialiasing.
+/// - Checkerboard is opt-in; when enabled and the color has alpha, it is drawn
+///   inside an inset inner bounds so the border occludes any checkerboard edge
+///   antialiasing.
 #[derive(IntoElement)]
 pub struct ColorSwatch {
     color: Hsla,
@@ -42,7 +43,7 @@ impl ColorSwatch {
             size: ControlSize::Md,
             custom_height: None,
             corner_radius: None,
-            checkerboard: true,
+            checkerboard: false,
         }
     }
 
@@ -74,12 +75,12 @@ impl ColorSwatch {
         self
     }
 
-    /// Disables the checkerboard underlay.
+    /// Sets whether the checkerboard underlay is shown.
     ///
-    /// Use this for opaque previews where the alpha indicator would be visual
-    /// noise, or when the caller wants a pure solid swatch fill.
-    pub fn disable_checkerboard(mut self) -> Self {
-        self.checkerboard = false;
+    /// Use `true` for translucent previews where the alpha indicator should be
+    /// visible.
+    pub fn checkerboard(mut self, enabled: bool) -> Self {
+        self.checkerboard = enabled;
         self
     }
 
@@ -105,8 +106,8 @@ impl RenderOnce for ColorSwatch {
     ///
     /// The paint order is deliberate:
     /// 1. Compute the outer radius and derive a 1px inset inner radius.
-    /// 2. If the color is translucent, paint an inner base fill and masked
-    ///    checkerboard inside the inset bounds.
+    /// 2. If checkerboard is enabled and the color is translucent, paint an
+    ///    inner base fill and masked checkerboard inside the inset bounds.
     /// 3. Paint the actual color and border together in one `PaintQuad` so the
     ///    outer edge is composed once.
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {

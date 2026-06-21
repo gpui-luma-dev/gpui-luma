@@ -193,7 +193,7 @@ impl gpui::Render for HsvPlaneState {
                     .flex_col()
                     .items_center()
                     .gap(px(8.0))
-                    .child(ColorSwatch::new(hsla).height(px(40.0)).rounded(px(12.0)).disable_checkerboard())
+                    .child(ColorSwatch::new(hsla).checkerboard(false).height(px(40.0)).rounded(px(12.0)))
                     .child(detail_row("Hex", format_hex_color(hsla), &self.look))
                     .child(detail_row("HSLA", format_compact_hsla(hsla), &self.look)),
             )

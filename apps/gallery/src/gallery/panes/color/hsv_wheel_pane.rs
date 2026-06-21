@@ -154,7 +154,7 @@ impl gpui::Render for HsvWheelState {
                     .flex()
                     .flex_col()
                     .gap(px(8.0))
-                    .child(ColorSwatch::new(color).height(px(40.0)).rounded(px(12.0)).disable_checkerboard())
+                    .child(ColorSwatch::new(color).checkerboard(false).height(px(40.0)).rounded(px(12.0)))
                     .child(detail_row("Hex", format_hex_color(color), &self.look))
                     .child(detail_row("HSLA", format_compact_hsla(color), &self.look)),
             )

@@ -10,6 +10,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, gallery_pane_with_description, notify_entity};
+use super::common::{control_label, detail_row};
 
 const CONTROL_WIDTH: f32 = 260.0;
 const SWATCH_HEIGHT: f32 = 44.0;
@@ -80,9 +81,9 @@ impl ColorPickerPane {
                         .flex()
                         .flex_col()
                         .gap(px(14.0))
-                        .child(label_row("Hue"))
+                        .child(control_label("Hue", look))
                         .child(self.hue_slider.clone())
-                        .child(label_row("Alpha"))
+                        .child(control_label("Alpha", look))
                         .child(self.alpha_slider.clone())
                         .child(
                             div()
@@ -90,9 +91,14 @@ impl ColorPickerPane {
                                 .flex()
                                 .flex_col()
                                 .gap(px(10.0))
-                                .child(ColorSwatch::new(selected).height(px(SWATCH_HEIGHT)).rounded(px(12.0)))
-                                .child(detail_row("Hex", format_hex_color(selected)))
-                                .child(detail_row("HSLA", format_compact_hsla(selected))),
+                                .child(
+                                    ColorSwatch::new(selected)
+                                        .checkerboard(true)
+                                        .height(px(SWATCH_HEIGHT))
+                                        .rounded(px(12.0)),
+                                )
+                                .child(detail_row("Hex", format_hex_color(selected), look))
+                                .child(detail_row("HSLA", format_compact_hsla(selected), look)),
                         ),
                 )
                 .into_any_element(),
@@ -165,18 +171,4 @@ impl ColorPickerPane {
 
         self.suppress_sync = false;
     }
-}
-
-fn label_row(label: &'static str) -> gpui::Div {
-    div().text_sm().font_weight(gpui::FontWeight::MEDIUM).child(label)
-}
-
-fn detail_row(label: &'static str, value: String) -> gpui::Div {
-    div()
-        .flex()
-        .items_center()
-        .justify_between()
-        .gap(px(12.0))
-        .child(div().text_sm().font_weight(gpui::FontWeight::MEDIUM).child(label))
-        .child(div().text_sm().child(value))
 }

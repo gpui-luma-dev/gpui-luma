@@ -233,7 +233,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
 }
 
 fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> AnyElement {
-    ColorSwatch::new(color).height(px(44.0)).rounded(px(12.0)).into_any_element()
+    ColorSwatch::new(color).checkerboard(true).height(px(44.0)).rounded(px(12.0)).into_any_element()
 }
 
 fn mixer_delegate<S: ColorSpecification>(spec: S, channel_name: &'static str) -> Box<dyn ColorSliderDelegate> {
