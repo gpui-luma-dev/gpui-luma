@@ -56,11 +56,11 @@ impl SliderTemplate for ThemedSliderTemplate {
         &self,
         model: &SliderRenderModel<'_>,
         handlers: SliderTemplateHandlers,
-        _window: &mut Window,
+        window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
         let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
-        let look = self.theme.resolve(model.state);
+        let look = self.theme.resolve(model.size, model.thumb_size, model.state);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let long_axis = look.width;
         let short_axis = look.height;
@@ -96,6 +96,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                 let track_top = (short_axis - cross_axis) * 0.5;
                 let thumb_top = (short_axis - look.thumb_size) * 0.5 - thumb_focus_offset();
                 let thumb_center_offset = -(look.thumb_size * 0.5 + thumb_focus_offset());
+                let track_radius =
+                    model.corner_radius.map(|radius| radius.to_pixels(window.rem_size())).unwrap_or(px(look.radius));
 
                 let track = div()
                     .id(format!("{}-track", model.id))
@@ -105,7 +107,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .top(px(track_top))
                     .h(px(cross_axis))
                     .bg(look.track_background)
-                    .rounded(px(look.radius))
+                    .rounded(track_radius)
                     .overflow_hidden()
                     .child(
                         div()
@@ -115,7 +117,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                             .h_full()
                             .w(relative(percentage))
                             .bg(look.fill_background)
-                            .rounded(px(look.radius)),
+                            .rounded(track_radius),
                     )
                     .child(
                         canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
@@ -152,6 +154,8 @@ impl SliderTemplate for ThemedSliderTemplate {
                 let track_left = (short_axis - cross_axis) * 0.5;
                 let thumb_left = (short_axis - look.thumb_size) * 0.5;
                 let thumb_top = (long_axis - look.thumb_size).max(0.0) * (1.0 - percentage);
+                let track_radius =
+                    model.corner_radius.map(|radius| radius.to_pixels(window.rem_size())).unwrap_or(px(look.radius));
 
                 let track = div()
                     .id(format!("{}-track", model.id))
@@ -161,7 +165,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                     .w(px(cross_axis))
                     .h(px(long_axis))
                     .bg(look.track_background)
-                    .rounded(px(look.radius))
+                    .rounded(track_radius)
                     .overflow_hidden()
                     .child(
                         div()
@@ -171,7 +175,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                             .w_full()
                             .h(px(long_axis * percentage))
                             .bg(look.fill_background)
-                            .rounded(px(look.radius)),
+                            .rounded(track_radius),
                     )
                     .child(
                         canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})

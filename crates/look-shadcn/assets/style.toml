@@ -463,11 +463,25 @@ label_color = "foreground"
 # =====================================================================
 # 5. SLIDER
 # =====================================================================
+[slider.metrics.sm]
+width = 260.0
+height = 24.0
+track_height = 4.0
+thumb_size = 12.0
+radius = "radius.pill"
+
 [slider.metrics.md]
 width = 260.0
 height = 32.0
+track_height = 6.0
+thumb_size = 16.0
+radius = "radius.pill"
+
+[slider.metrics.lg]
+width = 260.0
+height = 40.0
 track_height = 8.0
-thumb_size = 18.0
+thumb_size = 20.0
 radius = "radius.pill"
 
 [[slider.color_rules]]

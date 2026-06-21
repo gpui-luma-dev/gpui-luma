@@ -266,9 +266,14 @@ struct RadixSliderTheme {
 }
 
 impl SliderTheme for RadixSliderTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::slider::SliderLook {
+    fn resolve(
+        &self,
+        size: gpui_luma::theme::ControlSize,
+        thumb_size: Option<gpui_luma::controls::slider::SliderThumbSize>,
+        state: InteractionState,
+    ) -> gpui_luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
-        slider_look(tokens.as_ref(), self.theme.mode(), state)
+        slider_look(tokens.as_ref(), self.theme.mode(), size, thumb_size, state)
     }
 }
 

@@ -319,32 +319,42 @@ impl OtherPanel {
 
         let palette_hue_slider = panel.read(cx).palette_hue_slider.clone();
         subscriptions.push(cx.subscribe(&palette_hue_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_palette_hue_deg(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_palette_hue_deg(value, cx);
         }));
 
         let palette_saturation_slider = panel.read(cx).palette_saturation_slider.clone();
         subscriptions.push(cx.subscribe(&palette_saturation_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_palette_saturation_multiplier(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_palette_saturation_multiplier(value, cx);
         }));
 
         let palette_lightness_slider = panel.read(cx).palette_lightness_slider.clone();
         subscriptions.push(cx.subscribe(&palette_lightness_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_palette_lightness_multiplier(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_palette_lightness_multiplier(value, cx);
         }));
 
         let palette_vividness_slider = panel.read(cx).palette_vividness_slider.clone();
         subscriptions.push(cx.subscribe(&palette_vividness_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_palette_vividness_amount(clamp_palette_vividness_amount(*value), cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_palette_vividness_amount(clamp_palette_vividness_amount(value), cx);
         }));
 
         let palette_temperature_slider = panel.read(cx).palette_temperature_slider.clone();
         subscriptions.push(cx.subscribe(&palette_temperature_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_palette_temperature_amount(clamp_palette_temperature_amount(*value), cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_palette_temperature_amount(clamp_palette_temperature_amount(value), cx);
         }));
 
         let radius_field = panel.read(cx).radius_field.clone();
@@ -369,14 +379,18 @@ impl OtherPanel {
 
         let radius_slider = panel.read(cx).radius_slider.clone();
         subscriptions.push(cx.subscribe(&radius_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_radius_rem(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_radius_rem(value, cx);
         }));
 
         let spacing_slider = panel.read(cx).spacing_slider.clone();
         subscriptions.push(cx.subscribe(&spacing_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_spacing_rem(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_spacing_rem(value, cx);
         }));
 
         let shadow_color_field = panel.read(cx).shadow_color_field.clone();
@@ -450,32 +464,42 @@ impl OtherPanel {
 
         let shadow_opacity_slider = panel.read(cx).shadow_opacity_slider.clone();
         subscriptions.push(cx.subscribe(&shadow_opacity_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_shadow_opacity(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_shadow_opacity(value, cx);
         }));
 
         let shadow_blur_slider = panel.read(cx).shadow_blur_slider.clone();
         subscriptions.push(cx.subscribe(&shadow_blur_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_shadow_blur(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_shadow_blur(value, cx);
         }));
 
         let shadow_spread_slider = panel.read(cx).shadow_spread_slider.clone();
         subscriptions.push(cx.subscribe(&shadow_spread_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_shadow_spread(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_shadow_spread(value, cx);
         }));
 
         let shadow_offset_x_slider = panel.read(cx).shadow_offset_x_slider.clone();
         subscriptions.push(cx.subscribe(&shadow_offset_x_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_shadow_offset_x(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_shadow_offset_x(value, cx);
         }));
 
         let shadow_offset_y_slider = panel.read(cx).shadow_offset_y_slider.clone();
         subscriptions.push(cx.subscribe(&shadow_offset_y_slider, |app, _, event: &SliderEvent, cx| {
-            let SliderEvent::Change { value } = event;
-            app.set_shadow_offset_y(*value, cx);
+            let value = match event {
+                SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            };
+            app.set_shadow_offset_y(value, cx);
         }));
     }
 

@@ -108,8 +108,10 @@ impl SystemPanel {
     }
 
     fn handle_budget_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
-        let SliderEvent::Change { value } = event;
-        self.budget = *value;
+        let value = match event {
+            SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+        };
+        self.budget = value;
         self.emit_change("Slider::Budget", cx);
         cx.notify();
     }

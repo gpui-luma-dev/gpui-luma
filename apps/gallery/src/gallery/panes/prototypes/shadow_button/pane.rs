@@ -340,13 +340,15 @@ impl ButtonPane {
     }
 
     fn handle_slider_event(&mut self, field: ShadowSliderField, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
-        let SliderEvent::Change { value } = event;
+        let value = match event {
+            SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+        };
         match field {
-            ShadowSliderField::OffsetX => self.shadow.offset_x = *value,
-            ShadowSliderField::OffsetY => self.shadow.offset_y = *value,
-            ShadowSliderField::Blur => self.shadow.blur_radius = *value,
-            ShadowSliderField::Spread => self.shadow.spread_radius = *value,
-            ShadowSliderField::Opacity => self.shadow.opacity = (*value / 100.0).clamp(0.0, 1.0),
+            ShadowSliderField::OffsetX => self.shadow.offset_x = value,
+            ShadowSliderField::OffsetY => self.shadow.offset_y = value,
+            ShadowSliderField::Blur => self.shadow.blur_radius = value,
+            ShadowSliderField::Spread => self.shadow.spread_radius = value,
+            ShadowSliderField::Opacity => self.shadow.opacity = (value / 100.0).clamp(0.0, 1.0),
         }
 
         self.apply_template(cx);

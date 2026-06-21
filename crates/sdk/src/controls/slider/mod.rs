@@ -4,7 +4,7 @@ mod template;
 mod theme;
 
 pub use control::{SliderDrag, SliderEvent};
-pub use model::{SliderBuilder, SliderInputStrategy, SliderModel, SliderOrientation, SliderRenderModel};
+pub use model::{SliderBuilder, SliderInputStrategy, SliderModel, SliderOrientation, SliderRenderModel, SliderThumbSize};
 pub use template::{
     SliderBoundsHandler, SliderDragMoveHandler, SliderHoverHandler, SliderMouseDownHandler, SliderMouseUpHandler,
     SliderTemplate, SliderTemplateHandlers, ThemedSliderTemplate, default_slider_template,

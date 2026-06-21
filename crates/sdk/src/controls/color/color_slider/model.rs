@@ -1,6 +1,7 @@
-use gpui::{Context, Hsla, SharedString};
+use gpui::{AbsoluteLength, Context, Hsla, SharedString};
 
-use crate::controls::color::style::Size;
+use crate::controls::slider::SliderThumbSize as SemanticThumbSize;
+use crate::theme::ControlSize;
 
 use super::delegates::{AlphaDelegate, ChannelDelegate, GradientDelegate, HueDelegate};
 use super::slider::{
@@ -14,10 +15,12 @@ pub struct ColorSliderModel {
     pub step: Option<f32>,
     pub reversed: bool,
     pub thumb: ThumbConfig,
+    pub size: ControlSize,
+    pub thumb_size_override: Option<SemanticThumbSize>,
     pub axis: Axis,
-    pub size: Size,
     pub interpolation: ColorInterpolation,
     pub disabled: bool,
+    pub corner_radius: Option<AbsoluteLength>,
     pub delegate: Box<dyn ColorSliderDelegate>,
 }
 
@@ -30,10 +33,12 @@ impl ColorSliderModel {
             step: None,
             reversed: false,
             thumb: ThumbConfig::default(),
+            size: ControlSize::Md,
+            thumb_size_override: None,
             axis: Axis::Horizontal,
-            size: Size::Medium,
             interpolation: ColorInterpolation::default(),
             disabled: false,
+            corner_radius: None,
             delegate,
         }
     }
@@ -92,8 +97,23 @@ impl ColorSliderModel {
         self
     }
 
-    pub fn size(mut self, size: impl Into<Size>) -> Self {
-        self.size = size.into();
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        if self.thumb_size_override.is_none() {
+            self.thumb.size = thumb_size_from_control_size(size);
+        }
+        self
+    }
+
+    pub fn thumb_size(mut self, size: SemanticThumbSize) -> Self {
+        self.thumb_size_override = Some(size);
+        self.thumb.size = thumb_size_from_semantic(size);
+        self
+    }
+
+    pub fn clear_thumb_size(mut self) -> Self {
+        self.thumb_size_override = None;
+        self.thumb.size = thumb_size_from_control_size(self.size);
         self
     }
 
@@ -103,21 +123,25 @@ impl ColorSliderModel {
     }
 
     pub fn thumb_xsmall(mut self) -> Self {
+        self.thumb_size_override = None;
         self.thumb.size = ThumbSize::XSmall;
         self
     }
 
     pub fn thumb_small(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Sm);
         self.thumb.size = ThumbSize::Small;
         self
     }
 
     pub fn thumb_medium(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Md);
         self.thumb.size = ThumbSize::Medium;
         self
     }
 
     pub fn thumb_large(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Lg);
         self.thumb.size = ThumbSize::Large;
         self
     }
@@ -134,6 +158,16 @@ impl ColorSliderModel {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.disabled = !enabled;
+        self
+    }
+
+    pub fn corner_radius(mut self, radius: AbsoluteLength) -> Self {
+        self.corner_radius = Some(radius);
+        self
+    }
+
+    pub fn clear_corner_radius(mut self) -> Self {
+        self.corner_radius = None;
         self
     }
 
@@ -154,6 +188,22 @@ impl ColorSliderModel {
 
     pub fn build<V: 'static>(self, cx: &mut Context<V>) -> ColorSliderState {
         ColorSliderState::from_model(self, cx)
+    }
+}
+
+fn thumb_size_from_control_size(size: ControlSize) -> ThumbSize {
+    match size {
+        ControlSize::Sm => ThumbSize::Small,
+        ControlSize::Md => ThumbSize::Medium,
+        ControlSize::Lg => ThumbSize::Large,
+    }
+}
+
+fn thumb_size_from_semantic(size: SemanticThumbSize) -> ThumbSize {
+    match size {
+        SemanticThumbSize::Sm => ThumbSize::Small,
+        SemanticThumbSize::Md => ThumbSize::Medium,
+        SemanticThumbSize::Lg => ThumbSize::Large,
     }
 }
 

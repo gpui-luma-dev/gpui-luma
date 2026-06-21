@@ -3,9 +3,9 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
 use gpui_luma::controls::color::color_slider::{
-    AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderState, ThumbShape,
+    AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderState, SliderThumbSize, ThumbShape,
 };
-use gpui_luma::controls::color::style::Size;
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -41,13 +41,16 @@ pub(in crate::gallery) struct ColorSliderRevealedPane {
 
 impl ColorSliderRevealedPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _look: Arc<ShadcnLook>) -> Self {
-        let size_xsmall =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-xsmall", 180.0, cx).size(Size::XSmall));
+        let size_xsmall = cx.new(|cx| {
+            ColorSliderState::hue("color-slider-revealed-size-xsmall", 180.0, cx)
+                .size(ControlSize::Sm)
+                .thumb_xsmall()
+        });
         let size_small =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-small", 180.0, cx).size(Size::Small));
+            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-small", 180.0, cx).size(ControlSize::Sm));
         let size_medium = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-medium", 180.0, cx));
         let size_large =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-large", 180.0, cx).size(Size::Large));
+            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-large", 180.0, cx).size(ControlSize::Lg));
 
         let rounded_full = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-rounded-full", 180.0, cx));
         let rounded_8 =
@@ -74,7 +77,7 @@ impl ColorSliderRevealedPane {
         });
         let edge_large = cx.new(|cx| {
             ColorSliderState::hue("color-slider-revealed-edge-large", 180.0, cx)
-                .size(Size::Large)
+                .size(ControlSize::Lg)
                 .edge_to_edge()
         });
 
@@ -93,8 +96,9 @@ impl ColorSliderRevealedPane {
                 .interpolation(ColorInterpolation::Lab)
         });
 
-        let delegate_hue =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-delegate-hue", 180.0, cx).thumb_medium());
+        let delegate_hue = cx.new(|cx| {
+            ColorSliderState::hue("color-slider-revealed-delegate-hue", 180.0, cx).thumb_size(SliderThumbSize::Md)
+        });
         let delegate_alpha = cx.new(|cx| {
             let hsl = Hsl { h: 200.0, s: 0.8, l: 0.5, a: 1.0 };
             ColorSliderState::alpha("color-slider-revealed-delegate-alpha", 0.5, AlphaDelegate { spec: hsl }, cx)

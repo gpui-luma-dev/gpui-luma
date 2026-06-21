@@ -7,11 +7,11 @@ use gpui::{
 use gpui_luma::controls::slider::{
     Slider, SliderBoundsHandler, SliderDrag, SliderDragMoveHandler, SliderEvent, SliderHoverHandler,
     SliderInputStrategy, SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate,
-    SliderTemplateHandlers,
+    SliderTemplateHandlers, SliderThumbSize,
 };
 use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -23,6 +23,11 @@ use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 #[derive(Clone)]
 pub(in crate::gallery) struct SliderPane {
     slider: Slider,
+    slider_sm: Slider,
+    slider_md: Slider,
+    slider_lg: Slider,
+    slider_large_thumb: Slider,
+    slider_sharp: Slider,
     state_preview: Entity<SliderStatePreview>,
     inspector: Entity<ColorInspectorShell>,
     value: f32,
@@ -43,8 +48,28 @@ impl SliderPane {
                 cx,
             )
         });
+
         Self {
             slider: look.slider("slider-example").range(1..100).step(10).value(41).spawn(cx),
+            slider_sm: look.slider("slider-size-sm").size(ControlSize::Sm).range(1..100).step(10).value(28).spawn(cx),
+            slider_md: look.slider("slider-size-md").size(ControlSize::Md).range(1..100).step(10).value(41).spawn(cx),
+            slider_lg: look.slider("slider-size-lg").size(ControlSize::Lg).range(1..100).step(10).value(62).spawn(cx),
+            slider_large_thumb: look
+                .slider("slider-thumb-lg")
+                .size(ControlSize::Md)
+                .thumb_size(SliderThumbSize::Lg)
+                .range(1..100)
+                .step(10)
+                .value(54)
+                .spawn(cx),
+            slider_sharp: look
+                .slider("slider-sharp-preview")
+                .size(ControlSize::Md)
+                .range(1..100)
+                .step(10)
+                .value(54)
+                .corner_radius(px(0.0).into())
+                .spawn(cx),
             state_preview: cx.new(|_| SliderStatePreview::new(look.clone(), slider_template)),
             inspector,
             value: 41.0,
@@ -66,15 +91,38 @@ impl SliderPane {
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap_5()
-                .child(div().w(px(260.0)).max_w(px(320.0)).child(self.slider.clone()))
+                .gap_6()
                 .child(
                     div()
-                        .text_size(px(12.0))
-                        .line_height(px(16.0))
-                        .text_color(chrome.body_text)
-                        .child(format!("Value: {:.0}", self.value)),
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .child(div().w(px(260.0)).max_w(px(320.0)).child(self.slider.clone()))
+                        .child(
+                            div()
+                                .text_size(px(12.0))
+                                .line_height(px(16.0))
+                                .text_color(chrome.body_text)
+                                .child(format!("Value: {:.0}", self.value)),
+                        ),
                 )
+                .child(section_label("Slider sizes", chrome.muted_text))
+                .child(labeled_demo("Sm", div().w(px(320.0)).child(self.slider_sm.clone()), chrome.muted_text))
+                .child(labeled_demo("Md", div().w(px(320.0)).child(self.slider_md.clone()), chrome.muted_text))
+                .child(labeled_demo("Lg", div().w(px(320.0)).child(self.slider_lg.clone()), chrome.muted_text))
+                .child(section_label("Thumb sizing", chrome.muted_text))
+                .child(labeled_demo(
+                    "Md control · Lg thumb",
+                    div().w(px(320.0)).child(self.slider_large_thumb.clone()),
+                    chrome.muted_text,
+                ))
+                .child(section_label("Corner radius overrides", chrome.muted_text))
+                .child(labeled_demo(
+                    "Slider · square track",
+                    div().w(px(320.0)).child(self.slider_sharp.clone()),
+                    chrome.muted_text,
+                ))
                 .child(self.state_preview.clone())
                 .into_any_element(),
             self.inspector.clone(),
@@ -84,6 +132,11 @@ impl SliderPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.slider, cx);
+        notify_entity(&self.slider_sm, cx);
+        notify_entity(&self.slider_md, cx);
+        notify_entity(&self.slider_lg, cx);
+        notify_entity(&self.slider_large_thumb, cx);
+        notify_entity(&self.slider_sharp, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
@@ -93,7 +146,7 @@ impl SliderPane {
 
     fn handle_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
         match event {
-            SliderEvent::Change { value } => {
+            SliderEvent::Change { value } | SliderEvent::Release { value } => {
                 self.value = *value;
                 cx.notify();
             }
@@ -151,14 +204,7 @@ impl Render for SliderStatePreview {
             .flex_col()
             .items_center()
             .gap(px(10.0))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
-                    .text_color(chrome.muted_text)
-                    .child("Template state preview"),
-            )
+            .child(section_label("Template state preview", chrome.muted_text))
             .child(
                 div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                     samples
@@ -184,11 +230,14 @@ fn render_state_sample(
         id: &id,
         strategy,
         orientation: strategy.orientation(),
+        size: ControlSize::Md,
+        thumb_size: None,
         range,
         step: 10.0,
         value,
         percentage: range.percentage(value),
         enabled: !sample.state.disabled,
+        corner_radius: None,
         state: sample.state,
     };
 
@@ -204,6 +253,31 @@ fn render_state_sample(
             cx,
         )))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
+        .into_any_element()
+}
+
+fn labeled_demo(label: &str, element: impl IntoElement, label_color: gpui::Hsla) -> AnyElement {
+    let label = label.to_string();
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(element)
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(label))
+        .into_any_element()
+}
+
+fn section_label(label: &str, color: gpui::Hsla) -> AnyElement {
+    let label = label.to_string();
+
+    div()
+        .text_size(px(12.0))
+        .line_height(px(16.0))
+        .font_weight(gpui::FontWeight::MEDIUM)
+        .text_color(color)
+        .child(label)
         .into_any_element()
 }
 

@@ -36,7 +36,7 @@ impl ColorSlider {
 
     fn compute_layout(state: &ColorSliderState) -> SliderLayout {
         let track_thickness = state.track_thickness();
-        let thumb_size = state.thumb_size();
+        let thumb_size = state.thumb_size_px();
         let track_inset = state.track_inset();
         let is_vertical = state.dimensions.axis == Axis::Vertical;
         let track_hitsize = track_thickness.max(thumb_size);

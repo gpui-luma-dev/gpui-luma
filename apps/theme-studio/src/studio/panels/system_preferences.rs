@@ -107,10 +107,12 @@ impl SystemPreferencesPanel {
     }
 
     fn handle_budget_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
-        let SliderEvent::Change { value } = event;
-        self.budget = *value;
-        self.completion = *value;
-        self.completion_progress.update(cx, |progress, cx| progress.set_value(*value as f64, cx));
+        let value = match event {
+            SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+        };
+        self.budget = value;
+        self.completion = value;
+        self.completion_progress.update(cx, |progress, cx| progress.set_value(value as f64, cx));
         cx.notify();
     }
 }

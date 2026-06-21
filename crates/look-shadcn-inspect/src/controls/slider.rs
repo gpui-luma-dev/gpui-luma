@@ -1,6 +1,6 @@
 //! Inspect metadata for `slider`.
 
-use gpui_luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{LookContext, LookResolver, ResolvedColor, ShadcnModeTokens};
 
 pub struct SliderInspectPalette {
@@ -45,7 +45,8 @@ pub fn inspect_slider_metrics(mode: &ShadcnModeTokens, theme_mode: ThemeMode) ->
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = gpui_luma_look_shadcn::paint::slider_look(mode, theme_mode, InteractionState::default());
+    let look =
+        gpui_luma_look_shadcn::paint::slider_look(mode, theme_mode, ControlSize::Md, None, InteractionState::default());
 
     SliderInspectMetrics {
         width: derived_metric("slider demo width", look.width),

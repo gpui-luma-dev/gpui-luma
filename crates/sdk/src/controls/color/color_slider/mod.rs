@@ -18,3 +18,4 @@ pub use slider::{
     Axis, ColorInterpolation, ColorSlider, ColorSliderDelegate, ColorSliderEvent, ColorSliderState, ThumbPosition,
     ThumbSize, sizing,
 };
+pub use crate::controls::slider::SliderThumbSize;

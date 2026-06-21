@@ -10,7 +10,7 @@
 //! Track uses `border` rather than `muted` because many tweakcn light themes
 //! set `--muted` near white (e.g. 98% lightness), which disappears on card panels.
 
-use gpui_luma::controls::slider::SliderLook;
+use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
@@ -66,7 +66,13 @@ pub fn resolve_slider_colors_with_stylesheet(
     })
 }
 
-pub fn slider_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SliderLook {
+pub fn slider_look(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    size: ControlSize,
+    thumb_size: Option<SliderThumbSize>,
+    state: InteractionState,
+) -> SliderLook {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
@@ -76,11 +82,11 @@ pub fn slider_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: Intera
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider");
     let colors = resolve_slider_colors(&resolver, layer).unwrap_or_else(|_| SliderColorTable::fallback());
     let stylesheet = embedded_stylesheet();
-    let (width, height, track_height, thumb_size, radius) = stylesheet
+    let (width, height, track_height, resolved_thumb_size_px, radius) = stylesheet
         .slider
-        .metrics_for_size(ControlSize::Md)
+        .metrics_for_size(size)
         .map(|rule| {
-            let m = resolve_slider_metrics(rule, metrics);
+            let m = resolve_slider_metrics(rule, metrics, size);
             (m.width, m.height, m.track_height, m.thumb_size, m.radius)
         })
         .unwrap_or((
@@ -95,6 +101,8 @@ pub fn slider_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: Intera
         .then(|| focus_ring_color(catalog))
         .transpose()
         .unwrap_or_else(|err| panic!("slider properties: {err}"));
+
+    let thumb_size = thumb_size.map(slider_thumb_size).unwrap_or(resolved_thumb_size_px);
 
     SliderLook {
         track_background: colors.track_background.hsla(),
@@ -111,17 +119,24 @@ pub fn slider_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: Intera
     }
 }
 
+fn slider_thumb_size(size: SliderThumbSize) -> f32 {
+    match size {
+        SliderThumbSize::Sm => 12.0,
+        SliderThumbSize::Md => 16.0,
+        SliderThumbSize::Lg => 20.0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::ThemeMode;
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
-    use gpui_luma::theme::InteractionState;
-
+    use super::slider_look;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
-    use super::slider_look;
+    use gpui_luma::controls::slider::SliderThumbSize;
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -163,7 +178,8 @@ mod tests {
     fn default_slider_uses_border_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = slider_look(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
+        let look =
+            slider_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
 
         assert_eq!(look.track_background, catalog.color("border").expect("border"));
         assert_eq!(look.fill_background, catalog.color("primary").expect("primary"));
@@ -175,7 +191,8 @@ mod tests {
     fn astrovista_light_track_is_border_not_white_muted() {
         let catalog = astrovista_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = slider_look(&mode, gpui_luma::theme::ThemeMode::Light, InteractionState::default());
+        let look =
+            slider_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
 
         let border = catalog.color("border").expect("border");
         let muted = catalog.color("muted").expect("muted");
@@ -186,5 +203,41 @@ mod tests {
         assert_ne!(look.track_background, catalog.color("secondary").expect("secondary"));
         assert!(border.l > muted.l || (border.l - muted.l).abs() > 0.05);
         assert!(border.l < card.l - 0.05);
+    }
+
+    #[test]
+    fn slider_size_changes_metrics() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+
+        let sm = slider_look(&mode, ThemeMode::Light, ControlSize::Sm, None, InteractionState::default());
+        let md = slider_look(&mode, ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
+        let lg = slider_look(&mode, ThemeMode::Light, ControlSize::Lg, None, InteractionState::default());
+
+        assert!(sm.height < md.height);
+        assert!(md.height < lg.height);
+        assert!(sm.track_height < md.track_height);
+        assert!(md.track_height < lg.track_height);
+        assert!(sm.thumb_size < md.thumb_size);
+        assert!(md.thumb_size < lg.thumb_size);
+    }
+
+    #[test]
+    fn slider_thumb_override_changes_thumb_metrics_only() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+
+        let md_default = slider_look(&mode, ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
+        let md_large = slider_look(
+            &mode,
+            ThemeMode::Light,
+            ControlSize::Md,
+            Some(SliderThumbSize::Lg),
+            InteractionState::default(),
+        );
+
+        assert_eq!(md_default.height, md_large.height);
+        assert_eq!(md_default.track_height, md_large.track_height);
+        assert!(md_large.thumb_size > md_default.thumb_size);
     }
 }

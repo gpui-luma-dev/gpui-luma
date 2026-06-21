@@ -5,3 +5,6 @@ pub mod color_slider;
 pub mod mouse_behavior;
 pub mod shape;
 pub mod style;
+pub mod swatch;
+
+pub use swatch::ColorSwatch;

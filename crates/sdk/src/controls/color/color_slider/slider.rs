@@ -2,7 +2,8 @@ pub use super::color_thumb::ThumbShape;
 use super::color_thumb::bar_main_axis_size;
 use super::model::ColorSliderModel;
 pub use super::surface::ColorSlider;
-use crate::controls::color::style::{Sizable, Size};
+use crate::controls::slider::SliderThumbSize as SemanticThumbSize;
+use crate::theme::ControlSize;
 use gpui::{prelude::*, *};
 
 pub mod sizing {
@@ -84,13 +85,13 @@ pub struct ThumbConfig {
 
 pub struct SliderDimensions {
     pub axis: Axis,
-    pub size: Size,
+    pub size: ControlSize,
     pub bounds: Bounds<Pixels>,
 }
 
 impl Default for SliderDimensions {
     fn default() -> Self {
-        Self { axis: Axis::Horizontal, size: Size::Medium, bounds: Bounds::default() }
+        Self { axis: Axis::Horizontal, size: ControlSize::Md, bounds: Bounds::default() }
     }
 }
 
@@ -107,6 +108,7 @@ pub struct ColorSliderState {
     pub style: StyleRefinement,
     pub interpolation: ColorInterpolation,
     pub disabled: bool,
+    pub thumb_size_override: Option<SemanticThumbSize>,
     pub focus_handle: FocusHandle,
     interaction_active: bool,
 }
@@ -129,9 +131,17 @@ impl ColorSliderState {
             style: StyleRefinement::default(),
             interpolation: model.interpolation,
             disabled: model.disabled,
+            thumb_size_override: model.thumb_size_override,
             focus_handle: cx.focus_handle(),
             interaction_active: false,
         };
+
+        if let Some(radius) = model.corner_radius {
+            this.style.corner_radii.top_left = Some(radius);
+            this.style.corner_radii.top_right = Some(radius);
+            this.style.corner_radii.bottom_left = Some(radius);
+            this.style.corner_radii.bottom_right = Some(radius);
+        }
 
         this.value = this.clamp_to_range(this.value);
         this
@@ -221,12 +231,17 @@ impl ColorSliderState {
         self
     }
 
-    pub fn size(mut self, size: impl Into<Size>) -> Self {
-        let size = size.into();
+    pub fn size(mut self, size: ControlSize) -> Self {
         self.dimensions.size = size;
-        if let Some(thumb) = Self::synced_thumb_size(&self.dimensions.size) {
-            self.thumb.size = thumb;
+        if self.thumb_size_override.is_none() {
+            self.thumb.size = Self::synced_thumb_size(self.dimensions.size);
         }
+        self
+    }
+
+    pub fn thumb_size(mut self, size: SemanticThumbSize) -> Self {
+        self.thumb_size_override = Some(size);
+        self.thumb.size = Self::semantic_thumb_size(size);
         self
     }
 
@@ -253,21 +268,25 @@ impl ColorSliderState {
     }
 
     pub fn thumb_xsmall(mut self) -> Self {
+        self.thumb_size_override = None;
         self.thumb.size = ThumbSize::XSmall;
         self
     }
 
     pub fn thumb_small(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Sm);
         self.thumb.size = ThumbSize::Small;
         self
     }
 
     pub fn thumb_medium(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Md);
         self.thumb.size = ThumbSize::Medium;
         self
     }
 
     pub fn thumb_large(mut self) -> Self {
+        self.thumb_size_override = Some(SemanticThumbSize::Lg);
         self.thumb.size = ThumbSize::Large;
         self
     }
@@ -298,23 +317,33 @@ impl ColorSliderState {
         }
     }
 
-    pub fn set_size(&mut self, size: Size, cx: &mut Context<Self>) {
-        let synced_thumb = Self::synced_thumb_size(&size);
-        let needs_thumb_update = synced_thumb.is_some_and(|thumb| self.thumb.size != thumb);
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        let synced_thumb = Self::synced_thumb_size(size);
+        let needs_thumb_update = self.thumb_size_override.is_none() && self.thumb.size != synced_thumb;
 
         if self.dimensions.size != size || needs_thumb_update {
             self.dimensions.size = size;
-            if let Some(thumb) = synced_thumb {
-                self.thumb.size = thumb;
+            if self.thumb_size_override.is_none() {
+                self.thumb.size = synced_thumb;
             }
             cx.notify();
         }
     }
 
-    #[allow(dead_code)] // Runtime setter retained for external thumb style controls.
-    pub fn set_thumb_size(&mut self, size: ThumbSize, cx: &mut Context<Self>) {
-        if self.thumb.size != size {
-            self.thumb.size = size;
+    pub fn set_thumb_size(&mut self, size: SemanticThumbSize, cx: &mut Context<Self>) {
+        let mapped = Self::semantic_thumb_size(size);
+        if self.thumb_size_override != Some(size) || self.thumb.size != mapped {
+            self.thumb_size_override = Some(size);
+            self.thumb.size = mapped;
+            cx.notify();
+        }
+    }
+
+    pub fn clear_thumb_size(&mut self, cx: &mut Context<Self>) {
+        let synced = Self::synced_thumb_size(self.dimensions.size);
+        if self.thumb_size_override.is_some() || self.thumb.size != synced {
+            self.thumb_size_override = None;
+            self.thumb.size = synced;
             cx.notify();
         }
     }
@@ -374,15 +403,13 @@ impl ColorSliderState {
 
     pub fn track_thickness(&self) -> f32 {
         match self.dimensions.size {
-            Size::XSmall => sizing::TRACK_THICKNESS_XSMALL,
-            Size::Small => sizing::TRACK_THICKNESS_SMALL,
-            Size::Medium => sizing::TRACK_THICKNESS_MEDIUM,
-            Size::Large => sizing::TRACK_THICKNESS_LARGE,
-            Size::Size(base_px) => base_px.as_f32(),
+            ControlSize::Sm => sizing::TRACK_THICKNESS_SMALL,
+            ControlSize::Md => sizing::TRACK_THICKNESS_MEDIUM,
+            ControlSize::Lg => sizing::TRACK_THICKNESS_LARGE,
         }
     }
 
-    pub fn thumb_size(&self) -> f32 {
+    pub fn thumb_size_px(&self) -> f32 {
         match self.thumb.size {
             ThumbSize::XSmall => sizing::THUMB_SIZE_XSMALL,
             ThumbSize::Small => sizing::THUMB_SIZE_SMALL,
@@ -400,13 +427,19 @@ impl ColorSliderState {
 }
 
 impl ColorSliderState {
-    fn synced_thumb_size(size: &Size) -> Option<ThumbSize> {
+    fn synced_thumb_size(size: ControlSize) -> ThumbSize {
         match size {
-            Size::XSmall => Some(ThumbSize::XSmall),
-            Size::Small => Some(ThumbSize::Small),
-            Size::Medium => Some(ThumbSize::Medium),
-            Size::Large => Some(ThumbSize::Large),
-            Size::Size(_) => None,
+            ControlSize::Sm => ThumbSize::Small,
+            ControlSize::Md => ThumbSize::Medium,
+            ControlSize::Lg => ThumbSize::Large,
+        }
+    }
+
+    fn semantic_thumb_size(size: SemanticThumbSize) -> ThumbSize {
+        match size {
+            SemanticThumbSize::Sm => ThumbSize::Small,
+            SemanticThumbSize::Md => ThumbSize::Medium,
+            SemanticThumbSize::Lg => ThumbSize::Large,
         }
     }
 
@@ -425,8 +458,8 @@ impl ColorSliderState {
 
     pub(super) fn thumb_main_axis_size(&self) -> f32 {
         match self.thumb.shape {
-            ThumbShape::Bar => bar_main_axis_size(px(self.thumb_size())).as_f32(),
-            ThumbShape::Circle | ThumbShape::Square => self.thumb_size(),
+            ThumbShape::Bar => bar_main_axis_size(px(self.thumb_size_px())).as_f32(),
+            ThumbShape::Circle | ThumbShape::Square => self.thumb_size_px(),
         }
     }
 
@@ -495,17 +528,6 @@ impl ColorSliderState {
 impl Styled for ColorSliderState {
     fn style(&mut self) -> &mut StyleRefinement {
         &mut self.style
-    }
-}
-
-impl Sizable for ColorSliderState {
-    fn size(mut self, size: impl Into<Size>) -> Self {
-        let size = size.into();
-        self.dimensions.size = size;
-        if let Some(thumb) = Self::synced_thumb_size(&self.dimensions.size) {
-            self.thumb.size = thumb;
-        }
-        self
     }
 }
 

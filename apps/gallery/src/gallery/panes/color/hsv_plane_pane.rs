@@ -4,7 +4,7 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{ChannelDelegate, ColorSliderEvent, ColorSliderState, sizing};
-use gpui_luma::controls::color::style::Size;
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -65,7 +65,7 @@ impl HsvPlaneState {
                 .rounded(px(0.0))
                 .thumb_small()
                 .thumb_square();
-            slider.set_size(Size::Small, cx);
+            slider.set_size(ControlSize::Sm, cx);
             slider
         });
         let slider_s = cx.new(|cx| {
@@ -80,7 +80,7 @@ impl HsvPlaneState {
             .rounded(px(0.0))
             .thumb_small()
             .thumb_square();
-            slider.set_size(Size::Small, cx);
+            slider.set_size(ControlSize::Sm, cx);
             slider
         });
         let slider_v = cx.new(|cx| {
@@ -94,7 +94,7 @@ impl HsvPlaneState {
             .rounded(px(0.0))
             .thumb_small()
             .thumb_square();
-            slider.set_size(Size::Small, cx);
+            slider.set_size(ControlSize::Sm, cx);
             slider
         });
 

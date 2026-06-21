@@ -5,7 +5,7 @@ use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
 use gpui_luma::controls::color::color_slider::{
     AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderEvent, ColorSliderState, ColorSpecification,
 };
-use gpui_luma::controls::color::style::Size;
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
@@ -36,7 +36,7 @@ impl ColorSliderPane {
         let hsl = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 0.85 };
 
         let hue_slider =
-            cx.new(|cx| ColorSliderState::hue("color-slider-hue", hsl.h, cx).size(Size::Small).thumb_medium());
+            cx.new(|cx| ColorSliderState::hue("color-slider-hue", hsl.h, cx).size(ControlSize::Sm).thumb_medium());
         let saturation_slider = cx.new(|cx| {
             ColorSliderState::channel(
                 "color-slider-saturation",
@@ -44,13 +44,13 @@ impl ColorSliderPane {
                 ChannelDelegate::new(hsl, Hsl::SATURATION.into()).expect("HSL saturation delegate should be valid"),
                 cx,
             )
-            .size(Size::Small)
+            .size(ControlSize::Sm)
             .thumb_medium()
             .edge_to_edge()
         });
         let alpha_slider = cx.new(|cx| {
             ColorSliderState::alpha("color-slider-alpha", hsl.a, AlphaDelegate { spec: hsl }, cx)
-                .size(Size::Small)
+                .size(ControlSize::Sm)
                 .thumb_medium()
                 .edge_to_edge()
         });

@@ -1,17 +1,36 @@
 use std::sync::Arc;
 
-use gpui::{AppContext, Entity, SharedString};
+use gpui::{AbsoluteLength, AppContext, Entity, SharedString};
 
 use super::{SliderTemplate, default_slider_template};
 use super::control::SliderControl;
 use crate::controls::slider::SliderState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
+use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SliderOrientation {
     #[default]
     Horizontal,
     Vertical,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SliderThumbSize {
+    Sm,
+    #[default]
+    Md,
+    Lg,
+}
+
+impl From<ControlSize> for SliderThumbSize {
+    fn from(value: ControlSize) -> Self {
+        match value {
+            ControlSize::Sm => Self::Sm,
+            ControlSize::Md => Self::Md,
+            ControlSize::Lg => Self::Lg,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -47,10 +66,13 @@ impl From<SliderOrientation> for SliderInputStrategy {
 pub struct SliderModel {
     pub(crate) id: SharedString,
     pub(crate) strategy: SliderInputStrategy,
+    pub(crate) size: ControlSize,
+    pub(crate) thumb_size: Option<SliderThumbSize>,
     pub(crate) range: ControlRange,
     pub(crate) step: f32,
     pub(crate) value: f32,
     pub(crate) enabled: bool,
+    pub(crate) corner_radius: Option<AbsoluteLength>,
     pub(crate) template: Arc<dyn SliderTemplate>,
 }
 
@@ -58,11 +80,14 @@ pub struct SliderRenderModel<'a> {
     pub id: &'a SharedString,
     pub strategy: SliderInputStrategy,
     pub orientation: SliderOrientation,
+    pub size: ControlSize,
+    pub thumb_size: Option<SliderThumbSize>,
     pub range: ControlRange,
     pub step: f32,
     pub value: f32,
     pub percentage: f32,
     pub enabled: bool,
+    pub corner_radius: Option<AbsoluteLength>,
     pub state: SliderState,
 }
 
@@ -76,10 +101,13 @@ impl SliderBuilder {
             model: SliderModel {
                 id: id.into(),
                 strategy: SliderInputStrategy::default(),
+                size: ControlSize::Md,
+                thumb_size: None,
                 range: ControlRange::default(),
                 step: 1.0,
                 value: 0.0,
                 enabled: true,
+                corner_radius: None,
                 template: default_slider_template(),
             },
         }
@@ -110,6 +138,21 @@ impl SliderBuilder {
         self
     }
 
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
+        self
+    }
+
+    pub fn thumb_size(mut self, size: SliderThumbSize) -> Self {
+        self.model.thumb_size = Some(size);
+        self
+    }
+
+    pub fn clear_thumb_size(mut self) -> Self {
+        self.model.thumb_size = None;
+        self
+    }
+
     pub fn range(mut self, range: impl Into<ControlRange>) -> Self {
         self.model.range = range.into();
         self.model.value = self.model.range.snap(self.model.value, self.model.step);
@@ -129,6 +172,16 @@ impl SliderBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn corner_radius(mut self, radius: AbsoluteLength) -> Self {
+        self.model.corner_radius = Some(radius);
+        self
+    }
+
+    pub fn clear_corner_radius(mut self) -> Self {
+        self.model.corner_radius = None;
         self
     }
 

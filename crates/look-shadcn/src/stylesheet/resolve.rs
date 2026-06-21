@@ -568,13 +568,17 @@ pub fn resolve_autocomplete_chrome_color_rule(
     Ok(ResolvedAutocompleteChromeColors { status_color, muted_text_color, clear_icon_color, clear_icon_hover_color })
 }
 
-pub fn resolve_slider_metrics(rule: &SliderMetricsRule, metrics: &MetricTokens) -> ResolvedSliderMetrics {
+pub fn resolve_slider_metrics(
+    rule: &SliderMetricsRule,
+    metrics: &MetricTokens,
+    size: ControlSize,
+) -> ResolvedSliderMetrics {
     ResolvedSliderMetrics {
         width: rule.width,
         height: rule.height,
         track_height: rule.track_height,
         thumb_size: rule.thumb_size,
-        radius: resolve_stylesheet_metric(&rule.radius, metrics, ControlSize::Md).unwrap_or(metrics.radius.pill),
+        radius: resolve_stylesheet_metric(&rule.radius, metrics, size).unwrap_or(metrics.radius.pill),
     }
 }
 

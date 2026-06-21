@@ -1,20 +1,23 @@
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
+    AbsoluteLength, App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
 };
 
-use super::{SliderBuilder, SliderInputStrategy, SliderOrientation, SliderRenderModel, SliderTemplateHandlers};
+use super::{
+    SliderBuilder, SliderInputStrategy, SliderOrientation, SliderRenderModel, SliderTemplateHandlers, SliderThumbSize,
+};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
 };
-use crate::theme::observe_theme_revision;
+use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
 pub enum SliderEvent {
     Change { value: f32 },
+    Release { value: f32 },
 }
 
 #[derive(Clone, Debug)]
@@ -67,6 +70,14 @@ impl SliderControl {
         self.model.value
     }
 
+    pub fn size(&self) -> ControlSize {
+        self.model.size
+    }
+
+    pub fn thumb_size(&self) -> Option<SliderThumbSize> {
+        self.model.thumb_size
+    }
+
     pub fn range(&self) -> ControlRange {
         self.model.range
     }
@@ -82,6 +93,39 @@ impl SliderControl {
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         let value = value_from_input(value);
         self.set_value_internal(value, false, cx);
+    }
+
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        if self.model.size != size {
+            self.model.size = size;
+            cx.notify();
+        }
+    }
+
+    pub fn set_thumb_size(&mut self, size: SliderThumbSize, cx: &mut Context<Self>) {
+        if self.model.thumb_size != Some(size) {
+            self.model.thumb_size = Some(size);
+            cx.notify();
+        }
+    }
+
+    pub fn clear_thumb_size(&mut self, cx: &mut Context<Self>) {
+        if self.model.thumb_size.is_some() {
+            self.model.thumb_size = None;
+            cx.notify();
+        }
+    }
+
+    pub fn set_corner_radius(&mut self, radius: AbsoluteLength, cx: &mut Context<Self>) {
+        self.model.corner_radius = Some(radius);
+        cx.notify();
+    }
+
+    pub fn clear_corner_radius(&mut self, cx: &mut Context<Self>) {
+        if self.model.corner_radius.is_some() {
+            self.model.corner_radius = None;
+            cx.notify();
+        }
     }
 
     pub fn set_range(&mut self, range: impl Into<ControlRange>, cx: &mut Context<Self>) {
@@ -127,11 +171,14 @@ impl SliderControl {
             id: &self.model.id,
             strategy: self.model.strategy,
             orientation: self.model.strategy.orientation(),
+            size: self.model.size,
+            thumb_size: self.model.thumb_size,
             range: self.model.range,
             step: self.model.step,
             value: self.model.value,
             percentage: self.model.range.percentage(self.model.value),
             enabled: self.model.enabled,
+            corner_radius: self.model.corner_radius,
             state: self.interaction.render_state(self.model.enabled, window),
         }
     }
@@ -220,6 +267,7 @@ impl SliderControl {
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         self.reset_drag_tracking();
         if self.interaction.handle_mouse_up() {
+            cx.emit(SliderEvent::Release { value: self.model.value });
             cx.notify();
         }
     }
@@ -259,7 +307,9 @@ impl SliderControl {
             return;
         }
 
-        self.set_value_internal(self.model.value + delta, true, cx);
+        if self.set_value_internal(self.model.value + delta, true, cx) {
+            cx.emit(SliderEvent::Release { value: self.model.value });
+        }
     }
 
     fn move_to_value(&mut self, value: f32, cx: &mut Context<Self>) {
@@ -267,7 +317,9 @@ impl SliderControl {
             return;
         }
 
-        self.set_value_internal(value, true, cx);
+        if self.set_value_internal(value, true, cx) {
+            cx.emit(SliderEvent::Release { value: self.model.value });
+        }
     }
 
     fn reset_drag_tracking(&mut self) {

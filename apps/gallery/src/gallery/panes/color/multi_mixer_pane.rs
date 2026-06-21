@@ -4,14 +4,18 @@ use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude:
 use gpui_luma::controls::color::color_slider::color_spec::{
     ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec,
 };
-use gpui_luma::controls::color::color_slider::{ChannelDelegate, ColorSliderEvent, ColorSliderState};
-use gpui_luma::controls::color::style::Size;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::controls::color::ColorSwatch;
+use gpui_luma::wrappanel;
+use gpui_luma::controls::color::color_slider::{
+    AlphaDelegate, ChannelDelegate, ColorSliderDelegate, ColorSliderEvent, ColorSliderState, HueDelegate,
+};
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, notify_entity};
 
-use super::common::{color_gallery_pane, control_label, demo_card, demo_section, detail_row, notify_control};
+use super::common::{color_gallery_pane, control_label, demo_card, detail_row, notify_control};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct MultiMixerPane {
@@ -56,24 +60,50 @@ impl MultiMixerPane {
             "The original mixer page explored multiple color spaces. This port keeps each space as its own interactive card so you can compare the slider primitives directly.",
             div()
                 .w_full()
-                .max_w(px(1120.0))
                 .flex()
                 .flex_col()
                 .gap(px(28.0))
-                .child(demo_section(
-                    "Mixer Modes",
-                    "Representative mixers for the upstream mode set.",
-                    vec![
-                        mixer_card("Hue + Alpha", self.hue_alpha.clone(), look),
-                        mixer_card("RGB", self.rgb.clone(), look),
-                        mixer_card("HSLA", self.hsla.clone(), look),
-                        mixer_card("HSVA", self.hsva.clone(), look),
-                        mixer_card("Lab", self.lab.clone(), look),
-                        mixer_card("Lab Auto-clamped", self.lab_auto.clone(), look),
-                        mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), look),
-                    ],
-                    look,
-                ))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(12.0))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap(px(2.0))
+                                .child(
+                                    div()
+                                        .typography_style(
+                                            look.typography_role(gpui_luma_look_shadcn::ShadcnTextRole::H4),
+                                        )
+                                        .text_color(look.chrome().title_text)
+                                        .child("Mixer Modes"),
+                                )
+                                .child(
+                                    div()
+                                        .typography_style(
+                                            look.typography_scale(gpui_luma_look_shadcn::ShadcnTextSize::Sm),
+                                        )
+                                        .text_color(look.chrome().muted_text)
+                                        .child("Representative mixers for the upstream mode set."),
+                                ),
+                        )
+                        .child(
+                            wrappanel! {
+                                orientation=horizontal gap=16.0 align=start;
+                                mixer_card("Hue + Alpha", self.hue_alpha.clone(), look),
+                                mixer_card("RGB", self.rgb.clone(), look),
+                                mixer_card("HSLA", self.hsla.clone(), look),
+                                mixer_card("HSVA", self.hsva.clone(), look),
+                                mixer_card("Lab", self.lab.clone(), look),
+                                mixer_card("Lab Auto-clamped", self.lab_auto.clone(), look),
+                                mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), look)
+                            }
+                            .w_full(),
+                        ),
+                )
                 .into_any_element(),
             look,
         )
@@ -129,16 +159,27 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         for channel in &channels {
             let channel_meta = *channel;
             let initial_value = spec.get_value(channel_meta.name);
-            let initial_delegate = ChannelDelegate::new(spec, channel_meta.name.into())
-                .expect("color mixer channel delegate should be valid");
             let slider = cx.new(|cx| {
-                let mut slider = ColorSliderState::channel(
-                    format!("{}-{}", title, channel_meta.name),
-                    initial_value,
-                    initial_delegate,
-                    cx,
-                )
-                .size(Size::Small)
+                let mut slider = if channel_meta.name == "hue" {
+                    ColorSliderState::hue(format!("{}-{}", title, channel_meta.name), initial_value, cx)
+                } else if channel_meta.name == "alpha" {
+                    ColorSliderState::alpha(
+                        format!("{}-{}", title, channel_meta.name),
+                        initial_value,
+                        AlphaDelegate { spec },
+                        cx,
+                    )
+                } else {
+                    let initial_delegate = ChannelDelegate::new(spec, channel_meta.name.into())
+                        .expect("color mixer channel delegate should be valid");
+                    ColorSliderState::channel(
+                        format!("{}-{}", title, channel_meta.name),
+                        initial_value,
+                        initial_delegate,
+                        cx,
+                    )
+                }
+                .size(ControlSize::Sm)
                 .thumb_medium()
                 .edge_to_edge();
                 slider.set_range(channel_meta.min, channel_meta.max, cx);
@@ -185,15 +226,23 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
                 let (min, max) = spec.channel_bounds(channel.name);
                 slider.set_range(min, max, cx);
                 slider.set_value(spec.get_value(channel.name), cx);
-                slider.set_delegate(
-                    Box::new(
-                        ChannelDelegate::new(spec, channel.name.into())
-                            .expect("color mixer channel delegate should be valid"),
-                    ),
-                    cx,
-                );
+                slider.set_delegate(mixer_delegate(spec, channel.name), cx);
             });
         }
+    }
+}
+
+fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> AnyElement {
+    ColorSwatch::new(color).height(px(44.0)).rounded(px(12.0)).into_any_element()
+}
+
+fn mixer_delegate<S: ColorSpecification>(spec: S, channel_name: &'static str) -> Box<dyn ColorSliderDelegate> {
+    if channel_name == "hue" {
+        Box::new(HueDelegate)
+    } else if channel_name == "alpha" {
+        Box::new(AlphaDelegate { spec })
+    } else {
+        Box::new(ChannelDelegate::new(spec, channel_name.into()).expect("color mixer channel delegate should be valid"))
     }
 }
 
@@ -209,7 +258,7 @@ impl<S: ColorSpecification> gpui::Render for ColorSpaceMixerState<S> {
             .when_some(self.subtitle, |container, subtitle| {
                 container.child(div().text_xs().text_color(self.look.chrome().muted_text).child(subtitle))
             })
-            .child(div().h(px(44.0)).rounded(px(12.0)).border_1().border_color(self.look.chrome().border).bg(color))
+            .child(render_constructed_color_swatch(color, &self.look))
             .child(detail_row("Hex", format_hex_color(color), &self.look))
             .child(detail_row("HSLA", format_compact_hsla(color), &self.look))
             .child(detail_row("Spec", self.spec.summary(), &self.look))
