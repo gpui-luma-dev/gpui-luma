@@ -31,7 +31,7 @@ const ROW_GAP_PX: f32 = 16.0;
 const COLOR_SWATCH_SIZE: f32 = 48.0;
 const RESULT_SWATCH_HEIGHT: f32 = 112.0;
 
-pub(in crate::gallery) struct ColorCombinationsState {
+pub(in crate::gallery) struct ColorHarmoniesState {
     look: Arc<ShadcnLook>,
     wheel: Entity<ColorFieldState>,
     lightness_ring: Entity<ColorRingState>,
@@ -43,12 +43,12 @@ pub(in crate::gallery) struct ColorCombinationsState {
     _subscriptions: Vec<Subscription>,
 }
 
-impl ColorCombinationsState {
+impl ColorHarmoniesState {
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let color: Hsla = rgb(0x47c424).into();
         let wheel = cx.new(|_| {
             ColorFieldState::new(
-                "color-combinations-wheel",
+                "color-harmonies-wheel",
                 hsla_to_wheel_hsv(color),
                 Arc::new(CircleDomain),
                 Arc::new(WhiteMixHueWheelModel),
@@ -59,7 +59,7 @@ impl ColorCombinationsState {
         });
         let lightness_ring = cx.new(|cx| {
             ColorRingState::lightness(
-                "color-combinations-lightness-ring",
+                "color-harmonies-lightness-ring",
                 color.l,
                 LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s },
                 cx,
@@ -70,15 +70,15 @@ impl ColorCombinationsState {
             .rotation_degrees(180.0)
         });
         let harmony_menu = look
-            .selector("color-combinations-harmony")
+            .selector("color-harmonies-harmony")
             .label("Combination")
             .items(color_combination_items())
             .selected_id(ColorCombination::Tetradic.id())
             .spawn(cx);
         let color_input = look
-            .textfield("color-combinations-input")
+            .textfield("color-harmonies-input")
             .value(format_hsl_label(color))
-            .placeholder("hsl(120 50% 40%)")
+            .placeholder("hsl(120 50% 40%) or #006081")
             .full_width(true)
             .spawn(cx);
 
@@ -111,7 +111,7 @@ impl ColorCombinationsState {
                 }
 
                 if let TextFieldEvent::Change { value } | TextFieldEvent::Submit { value } = event
-                    && let Some(color) = parse_hsl(value)
+                    && let Some(color) = parse_color_input(value)
                 {
                     this.color = color;
                     this.sync_wheel(cx);
@@ -171,7 +171,7 @@ impl ColorCombinationsState {
     }
 }
 
-impl gpui::Render for ColorCombinationsState {
+impl gpui::Render for ColorHarmoniesState {
     fn render(&mut self, window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
         let color = self.color;
         let swatches = self.selected_combination.palette(color);
@@ -188,7 +188,7 @@ impl gpui::Render for ColorCombinationsState {
         vstack! {
             align=center;
             look
-                .card("color-combinations-card")
+                .card("color-harmonies-card")
                 .elevated(false)
                 .child_render(move |_, _| {
                     render_combinations_card_body(
@@ -486,6 +486,24 @@ fn field_label(label: &'static str, color: Hsla) -> gpui::Div {
 
 fn format_hsl_label(color: Hsla) -> String {
     format!("hsl({})", format_inspector_hsl(color))
+}
+
+fn parse_color_input(value: &str) -> Option<Hsla> {
+    parse_hex(value).or_else(|| parse_hsl(value))
+}
+
+fn parse_hex(value: &str) -> Option<Hsla> {
+    let trimmed = value.trim();
+    let hex = trimmed.strip_prefix('#').unwrap_or(trimmed);
+    if hex.len() != 6 {
+        return None;
+    }
+
+    let red = u8::from_str_radix(&hex[0..2], 16).ok()?;
+    let green = u8::from_str_radix(&hex[2..4], 16).ok()?;
+    let blue = u8::from_str_radix(&hex[4..6], 16).ok()?;
+
+    Some(rgb(((red as u32) << 16) | ((green as u32) << 8) | (blue as u32)).into())
 }
 
 fn parse_hsl(value: &str) -> Option<Hsla> {

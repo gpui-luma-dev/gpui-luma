@@ -7,13 +7,13 @@ use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::notify_entity;
 
 #[derive(Clone)]
-pub(in crate::gallery) struct ColorCombinationsPane {
-    state: Entity<super::compositions::ColorCombinationsState>,
+pub(in crate::gallery) struct ColorHarmoniesPane {
+    state: Entity<super::compositions::ColorHarmoniesState>,
 }
 
-impl ColorCombinationsPane {
+impl ColorHarmoniesPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
-        let state = cx.new(|cx| super::compositions::ColorCombinationsState::new(look, cx));
+        let state = cx.new(|cx| super::compositions::ColorHarmoniesState::new(look, cx));
         Self { state }
     }
 
@@ -21,8 +21,8 @@ impl ColorCombinationsPane {
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         super::render_single_composition_page(
-            "Combinations",
-            "The original harmony-combination composition page: a base color wheel plus generated harmony palettes.",
+            "Color Harmonies",
+            "The original color harmonies composition page: a base color wheel plus generated harmony palettes.",
             self.state.clone(),
             look,
         )

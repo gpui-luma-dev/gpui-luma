@@ -4,7 +4,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use crate::gallery::panes::color::common::color_gallery_pane;
 
 pub(super) mod compositions;
-mod color_combinations;
+mod color_harmonies;
 mod color_picker_photoshop;
 mod hsv_plane_photoshop;
 mod hsv_wheel;
@@ -12,7 +12,7 @@ mod hue_ring_sv_triangle;
 mod multi_mixer;
 mod split_ring_pixagram;
 
-pub(in crate::gallery) use color_combinations::ColorCombinationsPane;
+pub(in crate::gallery) use color_harmonies::ColorHarmoniesPane;
 pub(in crate::gallery) use color_picker_photoshop::ColorPickerPane;
 pub(in crate::gallery) use hsv_plane_photoshop::HsvPlanePane;
 pub(in crate::gallery) use hsv_wheel::HsvWheelPane;

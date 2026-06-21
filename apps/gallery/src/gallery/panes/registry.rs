@@ -61,7 +61,7 @@ enum GalleryPageKind {
     ColorArc,
     ColorSlider,
     ColorSliderRevealed,
-    ColorCombinations,
+    ColorHarmonies,
     ColorPicker,
     ColorHsvPlane,
     ColorHsvWheel,
@@ -175,12 +175,8 @@ const COLOR_SLIDER_REVEALED_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::ColorSliderRevealed,
 };
-const COLOR_COMBINATIONS_PAGE: GalleryPage = GalleryPage {
-    id: "color-combinations",
-    label: "Combinations",
-    icon: None,
-    kind: GalleryPageKind::ColorCombinations,
-};
+const COLOR_HARMONIES_PAGE: GalleryPage =
+    GalleryPage { id: "color-harmonies", label: "Color Harmonies", icon: None, kind: GalleryPageKind::ColorHarmonies };
 const COLOR_PICKER_PAGE: GalleryPage =
     GalleryPage { id: "color-picker", label: "Color Picker", icon: None, kind: GalleryPageKind::ColorPicker };
 const COLOR_HSV_PLANE_PAGE: GalleryPage =
@@ -326,7 +322,7 @@ const COLOR_PAGES: &[GalleryPage] = &[
     COLOR_ARC_PAGE,
     COLOR_SLIDER_PAGE,
     COLOR_SLIDER_REVEALED_PAGE,
-    COLOR_COMBINATIONS_PAGE,
+    COLOR_HARMONIES_PAGE,
     COLOR_PICKER_PAGE,
     COLOR_HSV_PLANE_PAGE,
     COLOR_HSV_WHEEL_PAGE,
@@ -442,7 +438,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) color_arc: color::ColorArcPane,
     pub(super) color_slider: color::ColorSliderPane,
     pub(super) color_slider_revealed: color::ColorSliderRevealedPane,
-    pub(super) color_combinations: color_compositions::ColorCombinationsPane,
+    pub(super) color_harmonies: color_compositions::ColorHarmoniesPane,
     pub(super) color_picker: color_compositions::ColorPickerPane,
     pub(super) color_hsv_plane: color_compositions::HsvPlanePane,
     pub(super) color_hsv_wheel: color_compositions::HsvWheelPane,
@@ -551,7 +547,7 @@ impl GalleryPanes {
             color_arc: color::ColorArcPane::new(cx, look.clone()),
             color_slider: color::ColorSliderPane::new(cx, look.clone()),
             color_slider_revealed: color::ColorSliderRevealedPane::new(cx, look.clone()),
-            color_combinations: color_compositions::ColorCombinationsPane::new(cx, look.clone()),
+            color_harmonies: color_compositions::ColorHarmoniesPane::new(cx, look.clone()),
             color_picker: color_compositions::ColorPickerPane::new(cx, look.clone()),
             color_hsv_plane: color_compositions::HsvPlanePane::new(cx, look.clone()),
             color_hsv_wheel: color_compositions::HsvWheelPane::new(cx, look.clone()),
@@ -605,7 +601,7 @@ impl GalleryPanes {
         self.color_arc.subscribe(cx, subscriptions);
         self.color_slider.subscribe(cx, subscriptions);
         self.color_slider_revealed.subscribe(cx, subscriptions);
-        self.color_combinations.subscribe(cx, subscriptions);
+        self.color_harmonies.subscribe(cx, subscriptions);
         self.color_picker.subscribe(cx, subscriptions);
         self.color_hsv_plane.subscribe(cx, subscriptions);
         self.color_hsv_wheel.subscribe(cx, subscriptions);
@@ -669,7 +665,7 @@ impl GalleryPanes {
             GalleryPageKind::ColorArc => self.color_arc.notify_controls(cx),
             GalleryPageKind::ColorSlider => self.color_slider.notify_controls(cx),
             GalleryPageKind::ColorSliderRevealed => self.color_slider_revealed.notify_controls(cx),
-            GalleryPageKind::ColorCombinations => self.color_combinations.notify_controls(cx),
+            GalleryPageKind::ColorHarmonies => self.color_harmonies.notify_controls(cx),
             GalleryPageKind::ColorPicker => self.color_picker.notify_controls(cx),
             GalleryPageKind::ColorHsvPlane => self.color_hsv_plane.notify_controls(cx),
             GalleryPageKind::ColorHsvWheel => self.color_hsv_wheel.notify_controls(cx),
@@ -737,7 +733,7 @@ impl GalleryPanes {
             GalleryPageKind::ColorArc => self.color_arc.render(&self.look),
             GalleryPageKind::ColorSlider => self.color_slider.render(&self.look),
             GalleryPageKind::ColorSliderRevealed => self.color_slider_revealed.render(&self.look),
-            GalleryPageKind::ColorCombinations => self.color_combinations.render(&self.look),
+            GalleryPageKind::ColorHarmonies => self.color_harmonies.render(&self.look),
             GalleryPageKind::ColorPicker => self.color_picker.render(&self.look),
             GalleryPageKind::ColorHsvPlane => self.color_hsv_plane.render(&self.look),
             GalleryPageKind::ColorHsvWheel => self.color_hsv_wheel.render(&self.look),
