@@ -1,4 +1,3 @@
-mod angular_template;
 mod constraints;
 mod control;
 mod domain;
@@ -8,7 +7,6 @@ mod model;
 mod segments;
 mod template;
 
-pub use angular_template::{ThemedAngularDialTemplate, default_angular_dial_template};
 pub use constraints::{clamp_and_snap_value, normalize_intervals, step_allowed_value};
 pub use control::{Slider2Drag, Slider2Event};
 pub use domain::{DomainTrackRenderer, GradientDomainTrack, HueDomainTrack};
@@ -19,7 +17,8 @@ pub use model::{
 };
 pub use template::{
     Slider2BoundsHandler, Slider2DragMoveHandler, Slider2HoverHandler, Slider2MouseDownHandler, Slider2MouseUpHandler,
-    Slider2Template, Slider2TemplateHandlers, ThemedSlider2Template, default_slider2_template,
+    Slider2Template, Slider2TemplateHandlers, ThemedAngularDialTemplate, ThemedCircularRingTemplate,
+    ThemedSlider2Template, default_angular_dial_template, default_circular_ring_template, default_slider2_template,
 };
 
 use gpui::{Entity, SharedString};

@@ -1,0 +1,140 @@
+use std::sync::{Arc, OnceLock};
+
+use gpui::{App, Bounds, Div, Hsla, Pixels, Stateful, Window, canvas, div, hsla, px, prelude::*};
+
+use super::{
+    DIAL_SIZE, Slider2Template, Slider2TemplateHandlers, TRACK_RADIUS, attach_radial_interaction,
+    paint_radial_fill_track, paint_radial_sliced_track, render_slider2_thumb_at, slider2_thumb_size,
+    track_bounds_canvas,
+};
+use crate::controls::slider::{SliderTheme, default_slider_theme};
+
+use crate::controls::slider2::input::{Slider2InputStrategy, angle_for_percentage};
+use crate::controls::slider2::layout::display_position;
+use crate::controls::slider2::model::{Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind};
+
+const RING_SEGMENTS: usize = 180;
+
+pub struct ThemedCircularRingTemplate {
+    theme: Arc<dyn SliderTheme>,
+}
+
+impl ThemedCircularRingTemplate {
+    pub fn new(theme: Arc<dyn SliderTheme>) -> Self {
+        Self { theme }
+    }
+}
+
+pub fn default_circular_ring_template() -> Arc<dyn Slider2Template> {
+    static TEMPLATE: OnceLock<Arc<dyn Slider2Template>> = OnceLock::new();
+
+    TEMPLATE.get_or_init(|| Arc::new(ThemedCircularRingTemplate::new(default_slider_theme()))).clone()
+}
+
+impl Slider2Template for ThemedCircularRingTemplate {
+    fn render(
+        &self,
+        model: &Slider2RenderModel<'_>,
+        handlers: Slider2TemplateHandlers,
+        primary_thumb_id: ThumbId,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> Stateful<Div> {
+        let look = self.theme.resolve(model.size, model.thumb_size.map(slider2_thumb_size), model.state);
+        let Slider2InputStrategy::Angular { min_angle, max_angle } = model.strategy else {
+            return div().id(model.id.clone());
+        };
+
+        let primary_thumb =
+            model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());
+        let thumb_position = primary_thumb.map(|thumb| thumb.position).unwrap_or(0.0);
+        let display_percentage = display_position(thumb_position, model.reversed);
+        let angle = angle_for_percentage(min_angle, max_angle, display_percentage);
+        let center = DIAL_SIZE * 0.5;
+        let thumb_x = center + TRACK_RADIUS * angle.cos();
+        let thumb_y = center + TRACK_RADIUS * angle.sin();
+        let arc_thickness = look.track_height;
+        let presentation = model.presentation;
+        let track_background = look.track_background;
+        let fill_background = look.fill_background;
+        let blocked_segments: Vec<_> = model
+            .track_segments
+            .iter()
+            .filter(|segment| segment.kind == TrackSegmentKind::Blocked)
+            .copied()
+            .collect();
+
+        let (track_bounds, interaction) = handlers.into();
+
+        let root = div()
+            .id(model.id.clone())
+            .relative()
+            .size(px(DIAL_SIZE))
+            .child(
+                canvas(
+                    move |_, _, _| (),
+                    move |bounds, _, window, _| match presentation {
+                        TrackPresentation::Fill => paint_radial_fill_track(
+                            bounds,
+                            min_angle,
+                            max_angle,
+                            display_percentage,
+                            track_background,
+                            fill_background,
+                            arc_thickness,
+                            window,
+                        ),
+                        TrackPresentation::Domain => paint_domain_ring(
+                            bounds,
+                            min_angle,
+                            max_angle,
+                            track_background,
+                            arc_thickness,
+                            &blocked_segments,
+                            window,
+                        ),
+                    },
+                )
+                .absolute()
+                .size_full(),
+            )
+            .child(render_slider2_thumb_at(&look, format!("{}-thumb", model.id), thumb_x, thumb_y, primary_thumb))
+            .child(track_bounds_canvas(track_bounds));
+
+        attach_radial_interaction(root, model, interaction, primary_thumb_id)
+    }
+}
+
+fn paint_domain_ring(
+    bounds: Bounds<Pixels>,
+    min_angle: f32,
+    max_angle: f32,
+    track_background: Hsla,
+    arc_thickness: f32,
+    blocked_segments: &[crate::controls::slider2::model::TrackSegment],
+    window: &mut Window,
+) {
+    paint_radial_sliced_track(
+        bounds,
+        min_angle,
+        max_angle,
+        RING_SEGMENTS,
+        arc_thickness,
+        |mid_t, segment_start, segment_end| {
+            let is_blocked = blocked_segments
+                .iter()
+                .any(|segment| ranges_overlap(segment.start, segment.end, segment_start, segment_end));
+
+            if is_blocked {
+                track_background
+            } else {
+                hsla(mid_t.rem_euclid(1.0), 1.0, 0.5, 1.0)
+            }
+        },
+        window,
+    );
+}
+
+fn ranges_overlap(start_a: f32, end_a: f32, start_b: f32, end_b: f32) -> bool {
+    start_a < end_b && end_a > start_b
+}

@@ -70,7 +70,7 @@ impl Slider2Pane {
                 .slider2("slider2-wrapping")
                 .angular(0.0, 2.0 * PI)
                 .wrapping(true)
-                .template(look.slider2_angular_template())
+                .template(look.slider2_circular_ring_template())
                 .range(0.0..360.0)
                 .step(1.0)
                 .value(180.0)
