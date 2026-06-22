@@ -19,6 +19,10 @@ pub(super) fn gallery_pane(title: &'static str, content: AnyElement, look: &Shad
     gallery_pane_with_description(title, None, content, look)
 }
 
+pub(super) fn gallery_pane_scrollable(title: &'static str, content: AnyElement, look: &ShadcnLook) -> AnyElement {
+    gallery_pane_scrollable_with_description(title, None, content, look)
+}
+
 pub(super) fn gallery_pane_with_description(
     title: &'static str,
     description: Option<&'static str>,
@@ -37,6 +41,27 @@ pub(super) fn gallery_pane_with_description(
         .p(px(28.0))
         .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
         .child(render_centered_pane_body(content))
+        .into_any_element()
+}
+
+pub(super) fn gallery_pane_scrollable_with_description(
+    title: &'static str,
+    description: Option<&'static str>,
+    content: AnyElement,
+    look: &ShadcnLook,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    div()
+        .size_full()
+        .relative()
+        .flex()
+        .flex_col()
+        .overflow_hidden()
+        .bg(chrome.content_background)
+        .p(px(28.0))
+        .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
+        .child(render_scrollable_pane_body(title, content))
         .into_any_element()
 }
 
@@ -82,6 +107,23 @@ pub(super) fn gallery_pane_with_inspector_description(
                             .child(render_centered_pane_body(content)),
                     ),
             ),
+        )
+        .into_any_element()
+}
+
+fn render_scrollable_pane_body(title: &'static str, content: AnyElement) -> AnyElement {
+    div()
+        .w_full()
+        .min_h(px(0.0))
+        .flex_1()
+        .child(
+            div()
+                .id(format!("{title}-scroll"))
+                .size_full()
+                .overflow_y_scroll()
+                .pt(px(18.0))
+                .pb(px(24.0))
+                .child(content),
         )
         .into_any_element()
 }

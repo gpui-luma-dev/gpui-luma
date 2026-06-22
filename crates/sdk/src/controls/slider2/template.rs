@@ -312,6 +312,39 @@ fn segment_background(kind: TrackSegmentKind, look: &crate::controls::slider::Sl
     }
 }
 
+pub(crate) fn render_slider2_thumb_at(
+    look: &crate::controls::slider::SliderLook,
+    id: impl Into<gpui::ElementId>,
+    center_x: f32,
+    center_y: f32,
+    thumb: Option<&SliderThumbValue>,
+) -> Stateful<Div> {
+    let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
+    let offset = look.thumb_size * 0.5 + thumb_focus_offset();
+
+    div()
+        .id(id)
+        .absolute()
+        .left(px(center_x - offset))
+        .top(px(center_y - offset))
+        .flex()
+        .items_center()
+        .justify_center()
+        .p(px(THUMB_FOCUS_GAP))
+        .border(px(THUMB_FOCUS_WIDTH))
+        .border_color(focus_ring_color(look.focus_ring))
+        .rounded(px(look.radius + thumb_focus_offset()))
+        .child(
+            div()
+                .size(px(look.thumb_size))
+                .bg(thumb_fill)
+                .border_1()
+                .border_color(look.thumb_border)
+                .rounded(px(look.radius))
+                .shadow(look.thumb_shadow.clone()),
+        )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn render_thumb(
     model: &Slider2RenderModel<'_>,

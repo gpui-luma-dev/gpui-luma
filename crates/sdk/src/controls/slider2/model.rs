@@ -7,6 +7,7 @@ use gpui::{AbsoluteLength, AppContext, Entity, Hsla, SharedString};
 use super::constraints::{clamp_and_snap_value, normalize_intervals};
 use super::control::Slider2Control;
 use super::domain::{DomainTrackRenderer, HueDomainTrack};
+use super::input::{Slider2InputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
 use super::template::{Slider2Template, default_slider2_template};
 use crate::controls::slider::SliderState;
@@ -87,7 +88,7 @@ impl From<ControlSize> for Slider2ThumbSize {
 #[derive(Clone)]
 pub struct Slider2Model {
     pub(crate) id: SharedString,
-    pub(crate) orientation: Slider2Orientation,
+    pub(crate) strategy: Slider2InputStrategy,
     pub(crate) presentation: TrackPresentation,
     pub(crate) size: ControlSize,
     pub(crate) thumb_size: Option<Slider2ThumbSize>,
@@ -96,6 +97,7 @@ pub struct Slider2Model {
     pub(crate) thumbs: Vec<SliderThumbValue>,
     pub(crate) allowed_intervals: Vec<RangeInclusive<f32>>,
     pub(crate) reversed: bool,
+    pub(crate) wrapping: bool,
     pub(crate) enabled: bool,
     pub(crate) corner_radius: Option<AbsoluteLength>,
     pub(crate) domain_track: Option<Arc<dyn DomainTrackRenderer>>,
@@ -104,6 +106,7 @@ pub struct Slider2Model {
 
 pub struct Slider2RenderModel<'a> {
     pub id: &'a SharedString,
+    pub strategy: Slider2InputStrategy,
     pub orientation: Slider2Orientation,
     pub presentation: TrackPresentation,
     pub size: ControlSize,
@@ -113,6 +116,7 @@ pub struct Slider2RenderModel<'a> {
     pub thumbs: &'a [SliderThumbValue],
     pub track_segments: Vec<TrackSegment>,
     pub reversed: bool,
+    pub wrapping: bool,
     pub enabled: bool,
     pub corner_radius: Option<AbsoluteLength>,
     pub domain_track: Option<Arc<dyn DomainTrackRenderer>>,
@@ -129,7 +133,7 @@ impl Slider2Builder {
         Self {
             model: Slider2Model {
                 id: id.into(),
-                orientation: Slider2Orientation::Horizontal,
+                strategy: Slider2InputStrategy::Horizontal,
                 presentation: TrackPresentation::Fill,
                 size: ControlSize::Md,
                 thumb_size: None,
@@ -143,6 +147,7 @@ impl Slider2Builder {
                 }],
                 allowed_intervals: Vec::new(),
                 reversed: false,
+                wrapping: false,
                 enabled: true,
                 corner_radius: None,
                 domain_track: None,
@@ -151,18 +156,34 @@ impl Slider2Builder {
         }
     }
 
+    pub fn strategy(mut self, strategy: Slider2InputStrategy) -> Self {
+        self.model.strategy = strategy;
+        self
+    }
+
     pub fn orientation(mut self, orientation: Slider2Orientation) -> Self {
-        self.model.orientation = orientation;
+        self.model.strategy = orientation.into();
         self
     }
 
     pub fn horizontal(mut self) -> Self {
-        self.model.orientation = Slider2Orientation::Horizontal;
+        self.model.strategy = Slider2InputStrategy::Horizontal;
         self
     }
 
     pub fn vertical(mut self) -> Self {
-        self.model.orientation = Slider2Orientation::Vertical;
+        self.model.strategy = Slider2InputStrategy::Vertical;
+        self
+    }
+
+    pub fn angular(mut self, min_angle: f32, max_angle: f32) -> Self {
+        self.model.strategy = Slider2InputStrategy::Angular { min_angle, max_angle };
+        self
+    }
+
+    pub fn wrapping(mut self, wrapping: bool) -> Self {
+        self.model.wrapping = wrapping;
+        self.sync_primary_thumb_position();
         self
     }
 
@@ -266,7 +287,11 @@ pub(crate) fn primary_value(model: &Slider2Model) -> f32 {
 }
 
 pub(crate) fn constrain_primary_value(value: f32, model: &Slider2Model) -> f32 {
-    clamp_and_snap_value(value, &model.allowed_intervals, model.range, model.step)
+    if model.wrapping && model.allowed_intervals.is_empty() {
+        wrap_and_snap(value, model.range, model.step)
+    } else {
+        clamp_and_snap_value(value, &model.allowed_intervals, model.range, model.step)
+    }
 }
 
 pub(crate) fn build_render_segments(model: &Slider2Model) -> Vec<TrackSegment> {

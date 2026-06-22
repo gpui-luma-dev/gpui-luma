@@ -30,7 +30,7 @@ use gpui_luma::controls::selection_panel::SelectionPanelLookProvider;
 use gpui_luma::controls::resizable_panels::ResizablePanelsTheme;
 use gpui_luma::controls::split_view::SplitViewTheme;
 use gpui_luma::controls::slider::{SliderTheme, ThemedSliderTemplate};
-use gpui_luma::controls::slider2::{Slider2Template, ThemedSlider2Template};
+use gpui_luma::controls::slider2::{Slider2Template, ThemedAngularDialTemplate, ThemedSlider2Template};
 use gpui_luma::controls::switch::{SwitchTheme, ThemedSwitchTemplate};
 use gpui_luma::controls::accordion::{AccordionTemplate, AccordionTheme, ThemedAccordionTemplate};
 use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTreeViewTemplate};
@@ -299,6 +299,10 @@ pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::s
 
 pub fn slider2_template(theme: Arc<ShadcnLook>) -> Arc<dyn Slider2Template> {
     Arc::new(ThemedSlider2Template::new(Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })))
+}
+
+pub fn slider2_angular_template(theme: Arc<ShadcnLook>) -> Arc<dyn Slider2Template> {
+    Arc::new(ThemedAngularDialTemplate::new(Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })))
 }
 
 pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate> {

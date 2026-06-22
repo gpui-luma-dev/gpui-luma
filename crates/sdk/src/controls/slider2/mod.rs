@@ -1,14 +1,18 @@
+mod angular_template;
 mod constraints;
 mod control;
 mod domain;
+mod input;
 mod layout;
 mod model;
 mod segments;
 mod template;
 
+pub use angular_template::{ThemedAngularDialTemplate, default_angular_dial_template};
 pub use constraints::{clamp_and_snap_value, normalize_intervals, step_allowed_value};
 pub use control::{Slider2Drag, Slider2Event};
 pub use domain::{DomainTrackRenderer, GradientDomainTrack, HueDomainTrack};
+pub use input::{Slider2InputStrategy, angle_for_percentage, wrap_and_snap, wrap_value};
 pub use model::{
     Slider2Builder, Slider2Model, Slider2Orientation, Slider2RenderModel, Slider2ThumbSize, SliderThumbRole,
     SliderThumbValue, ThumbId, TrackPresentation, TrackSegment, TrackSegmentKind, default_hue_domain_track,

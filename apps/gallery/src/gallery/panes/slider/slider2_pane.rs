@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, IntoElement, Subscription, div, prelude::*, px};
@@ -7,7 +8,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::control::GalleryApp;
 
-use super::super::shared::{gallery_pane, notify_entity};
+use super::super::shared::{gallery_pane_scrollable, notify_entity};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct Slider2Pane {
@@ -17,12 +18,16 @@ pub(in crate::gallery) struct Slider2Pane {
     domain_slider: Slider2,
     blocked_slider: Slider2,
     reversed_slider: Slider2,
+    angular_slider: Slider2,
+    wrapping_slider: Slider2,
     fill_value: f32,
     vertical_value: f32,
     vertical_reversed_value: f32,
     domain_value: f32,
     blocked_value: f32,
     reversed_value: f32,
+    angular_value: f32,
+    wrapping_value: f32,
 }
 
 impl Slider2Pane {
@@ -53,12 +58,31 @@ impl Slider2Pane {
                 .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
                 .spawn(cx),
             reversed_slider: look.slider2("slider2-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx),
+            angular_slider: look
+                .slider2("slider2-angular")
+                .angular(-1.25 * PI, 0.25 * PI)
+                .template(look.slider2_angular_template())
+                .range(0..100)
+                .step(1)
+                .value(50)
+                .spawn(cx),
+            wrapping_slider: look
+                .slider2("slider2-wrapping")
+                .angular(0.0, 2.0 * PI)
+                .wrapping(true)
+                .template(look.slider2_angular_template())
+                .range(0.0..360.0)
+                .step(1.0)
+                .value(180.0)
+                .spawn(cx),
             fill_value: 41.0,
             vertical_value: 62.0,
             vertical_reversed_value: 62.0,
             domain_value: 180.0,
             blocked_value: 100.0,
             reversed_value: 41.0,
+            angular_value: 50.0,
+            wrapping_value: 180.0,
         }
     }
 
@@ -81,12 +105,18 @@ impl Slider2Pane {
         subscriptions.push(cx.subscribe(&self.reversed_slider, |app, _, event: &Slider2Event, cx| {
             app.panes.slider2.handle_reversed_event(event, cx);
         }));
+        subscriptions.push(cx.subscribe(&self.angular_slider, |app, _, event: &Slider2Event, cx| {
+            app.panes.slider2.handle_angular_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.wrapping_slider, |app, _, event: &Slider2Event, cx| {
+            app.panes.slider2.handle_wrapping_event(event, cx);
+        }));
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane(
+        gallery_pane_scrollable(
             "Slider 2",
             div()
                 .flex()
@@ -149,6 +179,26 @@ impl Slider2Pane {
                         .child(div().w(px(320.0)).child(self.blocked_slider.clone()))
                         .child(value_label(self.blocked_value, chrome.body_text)),
                 )
+                .child(section_label("Angular dial", chrome.muted_text))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .child(self.angular_slider.clone())
+                        .child(value_label(self.angular_value, chrome.body_text)),
+                )
+                .child(section_label("Wrapping dial", chrome.muted_text))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .child(self.wrapping_slider.clone())
+                        .child(value_label(self.wrapping_value, chrome.body_text)),
+                )
                 .into_any_element(),
             look,
         )
@@ -161,6 +211,8 @@ impl Slider2Pane {
         notify_entity(&self.domain_slider, cx);
         notify_entity(&self.blocked_slider, cx);
         notify_entity(&self.reversed_slider, cx);
+        notify_entity(&self.angular_slider, cx);
+        notify_entity(&self.wrapping_slider, cx);
     }
 
     fn handle_fill_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
@@ -198,6 +250,18 @@ impl Slider2Pane {
         self.blocked_value = *value;
         cx.notify();
     }
+
+    fn handle_angular_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
+        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
+        self.angular_value = *value;
+        cx.notify();
+    }
+
+    fn handle_wrapping_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
+        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
+        self.wrapping_value = *value;
+        cx.notify();
+    }
 }
 
 fn vertical_demo(label: &'static str, slider: Slider2, value: f32, look: &ShadcnLook) -> impl IntoElement {
@@ -207,13 +271,7 @@ fn vertical_demo(label: &'static str, slider: Slider2, value: f32, look: &Shadcn
         .flex_col()
         .items_center()
         .gap_2()
-        .child(
-            div()
-                .text_size(px(11.0))
-                .line_height(px(14.0))
-                .text_color(chrome.muted_text)
-                .child(label),
-        )
+        .child(div().text_size(px(11.0)).line_height(px(14.0)).text_color(chrome.muted_text).child(label))
         .child(div().h(px(260.0)).child(slider))
         .child(value_label(value, chrome.body_text))
 }

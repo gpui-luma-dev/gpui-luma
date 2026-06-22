@@ -1,8 +1,12 @@
 use gpui::{
     App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, SharedString, Window, div, prelude::*, px,
+    Pixels, Point, Render, SharedString, Window, div, prelude::*,
 };
 
+use super::input::{
+    Slider2InputStrategy, angle_for_percentage, angle_from_position, angular_drag_value, percentage_from_position,
+    unwrap_angle_near,
+};
 use super::model::{
     build_render_segments, constrain_primary_value, primary_value, Slider2Builder, Slider2Orientation,
     Slider2RenderModel, Slider2ThumbSize, ThumbId,
@@ -46,6 +50,8 @@ pub struct Slider2Control {
     interaction: ControlInteraction,
     track_bounds: Option<Bounds<Pixels>>,
     active_thumb_id: Option<ThumbId>,
+    angular_drag_angle_offset: Option<f32>,
+    angular_drag_pointer_angle: Option<f32>,
 }
 
 impl EventEmitter<Slider2Event> for Slider2Control {}
@@ -65,6 +71,8 @@ impl Slider2Control {
             interaction: ControlInteraction::new(enabled, cx),
             track_bounds: None,
             active_thumb_id: None,
+            angular_drag_angle_offset: None,
+            angular_drag_pointer_angle: None,
         }
     }
 
@@ -88,8 +96,12 @@ impl Slider2Control {
         self.model.range
     }
 
+    pub fn strategy(&self) -> Slider2InputStrategy {
+        self.model.strategy
+    }
+
     pub fn orientation(&self) -> Slider2Orientation {
-        self.model.orientation
+        self.model.strategy.orientation()
     }
 
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
@@ -109,7 +121,8 @@ impl Slider2Control {
     fn render_model<'a>(&'a self, window: &Window) -> Slider2RenderModel<'a> {
         Slider2RenderModel {
             id: &self.model.id,
-            orientation: self.model.orientation,
+            strategy: self.model.strategy,
+            orientation: self.model.strategy.orientation(),
             presentation: self.model.presentation,
             size: self.model.size,
             thumb_size: self.model.thumb_size,
@@ -118,6 +131,7 @@ impl Slider2Control {
             thumbs: &self.model.thumbs,
             track_segments: build_render_segments(&self.model),
             reversed: self.model.reversed,
+            wrapping: self.model.wrapping,
             enabled: self.model.enabled,
             corner_radius: self.model.corner_radius,
             domain_track: self.model.domain_track.clone(),
@@ -167,7 +181,7 @@ impl Slider2Control {
             return false;
         };
 
-        let Some(percentage) = percentage_from_position(self.model.orientation, self.model.reversed, bounds, position)
+        let Some(percentage) = percentage_from_position(self.model.strategy, self.model.reversed, bounds, position)
         else {
             return false;
         };
@@ -189,7 +203,24 @@ impl Slider2Control {
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
         self.active_thumb_id = self.model.thumbs.first().map(|thumb| thumb.id);
-        let value_changed = self.set_value_from_position(event.position, true, cx);
+        let value_changed = match self.model.strategy {
+            Slider2InputStrategy::Angular { min_angle, max_angle } => {
+                if self.model.enabled {
+                    let handle_angle =
+                        angle_for_percentage(min_angle, max_angle, self.model.range.percentage(self.value()));
+                    let pointer_angle = self
+                        .track_bounds
+                        .and_then(|bounds| angle_from_position(bounds, event.position))
+                        .map(|pointer_angle| unwrap_angle_near(handle_angle, pointer_angle));
+                    self.angular_drag_angle_offset = pointer_angle.map(|pointer_angle| pointer_angle - handle_angle);
+                    self.angular_drag_pointer_angle = pointer_angle;
+                }
+                false
+            }
+            Slider2InputStrategy::Horizontal | Slider2InputStrategy::Vertical => {
+                self.set_value_from_position(event.position, true, cx)
+            }
+        };
 
         if interaction_changed || value_changed {
             cx.notify();
@@ -198,6 +229,7 @@ impl Slider2Control {
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
         self.active_thumb_id = None;
+        self.reset_drag_tracking();
         if self.interaction.handle_mouse_up() {
             cx.emit(Slider2Event::Release { value: self.value() });
             cx.notify();
@@ -210,11 +242,42 @@ impl Slider2Control {
             return;
         }
 
-        if self.track_bounds.is_none() {
-            self.track_bounds = Some(event.bounds);
-        }
+        match self.model.strategy {
+            Slider2InputStrategy::Angular { min_angle, max_angle } => {
+                let bounds = self.track_bounds.unwrap_or(event.bounds);
+                if let (Some(pointer_angle), Some(offset), Some(previous_pointer_angle)) = (
+                    angle_from_position(bounds, event.event.position),
+                    self.angular_drag_angle_offset,
+                    self.angular_drag_pointer_angle,
+                ) {
+                    let pointer_angle = unwrap_angle_near(previous_pointer_angle, pointer_angle);
+                    self.angular_drag_pointer_angle = Some(pointer_angle);
+                    if let Some(value) = angular_drag_value(
+                        pointer_angle,
+                        offset,
+                        min_angle,
+                        max_angle,
+                        self.model.range,
+                        self.model.wrapping && self.model.allowed_intervals.is_empty(),
+                        self.model.step,
+                    ) {
+                        self.set_value_internal(value, true, cx);
+                    }
+                }
+            }
+            Slider2InputStrategy::Horizontal | Slider2InputStrategy::Vertical => {
+                if self.track_bounds.is_none() {
+                    self.track_bounds = Some(event.bounds);
+                }
 
-        self.set_value_from_position(event.event.position, true, cx);
+                self.set_value_from_position(event.event.position, true, cx);
+            }
+        }
+    }
+
+    fn reset_drag_tracking(&mut self) {
+        self.angular_drag_angle_offset = None;
+        self.angular_drag_pointer_angle = None;
     }
 
     fn adjust_value(&mut self, delta: f32, cx: &mut Context<Self>) {
@@ -222,13 +285,21 @@ impl Slider2Control {
             return;
         }
 
-        let next = step_allowed_value(
-            self.value(),
-            super::layout::oriented_step_delta(delta, self.model.reversed),
-            &self.model.allowed_intervals,
-            self.model.range,
-            self.model.step,
-        );
+        let next = if self.model.wrapping && self.model.allowed_intervals.is_empty() {
+            super::input::wrap_and_snap(
+                self.value() + super::layout::oriented_step_delta(delta, self.model.reversed),
+                self.model.range,
+                self.model.step,
+            )
+        } else {
+            step_allowed_value(
+                self.value(),
+                super::layout::oriented_step_delta(delta, self.model.reversed),
+                &self.model.allowed_intervals,
+                self.model.range,
+                self.model.step,
+            )
+        };
 
         if self.set_value_internal(next, true, cx) {
             cx.emit(Slider2Event::Release { value: self.value() });
@@ -300,37 +371,11 @@ impl Render for Slider2Control {
     }
 }
 
-fn percentage_from_position(
-    orientation: Slider2Orientation,
-    reversed: bool,
-    bounds: Bounds<Pixels>,
-    position: Point<Pixels>,
-) -> Option<f32> {
-    let raw = match orientation {
-        Slider2Orientation::Horizontal => {
-            if bounds.size.width <= px(0.0) {
-                return None;
-            }
-
-            ((position.x - bounds.left()) / bounds.size.width).clamp(0.0, 1.0)
-        }
-        Slider2Orientation::Vertical => {
-            if bounds.size.height <= px(0.0) {
-                return None;
-            }
-
-            (1.0 - ((position.y - bounds.top()) / bounds.size.height)).clamp(0.0, 1.0)
-        }
-    };
-
-    Some(super::layout::position_from_pointer(raw, reversed))
-}
-
 #[cfg(test)]
 mod tests {
     use gpui::{Bounds, Pixels, point, px, size};
 
-    use super::{Slider2Orientation, percentage_from_position};
+    use super::super::input::{Slider2InputStrategy, percentage_from_position};
     use crate::controls::slider2::layout;
 
     fn test_bounds() -> Bounds<Pixels> {
@@ -340,7 +385,7 @@ mod tests {
     #[test]
     fn horizontal_percentage_tracks_x_position() {
         let percentage =
-            percentage_from_position(Slider2Orientation::Horizontal, false, test_bounds(), point(px(60.0), px(30.0)));
+            percentage_from_position(Slider2InputStrategy::Horizontal, false, test_bounds(), point(px(60.0), px(30.0)));
 
         assert_eq!(percentage, Some(0.25));
     }
@@ -348,7 +393,7 @@ mod tests {
     #[test]
     fn horizontal_reversed_pointer_mirrors_x_position() {
         let percentage =
-            percentage_from_position(Slider2Orientation::Horizontal, true, test_bounds(), point(px(60.0), px(30.0)));
+            percentage_from_position(Slider2InputStrategy::Horizontal, true, test_bounds(), point(px(60.0), px(30.0)));
 
         assert_eq!(percentage, Some(0.75));
     }
@@ -356,7 +401,7 @@ mod tests {
     #[test]
     fn vertical_percentage_inverts_y_position() {
         let percentage =
-            percentage_from_position(Slider2Orientation::Vertical, false, test_bounds(), point(px(20.0), px(50.0)));
+            percentage_from_position(Slider2InputStrategy::Vertical, false, test_bounds(), point(px(20.0), px(50.0)));
 
         assert_eq!(percentage, Some(0.75));
     }
@@ -364,7 +409,7 @@ mod tests {
     #[test]
     fn vertical_reversed_pointer_mirrors_y_position() {
         let percentage =
-            percentage_from_position(Slider2Orientation::Vertical, true, test_bounds(), point(px(20.0), px(50.0)));
+            percentage_from_position(Slider2InputStrategy::Vertical, true, test_bounds(), point(px(20.0), px(50.0)));
 
         assert_eq!(percentage, Some(0.25));
     }
