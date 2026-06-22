@@ -40,6 +40,7 @@ pub mod scroll_container;
 pub mod resizable_panels;
 pub mod split_view;
 pub mod slider;
+pub mod slider2;
 pub mod state;
 pub mod switch;
 pub mod listbox;

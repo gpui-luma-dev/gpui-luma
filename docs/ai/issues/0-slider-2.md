@@ -324,14 +324,49 @@ Ensure visual presentation is 100% correct without relying on `overflow_hidden()
 - Apply outer-edge-only corner rounding.
 - Port orientation-aware rendering layout from previous designs.
 
-### Phase 3: Incubate multi-thumb state, selection, and stop editing (Later Phase)
+### Phase 3: Unify 1D Angular/Circular Dial Controls
+
+To consolidate dial and ring sliders (e.g. `ColorArc`, `ColorRing`, and angular sliders) into the unified engine:
+- Implement `Slider2InputStrategy` to define pointer mapping strategy:
+  ```rust
+  pub enum Slider2InputStrategy {
+      Horizontal,
+      Vertical,
+      /// Calculates mouse angle relative to bounds center using atan2
+      Angular {
+          min_angle: f32, // e.g. -135.0
+          max_angle: f32, // e.g. 135.0
+      },
+  }
+  ```
+- Translate screen points to angular percentages in `percentage_from_position`:
+  ```rust
+  // Angular percentage mapping:
+  let center = bounds.origin + bounds.size / 2.0;
+  let delta = position - center;
+  let angle_rad = f32::atan2(delta.y.0, delta.x.0);
+  let mut angle_deg = angle_rad.to_degrees();
+  // Map angle_deg to 0.0..=1.0 relative to min_angle..=max_angle
+  ```
+- Add a `wrapping: bool` field to `Slider2Model` for continuous circular dials (like Hue wheels). When `wrapping` is true, the value bounds constraint uses modulo arithmetic rather than clamping:
+  ```rust
+  let span = range.end - range.start;
+  let mut wrapped = (value - range.start) % span;
+  if wrapped < 0.0 {
+      wrapped += span;
+  }
+  let value = wrapped + range.start;
+  ```
+- Ensure the controller is generic enough to support rendering via custom dial templates (Arc/Ring templates) while reusing the core interaction state.
+
+### Phase 4: Incubate multi-thumb state, selection, and stop editing (Later Phase)
 
 After the single-thumb core is proven, expand the engine to support:
 - Stable multi-thumb collections using `ThumbId`.
 - Crossover sorting and drag-identity persistence.
 - Dynamic stop insertion (clicking empty track) and deletion (drag-off).
 
-### Phase 4: Add color-capable track rendering hooks
+### Phase 5: Add color-capable track rendering hooks
 
 Introduce rendering hooks that can express:
 
@@ -348,7 +383,7 @@ This is the point where the new family becomes useful for:
 
 The hook surface should be rich enough to preserve current color sophistication, but not so broad that all color logic moves into the generic core.
 
-### Phase 5: Build new gallery prototype surfaces
+### Phase 6: Build new gallery prototype surfaces
 
 Add a dedicated gallery validation pane for the new family instead of immediately replacing existing panes.
 
@@ -369,7 +404,7 @@ The multi-mixer surface is especially relevant as a later consumer:
 
 - [apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs)
 
-### Phase 6: Prove one real color migration
+### Phase 7: Prove one real color migration
 
 After the prototype feels right, migrate one real color use case that the old `ColorSlider` cannot express cleanly.
 
@@ -380,9 +415,9 @@ Best candidates:
 
 This phase must preserve old color slider demos so the new control is compared against working reference behavior, not developed in a vacuum.
 
-### Phase 7: Decide what to do with old controls
+### Phase 8: Decide what to do with old controls
 
-Only after Phase 6 succeeds:
+Only after Phase 7 succeeds:
 
 - decide whether `RangeSlider` should be deprecated or removed
 - decide whether plain `Slider` should remain independent or get a thin wrapper over the new family

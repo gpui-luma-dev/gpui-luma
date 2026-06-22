@@ -73,6 +73,7 @@ enum GalleryPageKind {
     PagingListView,
     Pager,
     Slider,
+    Slider2,
     Scrollbar,
     TextArea,
     TextField,
@@ -206,6 +207,8 @@ const PAGING_LIST_VIEW_PAGE: GalleryPage = GalleryPage {
 const PAGER_PAGE: GalleryPage = GalleryPage { id: "pager", label: "Pager", icon: None, kind: GalleryPageKind::Pager };
 const SLIDER_PAGE: GalleryPage =
     GalleryPage { id: "slider", label: "Slider", icon: None, kind: GalleryPageKind::Slider };
+const SLIDER2_PAGE: GalleryPage =
+    GalleryPage { id: "slider2", label: "Slider 2", icon: None, kind: GalleryPageKind::Slider2 };
 const SCROLLBAR_PAGE: GalleryPage =
     GalleryPage { id: "scrollbar", label: "Scrollbar", icon: None, kind: GalleryPageKind::Scrollbar };
 const TEXTAREA_PAGE: GalleryPage =
@@ -315,7 +318,7 @@ const CHOICE_PAGES: &[GalleryPage] = &[
     TOGGLE_GROUP_PAGE,
     TREE_VIEW_PAGE,
 ];
-const INPUT_PAGES: &[GalleryPage] = &[SCROLLBAR_PAGE, SLIDER_PAGE, TEXTAREA_PAGE, TEXTFIELD_PAGE];
+const INPUT_PAGES: &[GalleryPage] = &[SCROLLBAR_PAGE, SLIDER_PAGE, SLIDER2_PAGE, TEXTAREA_PAGE, TEXTFIELD_PAGE];
 const COLOR_PAGES: &[GalleryPage] = &[
     COLOR_FIELD_PAGE,
     COLOR_RING_PAGE,
@@ -450,6 +453,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) paging_list_view: list_view::PagingListViewPane,
     pub(super) pager: pager::PagerPane,
     pub(super) slider: slider::SliderPane,
+    pub(super) slider2: slider::Slider2Pane,
     pub(super) scrollbar: scrollbar::ScrollbarPane,
     pub(super) textarea: textarea::TextAreaPane,
     pub(super) textfield: textfield::TextFieldPane,
@@ -559,6 +563,7 @@ impl GalleryPanes {
             paging_list_view: list_view::PagingListViewPane::new(cx, look.clone()),
             pager: pager::PagerPane::new(cx, look.clone()),
             slider: slider::SliderPane::new(cx, look.clone()),
+            slider2: slider::Slider2Pane::new(cx, look.clone()),
             scrollbar: scrollbar::ScrollbarPane::new(cx, look.clone()),
             textarea: textarea::TextAreaPane::new(cx, look.clone()),
             textfield: textfield::TextFieldPane::new(cx, look.clone()),
@@ -613,6 +618,7 @@ impl GalleryPanes {
         self.paging_list_view.subscribe(cx, subscriptions);
         self.pager.subscribe(cx, subscriptions);
         self.slider.subscribe(cx, subscriptions);
+        self.slider2.subscribe(cx, subscriptions);
         self.scrollbar.subscribe(cx, subscriptions);
         self.textarea.subscribe(cx, subscriptions);
         self.textfield.subscribe(cx, subscriptions);
@@ -677,6 +683,7 @@ impl GalleryPanes {
             GalleryPageKind::PagingListView => self.paging_list_view.notify_controls(cx),
             GalleryPageKind::Pager => self.pager.notify_controls(cx),
             GalleryPageKind::Slider => self.slider.notify_controls(cx),
+            GalleryPageKind::Slider2 => self.slider2.notify_controls(cx),
             GalleryPageKind::Scrollbar => self.scrollbar.notify_controls(cx),
             GalleryPageKind::TextArea => self.textarea.notify_controls(cx),
             GalleryPageKind::TextField => self.textfield.notify_controls(cx),
@@ -745,6 +752,7 @@ impl GalleryPanes {
             GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look),
             GalleryPageKind::Pager => self.pager.render(&self.look),
             GalleryPageKind::Slider => self.slider.render(&self.look),
+            GalleryPageKind::Slider2 => self.slider2.render(&self.look),
             GalleryPageKind::Scrollbar => self.scrollbar.render(&self.look),
             GalleryPageKind::TextArea => self.textarea.render(&self.look),
             GalleryPageKind::TextField => self.textfield.render(&self.look),

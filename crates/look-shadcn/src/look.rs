@@ -432,6 +432,10 @@ impl ShadcnLook {
         templates::slider_template(Arc::clone(self))
     }
 
+    pub fn slider2_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::slider2::Slider2Template> {
+        templates::slider2_template(Arc::clone(self))
+    }
+
     pub fn scrollbar_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate> {
         templates::scrollbar_template(Arc::clone(self))
     }
