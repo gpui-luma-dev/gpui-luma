@@ -31,6 +31,7 @@ use gpui_luma::controls::scrollbar::{self, ScrollbarBuilder};
 use gpui_luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
 use gpui_luma::controls::selection_panel::{SelectionPanelControl, SelectionPanelItem};
 use gpui_luma::controls::search_selector::{self, SearchSelectorBuilder};
+use gpui_luma::controls::range_slider::{self as range_slider, RangeSliderBuilder, ThemedRangeSliderTemplate};
 use gpui_luma::controls::slider::{self, SliderBuilder};
 use gpui_luma::controls::switch::{self, SwitchBuilder};
 use gpui_luma::controls::accordion::AccordionBuilder;
@@ -96,6 +97,7 @@ pub trait ShadcnLookControlExt {
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
+    fn range_slider(&self, id: impl Into<SharedString>) -> RangeSliderBuilder;
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
@@ -307,6 +309,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
         slider::new(id).template(self.slider_template())
+    }
+
+    fn range_slider(&self, id: impl Into<SharedString>) -> RangeSliderBuilder {
+        range_slider::new(id).template(Arc::new(ThemedRangeSliderTemplate::new(self.slider_theme())))
     }
 
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder {

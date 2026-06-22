@@ -73,6 +73,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine).
     *   **Inputs:** `textfield`, `textarea`, `text/` (shared editing engine).
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.
+    *   **Range input:** `slider`, `range_slider`, `color/color_slider`.
     *   **Selection:** `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`.
     *   **Menus:** `popup_menu`, `context_menu`, `floating_menu`.
     *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`, `pager`.

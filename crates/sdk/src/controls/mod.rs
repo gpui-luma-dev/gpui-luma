@@ -35,6 +35,7 @@ pub mod progress;
 pub mod pager;
 pub mod radio_button;
 pub mod radio_group;
+pub mod range_slider;
 pub mod scrollbar;
 pub mod scroll_container;
 pub mod resizable_panels;
