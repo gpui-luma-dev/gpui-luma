@@ -28,7 +28,8 @@ pub use theme::{DefaultSliderTheme, SliderLook, SliderTheme, default_slider_them
 
 pub(crate) use layout::{display_position, segment_corner_radii, segment_display_span};
 pub(crate) use template::{
-    SliderInteractionHandlers, attach_linear_interaction, attach_thumb_drag, render_domain_track_layer,
+    SliderInteractionHandlers, attach_linear_interaction, attach_radial_interaction, attach_thumb_drag,
+    render_domain_track_layer, track_bounds_canvas,
 };
 
 pub use crate::theme::InteractionState as SliderState;

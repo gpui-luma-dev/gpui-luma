@@ -1,10 +1,9 @@
-#![allow(dead_code)]
-
-use super::arc::{ColorArcDelegate, ColorArcState};
+use super::track_context::ColorArcTrackContext;
+use super::types::ColorArcDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
 use crate::controls::color::shape::{Arc, ArcData};
-use crate::controls::color::style::{ActiveTheme as _, Size};
-use gpui::{prelude::*, *};
+use crate::controls::color::style::Size;
+use gpui::*;
 use std::f32::consts::TAU;
 
 fn normalize_hue_degrees(hue: f32) -> f32 {
@@ -119,83 +118,87 @@ fn paint_arc_border_underlay(
     }
 }
 
+fn paint_vector_arc_spectrum(
+    context: &ColorArcTrackContext,
+    bounds: Bounds<Pixels>,
+    window: &mut Window,
+    segments: usize,
+    color_at: impl Fn(f32) -> Hsla,
+) {
+    let start_turn = context.start_turns();
+    let sweep_turns = context.sweep_turns();
+    let reversed = context.reversed;
+    let border_color = context.border_color;
+    if sweep_turns <= f32::EPSILON {
+        return;
+    }
+
+    let arc_thickness = context.arc_thickness_px();
+    let border_width = 1.6;
+    let fill_thickness = (arc_thickness - border_width * 2.0).max(0.0);
+
+    paint_arc_border_underlay(window, bounds, start_turn, sweep_turns, arc_thickness, border_color);
+    if fill_thickness <= 0.0 {
+        return;
+    }
+
+    let radius = bounds.size.width.min(bounds.size.height).as_f32() * 0.5;
+    let outer_fill_radius = (radius - border_width).max(0.0);
+    let inner_fill_radius = (outer_fill_radius - fill_thickness).max(0.0);
+
+    paint_arc_end_caps(
+        window,
+        bounds,
+        start_turn,
+        sweep_turns,
+        fill_thickness,
+        Some(outer_fill_radius),
+        color_at(logical_position(reversed, (0.5 / segments as f32).min(0.01))),
+        color_at(logical_position(reversed, (1.0 - 0.5 / segments as f32).max(0.99))),
+    );
+
+    let arc_shape = Arc::new().inner_radius(inner_fill_radius).outer_radius(outer_fill_radius);
+    let step_turns = sweep_turns / segments as f32;
+    let overlap = (step_turns * TAU) * 0.35;
+
+    for i in 0..segments {
+        let t0 = i as f32 / segments as f32;
+        let t1 = (i + 1) as f32 / segments as f32;
+        let t_mid = (t0 + t1) * 0.5;
+        let logical = logical_position(reversed, t_mid);
+        let color = color_at(logical);
+
+        let start_angle = (start_turn + t0 * sweep_turns) * TAU - overlap;
+        let end_angle = (start_turn + t1 * sweep_turns) * TAU + overlap;
+
+        arc_shape.paint(
+            &ArcData { data: &(), index: i, value: 1.0, start_angle, end_angle, pad_angle: 0.0 },
+            color,
+            None,
+            None,
+            &bounds,
+            window,
+        );
+    }
+}
+
 pub struct HueArcDelegate {
     pub saturation: f32,
     pub lightness: f32,
 }
 
 impl ColorArcDelegate for HueArcDelegate {
-    fn style_background(&self, arc: &ColorArcState, container: Div, _window: &mut Window, _cx: &App) -> Div {
+    fn paint_domain_track(&self, context: &ColorArcTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
         let saturation = self.saturation.clamp(0.0, 1.0);
         let lightness = self.lightness.clamp(0.0, 1.0);
-        let start_turn = arc.start_turns();
-        let sweep_turns = arc.sweep_turns();
-        let reversed = arc.reversed;
-        let border_color = _cx.theme().border;
-        if sweep_turns <= f32::EPSILON {
-            return container;
-        }
-
-        let segments = segment_count(arc.size, sweep_turns);
-        let arc_thickness = arc.arc_thickness_px();
-        let border_width = 1.6;
-        let fill_thickness = (arc_thickness - border_width * 2.0).max(0.0);
-
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_arc_border_underlay(window, bounds, start_turn, sweep_turns, arc_thickness, border_color);
-                    if fill_thickness <= 0.0 {
-                        return;
-                    }
-
-                    let radius = bounds.size.width.min(bounds.size.height).as_f32() * 0.5;
-                    let outer_fill_radius = (radius - border_width).max(0.0);
-                    let inner_fill_radius = (outer_fill_radius - fill_thickness).max(0.0);
-                    let arc_shape = Arc::new().inner_radius(inner_fill_radius).outer_radius(outer_fill_radius);
-                    let step_turns = sweep_turns / segments as f32;
-                    let overlap = (step_turns * TAU) * 0.35;
-
-                    for i in 0..segments {
-                        let t0 = i as f32 / segments as f32;
-                        let t1 = (i + 1) as f32 / segments as f32;
-                        let t_mid = (t0 + t1) * 0.5;
-                        let logical = logical_position(reversed, t_mid);
-                        let color = hsla(logical, saturation, lightness, 1.0);
-
-                        let start_angle = (start_turn + t0 * sweep_turns) * TAU - overlap;
-                        let end_angle = (start_turn + t1 * sweep_turns) * TAU + overlap;
-
-                        arc_shape.paint(
-                            &ArcData { data: &(), index: i, value: 1.0, start_angle, end_angle, pad_angle: 0.0 },
-                            color,
-                            None,
-                            None,
-                            &bounds,
-                            window,
-                        );
-                    }
-
-                    paint_arc_end_caps(
-                        window,
-                        bounds,
-                        start_turn,
-                        sweep_turns,
-                        fill_thickness,
-                        Some(outer_fill_radius),
-                        hsla(logical_position(reversed, 0.0), saturation, lightness, 1.0),
-                        hsla(logical_position(reversed, 1.0), saturation, lightness, 1.0),
-                    );
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
+        let segments = segment_count(context.size, context.sweep_turns());
+        paint_vector_arc_spectrum(context, bounds, window, segments, |logical| {
+            hsla(logical, saturation, lightness, 1.0)
+        });
     }
 
-    fn get_color_at_position(&self, arc: &ColorArcState, position: f32) -> Hsla {
-        let logical = logical_position(arc.reversed, position);
+    fn get_color_for_context(&self, context: &ColorArcTrackContext, position: f32) -> Hsla {
+        let logical = logical_position(context.reversed, position);
         hsla(logical, self.saturation.clamp(0.0, 1.0), self.lightness.clamp(0.0, 1.0), 1.0)
     }
 }
@@ -206,79 +209,19 @@ pub struct SaturationArcDelegate {
 }
 
 impl ColorArcDelegate for SaturationArcDelegate {
-    fn style_background(&self, arc: &ColorArcState, container: Div, _window: &mut Window, _cx: &App) -> Div {
+    fn paint_domain_track(&self, context: &ColorArcTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
         let hue = normalize_hue_degrees(self.hue);
         let hsv_value = self.hsv_value.clamp(0.0, 1.0);
-        let start_turn = arc.start_turns();
-        let sweep_turns = arc.sweep_turns();
-        let reversed = arc.reversed;
-        let border_color = _cx.theme().border;
-        if sweep_turns <= f32::EPSILON {
-            return container;
-        }
-
-        let segments = segment_count(arc.size, sweep_turns);
-        let arc_thickness = arc.arc_thickness_px();
-        let border_width = 1.6;
-        let fill_thickness = (arc_thickness - border_width * 2.0).max(0.0);
-
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_arc_border_underlay(window, bounds, start_turn, sweep_turns, arc_thickness, border_color);
-                    if fill_thickness <= 0.0 {
-                        return;
-                    }
-
-                    let radius = bounds.size.width.min(bounds.size.height).as_f32() * 0.5;
-                    let outer_fill_radius = (radius - border_width).max(0.0);
-                    let inner_fill_radius = (outer_fill_radius - fill_thickness).max(0.0);
-                    let arc_shape = Arc::new().inner_radius(inner_fill_radius).outer_radius(outer_fill_radius);
-                    let step_turns = sweep_turns / segments as f32;
-                    let overlap = (step_turns * TAU) * 0.35;
-
-                    for i in 0..segments {
-                        let t0 = i as f32 / segments as f32;
-                        let t1 = (i + 1) as f32 / segments as f32;
-                        let t_mid = (t0 + t1) * 0.5;
-                        let logical = logical_position(reversed, t_mid);
-                        let color = Hsv { h: hue, s: logical, v: hsv_value, a: 1.0 }.to_hsla_ext();
-
-                        let start_angle = (start_turn + t0 * sweep_turns) * TAU - overlap;
-                        let end_angle = (start_turn + t1 * sweep_turns) * TAU + overlap;
-
-                        arc_shape.paint(
-                            &ArcData { data: &(), index: i, value: 1.0, start_angle, end_angle, pad_angle: 0.0 },
-                            color,
-                            None,
-                            None,
-                            &bounds,
-                            window,
-                        );
-                    }
-
-                    paint_arc_end_caps(
-                        window,
-                        bounds,
-                        start_turn,
-                        sweep_turns,
-                        fill_thickness,
-                        Some(outer_fill_radius),
-                        Hsv { h: hue, s: logical_position(reversed, 0.0), v: hsv_value, a: 1.0 }.to_hsla_ext(),
-                        Hsv { h: hue, s: logical_position(reversed, 1.0), v: hsv_value, a: 1.0 }.to_hsla_ext(),
-                    );
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
+        let segments = segment_count(context.size, context.sweep_turns());
+        paint_vector_arc_spectrum(context, bounds, window, segments, |logical| {
+            Hsv { h: hue, s: logical, v: hsv_value, a: 1.0 }.to_hsla_ext()
+        });
     }
 
-    fn get_color_at_position(&self, arc: &ColorArcState, position: f32) -> Hsla {
+    fn get_color_for_context(&self, context: &ColorArcTrackContext, position: f32) -> Hsla {
         Hsv {
             h: normalize_hue_degrees(self.hue),
-            s: logical_position(arc.reversed, position),
+            s: logical_position(context.reversed, position),
             v: self.hsv_value.clamp(0.0, 1.0),
             a: 1.0,
         }
@@ -292,80 +235,18 @@ pub struct LightnessArcDelegate {
 }
 
 impl ColorArcDelegate for LightnessArcDelegate {
-    fn style_background(&self, arc: &ColorArcState, container: Div, _window: &mut Window, _cx: &App) -> Div {
+    fn paint_domain_track(&self, context: &ColorArcTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
         let hue = normalize_hue_degrees(self.hue) / 360.0;
         let saturation = self.saturation.clamp(0.0, 1.0);
-        let start_turn = arc.start_turns();
-        let sweep_turns = arc.sweep_turns();
-        let reversed = arc.reversed;
-        let border_color = _cx.theme().border;
-        if sweep_turns <= f32::EPSILON {
-            return container;
-        }
-
-        let segments = segment_count(arc.size, sweep_turns);
-        let arc_thickness = arc.arc_thickness_px();
-        let border_width = 1.6;
-        let fill_thickness = (arc_thickness - border_width * 2.0).max(0.0);
-
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_arc_border_underlay(window, bounds, start_turn, sweep_turns, arc_thickness, border_color);
-                    if fill_thickness <= 0.0 {
-                        return;
-                    }
-
-                    let radius = bounds.size.width.min(bounds.size.height).as_f32() * 0.5;
-                    let outer_fill_radius = (radius - border_width).max(0.0);
-                    let inner_fill_radius = (outer_fill_radius - fill_thickness).max(0.0);
-                    let arc_shape = Arc::new().inner_radius(inner_fill_radius).outer_radius(outer_fill_radius);
-                    let step_turns = sweep_turns / segments as f32;
-                    let overlap = (step_turns * TAU) * 0.35;
-
-                    for i in 0..segments {
-                        let t0 = i as f32 / segments as f32;
-                        let t1 = (i + 1) as f32 / segments as f32;
-                        let t_mid = (t0 + t1) * 0.5;
-                        let logical = logical_position(reversed, t_mid);
-                        let color = hsla(hue, saturation, logical, 1.0);
-
-                        let start_angle = (start_turn + t0 * sweep_turns) * TAU - overlap;
-                        let end_angle = (start_turn + t1 * sweep_turns) * TAU + overlap;
-
-                        arc_shape.paint(
-                            &ArcData { data: &(), index: i, value: 1.0, start_angle, end_angle, pad_angle: 0.0 },
-                            color,
-                            None,
-                            None,
-                            &bounds,
-                            window,
-                        );
-                    }
-
-                    paint_arc_end_caps(
-                        window,
-                        bounds,
-                        start_turn,
-                        sweep_turns,
-                        fill_thickness,
-                        Some(outer_fill_radius),
-                        hsla(hue, saturation, logical_position(reversed, 0.0), 1.0),
-                        hsla(hue, saturation, logical_position(reversed, 1.0), 1.0),
-                    );
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
+        let segments = segment_count(context.size, context.sweep_turns());
+        paint_vector_arc_spectrum(context, bounds, window, segments, |logical| hsla(hue, saturation, logical, 1.0));
     }
 
-    fn get_color_at_position(&self, arc: &ColorArcState, position: f32) -> Hsla {
+    fn get_color_for_context(&self, context: &ColorArcTrackContext, position: f32) -> Hsla {
         hsla(
             normalize_hue_degrees(self.hue) / 360.0,
             self.saturation.clamp(0.0, 1.0),
-            logical_position(arc.reversed, position),
+            logical_position(context.reversed, position),
             1.0,
         )
     }

@@ -387,7 +387,7 @@ Migrate all legacy single-thumb `Slider` usages in the codebase to use the new u
 
 **Done:** Legacy control deleted; implementation lives flat under `slider/` (with `theme.rs` + `template/`); `slider/mod.rs` re-exports legacy names; `look.slider()` binds the new linear template; gallery unified to one Slider page; theme-studio, neumorphic custom templates, and event handlers updated; ColorSlider untouched.
 
-### Phase 6: Add Color-Capable Track Rendering Hooks & ColorSlider Migration
+### Phase 6: Add Color-Capable Track Rendering Hooks & ColorSlider Migration ✅
 
 Migrate the legacy `ColorSlider` control to the unified template-driven engine to validate linear color editing:
 
@@ -420,13 +420,15 @@ Migrate the legacy `ColorSlider` control to the unified template-driven engine t
 
 **Done:** `DomainTrackRenderer` + thumb preview sync + `set_domain_track`/`set_range` on unified slider; wrapper-free `ColorSliderBuilder` → `Entity<SliderControl>` with typed factories; legacy `ColorSlider`/`ColorSliderState`/`surface.rs`/`model.rs` removed; all gallery color-slider consumers migrated (`slider_pane`, `slider_revealed_pane`, HSV plane, color picker, multimixer); dynamic sat/alpha delegate sync via `ColorSliderDomainRenderer` + `update_domain_delegate`/`refresh_color_slider`.
 
-### Phase 7: Unify Radial Color Controls - Part 1 (ColorArc)
+### Phase 7: Unify Radial Color Controls - Part 1 (ColorArc) ✅
 
 Migrate the legacy `ColorArc` control to standard `Slider` entities configured with angular input strategy and angular template, avoiding wrapping component classes:
 - **`ColorArc` Migration**:
-  - Expose a `ColorArcBuilder` returning a standard `Slider` (`Entity<SliderControl>`) configured with angular input strategy (`.angular(min_angle, max_angle)`) and using `ThemedAngularDialTemplate`.
+  - Expose a `ColorArcBuilder` returning a standard `Slider` (`Entity<SliderControl>`) configured with angular input strategy (`.angular(min_angle, max_angle)`) and using `ColorArcTemplate`.
   - Delegate the radial gradient/spectrum rendering math from its old delegates directly to `DomainTrackRenderer::paint` inside the dial canvas.
 - Ensure pointer tracking and snapping/intervals delegate to the unified slider core.
+
+**Done:** Wrapper-free `ColorArcBuilder` → `Entity<SliderControl>` with typed hue/sat/lightness factories and vector/raster renderer selection; `ColorArcDomainRenderer` + `ColorArcTemplate` with dynamic dial geometry; legacy `ColorArcState`/`ColorArc`/`surface.rs`/`model.rs` removed; `DomainTrackRenderer::raster_image` hook for bitmap arcs; gallery `arc_pane` and `hue_ring_sl_arcs` migrated.
 
 ### Phase 8: Unify Radial Color Controls - Part 2 (ColorRing)
 

@@ -1,19 +1,20 @@
-pub mod arc;
-pub(crate) mod common;
-pub mod control;
+pub mod builder;
+pub mod common;
 pub mod delegates;
-mod factory;
-pub mod model;
+pub mod domain_renderer;
 pub mod raster;
-pub mod surface;
+pub mod sync;
+pub mod template;
+pub mod track_context;
+pub mod types;
 pub mod visual;
 
-#[allow(unused_imports)]
-pub use arc::ColorArc;
-#[allow(unused_imports)]
-pub use control::{ColorArcDelegate, ColorArcEvent, ColorArcState, sizing};
-#[allow(unused_imports)]
+pub use builder::ColorArcBuilder;
 pub use delegates::{HueArcDelegate, LightnessArcDelegate, SaturationArcDelegate};
-pub use model::ColorArcModel;
-#[allow(unused_imports)]
-pub use raster::{ColorArcRasterEvent, ColorArcRasterState, ColorArcRenderer};
+pub use domain_renderer::ColorArcDomainRenderer;
+pub use raster::{ColorArcRenderer, RasterArcDelegate};
+pub use sync::{primary_slider_value, refresh_color_arc, update_arc_delegate};
+pub use template::{ColorArcTemplate, ColorArcTemplateConfig, color_arc_template, default_color_arc_template};
+pub use track_context::{ColorArcTrackContext, arc_angle_range, sizing, turn_to_angle};
+pub use types::ColorArcDelegate;
+pub use crate::controls::slider::{SliderControl, SliderEvent};

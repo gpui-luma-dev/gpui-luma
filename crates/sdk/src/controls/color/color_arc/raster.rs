@@ -1,16 +1,13 @@
-use super::arc::{ColorArcDelegate, ColorArcEvent, ColorArcState};
-use super::common::{arc_contains_turn, size_px as component_size_px, turn_to_position};
+use super::common::{arc_contains_turn, turn_to_position};
+use super::track_context::ColorArcTrackContext;
+use super::types::ColorArcDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
-use crate::controls::color::style::{ActiveTheme as _, Size as ComponentSize};
-use gpui::{prelude::*, *};
-use std::cell::RefCell;
+use crate::controls::color::style::Size as ComponentSize;
+use gpui::*;
+use std::sync::Mutex;
 use std::f32::consts::TAU;
 use std::sync::Arc;
 use tiny_skia::{Pixmap, PremultipliedColorU8};
-
-pub type ColorArcRasterState = ColorArcState;
-#[allow(dead_code)] // Kept as a compatibility alias for prior event naming.
-pub type ColorArcRasterEvent = ColorArcEvent;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ColorArcRenderer {
@@ -20,8 +17,7 @@ pub enum ColorArcRenderer {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)] // Raster hue mode is exposed for API symmetry with vector delegates.
-pub enum ColorArcRasterMode {
+enum ColorArcRasterMode {
     Hue,
     Saturation,
     Lightness,
@@ -52,11 +48,10 @@ pub struct RasterArcDelegate {
     hsv_value: f32,
     saturation: f32,
     lightness: f32,
-    image_cache: RefCell<ArcImageCache>,
+    image_cache: Mutex<ArcImageCache>,
 }
 
 impl RasterArcDelegate {
-    #[allow(dead_code)] // Public constructor kept for hue arc raster parity.
     pub fn hue(saturation: f32, lightness: f32) -> Self {
         Self {
             mode: ColorArcRasterMode::Hue,
@@ -64,7 +59,7 @@ impl RasterArcDelegate {
             hsv_value: 1.0,
             saturation: saturation.clamp(0.0, 1.0),
             lightness: lightness.clamp(0.0, 1.0),
-            image_cache: RefCell::new(None),
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -75,7 +70,7 @@ impl RasterArcDelegate {
             hsv_value: hsv_value.clamp(0.0, 1.0),
             saturation: 1.0,
             lightness: 0.5,
-            image_cache: RefCell::new(None),
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -85,8 +80,8 @@ impl RasterArcDelegate {
             hue: normalize_hue_degrees(hue),
             hsv_value: 1.0,
             saturation: saturation.clamp(0.0, 1.0),
-            lightness: 1.0,
-            image_cache: RefCell::new(None),
+            lightness: 0.5,
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -108,7 +103,7 @@ impl RasterArcDelegate {
         }
     }
 
-    fn cache_key(&self, arc: &ColorArcState, border_color: Hsla) -> ArcCacheKey {
+    fn cache_key(&self, context: &ColorArcTrackContext, border_color: Hsla) -> ArcCacheKey {
         let border_rgb = border_color.to_rgb();
         ArcCacheKey {
             mode: match self.mode {
@@ -120,10 +115,10 @@ impl RasterArcDelegate {
             value: (self.hsv_value.clamp(0.0, 1.0) * 1000.0).round() as u16,
             saturation: (self.saturation.clamp(0.0, 1.0) * 1000.0).round() as u16,
             lightness: (self.lightness.clamp(0.0, 1.0) * 1000.0).round() as u16,
-            arc_thickness: (arc.arc_thickness_px().clamp(1.0, 200.0) * 10.0).round() as u16,
-            start_turns: (arc.start_turns() * 3600.0).round() as u16,
-            sweep_turns: (arc.sweep_turns().clamp(0.0, 1.0) * 3600.0).round() as u16,
-            reversed: if arc.reversed { 1 } else { 0 },
+            arc_thickness: (context.arc_thickness_px().clamp(1.0, 200.0) * 10.0).round() as u16,
+            start_turns: (context.start_turns() * 3600.0).round() as u16,
+            sweep_turns: (context.sweep_turns().clamp(0.0, 1.0) * 3600.0).round() as u16,
+            reversed: if context.reversed { 1 } else { 0 },
             border_r: (border_rgb.r.clamp(0.0, 1.0) * 255.0).round() as u8,
             border_g: (border_rgb.g.clamp(0.0, 1.0) * 255.0).round() as u8,
             border_b: (border_rgb.b.clamp(0.0, 1.0) * 255.0).round() as u8,
@@ -147,30 +142,27 @@ impl RasterArcDelegate {
         }
     }
 
-    fn current_size(&self, arc: &ColorArcState) -> Size<Pixels> {
-        if arc.bounds.size.width > px(0.0) && arc.bounds.size.height > px(0.0) {
-            arc.bounds.size
-        } else {
-            let side = component_size_px(arc.size);
-            size(px(side), px(side))
-        }
-    }
-
-    fn ensure_cache(&self, arc: &ColorArcState, image_size: Size<Pixels>, border_color: Hsla) -> Option<Arc<Image>> {
-        let key = self.cache_key(arc, border_color);
-        if let Some((cached_size, cached_key, image)) = self.image_cache.borrow().as_ref()
+    fn ensure_cache(
+        &self,
+        context: &ColorArcTrackContext,
+        image_size: Size<Pixels>,
+        border_color: Hsla,
+    ) -> Option<Arc<Image>> {
+        let key = self.cache_key(context, border_color);
+        if let Ok(cache) = self.image_cache.lock()
+            && let Some((cached_size, cached_key, image)) = cache.as_ref()
             && *cached_size == image_size
             && *cached_key == key
         {
             return Some(image.clone());
         }
 
-        let sweep_turns = arc.sweep_turns().clamp(0.0, 1.0);
+        let sweep_turns = context.sweep_turns().clamp(0.0, 1.0);
         if sweep_turns <= f32::EPSILON {
             return None;
         }
 
-        let cache_scale = Self::cache_scale(arc.size);
+        let cache_scale = Self::cache_scale(context.size);
         let width = (image_size.width.as_f32() * cache_scale).round() as u32;
         let height = (image_size.height.as_f32() * cache_scale).round() as u32;
         if width == 0 || height == 0 {
@@ -183,7 +175,7 @@ impl RasterArcDelegate {
         let center_x = width as f32 / 2.0;
         let center_y = height as f32 / 2.0;
         let outer_radius = width.min(height) as f32 / 2.0;
-        let arc_thickness = arc.arc_thickness_px() * cache_scale;
+        let arc_thickness = context.arc_thickness_px() * cache_scale;
         if arc_thickness <= 0.0 || outer_radius <= 0.0 {
             return None;
         }
@@ -197,7 +189,7 @@ impl RasterArcDelegate {
         let outer_fill_radius = (outer_radius - border_width).max(0.0);
         let inner_fill_radius = (outer_fill_radius - fill_thickness).max(0.0);
 
-        let start_turn = arc.start_turns();
+        let start_turn = context.start_turns();
         let end_turn = (start_turn + sweep_turns).rem_euclid(1.0);
         let has_caps = sweep_turns < 0.9999;
 
@@ -248,15 +240,15 @@ impl RasterArcDelegate {
                             if on_fill_band || on_fill_cap {
                                 let logical_position = if on_fill_band {
                                     let position = turn_to_position(turn, start_turn, sweep_turns);
-                                    logical_position(arc.reversed, position)
+                                    logical_position(context.reversed, position)
                                 } else if on_start_fill_cap && !on_end_fill_cap {
-                                    logical_position(arc.reversed, 0.0)
+                                    logical_position(context.reversed, 0.0)
                                 } else if on_end_fill_cap && !on_start_fill_cap {
-                                    logical_position(arc.reversed, 1.0)
+                                    logical_position(context.reversed, 1.0)
                                 } else if start_fill_dist <= end_fill_dist {
-                                    logical_position(arc.reversed, 0.0)
+                                    logical_position(context.reversed, 0.0)
                                 } else {
-                                    logical_position(arc.reversed, 1.0)
+                                    logical_position(context.reversed, 1.0)
                                 };
 
                                 let fill_rgb = self.color_at_logical_position(logical_position).to_rgb();
@@ -306,27 +298,20 @@ impl RasterArcDelegate {
 
         let png_data = pixmap.encode_png().ok()?;
         let image = Arc::new(Image::from_bytes(ImageFormat::Png, png_data));
-        *self.image_cache.borrow_mut() = Some((image_size, key, image.clone()));
+        *self.image_cache.lock().expect("color arc raster cache lock") = Some((image_size, key, image.clone()));
         Some(image)
     }
 }
 
 impl ColorArcDelegate for RasterArcDelegate {
-    fn style_background(&self, arc: &ColorArcState, container: Div, _window: &mut Window, cx: &App) -> Div {
-        let image = self.ensure_cache(arc, self.current_size(arc), cx.theme().border);
-        container.when_some(image, |this, image| this.child(img(image).size_full().absolute().top_0().left_0()))
+    fn paint_domain_track(&self, _context: &ColorArcTrackContext, _bounds: Bounds<Pixels>, _window: &mut Window) {}
+
+    fn get_color_for_context(&self, context: &ColorArcTrackContext, position: f32) -> Hsla {
+        self.color_at_logical_position(logical_position(context.reversed, position))
     }
 
-    fn get_color_at_position(&self, arc: &ColorArcState, position: f32) -> Hsla {
-        self.color_at_logical_position(logical_position(arc.reversed, position))
-    }
-
-    fn prewarm_raster_cache(&self, arc: &ColorArcState, image_size: Size<Pixels>, border_color: Hsla) {
-        let _ = self.ensure_cache(arc, image_size, border_color);
-    }
-
-    fn renderer(&self) -> ColorArcRenderer {
-        ColorArcRenderer::Raster
+    fn raster_cached_image(&self, context: &ColorArcTrackContext, image_size: Size<Pixels>) -> Option<Arc<Image>> {
+        self.ensure_cache(context, image_size, context.border_color)
     }
 }
 
@@ -351,37 +336,4 @@ fn point_distance(x: f32, y: f32, center: (f32, f32)) -> f32 {
 
 fn normalize_hue_degrees(hue: f32) -> f32 {
     hue.rem_euclid(360.0)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::controls::color::color_arc::delegates::{HueArcDelegate, LightnessArcDelegate, SaturationArcDelegate};
-
-    #[::core::prelude::v1::test]
-    fn renderer_default_is_raster() {
-        assert_eq!(ColorArcRenderer::default(), ColorArcRenderer::Raster);
-    }
-
-    #[::core::prelude::v1::test]
-    fn raster_delegate_reports_raster_renderer() {
-        let hue = RasterArcDelegate::hue(0.8, 0.4);
-        let sat = RasterArcDelegate::saturation(180.0, 1.0);
-        let light = RasterArcDelegate::lightness(180.0, 0.8);
-
-        assert_eq!(hue.renderer(), ColorArcRenderer::Raster);
-        assert_eq!(sat.renderer(), ColorArcRenderer::Raster);
-        assert_eq!(light.renderer(), ColorArcRenderer::Raster);
-    }
-
-    #[::core::prelude::v1::test]
-    fn vector_delegates_report_vector_renderer() {
-        let hue = HueArcDelegate { saturation: 0.8, lightness: 0.4 };
-        let sat = SaturationArcDelegate { hue: 180.0, hsv_value: 1.0 };
-        let light = LightnessArcDelegate { hue: 180.0, saturation: 0.8 };
-
-        assert_eq!(hue.renderer(), ColorArcRenderer::Vector);
-        assert_eq!(sat.renderer(), ColorArcRenderer::Vector);
-        assert_eq!(light.renderer(), ColorArcRenderer::Vector);
-    }
 }

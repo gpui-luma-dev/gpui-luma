@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Subscription, div, hsla, prelude::*, px};
-use gpui_luma::controls::color::color_arc::{ColorArcEvent, ColorArcRenderer, ColorArcState};
-use gpui_luma::controls::color::color_arc::raster::RasterArcDelegate;
+use gpui_luma::controls::color::color_arc::{
+    ColorArcBuilder, ColorArcDomainRenderer, ColorArcRenderer, ColorArcTrackContext, RasterArcDelegate,
+    refresh_color_arc, update_arc_delegate,
+};
 use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
 use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
@@ -13,8 +16,12 @@ use crate::gallery::panes::color::common::{detail_row, notify_control};
 
 pub(in crate::gallery) struct SplitRingState {
     look: Arc<ShadcnLook>,
-    saturation_arc: Entity<ColorArcState>,
-    lightness_arc: Entity<ColorArcState>,
+    saturation_arc: Entity<SliderControl>,
+    saturation_renderer: Arc<ColorArcDomainRenderer>,
+    saturation_context: ColorArcTrackContext,
+    lightness_arc: Entity<SliderControl>,
+    lightness_renderer: Arc<ColorArcDomainRenderer>,
+    lightness_context: ColorArcTrackContext,
     hue_ring: Entity<ColorRingState>,
     hue_degrees: f32,
     saturation: f32,
@@ -65,36 +72,37 @@ impl SplitRingState {
         let saturation = init_color.s;
         let lightness = init_color.l;
 
-        let saturation_arc = cx.new(|cx| {
-            ColorArcState::saturation_with_renderer(
-                "composition-split-ring-saturation-arc",
-                saturation,
-                hue_degrees,
-                1.0,
-                ColorArcRenderer::Raster,
-                cx,
-            )
-            .size(Size::Size(px(Self::OUTER_SIZE_PX)))
-            .start_degrees(90.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
-            .sweep_degrees(Self::ARC_SWEEP_DEGREES)
-            .arc_thickness(Self::TRACK_WIDTH_PX)
-            .thumb_size(Self::TRACK_WIDTH_PX)
-        });
-        let lightness_arc = cx.new(|cx| {
-            ColorArcState::lightness_with_renderer(
-                "composition-split-ring-lightness-arc",
-                lightness,
-                hue_degrees,
-                saturation,
-                ColorArcRenderer::Raster,
-                cx,
-            )
-            .size(Size::Size(px(Self::OUTER_SIZE_PX)))
-            .start_degrees(270.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
-            .sweep_degrees(Self::ARC_SWEEP_DEGREES)
-            .arc_thickness(Self::TRACK_WIDTH_PX)
-            .thumb_size(Self::TRACK_WIDTH_PX)
-        });
+        let saturation_builder = ColorArcBuilder::saturation_with_renderer(
+            "composition-split-ring-saturation-arc",
+            saturation,
+            hue_degrees,
+            1.0,
+            ColorArcRenderer::Raster,
+        )
+        .size(Size::Size(px(Self::OUTER_SIZE_PX)))
+        .start_degrees(90.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
+        .sweep_degrees(Self::ARC_SWEEP_DEGREES)
+        .arc_thickness(Self::TRACK_WIDTH_PX)
+        .thumb_size(Self::TRACK_WIDTH_PX);
+        let saturation_renderer = saturation_builder.domain_renderer();
+        let saturation_context = saturation_builder.track_context();
+        let saturation_arc = saturation_builder.spawn(cx);
+
+        let lightness_builder = ColorArcBuilder::lightness_with_renderer(
+            "composition-split-ring-lightness-arc",
+            lightness,
+            hue_degrees,
+            saturation,
+            ColorArcRenderer::Raster,
+        )
+        .size(Size::Size(px(Self::OUTER_SIZE_PX)))
+        .start_degrees(270.0 + Self::ARC_ROTATION_DEGREES + Self::ARC_GAP_DEGREES * 0.5)
+        .sweep_degrees(Self::ARC_SWEEP_DEGREES)
+        .arc_thickness(Self::TRACK_WIDTH_PX)
+        .thumb_size(Self::TRACK_WIDTH_PX);
+        let lightness_renderer = lightness_builder.domain_renderer();
+        let lightness_context = lightness_builder.track_context();
+        let lightness_arc = lightness_builder.spawn(cx);
         let hue_ring = cx.new(|cx| {
             ColorRingState::hue(
                 "composition-split-ring-hue-ring",
@@ -116,17 +124,19 @@ impl SplitRingState {
                 this.sync(cx);
                 cx.notify();
             }),
-            cx.subscribe(&saturation_arc, |this, _, event: &ColorArcEvent, cx| {
+            cx.subscribe(&saturation_arc, |this, _, event: &SliderEvent, cx| {
                 let saturation = match event {
-                    ColorArcEvent::Change(value) | ColorArcEvent::Release(value) => *value,
+                    SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } => *value,
+                    _ => return,
                 };
                 this.saturation = saturation.clamp(0.0, 1.0);
                 this.sync(cx);
                 cx.notify();
             }),
-            cx.subscribe(&lightness_arc, |this, _, event: &ColorArcEvent, cx| {
+            cx.subscribe(&lightness_arc, |this, _, event: &SliderEvent, cx| {
                 let lightness = match event {
-                    ColorArcEvent::Change(value) | ColorArcEvent::Release(value) => *value,
+                    SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } => *value,
+                    _ => return,
                 };
                 this.lightness = lightness.clamp(0.0, 1.0);
                 this.sync(cx);
@@ -137,7 +147,11 @@ impl SplitRingState {
         let mut this = Self {
             look,
             saturation_arc,
+            saturation_renderer,
+            saturation_context,
             lightness_arc,
+            lightness_renderer,
+            lightness_context,
             hue_ring,
             hue_degrees,
             saturation,
@@ -163,14 +177,21 @@ impl SplitRingState {
             ring.set_value(hue_degrees, cx);
             ring.set_delegate(Box::new(HueRingDelegate { saturation, lightness }), cx);
         });
-        self.saturation_arc.update(cx, |arc, cx| {
-            arc.set_value(saturation, cx);
-            arc.set_delegate(Box::new(RasterArcDelegate::saturation(hue_degrees, 1.0)), cx);
-        });
-        self.lightness_arc.update(cx, |arc, cx| {
-            arc.set_value(lightness, cx);
-            arc.set_delegate(Box::new(RasterArcDelegate::lightness(hue_degrees, saturation)), cx);
-        });
+        self.saturation_arc.update(cx, |arc, cx| arc.set_value(saturation, cx));
+        update_arc_delegate(
+            &self.saturation_renderer,
+            Arc::new(RasterArcDelegate::saturation(hue_degrees, 1.0)),
+            self.saturation_context.clone(),
+        );
+        refresh_color_arc(&self.saturation_arc, cx);
+
+        self.lightness_arc.update(cx, |arc, cx| arc.set_value(lightness, cx));
+        update_arc_delegate(
+            &self.lightness_renderer,
+            Arc::new(RasterArcDelegate::lightness(hue_degrees, saturation)),
+            self.lightness_context.clone(),
+        );
+        refresh_color_arc(&self.lightness_arc, cx);
     }
 }
 

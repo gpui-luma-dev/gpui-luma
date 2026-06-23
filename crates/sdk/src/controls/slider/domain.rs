@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{Bounds, Hsla, Pixels, Window, canvas, prelude::*};
+use gpui::{Bounds, Hsla, Image, Pixels, Window, canvas, prelude::*};
 
 use super::model::{SliderOrientation, SliderRenderModel};
 
@@ -9,6 +9,16 @@ pub trait DomainTrackRenderer: Send + Sync {
 
     fn get_color_at_position(&self, position: f32) -> Option<Hsla> {
         let _ = position;
+        None
+    }
+
+    /// When set, templates may render this bitmap instead of invoking [`Self::paint`].
+    fn raster_image(
+        &self,
+        _bounds: Bounds<Pixels>,
+        _orientation: SliderOrientation,
+        _reversed: bool,
+    ) -> Option<Arc<Image>> {
         None
     }
 }
