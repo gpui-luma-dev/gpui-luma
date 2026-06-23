@@ -6,7 +6,7 @@ use crate::controls::slider::{SliderBuilder, SliderControl, SliderThumbSize, new
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::theme::ControlSize;
 
-use super::color_spec::ColorSpecification;
+use super::color_spec::{ColorSpecification, slider_step_for_channel};
 use super::color_thumb::ThumbShape;
 use super::delegates::{AlphaDelegate, ChannelDelegate, GradientDelegate, HueDelegate};
 use super::domain_renderer::ColorSliderDomainRenderer;
@@ -66,8 +66,19 @@ impl ColorSliderBuilder {
         spec: S,
         channel_name: impl Into<SharedString>,
     ) -> Result<Self, String> {
-        let delegate = ChannelDelegate::new(spec, channel_name.into())?;
-        Ok(Self::new(id, value, Arc::new(delegate)))
+        let channel_name = channel_name.into();
+
+        let delegate = ChannelDelegate::new(spec, channel_name.clone())?;
+
+        let channel = spec
+            .channels()
+            .iter()
+            .find(|c| c.name == channel_name.as_ref())
+            .ok_or_else(|| format!("Channel '{}' not found", channel_name))?;
+
+        let step = slider_step_for_channel(channel);
+
+        Ok(Self::new(id, value, Arc::new(delegate)).range(channel.min..channel.max).step(step))
     }
 
     pub fn saturation<S: ColorSpecification>(
