@@ -3,8 +3,12 @@ use std::sync::Arc;
 use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::color_slider::{AlphaDelegate, ColorSliderEvent, ColorSliderState, sizing};
+use gpui_luma::controls::color::color_slider::{
+    AlphaDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, refresh_color_slider, sizing,
+    update_domain_delegate,
+};
 use gpui_luma::controls::color::ColorSwatch;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -17,8 +21,9 @@ const SWATCH_HEIGHT: f32 = 44.0;
 pub(in crate::gallery) struct ColorPickerState {
     look: Arc<ShadcnLook>,
     field: Entity<ColorFieldState>,
-    hue_slider: Entity<ColorSliderState>,
-    alpha_slider: Entity<ColorSliderState>,
+    hue_slider: Entity<SliderControl>,
+    alpha_slider: Entity<SliderControl>,
+    alpha_domain: Arc<ColorSliderDomainRenderer>,
     hsv: Hsv,
     suppress_sync: bool,
     _subscriptions: Vec<Subscription>,
@@ -32,18 +37,17 @@ impl ColorPickerState {
                 .rounded(px(3.0))
                 .vector()
         });
-        let hue_slider = cx.new(|cx| {
-            ColorSliderState::hue("color-picker-hue-slider", hsv.h, cx)
-                .size(ControlSize::Sm)
-                .thumb_medium()
-                .edge_to_edge()
-        });
-        let alpha_slider = cx.new(|cx| {
-            ColorSliderState::alpha("color-picker-alpha-slider", hsv.a, AlphaDelegate { spec: hsv }, cx)
-                .size(ControlSize::Sm)
-                .thumb_medium()
-                .edge_to_edge()
-        });
+        let hue_slider = ColorSliderBuilder::hue("color-picker-hue-slider", hsv.h)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge()
+            .spawn(cx);
+        let alpha_builder = ColorSliderBuilder::alpha("color-picker-alpha-slider", hsv.a, hsv)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge();
+        let alpha_domain = alpha_builder.domain_renderer();
+        let alpha_slider = alpha_builder.spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&field, |this, _, event: &ColorFieldEvent, cx| {
@@ -54,37 +58,46 @@ impl ColorPickerState {
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
                 };
-                this.hsv = hsv;
+                this.hsv.h = hsv.h;
+                this.hsv.s = hsv.s;
+                this.hsv.v = hsv.v;
                 this.sync_controls(cx, false);
                 cx.notify();
             }),
-            cx.subscribe(&hue_slider, |this, _, event: &ColorSliderEvent, cx| {
+            cx.subscribe(&hue_slider, |this, _, event: &SliderEvent, cx| {
                 if this.suppress_sync {
                     return;
                 }
 
-                let hue = match event {
-                    ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-                };
-                this.hsv.h = hue;
-                this.sync_controls(cx, true);
-                cx.notify();
+                if let Some(hue) = primary_slider_value(event) {
+                    this.hsv.h = hue;
+                    this.sync_controls(cx, true);
+                    cx.notify();
+                }
             }),
-            cx.subscribe(&alpha_slider, |this, _, event: &ColorSliderEvent, cx| {
+            cx.subscribe(&alpha_slider, |this, _, event: &SliderEvent, cx| {
                 if this.suppress_sync {
                     return;
                 }
 
-                let alpha = match event {
-                    ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-                };
-                this.hsv.a = alpha;
-                this.sync_controls(cx, true);
-                cx.notify();
+                if let Some(alpha) = primary_slider_value(event) {
+                    this.hsv.a = alpha;
+                    this.sync_controls(cx, true);
+                    cx.notify();
+                }
             }),
         ];
 
-        Self { look, field, hue_slider, alpha_slider, hsv, suppress_sync: false, _subscriptions: subscriptions }
+        Self {
+            look,
+            field,
+            hue_slider,
+            alpha_slider,
+            alpha_domain,
+            hsv,
+            suppress_sync: false,
+            _subscriptions: subscriptions,
+        }
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
@@ -99,7 +112,7 @@ impl ColorPickerState {
 
         if sync_field {
             self.field.update(cx, |field, cx| {
-                field.set_hsv_components(hsv.h, hsv.s, hsv.v, cx);
+                field.set_hsv(hsv, cx);
             });
         }
 
@@ -108,8 +121,9 @@ impl ColorPickerState {
         });
         self.alpha_slider.update(cx, |slider, cx| {
             slider.set_value(hsv.a, cx);
-            slider.set_delegate(Box::new(AlphaDelegate { spec: hsv }), cx);
         });
+        update_domain_delegate(&self.alpha_domain, Arc::new(AlphaDelegate { spec: hsv }), self.alpha_domain.context());
+        refresh_color_slider(&self.alpha_slider, cx);
 
         self.suppress_sync = false;
     }

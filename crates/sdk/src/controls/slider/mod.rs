@@ -1,5 +1,6 @@
 mod constraints;
 mod control;
+mod domain;
 mod input;
 mod layout;
 mod model;
@@ -11,6 +12,7 @@ mod thumbs;
 pub use constraints::{clamp_and_snap_value, normalize_intervals, step_allowed_value};
 pub use segments::build_track_segments;
 pub use control::{SliderControl, SliderDrag, SliderEvent};
+pub use domain::DomainTrackRenderer;
 pub use input::{SliderInputStrategy, angle_for_percentage, wrap_and_snap, wrap_value};
 pub use model::{
     SliderBuilder, SliderModel, SliderOrientation, SliderRenderModel, SliderThumbPolicy, SliderThumbSize,
@@ -23,6 +25,11 @@ pub use template::{
     default_slider_template,
 };
 pub use theme::{DefaultSliderTheme, SliderLook, SliderTheme, default_slider_theme};
+
+pub(crate) use layout::{display_position, segment_corner_radii, segment_display_span};
+pub(crate) use template::{
+    SliderInteractionHandlers, attach_linear_interaction, attach_thumb_drag, render_domain_track_layer,
+};
 
 pub use crate::theme::InteractionState as SliderState;
 

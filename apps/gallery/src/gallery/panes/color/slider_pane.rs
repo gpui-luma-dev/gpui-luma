@@ -3,9 +3,11 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, SharedString, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
 use gpui_luma::controls::color::color_slider::{
-    AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderEvent, ColorSliderState, ColorSpecification,
+    AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderBuilder, ColorSliderDomainRenderer,
+    ColorSpecification, refresh_color_slider, update_domain_delegate,
 };
 use gpui_luma::controls::color::ColorSwatch;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -19,15 +21,17 @@ const NARROW_CARD: f32 = 320.0;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ColorSliderPane {
-    hue_slider: Entity<ColorSliderState>,
-    saturation_slider: Entity<ColorSliderState>,
-    alpha_slider: Entity<ColorSliderState>,
-    gradient_rgb: Entity<ColorSliderState>,
-    gradient_hsl: Entity<ColorSliderState>,
-    gradient_lab: Entity<ColorSliderState>,
-    red_slider: Entity<ColorSliderState>,
-    green_slider: Entity<ColorSliderState>,
-    blue_slider: Entity<ColorSliderState>,
+    hue_slider: Entity<SliderControl>,
+    saturation_slider: Entity<SliderControl>,
+    alpha_slider: Entity<SliderControl>,
+    saturation_domain: Arc<ColorSliderDomainRenderer>,
+    alpha_domain: Arc<ColorSliderDomainRenderer>,
+    gradient_rgb: Entity<SliderControl>,
+    gradient_hsl: Entity<SliderControl>,
+    gradient_lab: Entity<SliderControl>,
+    red_slider: Entity<SliderControl>,
+    green_slider: Entity<SliderControl>,
+    blue_slider: Entity<SliderControl>,
     hsl: Hsl,
     last_event: SharedString,
 }
@@ -37,76 +41,56 @@ impl ColorSliderPane {
         let hsl = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 0.85 };
 
         let hue_slider =
-            cx.new(|cx| ColorSliderState::hue("color-slider-hue", hsl.h, cx).size(ControlSize::Sm).thumb_medium());
-        let saturation_slider = cx.new(|cx| {
-            ColorSliderState::channel(
-                "color-slider-saturation",
-                hsl.s,
-                ChannelDelegate::new(hsl, Hsl::SATURATION.into()).expect("HSL saturation delegate should be valid"),
-                cx,
-            )
+            ColorSliderBuilder::hue("color-slider-hue", hsl.h).size(ControlSize::Sm).thumb_medium().spawn(cx);
+        let saturation_builder = ColorSliderBuilder::channel("color-slider-saturation", hsl.s, hsl, Hsl::SATURATION)
+            .expect("HSL saturation delegate should be valid")
             .size(ControlSize::Sm)
             .thumb_medium()
-            .edge_to_edge()
-        });
-        let alpha_slider = cx.new(|cx| {
-            ColorSliderState::alpha("color-slider-alpha", hsl.a, AlphaDelegate { spec: hsl }, cx)
-                .size(ControlSize::Sm)
-                .thumb_medium()
-                .edge_to_edge()
-        });
+            .edge_to_edge();
+        let saturation_domain = saturation_builder.domain_renderer();
+        let saturation_slider = saturation_builder.spawn(cx);
+        let alpha_builder = ColorSliderBuilder::alpha("color-slider-alpha", hsl.a, hsl)
+            .size(ControlSize::Sm)
+            .thumb_medium()
+            .edge_to_edge();
+        let alpha_domain = alpha_builder.domain_renderer();
+        let alpha_slider = alpha_builder.spawn(cx);
 
         let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
-        let gradient_rgb = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-gradient-rgb", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Rgb)
-        });
-        let gradient_hsl = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-gradient-hsl", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Hsl)
-        });
-        let gradient_lab = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-gradient-lab", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Lab)
-        });
+        let gradient_rgb = ColorSliderBuilder::gradient("color-slider-gradient-rgb", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Rgb)
+            .spawn(cx);
+        let gradient_hsl = ColorSliderBuilder::gradient("color-slider-gradient-hsl", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Hsl)
+            .spawn(cx);
+        let gradient_lab = ColorSliderBuilder::gradient("color-slider-gradient-lab", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Lab)
+            .spawn(cx);
 
         let rgba = RgbaSpec { r: 255.0, g: 128.0, b: 0.0, a: 1.0 };
-        let red_slider = cx.new(|cx| {
-            ColorSliderState::channel(
-                "color-slider-red",
-                rgba.r,
-                ChannelDelegate::new(rgba, RgbaSpec::RED.into()).expect("RGBA red delegate should be valid"),
-                cx,
-            )
+        let red_slider = ColorSliderBuilder::channel("color-slider-red", rgba.r, rgba, RgbaSpec::RED)
+            .expect("RGBA red delegate should be valid")
             .min(0.0)
             .max(255.0)
-        });
-        let green_slider = cx.new(|cx| {
-            ColorSliderState::channel(
-                "color-slider-green",
-                rgba.g,
-                ChannelDelegate::new(rgba, RgbaSpec::GREEN.into()).expect("RGBA green delegate should be valid"),
-                cx,
-            )
+            .spawn(cx);
+        let green_slider = ColorSliderBuilder::channel("color-slider-green", rgba.g, rgba, RgbaSpec::GREEN)
+            .expect("RGBA green delegate should be valid")
             .min(0.0)
             .max(255.0)
-        });
-        let blue_slider = cx.new(|cx| {
-            ColorSliderState::channel(
-                "color-slider-blue",
-                rgba.b,
-                ChannelDelegate::new(rgba, RgbaSpec::BLUE.into()).expect("RGBA blue delegate should be valid"),
-                cx,
-            )
+            .spawn(cx);
+        let blue_slider = ColorSliderBuilder::channel("color-slider-blue", rgba.b, rgba, RgbaSpec::BLUE)
+            .expect("RGBA blue delegate should be valid")
             .min(0.0)
             .max(255.0)
-        });
+            .spawn(cx);
 
         Self {
             hue_slider,
             saturation_slider,
             alpha_slider,
+            saturation_domain,
+            alpha_domain,
             gradient_rgb,
             gradient_hsl,
             gradient_lab,
@@ -119,14 +103,23 @@ impl ColorSliderPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.hue_slider, |app, _, event: &ColorSliderEvent, cx| {
-            app.panes.color_slider.handle_hue_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.hue_slider, |app, _, event: &SliderEvent, cx| {
+            if let Some((value, label)) = slider_event_label("Hue", event) {
+                app.panes.color_slider.last_event = label;
+                app.panes.color_slider.handle_hue_event(value, cx);
+            }
         }));
-        subscriptions.push(cx.subscribe(&self.saturation_slider, |app, _, event: &ColorSliderEvent, cx| {
-            app.panes.color_slider.handle_saturation_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.saturation_slider, |app, _, event: &SliderEvent, cx| {
+            if let Some((value, label)) = slider_event_label("Saturation", event) {
+                app.panes.color_slider.last_event = label;
+                app.panes.color_slider.handle_saturation_event(value, cx);
+            }
         }));
-        subscriptions.push(cx.subscribe(&self.alpha_slider, |app, _, event: &ColorSliderEvent, cx| {
-            app.panes.color_slider.handle_alpha_event(event, cx);
+        subscriptions.push(cx.subscribe(&self.alpha_slider, |app, _, event: &SliderEvent, cx| {
+            if let Some((value, label)) = slider_event_label("Alpha", event) {
+                app.panes.color_slider.last_event = label;
+                app.panes.color_slider.handle_alpha_event(value, cx);
+            }
         }));
     }
 
@@ -224,57 +217,50 @@ impl ColorSliderPane {
         }
     }
 
-    fn handle_hue_event(&mut self, event: &ColorSliderEvent, cx: &mut Context<GalleryApp>) {
-        let value = self.capture_event("Hue", event);
+    fn handle_hue_event(&mut self, value: f32, cx: &mut Context<GalleryApp>) {
         self.hsl.h = value;
         self.sync_delegates(cx);
         cx.notify();
     }
 
-    fn handle_saturation_event(&mut self, event: &ColorSliderEvent, cx: &mut Context<GalleryApp>) {
-        let value = self.capture_event("Saturation", event);
+    fn handle_saturation_event(&mut self, value: f32, cx: &mut Context<GalleryApp>) {
         self.hsl.s = value;
         self.sync_delegates(cx);
         cx.notify();
     }
 
-    fn handle_alpha_event(&mut self, event: &ColorSliderEvent, cx: &mut Context<GalleryApp>) {
-        let value = self.capture_event("Alpha", event);
+    fn handle_alpha_event(&mut self, value: f32, cx: &mut Context<GalleryApp>) {
         self.hsl.a = value;
         self.sync_delegates(cx);
         cx.notify();
     }
 
-    fn capture_event(&mut self, source: &str, event: &ColorSliderEvent) -> f32 {
-        match event {
-            ColorSliderEvent::Change(value) => {
-                self.last_event = SharedString::from(format!("{source} Change {:.3}", value));
-                *value
-            }
-            ColorSliderEvent::Release(value) => {
-                self.last_event = SharedString::from(format!("{source} Release {:.3}", value));
-                *value
-            }
-        }
-    }
-
     fn sync_delegates(&self, cx: &mut Context<GalleryApp>) {
         let hsl = self.hsl;
-        self.saturation_slider.update(cx, |slider, cx| {
-            slider.set_delegate(
-                Box::new(
-                    ChannelDelegate::new(hsl, Hsl::SATURATION.into()).expect("HSL saturation delegate should be valid"),
-                ),
-                cx,
-            );
-        });
-        self.alpha_slider.update(cx, |slider, cx| {
-            slider.set_delegate(Box::new(AlphaDelegate { spec: hsl }), cx);
-        });
+        update_domain_delegate(
+            &self.saturation_domain,
+            Arc::new(
+                ChannelDelegate::new(hsl, Hsl::SATURATION.into()).expect("HSL saturation delegate should be valid"),
+            ),
+            self.saturation_domain.context(),
+        );
+        refresh_color_slider(&self.saturation_slider, cx);
+        update_domain_delegate(&self.alpha_domain, Arc::new(AlphaDelegate { spec: hsl }), self.alpha_domain.context());
+        refresh_color_slider(&self.alpha_slider, cx);
     }
 }
 
-fn slider_row(label: &'static str, slider: Entity<ColorSliderState>, look: &ShadcnLook) -> AnyElement {
+fn slider_event_label(source: &str, event: &SliderEvent) -> Option<(f32, SharedString)> {
+    match event {
+        SliderEvent::Change { value, .. } => Some((*value, SharedString::from(format!("{source} Change {value:.3}")))),
+        SliderEvent::Release { value, .. } => {
+            Some((*value, SharedString::from(format!("{source} Release {value:.3}"))))
+        }
+        _ => None,
+    }
+}
+
+fn slider_row(label: &'static str, slider: Entity<SliderControl>, look: &ShadcnLook) -> AnyElement {
     div()
         .w_full()
         .flex()

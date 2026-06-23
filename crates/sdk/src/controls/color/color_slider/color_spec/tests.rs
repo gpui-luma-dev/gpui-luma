@@ -378,3 +378,12 @@ fn test_primary_red_fixture_remains_stable_across_models() {
     assert_approx_eq!(rgba.b, 0.0);
     assert_approx_eq!(rgba.a, 1.0);
 }
+
+#[test]
+fn slider_step_for_channel_uses_fine_default_on_unit_ranges() {
+    let alpha = ColorChannel { name: "alpha", label: "Alpha", min: 0.0, max: 1.0, step: None, unit: "" };
+    assert_approx_eq!(slider_step_for_channel(&alpha), 0.01);
+
+    let red = ColorChannel { name: "red", label: "Red", min: 0.0, max: 255.0, step: Some(1.0), unit: "" };
+    assert_approx_eq!(slider_step_for_channel(&red), 1.0);
+}

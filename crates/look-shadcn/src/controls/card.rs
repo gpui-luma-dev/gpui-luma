@@ -128,10 +128,10 @@ mod tests {
 
     #[test]
     fn card_uses_card_tokens() {
-        let look = sample_look();
-        let look = card_look(&look, ControlSize::Md);
+        let shadcn = sample_look();
+        let look = card_look(&shadcn, ControlSize::Md);
 
-        assert_eq!(look.background, look.color(crate::tokens::ShadcnToken::Card));
-        assert_eq!(look.title_color, look.color(crate::tokens::ShadcnToken::CardForeground));
+        assert_eq!(look.background, shadcn.color(crate::tokens::ShadcnToken::Card));
+        assert_eq!(look.title_color, shadcn.color(crate::tokens::ShadcnToken::CardForeground));
     }
 }

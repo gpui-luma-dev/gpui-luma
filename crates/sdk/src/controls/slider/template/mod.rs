@@ -20,6 +20,8 @@ pub use angular_dial::{ThemedAngularDialTemplate, default_angular_dial_template}
 pub use circular_ring::{ThemedCircularRingTemplate, default_circular_ring_template};
 pub use linear::{ThemedSliderTemplate, default_slider_template};
 
+pub(crate) use crate::controls::slider::domain::render_domain_track_layer;
+
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
 pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
 pub type SliderMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync>;

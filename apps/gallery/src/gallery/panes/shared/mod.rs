@@ -82,14 +82,7 @@ pub(super) fn gallery_pane_scrollable_with_inspector_description(
                     .right(div().h_full().min_h(px(0.0)).flex().child(div().w(px(28.0)).h_full()).child(
                         div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector),
                     ))
-                    .fill(
-                        div()
-                            .min_h(px(0.0))
-                            .flex()
-                            .items_stretch()
-                            .justify_center()
-                            .child(render_scrollable_pane_body(title, content)),
-                    ),
+                    .fill(render_scrollable_pane_body(title, content)),
             ),
         )
         .into_any_element()
@@ -134,9 +127,9 @@ pub(super) fn gallery_pane_with_inspector_description(
 
 fn render_scrollable_pane_body(title: &'static str, content: AnyElement) -> AnyElement {
     div()
-        .w_full()
+        .size_full()
         .min_h(px(0.0))
-        .flex_1()
+        .min_w(px(0.0))
         .child(
             div()
                 .id(format!("{title}-scroll"))

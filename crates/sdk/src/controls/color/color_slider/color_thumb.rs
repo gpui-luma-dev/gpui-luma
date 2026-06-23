@@ -23,14 +23,14 @@ pub enum TrackEndcaps {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThumbLayoutHint {
-    pub supported_positions: &'static [super::slider::ThumbPosition],
-    pub preferred_position: super::slider::ThumbPosition,
+    pub supported_positions: &'static [super::types::ThumbPosition],
+    pub preferred_position: super::types::ThumbPosition,
     pub preferred_track_endcaps: TrackEndcaps,
 }
 
 impl ThumbShape {
     pub fn layout_hint(self) -> ThumbLayoutHint {
-        use super::slider::ThumbPosition;
+        use super::types::ThumbPosition;
         const ALL_POSITIONS: &[ThumbPosition] = &[ThumbPosition::InsideSlider, ThumbPosition::EdgeToEdge];
         const INSIDE_ONLY: &[ThumbPosition] = &[ThumbPosition::InsideSlider];
 

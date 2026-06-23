@@ -277,27 +277,27 @@ mod tests {
 
     #[test]
     fn default_badge_uses_primary_tokens() {
-        let look = sample_look();
-        let look = badge_look(&look, BadgeVariant::Default, ControlSize::Md);
+        let shadcn = sample_look();
+        let look = badge_look(&shadcn, BadgeVariant::Default, ControlSize::Md);
 
-        assert_eq!(look.background, look.color(ShadcnToken::Primary));
-        assert_eq!(look.foreground, look.color(ShadcnToken::PrimaryForeground));
+        assert_eq!(look.background, shadcn.color(ShadcnToken::Primary));
+        assert_eq!(look.foreground, shadcn.color(ShadcnToken::PrimaryForeground));
     }
 
     #[test]
     fn outline_badge_uses_border_in_dark_mode() {
-        let look = sample_look();
-        look.set_mode(gpui_luma::theme::ThemeMode::Dark);
-        let look = badge_look(&look, BadgeVariant::Outline, ControlSize::Md);
+        let shadcn = sample_look();
+        shadcn.set_mode(gpui_luma::theme::ThemeMode::Dark);
+        let look = badge_look(&shadcn, BadgeVariant::Outline, ControlSize::Md);
 
-        assert_eq!(look.foreground, look.color(ShadcnToken::Foreground));
-        assert_eq!(look.border, Some(look.token_color("input").expect("input")));
+        assert_eq!(look.foreground, shadcn.color(ShadcnToken::Foreground));
+        assert_eq!(look.border, Some(shadcn.token_color("input").expect("input")));
     }
 
     #[test]
     fn ghost_badge_is_transparent() {
-        let look = sample_look();
-        let look = badge_look(&look, BadgeVariant::Ghost, ControlSize::Md);
+        let shadcn = sample_look();
+        let look = badge_look(&shadcn, BadgeVariant::Ghost, ControlSize::Md);
 
         assert_eq!(look.background.a, 0.0);
         assert!(look.border.is_none());

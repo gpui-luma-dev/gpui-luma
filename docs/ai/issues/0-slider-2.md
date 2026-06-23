@@ -133,7 +133,7 @@ Do not bury interaction policy inside ad hoc render closures.
 - multi-thumb value models
 - color-first track rendering hooks
 - gallery validation surfaces for gradient and spectrum editing
-- optional later wrappers for simple single-thumb cases
+- optional later builder APIs for simple single-thumb cases
 
 ### Out of scope for the first pass
 
@@ -161,7 +161,7 @@ These names should be treated as the preferred user-facing API and gallery vocab
 That means:
 
 - gallery panes and demos should use these names
-- future builders or wrappers should use these names
+- future builders should use these names
 - docs should describe the family in these terms
 
 ### Track presentation names
@@ -186,7 +186,7 @@ So these names should be considered:
 
 - primary public names
 - primary documentation names
-- likely wrapper or builder names
+- likely builder names
 
 They do not need to be the very first internal storage model if that would make the core harder to evolve.
 
@@ -233,9 +233,9 @@ This keeps color-specific sophistication without forcing it into the generic sta
 
 ## 4. Prioritize single-thumb quantity and color sliders first
 
-Instead of building multi-thumb capabilities first and wrapping plain sliders later, the incubation will target the two primary single-thumb use cases immediately:
+Instead of building multi-thumb capabilities first and handling plain sliders later, the incubation will target the two primary single-thumb use cases immediately:
 - **`Slider`** (quantity fill progress)
-- **`ColorSlider`** (static spectrum background)
+- **`ColorSliderBuilder`** (static spectrum background, returning a standard `Slider` entity)
 
 This ensures the core architecture snaps perfectly to Luma's main slider workloads before introducing the added complexity of multi-thumb selection, insertion/deletion, and crossover sorting.
 
@@ -387,24 +387,56 @@ Migrate all legacy single-thumb `Slider` usages in the codebase to use the new u
 
 **Done:** Legacy control deleted; implementation lives flat under `slider/` (with `theme.rs` + `template/`); `slider/mod.rs` re-exports legacy names; `look.slider()` binds the new linear template; gallery unified to one Slider page; theme-studio, neumorphic custom templates, and event handlers updated; ColorSlider untouched.
 
-### Phase 6: Add color-capable track rendering hooks
+### Phase 6: Add Color-Capable Track Rendering Hooks & ColorSlider Migration
 
-Introduce rendering hooks that can express:
+Migrate the legacy `ColorSlider` control to the unified template-driven engine to validate linear color editing:
 
-- a continuous color domain track
-- segmented spectrum bands
-- per-thumb preview color
-- checkerboard underlays for alpha-like cases
+#### 1. Core Engine Extensions (DomainTrackRenderer Hook & Runtime Modification)
+- Extend the `DomainTrackRenderer` trait in `domain.rs` to support querying preview colors:
+  ```rust
+  pub trait DomainTrackRenderer: Send + Sync {
+      fn paint(&self, bounds: Bounds<Pixels>, orientation: Slider2Orientation, reversed: bool, window: &mut Window);
+      fn get_color_at_position(&self, position: f32) -> Option<Hsla> { None }
+  }
+  ```
+- In `SliderControl::set_thumb_position_internal` (`control.rs`), automatically invoke `get_color_at_position` using the new thumb position whenever it changes, updating `thumb.preview = Some(color)`.
+- **Dynamic Track Updates**: Add a runtime setter `set_domain_track` to `SliderControl` to allow updating the track renderer dynamically at runtime (critical for Saturation/Alpha track updates when Hue/base color changes):
+  ```rust
+  pub fn set_domain_track(&mut self, renderer: Arc<dyn DomainTrackRenderer>, cx: &mut Context<Self>) {
+      self.model.presentation = TrackPresentation::Domain;
+      self.model.domain_track = Some(renderer);
+      cx.notify();
+  }
+  ```
 
-This is the point where the new family becomes useful for:
+#### 2. ColorSlider Migration (Wrapper-Free, Builder-Based)
+- **Eliminate `ColorSlider` wrapper component**: Remove the legacy `ColorSlider` struct/component class completely, avoiding any runtime wrapper boilerplate.
+- **Implement a dedicated `ColorSliderBuilder`**: Create a `ColorSliderBuilder` in the SDK that returns a standard `Slider` control (`Entity<SliderControl>`) configured with:
+  - `TrackPresentation::Domain`
+  - A custom `DomainTrackRenderer` delegate corresponding to the requested color dimension.
+- **Strict type safety (no magic strings)**: The `ColorSliderBuilder` will expose explicit methods for configuring different spectrum/dimension options (such as `.hue()`, `.saturation(color)`, `.alpha(color)`, `.lightness(color)`) instead of using string keys or generic wrappers.
+- **Adapt Track Renderers**: Implement `DomainTrackRenderer` directly on the existing `ColorSliderDelegate` concrete types (or new unified types like `HueDelegate`, `GradientDelegate`, `AlphaDelegate`, `ChannelDelegate`).
+- Port vector/raster gradient and checkerboard rendering math from the delegates' old `style_background` methods into their respective `DomainTrackRenderer::paint` implementations.
 
-- OKLCH spectrum sliders
-- gradient stop pickers
-- richer color editors
+**Done:** `DomainTrackRenderer` + thumb preview sync + `set_domain_track`/`set_range` on unified slider; wrapper-free `ColorSliderBuilder` → `Entity<SliderControl>` with typed factories; legacy `ColorSlider`/`ColorSliderState`/`surface.rs`/`model.rs` removed; all gallery color-slider consumers migrated (`slider_pane`, `slider_revealed_pane`, HSV plane, color picker, multimixer); dynamic sat/alpha delegate sync via `ColorSliderDomainRenderer` + `update_domain_delegate`/`refresh_color_slider`.
 
-The hook surface should be rich enough to preserve current color sophistication, but not so broad that all color logic moves into the generic core.
+### Phase 7: Unify Radial Color Controls - Part 1 (ColorArc)
 
-### Phase 7: Build new gallery prototype surfaces
+Migrate the legacy `ColorArc` control to standard `Slider` entities configured with angular input strategy and angular template, avoiding wrapping component classes:
+- **`ColorArc` Migration**:
+  - Expose a `ColorArcBuilder` returning a standard `Slider` (`Entity<SliderControl>`) configured with angular input strategy (`.angular(min_angle, max_angle)`) and using `ThemedAngularDialTemplate`.
+  - Delegate the radial gradient/spectrum rendering math from its old delegates directly to `DomainTrackRenderer::paint` inside the dial canvas.
+- Ensure pointer tracking and snapping/intervals delegate to the unified slider core.
+
+### Phase 8: Unify Radial Color Controls - Part 2 (ColorRing)
+
+Migrate the legacy `ColorRing` control to standard `Slider` entities configured with circular input strategy and ring template, avoiding wrapping component classes:
+- **`ColorRing` Migration**:
+  - Expose a `ColorRingBuilder` returning a standard `Slider` (`Entity<SliderControl>`) configured with angular input strategy (`.angular(0.0, 2.0 * PI).wrapping(true)`) and using `ThemedCircularRingTemplate`.
+  - Delegate the circular gradient/spectrum rendering to `DomainTrackRenderer::paint` within the ring canvas.
+- Ensure pointer tracking, wrapping boundary seam logic, and snapping/intervals delegate to the unified slider core.
+
+### Phase 9: Build new gallery prototype surfaces
 
 Add a dedicated gallery validation pane for the new family instead of immediately replacing existing panes.
 
@@ -425,7 +457,7 @@ The multi-mixer surface is especially relevant as a later consumer:
 
 - [apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs)
 
-### Phase 8: Prove one real color migration
+### Phase 10: Prove one real color migration
 
 After the prototype feels right, migrate one real color use case that the old `ColorSlider` cannot express cleanly.
 
@@ -436,15 +468,12 @@ Best candidates:
 
 This phase must preserve old color slider demos so the new control is compared against working reference behavior, not developed in a vacuum.
 
-### Phase 9: Decide what to do with old controls
+### Phase 11: Finalize cleanup of old controls
 
-Only after Phase 8 succeeds:
+Only after Phase 10 succeeds:
 
-- decide whether `RangeSlider` should be deprecated or removed
-- decide whether plain `Slider` should remain independent or get a thin wrapper over the new family
-- decide whether some `ColorSlider` delegates should be adapted into the new control family
-
-This decision should be based on actual reuse, not on an up-front desire for conceptual purity.
+- Deprecate or remove remaining legacy files and tests.
+- Ensure all radial controls and linear spectrum controls are fully powered by the unified `Slider` control.
 
 ---
 

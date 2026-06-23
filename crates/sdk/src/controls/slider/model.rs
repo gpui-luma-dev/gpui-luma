@@ -6,6 +6,7 @@ use gpui::{AbsoluteLength, AppContext, Entity, Hsla, SharedString};
 
 use super::constraints::{clamp_and_snap_value, normalize_intervals};
 use super::control::SliderControl;
+use super::domain::DomainTrackRenderer;
 use super::input::{SliderInputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
 use super::template::{SliderTemplate, default_slider_template};
@@ -154,6 +155,7 @@ pub struct SliderModel {
     pub(crate) corner_radius: Option<AbsoluteLength>,
     pub(crate) template: Arc<dyn SliderTemplate>,
     pub(crate) thumb_policy: SliderThumbPolicy,
+    pub(crate) domain_track: Option<Arc<dyn DomainTrackRenderer>>,
 }
 
 pub struct SliderRenderModel<'a> {
@@ -174,6 +176,7 @@ pub struct SliderRenderModel<'a> {
     pub thumb_policy: SliderThumbPolicy,
     pub active_thumb_id: Option<ThumbId>,
     pub state: SliderState,
+    pub domain_track: Option<Arc<dyn DomainTrackRenderer>>,
 }
 
 pub struct SliderBuilder {
@@ -205,6 +208,7 @@ impl SliderBuilder {
                 corner_radius: None,
                 template: default_slider_template(),
                 thumb_policy: SliderThumbPolicy::default(),
+                domain_track: None,
             },
         }
     }
@@ -247,6 +251,12 @@ impl SliderBuilder {
 
     pub fn domain(mut self) -> Self {
         self.model.presentation = TrackPresentation::Domain;
+        self
+    }
+
+    pub fn domain_track(mut self, renderer: Arc<dyn DomainTrackRenderer>) -> Self {
+        self.model.presentation = TrackPresentation::Domain;
+        self.model.domain_track = Some(renderer);
         self
     }
 

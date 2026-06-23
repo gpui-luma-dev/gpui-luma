@@ -2,12 +2,14 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{
-    ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec,
+    ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec, slider_step_for_channel,
 };
 use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::color_slider::{
-    AlphaDelegate, ChannelDelegate, ColorSliderDelegate, ColorSliderEvent, ColorSliderState, HueDelegate,
+    AlphaDelegate, ChannelDelegate, ColorSliderBuilder, ColorSliderDelegate, ColorSliderDomainRenderer, HueDelegate,
+    primary_slider_value, refresh_color_slider, update_domain_delegate,
 };
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma::wrappanel;
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook};
@@ -109,7 +111,8 @@ fn mixer_card(title: &'static str, mixer: impl IntoElement, look: &ShadcnLook) -
 
 struct MixerSliderRow {
     channel: ColorChannel,
-    slider: Entity<ColorSliderState>,
+    slider: Entity<SliderControl>,
+    domain_renderer: Arc<ColorSliderDomainRenderer>,
 }
 
 struct ColorSpaceMixerState<S: ColorSpecification> {
@@ -134,46 +137,45 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         for channel in &channels {
             let channel_meta = *channel;
             let initial_value = spec.get_value(channel_meta.name);
-            let slider = cx.new(|cx| {
-                let mut slider = if channel_meta.name == "hue" {
-                    ColorSliderState::hue(format!("{}-{}", title, channel_meta.name), initial_value, cx)
-                } else if channel_meta.name == "alpha" {
-                    ColorSliderState::alpha(
-                        format!("{}-{}", title, channel_meta.name),
-                        initial_value,
-                        AlphaDelegate { spec },
-                        cx,
-                    )
-                } else {
-                    let initial_delegate = ChannelDelegate::new(spec, channel_meta.name.into())
-                        .expect("color mixer channel delegate should be valid");
-                    ColorSliderState::channel(
-                        format!("{}-{}", title, channel_meta.name),
-                        initial_value,
-                        initial_delegate,
-                        cx,
-                    )
-                }
+            let builder = if channel_meta.name == "hue" {
+                ColorSliderBuilder::hue(format!("{}-{}", title, channel_meta.name), initial_value)
+            } else if channel_meta.name == "alpha" {
+                ColorSliderBuilder::alpha(format!("{}-{}", title, channel_meta.name), initial_value, spec)
+            } else {
+                ColorSliderBuilder::channel(
+                    format!("{}-{}", title, channel_meta.name),
+                    initial_value,
+                    spec,
+                    channel_meta.name,
+                )
+                .expect("color mixer channel delegate should be valid")
+            };
+            let domain_renderer = builder.domain_renderer();
+            let slider = builder
                 .size(ControlSize::Sm)
                 .thumb_medium()
-                .edge_to_edge();
-                slider.set_range(channel_meta.min, channel_meta.max, cx);
-                slider
-            });
-            sliders.push(MixerSliderRow { channel: channel_meta, slider });
+                .edge_to_edge()
+                .range(channel_meta.min..channel_meta.max)
+                .step(slider_step_for_channel(&channel_meta))
+                .spawn(cx);
+            sliders.push(MixerSliderRow { channel: channel_meta, slider, domain_renderer });
         }
 
         let subscriptions = sliders
             .iter()
             .map(|row| {
                 let channel_name = row.channel.name;
-                cx.subscribe(&row.slider, move |this, _, event: &ColorSliderEvent, cx| {
-                    this.handle_slider_event(channel_name, event, cx);
+                cx.subscribe(&row.slider, move |this, _, event: &SliderEvent, cx| {
+                    if let Some(value) = primary_slider_value(event) {
+                        this.handle_slider_event(channel_name, value, cx);
+                    }
                 })
             })
             .collect();
 
-        Self { subtitle, look, spec, sliders, _subscriptions: subscriptions }
+        let state = Self { subtitle, look, spec, sliders, _subscriptions: subscriptions };
+        state.sync_sliders(cx);
+        state
     }
 
     fn notify_controls(&self, cx: &mut Context<Self>) {
@@ -182,10 +184,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         }
     }
 
-    fn handle_slider_event(&mut self, channel_name: &'static str, event: &ColorSliderEvent, cx: &mut Context<Self>) {
-        let proposed = match event {
-            ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-        };
+    fn handle_slider_event(&mut self, channel_name: &'static str, proposed: f32, cx: &mut Context<Self>) {
         let clamped = self.spec.clamp_channel_to_gamut(channel_name, proposed);
         self.spec.set_value(channel_name, clamped);
         self.spec.clamp_spec_to_gamut();
@@ -197,12 +196,20 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         let spec = self.spec;
         for row in &self.sliders {
             let channel = row.channel;
+            let (min, max) = spec.channel_bounds(channel.name);
             row.slider.update(cx, |slider, cx| {
-                let (min, max) = spec.channel_bounds(channel.name);
-                slider.set_range(min, max, cx);
+                slider.set_range(min..max, cx);
+                if let Some((allowed_min, allowed_max)) = spec.channel_allowed_interval(channel.name) {
+                    slider.set_allowed_intervals(vec![allowed_min..=allowed_max], cx);
+                } else {
+                    slider.clear_allowed_intervals(cx);
+                }
                 slider.set_value(spec.get_value(channel.name), cx);
-                slider.set_delegate(mixer_delegate(spec, channel.name), cx);
             });
+            let mut context = row.domain_renderer.context();
+            context.range = min..max;
+            update_domain_delegate(&row.domain_renderer, mixer_delegate(spec, channel.name), context);
+            refresh_color_slider(&row.slider, cx);
         }
     }
 }
@@ -211,13 +218,13 @@ fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> gpu
     ColorSwatch::new(color).checkerboard(true).height(px(44.0)).rounded(px(12.0)).into_any_element()
 }
 
-fn mixer_delegate<S: ColorSpecification>(spec: S, channel_name: &'static str) -> Box<dyn ColorSliderDelegate> {
+fn mixer_delegate<S: ColorSpecification>(spec: S, channel_name: &'static str) -> Arc<dyn ColorSliderDelegate> {
     if channel_name == "hue" {
-        Box::new(HueDelegate)
+        Arc::new(HueDelegate)
     } else if channel_name == "alpha" {
-        Box::new(AlphaDelegate { spec })
+        Arc::new(AlphaDelegate { spec })
     } else {
-        Box::new(ChannelDelegate::new(spec, channel_name.into()).expect("color mixer channel delegate should be valid"))
+        Arc::new(ChannelDelegate::new(spec, channel_name.into()).expect("color mixer channel delegate should be valid"))
     }
 }
 

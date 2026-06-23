@@ -13,9 +13,11 @@ use super::model::{
     build_render_segments, constrain_primary_value, primary_value, SliderBuilder, SliderOrientation, SliderRenderModel,
     SliderThumbSize, ThumbId, TrackPresentation,
 };
+use super::domain::DomainTrackRenderer;
 use super::thumbs::{insert_thumb, nearest_thumb, normalized_hit_radius, remove_thumb, set_thumb_position, thumb_value};
 use super::{SliderTemplateHandlers, step_allowed_value};
 use crate::controls::interaction::ControlInteraction;
+use super::constraints::normalize_intervals;
 use super::model::SliderModel;
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
@@ -71,10 +73,12 @@ impl SliderControl {
     pub(crate) fn from_builder(builder: SliderBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
         let active_thumb_id = builder.model.thumbs.first().map(|thumb| thumb.id);
+        let mut model = builder.model;
+        sync_thumb_previews(&mut model);
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
-            model: builder.model,
+            model,
             interaction: ControlInteraction::new(enabled, cx),
             track_bounds: None,
             active_thumb_id,
@@ -135,6 +139,28 @@ impl SliderControl {
         }
     }
 
+    pub fn set_range(&mut self, range: impl Into<ControlRange>, cx: &mut Context<Self>) {
+        self.model.range = range.into();
+        self.model.allowed_intervals = normalize_intervals(&self.model.allowed_intervals, self.model.range);
+        sync_thumb_previews(&mut self.model);
+        cx.notify();
+    }
+
+    pub fn set_allowed_intervals(&mut self, intervals: Vec<std::ops::RangeInclusive<f32>>, cx: &mut Context<Self>) {
+        self.model.allowed_intervals = normalize_intervals(&intervals, self.model.range);
+        sync_thumb_previews(&mut self.model);
+        cx.notify();
+    }
+
+    pub fn clear_allowed_intervals(&mut self, cx: &mut Context<Self>) {
+        if self.model.allowed_intervals.is_empty() {
+            return;
+        }
+        self.model.allowed_intervals.clear();
+        sync_thumb_previews(&mut self.model);
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
@@ -146,6 +172,13 @@ impl SliderControl {
 
     pub fn set_template(&mut self, template: Arc<dyn super::SliderTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
+        cx.notify();
+    }
+
+    pub fn set_domain_track(&mut self, renderer: Arc<dyn DomainTrackRenderer>, cx: &mut Context<Self>) {
+        self.model.presentation = TrackPresentation::Domain;
+        self.model.domain_track = Some(renderer);
+        sync_thumb_previews(&mut self.model);
         cx.notify();
     }
 
@@ -174,6 +207,7 @@ impl SliderControl {
             thumb_policy: self.model.thumb_policy,
             active_thumb_id: self.active_thumb_id,
             state: self.interaction.render_state(self.model.enabled, window),
+            domain_track: self.model.domain_track.clone(),
         }
     }
 
@@ -224,6 +258,8 @@ impl SliderControl {
         if !set_thumb_position(&mut self.model, thumb_id, percentage) {
             return false;
         }
+
+        sync_thumb_preview(&mut self.model, thumb_id);
 
         if emit {
             let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
@@ -548,6 +584,30 @@ impl Render for SliderControl {
                     .on_action(cx.listener(Self::handle_remove_value)),
             )
             .into_any_element()
+    }
+}
+
+fn sync_thumb_previews(model: &mut SliderModel) {
+    let thumb_ids: Vec<_> = model.thumbs.iter().map(|thumb| thumb.id).collect();
+    for thumb_id in thumb_ids {
+        sync_thumb_preview(model, thumb_id);
+    }
+}
+
+fn sync_thumb_preview(model: &mut SliderModel, thumb_id: ThumbId) {
+    let Some(renderer) = model.domain_track.as_ref() else {
+        return;
+    };
+
+    let position = model.thumbs.iter().find(|thumb| thumb.id == thumb_id).map(|thumb| thumb.position);
+    let Some(position) = position else {
+        return;
+    };
+
+    if let Some(color) = renderer.get_color_at_position(position)
+        && let Some(thumb) = model.thumbs.iter_mut().find(|thumb| thumb.id == thumb_id)
+    {
+        thumb.preview = Some(color);
     }
 }
 

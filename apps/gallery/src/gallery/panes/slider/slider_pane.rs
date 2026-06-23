@@ -5,6 +5,7 @@ use gpui::{
     AnyElement, App, Bounds, Context, DragMoveEvent, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
     SharedString, Subscription, Window, div, prelude::*, px,
 };
+use gpui_luma::controls::color::color_slider::ColorSliderBuilder;
 use gpui_luma::controls::slider::{
     Slider, SliderInputStrategy, SliderThumbPolicy, SliderBoundsHandler, SliderDrag, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
@@ -36,6 +37,7 @@ pub(in crate::gallery) struct SliderPane {
     slider_lg: Slider,
     slider_large_thumb: Slider,
     slider_sharp: Slider,
+    color_hue_slider: Slider,
     state_preview: Entity<SliderStatePreview>,
     inspector: Entity<ColorInspectorShell>,
     fill_value: f32,
@@ -48,6 +50,7 @@ pub(in crate::gallery) struct SliderPane {
     selected_stop: Option<ThumbId>,
     stop_summary: String,
     stops_interaction_hint: Option<String>,
+    color_hue_value: f32,
 }
 
 impl SliderPane {
@@ -130,6 +133,7 @@ impl SliderPane {
                 .value(54)
                 .corner_radius(px(0.0).into())
                 .spawn(cx),
+            color_hue_slider: ColorSliderBuilder::hue("slider-color-hue", 180.0).spawn(cx),
             state_preview: cx.new(|_| SliderStatePreview::new(look.clone(), slider_template)),
             inspector,
             fill_value: 41.0,
@@ -142,6 +146,7 @@ impl SliderPane {
             selected_stop: None,
             stop_summary: String::new(),
             stops_interaction_hint: multi_stop_interaction_hint(stops_policy),
+            color_hue_value: 180.0,
         }
     }
 
@@ -171,6 +176,9 @@ impl SliderPane {
             let slider = app.panes.slider.stops_slider.clone();
             app.panes.slider.handle_stops_event(&slider, event, cx);
         }));
+        subscriptions.push(cx.subscribe(&self.color_hue_slider, |app, _, event: &SliderEvent, cx| {
+            app.panes.slider.handle_color_hue_event(event, cx);
+        }));
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
@@ -192,6 +200,16 @@ impl SliderPane {
                         .gap_2()
                         .child(div().w(px(320.0)).child(self.fill_slider.clone()))
                         .child(value_label(self.fill_value, chrome.body_text)),
+                )
+                .child(section_label("Color spectrum (ColorSliderBuilder)", chrome.muted_text))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .child(div().w(px(320.0)).child(self.color_hue_slider.clone()))
+                        .child(value_label(self.color_hue_value, chrome.body_text)),
                 )
                 .child(section_label("Slider sizes", chrome.muted_text))
                 .child(labeled_demo("Sm", div().w(px(320.0)).child(self.slider_sm.clone()), chrome.muted_text))
@@ -315,6 +333,13 @@ impl SliderPane {
     fn handle_fill_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
         if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
             self.fill_value = *value;
+            cx.notify();
+        }
+    }
+
+    fn handle_color_hue_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
+        if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+            self.color_hue_value = *value;
             cx.notify();
         }
     }
@@ -485,6 +510,7 @@ fn render_state_sample(
         thumb_policy: SliderThumbPolicy::default(),
         active_thumb_id: Some(thumb_id),
         state: sample.state,
+        domain_track: None,
     };
 
     div()

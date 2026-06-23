@@ -3,8 +3,12 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::color_slider::{ChannelDelegate, ColorSliderEvent, ColorSliderState, sizing};
+use gpui_luma::controls::color::color_slider::{
+    ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, refresh_color_slider, sizing,
+    update_domain_delegate,
+};
 use gpui_luma::controls::color::ColorSwatch;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -16,9 +20,11 @@ pub(in crate::gallery) struct HsvPlaneState {
     look: Arc<ShadcnLook>,
     hsv: Hsv,
     plane: Entity<ColorFieldState>,
-    slider_h: Entity<ColorSliderState>,
-    slider_s: Entity<ColorSliderState>,
-    slider_v: Entity<ColorSliderState>,
+    slider_h: Entity<SliderControl>,
+    slider_s: Entity<SliderControl>,
+    slider_v: Entity<SliderControl>,
+    slider_s_domain: Arc<ColorSliderDomainRenderer>,
+    slider_v_domain: Arc<ColorSliderDomainRenderer>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -31,44 +37,33 @@ impl HsvPlaneState {
                 .raster_image()
                 .rounded(px(0.0))
         });
-        let slider_h = cx.new(|cx| {
-            let mut slider = ColorSliderState::hue("composition-hsv-plane-h", initial_hsv.h, cx)
+        let slider_h = ColorSliderBuilder::hue("composition-hsv-plane-h", initial_hsv.h)
+            .horizontal()
+            .rounded(px(0.0))
+            .thumb_small()
+            .thumb_square()
+            .size(ControlSize::Sm)
+            .spawn(cx);
+        let slider_s_builder =
+            ColorSliderBuilder::channel("composition-hsv-plane-s", initial_hsv.s, initial_hsv, Hsv::SATURATION)
+                .expect("HSV saturation delegate should be valid")
                 .horizontal()
                 .rounded(px(0.0))
                 .thumb_small()
-                .thumb_square();
-            slider.set_size(ControlSize::Sm, cx);
-            slider
-        });
-        let slider_s = cx.new(|cx| {
-            let mut slider = ColorSliderState::channel(
-                "composition-hsv-plane-s",
-                initial_hsv.s,
-                ChannelDelegate::new(initial_hsv, Hsv::SATURATION.into())
-                    .expect("HSV saturation delegate should be valid"),
-                cx,
-            )
-            .horizontal()
-            .rounded(px(0.0))
-            .thumb_small()
-            .thumb_square();
-            slider.set_size(ControlSize::Sm, cx);
-            slider
-        });
-        let slider_v = cx.new(|cx| {
-            let mut slider = ColorSliderState::channel(
-                "composition-hsv-plane-v",
-                initial_hsv.v,
-                ChannelDelegate::new(initial_hsv, Hsv::VALUE.into()).expect("HSV value delegate should be valid"),
-                cx,
-            )
-            .horizontal()
-            .rounded(px(0.0))
-            .thumb_small()
-            .thumb_square();
-            slider.set_size(ControlSize::Sm, cx);
-            slider
-        });
+                .thumb_square()
+                .size(ControlSize::Sm);
+        let slider_s_domain = slider_s_builder.domain_renderer();
+        let slider_s = slider_s_builder.spawn(cx);
+        let slider_v_builder =
+            ColorSliderBuilder::channel("composition-hsv-plane-v", initial_hsv.v, initial_hsv, Hsv::VALUE)
+                .expect("HSV value delegate should be valid")
+                .horizontal()
+                .rounded(px(0.0))
+                .thumb_small()
+                .thumb_square()
+                .size(ControlSize::Sm);
+        let slider_v_domain = slider_v_builder.domain_renderer();
+        let slider_v = slider_v_builder.spawn(cx);
 
         let subscriptions = vec![
             cx.subscribe(&plane, |this, _, event: &ColorFieldEvent, cx| {
@@ -81,33 +76,40 @@ impl HsvPlaneState {
                 this.sync_controls(cx);
                 cx.notify();
             }),
-            cx.subscribe(&slider_h, |this, _, event: &ColorSliderEvent, cx| {
-                let value = match event {
-                    ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-                };
-                this.hsv.h = value;
-                this.sync_controls(cx);
-                cx.notify();
+            cx.subscribe(&slider_h, |this, _, event: &SliderEvent, cx| {
+                if let Some(value) = primary_slider_value(event) {
+                    this.hsv.h = value;
+                    this.sync_controls(cx);
+                    cx.notify();
+                }
             }),
-            cx.subscribe(&slider_s, |this, _, event: &ColorSliderEvent, cx| {
-                let value = match event {
-                    ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-                };
-                this.hsv.s = value;
-                this.sync_controls(cx);
-                cx.notify();
+            cx.subscribe(&slider_s, |this, _, event: &SliderEvent, cx| {
+                if let Some(value) = primary_slider_value(event) {
+                    this.hsv.s = value;
+                    this.sync_controls(cx);
+                    cx.notify();
+                }
             }),
-            cx.subscribe(&slider_v, |this, _, event: &ColorSliderEvent, cx| {
-                let value = match event {
-                    ColorSliderEvent::Change(value) | ColorSliderEvent::Release(value) => *value,
-                };
-                this.hsv.v = value;
-                this.sync_controls(cx);
-                cx.notify();
+            cx.subscribe(&slider_v, |this, _, event: &SliderEvent, cx| {
+                if let Some(value) = primary_slider_value(event) {
+                    this.hsv.v = value;
+                    this.sync_controls(cx);
+                    cx.notify();
+                }
             }),
         ];
 
-        Self { look, hsv: initial_hsv, plane, slider_h, slider_s, slider_v, _subscriptions: subscriptions }
+        Self {
+            look,
+            hsv: initial_hsv,
+            plane,
+            slider_h,
+            slider_s,
+            slider_v,
+            slider_s_domain,
+            slider_v_domain,
+            _subscriptions: subscriptions,
+        }
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
@@ -123,22 +125,22 @@ impl HsvPlaneState {
             plane.set_hsv_components(hsv.h, hsv.s, hsv.v, cx);
         });
         self.slider_h.update(cx, |slider, cx| slider.set_value(hsv.h, cx));
-        self.slider_s.update(cx, |slider, cx| {
-            slider.set_value(hsv.s, cx);
-            slider.set_delegate(
-                Box::new(
-                    ChannelDelegate::new(hsv, Hsv::SATURATION.into()).expect("HSV saturation delegate should be valid"),
-                ),
-                cx,
-            );
-        });
-        self.slider_v.update(cx, |slider, cx| {
-            slider.set_value(hsv.v, cx);
-            slider.set_delegate(
-                Box::new(ChannelDelegate::new(hsv, Hsv::VALUE.into()).expect("HSV value delegate should be valid")),
-                cx,
-            );
-        });
+        self.slider_s.update(cx, |slider, cx| slider.set_value(hsv.s, cx));
+        update_domain_delegate(
+            &self.slider_s_domain,
+            Arc::new(
+                ChannelDelegate::new(hsv, Hsv::SATURATION.into()).expect("HSV saturation delegate should be valid"),
+            ),
+            self.slider_s_domain.context(),
+        );
+        refresh_color_slider(&self.slider_s, cx);
+        self.slider_v.update(cx, |slider, cx| slider.set_value(hsv.v, cx));
+        update_domain_delegate(
+            &self.slider_v_domain,
+            Arc::new(ChannelDelegate::new(hsv, Hsv::VALUE.into()).expect("HSV value delegate should be valid")),
+            self.slider_v_domain.context(),
+        );
+        refresh_color_slider(&self.slider_v, cx);
     }
 }
 
@@ -171,7 +173,7 @@ impl gpui::Render for HsvPlaneState {
     }
 }
 
-fn slider_row(label: &'static str, slider: Entity<ColorSliderState>) -> AnyElement {
+fn slider_row(label: &'static str, slider: Entity<SliderControl>) -> AnyElement {
     div()
         .w_full()
         .flex()

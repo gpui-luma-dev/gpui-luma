@@ -7,8 +7,8 @@ pub use interpolation::{interpolate_hsl, interpolate_lab, interpolate_rgb};
 mod tests;
 
 pub mod constants {
-    /// The size of the checkerboard squares for alpha backgrounds.
-    pub const CHECKERBOARD_SIZE: f32 = 8.0;
+    /// The size of the checkerboard squares for alpha slider tracks.
+    pub const CHECKERBOARD_SIZE: f32 = 4.0;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -19,6 +19,14 @@ pub struct ColorChannel {
     pub max: f32,
     pub step: Option<f32>,
     pub unit: &'static str,
+}
+
+/// Resolves the slider step for a color channel, using a fine default for unit-range channels.
+pub fn slider_step_for_channel(channel: &ColorChannel) -> f32 {
+    channel.step.unwrap_or_else(|| {
+        let span = channel.max - channel.min;
+        if span <= 1.0 { 0.01 } else { 1.0 }
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -91,6 +99,13 @@ pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
     fn channel_bounds(&self, channel_name: &str) -> (f32, f32) {
         let channel = self.channels().iter().find(|c| c.name == channel_name).unwrap();
         (channel.min, channel.max)
+    }
+
+    /// Optional sub-range within [`Self::channel_bounds`] where thumb interaction is allowed.
+    /// When set, the domain track still paints across the full [`Self::channel_bounds`].
+    fn channel_allowed_interval(&self, channel_name: &str) -> Option<(f32, f32)> {
+        let _ = channel_name;
+        None
     }
 
     #[allow(dead_code)]
@@ -646,6 +661,14 @@ impl ColorSpecification for Lab {
             Self::gamut_interval_around(*self, channel_name)
         } else {
             Self::channel_bounds_math(channel_name)
+        }
+    }
+
+    fn channel_allowed_interval(&self, channel_name: &str) -> Option<(f32, f32)> {
+        if self.auto_clamp && channel_name != Self::ALPHA {
+            Some(Self::gamut_interval_around(*self, channel_name))
+        } else {
+            None
         }
     }
 

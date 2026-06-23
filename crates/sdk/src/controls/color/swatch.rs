@@ -7,6 +7,7 @@
 
 use gpui::{prelude::*, *};
 
+use crate::controls::color::checkerboard_paint::{DEFAULT_CHECKERBOARD_SQUARE_SIZE, paint_masked_checkerboard};
 use crate::controls::color::style::ActiveTheme;
 use crate::theme::ControlSize;
 
@@ -146,7 +147,14 @@ impl RenderOnce for ColorSwatch {
                             border_style: BorderStyle::default(),
                         });
 
-                        paint_checkerboard(window, inner_bounds, inner_r, c2);
+                        paint_masked_checkerboard(
+                            window,
+                            inner_bounds,
+                            inner_r,
+                            c2,
+                            false,
+                            DEFAULT_CHECKERBOARD_SQUARE_SIZE,
+                        );
                     }
 
                     window.paint_quad(PaintQuad {
@@ -163,113 +171,4 @@ impl RenderOnce for ColorSwatch {
             .size_full(),
         )
     }
-}
-
-/// Paints the alternating checkerboard squares inside the provided bounds.
-///
-/// Squares are clamped to the available bounds so the last row/column does not
-/// overrun the swatch edge, and each square is skipped if any of its corners
-/// would fall outside the rounded inner mask.
-fn paint_checkerboard(window: &mut Window, bounds: Bounds<Pixels>, radius: Pixels, color: Hsla) {
-    let square_size = px(8.0);
-    let rows = (bounds.size.height / square_size).ceil() as i32;
-    let cols = (bounds.size.width / square_size).ceil() as i32;
-
-    for row in 0..rows {
-        for col in 0..cols {
-            if (row + col) % 2 == 0 {
-                let origin = bounds.origin + point(square_size * (col as f32), square_size * (row as f32));
-                let sq_w = square_size.min(bounds.size.width - square_size * col as f32);
-                let sq_h = square_size.min(bounds.size.height - square_size * row as f32);
-                let square_bounds = Bounds { origin, size: size(sq_w, sq_h) };
-
-                if !is_square_outside_rounded_rect(square_bounds, bounds, radius) {
-                    window.paint_quad(PaintQuad {
-                        bounds: square_bounds,
-                        corner_radii: Corners::default(),
-                        background: color.into(),
-                        border_widths: Edges::default(),
-                        border_color: transparent_black(),
-                        border_style: BorderStyle::default(),
-                    });
-                }
-            }
-        }
-    }
-}
-
-/// Returns `true` when any corner of `square` lies outside the rounded rect.
-///
-/// This helper uses the four-corner test described in the swatch issue notes.
-/// That conservative test intentionally drops partially intersecting squares so
-/// their antialiased edges cannot leak beyond the rounded boundary.
-fn is_square_outside_rounded_rect(square: Bounds<Pixels>, rect: Bounds<Pixels>, radius: Pixels) -> bool {
-    let r_f32 = radius.as_f32();
-    if r_f32 <= 0.0 {
-        return false;
-    }
-
-    let left = rect.origin.x.as_f32();
-    let top = rect.origin.y.as_f32();
-    let right = (rect.origin.x + rect.size.width).as_f32();
-    let bottom = (rect.origin.y + rect.size.height).as_f32();
-
-    let sq_left = square.origin.x.as_f32();
-    let sq_top = square.origin.y.as_f32();
-    let sq_right = (square.origin.x + square.size.width).as_f32();
-    let sq_bottom = (square.origin.y + square.size.height).as_f32();
-
-    let corners = [(sq_left, sq_top), (sq_right, sq_top), (sq_left, sq_bottom), (sq_right, sq_bottom)];
-
-    for &(x, y) in &corners {
-        {
-            let cx = left + r_f32;
-            let cy = top + r_f32;
-            if x < cx && y < cy {
-                let dx = x - cx;
-                let dy = y - cy;
-                if dx * dx + dy * dy > r_f32 * r_f32 {
-                    return true;
-                }
-            }
-        }
-
-        {
-            let cx = right - r_f32;
-            let cy = top + r_f32;
-            if x > cx && y < cy {
-                let dx = x - cx;
-                let dy = y - cy;
-                if dx * dx + dy * dy > r_f32 * r_f32 {
-                    return true;
-                }
-            }
-        }
-
-        {
-            let cx = left + r_f32;
-            let cy = bottom - r_f32;
-            if x < cx && y > cy {
-                let dx = x - cx;
-                let dy = y - cy;
-                if dx * dx + dy * dy > r_f32 * r_f32 {
-                    return true;
-                }
-            }
-        }
-
-        {
-            let cx = right - r_f32;
-            let cy = bottom - r_f32;
-            if x > cx && y > cy {
-                let dx = x - cx;
-                let dy = y - cy;
-                if dx * dx + dy * dy > r_f32 * r_f32 {
-                    return true;
-                }
-            }
-        }
-    }
-
-    false
 }

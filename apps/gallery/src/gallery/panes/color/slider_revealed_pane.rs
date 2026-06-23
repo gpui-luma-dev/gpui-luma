@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{Hsl, RgbaSpec};
-use gpui_luma::controls::color::color_slider::{
-    AlphaDelegate, ChannelDelegate, ColorInterpolation, ColorSliderState, SliderThumbSize, ThumbShape,
-};
+use gpui_luma::controls::color::color_slider::{ColorInterpolation, ColorSliderBuilder, SliderThumbSize};
+use gpui_luma::controls::slider::SliderControl;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -17,112 +16,95 @@ const CARD_WIDTH: f32 = 360.0;
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ColorSliderRevealedPane {
-    size_xsmall: Entity<ColorSliderState>,
-    size_small: Entity<ColorSliderState>,
-    size_medium: Entity<ColorSliderState>,
-    size_large: Entity<ColorSliderState>,
-    rounded_full: Entity<ColorSliderState>,
-    rounded_8: Entity<ColorSliderState>,
-    rounded_square: Entity<ColorSliderState>,
-    thumb_default: Entity<ColorSliderState>,
-    thumb_square: Entity<ColorSliderState>,
-    thumb_bar: Entity<ColorSliderState>,
-    edge_default: Entity<ColorSliderState>,
-    edge_square: Entity<ColorSliderState>,
-    edge_large: Entity<ColorSliderState>,
-    interp_rgb: Entity<ColorSliderState>,
-    interp_hsl: Entity<ColorSliderState>,
-    interp_lab: Entity<ColorSliderState>,
-    delegate_hue: Entity<ColorSliderState>,
-    delegate_alpha: Entity<ColorSliderState>,
-    delegate_red: Entity<ColorSliderState>,
-    delegate_saturation: Entity<ColorSliderState>,
+    size_xsmall: Entity<SliderControl>,
+    size_small: Entity<SliderControl>,
+    size_medium: Entity<SliderControl>,
+    size_large: Entity<SliderControl>,
+    rounded_full: Entity<SliderControl>,
+    rounded_8: Entity<SliderControl>,
+    rounded_square: Entity<SliderControl>,
+    thumb_default: Entity<SliderControl>,
+    thumb_square: Entity<SliderControl>,
+    thumb_bar: Entity<SliderControl>,
+    edge_default: Entity<SliderControl>,
+    edge_square: Entity<SliderControl>,
+    edge_large: Entity<SliderControl>,
+    interp_rgb: Entity<SliderControl>,
+    interp_hsl: Entity<SliderControl>,
+    interp_lab: Entity<SliderControl>,
+    delegate_hue: Entity<SliderControl>,
+    delegate_alpha: Entity<SliderControl>,
+    delegate_red: Entity<SliderControl>,
+    delegate_saturation: Entity<SliderControl>,
 }
 
 impl ColorSliderRevealedPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, _look: Arc<ShadcnLook>) -> Self {
-        let size_xsmall = cx.new(|cx| {
-            ColorSliderState::hue("color-slider-revealed-size-xsmall", 180.0, cx)
-                .size(ControlSize::Sm)
-                .thumb_xsmall()
-        });
+        let size_xsmall = ColorSliderBuilder::hue("color-slider-revealed-size-xsmall", 180.0)
+            .size(ControlSize::Sm)
+            .thumb_xsmall()
+            .spawn(cx);
         let size_small =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-small", 180.0, cx).size(ControlSize::Sm));
-        let size_medium = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-medium", 180.0, cx));
+            ColorSliderBuilder::hue("color-slider-revealed-size-small", 180.0).size(ControlSize::Sm).spawn(cx);
+        let size_medium = ColorSliderBuilder::hue("color-slider-revealed-size-medium", 180.0).spawn(cx);
         let size_large =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-size-large", 180.0, cx).size(ControlSize::Lg));
+            ColorSliderBuilder::hue("color-slider-revealed-size-large", 180.0).size(ControlSize::Lg).spawn(cx);
 
-        let rounded_full = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-rounded-full", 180.0, cx));
-        let rounded_8 =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-rounded-8", 180.0, cx).rounded(px(8.0)));
+        let rounded_full = ColorSliderBuilder::hue("color-slider-revealed-rounded-full", 180.0).spawn(cx);
+        let rounded_8 = ColorSliderBuilder::hue("color-slider-revealed-rounded-8", 180.0).rounded(px(8.0)).spawn(cx);
         let rounded_square =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-rounded-square", 180.0, cx).rounded(px(0.0)));
+            ColorSliderBuilder::hue("color-slider-revealed-rounded-square", 180.0).rounded(px(0.0)).spawn(cx);
 
-        let thumb_default = cx.new(|cx| ColorSliderState::hue("color-slider-revealed-thumb-default", 180.0, cx));
+        let thumb_default = ColorSliderBuilder::hue("color-slider-revealed-thumb-default", 180.0).spawn(cx);
         let thumb_square =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-thumb-square", 180.0, cx).thumb_square());
-        let thumb_bar = cx.new(|cx| {
-            let mut slider = ColorSliderState::hue("color-slider-revealed-thumb-bar", 180.0, cx);
-            slider.thumb.shape = ThumbShape::Bar;
-            slider
-        });
+            ColorSliderBuilder::hue("color-slider-revealed-thumb-square", 180.0).thumb_square().spawn(cx);
+        let thumb_bar = ColorSliderBuilder::hue("color-slider-revealed-thumb-bar", 180.0).thumb_bar().spawn(cx);
 
         let edge_default =
-            cx.new(|cx| ColorSliderState::hue("color-slider-revealed-edge-default", 180.0, cx).edge_to_edge());
-        let edge_square = cx.new(|cx| {
-            ColorSliderState::hue("color-slider-revealed-edge-square", 180.0, cx)
-                .rounded(px(0.0))
-                .thumb_square()
-                .edge_to_edge()
-        });
-        let edge_large = cx.new(|cx| {
-            ColorSliderState::hue("color-slider-revealed-edge-large", 180.0, cx)
-                .size(ControlSize::Lg)
-                .edge_to_edge()
-        });
+            ColorSliderBuilder::hue("color-slider-revealed-edge-default", 180.0).edge_to_edge().spawn(cx);
+        let edge_square = ColorSliderBuilder::hue("color-slider-revealed-edge-square", 180.0)
+            .rounded(px(0.0))
+            .thumb_square()
+            .edge_to_edge()
+            .spawn(cx);
+        let edge_large = ColorSliderBuilder::hue("color-slider-revealed-edge-large", 180.0)
+            .size(ControlSize::Lg)
+            .edge_to_edge()
+            .spawn(cx);
 
         let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let blue = gpui::hsla(240.0 / 360.0, 1.0, 0.5, 1.0);
-        let interp_rgb = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-revealed-interp-rgb", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Rgb)
-        });
-        let interp_hsl = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-revealed-interp-hsl", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Hsl)
-        });
-        let interp_lab = cx.new(|cx| {
-            ColorSliderState::gradient("color-slider-revealed-interp-lab", 0.5, vec![red, blue], cx)
-                .interpolation(ColorInterpolation::Lab)
-        });
+        let interp_rgb = ColorSliderBuilder::gradient("color-slider-revealed-interp-rgb", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Rgb)
+            .spawn(cx);
+        let interp_hsl = ColorSliderBuilder::gradient("color-slider-revealed-interp-hsl", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Hsl)
+            .spawn(cx);
+        let interp_lab = ColorSliderBuilder::gradient("color-slider-revealed-interp-lab", 0.5, vec![red, blue])
+            .interpolation(ColorInterpolation::Lab)
+            .spawn(cx);
 
-        let delegate_hue = cx.new(|cx| {
-            ColorSliderState::hue("color-slider-revealed-delegate-hue", 180.0, cx).thumb_size(SliderThumbSize::Md)
-        });
-        let delegate_alpha = cx.new(|cx| {
+        let delegate_hue = ColorSliderBuilder::hue("color-slider-revealed-delegate-hue", 180.0)
+            .thumb_size(SliderThumbSize::Md)
+            .spawn(cx);
+        let delegate_alpha = {
             let hsl = Hsl { h: 200.0, s: 0.8, l: 0.5, a: 1.0 };
-            ColorSliderState::alpha("color-slider-revealed-delegate-alpha", 0.5, AlphaDelegate { spec: hsl }, cx)
-        });
-        let delegate_red = cx.new(|cx| {
+            ColorSliderBuilder::alpha("color-slider-revealed-delegate-alpha", 0.5, hsl).spawn(cx)
+        };
+        let delegate_red = {
             let rgba = RgbaSpec { r: 255.0, g: 128.0, b: 0.0, a: 1.0 };
-            ColorSliderState::channel(
-                "color-slider-revealed-delegate-red",
-                rgba.r,
-                ChannelDelegate::new(rgba, RgbaSpec::RED.into()).expect("RGBA red delegate should be valid"),
-                cx,
-            )
-            .min(0.0)
-            .max(255.0)
-        });
-        let delegate_saturation = cx.new(|cx| {
+            ColorSliderBuilder::channel("color-slider-revealed-delegate-red", rgba.r, rgba, RgbaSpec::RED)
+                .expect("RGBA red delegate should be valid")
+                .min(0.0)
+                .max(255.0)
+                .spawn(cx)
+        };
+        let delegate_saturation = {
             let hsl = Hsl { h: 240.0, s: 0.5, l: 0.52, a: 1.0 };
-            ColorSliderState::channel(
-                "color-slider-revealed-delegate-saturation",
-                hsl.s,
-                ChannelDelegate::new(hsl, Hsl::SATURATION.into()).expect("HSL saturation delegate should be valid"),
-                cx,
-            )
-        });
+            ColorSliderBuilder::channel("color-slider-revealed-delegate-saturation", hsl.s, hsl, Hsl::SATURATION)
+                .expect("HSL saturation delegate should be valid")
+                .spawn(cx)
+        };
 
         Self {
             size_xsmall,
@@ -303,7 +285,7 @@ impl ColorSliderRevealedPane {
     }
 }
 
-fn slider_stack<const N: usize>(rows: [(&'static str, Entity<ColorSliderState>); N], look: &ShadcnLook) -> AnyElement {
+fn slider_stack<const N: usize>(rows: [(&'static str, Entity<SliderControl>); N], look: &ShadcnLook) -> AnyElement {
     div()
         .w_full()
         .flex()

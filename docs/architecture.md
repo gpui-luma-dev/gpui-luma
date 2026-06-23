@@ -73,7 +73,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine).
     *   **Inputs:** `textfield`, `textarea`, `text/` (shared editing engine).
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.
-    *   **Range input:** `slider` (unified single- and multi-thumb engine with linear/angular strategies), `color/color_slider`.
+    *   **Range input:** `slider` (unified single- and multi-thumb engine with linear/angular strategies and `DomainTrackRenderer`), `color/color_slider` (`ColorSliderBuilder` returns unified `Slider` entities).
     *   **Selection:** `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`.
     *   **Menus:** `popup_menu`, `context_menu`, `floating_menu`.
     *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`, `pager`.

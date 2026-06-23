@@ -4,7 +4,7 @@ use gpui::{App, Div, Pixels, Stateful, Window, div, px, prelude::*};
 
 use super::{
     SliderBoundsHandler, SliderInteractionHandlers, SliderTemplate, SliderTemplateHandlers, attach_linear_interaction,
-    attach_thumb_drag, render_linear_thumb, track_bounds_canvas, track_surface_background,
+    attach_thumb_drag, render_domain_track_layer, render_linear_thumb, track_bounds_canvas, track_surface_background,
 };
 use crate::controls::color::style::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
@@ -158,9 +158,15 @@ fn render_horizontal_track(
         .right(px(0.0))
         .top(px(track_top))
         .h(px(cross_axis))
-        .when(!uses_sibling_segments, |this| this.bg(track_surface_background(model, look)).rounded(track_radius));
+        .rounded(track_radius)
+        .overflow_hidden()
+        .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
+            this.bg(track_surface_background(model, look))
+        });
 
-    if model.presentation == TrackPresentation::Domain {
+    if let Some(layer) = render_domain_track_layer(model, track_radius) {
+        track = track.child(layer);
+    } else if model.presentation == TrackPresentation::Domain {
         track =
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
@@ -195,9 +201,15 @@ fn render_vertical_track(
         .top(px(0.0))
         .w(px(cross_axis))
         .h(px(long_axis))
-        .when(!uses_sibling_segments, |this| this.bg(track_surface_background(model, look)).rounded(track_radius));
+        .rounded(track_radius)
+        .overflow_hidden()
+        .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
+            this.bg(track_surface_background(model, look))
+        });
 
-    if model.presentation == TrackPresentation::Domain {
+    if let Some(layer) = render_domain_track_layer(model, track_radius) {
+        track = track.child(layer);
+    } else if model.presentation == TrackPresentation::Domain {
         track =
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
