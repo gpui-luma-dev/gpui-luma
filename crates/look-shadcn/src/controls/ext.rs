@@ -32,7 +32,6 @@ use gpui_luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
 use gpui_luma::controls::selection_panel::{SelectionPanelControl, SelectionPanelItem};
 use gpui_luma::controls::search_selector::{self, SearchSelectorBuilder};
 use gpui_luma::controls::slider::{self, SliderBuilder};
-use gpui_luma::controls::slider2::{self, Slider2Builder};
 use gpui_luma::controls::switch::{self, SwitchBuilder};
 use gpui_luma::controls::accordion::AccordionBuilder;
 use gpui_luma::controls::tree_view::TreeViewBuilder;
@@ -97,7 +96,6 @@ pub trait ShadcnLookControlExt {
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
-    fn slider2(&self, id: impl Into<SharedString>) -> Slider2Builder;
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
@@ -309,10 +307,6 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
         slider::new(id).template(self.slider_template())
-    }
-
-    fn slider2(&self, id: impl Into<SharedString>) -> Slider2Builder {
-        slider2::new(id).template(self.slider2_template())
     }
 
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder {

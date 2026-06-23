@@ -10,10 +10,8 @@ use super::{
 use crate::controls::color::style::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
-use crate::controls::slider2::layout::{display_position, segment_corner_radii, segment_display_span};
-use crate::controls::slider2::model::{
-    Slider2Orientation, Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind,
-};
+use super::super::layout::{display_position, segment_corner_radii, segment_display_span};
+use super::super::model::{Slider2Orientation, Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind};
 
 pub struct ThemedSlider2Template {
     theme: Arc<dyn SliderTheme>,
@@ -138,7 +136,7 @@ impl Slider2Template for ThemedSlider2Template {
 }
 
 /// Inactive thumbs first; active thumb last so it paints on top while dragging.
-fn ordered_thumbs<'a>(model: &'a Slider2RenderModel<'_>) -> Vec<&'a crate::controls::slider2::model::SliderThumbValue> {
+fn ordered_thumbs<'a>(model: &'a Slider2RenderModel<'_>) -> Vec<&'a super::super::model::SliderThumbValue> {
     let mut thumbs: Vec<_> = model.thumbs.iter().collect();
     thumbs.sort_by_key(|thumb| model.active_thumb_id == Some(thumb.id));
     thumbs
@@ -220,7 +218,7 @@ fn render_vertical_track(
 }
 
 fn render_fill_segment(
-    segment: &crate::controls::slider2::model::TrackSegment,
+    segment: &super::super::model::TrackSegment,
     orientation: Slider2Orientation,
     reversed: bool,
     look: &crate::controls::slider::SliderLook,

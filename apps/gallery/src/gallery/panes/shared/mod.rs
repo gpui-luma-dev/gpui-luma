@@ -19,10 +19,6 @@ pub(super) fn gallery_pane(title: &'static str, content: AnyElement, look: &Shad
     gallery_pane_with_description(title, None, content, look)
 }
 
-pub(super) fn gallery_pane_scrollable(title: &'static str, content: AnyElement, look: &ShadcnLook) -> AnyElement {
-    gallery_pane_scrollable_with_description(title, None, content, look)
-}
-
 pub(super) fn gallery_pane_with_description(
     title: &'static str,
     description: Option<&'static str>,
@@ -44,10 +40,29 @@ pub(super) fn gallery_pane_with_description(
         .into_any_element()
 }
 
-pub(super) fn gallery_pane_scrollable_with_description(
+pub(super) fn gallery_pane_with_inspector(
+    title: &'static str,
+    content: AnyElement,
+    inspector: impl IntoElement,
+    look: &ShadcnLook,
+) -> AnyElement {
+    gallery_pane_with_inspector_description(title, None, content, inspector, look)
+}
+
+pub(super) fn gallery_pane_scrollable_with_inspector(
+    title: &'static str,
+    content: AnyElement,
+    inspector: impl IntoElement,
+    look: &ShadcnLook,
+) -> AnyElement {
+    gallery_pane_scrollable_with_inspector_description(title, None, content, inspector, look)
+}
+
+pub(super) fn gallery_pane_scrollable_with_inspector_description(
     title: &'static str,
     description: Option<&'static str>,
     content: AnyElement,
+    inspector: impl IntoElement,
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
@@ -61,17 +76,23 @@ pub(super) fn gallery_pane_scrollable_with_description(
         .bg(chrome.content_background)
         .p(px(28.0))
         .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
-        .child(render_scrollable_pane_body(title, content))
+        .child(
+            div().min_h(px(0.0)).flex_1().child(
+                DockPanel::new()
+                    .right(div().h_full().min_h(px(0.0)).flex().child(div().w(px(28.0)).h_full()).child(
+                        div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector),
+                    ))
+                    .fill(
+                        div()
+                            .min_h(px(0.0))
+                            .flex()
+                            .items_stretch()
+                            .justify_center()
+                            .child(render_scrollable_pane_body(title, content)),
+                    ),
+            ),
+        )
         .into_any_element()
-}
-
-pub(super) fn gallery_pane_with_inspector(
-    title: &'static str,
-    content: AnyElement,
-    inspector: impl IntoElement,
-    look: &ShadcnLook,
-) -> AnyElement {
-    gallery_pane_with_inspector_description(title, None, content, inspector, look)
 }
 
 pub(super) fn gallery_pane_with_inspector_description(

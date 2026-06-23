@@ -5,7 +5,7 @@ use gpui::{
     App, Bounds, BoxShadow, Corners, Div, FontFeatures, PathBuilder, Pixels, Point, SharedString, Stateful, Window,
     canvas, div, fill, hsla, point, prelude::*, px, rgb, size,
 };
-use gpui_luma::controls::slider::{self, SliderBuilder, SliderRenderModel, SliderTemplate, SliderTemplateHandlers};
+use gpui_luma::controls::slider::{self, SliderBuilder, SliderRenderModel, SliderTemplate, SliderTemplateHandlers, ThumbId};
 
 const MIN_ANGLE: f32 = -1.25 * PI;
 const MAX_ANGLE: f32 = 0.25 * PI;
@@ -152,11 +152,19 @@ impl SliderTemplate for NeumorphicDialTemplate {
         &self,
         model: &SliderRenderModel<'_>,
         handlers: SliderTemplateHandlers,
+        primary_thumb_id: ThumbId,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
-        let value = model.value;
+        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } =
+            handlers;
+        let primary = model
+            .thumbs
+            .iter()
+            .find(|thumb| thumb.id == primary_thumb_id)
+            .or_else(|| model.thumbs.first())
+            .expect("slider thumb");
+        let value = model.range.value_at(primary.position);
         let dial_size = self.size;
         let label = self.label.clone();
 
@@ -168,11 +176,17 @@ impl SliderTemplate for NeumorphicDialTemplate {
             .on_mouse_down(gpui::MouseButton::Left, mouse_down)
             .on_mouse_up(gpui::MouseButton::Left, mouse_up)
             .on_mouse_up_out(gpui::MouseButton::Left, mouse_up_out)
-            .on_drag(gpui_luma::controls::slider::SliderDrag::new(model.id.clone()), |drag, _, _, cx| {
-                cx.stop_propagation();
-                cx.new(|_| drag.clone())
+            .on_drag(
+                gpui_luma::controls::slider::SliderDrag::new(model.id.clone(), primary_thumb_id),
+                |drag, _, _, cx| {
+                    cx.stop_propagation();
+                    cx.new(|_| drag.clone())
+                },
+            )
+            .on_drag_move({
+                let drag_move = drag_move.clone();
+                move |event, window, cx| drag_move(event, window, cx)
             })
-            .on_drag_move(drag_move)
             .child(
                 canvas(
                     move |bounds, window, cx| track_bounds(&bounds, window, cx),

@@ -8,9 +8,9 @@ use super::{
 };
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
-use crate::controls::slider2::input::{Slider2InputStrategy, angle_for_percentage};
-use crate::controls::slider2::layout::display_position;
-use crate::controls::slider2::model::{Slider2RenderModel, ThumbId, TrackPresentation};
+use super::super::input::{Slider2InputStrategy, angle_for_percentage};
+use super::super::layout::display_position;
+use super::super::model::{Slider2RenderModel, ThumbId, TrackPresentation};
 
 pub struct ThemedAngularDialTemplate {
     theme: Arc<dyn SliderTheme>,

@@ -89,9 +89,7 @@ mod tests {
     use gpui::px;
 
     use super::*;
-    use crate::controls::slider2::model::TrackSegmentKind;
-
-    use super::super::model::TrackSegment;
+    use crate::controls::slider::model::{TrackSegment, TrackSegmentKind};
 
     #[test]
     fn display_position_mirrors_when_reversed() {

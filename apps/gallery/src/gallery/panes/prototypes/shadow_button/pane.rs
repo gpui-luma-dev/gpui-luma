@@ -341,7 +341,8 @@ impl ButtonPane {
 
     fn handle_slider_event(&mut self, field: ShadowSliderField, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
         let value = match event {
-            SliderEvent::Change { value } | SliderEvent::Release { value } => *value,
+            SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } => *value,
+            _ => return,
         };
         match field {
             ShadowSliderField::OffsetX => self.shadow.offset_x = value,

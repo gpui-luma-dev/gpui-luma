@@ -73,7 +73,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine).
     *   **Inputs:** `textfield`, `textarea`, `text/` (shared editing engine).
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.
-    *   **Range input:** `slider`, `slider2` (single- and multi-thumb, linear/angular strategies), `color/color_slider`.
+    *   **Range input:** `slider` (unified single- and multi-thumb engine with linear/angular strategies; legacy type names re-exported), `color/color_slider`.
     *   **Selection:** `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`.
     *   **Menus:** `popup_menu`, `context_menu`, `floating_menu`.
     *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`, `pager`.
@@ -103,6 +103,6 @@ User Actions (Pointer/Keyboard)
 ```
 
 ### Event Invariant
-*   **Controls** emit semantic events (e.g. `ButtonEvent::Click`, `SliderEvent::Change { value }`, `SliderEvent::Release { value }`).
+*   **Controls** emit semantic events (e.g. `ButtonEvent::Click`, `SliderEvent::Change { thumb_id, value }`, `SliderEvent::Release { thumb_id, value }`; multi-thumb sliders may also emit `ThumbAdded`, `ThumbRemoved`, `ThumbSelected`).
 *   **Templates** never emit events. They register element event listeners to call control methods, which in turn emit the semantic events.
 *   **Application states** never live inside SDK controls. Apps subscribe to control events using `cx.subscribe` and sync their local models accordingly. Programmatic setters (e.g., `set_value`) update visual state and notify, but do **not** trigger recursive events to avoid update loops.

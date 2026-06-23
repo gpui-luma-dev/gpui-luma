@@ -374,7 +374,7 @@ After the single-thumb core is proven, expand the engine to support:
 - Keyboard: Delete/Backspace removes active thumb (`RemoveValue` on RangeValue profile)
 - Gallery: multi-stop fill-track demo
 
-### Phase 5: Replace and Migrate Legacy Slider to Slider2
+### Phase 5: Replace and Migrate Legacy Slider to Slider2 ✅
 
 Migrate all legacy single-thumb `Slider` usages in the codebase to use the new unified `Slider2` engine:
 - Delete the old `crates/sdk/src/controls/slider/` module.
@@ -384,6 +384,8 @@ Migrate all legacy single-thumb `Slider` usages in the codebase to use the new u
 - Update and merge the old `pane.rs` and `slider2_pane.rs` gallery pages.
 - Ensure all other client preference panels and demos are adapted and compile.
 - Confirm zero impact on the isolated `ColorSlider` controls.
+
+**Done:** Legacy control deleted; implementation lives flat under `slider/` (with `theme.rs` + `template/`); `slider/mod.rs` re-exports legacy names; `look.slider()` binds the new linear template; gallery unified to one Slider page; theme-studio, neumorphic custom templates, and event handlers updated; ColorSlider untouched.
 
 ### Phase 6: Add color-capable track rendering hooks
 

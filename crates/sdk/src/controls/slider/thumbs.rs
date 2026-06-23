@@ -150,9 +150,9 @@ pub fn set_thumb_position(model: &mut Slider2Model, thumb_id: ThumbId, percentag
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controls::slider2::model::Slider2Model;
-    use crate::controls::slider2::template::default_slider2_template;
-    use crate::controls::slider2::input::Slider2InputStrategy;
+    use crate::controls::slider::input::Slider2InputStrategy;
+    use crate::controls::slider::model::Slider2Model;
+    use crate::controls::slider::template::default_slider2_template;
     use crate::controls::value::ControlRange;
     use gpui::SharedString;
 

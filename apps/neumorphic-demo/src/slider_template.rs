@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, MouseButton, Stateful, Window, canvas, div, hsla, px, prelude::*};
-use gpui_luma::controls::slider::{SliderDrag, SliderRenderModel, SliderTemplate, SliderTemplateHandlers};
+use gpui_luma::controls::slider::{SliderDrag, SliderRenderModel, SliderTemplate, SliderTemplateHandlers, ThumbId};
 
 pub fn neumorphic_slider_template() -> Arc<dyn SliderTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SliderTemplate>> = OnceLock::new();
@@ -16,11 +16,24 @@ impl SliderTemplate for NeumorphicSliderTemplate {
         &self,
         model: &SliderRenderModel<'_>,
         handlers: SliderTemplateHandlers,
+        primary_thumb_id: ThumbId,
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
-        let percentage = model.percentage.clamp(0.0, 1.0);
+        let SliderTemplateHandlers { track_bounds, hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } =
+            handlers;
+        let primary = model
+            .thumbs
+            .iter()
+            .find(|thumb| thumb.id == primary_thumb_id)
+            .or_else(|| model.thumbs.first())
+            .expect("slider thumb");
+        let percentage = if model.reversed {
+            1.0 - primary.position
+        } else {
+            primary.position
+        }
+        .clamp(0.0, 1.0);
         let root_width = 56.0;
         let rail_height = 154.0;
         let rail_width = 12.0;
@@ -35,7 +48,7 @@ impl SliderTemplate for NeumorphicSliderTemplate {
         let thumb_top = rail_top + ((1.0 - percentage) * thumb_travel);
 
         let active_start = thumb_top + (thumb_height * 0.5);
-        let active_height = (rail_top + rail_height - active_start).max(0.0);
+        let active_height = (rail_top + rail_height - active_start).max(0.0_f32);
 
         let track_bg = if model.enabled {
             hsla(220.0 / 360.0, 0.12, 0.80, 0.96)
@@ -157,11 +170,14 @@ impl SliderTemplate for NeumorphicSliderTemplate {
             .on_mouse_down(MouseButton::Left, mouse_down)
             .on_mouse_up(MouseButton::Left, mouse_up)
             .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-            .on_drag(SliderDrag::new(model.id.clone()), |drag, _, _, cx| {
+            .on_drag(SliderDrag::new(model.id.clone(), primary_thumb_id), |drag, _, _, cx| {
                 cx.stop_propagation();
                 cx.new(|_| drag.clone())
             })
-            .on_drag_move(drag_move)
+            .on_drag_move({
+                let drag_move = drag_move.clone();
+                move |event, window, cx| drag_move(event, window, cx)
+            })
             .child(rail)
             .child(thumb_shadow_pool)
             .child(thumb)
