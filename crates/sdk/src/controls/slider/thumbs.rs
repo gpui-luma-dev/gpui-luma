@@ -2,7 +2,7 @@ use gpui::{Bounds, Pixels};
 
 use super::constraints::clamp_and_snap_value;
 use super::input::wrap_and_snap;
-use super::model::{Slider2Model, Slider2ThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId};
+use super::model::{SliderModel, SliderThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId};
 use crate::controls::value::ControlRange;
 
 const DEFAULT_HIT_RADIUS: f32 = 0.04;
@@ -31,7 +31,7 @@ pub fn nearest_thumb(
         .min_by(|left, right| left.1.total_cmp(&right.1))
 }
 
-pub fn can_insert_at(thumbs: &[SliderThumbValue], percentage: f32, policy: Slider2ThumbPolicy) -> bool {
+pub fn can_insert_at(thumbs: &[SliderThumbValue], percentage: f32, policy: SliderThumbPolicy) -> bool {
     if !policy.allow_insert || thumbs.len() >= policy.max_count {
         return false;
     }
@@ -47,12 +47,12 @@ pub fn constrain_thumb_position(
     position: f32,
     thumb_id: ThumbId,
     thumbs: &[SliderThumbValue],
-    policy: Slider2ThumbPolicy,
+    policy: SliderThumbPolicy,
 ) -> f32 {
     constrain_position(position, Some(thumb_id), thumbs, policy)
 }
 
-pub fn constrain_insert_position(position: f32, thumbs: &[SliderThumbValue], policy: Slider2ThumbPolicy) -> f32 {
+pub fn constrain_insert_position(position: f32, thumbs: &[SliderThumbValue], policy: SliderThumbPolicy) -> f32 {
     constrain_position(position, None, thumbs, policy)
 }
 
@@ -60,7 +60,7 @@ fn constrain_position(
     position: f32,
     thumb_id: Option<ThumbId>,
     thumbs: &[SliderThumbValue],
-    policy: Slider2ThumbPolicy,
+    policy: SliderThumbPolicy,
 ) -> f32 {
     let mut position = position.clamp(0.0, 1.0);
     if policy.allow_overlap || policy.min_distance <= f32::EPSILON {
@@ -94,7 +94,7 @@ fn constrain_position(
     position.clamp(0.0, 1.0)
 }
 
-pub fn constrain_thumb_value(value: f32, model: &Slider2Model) -> f32 {
+pub fn constrain_thumb_value(value: f32, model: &SliderModel) -> f32 {
     if model.wrapping && model.allowed_intervals.is_empty() {
         wrap_and_snap(value, model.range, model.step)
     } else {
@@ -102,11 +102,11 @@ pub fn constrain_thumb_value(value: f32, model: &Slider2Model) -> f32 {
     }
 }
 
-pub fn thumb_value(thumb: &SliderThumbValue, range: ControlRange, model: &Slider2Model) -> f32 {
+pub fn thumb_value(thumb: &SliderThumbValue, range: ControlRange, model: &SliderModel) -> f32 {
     constrain_thumb_value(range.value_at(thumb.position), model)
 }
 
-pub fn insert_thumb(model: &mut Slider2Model, percentage: f32) -> Option<ThumbId> {
+pub fn insert_thumb(model: &mut SliderModel, percentage: f32) -> Option<ThumbId> {
     let policy = model.thumb_policy;
     if !can_insert_at(&model.thumbs, percentage, policy) {
         return None;
@@ -118,7 +118,7 @@ pub fn insert_thumb(model: &mut Slider2Model, percentage: f32) -> Option<ThumbId
     Some(id)
 }
 
-pub fn remove_thumb(model: &mut Slider2Model, thumb_id: ThumbId) -> bool {
+pub fn remove_thumb(model: &mut SliderModel, thumb_id: ThumbId) -> bool {
     let policy = model.thumb_policy;
     if !policy.allow_remove || model.thumbs.len() <= policy.min_count {
         return false;
@@ -132,7 +132,7 @@ pub fn remove_thumb(model: &mut Slider2Model, thumb_id: ThumbId) -> bool {
     true
 }
 
-pub fn set_thumb_position(model: &mut Slider2Model, thumb_id: ThumbId, percentage: f32) -> bool {
+pub fn set_thumb_position(model: &mut SliderModel, thumb_id: ThumbId, percentage: f32) -> bool {
     let policy = model.thumb_policy;
     let position = constrain_thumb_position(percentage, thumb_id, &model.thumbs, policy);
     let Some(thumb) = model.thumbs.iter_mut().find(|thumb| thumb.id == thumb_id) else {
@@ -150,16 +150,16 @@ pub fn set_thumb_position(model: &mut Slider2Model, thumb_id: ThumbId, percentag
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controls::slider::input::Slider2InputStrategy;
-    use crate::controls::slider::model::Slider2Model;
-    use crate::controls::slider::template::default_slider2_template;
+    use crate::controls::slider::input::SliderInputStrategy;
+    use crate::controls::slider::model::SliderModel;
+    use crate::controls::slider::template::default_slider_template;
     use crate::controls::value::ControlRange;
     use gpui::SharedString;
 
-    fn test_model(thumbs: Vec<SliderThumbValue>, policy: Slider2ThumbPolicy) -> Slider2Model {
-        Slider2Model {
+    fn test_model(thumbs: Vec<SliderThumbValue>, policy: SliderThumbPolicy) -> SliderModel {
+        SliderModel {
             id: SharedString::from("test"),
-            strategy: Slider2InputStrategy::Horizontal,
+            strategy: SliderInputStrategy::Horizontal,
             presentation: super::super::model::TrackPresentation::Fill,
             size: crate::theme::ControlSize::Md,
             thumb_size: None,
@@ -171,7 +171,7 @@ mod tests {
             wrapping: false,
             enabled: true,
             corner_radius: None,
-            template: default_slider2_template(),
+            template: default_slider_template(),
             thumb_policy: policy,
         }
     }
@@ -189,12 +189,12 @@ mod tests {
 
     #[test]
     fn insert_respects_min_distance() {
-        let policy = Slider2ThumbPolicy {
+        let policy = SliderThumbPolicy {
             min_count: 1,
             max_count: 4,
             min_distance: 0.1,
             allow_insert: true,
-            ..Slider2ThumbPolicy::multi_stop()
+            ..SliderThumbPolicy::multi_stop()
         };
         let mut model = test_model(vec![thumb(0.5)], policy);
         assert!(insert_thumb(&mut model, 0.52).is_none());
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn remove_respects_min_count() {
-        let policy = Slider2ThumbPolicy { min_count: 2, ..Slider2ThumbPolicy::multi_stop() };
+        let policy = SliderThumbPolicy { min_count: 2, ..SliderThumbPolicy::multi_stop() };
         let first = thumb(0.2);
         let first_id = first.id;
         let mut model = test_model(vec![first, thumb(0.8)], policy);
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn constrain_thumb_position_enforces_min_distance() {
-        let policy = Slider2ThumbPolicy { min_distance: 0.1, allow_overlap: false, ..Slider2ThumbPolicy::multi_stop() };
+        let policy = SliderThumbPolicy { min_distance: 0.1, allow_overlap: false, ..SliderThumbPolicy::multi_stop() };
         let left = thumb(0.2);
         let left_id = left.id;
         let thumbs = vec![left, thumb(0.8)];
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn crossover_preserves_identity_in_vec_order() {
-        let policy = Slider2ThumbPolicy::multi_stop();
+        let policy = SliderThumbPolicy::multi_stop();
         let first = thumb(0.2);
         let first_id = first.id;
         let mut model = test_model(vec![first, thumb(0.8)], policy);

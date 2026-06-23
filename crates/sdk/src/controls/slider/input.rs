@@ -3,11 +3,11 @@ use std::f32::consts::PI;
 use gpui::{Bounds, Pixels, Point, px};
 
 use super::layout::position_from_pointer;
-use super::model::Slider2Orientation;
+use super::model::SliderOrientation;
 use crate::controls::value::{ControlRange, normalized_step};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub enum Slider2InputStrategy {
+pub enum SliderInputStrategy {
     #[default]
     Horizontal,
     Vertical,
@@ -17,11 +17,11 @@ pub enum Slider2InputStrategy {
     },
 }
 
-impl Slider2InputStrategy {
-    pub fn orientation(self) -> Slider2Orientation {
+impl SliderInputStrategy {
+    pub fn orientation(self) -> SliderOrientation {
         match self {
-            Self::Horizontal | Self::Angular { .. } => Slider2Orientation::Horizontal,
-            Self::Vertical => Slider2Orientation::Vertical,
+            Self::Horizontal | Self::Angular { .. } => SliderOrientation::Horizontal,
+            Self::Vertical => SliderOrientation::Vertical,
         }
     }
 
@@ -30,37 +30,37 @@ impl Slider2InputStrategy {
     }
 }
 
-impl From<Slider2Orientation> for Slider2InputStrategy {
-    fn from(value: Slider2Orientation) -> Self {
+impl From<SliderOrientation> for SliderInputStrategy {
+    fn from(value: SliderOrientation) -> Self {
         match value {
-            Slider2Orientation::Horizontal => Self::Horizontal,
-            Slider2Orientation::Vertical => Self::Vertical,
+            SliderOrientation::Horizontal => Self::Horizontal,
+            SliderOrientation::Vertical => Self::Vertical,
         }
     }
 }
 
 pub fn percentage_from_position(
-    strategy: Slider2InputStrategy,
+    strategy: SliderInputStrategy,
     reversed: bool,
     bounds: Bounds<Pixels>,
     position: Point<Pixels>,
 ) -> Option<f32> {
     let raw = match strategy {
-        Slider2InputStrategy::Horizontal => {
+        SliderInputStrategy::Horizontal => {
             if bounds.size.width <= px(0.0) {
                 return None;
             }
 
             ((position.x - bounds.left()) / bounds.size.width).clamp(0.0, 1.0)
         }
-        Slider2InputStrategy::Vertical => {
+        SliderInputStrategy::Vertical => {
             if bounds.size.height <= px(0.0) {
                 return None;
             }
 
             (1.0 - ((position.y - bounds.top()) / bounds.size.height)).clamp(0.0, 1.0)
         }
-        Slider2InputStrategy::Angular { min_angle, max_angle } => {
+        SliderInputStrategy::Angular { min_angle, max_angle } => {
             let angle = angle_from_position(bounds, position)?;
             let span = max_angle - min_angle;
             if span.abs() <= f32::EPSILON {
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn angular_percentage_maps_clamped_arc() {
-        let strategy = Slider2InputStrategy::Angular { min_angle: -1.25 * PI, max_angle: 0.25 * PI };
+        let strategy = SliderInputStrategy::Angular { min_angle: -1.25 * PI, max_angle: 0.25 * PI };
         let bounds = Bounds { origin: point(px(0.0), px(0.0)), size: size(px(200.0), px(200.0)) };
         let percentage = percentage_from_position(strategy, false, bounds, point(px(100.0), px(0.0)));
 

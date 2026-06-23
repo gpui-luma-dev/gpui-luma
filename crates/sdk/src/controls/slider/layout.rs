@@ -1,6 +1,6 @@
 use gpui::{Corners, Pixels};
 
-use super::model::{Slider2Orientation, TrackSegment};
+use super::model::{SliderOrientation, TrackSegment};
 
 const TRACK_EDGE_EPSILON: f32 = 0.0001;
 
@@ -28,7 +28,7 @@ pub fn segment_display_span(segment: &TrackSegment, reversed: bool) -> (f32, f32
 pub fn segment_corner_radii(
     display_start: f32,
     display_span: f32,
-    orientation: Slider2Orientation,
+    orientation: SliderOrientation,
     radius: Pixels,
 ) -> Corners<Pixels> {
     let mut corner_radii = Corners::default();
@@ -44,18 +44,18 @@ pub fn segment_corner_radii(
 
 pub(crate) fn apply_outer_edge_corner_radii(
     corner_radii: &mut Corners<Pixels>,
-    orientation: Slider2Orientation,
+    orientation: SliderOrientation,
     radius: Pixels,
     round_start: bool,
     round_end: bool,
 ) {
     if round_start {
         match orientation {
-            Slider2Orientation::Horizontal => {
+            SliderOrientation::Horizontal => {
                 corner_radii.top_left = radius;
                 corner_radii.bottom_left = radius;
             }
-            Slider2Orientation::Vertical => {
+            SliderOrientation::Vertical => {
                 corner_radii.bottom_left = radius;
                 corner_radii.bottom_right = radius;
             }
@@ -64,11 +64,11 @@ pub(crate) fn apply_outer_edge_corner_radii(
 
     if round_end {
         match orientation {
-            Slider2Orientation::Horizontal => {
+            SliderOrientation::Horizontal => {
                 corner_radii.top_right = radius;
                 corner_radii.bottom_right = radius;
             }
-            Slider2Orientation::Vertical => {
+            SliderOrientation::Vertical => {
                 corner_radii.top_left = radius;
                 corner_radii.top_right = radius;
             }
@@ -120,18 +120,18 @@ mod tests {
 
     #[test]
     fn middle_segment_gets_no_corner_rounding() {
-        let radii = segment_corner_radii(0.25, 0.5, Slider2Orientation::Horizontal, px(4.0));
+        let radii = segment_corner_radii(0.25, 0.5, SliderOrientation::Horizontal, px(4.0));
         assert_eq!(radii.top_left, px(0.0));
         assert_eq!(radii.top_right, px(0.0));
     }
 
     #[test]
     fn outer_segments_round_only_outer_edges() {
-        let start = segment_corner_radii(0.0, 0.25, Slider2Orientation::Horizontal, px(4.0));
+        let start = segment_corner_radii(0.0, 0.25, SliderOrientation::Horizontal, px(4.0));
         assert_eq!(start.top_left, px(4.0));
         assert_eq!(start.top_right, px(0.0));
 
-        let end = segment_corner_radii(0.75, 0.25, Slider2Orientation::Horizontal, px(4.0));
+        let end = segment_corner_radii(0.75, 0.25, SliderOrientation::Horizontal, px(4.0));
         assert_eq!(end.top_left, px(0.0));
         assert_eq!(end.top_right, px(4.0));
     }

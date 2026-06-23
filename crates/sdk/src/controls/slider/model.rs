@@ -5,10 +5,10 @@ use std::ops::RangeInclusive;
 use gpui::{AbsoluteLength, AppContext, Entity, Hsla, SharedString};
 
 use super::constraints::{clamp_and_snap_value, normalize_intervals};
-use super::control::Slider2Control;
-use super::input::{Slider2InputStrategy, wrap_and_snap};
+use super::control::SliderControl;
+use super::input::{SliderInputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
-use super::template::{Slider2Template, default_slider2_template};
+use super::template::{SliderTemplate, default_slider_template};
 use crate::controls::slider::SliderState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 use crate::theme::ControlSize;
@@ -34,7 +34,7 @@ pub enum SliderThumbRole {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Slider2ThumbPolicy {
+pub struct SliderThumbPolicy {
     pub min_count: usize,
     pub max_count: usize,
     pub min_distance: f32,
@@ -44,7 +44,7 @@ pub struct Slider2ThumbPolicy {
     pub allow_overlap: bool,
 }
 
-impl Default for Slider2ThumbPolicy {
+impl Default for SliderThumbPolicy {
     fn default() -> Self {
         Self {
             min_count: 1,
@@ -57,7 +57,7 @@ impl Default for Slider2ThumbPolicy {
     }
 }
 
-impl Slider2ThumbPolicy {
+impl SliderThumbPolicy {
     pub fn multi_stop() -> Self {
         Self {
             min_count: 2,
@@ -113,21 +113,21 @@ pub enum TrackPresentation {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum Slider2Orientation {
+pub enum SliderOrientation {
     #[default]
     Horizontal,
     Vertical,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum Slider2ThumbSize {
+pub enum SliderThumbSize {
     Sm,
     #[default]
     Md,
     Lg,
 }
 
-impl From<ControlSize> for Slider2ThumbSize {
+impl From<ControlSize> for SliderThumbSize {
     fn from(value: ControlSize) -> Self {
         match value {
             ControlSize::Sm => Self::Sm,
@@ -138,12 +138,12 @@ impl From<ControlSize> for Slider2ThumbSize {
 }
 
 #[derive(Clone)]
-pub struct Slider2Model {
+pub struct SliderModel {
     pub(crate) id: SharedString,
-    pub(crate) strategy: Slider2InputStrategy,
+    pub(crate) strategy: SliderInputStrategy,
     pub(crate) presentation: TrackPresentation,
     pub(crate) size: ControlSize,
-    pub(crate) thumb_size: Option<Slider2ThumbSize>,
+    pub(crate) thumb_size: Option<SliderThumbSize>,
     pub(crate) range: ControlRange,
     pub(crate) step: f32,
     pub(crate) thumbs: Vec<SliderThumbValue>,
@@ -152,17 +152,17 @@ pub struct Slider2Model {
     pub(crate) wrapping: bool,
     pub(crate) enabled: bool,
     pub(crate) corner_radius: Option<AbsoluteLength>,
-    pub(crate) template: Arc<dyn Slider2Template>,
-    pub(crate) thumb_policy: Slider2ThumbPolicy,
+    pub(crate) template: Arc<dyn SliderTemplate>,
+    pub(crate) thumb_policy: SliderThumbPolicy,
 }
 
-pub struct Slider2RenderModel<'a> {
+pub struct SliderRenderModel<'a> {
     pub id: &'a SharedString,
-    pub strategy: Slider2InputStrategy,
-    pub orientation: Slider2Orientation,
+    pub strategy: SliderInputStrategy,
+    pub orientation: SliderOrientation,
     pub presentation: TrackPresentation,
     pub size: ControlSize,
-    pub thumb_size: Option<Slider2ThumbSize>,
+    pub thumb_size: Option<SliderThumbSize>,
     pub range: ControlRange,
     pub step: f32,
     pub thumbs: &'a [SliderThumbValue],
@@ -171,22 +171,22 @@ pub struct Slider2RenderModel<'a> {
     pub wrapping: bool,
     pub enabled: bool,
     pub corner_radius: Option<AbsoluteLength>,
-    pub thumb_policy: Slider2ThumbPolicy,
+    pub thumb_policy: SliderThumbPolicy,
     pub active_thumb_id: Option<ThumbId>,
     pub state: SliderState,
 }
 
-pub struct Slider2Builder {
-    pub(crate) model: Slider2Model,
+pub struct SliderBuilder {
+    pub(crate) model: SliderModel,
 }
 
-impl Slider2Builder {
+impl SliderBuilder {
     pub fn new(id: impl Into<SharedString>) -> Self {
         let thumb_id = ThumbId::next();
         Self {
-            model: Slider2Model {
+            model: SliderModel {
                 id: id.into(),
-                strategy: Slider2InputStrategy::Horizontal,
+                strategy: SliderInputStrategy::Horizontal,
                 presentation: TrackPresentation::Fill,
                 size: ControlSize::Md,
                 thumb_size: None,
@@ -203,34 +203,34 @@ impl Slider2Builder {
                 wrapping: false,
                 enabled: true,
                 corner_radius: None,
-                template: default_slider2_template(),
-                thumb_policy: Slider2ThumbPolicy::default(),
+                template: default_slider_template(),
+                thumb_policy: SliderThumbPolicy::default(),
             },
         }
     }
 
-    pub fn strategy(mut self, strategy: Slider2InputStrategy) -> Self {
+    pub fn strategy(mut self, strategy: SliderInputStrategy) -> Self {
         self.model.strategy = strategy;
         self
     }
 
-    pub fn orientation(mut self, orientation: Slider2Orientation) -> Self {
+    pub fn orientation(mut self, orientation: SliderOrientation) -> Self {
         self.model.strategy = orientation.into();
         self
     }
 
     pub fn horizontal(mut self) -> Self {
-        self.model.strategy = Slider2InputStrategy::Horizontal;
+        self.model.strategy = SliderInputStrategy::Horizontal;
         self
     }
 
     pub fn vertical(mut self) -> Self {
-        self.model.strategy = Slider2InputStrategy::Vertical;
+        self.model.strategy = SliderInputStrategy::Vertical;
         self
     }
 
     pub fn angular(mut self, min_angle: f32, max_angle: f32) -> Self {
-        self.model.strategy = Slider2InputStrategy::Angular { min_angle, max_angle };
+        self.model.strategy = SliderInputStrategy::Angular { min_angle, max_angle };
         self
     }
 
@@ -255,7 +255,7 @@ impl Slider2Builder {
         self
     }
 
-    pub fn thumb_size(mut self, size: Slider2ThumbSize) -> Self {
+    pub fn thumb_size(mut self, size: SliderThumbSize) -> Self {
         self.model.thumb_size = Some(size);
         self
     }
@@ -310,12 +310,12 @@ impl Slider2Builder {
         self
     }
 
-    pub fn template(mut self, template: Arc<dyn Slider2Template>) -> Self {
+    pub fn template(mut self, template: Arc<dyn SliderTemplate>) -> Self {
         self.model.template = template;
         self
     }
 
-    pub fn thumb_policy(mut self, policy: Slider2ThumbPolicy) -> Self {
+    pub fn thumb_policy(mut self, policy: SliderThumbPolicy) -> Self {
         self.model.thumb_policy = policy;
         self.ensure_thumb_count();
         self
@@ -334,7 +334,7 @@ impl Slider2Builder {
     }
 
     pub fn multi_stop(self) -> Self {
-        self.thumb_policy(Slider2ThumbPolicy::multi_stop()).domain()
+        self.thumb_policy(SliderThumbPolicy::multi_stop()).domain()
     }
 
     pub fn thumb_values(mut self, values: impl IntoIterator<Item = (impl Into<f64>, Option<Hsla>)>) -> Self {
@@ -350,8 +350,8 @@ impl Slider2Builder {
         self
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Slider2Control> {
-        cx.new(|cx| Slider2Control::from_builder(self, cx))
+    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SliderControl> {
+        cx.new(|cx| SliderControl::from_builder(self, cx))
     }
 
     fn sync_primary_thumb_position(&mut self) {
@@ -382,13 +382,13 @@ impl Slider2Builder {
     }
 }
 
-pub(crate) fn primary_value(model: &Slider2Model) -> f32 {
+pub(crate) fn primary_value(model: &SliderModel) -> f32 {
     let position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
     let value = model.range.value_at(position);
     constrain_primary_value(value, model)
 }
 
-pub(crate) fn constrain_primary_value(value: f32, model: &Slider2Model) -> f32 {
+pub(crate) fn constrain_primary_value(value: f32, model: &SliderModel) -> f32 {
     if model.wrapping && model.allowed_intervals.is_empty() {
         wrap_and_snap(value, model.range, model.step)
     } else {
@@ -396,7 +396,7 @@ pub(crate) fn constrain_primary_value(value: f32, model: &Slider2Model) -> f32 {
     }
 }
 
-pub(crate) fn build_render_segments(model: &Slider2Model) -> Vec<TrackSegment> {
+pub(crate) fn build_render_segments(model: &SliderModel) -> Vec<TrackSegment> {
     let presentation = if model.thumb_policy.is_multi_thumb() {
         TrackPresentation::Domain
     } else {

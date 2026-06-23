@@ -13,43 +13,43 @@ use gpui::{
 
 use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
 
-use super::model::{Slider2RenderModel, Slider2ThumbSize, SliderThumbValue, ThumbId};
-use super::Slider2Drag;
+use super::model::{SliderRenderModel, SliderThumbValue, ThumbId};
+use super::SliderDrag;
 
 pub use angular_dial::{ThemedAngularDialTemplate, default_angular_dial_template};
 pub use circular_ring::{ThemedCircularRingTemplate, default_circular_ring_template};
-pub use linear::{ThemedSlider2Template, default_slider2_template};
+pub use linear::{ThemedSliderTemplate, default_slider_template};
 
-pub type Slider2BoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
-pub type Slider2HoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
-pub type Slider2MouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
-pub type Slider2MouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + Send + Sync>;
-pub type Slider2DragMoveHandler = Arc<dyn Fn(&DragMoveEvent<Slider2Drag>, &mut Window, &mut App) + Send + Sync>;
-pub type Slider2ThumbMouseDownHandler = Arc<dyn Fn(&ThumbId, &MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
+pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
+pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
+pub type SliderMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
+pub type SliderMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + Send + Sync>;
+pub type SliderDragMoveHandler = Arc<dyn Fn(&DragMoveEvent<SliderDrag>, &mut Window, &mut App) + Send + Sync>;
+pub type SliderThumbMouseDownHandler = Arc<dyn Fn(&ThumbId, &MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
 
-pub struct Slider2TemplateHandlers {
-    pub track_bounds: Slider2BoundsHandler,
-    pub hover: Slider2HoverHandler,
-    pub mouse_down: Slider2MouseDownHandler,
-    pub mouse_up: Slider2MouseUpHandler,
-    pub mouse_up_out: Slider2MouseUpHandler,
-    pub drag_move: Slider2DragMoveHandler,
-    pub thumb_mouse_down: Slider2ThumbMouseDownHandler,
+pub struct SliderTemplateHandlers {
+    pub track_bounds: SliderBoundsHandler,
+    pub hover: SliderHoverHandler,
+    pub mouse_down: SliderMouseDownHandler,
+    pub mouse_up: SliderMouseUpHandler,
+    pub mouse_up_out: SliderMouseUpHandler,
+    pub drag_move: SliderDragMoveHandler,
+    pub thumb_mouse_down: SliderThumbMouseDownHandler,
 }
 
-pub(crate) struct Slider2InteractionHandlers {
-    pub hover: Slider2HoverHandler,
-    pub mouse_down: Slider2MouseDownHandler,
-    pub mouse_up: Slider2MouseUpHandler,
-    pub mouse_up_out: Slider2MouseUpHandler,
-    pub drag_move: Slider2DragMoveHandler,
+pub(crate) struct SliderInteractionHandlers {
+    pub hover: SliderHoverHandler,
+    pub mouse_down: SliderMouseDownHandler,
+    pub mouse_up: SliderMouseUpHandler,
+    pub mouse_up_out: SliderMouseUpHandler,
+    pub drag_move: SliderDragMoveHandler,
 }
 
-impl From<Slider2TemplateHandlers> for (Slider2BoundsHandler, Slider2InteractionHandlers) {
-    fn from(handlers: Slider2TemplateHandlers) -> Self {
+impl From<SliderTemplateHandlers> for (SliderBoundsHandler, SliderInteractionHandlers) {
+    fn from(handlers: SliderTemplateHandlers) -> Self {
         (
             handlers.track_bounds,
-            Slider2InteractionHandlers {
+            SliderInteractionHandlers {
                 hover: handlers.hover,
                 mouse_down: handlers.mouse_down,
                 mouse_up: handlers.mouse_up,
@@ -60,11 +60,11 @@ impl From<Slider2TemplateHandlers> for (Slider2BoundsHandler, Slider2Interaction
     }
 }
 
-pub trait Slider2Template: Send + Sync {
+pub trait SliderTemplate: Send + Sync {
     fn render(
         &self,
-        model: &Slider2RenderModel<'_>,
-        handlers: Slider2TemplateHandlers,
+        model: &SliderRenderModel<'_>,
+        handlers: SliderTemplateHandlers,
         primary_thumb_id: ThumbId,
         window: &mut Window,
         cx: &mut App,
@@ -78,20 +78,12 @@ pub(crate) const TRACK_RADIUS: f32 = 72.0;
 const THUMB_FOCUS_GAP: f32 = 0.0;
 const THUMB_FOCUS_WIDTH: f32 = 2.0;
 
-pub(crate) fn slider2_thumb_size(size: Slider2ThumbSize) -> crate::controls::slider::SliderThumbSize {
-    match size {
-        Slider2ThumbSize::Sm => crate::controls::slider::SliderThumbSize::Sm,
-        Slider2ThumbSize::Md => crate::controls::slider::SliderThumbSize::Md,
-        Slider2ThumbSize::Lg => crate::controls::slider::SliderThumbSize::Lg,
-    }
-}
-
-pub(crate) fn uses_static_track_surface(model: &Slider2RenderModel<'_>) -> bool {
+pub(crate) fn uses_static_track_surface(model: &SliderRenderModel<'_>) -> bool {
     model.thumb_policy.is_multi_thumb() || model.presentation == super::model::TrackPresentation::Domain
 }
 
 pub(crate) fn track_surface_background(
-    model: &Slider2RenderModel<'_>,
+    model: &SliderRenderModel<'_>,
     look: &crate::controls::slider::SliderLook,
 ) -> Hsla {
     if uses_static_track_surface(model) {
@@ -105,7 +97,7 @@ pub(crate) fn track_muted_background(look: &crate::controls::slider::SliderLook)
     look.track_background
 }
 
-pub(crate) fn render_slider2_thumb_at(
+pub(crate) fn render_slider_thumb_at(
     look: &crate::controls::slider::SliderLook,
     id: impl Into<gpui::ElementId>,
     center_x: f32,
@@ -140,7 +132,7 @@ pub(crate) fn render_slider2_thumb_at(
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_linear_thumb(
-    model: &Slider2RenderModel<'_>,
+    model: &SliderRenderModel<'_>,
     look: &crate::controls::slider::SliderLook,
     id: impl Into<gpui::ElementId>,
     display_percentage: f32,
@@ -150,7 +142,7 @@ pub(crate) fn render_linear_thumb(
     thumb: Option<&SliderThumbValue>,
     active: bool,
 ) -> Stateful<Div> {
-    use super::model::Slider2Orientation;
+    use super::model::SliderOrientation;
     use gpui::relative;
 
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
@@ -178,14 +170,14 @@ pub(crate) fn render_linear_thumb(
         );
 
     thumb = match model.orientation {
-        Slider2Orientation::Horizontal => {
+        SliderOrientation::Horizontal => {
             let mut node = thumb.left(relative(display_percentage));
             if let Some(offset) = main_offset {
                 node = node.ml(px(offset));
             }
             node
         }
-        Slider2Orientation::Vertical => {
+        SliderOrientation::Vertical => {
             if let Some(offset) = cross_offset {
                 thumb = thumb.left(px(offset));
             }
@@ -196,7 +188,7 @@ pub(crate) fn render_linear_thumb(
     thumb
 }
 
-pub(crate) fn track_bounds_canvas(track_bounds: Slider2BoundsHandler) -> impl IntoElement {
+pub(crate) fn track_bounds_canvas(track_bounds: SliderBoundsHandler) -> impl IntoElement {
     canvas(move |bounds, window, cx| track_bounds(&bounds, window, cx), |_, _, _, _| {})
         .absolute()
         .size_full()
@@ -204,18 +196,18 @@ pub(crate) fn track_bounds_canvas(track_bounds: Slider2BoundsHandler) -> impl In
 
 pub(crate) fn attach_radial_interaction(
     mut root: Stateful<Div>,
-    model: &Slider2RenderModel<'_>,
-    handlers: Slider2InteractionHandlers,
+    model: &SliderRenderModel<'_>,
+    handlers: SliderInteractionHandlers,
     primary_thumb_id: ThumbId,
 ) -> Stateful<Div> {
-    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
+    let SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
         .on_mouse_down(MouseButton::Left, mouse_down)
         .on_mouse_up(MouseButton::Left, mouse_up)
         .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-        .on_drag(Slider2Drag::new(model.id.clone(), primary_thumb_id), |drag, _, _, cx| {
+        .on_drag(SliderDrag::new(model.id.clone(), primary_thumb_id), |drag, _, _, cx| {
             cx.stop_propagation();
             cx.new(|_| drag.clone())
         })
@@ -233,10 +225,10 @@ pub(crate) fn attach_radial_interaction(
 
 pub(crate) fn attach_linear_interaction(
     mut root: Stateful<Div>,
-    model: &Slider2RenderModel<'_>,
-    handlers: Slider2InteractionHandlers,
+    model: &SliderRenderModel<'_>,
+    handlers: SliderInteractionHandlers,
 ) -> Stateful<Div> {
-    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
+    let SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
@@ -259,8 +251,8 @@ pub(crate) fn attach_thumb_drag(
     mut thumb: Stateful<Div>,
     model_id: &SharedString,
     thumb_id: ThumbId,
-    mouse_down: Slider2ThumbMouseDownHandler,
-    drag_move: Slider2DragMoveHandler,
+    mouse_down: SliderThumbMouseDownHandler,
+    drag_move: SliderDragMoveHandler,
     enabled: bool,
 ) -> Stateful<Div> {
     thumb = thumb
@@ -268,7 +260,7 @@ pub(crate) fn attach_thumb_drag(
             let mouse_down = mouse_down.clone();
             move |event, window, cx| mouse_down(&thumb_id, event, window, cx)
         })
-        .on_drag(Slider2Drag::new(model_id.clone(), thumb_id), |drag, _, _, cx| {
+        .on_drag(SliderDrag::new(model_id.clone(), thumb_id), |drag, _, _, cx| {
             cx.stop_propagation();
             cx.new(|_| drag.clone())
         })

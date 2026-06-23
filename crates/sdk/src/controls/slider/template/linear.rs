@@ -3,54 +3,53 @@ use std::sync::{Arc, OnceLock};
 use gpui::{App, Div, Pixels, Stateful, Window, div, px, prelude::*};
 
 use super::{
-    Slider2BoundsHandler, Slider2InteractionHandlers, Slider2Template, Slider2TemplateHandlers,
-    attach_linear_interaction, attach_thumb_drag, render_linear_thumb, slider2_thumb_size, track_bounds_canvas,
-    track_surface_background,
+    SliderBoundsHandler, SliderInteractionHandlers, SliderTemplate, SliderTemplateHandlers, attach_linear_interaction,
+    attach_thumb_drag, render_linear_thumb, track_bounds_canvas, track_surface_background,
 };
 use crate::controls::color::style::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
 use super::super::layout::{display_position, segment_corner_radii, segment_display_span};
-use super::super::model::{Slider2Orientation, Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind};
+use super::super::model::{SliderOrientation, SliderRenderModel, ThumbId, TrackPresentation, TrackSegmentKind};
 
-pub struct ThemedSlider2Template {
+pub struct ThemedSliderTemplate {
     theme: Arc<dyn SliderTheme>,
 }
 
-impl ThemedSlider2Template {
+impl ThemedSliderTemplate {
     pub fn new(theme: Arc<dyn SliderTheme>) -> Self {
         Self { theme }
     }
 }
 
-pub fn default_slider2_template() -> Arc<dyn Slider2Template> {
-    static TEMPLATE: OnceLock<Arc<dyn Slider2Template>> = OnceLock::new();
+pub fn default_slider_template() -> Arc<dyn SliderTemplate> {
+    static TEMPLATE: OnceLock<Arc<dyn SliderTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedSlider2Template::new(default_slider_theme()))).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSliderTemplate::new(default_slider_theme()))).clone()
 }
 
-impl Slider2Template for ThemedSlider2Template {
+impl SliderTemplate for ThemedSliderTemplate {
     fn render(
         &self,
-        model: &Slider2RenderModel<'_>,
-        handlers: Slider2TemplateHandlers,
+        model: &SliderRenderModel<'_>,
+        handlers: SliderTemplateHandlers,
         _primary_thumb_id: ThumbId,
         window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let look = self.theme.resolve(model.size, model.thumb_size.map(slider2_thumb_size), model.state);
+        let look = self.theme.resolve(model.size, model.thumb_size, model.state);
         let long_axis = look.width;
         let short_axis = look.height;
         let cross_axis = look.track_height;
         let root_height = match model.orientation {
-            Slider2Orientation::Horizontal => short_axis,
-            Slider2Orientation::Vertical => long_axis,
+            SliderOrientation::Horizontal => short_axis,
+            SliderOrientation::Vertical => long_axis,
         };
         let root_width = short_axis;
         let track_radius =
             model.corner_radius.map(|radius| radius.to_pixels(window.rem_size())).unwrap_or(px(look.radius));
 
-        let Slider2TemplateHandlers {
+        let SliderTemplateHandlers {
             track_bounds,
             hover,
             mouse_down,
@@ -60,7 +59,7 @@ impl Slider2Template for ThemedSlider2Template {
             thumb_mouse_down,
         } = handlers;
         let interaction =
-            Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move: drag_move.clone() };
+            SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move: drag_move.clone() };
         let model_id = model.id.clone();
         let enabled = model.enabled;
 
@@ -70,13 +69,13 @@ impl Slider2Template for ThemedSlider2Template {
             .flex()
             .items_center()
             .justify_center()
-            .when(model.orientation == Slider2Orientation::Horizontal, |this| {
+            .when(model.orientation == SliderOrientation::Horizontal, |this| {
                 this.w_full().min_w(px(0.0)).h(px(root_height)).px(px(look.thumb_size * 0.5))
             })
-            .when(model.orientation == Slider2Orientation::Vertical, |this| this.w(px(root_width)).h(px(root_height)));
+            .when(model.orientation == SliderOrientation::Vertical, |this| this.w(px(root_width)).h(px(root_height)));
 
         let root = match model.orientation {
-            Slider2Orientation::Horizontal => {
+            SliderOrientation::Horizontal => {
                 let track_top = (short_axis - cross_axis) * 0.5;
                 let thumb_top = (short_axis - look.thumb_size) * 0.5 - thumb_focus_offset();
                 let thumb_center_offset = -(look.thumb_size * 0.5 + thumb_focus_offset());
@@ -102,7 +101,7 @@ impl Slider2Template for ThemedSlider2Template {
 
                 root.child(track).children(thumbs)
             }
-            Slider2Orientation::Vertical => {
+            SliderOrientation::Vertical => {
                 let track_left = (short_axis - cross_axis) * 0.5;
                 let thumb_left = (short_axis - look.thumb_size) * 0.5;
 
@@ -136,19 +135,19 @@ impl Slider2Template for ThemedSlider2Template {
 }
 
 /// Inactive thumbs first; active thumb last so it paints on top while dragging.
-fn ordered_thumbs<'a>(model: &'a Slider2RenderModel<'_>) -> Vec<&'a super::super::model::SliderThumbValue> {
+fn ordered_thumbs<'a>(model: &'a SliderRenderModel<'_>) -> Vec<&'a super::super::model::SliderThumbValue> {
     let mut thumbs: Vec<_> = model.thumbs.iter().collect();
     thumbs.sort_by_key(|thumb| model.active_thumb_id == Some(thumb.id));
     thumbs
 }
 
 fn render_horizontal_track(
-    model: &Slider2RenderModel<'_>,
+    model: &SliderRenderModel<'_>,
     look: &crate::controls::slider::SliderLook,
     track_top: f32,
     cross_axis: f32,
     track_radius: Pixels,
-    track_bounds: Slider2BoundsHandler,
+    track_bounds: SliderBoundsHandler,
 ) -> Stateful<Div> {
     let uses_sibling_segments = uses_partitioned_track(model);
 
@@ -179,13 +178,13 @@ fn render_horizontal_track(
 }
 
 fn render_vertical_track(
-    model: &Slider2RenderModel<'_>,
+    model: &SliderRenderModel<'_>,
     look: &crate::controls::slider::SliderLook,
     track_left: f32,
     long_axis: f32,
     cross_axis: f32,
     track_radius: Pixels,
-    track_bounds: Slider2BoundsHandler,
+    track_bounds: SliderBoundsHandler,
 ) -> Stateful<Div> {
     let uses_sibling_segments = uses_partitioned_track(model);
 
@@ -219,7 +218,7 @@ fn render_vertical_track(
 
 fn render_fill_segment(
     segment: &super::super::model::TrackSegment,
-    orientation: Slider2Orientation,
+    orientation: SliderOrientation,
     reversed: bool,
     look: &crate::controls::slider::SliderLook,
     track_radius: Pixels,
@@ -259,7 +258,7 @@ fn segment_background(kind: TrackSegmentKind, look: &crate::controls::slider::Sl
     }
 }
 
-fn uses_partitioned_track(model: &Slider2RenderModel<'_>) -> bool {
+fn uses_partitioned_track(model: &SliderRenderModel<'_>) -> bool {
     match model.presentation {
         TrackPresentation::Fill => !model.track_segments.is_empty(),
         TrackPresentation::Domain => {

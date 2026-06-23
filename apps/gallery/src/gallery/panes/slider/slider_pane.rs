@@ -6,7 +6,7 @@ use gpui::{
     SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::slider::{
-    Slider, Slider2InputStrategy, Slider2ThumbPolicy, SliderBoundsHandler, SliderDrag, SliderEvent, SliderHoverHandler,
+    Slider, SliderInputStrategy, SliderThumbPolicy, SliderBoundsHandler, SliderDrag, SliderEvent, SliderHoverHandler,
     SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
     SliderThumbRole, SliderThumbSize, SliderThumbValue, ThumbId, TrackPresentation, build_track_segments,
 };
@@ -65,13 +65,13 @@ impl SliderPane {
                 cx,
             )
         });
-        let stops_policy = Slider2ThumbPolicy::multi_stop();
+        let stops_policy = SliderThumbPolicy::multi_stop();
 
         Self {
-            fill_slider: look.slider("slider2-fill").range(1..100).step(1).value(41).spawn(cx),
-            vertical_slider: look.slider("slider2-vertical").vertical().range(1..100).step(1).value(62).spawn(cx),
+            fill_slider: look.slider("slider-fill").range(1..100).step(1).value(41).spawn(cx),
+            vertical_slider: look.slider("slider-vertical").vertical().range(1..100).step(1).value(62).spawn(cx),
             vertical_reversed_slider: look
-                .slider("slider2-vertical-reversed")
+                .slider("slider-vertical-reversed")
                 .vertical()
                 .reversed(true)
                 .range(1..100)
@@ -79,33 +79,33 @@ impl SliderPane {
                 .value(62)
                 .spawn(cx),
             blocked_slider: look
-                .slider("slider2-blocked")
+                .slider("slider-blocked")
                 .range(0.0..360.0)
                 .step(10.0)
                 .value(100.0)
                 .allowed_intervals(vec![0.0..=120.0, 180.0..=240.0, 300.0..=360.0])
                 .spawn(cx),
-            reversed_slider: look.slider("slider2-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx),
+            reversed_slider: look.slider("slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx),
             angular_slider: look
-                .slider("slider2-angular")
+                .slider("slider-angular")
                 .angular(-1.25 * PI, 0.25 * PI)
-                .template(look.slider2_angular_template())
+                .template(look.slider_angular_template())
                 .range(0..100)
                 .step(1)
                 .value(50)
                 .spawn(cx),
             wrapping_slider: look
-                .slider("slider2-wrapping")
+                .slider("slider-wrapping")
                 .angular(0.0, 2.0 * PI)
                 .wrapping(true)
                 .domain()
-                .template(look.slider2_circular_ring_template())
+                .template(look.slider_circular_ring_template())
                 .range(0.0..360.0)
                 .step(1.0)
                 .value(180.0)
                 .spawn(cx),
             stops_slider: look
-                .slider("slider2-stops")
+                .slider("slider-stops")
                 .multi_stop()
                 .range(0.0..360.0)
                 .step(1.0)
@@ -469,8 +469,8 @@ fn render_state_sample(
     let track_segments = build_track_segments(TrackPresentation::Fill, position, &[], range);
     let model = SliderRenderModel {
         id: &id,
-        strategy: Slider2InputStrategy::Horizontal,
-        orientation: Slider2InputStrategy::Horizontal.orientation(),
+        strategy: SliderInputStrategy::Horizontal,
+        orientation: SliderInputStrategy::Horizontal.orientation(),
         presentation: TrackPresentation::Fill,
         size: ControlSize::Md,
         thumb_size: None,
@@ -482,7 +482,7 @@ fn render_state_sample(
         wrapping: false,
         enabled: !sample.state.disabled,
         corner_radius: None,
-        thumb_policy: Slider2ThumbPolicy::default(),
+        thumb_policy: SliderThumbPolicy::default(),
         active_thumb_id: Some(thumb_id),
         state: sample.state,
     };
@@ -568,7 +568,7 @@ fn labeled_demo(label: &str, element: impl IntoElement, label_color: gpui::Hsla)
         .into_any_element()
 }
 
-fn multi_stop_interaction_hint(policy: Slider2ThumbPolicy) -> Option<String> {
+fn multi_stop_interaction_hint(policy: SliderThumbPolicy) -> Option<String> {
     let mut parts = Vec::new();
     if policy.supports_click_to_add() {
         parts.push("Click empty track to add");
