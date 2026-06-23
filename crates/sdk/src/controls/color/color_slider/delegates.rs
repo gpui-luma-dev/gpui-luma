@@ -2,7 +2,7 @@ use gpui::*;
 
 use super::color_spec::{self, ColorChannel, ColorSpecification};
 use super::types::{Axis, ColorInterpolation, ColorSliderDelegate};
-use super::track_context::{ColorSliderTrackContext, value_at_position};
+use super::track_context::ColorSliderTrackContext;
 use crate::controls::color::checkerboard_paint::paint_masked_checkerboard;
 
 /// Calculates the start offset and size of a segment with a slight overlap to prevent sub-pixel gaps.
@@ -100,6 +100,41 @@ fn effective_channel_range(ctx: &ColorSliderTrackContext, channel: ColorChannel)
         (ctx.range.start.min(ctx.range.end), ctx.range.start.max(ctx.range.end))
     }
 }
+
+fn spectrum_position(context: &ColorSliderTrackContext, position: f32) -> f32 {
+    if context.reversed { 1.0 - position } else { position }
+}
+
+const CHANNEL_SPECTRUM_SEGMENT_COUNT: f32 = 10.0;
+
+fn channel_color_at_position<S: ColorSpecification>(
+    spec: S,
+    channel_name: &str,
+    channel: ColorChannel,
+    context: &ColorSliderTrackContext,
+    position: f32,
+) -> Hsla {
+    let (range_min, range_max) = effective_channel_range(context, channel);
+    let span = range_max - range_min;
+    let t = spectrum_position(context, position).clamp(0.0, 1.0);
+
+    let color_at_channel_t = |channel_t: f32| {
+        let mut sample = spec;
+        sample.set_value(channel_name, range_min + span * channel_t.clamp(0.0, 1.0));
+        sample.to_hsla()
+    };
+
+    if context.interpolation == ColorInterpolation::Rgb {
+        return color_spec::interpolate_rgb(color_at_channel_t(0.0), color_at_channel_t(1.0), t);
+    }
+
+    let scaled = t * CHANNEL_SPECTRUM_SEGMENT_COUNT;
+    let segment_index = scaled.floor().min(CHANNEL_SPECTRUM_SEGMENT_COUNT - 1.0) as usize;
+    let local_t = scaled - segment_index as f32;
+    let segment_start_t = segment_index as f32 / CHANNEL_SPECTRUM_SEGMENT_COUNT;
+    let segment_end_t = (segment_index + 1) as f32 / CHANNEL_SPECTRUM_SEGMENT_COUNT;
+    color_spec::interpolate_rgb(color_at_channel_t(segment_start_t), color_at_channel_t(segment_end_t), local_t)
+}
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HueDelegate;
 
@@ -158,9 +193,35 @@ impl ColorSliderDelegate for HueDelegate {
     }
 
     fn get_color_for_context(&self, context: &ColorSliderTrackContext, position: f32) -> Hsla {
-        let hue = value_at_position(context, position);
-        gpui::hsla(hue / 360.0, 1.0, 0.5, 1.0)
+        hue_spectrum_color_at_position(context, position)
     }
+}
+
+fn hue_spectrum_color_at_position(context: &ColorSliderTrackContext, position: f32) -> Hsla {
+    const BAND_COUNT: f32 = 6.0;
+    let mut bands = [
+        (hsla(0.0, 1.0, 0.5, 1.0), hsla(60.0 / 360.0, 1.0, 0.5, 1.0)),
+        (hsla(60.0 / 360.0, 1.0, 0.5, 1.0), hsla(120.0 / 360.0, 1.0, 0.5, 1.0)),
+        (hsla(120.0 / 360.0, 1.0, 0.5, 1.0), hsla(180.0 / 360.0, 1.0, 0.5, 1.0)),
+        (hsla(180.0 / 360.0, 1.0, 0.5, 1.0), hsla(240.0 / 360.0, 1.0, 0.5, 1.0)),
+        (hsla(240.0 / 360.0, 1.0, 0.5, 1.0), hsla(300.0 / 360.0, 1.0, 0.5, 1.0)),
+        (hsla(300.0 / 360.0, 1.0, 0.5, 1.0), hsla(1.0, 1.0, 0.5, 1.0)),
+    ];
+
+    if context.reversed {
+        bands.reverse();
+        for band in bands.iter_mut() {
+            let (start, end) = *band;
+            *band = (end, start);
+        }
+    }
+
+    let t = spectrum_position(context, position).clamp(0.0, 1.0);
+    let scaled = t * BAND_COUNT;
+    let band_index = scaled.floor().min(BAND_COUNT - 1.0) as usize;
+    let local_t = scaled - band_index as f32;
+    let (start, end) = bands[band_index];
+    color_spec::interpolate_rgb(start, end, local_t)
 }
 
 #[allow(dead_code)]
@@ -370,10 +431,12 @@ impl<S: ColorSpecification> ColorSliderDelegate for AlphaDelegate<S> {
     }
 
     fn get_color_for_context(&self, context: &ColorSliderTrackContext, position: f32) -> Hsla {
-        let alpha = value_at_position(context, position);
-        let mut color = self.spec.to_hsla();
-        color.a = alpha;
-        color
+        let t = spectrum_position(context, position).clamp(0.0, 1.0);
+        let mut opaque_color = self.spec.to_hsla();
+        opaque_color.a = 1.0;
+        let mut transparent_color = opaque_color;
+        transparent_color.a = 0.0;
+        color_spec::interpolate_rgb(transparent_color, opaque_color, t)
     }
 }
 
@@ -488,15 +551,7 @@ impl<S: ColorSpecification> ColorSliderDelegate for ChannelDelegate<S> {
         let Some(channel) = self.resolve_channel() else {
             return self.spec.to_hsla();
         };
-        let (range_min, range_max) = effective_channel_range(context, channel);
-        let value = if context.reversed {
-            range_max - (range_max - range_min) * position
-        } else {
-            range_min + (range_max - range_min) * position
-        };
-        let mut spec = self.spec;
-        spec.set_value(self.channel_name.as_ref(), value);
-        spec.to_hsla()
+        channel_color_at_position(self.spec, self.channel_name.as_ref(), channel, context, position)
     }
 }
 
@@ -552,5 +607,119 @@ mod tests {
         let err = ChannelDelegate::new(spec, "unknown".into());
         assert!(err.is_err());
         assert!(err.err().is_some_and(|message| message.contains("Channel 'unknown' not found")));
+    }
+
+    #[::core::prelude::v1::test]
+    fn channel_preview_matches_rgb_track_interpolation() {
+        use crate::controls::color::color_slider::color_spec::Oklch;
+        use crate::controls::color::color_slider::track_context::ColorSliderTrackContext;
+        use crate::controls::color::color_slider::types::{Axis, ColorInterpolation};
+
+        let spec = Oklch { l: 0.64, c: 0.14, h: 257.0, a: 1.0 };
+        let delegate = ChannelDelegate::new(spec, Oklch::LIGHTNESS.into()).expect("valid channel");
+        let channel = delegate.resolve_channel().expect("lightness channel");
+        let context = ColorSliderTrackContext {
+            range: 0.0..1.0,
+            reversed: false,
+            axis: Axis::Horizontal,
+            interpolation: ColorInterpolation::Rgb,
+            corner_radii: Default::default(),
+            theme_is_dark: false,
+        };
+
+        let direct = {
+            let mut sample = spec;
+            sample.set_value(Oklch::LIGHTNESS, 0.5);
+            sample.to_hsla()
+        };
+        let preview = channel_color_at_position(spec, Oklch::LIGHTNESS, channel, &context, 0.5);
+
+        assert_ne!(preview, direct, "thumb preview should follow painted rgb gradient, not direct conversion");
+    }
+
+    fn test_track_context(
+        range: std::ops::Range<f32>,
+    ) -> crate::controls::color::color_slider::track_context::ColorSliderTrackContext {
+        use crate::controls::color::color_slider::track_context::ColorSliderTrackContext;
+        use crate::controls::color::color_slider::types::{Axis, ColorInterpolation};
+
+        ColorSliderTrackContext {
+            range,
+            reversed: false,
+            axis: Axis::Horizontal,
+            interpolation: ColorInterpolation::Rgb,
+            corner_radii: Default::default(),
+            theme_is_dark: false,
+        }
+    }
+
+    #[::core::prelude::v1::test]
+    fn hsl_mixer_channel_previews_are_not_all_swatch() {
+        use crate::controls::color::color_slider::color_spec::Hsl;
+
+        let spec = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 0.85 };
+        let swatch = spec.to_hsla();
+        let context = test_track_context(0.0..1.0);
+        let sat_channel = spec.channels()[1];
+        let light_channel = spec.channels()[2];
+
+        let sat_preview = channel_color_at_position(spec, Hsl::SATURATION, sat_channel, &context, 0.72);
+        let light_preview = channel_color_at_position(spec, Hsl::LIGHTNESS, light_channel, &context, 0.52);
+
+        assert_ne!(sat_preview, swatch);
+        assert_ne!(light_preview, swatch);
+        assert_ne!(sat_preview, light_preview);
+    }
+
+    #[::core::prelude::v1::test]
+    fn rgb_mixer_channel_previews_differ_per_channel() {
+        use crate::controls::color::color_slider::color_spec::RgbaSpec;
+
+        let spec = RgbaSpec { r: 128.0, g: 64.0, b: 192.0, a: 1.0 };
+        let context = test_track_context(0.0..255.0);
+        let channels = spec.channels();
+
+        let red_preview = channel_color_at_position(spec, RgbaSpec::RED, channels[0], &context, 0.25);
+        let green_preview = channel_color_at_position(spec, RgbaSpec::GREEN, channels[1], &context, 0.75);
+
+        assert_ne!(red_preview, green_preview);
+    }
+
+    #[::core::prelude::v1::test]
+    fn hsv_mixer_value_preview_follows_track_not_swatch() {
+        use crate::controls::color::color_slider::color_spec::Hsv;
+
+        let spec = Hsv { h: 12.0, s: 0.78, v: 0.86, a: 1.0 };
+        let swatch = spec.to_hsla();
+        let context = test_track_context(0.0..1.0);
+        let value_channel = spec.channels()[2];
+        let preview = channel_color_at_position(spec, Hsv::VALUE, value_channel, &context, 0.86);
+
+        assert_ne!(preview, swatch);
+    }
+
+    #[::core::prelude::v1::test]
+    fn lab_mixer_channel_previews_follow_track_not_swatch() {
+        use crate::controls::color::color_slider::color_spec::Lab;
+
+        let spec = Lab { l: 50.0, a: 30.0, b: -20.0, alpha: 1.0, auto_clamp: false, dynamic_range: false };
+        let swatch = spec.to_hsla();
+        let context = test_track_context(0.0..100.0);
+        let lightness_channel = spec.channels()[0];
+        let preview = channel_color_at_position(spec, Lab::LIGHTNESS, lightness_channel, &context, 0.5);
+
+        assert_ne!(preview, swatch);
+    }
+
+    #[::core::prelude::v1::test]
+    fn hue_delegate_preview_is_rainbow_not_composed_swatch() {
+        use crate::controls::color::color_slider::color_spec::Hsl;
+        use crate::controls::color::color_slider::types::ColorSliderDelegate;
+
+        let spec = Hsl { h: 210.0, s: 0.72, l: 0.52, a: 1.0 };
+        let context = test_track_context(0.0..360.0);
+        let preview = HueDelegate.get_color_for_context(&context, 210.0 / 360.0);
+
+        assert_ne!(preview, spec.to_hsla());
     }
 }

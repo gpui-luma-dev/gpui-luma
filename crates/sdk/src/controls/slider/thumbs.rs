@@ -167,6 +167,7 @@ mod tests {
             step: 1.0,
             thumbs,
             allowed_intervals: Vec::new(),
+            track_intervals: None,
             reversed: false,
             wrapping: false,
             enabled: true,

@@ -2,6 +2,7 @@ use gpui::{Hsla, Rgba};
 
 mod interpolation;
 pub use interpolation::{interpolate_hsl, interpolate_lab, interpolate_rgb};
+pub use super::oklch_spec::Oklch;
 
 #[cfg(test)]
 mod tests;
@@ -77,6 +78,10 @@ impl ColorSpecification for HueAlpha {
     fn from_hsla(hsla: Hsla) -> Self {
         Self { h: hsla.h * 360.0, a: hsla.a }
     }
+
+    fn uses_rainbow_hue_track(&self) -> bool {
+        true
+    }
 }
 
 pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
@@ -108,6 +113,30 @@ pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
         None
     }
 
+    /// Allowed interaction intervals within [`Self::channel_bounds`].
+    fn channel_allowed_intervals(&self, channel_name: &str) -> Vec<std::ops::RangeInclusive<f32>> {
+        match self.channel_allowed_interval(channel_name) {
+            Some((min, max)) => vec![min..=max],
+            None => Vec::new(),
+        }
+    }
+
+    /// Intervals rendered as allowed/blocked regions on the track.
+    fn channel_track_intervals(&self, channel_name: &str) -> Vec<std::ops::RangeInclusive<f32>> {
+        self.channel_allowed_intervals(channel_name)
+    }
+
+    /// When true, the slider accepts the full range and defers clamping to the spec.
+    fn uses_continuous_channel_interaction(&self, channel_name: &str) -> bool {
+        let _ = channel_name;
+        false
+    }
+
+    /// When true, the hue channel uses the fixed rainbow hue track instead of a spec slice.
+    fn uses_rainbow_hue_track(&self) -> bool {
+        true
+    }
+
     #[allow(dead_code)]
     fn set_auto_clamp(&mut self, _auto_clamp: bool) {}
 
@@ -119,6 +148,12 @@ pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
     fn clamp_channel_to_gamut(&self, channel_name: &str, proposed: f32) -> f32 {
         let bounds = self.channel_bounds(channel_name);
         proposed.clamp(bounds.0, bounds.1)
+    }
+
+    fn apply_channel_slider_value(&mut self, channel_name: &str, proposed: f32) {
+        let clamped = self.clamp_channel_to_gamut(channel_name, proposed);
+        self.set_value(channel_name, clamped);
+        self.clamp_spec_to_gamut();
     }
 
     #[allow(dead_code)]
@@ -158,6 +193,14 @@ pub trait ColorSpecification: 'static + Clone + Copy + Send + Sync {
             )
         } else if self.name() == "Hue+Alpha" {
             format!("hue+alpha({:.0}°, {:.2})", self.get_value("hue"), alpha)
+        } else if self.name() == "OKLCH" {
+            format!(
+                "oklch({:.2} {:.3} {:.0} / {:.2})",
+                self.get_value("lightness"),
+                self.get_value("chroma"),
+                self.get_value("hue"),
+                alpha
+            )
         } else {
             String::new()
         }

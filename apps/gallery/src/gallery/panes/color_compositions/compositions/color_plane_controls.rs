@@ -116,13 +116,13 @@ impl ColorPickerState {
             });
         }
 
+        update_domain_delegate(&self.alpha_domain, Arc::new(AlphaDelegate { spec: hsv }), self.alpha_domain.context());
         self.hue_slider.update(cx, |slider, cx| {
             slider.set_value(hsv.h, cx);
         });
         self.alpha_slider.update(cx, |slider, cx| {
             slider.set_value(hsv.a, cx);
         });
-        update_domain_delegate(&self.alpha_domain, Arc::new(AlphaDelegate { spec: hsv }), self.alpha_domain.context());
         refresh_color_slider(&self.alpha_slider, cx);
 
         self.suppress_sync = false;

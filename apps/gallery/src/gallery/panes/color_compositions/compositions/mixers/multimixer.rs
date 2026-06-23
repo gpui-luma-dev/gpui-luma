@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_slider::color_spec::{
-    ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, RgbaSpec, slider_step_for_channel,
+    ColorChannel, ColorSpecification, Hsl, Hsv, HueAlpha, Lab, Oklch, RgbaSpec, slider_step_for_channel,
 };
 use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::color_slider::{
@@ -26,6 +26,7 @@ pub(in crate::gallery) struct MultiMixerState {
     lab: Entity<ColorSpaceMixerState<Lab>>,
     lab_auto: Entity<ColorSpaceMixerState<Lab>>,
     lab_dynamic: Entity<ColorSpaceMixerState<Lab>>,
+    oklch: Entity<ColorSpaceMixerState<Oklch>>,
 }
 
 impl MultiMixerState {
@@ -49,7 +50,11 @@ impl MultiMixerState {
             ColorSpaceMixerState::new("Lab", Some("Dynamic range"), look.clone(), spec, cx)
         });
 
-        Self { look, hue_alpha, rgb, hsla, hsva, lab, lab_auto, lab_dynamic }
+        let oklch = cx.new(|cx| {
+            ColorSpaceMixerState::new("OKLCH", Some("Gamut-clamped"), look.clone(), Oklch::from_hsla(initial), cx)
+        });
+
+        Self { look, hue_alpha, rgb, hsla, hsva, lab, lab_auto, lab_dynamic, oklch }
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
@@ -60,6 +65,7 @@ impl MultiMixerState {
         self.lab.update(cx, |state, cx| state.notify_controls(cx));
         self.lab_auto.update(cx, |state, cx| state.notify_controls(cx));
         self.lab_dynamic.update(cx, |state, cx| state.notify_controls(cx));
+        self.oklch.update(cx, |state, cx| state.notify_controls(cx));
     }
 }
 
@@ -97,7 +103,8 @@ impl gpui::Render for MultiMixerState {
                         mixer_card("HSVA", self.hsva.clone(), &self.look),
                         mixer_card("Lab", self.lab.clone(), &self.look),
                         mixer_card("Lab Auto-clamped", self.lab_auto.clone(), &self.look),
-                        mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), &self.look)
+                        mixer_card("Lab Dynamic Range", self.lab_dynamic.clone(), &self.look),
+                        mixer_card("OKLCH", self.oklch.clone(), &self.look)
                     }
                     .w_full(),
                 ),
@@ -137,10 +144,10 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         for channel in &channels {
             let channel_meta = *channel;
             let initial_value = spec.get_value(channel_meta.name);
-            let builder = if channel_meta.name == "hue" {
-                ColorSliderBuilder::hue(format!("{}-{}", title, channel_meta.name), initial_value)
-            } else if channel_meta.name == "alpha" {
+            let builder = if channel_meta.name == "alpha" {
                 ColorSliderBuilder::alpha(format!("{}-{}", title, channel_meta.name), initial_value, spec)
+            } else if channel_meta.name == "hue" && spec.uses_rainbow_hue_track() {
+                ColorSliderBuilder::hue(format!("{}-{}", title, channel_meta.name), initial_value)
             } else {
                 ColorSliderBuilder::channel(
                     format!("{}-{}", title, channel_meta.name),
@@ -185,9 +192,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
     }
 
     fn handle_slider_event(&mut self, channel_name: &'static str, proposed: f32, cx: &mut Context<Self>) {
-        let clamped = self.spec.clamp_channel_to_gamut(channel_name, proposed);
-        self.spec.set_value(channel_name, clamped);
-        self.spec.clamp_spec_to_gamut();
+        self.spec.apply_channel_slider_value(channel_name, proposed);
         self.sync_sliders(cx);
         cx.notify();
     }
@@ -197,18 +202,29 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
         for row in &self.sliders {
             let channel = row.channel;
             let (min, max) = spec.channel_bounds(channel.name);
-            row.slider.update(cx, |slider, cx| {
-                slider.set_range(min..max, cx);
-                if let Some((allowed_min, allowed_max)) = spec.channel_allowed_interval(channel.name) {
-                    slider.set_allowed_intervals(vec![allowed_min..=allowed_max], cx);
-                } else {
-                    slider.clear_allowed_intervals(cx);
-                }
-                slider.set_value(spec.get_value(channel.name), cx);
-            });
             let mut context = row.domain_renderer.context();
             context.range = min..max;
             update_domain_delegate(&row.domain_renderer, mixer_delegate(spec, channel.name), context);
+            row.slider.update(cx, |slider, cx| {
+                slider.set_range(min..max, cx);
+                let track_intervals = spec.channel_track_intervals(channel.name);
+                if track_intervals.is_empty() {
+                    slider.clear_track_intervals(cx);
+                } else {
+                    slider.set_track_intervals(track_intervals, cx);
+                }
+                if spec.uses_continuous_channel_interaction(channel.name) {
+                    slider.clear_allowed_intervals(cx);
+                } else {
+                    let intervals = spec.channel_allowed_intervals(channel.name);
+                    if intervals.is_empty() {
+                        slider.clear_allowed_intervals(cx);
+                    } else {
+                        slider.set_allowed_intervals(intervals, cx);
+                    }
+                }
+                slider.set_value(spec.get_value(channel.name), cx);
+            });
             refresh_color_slider(&row.slider, cx);
         }
     }
@@ -219,10 +235,10 @@ fn render_constructed_color_swatch(color: gpui::Hsla, _look: &ShadcnLook) -> gpu
 }
 
 fn mixer_delegate<S: ColorSpecification>(spec: S, channel_name: &'static str) -> Arc<dyn ColorSliderDelegate> {
-    if channel_name == "hue" {
-        Arc::new(HueDelegate)
-    } else if channel_name == "alpha" {
+    if channel_name == "alpha" {
         Arc::new(AlphaDelegate { spec })
+    } else if channel_name == "hue" && spec.uses_rainbow_hue_track() {
+        Arc::new(HueDelegate)
     } else {
         Arc::new(ChannelDelegate::new(spec, channel_name.into()).expect("color mixer channel delegate should be valid"))
     }
@@ -252,9 +268,9 @@ impl<S: ColorSpecification> gpui::Render for ColorSpaceMixerState<S> {
                     .w_full()
                     .flex()
                     .items_center()
-                    .gap(px(12.0))
-                    .child(div().w(px(82.0)).child(control_label(row.channel.label, &self.look)))
-                    .child(div().flex_1().child(row.slider.clone()))
+                    .gap(px(8.0))
+                    .child(div().flex_shrink_0().child(control_label(row.channel.label, &self.look)))
+                    .child(div().flex_1().min_w(px(0.0)).child(row.slider.clone()))
                     .into_any_element()
             }))
     }

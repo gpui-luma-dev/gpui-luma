@@ -149,6 +149,9 @@ pub struct SliderModel {
     pub(crate) step: f32,
     pub(crate) thumbs: Vec<SliderThumbValue>,
     pub(crate) allowed_intervals: Vec<RangeInclusive<f32>>,
+    /// Optional intervals used only for blocked-track rendering.
+    /// When unset, [`Self::allowed_intervals`] is used for both interaction and display.
+    pub(crate) track_intervals: Option<Vec<RangeInclusive<f32>>>,
     pub(crate) reversed: bool,
     pub(crate) wrapping: bool,
     pub(crate) enabled: bool,
@@ -202,6 +205,7 @@ impl SliderBuilder {
                     role: SliderThumbRole::Value,
                 }],
                 allowed_intervals: Vec::new(),
+                track_intervals: None,
                 reversed: false,
                 wrapping: false,
                 enabled: true,
@@ -413,5 +417,6 @@ pub(crate) fn build_render_segments(model: &SliderModel) -> Vec<TrackSegment> {
         model.presentation
     };
     let thumb_position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
-    build_track_segments(presentation, thumb_position, &model.allowed_intervals, model.range)
+    let track_intervals = model.track_intervals.as_ref().unwrap_or(&model.allowed_intervals);
+    build_track_segments(presentation, thumb_position, track_intervals, model.range)
 }

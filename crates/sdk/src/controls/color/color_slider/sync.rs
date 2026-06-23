@@ -25,5 +25,8 @@ pub fn update_domain_delegate(
 }
 
 pub fn refresh_color_slider(slider: &Entity<SliderControl>, cx: &mut App) {
-    slider.update(cx, |_, cx| cx.notify());
+    slider.update(cx, |slider, cx| {
+        slider.sync_domain_thumb_previews();
+        cx.notify();
+    });
 }

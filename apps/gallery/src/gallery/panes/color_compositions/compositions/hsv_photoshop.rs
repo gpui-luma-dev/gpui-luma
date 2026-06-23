@@ -124,8 +124,6 @@ impl HsvPlaneState {
         self.plane.update(cx, |plane, cx| {
             plane.set_hsv_components(hsv.h, hsv.s, hsv.v, cx);
         });
-        self.slider_h.update(cx, |slider, cx| slider.set_value(hsv.h, cx));
-        self.slider_s.update(cx, |slider, cx| slider.set_value(hsv.s, cx));
         update_domain_delegate(
             &self.slider_s_domain,
             Arc::new(
@@ -133,13 +131,15 @@ impl HsvPlaneState {
             ),
             self.slider_s_domain.context(),
         );
-        refresh_color_slider(&self.slider_s, cx);
-        self.slider_v.update(cx, |slider, cx| slider.set_value(hsv.v, cx));
         update_domain_delegate(
             &self.slider_v_domain,
             Arc::new(ChannelDelegate::new(hsv, Hsv::VALUE.into()).expect("HSV value delegate should be valid")),
             self.slider_v_domain.context(),
         );
+        self.slider_h.update(cx, |slider, cx| slider.set_value(hsv.h, cx));
+        self.slider_s.update(cx, |slider, cx| slider.set_value(hsv.s, cx));
+        self.slider_v.update(cx, |slider, cx| slider.set_value(hsv.v, cx));
+        refresh_color_slider(&self.slider_s, cx);
         refresh_color_slider(&self.slider_v, cx);
     }
 }

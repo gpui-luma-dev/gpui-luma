@@ -161,6 +161,19 @@ impl SliderControl {
         cx.notify();
     }
 
+    pub fn set_track_intervals(&mut self, intervals: Vec<std::ops::RangeInclusive<f32>>, cx: &mut Context<Self>) {
+        self.model.track_intervals = Some(normalize_intervals(&intervals, self.model.range));
+        cx.notify();
+    }
+
+    pub fn clear_track_intervals(&mut self, cx: &mut Context<Self>) {
+        if self.model.track_intervals.is_none() {
+            return;
+        }
+        self.model.track_intervals = None;
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
@@ -180,6 +193,10 @@ impl SliderControl {
         self.model.domain_track = Some(renderer);
         sync_thumb_previews(&mut self.model);
         cx.notify();
+    }
+
+    pub fn sync_domain_thumb_previews(&mut self) {
+        sync_thumb_previews(&mut self.model);
     }
 
     fn render_model<'a>(&'a self, window: &Window) -> SliderRenderModel<'a> {

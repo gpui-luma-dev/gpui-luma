@@ -3,6 +3,7 @@ pub mod color_spec;
 pub mod color_thumb;
 pub mod delegates;
 pub mod domain_renderer;
+mod oklch_spec;
 pub mod sync;
 pub mod template;
 pub mod track_context;
@@ -11,6 +12,7 @@ pub mod visual;
 
 #[allow(unused_imports)]
 pub use color_spec::{ColorSpecification, Hsl, RgbaSpec};
+pub use oklch_spec::Oklch;
 pub use color_thumb::ThumbShape;
 pub use builder::ColorSliderBuilder;
 pub use delegates::{AlphaDelegate, ChannelDelegate, GradientDelegate, HueDelegate};
