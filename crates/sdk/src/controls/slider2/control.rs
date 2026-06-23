@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gpui::{
     App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
     Pixels, Point, Render, SharedString, Window, div, prelude::*,
@@ -9,27 +11,31 @@ use super::input::{
 };
 use super::model::{
     build_render_segments, constrain_primary_value, primary_value, Slider2Builder, Slider2Orientation,
-    Slider2RenderModel, Slider2ThumbSize, ThumbId,
+    Slider2RenderModel, Slider2ThumbSize, ThumbId, TrackPresentation,
 };
+use super::thumbs::{insert_thumb, nearest_thumb, normalized_hit_radius, remove_thumb, set_thumb_position, thumb_value};
 use super::{Slider2TemplateHandlers, step_allowed_value};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::slider2::model::Slider2Model;
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
+    RemoveValue,
 };
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
 pub enum Slider2Event {
-    Change { value: f32 },
-    Release { value: f32 },
+    Change { thumb_id: ThumbId, value: f32 },
+    Release { thumb_id: ThumbId, value: f32 },
+    ThumbAdded { thumb_id: ThumbId, value: f32 },
+    ThumbRemoved { thumb_id: ThumbId },
+    ThumbSelected { thumb_id: ThumbId },
 }
 
 #[derive(Clone, Debug)]
 pub struct Slider2Drag {
     id: SharedString,
-    #[allow(dead_code)]
     thumb_id: ThumbId,
 }
 
@@ -64,13 +70,14 @@ impl Slider2Control {
 
     pub(crate) fn from_builder(builder: Slider2Builder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        let active_thumb_id = builder.model.thumbs.first().map(|thumb| thumb.id);
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
             interaction: ControlInteraction::new(enabled, cx),
             track_bounds: None,
-            active_thumb_id: None,
+            active_thumb_id,
             angular_drag_angle_offset: None,
             angular_drag_pointer_angle: None,
         }
@@ -78,6 +85,22 @@ impl Slider2Control {
 
     pub fn value(&self) -> f32 {
         primary_value(&self.model)
+    }
+
+    pub fn thumbs(&self) -> &[super::model::SliderThumbValue] {
+        &self.model.thumbs
+    }
+
+    pub fn active_thumb_id(&self) -> Option<ThumbId> {
+        self.active_thumb_id
+    }
+
+    pub fn thumb_value(&self, thumb_id: ThumbId) -> Option<f32> {
+        self.model
+            .thumbs
+            .iter()
+            .find(|thumb| thumb.id == thumb_id)
+            .map(|thumb| thumb_value(thumb, self.model.range, &self.model))
     }
 
     pub fn primary_thumb_id(&self) -> ThumbId {
@@ -106,7 +129,10 @@ impl Slider2Control {
 
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         let value = value_from_input(value);
-        self.set_value_internal(value, false, cx);
+        let thumb_id = self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id));
+        if let Some(thumb_id) = thumb_id {
+            self.set_thumb_value_internal(thumb_id, value, false, cx);
+        }
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -119,11 +145,17 @@ impl Slider2Control {
     }
 
     fn render_model<'a>(&'a self, window: &Window) -> Slider2RenderModel<'a> {
+        let presentation = if self.model.thumb_policy.is_multi_thumb() {
+            TrackPresentation::Domain
+        } else {
+            self.model.presentation
+        };
+
         Slider2RenderModel {
             id: &self.model.id,
             strategy: self.model.strategy,
             orientation: self.model.strategy.orientation(),
-            presentation: self.model.presentation,
+            presentation,
             size: self.model.size,
             thumb_size: self.model.thumb_size,
             range: self.model.range,
@@ -134,38 +166,63 @@ impl Slider2Control {
             wrapping: self.model.wrapping,
             enabled: self.model.enabled,
             corner_radius: self.model.corner_radius,
-            domain_track: self.model.domain_track.clone(),
+            thumb_policy: self.model.thumb_policy,
+            active_thumb_id: self.active_thumb_id,
             state: self.interaction.render_state(self.model.enabled, window),
         }
     }
 
     fn template_handlers(&self, cx: &mut Context<Self>) -> Slider2TemplateHandlers {
+        let entity = cx.entity().clone();
         Slider2TemplateHandlers {
             track_bounds: Box::new(cx.listener(Self::handle_track_bounds)),
             hover: Box::new(cx.listener(Self::handle_hover)),
             mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
             mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
             mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
-            drag_move: Box::new(cx.listener(Self::handle_drag_move)),
+            drag_move: Arc::new(cx.listener(Self::handle_drag_move)),
+            thumb_mouse_down: Arc::new(
+                move |thumb_id: &ThumbId, event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
+                    entity.update(cx, |this, cx| {
+                        this.handle_thumb_mouse_down(thumb_id, event, window, cx);
+                    });
+                },
+            ),
         }
     }
 
-    fn set_value_internal(&mut self, value: f32, emit: bool, cx: &mut Context<Self>) -> bool {
-        let value = constrain_primary_value(value, &self.model);
-        let position = self.model.range.percentage(value);
-
-        let Some(thumb) = self.model.thumbs.first_mut() else {
-            return false;
-        };
-
-        if (thumb.position - position).abs() <= f32::EPSILON {
+    fn select_thumb(&mut self, thumb_id: ThumbId, emit: bool, cx: &mut Context<Self>) -> bool {
+        if self.active_thumb_id == Some(thumb_id) {
             return false;
         }
 
-        thumb.position = position;
+        self.active_thumb_id = Some(thumb_id);
+        if emit {
+            cx.emit(Slider2Event::ThumbSelected { thumb_id });
+        }
+        true
+    }
+
+    fn set_thumb_value_internal(&mut self, thumb_id: ThumbId, value: f32, emit: bool, cx: &mut Context<Self>) -> bool {
+        let value = constrain_primary_value(value, &self.model);
+        let position = self.model.range.percentage(value);
+        self.set_thumb_position_internal(thumb_id, position, emit, cx)
+    }
+
+    fn set_thumb_position_internal(
+        &mut self,
+        thumb_id: ThumbId,
+        percentage: f32,
+        emit: bool,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if !set_thumb_position(&mut self.model, thumb_id, percentage) {
+            return false;
+        }
 
         if emit {
-            cx.emit(Slider2Event::Change { value });
+            let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+            cx.emit(Slider2Event::Change { thumb_id, value });
         }
 
         cx.notify();
@@ -185,9 +242,57 @@ impl Slider2Control {
         else {
             return false;
         };
-        let value = self.model.range.value_at(percentage);
 
-        self.set_value_internal(value, emit, cx)
+        self.handle_linear_pointer_down(bounds, percentage, emit, cx)
+    }
+
+    fn handle_linear_pointer_down(
+        &mut self,
+        bounds: Bounds<Pixels>,
+        percentage: f32,
+        emit: bool,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let hit_radius = self.normalized_hit_radius(bounds);
+        let mut changed = false;
+
+        let nearest_hit = nearest_thumb(&self.model.thumbs, percentage, hit_radius).map(|(thumb, _)| thumb.id);
+        if let Some(thumb_id) = nearest_hit {
+            changed |= self.select_thumb(thumb_id, true, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, percentage, emit, cx);
+        } else if self.model.thumb_policy.allow_insert && insert_thumb(&mut self.model, percentage).is_some() {
+            let thumb_id = self.model.thumbs.last().map(|thumb| thumb.id).expect("inserted thumb");
+            changed = true;
+            self.select_thumb(thumb_id, true, cx);
+            let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+            if emit {
+                cx.emit(Slider2Event::ThumbAdded { thumb_id, value });
+                cx.emit(Slider2Event::Change { thumb_id, value });
+            }
+            cx.notify();
+        } else if let Some((thumb, _)) = nearest_thumb(&self.model.thumbs, percentage, f32::MAX) {
+            let thumb_id = thumb.id;
+            changed |= self.select_thumb(thumb_id, true, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, percentage, emit, cx);
+        }
+
+        changed
+    }
+
+    fn normalized_hit_radius(&self, bounds: Bounds<Pixels>) -> f32 {
+        normalized_hit_radius(bounds, self.thumb_size_px())
+    }
+
+    fn thumb_size_px(&self) -> f32 {
+        self.model
+            .thumb_size
+            .map(super::template::slider2_thumb_size)
+            .map(|size| match size {
+                crate::controls::slider::SliderThumbSize::Sm => 14.0,
+                crate::controls::slider::SliderThumbSize::Md => 18.0,
+                crate::controls::slider::SliderThumbSize::Lg => 22.0,
+            })
+            .unwrap_or(18.0)
     }
 
     fn handle_track_bounds(&mut self, bounds: &Bounds<Pixels>, _window: &mut Window, _cx: &mut Context<Self>) {
@@ -200,14 +305,32 @@ impl Slider2Control {
         }
     }
 
+    fn handle_thumb_mouse_down(
+        &mut self,
+        thumb_id: &ThumbId,
+        _event: &MouseDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
+        let selection_changed = self.select_thumb(*thumb_id, true, cx);
+
+        if interaction_changed || selection_changed {
+            cx.notify();
+        }
+    }
+
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
-        self.active_thumb_id = self.model.thumbs.first().map(|thumb| thumb.id);
         let value_changed = match self.model.strategy {
             Slider2InputStrategy::Angular { min_angle, max_angle } => {
-                if self.model.enabled {
-                    let handle_angle =
-                        angle_for_percentage(min_angle, max_angle, self.model.range.percentage(self.value()));
+                let thumb_id = self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id));
+                if self.model.enabled
+                    && let Some(thumb_id) = thumb_id
+                {
+                    self.select_thumb(thumb_id, false, cx);
+                    let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+                    let handle_angle = angle_for_percentage(min_angle, max_angle, self.model.range.percentage(value));
                     let pointer_angle = self
                         .track_bounds
                         .and_then(|bounds| angle_from_position(bounds, event.position))
@@ -228,10 +351,12 @@ impl Slider2Control {
     }
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        self.active_thumb_id = None;
         self.reset_drag_tracking();
         if self.interaction.handle_mouse_up() {
-            cx.emit(Slider2Event::Release { value: self.value() });
+            if let Some(thumb_id) = self.active_thumb_id {
+                let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+                cx.emit(Slider2Event::Release { thumb_id, value });
+            }
             cx.notify();
         }
     }
@@ -241,6 +366,9 @@ impl Slider2Control {
         if drag.id != self.model.id {
             return;
         }
+
+        let thumb_id = drag.thumb_id;
+        self.select_thumb(thumb_id, false, cx);
 
         match self.model.strategy {
             Slider2InputStrategy::Angular { min_angle, max_angle } => {
@@ -261,7 +389,7 @@ impl Slider2Control {
                         self.model.wrapping && self.model.allowed_intervals.is_empty(),
                         self.model.step,
                     ) {
-                        self.set_value_internal(value, true, cx);
+                        self.set_thumb_value_internal(thumb_id, value, true, cx);
                     }
                 }
             }
@@ -270,9 +398,29 @@ impl Slider2Control {
                     self.track_bounds = Some(event.bounds);
                 }
 
-                self.set_value_from_position(event.event.position, true, cx);
+                let bounds = self.track_bounds.unwrap_or(event.bounds);
+
+                if let Some(percentage) =
+                    percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.event.position)
+                {
+                    self.set_thumb_position_internal(thumb_id, percentage, true, cx);
+                }
             }
         }
+    }
+
+    fn remove_thumb(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) -> bool {
+        if !remove_thumb(&mut self.model, thumb_id) {
+            return false;
+        }
+
+        cx.emit(Slider2Event::ThumbRemoved { thumb_id });
+        self.active_thumb_id = self.model.thumbs.first().map(|thumb| thumb.id);
+        if let Some(next_id) = self.active_thumb_id {
+            cx.emit(Slider2Event::ThumbSelected { thumb_id: next_id });
+        }
+        cx.notify();
+        true
     }
 
     fn reset_drag_tracking(&mut self) {
@@ -280,20 +428,29 @@ impl Slider2Control {
         self.angular_drag_pointer_angle = None;
     }
 
+    fn active_or_primary_thumb_id(&self) -> Option<ThumbId> {
+        self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id))
+    }
+
     fn adjust_value(&mut self, delta: f32, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
         }
 
+        let Some(thumb_id) = self.active_or_primary_thumb_id() else {
+            return;
+        };
+
+        let current = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
         let next = if self.model.wrapping && self.model.allowed_intervals.is_empty() {
             super::input::wrap_and_snap(
-                self.value() + super::layout::oriented_step_delta(delta, self.model.reversed),
+                current + super::layout::oriented_step_delta(delta, self.model.reversed),
                 self.model.range,
                 self.model.step,
             )
         } else {
             step_allowed_value(
-                self.value(),
+                current,
                 super::layout::oriented_step_delta(delta, self.model.reversed),
                 &self.model.allowed_intervals,
                 self.model.range,
@@ -301,8 +458,8 @@ impl Slider2Control {
             )
         };
 
-        if self.set_value_internal(next, true, cx) {
-            cx.emit(Slider2Event::Release { value: self.value() });
+        if self.set_thumb_value_internal(thumb_id, next, true, cx) {
+            cx.emit(Slider2Event::Release { thumb_id, value: next });
         }
     }
 
@@ -311,8 +468,13 @@ impl Slider2Control {
             return;
         }
 
-        if self.set_value_internal(value, true, cx) {
-            cx.emit(Slider2Event::Release { value: self.value() });
+        let Some(thumb_id) = self.active_or_primary_thumb_id() else {
+            return;
+        };
+
+        if self.set_thumb_value_internal(thumb_id, value, true, cx) {
+            let value = self.thumb_value(thumb_id).unwrap_or(value);
+            cx.emit(Slider2Event::Release { thumb_id, value });
         }
     }
 
@@ -339,6 +501,16 @@ impl Slider2Control {
     fn handle_move_to_end(&mut self, _: &MoveToEnd, _window: &mut Window, cx: &mut Context<Self>) {
         self.move_to_value(self.model.range.end, cx);
     }
+
+    fn handle_remove_value(&mut self, _: &RemoveValue, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.model.enabled || !self.model.thumb_policy.allow_remove {
+            return;
+        }
+
+        if let Some(thumb_id) = self.active_thumb_id {
+            self.remove_thumb(thumb_id, cx);
+        }
+    }
 }
 
 impl Focusable for Slider2Control {
@@ -351,13 +523,16 @@ impl Render for Slider2Control {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
-        let primary_thumb_id = self.primary_thumb_id();
+        let active_thumb_id = self
+            .active_thumb_id
+            .or_else(|| self.model.thumbs.first().map(|thumb| thumb.id))
+            .expect("slider2 always has a thumb");
 
         div()
             .child(
                 self.model
                     .template
-                    .render(&model, handlers, primary_thumb_id, window, cx)
+                    .render(&model, handlers, active_thumb_id, window, cx)
                     .track_focus(self.interaction.focus_handle())
                     .key_context(ControlKeyProfile::RangeValue.context())
                     .on_action(cx.listener(Self::handle_decrease_value))
@@ -365,7 +540,8 @@ impl Render for Slider2Control {
                     .on_action(cx.listener(Self::handle_decrease_value_large))
                     .on_action(cx.listener(Self::handle_increase_value_large))
                     .on_action(cx.listener(Self::handle_move_to_start))
-                    .on_action(cx.listener(Self::handle_move_to_end)),
+                    .on_action(cx.listener(Self::handle_move_to_end))
+                    .on_action(cx.listener(Self::handle_remove_value)),
             )
             .into_any_element()
     }

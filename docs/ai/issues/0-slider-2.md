@@ -359,14 +359,33 @@ To consolidate dial and ring sliders (e.g. `ColorArc`, `ColorRing`, and angular 
   ```
 - Ensure the controller is generic enough to support rendering via custom dial templates (Arc/Ring templates) while reusing the core interaction state.
 
-### Phase 4: Incubate multi-thumb state, selection, and stop editing (Later Phase)
+### Phase 4: Incubate multi-thumb state, selection, and stop editing ✅
 
 After the single-thumb core is proven, expand the engine to support:
 - Stable multi-thumb collections using `ThumbId`.
 - Crossover sorting and drag-identity persistence.
-- Dynamic stop insertion (clicking empty track) and deletion (drag-off).
+- Dynamic stop insertion (clicking empty track) and deletion (keyboard).
 
-### Phase 5: Add color-capable track rendering hooks
+**Delivered:**
+- `Slider2ThumbPolicy` + `thumbs.rs` (hit testing, min distance, insert/remove)
+- Builder: `.multi_stop()`, `.thumb_policy()`, `.thumb_values()`
+- Events: `Change`/`Release` include `thumb_id`; `ThumbAdded`, `ThumbRemoved`, `ThumbSelected`
+- Linear template renders all thumbs with per-thumb drag and active focus ring
+- Keyboard: Delete/Backspace removes active thumb (`RemoveValue` on RangeValue profile)
+- Gallery: multi-stop fill-track demo
+
+### Phase 5: Replace and Migrate Legacy Slider to Slider2
+
+Migrate all legacy single-thumb `Slider` usages in the codebase to use the new unified `Slider2` engine:
+- Delete the old `crates/sdk/src/controls/slider/` module.
+- Move and rename `crates/sdk/src/controls/slider2/` to `crates/sdk/src/controls/slider/`.
+- Re-export `Slider`, `SliderEvent`, `SliderBuilder`, etc. for backward compatibility.
+- Update `look-shadcn` control extension and template binding methods.
+- Update and merge the old `pane.rs` and `slider2_pane.rs` gallery pages.
+- Ensure all other client preference panels and demos are adapted and compile.
+- Confirm zero impact on the isolated `ColorSlider` controls.
+
+### Phase 6: Add color-capable track rendering hooks
 
 Introduce rendering hooks that can express:
 
@@ -383,7 +402,7 @@ This is the point where the new family becomes useful for:
 
 The hook surface should be rich enough to preserve current color sophistication, but not so broad that all color logic moves into the generic core.
 
-### Phase 6: Build new gallery prototype surfaces
+### Phase 7: Build new gallery prototype surfaces
 
 Add a dedicated gallery validation pane for the new family instead of immediately replacing existing panes.
 
@@ -404,7 +423,7 @@ The multi-mixer surface is especially relevant as a later consumer:
 
 - [apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs)
 
-### Phase 7: Prove one real color migration
+### Phase 8: Prove one real color migration
 
 After the prototype feels right, migrate one real color use case that the old `ColorSlider` cannot express cleanly.
 
@@ -415,9 +434,9 @@ Best candidates:
 
 This phase must preserve old color slider demos so the new control is compared against working reference behavior, not developed in a vacuum.
 
-### Phase 8: Decide what to do with old controls
+### Phase 9: Decide what to do with old controls
 
-Only after Phase 7 succeeds:
+Only after Phase 8 succeeds:
 
 - decide whether `RangeSlider` should be deprecated or removed
 - decide whether plain `Slider` should remain independent or get a thin wrapper over the new family

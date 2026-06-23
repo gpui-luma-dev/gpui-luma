@@ -1,19 +1,17 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Bounds, Div, Hsla, Pixels, Stateful, Window, canvas, div, hsla, px, prelude::*};
+use gpui::{App, Div, Stateful, Window, canvas, div, px, prelude::*};
 
 use super::{
-    DIAL_SIZE, Slider2Template, Slider2TemplateHandlers, TRACK_RADIUS, attach_radial_interaction,
-    paint_radial_fill_track, paint_radial_sliced_track, render_slider2_thumb_at, slider2_thumb_size,
-    track_bounds_canvas,
+    DIAL_SIZE, Slider2Template, Slider2TemplateHandlers, TRACK_RADIUS, attach_radial_interaction, paint_radial_annulus,
+    paint_radial_fill_track, render_slider2_thumb_at, slider2_thumb_size, track_bounds_canvas, track_muted_background,
+    track_surface_background, uses_static_track_surface,
 };
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
 use crate::controls::slider2::input::{Slider2InputStrategy, angle_for_percentage};
 use crate::controls::slider2::layout::display_position;
-use crate::controls::slider2::model::{Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind};
-
-const RING_SEGMENTS: usize = 180;
+use crate::controls::slider2::model::{Slider2RenderModel, ThumbId, TrackPresentation};
 
 pub struct ThemedCircularRingTemplate {
     theme: Arc<dyn SliderTheme>,
@@ -55,14 +53,10 @@ impl Slider2Template for ThemedCircularRingTemplate {
         let thumb_y = center + TRACK_RADIUS * angle.sin();
         let arc_thickness = look.track_height;
         let presentation = model.presentation;
-        let track_background = look.track_background;
+        let track_background = track_muted_background(&look);
         let fill_background = look.fill_background;
-        let blocked_segments: Vec<_> = model
-            .track_segments
-            .iter()
-            .filter(|segment| segment.kind == TrackSegmentKind::Blocked)
-            .copied()
-            .collect();
+        let surface_background = track_surface_background(model, &look);
+        let static_surface = uses_static_track_surface(model);
 
         let (track_bounds, interaction) = handlers.into();
 
@@ -73,26 +67,41 @@ impl Slider2Template for ThemedCircularRingTemplate {
             .child(
                 canvas(
                     move |_, _, _| (),
-                    move |bounds, _, window, _| match presentation {
-                        TrackPresentation::Fill => paint_radial_fill_track(
-                            bounds,
-                            min_angle,
-                            max_angle,
-                            display_percentage,
-                            track_background,
-                            fill_background,
-                            arc_thickness,
-                            window,
-                        ),
-                        TrackPresentation::Domain => paint_domain_ring(
-                            bounds,
-                            min_angle,
-                            max_angle,
-                            track_background,
-                            arc_thickness,
-                            &blocked_segments,
-                            window,
-                        ),
+                    move |bounds, _, window, _| {
+                        if static_surface {
+                            paint_radial_annulus(
+                                bounds,
+                                min_angle,
+                                max_angle,
+                                surface_background,
+                                arc_thickness,
+                                window,
+                            );
+                            return;
+                        }
+
+                        match presentation {
+                            TrackPresentation::Fill => paint_radial_fill_track(
+                                bounds,
+                                min_angle,
+                                max_angle,
+                                display_percentage,
+                                track_background,
+                                fill_background,
+                                arc_thickness,
+                                window,
+                            ),
+                            TrackPresentation::Domain => {
+                                paint_radial_annulus(
+                                    bounds,
+                                    min_angle,
+                                    max_angle,
+                                    surface_background,
+                                    arc_thickness,
+                                    window,
+                                );
+                            }
+                        }
                     },
                 )
                 .absolute()
@@ -103,38 +112,4 @@ impl Slider2Template for ThemedCircularRingTemplate {
 
         attach_radial_interaction(root, model, interaction, primary_thumb_id)
     }
-}
-
-fn paint_domain_ring(
-    bounds: Bounds<Pixels>,
-    min_angle: f32,
-    max_angle: f32,
-    track_background: Hsla,
-    arc_thickness: f32,
-    blocked_segments: &[crate::controls::slider2::model::TrackSegment],
-    window: &mut Window,
-) {
-    paint_radial_sliced_track(
-        bounds,
-        min_angle,
-        max_angle,
-        RING_SEGMENTS,
-        arc_thickness,
-        |mid_t, segment_start, segment_end| {
-            let is_blocked = blocked_segments
-                .iter()
-                .any(|segment| ranges_overlap(segment.start, segment.end, segment_start, segment_end));
-
-            if is_blocked {
-                track_background
-            } else {
-                hsla(mid_t.rem_euclid(1.0), 1.0, 0.5, 1.0)
-            }
-        },
-        window,
-    );
-}
-
-fn ranges_overlap(start_a: f32, end_a: f32, start_b: f32, end_b: f32) -> bool {
-    start_a < end_b && end_a > start_b
 }

@@ -1,15 +1,15 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, IntoElement, Pixels, Stateful, Window, canvas, div, px, prelude::*};
+use gpui::{App, Div, Pixels, Stateful, Window, div, px, prelude::*};
 
 use super::{
-    Slider2BoundsHandler, Slider2Template, Slider2TemplateHandlers, attach_linear_interaction, render_linear_thumb,
-    slider2_thumb_size, track_bounds_canvas,
+    Slider2BoundsHandler, Slider2InteractionHandlers, Slider2Template, Slider2TemplateHandlers,
+    attach_linear_interaction, attach_thumb_drag, render_linear_thumb, slider2_thumb_size, track_bounds_canvas,
+    track_surface_background,
 };
 use crate::controls::color::style::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
 
-use crate::controls::slider2::domain::DomainTrackRenderer;
 use crate::controls::slider2::layout::{display_position, segment_corner_radii, segment_display_span};
 use crate::controls::slider2::model::{
     Slider2Orientation, Slider2RenderModel, ThumbId, TrackPresentation, TrackSegmentKind,
@@ -36,7 +36,7 @@ impl Slider2Template for ThemedSlider2Template {
         &self,
         model: &Slider2RenderModel<'_>,
         handlers: Slider2TemplateHandlers,
-        primary_thumb_id: ThumbId,
+        _primary_thumb_id: ThumbId,
         window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
@@ -52,12 +52,19 @@ impl Slider2Template for ThemedSlider2Template {
         let track_radius =
             model.corner_radius.map(|radius| radius.to_pixels(window.rem_size())).unwrap_or(px(look.radius));
 
-        let primary_thumb =
-            model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());
-        let thumb_position = primary_thumb.map(|thumb| thumb.position.clamp(0.0, 1.0)).unwrap_or(0.0);
-        let display_percentage = display_position(thumb_position, model.reversed);
-
-        let (track_bounds, interaction) = handlers.into();
+        let Slider2TemplateHandlers {
+            track_bounds,
+            hover,
+            mouse_down,
+            mouse_up,
+            mouse_up_out,
+            drag_move,
+            thumb_mouse_down,
+        } = handlers;
+        let interaction =
+            Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move: drag_move.clone() };
+        let model_id = model.id.clone();
+        let enabled = model.enabled;
 
         let root = div()
             .id(model.id.clone())
@@ -78,44 +85,63 @@ impl Slider2Template for ThemedSlider2Template {
 
                 let track = render_horizontal_track(model, &look, track_top, cross_axis, track_radius, track_bounds);
 
-                let thumb = render_linear_thumb(
-                    model,
-                    &look,
-                    format!("{}-thumb", model.id),
-                    display_percentage,
-                    thumb_top,
-                    Some(thumb_center_offset),
-                    None,
-                    primary_thumb,
-                );
+                let thumbs = ordered_thumbs(model).into_iter().map(|thumb| {
+                    let display_percentage = display_position(thumb.position.clamp(0.0, 1.0), model.reversed);
+                    let active = model.active_thumb_id == Some(thumb.id);
+                    let node = render_linear_thumb(
+                        model,
+                        &look,
+                        format!("{}-thumb-{}", model.id, thumb.id.as_u64()),
+                        display_percentage,
+                        thumb_top,
+                        Some(thumb_center_offset),
+                        None,
+                        Some(thumb),
+                        active,
+                    );
+                    attach_thumb_drag(node, &model_id, thumb.id, thumb_mouse_down.clone(), drag_move.clone(), enabled)
+                });
 
-                root.child(track).child(thumb)
+                root.child(track).children(thumbs)
             }
             Slider2Orientation::Vertical => {
                 let track_left = (short_axis - cross_axis) * 0.5;
                 let thumb_left = (short_axis - look.thumb_size) * 0.5;
-                let thumb_top = (long_axis - look.thumb_size).max(0.0) * (1.0 - display_percentage);
 
                 let track =
                     render_vertical_track(model, &look, track_left, long_axis, cross_axis, track_radius, track_bounds);
 
-                let thumb = render_linear_thumb(
-                    model,
-                    &look,
-                    format!("{}-thumb", model.id),
-                    display_percentage,
-                    thumb_top - thumb_focus_offset(),
-                    None,
-                    Some(thumb_left - thumb_focus_offset()),
-                    primary_thumb,
-                );
+                let thumbs = ordered_thumbs(model).into_iter().map(|thumb| {
+                    let display_percentage = display_position(thumb.position.clamp(0.0, 1.0), model.reversed);
+                    let thumb_top = (long_axis - look.thumb_size).max(0.0) * (1.0 - display_percentage);
+                    let active = model.active_thumb_id == Some(thumb.id);
+                    let node = render_linear_thumb(
+                        model,
+                        &look,
+                        format!("{}-thumb-{}", model.id, thumb.id.as_u64()),
+                        display_percentage,
+                        thumb_top - thumb_focus_offset(),
+                        None,
+                        Some(thumb_left - thumb_focus_offset()),
+                        Some(thumb),
+                        active,
+                    );
+                    attach_thumb_drag(node, &model_id, thumb.id, thumb_mouse_down.clone(), drag_move.clone(), enabled)
+                });
 
-                root.child(track).child(thumb)
+                root.child(track).children(thumbs)
             }
         };
 
-        attach_linear_interaction(root, model, interaction, primary_thumb_id)
+        attach_linear_interaction(root, model, interaction)
     }
+}
+
+/// Inactive thumbs first; active thumb last so it paints on top while dragging.
+fn ordered_thumbs<'a>(model: &'a Slider2RenderModel<'_>) -> Vec<&'a crate::controls::slider2::model::SliderThumbValue> {
+    let mut thumbs: Vec<_> = model.thumbs.iter().collect();
+    thumbs.sort_by_key(|thumb| model.active_thumb_id == Some(thumb.id));
+    thumbs
 }
 
 fn render_horizontal_track(
@@ -135,12 +161,9 @@ fn render_horizontal_track(
         .right(px(0.0))
         .top(px(track_top))
         .h(px(cross_axis))
-        .when(!uses_sibling_segments, |this| this.bg(look.track_background).rounded(track_radius));
+        .when(!uses_sibling_segments, |this| this.bg(track_surface_background(model, look)).rounded(track_radius));
 
     if model.presentation == TrackPresentation::Domain {
-        if let Some(renderer) = model.domain_track.clone() {
-            track = track.child(domain_canvas(renderer, model.orientation, model.reversed));
-        }
         track =
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
@@ -175,12 +198,9 @@ fn render_vertical_track(
         .top(px(0.0))
         .w(px(cross_axis))
         .h(px(long_axis))
-        .when(!uses_sibling_segments, |this| this.bg(look.track_background).rounded(track_radius));
+        .when(!uses_sibling_segments, |this| this.bg(track_surface_background(model, look)).rounded(track_radius));
 
     if model.presentation == TrackPresentation::Domain {
-        if let Some(renderer) = model.domain_track.clone() {
-            track = track.child(domain_canvas(renderer, model.orientation, model.reversed));
-        }
         track =
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
@@ -197,21 +217,6 @@ fn render_vertical_track(
     }
 
     track.child(track_bounds_canvas(track_bounds))
-}
-
-fn domain_canvas(
-    renderer: Arc<dyn DomainTrackRenderer>,
-    orientation: Slider2Orientation,
-    reversed: bool,
-) -> impl IntoElement {
-    canvas(
-        move |_, _, _| (),
-        move |bounds, _, window, _| {
-            renderer.paint(bounds, orientation, reversed, window);
-        },
-    )
-    .absolute()
-    .size_full()
 }
 
 fn render_fill_segment(

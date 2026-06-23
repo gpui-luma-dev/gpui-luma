@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, IntoElement, Subscription, div, prelude::*, px};
-use gpui_luma::controls::slider2::{Slider2, Slider2Event, default_hue_domain_track};
+use gpui_luma::controls::slider2::{Slider2, Slider2Event, Slider2ThumbPolicy, ThumbId};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -15,23 +15,27 @@ pub(in crate::gallery) struct Slider2Pane {
     fill_slider: Slider2,
     vertical_slider: Slider2,
     vertical_reversed_slider: Slider2,
-    domain_slider: Slider2,
     blocked_slider: Slider2,
     reversed_slider: Slider2,
     angular_slider: Slider2,
     wrapping_slider: Slider2,
+    stops_slider: Slider2,
     fill_value: f32,
     vertical_value: f32,
     vertical_reversed_value: f32,
-    domain_value: f32,
     blocked_value: f32,
     reversed_value: f32,
     angular_value: f32,
     wrapping_value: f32,
+    selected_stop: Option<ThumbId>,
+    stop_summary: String,
+    stops_interaction_hint: Option<String>,
 }
 
 impl Slider2Pane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let stops_policy = Slider2ThumbPolicy::multi_stop();
+
         Self {
             fill_slider: look.slider2("slider2-fill").range(1..100).step(1).value(41).spawn(cx),
             vertical_slider: look.slider2("slider2-vertical").vertical().range(1..100).step(1).value(62).spawn(cx),
@@ -42,13 +46,6 @@ impl Slider2Pane {
                 .range(1..100)
                 .step(1)
                 .value(62)
-                .spawn(cx),
-            domain_slider: look
-                .slider2("slider2-domain")
-                .domain_track(default_hue_domain_track())
-                .range(0.0..360.0)
-                .step(1.0)
-                .value(180.0)
                 .spawn(cx),
             blocked_slider: look
                 .slider2("slider2-blocked")
@@ -70,19 +67,29 @@ impl Slider2Pane {
                 .slider2("slider2-wrapping")
                 .angular(0.0, 2.0 * PI)
                 .wrapping(true)
+                .domain()
                 .template(look.slider2_circular_ring_template())
                 .range(0.0..360.0)
                 .step(1.0)
                 .value(180.0)
                 .spawn(cx),
+            stops_slider: look
+                .slider2("slider2-stops")
+                .multi_stop()
+                .range(0.0..360.0)
+                .step(1.0)
+                .thumb_values([(0.0, None), (180.0, None), (300.0, None)])
+                .spawn(cx),
             fill_value: 41.0,
             vertical_value: 62.0,
             vertical_reversed_value: 62.0,
-            domain_value: 180.0,
             blocked_value: 100.0,
             reversed_value: 41.0,
             angular_value: 50.0,
             wrapping_value: 180.0,
+            selected_stop: None,
+            stop_summary: String::new(),
+            stops_interaction_hint: multi_stop_interaction_hint(stops_policy),
         }
     }
 
@@ -96,9 +103,6 @@ impl Slider2Pane {
         subscriptions.push(cx.subscribe(&self.vertical_reversed_slider, |app, _, event: &Slider2Event, cx| {
             app.panes.slider2.handle_vertical_reversed_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.domain_slider, |app, _, event: &Slider2Event, cx| {
-            app.panes.slider2.handle_domain_event(event, cx);
-        }));
         subscriptions.push(cx.subscribe(&self.blocked_slider, |app, _, event: &Slider2Event, cx| {
             app.panes.slider2.handle_blocked_event(event, cx);
         }));
@@ -110,6 +114,10 @@ impl Slider2Pane {
         }));
         subscriptions.push(cx.subscribe(&self.wrapping_slider, |app, _, event: &Slider2Event, cx| {
             app.panes.slider2.handle_wrapping_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.stops_slider, |app, _, event: &Slider2Event, cx| {
+            let slider = app.panes.slider2.stops_slider.clone();
+            app.panes.slider2.handle_stops_event(&slider, event, cx);
         }));
     }
 
@@ -159,16 +167,6 @@ impl Slider2Pane {
                         .child(div().w(px(320.0)).child(self.reversed_slider.clone()))
                         .child(value_label(self.reversed_value, chrome.body_text)),
                 )
-                .child(section_label("Domain track (hue spectrum)", chrome.muted_text))
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_2()
-                        .child(div().w(px(320.0)).child(self.domain_slider.clone()))
-                        .child(value_label(self.domain_value, chrome.body_text)),
-                )
                 .child(section_label("Blocked intervals", chrome.muted_text))
                 .child(
                     div()
@@ -178,6 +176,25 @@ impl Slider2Pane {
                         .gap_2()
                         .child(div().w(px(320.0)).child(self.blocked_slider.clone()))
                         .child(value_label(self.blocked_value, chrome.body_text)),
+                )
+                .child(section_label("Multi-stop", chrome.muted_text))
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .when_some(self.stops_interaction_hint.as_ref(), |this, hint| {
+                            this.child(
+                                div()
+                                    .text_size(px(11.0))
+                                    .line_height(px(14.0))
+                                    .text_color(chrome.muted_text)
+                                    .child(hint.clone()),
+                            )
+                        })
+                        .child(div().w(px(320.0)).child(self.stops_slider.clone()))
+                        .child(stops_label(&self.stop_summary, chrome.body_text)),
                 )
                 .child(section_label("Angular dial", chrome.muted_text))
                 .child(
@@ -208,59 +225,90 @@ impl Slider2Pane {
         notify_entity(&self.fill_slider, cx);
         notify_entity(&self.vertical_slider, cx);
         notify_entity(&self.vertical_reversed_slider, cx);
-        notify_entity(&self.domain_slider, cx);
         notify_entity(&self.blocked_slider, cx);
         notify_entity(&self.reversed_slider, cx);
         notify_entity(&self.angular_slider, cx);
         notify_entity(&self.wrapping_slider, cx);
+        notify_entity(&self.stops_slider, cx);
     }
 
     fn handle_fill_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.fill_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.fill_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_vertical_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.vertical_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.vertical_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_vertical_reversed_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.vertical_reversed_value = *value;
-        cx.notify();
-    }
-
-    fn handle_domain_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.domain_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.vertical_reversed_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_reversed_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.reversed_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.reversed_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_blocked_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.blocked_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.blocked_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_angular_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.angular_value = *value;
-        cx.notify();
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.angular_value = *value;
+            cx.notify();
+        }
     }
 
     fn handle_wrapping_event(&mut self, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
-        let (Slider2Event::Change { value } | Slider2Event::Release { value }) = event;
-        self.wrapping_value = *value;
+        if let Slider2Event::Change { value, .. } | Slider2Event::Release { value, .. } = event {
+            self.wrapping_value = *value;
+            cx.notify();
+        }
+    }
+
+    fn handle_stops_event(&mut self, slider: &Slider2, event: &Slider2Event, cx: &mut Context<GalleryApp>) {
+        if matches!(event, Slider2Event::ThumbSelected { .. }) {
+            if let Slider2Event::ThumbSelected { thumb_id } = event {
+                self.selected_stop = Some(*thumb_id);
+            }
+        }
+
+        self.sync_stop_summary(slider, cx);
         cx.notify();
+    }
+
+    fn sync_stop_summary(&mut self, slider: &Slider2, cx: &mut Context<GalleryApp>) {
+        let slider = slider.read(cx);
+        let mut stops = slider.thumbs().iter().map(|thumb| slider.range().value_at(thumb.position)).collect::<Vec<_>>();
+        stops.sort_by(|left, right| left.total_cmp(right));
+
+        self.selected_stop = slider.active_thumb_id();
+        let selected_value = self
+            .selected_stop
+            .and_then(|id| slider.thumb_value(id))
+            .unwrap_or(stops.first().copied().unwrap_or(0.0));
+
+        self.stop_summary = format!(
+            "{} stops [{}] · selected {:.0}",
+            stops.len(),
+            stops.iter().map(|value| format!("{value:.0}")).collect::<Vec<_>>().join(", "),
+            selected_value
+        );
     }
 }
 
@@ -286,4 +334,20 @@ fn value_label(value: f32, color: gpui::Hsla) -> impl IntoElement {
         .line_height(px(16.0))
         .text_color(color)
         .child(format!("Value: {:.0}", value))
+}
+
+fn stops_label(summary: &str, color: gpui::Hsla) -> impl IntoElement {
+    div().text_size(px(12.0)).line_height(px(16.0)).text_color(color).child(summary.to_string())
+}
+
+fn multi_stop_interaction_hint(policy: Slider2ThumbPolicy) -> Option<String> {
+    let mut parts = Vec::new();
+    if policy.supports_click_to_add() {
+        parts.push("Click empty track to add");
+    }
+    if policy.supports_delete_to_remove() {
+        parts.push("Delete/Backspace to remove selected");
+    }
+
+    (!parts.is_empty()).then(|| parts.join(" · "))
 }

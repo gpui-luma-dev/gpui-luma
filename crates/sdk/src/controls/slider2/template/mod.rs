@@ -2,15 +2,16 @@ mod angular_dial;
 mod circular_ring;
 mod linear;
 
+use std::sync::Arc;
 use std::f32::consts::FRAC_PI_2;
 
 use gpui::{
     App, BorderStyle, Bounds, Corners, Div, DragMoveEvent, Edges, Hsla, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, PaintQuad, Pixels, Point, Stateful, Window, canvas, div, hsla, point, px, size, transparent_black,
-    prelude::*,
+    MouseUpEvent, PaintQuad, Pixels, Point, SharedString, Stateful, Window, canvas, div, hsla, point, px, size,
+    transparent_black, prelude::*,
 };
 
-use crate::controls::color::shape::{Arc, ArcData};
+use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
 
 use super::model::{Slider2RenderModel, Slider2ThumbSize, SliderThumbValue, ThumbId};
 use super::Slider2Drag;
@@ -19,11 +20,12 @@ pub use angular_dial::{ThemedAngularDialTemplate, default_angular_dial_template}
 pub use circular_ring::{ThemedCircularRingTemplate, default_circular_ring_template};
 pub use linear::{ThemedSlider2Template, default_slider2_template};
 
-pub type Slider2BoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
-pub type Slider2HoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type Slider2MouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type Slider2MouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-pub type Slider2DragMoveHandler = Box<dyn Fn(&DragMoveEvent<Slider2Drag>, &mut Window, &mut App) + 'static>;
+pub type Slider2BoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
+pub type Slider2HoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
+pub type Slider2MouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
+pub type Slider2MouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + Send + Sync>;
+pub type Slider2DragMoveHandler = Arc<dyn Fn(&DragMoveEvent<Slider2Drag>, &mut Window, &mut App) + Send + Sync>;
+pub type Slider2ThumbMouseDownHandler = Arc<dyn Fn(&ThumbId, &MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
 
 pub struct Slider2TemplateHandlers {
     pub track_bounds: Slider2BoundsHandler,
@@ -32,6 +34,7 @@ pub struct Slider2TemplateHandlers {
     pub mouse_up: Slider2MouseUpHandler,
     pub mouse_up_out: Slider2MouseUpHandler,
     pub drag_move: Slider2DragMoveHandler,
+    pub thumb_mouse_down: Slider2ThumbMouseDownHandler,
 }
 
 pub(crate) struct Slider2InteractionHandlers {
@@ -72,9 +75,6 @@ pub(crate) const DISABLED_OPACITY: f32 = 0.56;
 pub(crate) const DIAL_SIZE: f32 = 200.0;
 pub(crate) const TRACK_RADIUS: f32 = 72.0;
 
-/// Overlap between adjacent annulus slices to hide anti-aliased seams (see color arc delegates).
-const SEGMENT_OVERLAP_RATIO: f32 = 0.35;
-
 const THUMB_FOCUS_GAP: f32 = 0.0;
 const THUMB_FOCUS_WIDTH: f32 = 2.0;
 
@@ -84,6 +84,25 @@ pub(crate) fn slider2_thumb_size(size: Slider2ThumbSize) -> crate::controls::sli
         Slider2ThumbSize::Md => crate::controls::slider::SliderThumbSize::Md,
         Slider2ThumbSize::Lg => crate::controls::slider::SliderThumbSize::Lg,
     }
+}
+
+pub(crate) fn uses_static_track_surface(model: &Slider2RenderModel<'_>) -> bool {
+    model.thumb_policy.is_multi_thumb() || model.presentation == super::model::TrackPresentation::Domain
+}
+
+pub(crate) fn track_surface_background(
+    model: &Slider2RenderModel<'_>,
+    look: &crate::controls::slider::SliderLook,
+) -> Hsla {
+    if uses_static_track_surface(model) {
+        look.fill_background
+    } else {
+        look.track_background
+    }
+}
+
+pub(crate) fn track_muted_background(look: &crate::controls::slider::SliderLook) -> Hsla {
+    look.track_background
 }
 
 pub(crate) fn render_slider2_thumb_at(
@@ -129,11 +148,13 @@ pub(crate) fn render_linear_thumb(
     main_offset: Option<f32>,
     cross_offset: Option<f32>,
     thumb: Option<&SliderThumbValue>,
+    active: bool,
 ) -> Stateful<Div> {
     use super::model::Slider2Orientation;
     use gpui::relative;
 
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
+    let focus_ring = if active { look.focus_ring } else { None };
 
     let mut thumb = div()
         .id(id)
@@ -144,7 +165,7 @@ pub(crate) fn render_linear_thumb(
         .justify_center()
         .p(px(THUMB_FOCUS_GAP))
         .border(px(THUMB_FOCUS_WIDTH))
-        .border_color(focus_ring_color(look.focus_ring))
+        .border_color(focus_ring_color(focus_ring))
         .rounded(px(look.radius + thumb_focus_offset()))
         .child(
             div()
@@ -187,7 +208,7 @@ pub(crate) fn attach_radial_interaction(
     handlers: Slider2InteractionHandlers,
     primary_thumb_id: ThumbId,
 ) -> Stateful<Div> {
-    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
+    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
@@ -198,7 +219,10 @@ pub(crate) fn attach_radial_interaction(
             cx.stop_propagation();
             cx.new(|_| drag.clone())
         })
-        .on_drag_move(drag_move);
+        .on_drag_move({
+            let drag_move = drag_move.clone();
+            move |event, window, cx| drag_move(event, window, cx)
+        });
 
     if model.enabled {
         root.cursor_pointer()
@@ -211,25 +235,52 @@ pub(crate) fn attach_linear_interaction(
     mut root: Stateful<Div>,
     model: &Slider2RenderModel<'_>,
     handlers: Slider2InteractionHandlers,
-    primary_thumb_id: ThumbId,
 ) -> Stateful<Div> {
-    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move } = handlers;
+    let Slider2InteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
         .on_mouse_down(MouseButton::Left, mouse_down)
         .on_mouse_up(MouseButton::Left, mouse_up)
         .on_mouse_up_out(MouseButton::Left, mouse_up_out)
-        .on_drag(Slider2Drag::new(model.id.clone(), primary_thumb_id), |drag, _, _, cx| {
-            cx.stop_propagation();
-            cx.new(|_| drag.clone())
-        })
-        .on_drag_move(drag_move);
+        .on_drag_move({
+            let drag_move = drag_move.clone();
+            move |event, window, cx| drag_move(event, window, cx)
+        });
 
     if model.enabled {
         root.cursor_pointer()
     } else {
         root.opacity(DISABLED_OPACITY)
+    }
+}
+
+pub(crate) fn attach_thumb_drag(
+    mut thumb: Stateful<Div>,
+    model_id: &SharedString,
+    thumb_id: ThumbId,
+    mouse_down: Slider2ThumbMouseDownHandler,
+    drag_move: Slider2DragMoveHandler,
+    enabled: bool,
+) -> Stateful<Div> {
+    thumb = thumb
+        .on_mouse_down(MouseButton::Left, {
+            let mouse_down = mouse_down.clone();
+            move |event, window, cx| mouse_down(&thumb_id, event, window, cx)
+        })
+        .on_drag(Slider2Drag::new(model_id.clone(), thumb_id), |drag, _, _, cx| {
+            cx.stop_propagation();
+            cx.new(|_| drag.clone())
+        })
+        .on_drag_move({
+            let drag_move = drag_move.clone();
+            move |event, window, cx| drag_move(event, window, cx)
+        });
+
+    if enabled {
+        thumb.cursor_pointer()
+    } else {
+        thumb.opacity(DISABLED_OPACITY)
     }
 }
 
@@ -258,7 +309,7 @@ pub(crate) fn paint_radial_annulus(
 
     let (inner, outer) = arc_annulus_radii(arc_thickness);
     let (start_angle, end_angle) = arc_shape_angles(start_angle, end_angle);
-    let arc_shape = Arc::new().inner_radius(inner).outer_radius(outer);
+    let arc_shape = ShapeArc::new().inner_radius(inner).outer_radius(outer);
     let data = ArcData { data: &(), index: 0, value: 1.0, start_angle, end_angle, pad_angle: 0.0 };
     arc_shape.paint(&data, color, None, None, &bounds, window);
 }
@@ -290,32 +341,6 @@ pub(crate) fn paint_radial_fill_track(
     let (start_color, end_color) =
         arc_fill_end_cap_colors(fill_segments, segment_count, track_background, fill_background);
     paint_arc_open_end_caps(center, TRACK_RADIUS, min_angle, max_angle, start_color, end_color, arc_thickness, window);
-}
-
-pub(crate) fn paint_radial_sliced_track(
-    bounds: Bounds<Pixels>,
-    min_angle: f32,
-    max_angle: f32,
-    segments: usize,
-    arc_thickness: f32,
-    mut color_at: impl FnMut(f32, f32, f32) -> Hsla,
-    window: &mut Window,
-) {
-    let segments = segments.max(2);
-    let span = max_angle - min_angle;
-    let step = span / segments as f32;
-    let overlap = step * SEGMENT_OVERLAP_RATIO;
-
-    for index in 0..segments {
-        let t0 = index as f32 / segments as f32;
-        let t1 = (index + 1) as f32 / segments as f32;
-        let segment_start = t0;
-        let segment_end = t1;
-        let a0 = min_angle + span * t0 - overlap;
-        let a1 = min_angle + span * t1 + overlap;
-        let color = color_at((t0 + t1) * 0.5, segment_start, segment_end);
-        paint_radial_annulus(bounds, a0, a1, color, arc_thickness, window);
-    }
 }
 
 pub(crate) fn paint_arc_round_cap(

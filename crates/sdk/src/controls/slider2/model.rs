@@ -1,12 +1,11 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::{ops::RangeInclusive, sync::OnceLock};
+use std::ops::RangeInclusive;
 
 use gpui::{AbsoluteLength, AppContext, Entity, Hsla, SharedString};
 
 use super::constraints::{clamp_and_snap_value, normalize_intervals};
 use super::control::Slider2Control;
-use super::domain::{DomainTrackRenderer, HueDomainTrack};
 use super::input::{Slider2InputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
 use super::template::{Slider2Template, default_slider2_template};
@@ -22,12 +21,65 @@ impl ThumbId {
         static NEXT: AtomicU64 = AtomicU64::new(1);
         Self(NEXT.fetch_add(1, Ordering::Relaxed))
     }
+
+    pub const fn as_u64(self) -> u64 {
+        self.0
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SliderThumbRole {
     #[default]
     Value,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Slider2ThumbPolicy {
+    pub min_count: usize,
+    pub max_count: usize,
+    pub min_distance: f32,
+    pub allow_insert: bool,
+    pub allow_remove: bool,
+    /// When true, thumbs may share the same position while dragging (crossover / stack).
+    pub allow_overlap: bool,
+}
+
+impl Default for Slider2ThumbPolicy {
+    fn default() -> Self {
+        Self {
+            min_count: 1,
+            max_count: 1,
+            min_distance: 0.0,
+            allow_insert: false,
+            allow_remove: false,
+            allow_overlap: false,
+        }
+    }
+}
+
+impl Slider2ThumbPolicy {
+    pub fn multi_stop() -> Self {
+        Self {
+            min_count: 2,
+            max_count: 8,
+            min_distance: 0.02,
+            allow_insert: true,
+            allow_remove: true,
+            allow_overlap: true,
+        }
+    }
+
+    pub fn is_multi_thumb(self) -> bool {
+        self.max_count > 1
+    }
+
+    pub fn supports_click_to_add(self) -> bool {
+        self.is_multi_thumb() && self.allow_insert
+    }
+
+    pub fn supports_delete_to_remove(self) -> bool {
+        self.is_multi_thumb() && self.allow_remove
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -100,8 +152,8 @@ pub struct Slider2Model {
     pub(crate) wrapping: bool,
     pub(crate) enabled: bool,
     pub(crate) corner_radius: Option<AbsoluteLength>,
-    pub(crate) domain_track: Option<Arc<dyn DomainTrackRenderer>>,
     pub(crate) template: Arc<dyn Slider2Template>,
+    pub(crate) thumb_policy: Slider2ThumbPolicy,
 }
 
 pub struct Slider2RenderModel<'a> {
@@ -119,7 +171,8 @@ pub struct Slider2RenderModel<'a> {
     pub wrapping: bool,
     pub enabled: bool,
     pub corner_radius: Option<AbsoluteLength>,
-    pub domain_track: Option<Arc<dyn DomainTrackRenderer>>,
+    pub thumb_policy: Slider2ThumbPolicy,
+    pub active_thumb_id: Option<ThumbId>,
     pub state: SliderState,
 }
 
@@ -150,8 +203,8 @@ impl Slider2Builder {
                 wrapping: false,
                 enabled: true,
                 corner_radius: None,
-                domain_track: None,
                 template: default_slider2_template(),
+                thumb_policy: Slider2ThumbPolicy::default(),
             },
         }
     }
@@ -189,13 +242,11 @@ impl Slider2Builder {
 
     pub fn fill(mut self) -> Self {
         self.model.presentation = TrackPresentation::Fill;
-        self.model.domain_track = None;
         self
     }
 
-    pub fn domain_track(mut self, renderer: Arc<dyn DomainTrackRenderer>) -> Self {
+    pub fn domain(mut self) -> Self {
         self.model.presentation = TrackPresentation::Domain;
-        self.model.domain_track = Some(renderer);
         self
     }
 
@@ -264,6 +315,41 @@ impl Slider2Builder {
         self
     }
 
+    pub fn thumb_policy(mut self, policy: Slider2ThumbPolicy) -> Self {
+        self.model.thumb_policy = policy;
+        self.ensure_thumb_count();
+        self
+    }
+
+    /// Click empty track space to insert a new thumb (multi-thumb mode).
+    pub fn allow_insert(mut self, allow: bool) -> Self {
+        self.model.thumb_policy.allow_insert = allow;
+        self
+    }
+
+    /// Delete/Backspace removes the selected thumb (multi-thumb mode).
+    pub fn allow_remove(mut self, allow: bool) -> Self {
+        self.model.thumb_policy.allow_remove = allow;
+        self
+    }
+
+    pub fn multi_stop(self) -> Self {
+        self.thumb_policy(Slider2ThumbPolicy::multi_stop()).domain()
+    }
+
+    pub fn thumb_values(mut self, values: impl IntoIterator<Item = (impl Into<f64>, Option<Hsla>)>) -> Self {
+        self.model.thumbs = values
+            .into_iter()
+            .map(|(value, preview)| {
+                let value = value_from_input(value);
+                let position = self.model.range.percentage(constrain_primary_value(value, &self.model));
+                SliderThumbValue { id: ThumbId::next(), position, preview, role: SliderThumbRole::Value }
+            })
+            .collect();
+        self.ensure_thumb_count();
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Slider2Control> {
         cx.new(|cx| Slider2Control::from_builder(self, cx))
     }
@@ -276,6 +362,22 @@ impl Slider2Builder {
     fn set_primary_position(&mut self, position: f32) {
         if let Some(thumb) = self.model.thumbs.first_mut() {
             thumb.position = position.clamp(0.0, 1.0);
+        }
+    }
+
+    fn ensure_thumb_count(&mut self) {
+        let policy = self.model.thumb_policy;
+        while self.model.thumbs.len() < policy.min_count {
+            self.model.thumbs.push(SliderThumbValue {
+                id: ThumbId::next(),
+                position: 0.0,
+                preview: None,
+                role: SliderThumbRole::Value,
+            });
+        }
+
+        if self.model.thumbs.len() > policy.max_count {
+            self.model.thumbs.truncate(policy.max_count);
         }
     }
 }
@@ -295,12 +397,11 @@ pub(crate) fn constrain_primary_value(value: f32, model: &Slider2Model) -> f32 {
 }
 
 pub(crate) fn build_render_segments(model: &Slider2Model) -> Vec<TrackSegment> {
+    let presentation = if model.thumb_policy.is_multi_thumb() {
+        TrackPresentation::Domain
+    } else {
+        model.presentation
+    };
     let thumb_position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
-    build_track_segments(model.presentation, thumb_position, &model.allowed_intervals, model.range)
-}
-
-static DEFAULT_HUE_TRACK: OnceLock<Arc<HueDomainTrack>> = OnceLock::new();
-
-pub fn default_hue_domain_track() -> Arc<dyn DomainTrackRenderer> {
-    DEFAULT_HUE_TRACK.get_or_init(|| Arc::new(HueDomainTrack)).clone()
+    build_track_segments(presentation, thumb_position, &model.allowed_intervals, model.range)
 }

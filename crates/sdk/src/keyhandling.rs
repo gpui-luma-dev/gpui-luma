@@ -18,6 +18,7 @@ actions!(
         DecreaseValueLarge,
         MoveToStart,
         MoveToEnd,
+        RemoveValue,
         OpenContextMenu
     ]
 );
@@ -78,6 +79,8 @@ impl ControlKeyProfile {
                 KeyBinding::new("pageup", IncreaseValueLarge, Some(context)),
                 KeyBinding::new("home", MoveToStart, Some(context)),
                 KeyBinding::new("end", MoveToEnd, Some(context)),
+                KeyBinding::new("delete", RemoveValue, Some(context)),
+                KeyBinding::new("backspace", RemoveValue, Some(context)),
             ],
             Self::ScrollOffset => vec![
                 KeyBinding::new("left", DecreaseValue, Some(context)),
@@ -198,14 +201,14 @@ mod tests {
 
     #[test]
     fn default_control_key_bindings_are_parseable() {
-        assert_eq!(default_control_key_bindings().len(), 81);
+        assert_eq!(default_control_key_bindings().len(), 83);
     }
 
     #[test]
     fn profile_binding_counts_are_stable() {
         assert_eq!(ControlKeyProfile::Command.default_bindings().len(), 2);
         assert_eq!(ControlKeyProfile::Choice.default_bindings().len(), 1);
-        assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 8);
+        assert_eq!(ControlKeyProfile::RangeValue.default_bindings().len(), 10);
         assert_eq!(ControlKeyProfile::ScrollOffset.default_bindings().len(), 8);
         assert_eq!(ControlKeyProfile::Menu.default_bindings().len(), 12);
         assert_eq!(ControlKeyProfile::Selector.default_bindings().len(), 12);

@@ -42,13 +42,7 @@ pub fn segment_corner_radii(
     corner_radii
 }
 
-pub fn track_corner_radii(orientation: Slider2Orientation, radius: Pixels) -> Corners<Pixels> {
-    let mut corner_radii = Corners::default();
-    apply_outer_edge_corner_radii(&mut corner_radii, orientation, radius, true, true);
-    corner_radii
-}
-
-pub fn apply_outer_edge_corner_radii(
+pub(crate) fn apply_outer_edge_corner_radii(
     corner_radii: &mut Corners<Pixels>,
     orientation: Slider2Orientation,
     radius: Pixels,
