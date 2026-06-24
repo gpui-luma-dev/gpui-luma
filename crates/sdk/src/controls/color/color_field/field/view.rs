@@ -34,7 +34,7 @@ struct ColorFieldLayout {
     outside_color: Hsla,
     show_border: bool,
     renderer: ColorFieldRenderer,
-    cached_image: Option<Arc<Image>>,
+    cached_image: Option<Arc<RenderImage>>,
     samples_per_axis: usize,
     thumb_size: Pixels,
     thumb_offset: Pixels,
@@ -111,7 +111,7 @@ impl ColorField {
                     .size_full()
                     .relative()
                     .when_some(cached_image, |this, image| {
-                        this.child(img(image).size_full().absolute().top_0().left_0())
+                        this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
                     })
                     // Intentionally no vector fallback here in raster mode.
                     // This avoids large first-frame quad bursts before image cache is ready.

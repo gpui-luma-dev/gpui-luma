@@ -128,7 +128,7 @@ pub struct ColorFieldState {
     interaction_active: bool,
     window_cursor_claimed: bool,
     hover_inside_domain: bool,
-    image_cache: Option<(FieldImageCacheKey, Arc<Image>)>,
+    image_cache: Option<(FieldImageCacheKey, Arc<RenderImage>)>,
 }
 
 impl ColorFieldState {
@@ -683,7 +683,7 @@ impl ColorFieldState {
         }
     }
 
-    pub(super) fn cached_image(&self) -> Option<Arc<Image>> {
+    pub(super) fn cached_image(&self) -> Option<Arc<RenderImage>> {
         self.image_cache.as_ref().map(|(_, image)| image.clone())
     }
 

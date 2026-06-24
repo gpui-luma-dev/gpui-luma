@@ -2,6 +2,8 @@ use super::super::domain::FieldDomain2D;
 use super::super::model::{ColorFieldModel2D, ColorFieldModelKind};
 use crate::controls::color::color_slider::color_spec::Hsv;
 use gpui::{black, white, *};
+use image::{Frame, ImageBuffer, Rgba};
+use smallvec::smallvec;
 use std::sync::Arc;
 use tiny_skia::{Pixmap, PremultipliedColorU8};
 
@@ -71,7 +73,7 @@ pub(super) fn rasterize_domain_image(
     model: &dyn ColorFieldModel2D,
     hsv: Hsv,
     _samples_per_axis: usize,
-) -> Option<Arc<Image>> {
+) -> Option<Arc<RenderImage>> {
     if domain.is_circle() && model.kind() == ColorFieldModelKind::HueSaturationWheel {
         return rasterize_hue_saturation_wheel_image(size, model, hsv);
     }
@@ -131,14 +133,16 @@ pub(super) fn rasterize_domain_image(
             let b_u8 = ((b_sum * inv).clamp(0.0, 1.0) * 255.0).round() as u8;
             let a_u8 = (alpha * 255.0).round() as u8;
 
-            if let Some(pixel) = PremultipliedColorU8::from_rgba(r_u8, g_u8, b_u8, a_u8) {
+            if let Some(pixel) = PremultipliedColorU8::from_rgba(b_u8, g_u8, r_u8, a_u8) {
                 pixels[(y * width + x) as usize] = pixel;
             }
         }
     }
 
-    let png_data = pixmap.encode_png().ok()?;
-    Some(Arc::new(Image::from_bytes(ImageFormat::Png, png_data)))
+    let raw_bytes = pixmap.data().to_vec();
+    let image_buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, raw_bytes)?;
+    let frame = Frame::new(image_buffer);
+    Some(Arc::new(RenderImage::new(smallvec![frame])))
 }
 
 fn hsl_photoshop_bar_start_u(size: Size<Pixels>, kind: ColorFieldModelKind, is_rect_domain: bool) -> Option<f32> {
@@ -167,7 +171,7 @@ fn rasterize_hue_saturation_wheel_image(
     size: Size<Pixels>,
     model: &dyn ColorFieldModel2D,
     hsv: Hsv,
-) -> Option<Arc<Image>> {
+) -> Option<Arc<RenderImage>> {
     let scale = raster_scale_for_size(size);
     let width = (size.width.as_f32() * scale).round() as u32;
     let height = (size.height.as_f32() * scale).round() as u32;
@@ -201,12 +205,14 @@ fn rasterize_hue_saturation_wheel_image(
             let b_u8 = (rgb.b.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;
             let a_u8 = (alpha * 255.0).round() as u8;
 
-            if let Some(pixel) = PremultipliedColorU8::from_rgba(r_u8, g_u8, b_u8, a_u8) {
+            if let Some(pixel) = PremultipliedColorU8::from_rgba(b_u8, g_u8, r_u8, a_u8) {
                 pixels[(y * width + x) as usize] = pixel;
             }
         }
     }
 
-    let png_data = pixmap.encode_png().ok()?;
-    Some(Arc::new(Image::from_bytes(ImageFormat::Png, png_data)))
+    let raw_bytes = pixmap.data().to_vec();
+    let image_buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, raw_bytes)?;
+    let frame = Frame::new(image_buffer);
+    Some(Arc::new(RenderImage::new(smallvec![frame])))
 }
