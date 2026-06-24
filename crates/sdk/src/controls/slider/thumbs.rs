@@ -2,7 +2,7 @@ use gpui::{Bounds, Pixels};
 
 use super::constraints::clamp_and_snap_value;
 use super::input::wrap_and_snap;
-use super::model::{SliderModel, SliderThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId};
+use super::model::{SliderModel, SliderThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId, value_for_position};
 use crate::controls::value::ControlRange;
 
 const DEFAULT_HIT_RADIUS: f32 = 0.04;
@@ -103,7 +103,8 @@ pub fn constrain_thumb_value(value: f32, model: &SliderModel) -> f32 {
 }
 
 pub fn thumb_value(thumb: &SliderThumbValue, range: ControlRange, model: &SliderModel) -> f32 {
-    constrain_thumb_value(range.value_at(thumb.position), model)
+    let _ = range;
+    constrain_thumb_value(value_for_position(model, thumb.position), model)
 }
 
 pub fn insert_thumb(model: &mut SliderModel, percentage: f32) -> Option<ThumbId> {
@@ -175,6 +176,7 @@ mod tests {
             template: default_slider_template(),
             thumb_policy: policy,
             domain_track: None,
+            value_map: None,
         }
     }
 

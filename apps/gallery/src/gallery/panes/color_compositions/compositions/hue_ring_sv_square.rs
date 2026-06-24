@@ -3,10 +3,11 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
-use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
+use gpui_luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::ColorSwatch;
 use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
@@ -15,7 +16,7 @@ use crate::gallery::panes::color::common::{detail_row, notify_control};
 
 pub(in crate::gallery) struct HsvWheelState {
     look: Arc<ShadcnLook>,
-    color_ring: Entity<ColorRingState>,
+    color_ring: Entity<SliderControl>,
     plane_sv: Entity<ColorFieldState>,
     hsv: Hsv,
     _subscriptions: Vec<Subscription>,
@@ -23,32 +24,27 @@ pub(in crate::gallery) struct HsvWheelState {
 
 impl HsvWheelState {
     const RING_OUTER_SIZE_PX: f32 = 300.0;
+    const RING_THICKNESS_PX: f32 = sizing::RING_THICKNESS_MEDIUM;
 
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let hsv = Hsv { h: 220.0, s: 0.88, v: 0.6, a: 1.0 };
-        let color_ring = cx.new(|cx| {
-            ColorRingState::hue(
-                "composition-hsv-wheel-ring",
-                hsv.h,
-                HueRingDelegate { saturation: 1.0, lightness: 0.5 },
-                cx,
-            )
+        let color_ring = ColorRingBuilder::hue("composition-hsv-wheel-ring", hsv.h, 1.0, 0.5)
             .size(Size::Size(px(Self::RING_OUTER_SIZE_PX)))
             .ring_thickness_size(Size::Medium)
             .thumb_size(16.0)
-        });
+            .spawn(cx);
         let plane_sv = cx.new(|_| {
             ColorFieldState::saturation_value("composition-hsv-wheel-plane", hsv, 16.0)
-                .raster_image()
+                // DO NOT USE .raster_image()
                 .rounded(px(0.0))
                 .no_border()
                 .edge_to_edge()
         });
 
         let subscriptions = vec![
-            cx.subscribe(&color_ring, |this, _, event: &ColorRingEvent, cx| {
-                let hue = match event {
-                    ColorRingEvent::Change(value) | ColorRingEvent::Release(value) => *value,
+            cx.subscribe(&color_ring, |this, _, event: &SliderEvent, cx| {
+                let Some(hue) = primary_slider_value(event) else {
+                    return;
                 };
                 this.hsv.h = hue;
                 this.plane_sv.update(cx, |plane, cx| {
@@ -76,21 +72,11 @@ impl HsvWheelState {
 }
 
 impl gpui::Render for HsvWheelState {
-    fn render(&mut self, _window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (ring_outer_size, plane_half, plane_size) = {
-            let ring_state = self.color_ring.read(cx);
-            let ring_outer_size = match ring_state.size {
-                Size::XSmall => 140.0,
-                Size::Small => 180.0,
-                Size::Medium => 220.0,
-                Size::Large => 280.0,
-                Size::Size(px) => px.as_f32(),
-            };
-            let ring_inner_diameter = (ring_outer_size - 2.0 * ring_state.ring_thickness_px()).max(0.0);
-            let plane_size = (ring_inner_diameter / SQRT_2 - 8.0).max(40.0);
-            let plane_half = plane_size / 2.0;
-            (ring_outer_size, plane_half, plane_size)
-        };
+    fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let ring_outer_size = Self::RING_OUTER_SIZE_PX;
+        let ring_inner_diameter = (ring_outer_size - 2.0 * Self::RING_THICKNESS_PX).max(0.0);
+        let plane_size = (ring_inner_diameter / SQRT_2 - 8.0).max(40.0);
+        let plane_half = plane_size / 2.0;
 
         let color = self.hsv.to_hsla_ext();
 

@@ -1,8 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 use std::ops::RangeInclusive;
+use std::sync::Arc;
 
-use gpui::{AbsoluteLength, AppContext, Entity, Hsla, SharedString};
+use gpui::{AbsoluteLength, AppContext, Bounds, Entity, Hsla, Pixels, Point, SharedString};
 
 use super::constraints::{clamp_and_snap_value, normalize_intervals};
 use super::control::SliderControl;
@@ -91,6 +91,22 @@ pub struct SliderThumbValue {
     pub role: SliderThumbRole,
 }
 
+pub trait SliderValueMapping: Send + Sync + 'static {
+    fn value_to_position(&self, value: f32, range: ControlRange) -> f32;
+
+    fn position_to_value(&self, position: f32, range: ControlRange) -> f32;
+}
+
+pub trait RadialHitTarget: Send + Sync + 'static {
+    fn accepts_pointer(
+        &self,
+        bounds: Bounds<Pixels>,
+        pointer: Point<Pixels>,
+        thumb_position: f32,
+        reversed: bool,
+    ) -> bool;
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrackSegmentKind {
     Domain,
@@ -159,6 +175,8 @@ pub struct SliderModel {
     pub(crate) template: Arc<dyn SliderTemplate>,
     pub(crate) thumb_policy: SliderThumbPolicy,
     pub(crate) domain_track: Option<Arc<dyn DomainTrackRenderer>>,
+    pub(crate) value_map: Option<Arc<dyn SliderValueMapping>>,
+    pub(crate) radial_hit_target: Option<Arc<dyn RadialHitTarget>>,
 }
 
 pub struct SliderRenderModel<'a> {
@@ -213,6 +231,8 @@ impl SliderBuilder {
                 template: default_slider_template(),
                 thumb_policy: SliderThumbPolicy::default(),
                 domain_track: None,
+                value_map: None,
+                radial_hit_target: None,
             },
         }
     }
@@ -264,6 +284,17 @@ impl SliderBuilder {
         self
     }
 
+    pub fn value_map(mut self, mapping: Arc<dyn SliderValueMapping>) -> Self {
+        self.model.value_map = Some(mapping);
+        self.sync_primary_thumb_position();
+        self
+    }
+
+    pub fn radial_hit_target(mut self, target: Arc<dyn RadialHitTarget>) -> Self {
+        self.model.radial_hit_target = Some(target);
+        self
+    }
+
     pub fn size(mut self, size: ControlSize) -> Self {
         self.model.size = size;
         self
@@ -300,7 +331,7 @@ impl SliderBuilder {
 
     pub fn value(mut self, value: impl Into<f64>) -> Self {
         let value = constrain_primary_value(value_from_input(value), &self.model);
-        self.set_primary_position(self.model.range.percentage(value));
+        self.set_primary_position(position_for_value(&self.model, value));
         self
     }
 
@@ -356,7 +387,7 @@ impl SliderBuilder {
             .into_iter()
             .map(|(value, preview)| {
                 let value = value_from_input(value);
-                let position = self.model.range.percentage(constrain_primary_value(value, &self.model));
+                let position = position_for_value(&self.model, constrain_primary_value(value, &self.model));
                 SliderThumbValue { id: ThumbId::next(), position, preview, role: SliderThumbRole::Value }
             })
             .collect();
@@ -370,7 +401,7 @@ impl SliderBuilder {
 
     fn sync_primary_thumb_position(&mut self) {
         let value = primary_value(&self.model);
-        self.set_primary_position(self.model.range.percentage(value));
+        self.set_primary_position(position_for_value(&self.model, value));
     }
 
     fn set_primary_position(&mut self, position: f32) {
@@ -398,8 +429,25 @@ impl SliderBuilder {
 
 pub(crate) fn primary_value(model: &SliderModel) -> f32 {
     let position = model.thumbs.first().map(|thumb| thumb.position).unwrap_or(0.0);
-    let value = model.range.value_at(position);
+    let value = value_for_position(model, position);
     constrain_primary_value(value, model)
+}
+
+pub(crate) fn value_for_position(model: &SliderModel, position: f32) -> f32 {
+    model
+        .value_map
+        .as_ref()
+        .map(|mapping| mapping.position_to_value(position, model.range))
+        .unwrap_or_else(|| model.range.value_at(position))
+}
+
+pub(crate) fn position_for_value(model: &SliderModel, value: f32) -> f32 {
+    model
+        .value_map
+        .as_ref()
+        .map(|mapping| mapping.value_to_position(value, model.range))
+        .unwrap_or_else(|| model.range.percentage(value))
+        .clamp(0.0, 1.0)
 }
 
 pub(crate) fn constrain_primary_value(value: f32, model: &SliderModel) -> f32 {

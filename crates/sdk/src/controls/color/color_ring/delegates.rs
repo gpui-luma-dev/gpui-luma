@@ -2,6 +2,8 @@ use super::common::{
     mirrored_lightness, mirrored_saturation, position_from_mirrored_lightness, position_from_mirrored_saturation,
 };
 use super::ring::{ColorRingDelegate, ColorRingState};
+use super::track_context::ColorRingTrackContext;
+use super::types::ColorRingTrackDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
 use crate::controls::color::shape::{Arc, ArcData};
 use crate::controls::color::style::Size;
@@ -194,6 +196,75 @@ impl ColorRingDelegate for HueRingDelegate {
     }
 
     fn get_color_at_position(&self, _circle: &ColorRingState, position: f32) -> Hsla {
+        let hue = position.rem_euclid(1.0);
+        hsla(hue, self.saturation, self.lightness, 1.0)
+    }
+}
+
+impl ColorRingTrackDelegate for SaturationRingDelegate {
+    fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
+        let hue_deg = normalize_hue_degrees(self.hue);
+        let segments = segments_for_size(context.size);
+        let ring_thickness = context.ring_thickness_px();
+        let rotation_turns = context.rotation_turns();
+        let hsv_value = self.hsv_value.clamp(0.0, 1.0);
+
+        paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
+            let sat = mirrored_saturation(t0);
+            Hsv { h: hue_deg, s: sat, v: hsv_value, a: 1.0 }.to_hsla_ext()
+        });
+    }
+
+    fn get_color_for_context(&self, _context: &ColorRingTrackContext, position: f32) -> Hsla {
+        Hsv {
+            h: normalize_hue_degrees(self.hue),
+            s: mirrored_saturation(position),
+            v: self.hsv_value.clamp(0.0, 1.0),
+            a: 1.0,
+        }
+        .to_hsla_ext()
+    }
+}
+
+impl ColorRingTrackDelegate for LightnessRingDelegate {
+    fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
+        let hue = normalize_hue_degrees(self.hue) / 360.0;
+        let saturation = self.saturation.clamp(0.0, 1.0);
+        let segments = segments_for_size(context.size);
+        let ring_thickness = context.ring_thickness_px();
+        let rotation_turns = context.rotation_turns();
+
+        paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
+            hsla(hue, saturation, mirrored_lightness(t0), 1.0)
+        });
+    }
+
+    fn get_color_for_context(&self, _context: &ColorRingTrackContext, position: f32) -> Hsla {
+        hsla(
+            normalize_hue_degrees(self.hue) / 360.0,
+            self.saturation.clamp(0.0, 1.0),
+            mirrored_lightness(position),
+            1.0,
+        )
+    }
+}
+
+impl ColorRingTrackDelegate for HueRingDelegate {
+    fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
+        let saturation = self.saturation;
+        let lightness = self.lightness;
+        let segments = segments_for_size(context.size);
+        let ring_thickness = context.ring_thickness_px();
+        let rotation_turns = context.rotation_turns();
+
+        paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
+            let t1 = t0 + (1.0 / segments as f32);
+            let t_mid = (t0 + t1) * 0.5;
+            hsla(t_mid, saturation, lightness, 1.0)
+        });
+    }
+
+    fn get_color_for_context(&self, _context: &ColorRingTrackContext, position: f32) -> Hsla {
         let hue = position.rem_euclid(1.0);
         hsla(hue, self.saturation, self.lightness, 1.0)
     }

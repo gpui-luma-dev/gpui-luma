@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, IntoElement, Subscription, div, prelude::*, px};
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
-use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, HueRingDelegate};
+use gpui_luma::controls::color::color_field::model::ColorFieldModelKind;
+use gpui_luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
@@ -14,26 +16,23 @@ use crate::gallery::panes::color::common::{detail_row, notify_control};
 pub(in crate::gallery) struct SvTriangleState {
     look: Arc<ShadcnLook>,
     hsv: Hsv,
-    ring: Entity<ColorRingState>,
+    ring: Entity<SliderControl>,
     triangle: Entity<ColorFieldState>,
     _subscriptions: Vec<Subscription>,
 }
 
 impl SvTriangleState {
+    const RING_SIZE_PX: f32 = 300.0;
+    const RING_THICKNESS_PX: f32 = sizing::RING_THICKNESS_MEDIUM;
+
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 317.0, s: 0.83, v: 0.84, a: 1.0 };
 
-        let ring = cx.new(|cx| {
-            ColorRingState::hue(
-                "composition-sv-triangle-ring",
-                initial_hsv.h,
-                HueRingDelegate { saturation: 1.0, lightness: 0.5 },
-                cx,
-            )
-            .size(Size::Size(px(300.0)))
+        let ring = ColorRingBuilder::hue("composition-sv-triangle-ring", initial_hsv.h, 1.0, 0.5)
+            .size(Size::Size(px(Self::RING_SIZE_PX)))
             .ring_thickness_size(Size::Medium)
             .thumb_size(14.0)
-        });
+            .spawn(cx);
 
         let triangle = cx.new(|_| {
             let (white, black, hue) = sv_triangle_vertices();
@@ -51,9 +50,9 @@ impl SvTriangleState {
         });
 
         let subscriptions = vec![
-            cx.subscribe(&ring, |this, _, event: &ColorRingEvent, cx| {
-                let hue = match event {
-                    ColorRingEvent::Change(value) | ColorRingEvent::Release(value) => *value,
+            cx.subscribe(&ring, |this, _, event: &SliderEvent, cx| {
+                let Some(hue) = primary_slider_value(event) else {
+                    return;
                 };
                 this.hsv.h = hue;
                 this.ring.update(cx, |ring, cx| {
@@ -84,20 +83,11 @@ impl SvTriangleState {
 }
 
 impl gpui::Render for SvTriangleState {
-    fn render(&mut self, _window: &mut gpui::Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (ring_outer_size, triangle_size, triangle_half) = {
-            let ring_state = self.ring.read(cx);
-            let outer = match ring_state.size {
-                Size::XSmall => 140.0,
-                Size::Small => 180.0,
-                Size::Medium => 220.0,
-                Size::Large => 280.0,
-                Size::Size(px) => px.as_f32(),
-            };
-            let inner = (outer - 2.0 * ring_state.ring_thickness_px()).max(0.0);
-            let tri = (inner - 2.0).max(40.0);
-            (outer, tri, tri * 0.5)
-        };
+    fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let ring_outer_size = Self::RING_SIZE_PX;
+        let inner = (ring_outer_size - 2.0 * Self::RING_THICKNESS_PX).max(0.0);
+        let triangle_size = (inner - 2.0).max(40.0);
+        let triangle_half = triangle_size * 0.5;
 
         let swatch = self.hsv.to_hsla_ext();
 
@@ -193,6 +183,10 @@ impl ColorFieldModel2D for PhotoshopSvTriangleModel {
         };
 
         Hsv { h: hsv.h, s: saturation, v: value, a: 1.0 }.to_hsla_ext()
+    }
+
+    fn kind(&self) -> ColorFieldModelKind {
+        ColorFieldModelKind::SvAtHue
     }
 }
 

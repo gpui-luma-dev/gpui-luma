@@ -53,13 +53,20 @@ impl SliderTemplate for ThemedSliderTemplate {
             track_bounds,
             hover,
             mouse_down,
+            mouse_move,
             mouse_up,
             mouse_up_out,
             drag_move,
             thumb_mouse_down,
         } = handlers;
-        let interaction =
-            SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move: drag_move.clone() };
+        let interaction = SliderInteractionHandlers {
+            hover,
+            mouse_down,
+            mouse_move,
+            mouse_up,
+            mouse_up_out,
+            drag_move: drag_move.clone(),
+        };
         let model_id = model.id.clone();
         let enabled = model.enabled;
 

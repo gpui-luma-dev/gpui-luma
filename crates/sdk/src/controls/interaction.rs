@@ -40,15 +40,11 @@ impl ControlInteraction {
     }
 
     pub fn handle_hover(&mut self, hovered: bool) -> bool {
-        if self.state.hovered == hovered && (hovered || !self.state.pressed) {
+        if self.state.hovered == hovered {
             return false;
         }
 
         self.state.hovered = hovered;
-        if !hovered {
-            self.state.pressed = false;
-        }
-
         true
     }
 
@@ -69,5 +65,9 @@ impl ControlInteraction {
 
         self.state.pressed = false;
         true
+    }
+
+    pub fn is_pressed(&self) -> bool {
+        self.state.pressed
     }
 }

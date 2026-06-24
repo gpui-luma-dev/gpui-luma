@@ -8,9 +8,13 @@ use gpui::{
 };
 use gpui_luma::{hstack, vstack};
 use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, WhiteMixHueWheelModel};
-use gpui_luma::controls::color::color_ring::{ColorRingEvent, ColorRingState, LightnessRingDelegate, ring::sizing};
+use gpui_luma::controls::color::color_ring::{
+    ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
+    refresh_color_ring, sizing, update_ring_delegate,
+};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
@@ -34,7 +38,9 @@ const RESULT_SWATCH_HEIGHT: f32 = 112.0;
 pub(in crate::gallery) struct ColorHarmoniesState {
     look: Arc<ShadcnLook>,
     wheel: Entity<ColorFieldState>,
-    lightness_ring: Entity<ColorRingState>,
+    lightness_ring: Entity<SliderControl>,
+    lightness_renderer: Arc<ColorRingDomainRenderer>,
+    lightness_context: ColorRingTrackContext,
     harmony_menu: Entity<Selector>,
     color_input: TextField,
     color_input_programmatic_update: bool,
@@ -57,18 +63,16 @@ impl ColorHarmoniesState {
             .inside_field()
             .raster_image_prewarmed_square(WHEEL_SIZE)
         });
-        let lightness_ring = cx.new(|cx| {
-            ColorRingState::lightness(
-                "color-harmonies-lightness-ring",
-                color.l,
-                LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s },
-                cx,
-            )
-            .size(Size::Size(px(RING_SIZE)))
-            .ring_thickness_size(Size::Medium)
-            .thumb_size(14.0)
-            .rotation_degrees(180.0)
-        });
+        let lightness_builder =
+            ColorRingBuilder::lightness("color-harmonies-lightness-ring", color.l, color.h * 360.0, color.s)
+                .size(Size::Size(px(RING_SIZE)))
+                .ring_thickness_size(Size::Medium)
+                .thumb_size(14.0)
+                .allow_inner_target(true)
+                .rotation_degrees(180.0);
+        let lightness_renderer = lightness_builder.domain_renderer();
+        let lightness_context = lightness_builder.track_context();
+        let lightness_ring = lightness_builder.spawn(cx);
         let harmony_menu = look
             .selector("color-harmonies-harmony")
             .label("Combination")
@@ -92,9 +96,9 @@ impl ColorHarmoniesState {
                 this.sync_ring(cx);
                 cx.notify();
             }),
-            cx.subscribe(&lightness_ring, |this, _, event: &ColorRingEvent, cx| {
-                let lightness = match event {
-                    ColorRingEvent::Change(value) | ColorRingEvent::Release(value) => *value,
+            cx.subscribe(&lightness_ring, |this, _, event: &SliderEvent, cx| {
+                let Some(lightness) = primary_slider_value(event) else {
+                    return;
                 };
                 this.color.l = lightness.clamp(0.0, 1.0);
                 this.sync_wheel(cx);
@@ -125,6 +129,8 @@ impl ColorHarmoniesState {
             look,
             wheel,
             lightness_ring,
+            lightness_renderer,
+            lightness_context,
             harmony_menu,
             color_input,
             color_input_programmatic_update: false,
@@ -143,10 +149,13 @@ impl ColorHarmoniesState {
 
     fn sync_ring(&mut self, cx: &mut Context<Self>) {
         let color = self.color;
-        self.lightness_ring.update(cx, |ring, cx| {
-            ring.set_value(color.l, cx);
-            ring.set_delegate(Box::new(LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s }), cx);
-        });
+        self.lightness_ring.update(cx, |ring, cx| ring.set_value(color.l, cx));
+        update_ring_delegate(
+            &self.lightness_renderer,
+            Arc::new(LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s }),
+            self.lightness_context.clone(),
+        );
+        refresh_color_ring(&self.lightness_ring, cx);
         self.sync_color_input(cx);
     }
 
@@ -216,8 +225,7 @@ fn hsla_to_wheel_hsv(color: Hsla) -> Hsv {
     Hsv {
         h: (color.h * 360.0).rem_euclid(360.0),
         s: color.s.clamp(0.0, 1.0),
-        // The white-mix wheel carries HSL lightness through `v`.
-        v: color.l.clamp(0.0, 1.0),
+        v: 1.0,
         a: color.a.clamp(0.0, 1.0),
     }
 }
@@ -424,7 +432,7 @@ fn render_combinations_card_body(
     title_text: Hsla,
     body_text: Hsla,
     border: Hsla,
-    lightness_ring: Entity<ColorRingState>,
+    lightness_ring: Entity<SliderControl>,
     wheel: Entity<ColorFieldState>,
     color_input: TextField,
     harmony_menu: Entity<Selector>,

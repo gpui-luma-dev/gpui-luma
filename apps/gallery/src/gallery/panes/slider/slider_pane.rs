@@ -2,14 +2,15 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, Context, DragMoveEvent, Entity, IntoElement, MouseDownEvent, MouseUpEvent, Pixels, Render,
-    SharedString, Subscription, Window, div, prelude::*, px,
+    AnyElement, App, Bounds, Context, DragMoveEvent, Entity, IntoElement, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
+    Pixels, Render, SharedString, Subscription, Window, div, prelude::*, px,
 };
 use gpui_luma::controls::color::color_slider::ColorSliderBuilder;
 use gpui_luma::controls::slider::{
     Slider, SliderInputStrategy, SliderThumbPolicy, SliderBoundsHandler, SliderDrag, SliderEvent, SliderHoverHandler,
-    SliderMouseDownHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
-    SliderThumbRole, SliderThumbSize, SliderThumbValue, ThumbId, TrackPresentation, build_track_segments,
+    SliderMouseDownHandler, SliderMouseMoveHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate,
+    SliderTemplateHandlers, SliderThumbRole, SliderThumbSize, SliderThumbValue, ThumbId, TrackPresentation,
+    build_track_segments,
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState};
@@ -534,6 +535,7 @@ fn slider_preview_handlers() -> SliderTemplateHandlers {
         track_bounds: Box::new(noop_bounds) as SliderBoundsHandler,
         hover: Box::new(noop_hover) as SliderHoverHandler,
         mouse_down: Box::new(noop_mouse_down) as SliderMouseDownHandler,
+        mouse_move: Box::new(noop_mouse_move) as SliderMouseMoveHandler,
         mouse_up: Box::new(noop_mouse_up) as SliderMouseUpHandler,
         mouse_up_out: Box::new(noop_mouse_up) as SliderMouseUpHandler,
         drag_move: Arc::new(noop_drag_move),
@@ -546,6 +548,8 @@ fn noop_bounds(_: &Bounds<Pixels>, _: &mut Window, _: &mut App) {}
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
 
 fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_move(_: &MouseMoveEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_mouse_up(_: &MouseUpEvent, _: &mut Window, _: &mut App) {}
 

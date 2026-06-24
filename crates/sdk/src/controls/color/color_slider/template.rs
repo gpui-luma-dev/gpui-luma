@@ -76,13 +76,20 @@ impl SliderTemplate for ColorSliderTemplate {
             track_bounds,
             hover,
             mouse_down,
+            mouse_move,
             mouse_up,
             mouse_up_out,
             drag_move,
             thumb_mouse_down,
         } = handlers;
-        let interaction =
-            SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move: drag_move.clone() };
+        let interaction = SliderInteractionHandlers {
+            hover,
+            mouse_down,
+            mouse_move,
+            mouse_up,
+            mouse_up_out,
+            drag_move: drag_move.clone(),
+        };
 
         let primary_thumb =
             model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());

@@ -8,6 +8,7 @@ use crate::controls::color::style::Size;
 
 use super::delegates::{HueArcDelegate, LightnessArcDelegate, SaturationArcDelegate};
 use super::domain_renderer::ColorArcDomainRenderer;
+use super::hit_target::ColorArcHitTarget;
 use super::raster::{ColorArcRenderer, RasterArcDelegate};
 use super::template::{ColorArcTemplateConfig, color_arc_template};
 use super::track_context::{ColorArcTrackContext, arc_angle_range};
@@ -34,6 +35,7 @@ impl ColorArcBuilder {
                 .angular(min_angle, max_angle)
                 .domain()
                 .domain_track(domain_renderer.clone())
+                .radial_hit_target(Arc::new(ColorArcHitTarget::new(track_context.clone(), None)))
                 .template(color_arc_template(Arc::clone(&template_config))),
             template_config,
             domain_renderer,
@@ -79,7 +81,7 @@ impl ColorArcBuilder {
             ColorArcRenderer::Vector => Arc::new(SaturationArcDelegate { hue, hsv_value }),
             ColorArcRenderer::Raster => Arc::new(RasterArcDelegate::saturation(hue, hsv_value)),
         };
-        Self::new(id, value, delegate)
+        Self::new(id, value, delegate).range(0.0..1.0).step(0.001)
     }
 
     pub fn lightness_with_renderer(
@@ -93,7 +95,7 @@ impl ColorArcBuilder {
             ColorArcRenderer::Vector => Arc::new(LightnessArcDelegate { hue, saturation }),
             ColorArcRenderer::Raster => Arc::new(RasterArcDelegate::lightness(hue, saturation)),
         };
-        Self::new(id, value, delegate)
+        Self::new(id, value, delegate).range(0.0..1.0).step(0.001)
     }
 
     pub fn range(mut self, range: impl Into<ControlRange>) -> Self {
@@ -181,10 +183,12 @@ impl ColorArcBuilder {
         self.track_context.clone()
     }
 
-    pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SliderControl> {
+    pub fn spawn(mut self, cx: &mut impl AppContext) -> Entity<SliderControl> {
         {
             let mut config = self.template_config.write().expect("color arc template config");
             config.context = self.track_context.clone();
+            self.slider.model.radial_hit_target =
+                Some(Arc::new(ColorArcHitTarget::new(self.track_context.clone(), config.thumb_size)));
         }
         self.domain_renderer.set_context(self.track_context);
         self.slider.value(self.initial_value).spawn(cx)

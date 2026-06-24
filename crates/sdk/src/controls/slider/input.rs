@@ -62,17 +62,21 @@ pub fn percentage_from_position(
         }
         SliderInputStrategy::Angular { min_angle, max_angle } => {
             let angle = angle_from_position(bounds, position)?;
-            let span = max_angle - min_angle;
-            if span.abs() <= f32::EPSILON {
-                return None;
-            }
-
-            let normalized_angle = normalize_angle_for_range(angle, min_angle, max_angle);
-            ((normalized_angle.clamp(min_angle, max_angle) - min_angle) / span).clamp(0.0, 1.0)
+            percentage_from_angle(angle, min_angle, max_angle)?
         }
     };
 
     Some(position_from_pointer(raw, reversed))
+}
+
+pub fn percentage_from_angle(angle: f32, min_angle: f32, max_angle: f32) -> Option<f32> {
+    let span = max_angle - min_angle;
+    if span.abs() <= f32::EPSILON {
+        return None;
+    }
+
+    let normalized_angle = normalize_angle_for_range(angle, min_angle, max_angle);
+    Some(((normalized_angle.clamp(min_angle, max_angle) - min_angle) / span).clamp(0.0, 1.0))
 }
 
 pub fn angle_for_percentage(min_angle: f32, max_angle: f32, percentage: f32) -> f32 {
@@ -115,31 +119,6 @@ pub fn normalize_angle_for_range(angle: f32, min_angle: f32, max_angle: f32) -> 
     }
 
     normalized_angle
-}
-
-pub fn angular_drag_value(
-    pointer_angle: f32,
-    offset: f32,
-    min_angle: f32,
-    max_angle: f32,
-    range: ControlRange,
-    wrapping: bool,
-    step: f32,
-) -> Option<f32> {
-    let span = max_angle - min_angle;
-    if span.abs() <= f32::EPSILON {
-        return None;
-    }
-
-    let target_angle = pointer_angle - offset;
-    if wrapping {
-        let raw_value = range.start + ((target_angle - min_angle) / span) * range.span();
-        Some(wrap_and_snap(raw_value, range, step))
-    } else {
-        let target_angle = target_angle.clamp(min_angle, max_angle);
-        let percentage = ((target_angle - min_angle) / span).clamp(0.0, 1.0);
-        Some(range.value_at(percentage))
-    }
 }
 
 pub fn wrap_value(value: f32, range: ControlRange) -> f32 {
@@ -191,32 +170,5 @@ mod tests {
         let range = ControlRange::new(0.0, 360.0);
         assert_eq!(wrap_value(370.0, range), 10.0);
         assert_eq!(wrap_value(-10.0, range), 350.0);
-    }
-
-    #[test]
-    fn angular_drag_value_wraps_when_enabled() {
-        let range = ControlRange::new(0.0, 360.0);
-        let min_angle = 0.0;
-        let max_angle = 2.0 * PI;
-        let span = max_angle - min_angle;
-        let offset = 0.0;
-        let pointer_past_end = min_angle + span * 1.05;
-
-        let value = angular_drag_value(pointer_past_end, offset, min_angle, max_angle, range, true, 1.0);
-
-        assert_eq!(value, Some(18.0));
-    }
-
-    #[test]
-    fn angular_drag_value_clamps_when_not_wrapping() {
-        let range = ControlRange::new(0.0, 360.0);
-        let min_angle = -1.25 * PI;
-        let max_angle = 0.25 * PI;
-        let offset = 0.0;
-        let pointer_past_end = max_angle + 0.5;
-
-        let value = angular_drag_value(pointer_past_end, offset, min_angle, max_angle, range, false, 1.0);
-
-        assert_eq!(value, Some(360.0));
     }
 }

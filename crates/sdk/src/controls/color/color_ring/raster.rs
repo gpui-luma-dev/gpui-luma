@@ -3,12 +3,13 @@ use super::common::{
     size_px as component_size_px,
 };
 use super::ring::{ColorRingDelegate, ColorRingEvent, ColorRingState};
+use super::track_context::ColorRingTrackContext;
+use super::types::ColorRingTrackDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
 use crate::controls::color::style::Size as ComponentSize;
 use gpui::{prelude::*, *};
-use std::cell::RefCell;
 use std::f32::consts::TAU;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tiny_skia::{Pixmap, PremultipliedColorU8};
 
 pub type ColorRingRasterState = ColorRingState;
@@ -48,7 +49,7 @@ pub struct RasterRingDelegate {
     hsv_value: f32,
     saturation: f32,
     lightness: f32,
-    image_cache: RefCell<RingImageCache>,
+    image_cache: Mutex<RingImageCache>,
 }
 
 impl RasterRingDelegate {
@@ -59,7 +60,7 @@ impl RasterRingDelegate {
             hsv_value: 1.0,
             saturation: saturation.clamp(0.0, 1.0),
             lightness: lightness.clamp(0.0, 1.0),
-            image_cache: RefCell::new(None),
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -70,7 +71,7 @@ impl RasterRingDelegate {
             hsv_value: hsv_value.clamp(0.0, 1.0),
             saturation: 1.0,
             lightness: 0.5,
-            image_cache: RefCell::new(None),
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -81,7 +82,7 @@ impl RasterRingDelegate {
             hsv_value: 1.0,
             saturation: saturation.clamp(0.0, 1.0),
             lightness: 1.0,
-            image_cache: RefCell::new(None),
+            image_cache: Mutex::new(None),
         }
     }
 
@@ -168,7 +169,7 @@ impl RasterRingDelegate {
 
     fn ensure_cache(&self, circle: &ColorRingState, image_size: Size<Pixels>) -> Option<Arc<Image>> {
         let key = self.cache_key(circle);
-        if let Some((cached_size, cached_key, image)) = self.image_cache.borrow().as_ref()
+        if let Some((cached_size, cached_key, image)) = self.image_cache.lock().expect("ring cache lock").as_ref()
             && *cached_size == image_size
             && *cached_key == key
         {
@@ -236,7 +237,7 @@ impl RasterRingDelegate {
 
         let png_data = pixmap.encode_png().ok()?;
         let image = Arc::new(Image::from_bytes(ImageFormat::Png, png_data));
-        *self.image_cache.borrow_mut() = Some((image_size, key, image.clone()));
+        *self.image_cache.lock().expect("ring cache lock") = Some((image_size, key, image.clone()));
         Some(image)
     }
 }
@@ -259,6 +260,100 @@ impl ColorRingDelegate for RasterRingDelegate {
 
     fn value_to_position(&self, _circle: &ColorRingState, value: f32) -> f32 {
         self.position_from_value_percent(value)
+    }
+}
+
+impl ColorRingTrackDelegate for RasterRingDelegate {
+    fn paint_domain_track(&self, _context: &ColorRingTrackContext, _bounds: Bounds<Pixels>, _window: &mut Window) {}
+
+    fn get_color_for_context(&self, _context: &ColorRingTrackContext, position: f32) -> Hsla {
+        self.color_at_position(position)
+    }
+
+    fn raster_cached_image(&self, context: &ColorRingTrackContext, image_size: Size<Pixels>) -> Option<Arc<Image>> {
+        let key = RingCacheKey {
+            mode: match self.mode {
+                ColorRingRasterMode::Hue => 0,
+                ColorRingRasterMode::Saturation => 1,
+                ColorRingRasterMode::Lightness => 2,
+            },
+            hue: (self.hue.rem_euclid(360.0) * 10.0).round() as u16,
+            value: (self.hsv_value.clamp(0.0, 1.0) * 1000.0).round() as u16,
+            saturation: (self.saturation.clamp(0.0, 1.0) * 1000.0).round() as u16,
+            lightness: (self.lightness.clamp(0.0, 1.0) * 1000.0).round() as u16,
+            ring_thickness: (context.ring_thickness_px().clamp(1.0, 200.0) * 10.0).round() as u16,
+            rotation: (context.rotation_turns() * 3600.0).round() as u16,
+        };
+        if let Some((cached_size, cached_key, image)) = self.image_cache.lock().expect("ring cache lock").as_ref()
+            && *cached_size == image_size
+            && *cached_key == key
+        {
+            return Some(image.clone());
+        }
+
+        let cache_scale = Self::cache_scale(context.size);
+        let width = (image_size.width.as_f32() * cache_scale).round() as u32;
+        let height = (image_size.height.as_f32() * cache_scale).round() as u32;
+        if width == 0 || height == 0 {
+            return None;
+        }
+
+        let mut pixmap = Pixmap::new(width, height)?;
+        let pixels = pixmap.pixels_mut();
+
+        let center_x = width as f32 / 2.0;
+        let center_y = height as f32 / 2.0;
+        let outer_radius = width.min(height) as f32 / 2.0;
+        let ring_thickness = context.ring_thickness_px() * cache_scale;
+        let inner_radius = (outer_radius - ring_thickness).max(0.0);
+        let rotation_turns = context.rotation_turns();
+
+        for y in 0..height {
+            for x in 0..width {
+                let mut r_sum = 0.0_f32;
+                let mut g_sum = 0.0_f32;
+                let mut b_sum = 0.0_f32;
+                let mut covered = 0_u8;
+
+                for sy in [0.25_f32, 0.75_f32] {
+                    for sx in [0.25_f32, 0.75_f32] {
+                        let dx = x as f32 + sx - center_x;
+                        let dy = y as f32 + sy - center_y;
+                        let dist = (dx * dx + dy * dy).sqrt();
+                        if dist > outer_radius || dist < inner_radius {
+                            continue;
+                        }
+
+                        let theta = dy.atan2(dx);
+                        let position = (0.25 + (theta / TAU) - rotation_turns).rem_euclid(1.0);
+                        let rgb = self.color_at_position(position).to_rgb();
+                        r_sum += rgb.r;
+                        g_sum += rgb.g;
+                        b_sum += rgb.b;
+                        covered += 1;
+                    }
+                }
+
+                if covered == 0 {
+                    continue;
+                }
+
+                let inv = 1.0 / covered as f32;
+                let r_u8 = (r_sum * inv * 255.0).round() as u8;
+                let g_u8 = (g_sum * inv * 255.0).round() as u8;
+                let b_u8 = (b_sum * inv * 255.0).round() as u8;
+                let a_u8 = ((covered as f32 / 4.0) * 255.0).round() as u8;
+
+                if let Some(pixel) = PremultipliedColorU8::from_rgba(r_u8, g_u8, b_u8, a_u8) {
+                    pixels[(y * width + x) as usize] = pixel;
+                }
+            }
+        }
+
+        let png_data = pixmap.encode_png().ok()?;
+        let image = Arc::new(Image::from_bytes(ImageFormat::Png, png_data));
+        *self.image_cache.lock().expect("ring cache lock") = Some((image_size, key, image.clone()));
+        Some(image)
     }
 }
 

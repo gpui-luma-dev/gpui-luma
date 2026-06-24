@@ -7,8 +7,8 @@ use std::f32::consts::FRAC_PI_2;
 
 use gpui::{
     App, BorderStyle, Bounds, Corners, Div, DragMoveEvent, Edges, Hsla, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, PaintQuad, Pixels, Point, SharedString, Stateful, Window, canvas, div, hsla, point, px, size,
-    transparent_black, prelude::*,
+    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, SharedString, Stateful, Window, canvas, div, hsla, point,
+    px, size, transparent_black, prelude::*,
 };
 
 use crate::controls::color::shape::{Arc as ShapeArc, ArcData};
@@ -25,6 +25,7 @@ pub(crate) use crate::controls::slider::domain::render_domain_track_layer;
 pub type SliderBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + Send + Sync>;
 pub type SliderHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + Send + Sync>;
 pub type SliderMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
+pub type SliderMouseMoveHandler = Box<dyn Fn(&MouseMoveEvent, &mut Window, &mut App) + Send + Sync>;
 pub type SliderMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + Send + Sync>;
 pub type SliderDragMoveHandler = Arc<dyn Fn(&DragMoveEvent<SliderDrag>, &mut Window, &mut App) + Send + Sync>;
 pub type SliderThumbMouseDownHandler = Arc<dyn Fn(&ThumbId, &MouseDownEvent, &mut Window, &mut App) + Send + Sync>;
@@ -33,6 +34,7 @@ pub struct SliderTemplateHandlers {
     pub track_bounds: SliderBoundsHandler,
     pub hover: SliderHoverHandler,
     pub mouse_down: SliderMouseDownHandler,
+    pub mouse_move: SliderMouseMoveHandler,
     pub mouse_up: SliderMouseUpHandler,
     pub mouse_up_out: SliderMouseUpHandler,
     pub drag_move: SliderDragMoveHandler,
@@ -42,6 +44,7 @@ pub struct SliderTemplateHandlers {
 pub(crate) struct SliderInteractionHandlers {
     pub hover: SliderHoverHandler,
     pub mouse_down: SliderMouseDownHandler,
+    pub mouse_move: SliderMouseMoveHandler,
     pub mouse_up: SliderMouseUpHandler,
     pub mouse_up_out: SliderMouseUpHandler,
     pub drag_move: SliderDragMoveHandler,
@@ -54,6 +57,7 @@ impl From<SliderTemplateHandlers> for (SliderBoundsHandler, SliderInteractionHan
             SliderInteractionHandlers {
                 hover: handlers.hover,
                 mouse_down: handlers.mouse_down,
+                mouse_move: handlers.mouse_move,
                 mouse_up: handlers.mouse_up,
                 mouse_up_out: handlers.mouse_up_out,
                 drag_move: handlers.drag_move,
@@ -202,11 +206,12 @@ pub(crate) fn attach_radial_interaction(
     handlers: SliderInteractionHandlers,
     primary_thumb_id: ThumbId,
 ) -> Stateful<Div> {
-    let SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
+    let SliderInteractionHandlers { hover, mouse_down, mouse_move, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
         .on_mouse_down(MouseButton::Left, mouse_down)
+        .on_mouse_move(mouse_move)
         .on_mouse_up(MouseButton::Left, mouse_up)
         .on_mouse_up_out(MouseButton::Left, mouse_up_out)
         .on_drag(SliderDrag::new(model.id.clone(), primary_thumb_id), |drag, _, _, cx| {
@@ -230,11 +235,12 @@ pub(crate) fn attach_linear_interaction(
     model: &SliderRenderModel<'_>,
     handlers: SliderInteractionHandlers,
 ) -> Stateful<Div> {
-    let SliderInteractionHandlers { hover, mouse_down, mouse_up, mouse_up_out, drag_move, .. } = handlers;
+    let SliderInteractionHandlers { hover, mouse_down, mouse_move, mouse_up, mouse_up_out, drag_move, .. } = handlers;
 
     root = root
         .on_hover(hover)
         .on_mouse_down(MouseButton::Left, mouse_down)
+        .on_mouse_move(mouse_move)
         .on_mouse_up(MouseButton::Left, mouse_up)
         .on_mouse_up_out(MouseButton::Left, mouse_up_out)
         .on_drag_move({

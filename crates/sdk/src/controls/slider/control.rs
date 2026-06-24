@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, Render, SharedString, Window, div, prelude::*,
+    App, Bounds, Context, DragMoveEvent, Empty, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseMoveEvent,
+    MouseUpEvent, Pixels, Point, Render, SharedString, Window, div, prelude::*,
 };
 
 use super::input::{
-    SliderInputStrategy, angle_for_percentage, angle_from_position, angular_drag_value, percentage_from_position,
+    SliderInputStrategy, angle_for_percentage, angle_from_position, percentage_from_angle, percentage_from_position,
     unwrap_angle_near,
 };
 use super::model::{
-    build_render_segments, constrain_primary_value, primary_value, SliderBuilder, SliderOrientation, SliderRenderModel,
-    SliderThumbSize, ThumbId, TrackPresentation,
+    build_render_segments, constrain_primary_value, position_for_value, primary_value, value_for_position,
+    SliderBuilder, SliderOrientation, SliderRenderModel, SliderThumbSize, ThumbId, TrackPresentation,
 };
 use super::domain::DomainTrackRenderer;
 use super::thumbs::{insert_thumb, nearest_thumb, normalized_hit_radius, remove_thumb, set_thumb_position, thumb_value};
@@ -234,6 +234,7 @@ impl SliderControl {
             track_bounds: Box::new(cx.listener(Self::handle_track_bounds)),
             hover: Box::new(cx.listener(Self::handle_hover)),
             mouse_down: Box::new(cx.listener(Self::handle_mouse_down)),
+            mouse_move: Box::new(cx.listener(Self::handle_mouse_move)),
             mouse_up: Box::new(cx.listener(Self::handle_mouse_up)),
             mouse_up_out: Box::new(cx.listener(Self::handle_mouse_up)),
             drag_move: Arc::new(cx.listener(Self::handle_drag_move)),
@@ -261,7 +262,7 @@ impl SliderControl {
 
     fn set_thumb_value_internal(&mut self, thumb_id: ThumbId, value: f32, emit: bool, cx: &mut Context<Self>) -> bool {
         let value = constrain_primary_value(value, &self.model);
-        let position = self.model.range.percentage(value);
+        let position = position_for_value(&self.model, value);
         self.set_thumb_position_internal(thumb_id, position, emit, cx)
     }
 
@@ -316,8 +317,9 @@ impl SliderControl {
 
         let nearest_hit = nearest_thumb(&self.model.thumbs, percentage, hit_radius).map(|(thumb, _)| thumb.id);
         if let Some(thumb_id) = nearest_hit {
+            let constrained = self.constrained_position_for_raw_position(percentage);
             changed |= self.select_thumb(thumb_id, true, cx);
-            changed |= self.set_thumb_position_internal(thumb_id, percentage, emit, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, cx);
         } else if self.model.thumb_policy.allow_insert && insert_thumb(&mut self.model, percentage).is_some() {
             let thumb_id = self.model.thumbs.last().map(|thumb| thumb.id).expect("inserted thumb");
             changed = true;
@@ -330,8 +332,9 @@ impl SliderControl {
             cx.notify();
         } else if let Some((thumb, _)) = nearest_thumb(&self.model.thumbs, percentage, f32::MAX) {
             let thumb_id = thumb.id;
+            let constrained = self.constrained_position_for_raw_position(percentage);
             changed |= self.select_thumb(thumb_id, true, cx);
-            changed |= self.set_thumb_position_internal(thumb_id, percentage, emit, cx);
+            changed |= self.set_thumb_position_internal(thumb_id, constrained, emit, cx);
         }
 
         changed
@@ -373,38 +376,76 @@ impl SliderControl {
         let selection_changed = self.select_thumb(*thumb_id, true, cx);
 
         if interaction_changed || selection_changed {
+            cx.stop_propagation();
             cx.notify();
         }
     }
 
     fn handle_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
-        let value_changed = match self.model.strategy {
+        match self.model.strategy {
             SliderInputStrategy::Angular { min_angle, max_angle } => {
+                let Some(bounds) = self.track_bounds else {
+                    return;
+                };
+                if !self.angular_accepts_pointer(bounds, event.position) {
+                    return;
+                }
+                let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
                 let thumb_id = self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id));
+                let mut changed = false;
                 if self.model.enabled
                     && let Some(thumb_id) = thumb_id
                 {
                     self.select_thumb(thumb_id, false, cx);
-                    let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
-                    let handle_angle = angle_for_percentage(min_angle, max_angle, self.model.range.percentage(value));
-                    let pointer_angle = self
-                        .track_bounds
-                        .and_then(|bounds| angle_from_position(bounds, event.position))
+                    if let Some(percentage) =
+                        percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.position)
+                    {
+                        let constrained = self.constrained_position_for_raw_position(percentage);
+                        changed |= self.set_thumb_position_internal(thumb_id, constrained, true, cx);
+                    }
+
+                    let handle_position = self
+                        .model
+                        .thumbs
+                        .iter()
+                        .find(|thumb| thumb.id == thumb_id)
+                        .map(|thumb| thumb.position)
+                        .unwrap_or(0.0);
+                    let handle_angle = angle_for_percentage(min_angle, max_angle, handle_position);
+                    let pointer_angle = angle_from_position(bounds, event.position)
                         .map(|pointer_angle| unwrap_angle_near(handle_angle, pointer_angle));
-                    self.angular_drag_angle_offset = pointer_angle.map(|pointer_angle| pointer_angle - handle_angle);
+                    self.angular_drag_angle_offset = Some(0.0);
                     self.angular_drag_pointer_angle = pointer_angle;
                 }
-                false
+                if interaction_changed || changed {
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+                return;
             }
             SliderInputStrategy::Horizontal | SliderInputStrategy::Vertical => {
-                self.set_value_from_position(event.position, true, cx)
+                let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
+                let changed = self.set_value_from_position(event.position, true, cx);
+                if interaction_changed || changed {
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+                return;
             }
-        };
-
-        if interaction_changed || value_changed {
-            cx.notify();
         }
+    }
+
+    fn angular_accepts_pointer(&self, bounds: Bounds<Pixels>, pointer: Point<Pixels>) -> bool {
+        let Some(target) = self.model.radial_hit_target.as_ref() else {
+            return true;
+        };
+        let thumb_position = self
+            .active_thumb_id
+            .and_then(|thumb_id| self.model.thumbs.iter().find(|thumb| thumb.id == thumb_id))
+            .or_else(|| self.model.thumbs.first())
+            .map(|thumb| thumb.position)
+            .unwrap_or(0.0);
+        target.accepts_pointer(bounds, pointer, thumb_position, self.model.reversed)
     }
 
     fn handle_mouse_up(&mut self, _event: &MouseUpEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -415,6 +456,37 @@ impl SliderControl {
                 cx.emit(SliderEvent::Release { thumb_id, value });
             }
             cx.notify();
+        }
+    }
+
+    fn handle_mouse_move(&mut self, event: &MouseMoveEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if !self.interaction.is_pressed() || !self.model.enabled {
+            return;
+        }
+
+        let SliderInputStrategy::Angular { min_angle, max_angle } = self.model.strategy else {
+            return;
+        };
+        let Some(bounds) = self.track_bounds else {
+            return;
+        };
+
+        let Some(thumb_id) = self.active_or_primary_thumb_id() else {
+            return;
+        };
+        if let Some(pointer_angle) = angle_from_position(bounds, event.position) {
+            let previous = self.angular_drag_pointer_angle.unwrap_or(pointer_angle);
+            let pointer_angle = unwrap_angle_near(previous, pointer_angle);
+            self.angular_drag_pointer_angle = Some(pointer_angle);
+            let offset = self.angular_drag_angle_offset.unwrap_or(0.0);
+            if let Some(raw_percentage) = percentage_from_angle(pointer_angle - offset, min_angle, max_angle)
+                .map(|raw| if self.model.reversed { 1.0 - raw } else { raw })
+            {
+                let constrained = self.constrained_position_for_raw_position(raw_percentage);
+                if self.set_thumb_position_internal(thumb_id, constrained, true, cx) {
+                    cx.stop_propagation();
+                }
+            }
         }
     }
 
@@ -437,16 +509,11 @@ impl SliderControl {
                 ) {
                     let pointer_angle = unwrap_angle_near(previous_pointer_angle, pointer_angle);
                     self.angular_drag_pointer_angle = Some(pointer_angle);
-                    if let Some(value) = angular_drag_value(
-                        pointer_angle,
-                        offset,
-                        min_angle,
-                        max_angle,
-                        self.model.range,
-                        self.model.wrapping && self.model.allowed_intervals.is_empty(),
-                        self.model.step,
-                    ) {
-                        self.set_thumb_value_internal(thumb_id, value, true, cx);
+                    if let Some(raw_percentage) = percentage_from_angle(pointer_angle - offset, min_angle, max_angle)
+                        .map(|raw| if self.model.reversed { 1.0 - raw } else { raw })
+                    {
+                        let constrained = self.constrained_position_for_raw_position(raw_percentage);
+                        self.set_thumb_position_internal(thumb_id, constrained, true, cx);
                     }
                 }
             }
@@ -460,7 +527,8 @@ impl SliderControl {
                 if let Some(percentage) =
                     percentage_from_position(self.model.strategy, self.model.reversed, bounds, event.event.position)
                 {
-                    self.set_thumb_position_internal(thumb_id, percentage, true, cx);
+                    let constrained = self.constrained_position_for_raw_position(percentage);
+                    self.set_thumb_position_internal(thumb_id, constrained, true, cx);
                 }
             }
         }
@@ -487,6 +555,20 @@ impl SliderControl {
 
     fn active_or_primary_thumb_id(&self) -> Option<ThumbId> {
         self.active_thumb_id.or_else(|| self.model.thumbs.first().map(|thumb| thumb.id))
+    }
+
+    fn constrained_position_for_raw_position(&self, raw_position: f32) -> f32 {
+        let raw_position = raw_position.clamp(0.0, 1.0);
+        let raw_value = value_for_position(&self.model, raw_position);
+        let constrained = constrain_primary_value(raw_value, &self.model);
+
+        // Preserve the live drag position when it still maps to the constrained value.
+        // Mirrored ring mappings intentionally have multiple valid positions for one value.
+        if (raw_value - constrained).abs() <= 0.001 {
+            raw_position
+        } else {
+            position_for_value(&self.model, constrained)
+        }
     }
 
     fn adjust_value(&mut self, delta: f32, cx: &mut Context<Self>) {
