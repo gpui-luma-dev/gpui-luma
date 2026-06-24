@@ -5,21 +5,17 @@ use gpui_luma::controls::color::color_ring::{
     ColorRingEvent, ColorRingModel, ColorRingRasterState, ColorRingRenderer, ColorRingState, HueRingDelegate,
     LightnessRingDelegate, SaturationRingDelegate,
 };
-use gpui_luma::controls::color::color_slider::color_spec::Hsv;
-use gpui_luma::controls::color::color_slider::{
-    ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, refresh_color_slider,
-    update_domain_delegate,
-};
+use gpui_luma::controls::color::color_slider::color_spec::{Hsl, Hsv};
+use gpui_luma::controls::color::color_slider::ColorSpecification;
 use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
-use gpui_luma::theme::{ControlSize, ThemeMode};
+use gpui_luma::theme::ThemeMode;
 use gpui_luma::{vstack, wrappanel};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 use crate::gallery::panes::shared::notify_entity;
 
-use super::common::{color_gallery_pane, control_label, demo_card, demo_section, detail_row};
+use super::common::{color_gallery_pane, demo_card, demo_section, detail_row};
 
 const WIDE_CARD: f32 = 1120.0;
 const SWATCH_SIZE: f32 = 220.0;
@@ -56,21 +52,23 @@ pub(in crate::gallery) struct ColorRingPane {
     ring_thickness_small: Entity<ColorRingState>,
     ring_thickness_medium: Entity<ColorRingState>,
     ring_thickness_large: Entity<ColorRingState>,
-    ring_s: Entity<SliderControl>,
-    ring_v: Entity<SliderControl>,
-    ring_s_domain: Arc<ColorSliderDomainRenderer>,
-    ring_v_domain: Arc<ColorSliderDomainRenderer>,
-    ring_hsv: Hsv,
+    ring_saturation: Entity<ColorRingState>,
+    ring_lightness: Entity<ColorRingState>,
+    ring_hsl: Hsl,
     ring_color: gpui::Hsla,
     ring_event_name: &'static str,
     ring_event_value: f32,
+    ring_saturation_event_name: &'static str,
+    ring_saturation_event_value: f32,
+    ring_lightness_event_name: &'static str,
+    ring_lightness_event_value: f32,
 }
 
 impl ColorRingPane {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         let hsla = hsla(0.0, 1.0, 0.5, 1.0);
-        let hsv = Hsv::from_hsla_ext(hsla);
-        let lightness = hsv.to_hsla_ext().l;
+        let hsl = Hsl::from_hsla(hsla);
+        let hsv_value = Hsv::from_hsla_ext(hsla).v;
         let contrast_border = if look.mode() == ThemeMode::Dark {
             white()
         } else {
@@ -78,7 +76,7 @@ impl ColorRingPane {
         };
 
         let color_ring = cx.new(|cx| {
-            ColorRingModel::new("color_ring", hsv.h, Box::new(HueRingDelegate { saturation: hsv.s, lightness }))
+            ColorRingModel::new("color_ring", hsl.h, Box::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
                 .max(360.0)
                 .size(Size::Medium)
                 .allow_inner_target(true)
@@ -88,31 +86,24 @@ impl ColorRingPane {
         let color_ring_vector_compare = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
                 "color_ring_vector_compare",
-                hsv.h,
-                hsv.s,
-                lightness,
+                hsl.h,
+                hsl.s,
+                hsl.l,
                 ColorRingRenderer::Vector,
                 cx,
             )
             .size(Size::Medium)
         });
         let color_ring_raster = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
-                "color_ring_raster",
-                hsv.h,
-                hsv.s,
-                lightness,
-                ColorRingRenderer::Raster,
-                cx,
-            )
-            .size(Size::Medium)
+            ColorRingState::hue_with_renderer("color_ring_raster", hsl.h, hsl.s, hsl.l, ColorRingRenderer::Raster, cx)
+                .size(Size::Medium)
         });
         let color_ring_vector_compare_inner_target = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
                 "color_ring_vector_compare_inner_target",
-                hsv.h,
-                hsv.s,
-                lightness,
+                hsl.h,
+                hsl.s,
+                hsl.l,
                 ColorRingRenderer::Vector,
                 cx,
             )
@@ -122,9 +113,9 @@ impl ColorRingPane {
         let color_ring_raster_inner_target = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
                 "color_ring_raster_inner_target",
-                hsv.h,
-                hsv.s,
-                lightness,
+                hsl.h,
+                hsl.s,
+                hsl.l,
                 ColorRingRenderer::Raster,
                 cx,
             )
@@ -135,9 +126,9 @@ impl ColorRingPane {
         let color_ring_saturation_vector = cx.new(|cx| {
             ColorRingState::saturation_with_renderer(
                 "color_ring_saturation_vector",
-                hsv.s,
-                hsv.h,
-                hsv.v,
+                hsl.s,
+                hsl.h,
+                hsv_value,
                 ColorRingRenderer::Vector,
                 cx,
             )
@@ -146,9 +137,9 @@ impl ColorRingPane {
         let color_ring_saturation_vector_rotated = cx.new(|cx| {
             ColorRingState::saturation_with_renderer(
                 "color_ring_saturation_vector_rotated",
-                hsv.s,
-                hsv.h,
-                hsv.v,
+                hsl.s,
+                hsl.h,
+                hsv_value,
                 ColorRingRenderer::Vector,
                 cx,
             )
@@ -158,8 +149,8 @@ impl ColorRingPane {
         let color_ring_saturation_raster = cx.new(|cx| {
             ColorRingState::saturation_with_renderer(
                 "color_ring_saturation_raster",
-                hsv.s,
-                hsv.h,
+                hsl.s,
+                hsl.h,
                 1.0,
                 ColorRingRenderer::Raster,
                 cx,
@@ -169,8 +160,8 @@ impl ColorRingPane {
         let color_ring_saturation_raster_rotated = cx.new(|cx| {
             ColorRingState::saturation_with_renderer(
                 "color_ring_saturation_raster_rotated",
-                hsv.s,
-                hsv.h,
+                hsl.s,
+                hsl.h,
                 1.0,
                 ColorRingRenderer::Raster,
                 cx,
@@ -182,9 +173,9 @@ impl ColorRingPane {
         let color_ring_lightness_vector = cx.new(|cx| {
             ColorRingState::lightness_with_renderer(
                 "color_ring_lightness_vector",
-                lightness,
-                hsv.h,
-                hsv.s,
+                hsl.l,
+                hsl.h,
+                hsl.s,
                 ColorRingRenderer::Vector,
                 cx,
             )
@@ -193,9 +184,9 @@ impl ColorRingPane {
         let color_ring_lightness_raster = cx.new(|cx| {
             ColorRingState::lightness_with_renderer(
                 "color_ring_lightness_raster",
-                lightness,
-                hsv.h,
-                hsv.s,
+                hsl.l,
+                hsl.h,
+                hsl.s,
                 ColorRingRenderer::Raster,
                 cx,
             )
@@ -205,9 +196,9 @@ impl ColorRingPane {
         let color_ring_disabled_vector = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
                 "color_ring_disabled_vector",
-                hsv.h,
-                hsv.s,
-                lightness,
+                hsl.h,
+                hsl.s,
+                hsl.l,
                 ColorRingRenderer::Vector,
                 cx,
             )
@@ -217,9 +208,9 @@ impl ColorRingPane {
         let color_ring_disabled_raster = cx.new(|cx| {
             ColorRingState::hue_with_renderer(
                 "color_ring_disabled_raster",
-                hsv.h,
-                hsv.s,
-                lightness,
+                hsl.h,
+                hsl.s,
+                hsl.l,
                 ColorRingRenderer::Raster,
                 cx,
             )
@@ -228,91 +219,117 @@ impl ColorRingPane {
         });
 
         let ring_no_border = cx.new(|cx| {
-            ColorRingState::hue("ring_no_border", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_no_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Small)
                 .ring_inner_border(false)
                 .ring_outer_border(false)
         });
         let ring_inner_border = cx.new(|cx| {
-            ColorRingState::hue("ring_inner_border", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_inner_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Small)
                 .ring_inner_border(true)
                 .ring_outer_border(false)
         });
         let ring_outer_border = cx.new(|cx| {
-            ColorRingState::hue("ring_outer_border", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_outer_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Small)
                 .ring_inner_border(false)
                 .ring_outer_border(true)
         });
         let ring_both_borders = cx.new(|cx| {
-            ColorRingState::hue("ring_both_borders", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_both_borders", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Small)
                 .ring_inner_border(true)
                 .ring_outer_border(true)
         });
         let ring_foreground_borders = cx.new(|cx| {
-            ColorRingState::hue("ring_foreground_borders", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .size(Size::Small)
-                .ring_inner_border(true)
-                .ring_outer_border(true)
-                .ring_border_color(contrast_border)
+            ColorRingState::hue(
+                "ring_foreground_borders",
+                hsl.h,
+                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
+                cx,
+            )
+            .size(Size::Small)
+            .ring_inner_border(true)
+            .ring_outer_border(true)
+            .ring_border_color(contrast_border)
         });
 
         let ring_size_xsmall = cx.new(|cx| {
-            ColorRingState::hue("ring_size_xsmall", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_size_xsmall", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::XSmall)
         });
         let ring_size_small = cx.new(|cx| {
-            ColorRingState::hue("ring_size_small", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_size_small", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Small)
         });
         let ring_size_medium = cx.new(|cx| {
-            ColorRingState::hue("ring_size_medium", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_size_medium", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Medium)
         });
         let ring_size_large = cx.new(|cx| {
-            ColorRingState::hue("ring_size_large", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
+            ColorRingState::hue("ring_size_large", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
                 .size(Size::Large)
         });
 
         let ring_thickness_xsmall = cx.new(|cx| {
-            ColorRingState::hue("ring_thickness_xsmall", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .size(Size::Medium)
-                .ring_thickness_size(Size::XSmall)
+            ColorRingState::hue(
+                "ring_thickness_xsmall",
+                hsl.h,
+                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
+                cx,
+            )
+            .size(Size::Medium)
+            .ring_thickness_size(Size::XSmall)
         });
         let ring_thickness_small = cx.new(|cx| {
-            ColorRingState::hue("ring_thickness_small", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .size(Size::Medium)
-                .ring_thickness_size(Size::Small)
+            ColorRingState::hue(
+                "ring_thickness_small",
+                hsl.h,
+                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
+                cx,
+            )
+            .size(Size::Medium)
+            .ring_thickness_size(Size::Small)
         });
         let ring_thickness_medium = cx.new(|cx| {
-            ColorRingState::hue("ring_thickness_medium", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .size(Size::Medium)
-                .ring_thickness_size(Size::Medium)
+            ColorRingState::hue(
+                "ring_thickness_medium",
+                hsl.h,
+                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
+                cx,
+            )
+            .size(Size::Medium)
+            .ring_thickness_size(Size::Medium)
         });
         let ring_thickness_large = cx.new(|cx| {
-            ColorRingState::hue("ring_thickness_large", hsv.h, HueRingDelegate { saturation: hsv.s, lightness }, cx)
-                .size(Size::Medium)
-                .ring_thickness_size(Size::Large)
+            ColorRingState::hue(
+                "ring_thickness_large",
+                hsl.h,
+                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
+                cx,
+            )
+            .size(Size::Medium)
+            .ring_thickness_size(Size::Large)
         });
 
-        let theme_is_dark = look.mode() == ThemeMode::Dark;
+        let ring_saturation = cx.new(|cx| {
+            ColorRingModel::new("ring_saturation", hsl.s, Box::new(SaturationRingDelegate { hue: hsl.h, hsv_value }))
+                .size(Size::Medium)
+                .allow_inner_target(true)
+                .build(cx)
+        });
 
-        let ring_s_builder = ColorSliderBuilder::channel("ring_s", hsv.s, hsv, Hsv::SATURATION)
-            .expect("ring saturation delegate")
-            .size(ControlSize::Sm)
-            .thumb_medium()
-            .theme_is_dark(theme_is_dark);
-        let ring_s_domain = ring_s_builder.domain_renderer();
-        let ring_s = ring_s_builder.spawn(cx);
-        let ring_v_builder = ColorSliderBuilder::channel("ring_v", hsv.v, hsv, Hsv::VALUE)
-            .expect("ring value delegate")
-            .size(ControlSize::Sm)
-            .thumb_medium()
-            .theme_is_dark(theme_is_dark);
-        let ring_v_domain = ring_v_builder.domain_renderer();
-        let ring_v = ring_v_builder.spawn(cx);
+        let ring_lightness = cx.new(|cx| {
+            ColorRingModel::new(
+                "ring_lightness",
+                hsl.l,
+                Box::new(LightnessRingDelegate { hue: hsl.h, saturation: hsl.s }),
+            )
+            .size(Size::Medium)
+            .allow_inner_target(true)
+            .build(cx)
+        });
 
         let mut pane = Self {
             color_ring,
@@ -341,14 +358,16 @@ impl ColorRingPane {
             ring_thickness_small,
             ring_thickness_medium,
             ring_thickness_large,
-            ring_s,
-            ring_v,
-            ring_s_domain,
-            ring_v_domain,
-            ring_hsv: hsv,
+            ring_saturation,
+            ring_lightness,
+            ring_hsl: hsl,
             ring_color: hsla,
             ring_event_name: "Change",
-            ring_event_value: hsv.h,
+            ring_event_value: hsl.h,
+            ring_saturation_event_name: "Change",
+            ring_saturation_event_value: hsl.s,
+            ring_lightness_event_name: "Change",
+            ring_lightness_event_value: hsl.l,
         };
         pane.sync_ring(cx, SyncSource::HueRing);
         pane
@@ -362,27 +381,35 @@ impl ColorRingPane {
             };
             app.panes.color_ring.ring_event_name = event_name;
             app.panes.color_ring.ring_event_value = value;
-            app.panes.color_ring.ring_hsv.h = value;
+            app.panes.color_ring.ring_hsl.h = value;
             app.panes.color_ring.sync_ring_from_hue_ring(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.ring_s, |app, _, event: &SliderEvent, cx| {
-            if let Some(value) = primary_slider_value(event) {
-                app.panes.color_ring.ring_hsv.s = value;
-                app.panes.color_ring.sync_ring_from_saturation_slider(cx);
-            }
+        subscriptions.push(cx.subscribe(&self.ring_saturation, |app, _, event: &ColorRingEvent, cx| {
+            let (event_name, value) = match event {
+                ColorRingEvent::Change(value) => ("Change", *value),
+                ColorRingEvent::Release(value) => ("Release", *value),
+            };
+            app.panes.color_ring.ring_saturation_event_name = event_name;
+            app.panes.color_ring.ring_saturation_event_value = value;
+            app.panes.color_ring.ring_hsl.s = value;
+            app.panes.color_ring.sync_ring_from_saturation_ring(cx);
         }));
-        subscriptions.push(cx.subscribe(&self.ring_v, |app, _, event: &SliderEvent, cx| {
-            if let Some(value) = primary_slider_value(event) {
-                app.panes.color_ring.ring_hsv.v = value;
-                app.panes.color_ring.sync_ring_from_value_slider(cx);
-            }
+        subscriptions.push(cx.subscribe(&self.ring_lightness, |app, _, event: &ColorRingEvent, cx| {
+            let (event_name, value) = match event {
+                ColorRingEvent::Change(value) => ("Change", *value),
+                ColorRingEvent::Release(value) => ("Release", *value),
+            };
+            app.panes.color_ring.ring_lightness_event_name = event_name;
+            app.panes.color_ring.ring_lightness_event_value = value;
+            app.panes.color_ring.ring_hsl.l = value;
+            app.panes.color_ring.sync_ring_from_lightness_ring(cx);
         }));
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
-        let hue = self.ring_hsv.h;
-        let saturation = self.ring_hsv.s;
-        let lightness = self.ring_hsv.to_hsla_ext().l;
+        let hue = self.ring_hsl.h;
+        let saturation = self.ring_hsl.s;
+        let lightness = self.ring_hsl.l;
 
         let chrome = look.chrome();
         let main = wrappanel! {
@@ -410,9 +437,31 @@ impl ColorRingPane {
                 .w(px(SLIDER_COLUMN_WIDTH))
                 .flex_shrink_0()
                 .child(vstack! {
-                    gap=10;
-                    slider_row("S", self.ring_s.clone(), look),
-                    slider_row("V", self.ring_v.clone(), look),
+                    gap=16;
+                    div()
+                        .size(px(RING_MEDIUM_PX))
+                        .flex_shrink_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(ring_event_overlay(
+                            self.ring_saturation.clone(),
+                            self.ring_saturation_event_name,
+                            self.ring_saturation_event_value,
+                            look,
+                        )),
+                    div()
+                        .size(px(RING_MEDIUM_PX))
+                        .flex_shrink_0()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(ring_event_overlay(
+                            self.ring_lightness.clone(),
+                            self.ring_lightness_event_name,
+                            self.ring_lightness_event_value,
+                            look,
+                        )),
                 }),
             div()
                 .w(px(READOUT_WIDTH))
@@ -422,15 +471,15 @@ impl ColorRingPane {
 
         color_gallery_pane(
             "Color Ring",
-            "Ring story adapted from the original gallery with interactive HSV controls and renderer/size/thickness/border variants.",
+            "Ring story adapted from the original gallery with interactive HSL controls and renderer/size/thickness/border variants.",
             vstack! {
                 gap=28;
                 demo_section(
                     "Color Ring",
-                    "Primary hue ring with linked S and V sliders.",
+                    "Primary hue, saturation, and lightness rings linked as an HSL mixer.",
                     vec![demo_card(
                         "Interactive Sample",
-                        "Drag the ring for hue, or use the S/V sliders to edit the shared color.",
+                        "Drag the hue, saturation, or lightness rings to edit the shared color.",
                         WIDE_CARD,
                         main,
                         look,
@@ -664,34 +713,33 @@ impl ColorRingPane {
         notify_entity(&self.ring_thickness_small, cx);
         notify_entity(&self.ring_thickness_medium, cx);
         notify_entity(&self.ring_thickness_large, cx);
-        notify_entity(&self.ring_s, cx);
-        notify_entity(&self.ring_v, cx);
+        notify_entity(&self.ring_saturation, cx);
+        notify_entity(&self.ring_lightness, cx);
     }
 
     fn sync_ring_from_hue_ring(&mut self, cx: &mut Context<GalleryApp>) {
         self.sync_ring(cx, SyncSource::HueRing);
     }
 
-    fn sync_ring_from_saturation_slider(&mut self, cx: &mut Context<GalleryApp>) {
-        self.sync_ring(cx, SyncSource::SaturationSlider);
+    fn sync_ring_from_saturation_ring(&mut self, cx: &mut Context<GalleryApp>) {
+        self.sync_ring(cx, SyncSource::SaturationRing);
     }
 
-    fn sync_ring_from_value_slider(&mut self, cx: &mut Context<GalleryApp>) {
-        self.sync_ring(cx, SyncSource::ValueSlider);
+    fn sync_ring_from_lightness_ring(&mut self, cx: &mut Context<GalleryApp>) {
+        self.sync_ring(cx, SyncSource::LightnessRing);
     }
 
     fn sync_ring(&mut self, cx: &mut Context<GalleryApp>, source: SyncSource) {
-        let hsv = self.ring_hsv;
-        let hsla = hsv.to_hsla_ext();
-        let lightness = hsla.l;
-        self.ring_color = hsla;
+        let hsl = self.ring_hsl;
+        let hsv_value = hsv_value_for_saturation_ring(hsl);
+        self.ring_color = hsl.to_hsla();
 
-        let hue_delegate = || HueRingDelegate { saturation: hsv.s, lightness };
+        let hue_delegate = || HueRingDelegate { saturation: hsl.s, lightness: hsl.l };
 
         self.color_ring.update(cx, |ring, cx| {
             ring.set_delegate(Box::new(hue_delegate()), cx);
             if !matches!(source, SyncSource::HueRing) {
-                ring.set_value(hsv.h, cx);
+                ring.set_value(hsl.h, cx);
             }
         });
 
@@ -718,48 +766,44 @@ impl ColorRingPane {
         ] {
             ring.update(cx, |ring, cx| {
                 ring.set_delegate(Box::new(hue_delegate()), cx);
-                ring.set_value(hsv.h, cx);
+                ring.set_value(hsl.h, cx);
             });
         }
 
-        update_domain_delegate(
-            &self.ring_s_domain,
-            Arc::new(ChannelDelegate::new(hsv, Hsv::SATURATION.into()).expect("ring saturation delegate")),
-            self.ring_s_domain.context(),
-        );
-        update_domain_delegate(
-            &self.ring_v_domain,
-            Arc::new(ChannelDelegate::new(hsv, Hsv::VALUE.into()).expect("ring value delegate")),
-            self.ring_v_domain.context(),
-        );
-        if !matches!(source, SyncSource::SaturationSlider) {
-            self.ring_s.update(cx, |slider, cx| slider.set_value(hsv.s, cx));
-        }
-        if !matches!(source, SyncSource::ValueSlider) {
-            self.ring_v.update(cx, |slider, cx| slider.set_value(hsv.v, cx));
-        }
-        refresh_color_slider(&self.ring_s, cx);
-        refresh_color_slider(&self.ring_v, cx);
+        self.ring_saturation.update(cx, |ring, cx| {
+            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value };
+            ring.set_delegate(Box::new(delegate), cx);
+            if !matches!(source, SyncSource::SaturationRing) {
+                ring.set_value(hsl.s, cx);
+            }
+        });
+        self.ring_lightness.update(cx, |ring, cx| {
+            let delegate = LightnessRingDelegate { hue: hsl.h, saturation: hsl.s };
+            ring.set_delegate(Box::new(delegate), cx);
+            if !matches!(source, SyncSource::LightnessRing) {
+                ring.set_value(hsl.l, cx);
+            }
+        });
 
         for ring in [&self.color_ring_saturation_vector, &self.color_ring_saturation_vector_rotated] {
-            let delegate = SaturationRingDelegate { hue: hsv.h, hsv_value: hsv.v };
+            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value };
             ring.update(cx, |ring, cx| {
                 ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(hsv.s, cx);
+                ring.set_value(hsl.s, cx);
             });
         }
         for ring in [&self.color_ring_saturation_raster, &self.color_ring_saturation_raster_rotated] {
-            let delegate = SaturationRingDelegate { hue: hsv.h, hsv_value: 1.0 };
+            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value: 1.0 };
             ring.update(cx, |ring, cx| {
                 ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(hsv.s, cx);
+                ring.set_value(hsl.s, cx);
             });
         }
         for ring in [&self.color_ring_lightness_vector, &self.color_ring_lightness_raster] {
-            let delegate = LightnessRingDelegate { hue: hsv.h, saturation: hsv.s };
+            let delegate = LightnessRingDelegate { hue: hsl.h, saturation: hsl.s };
             ring.update(cx, |ring, cx| {
                 ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(lightness, cx);
+                ring.set_value(hsl.l, cx);
             });
         }
 
@@ -770,18 +814,12 @@ impl ColorRingPane {
 #[derive(Clone, Copy)]
 enum SyncSource {
     HueRing,
-    SaturationSlider,
-    ValueSlider,
+    SaturationRing,
+    LightnessRing,
 }
 
-fn slider_row(label: &'static str, slider: Entity<SliderControl>, look: &ShadcnLook) -> impl IntoElement {
-    div()
-        .w_full()
-        .flex()
-        .items_center()
-        .gap(px(12.0))
-        .child(div().w(px(14.0)).child(control_label(label, look)))
-        .child(div().flex_1().min_w(px(0.0)).child(slider))
+fn hsv_value_for_saturation_ring(hsl: Hsl) -> f32 {
+    Hsv::from_hsla_ext(hsl.to_hsla()).v
 }
 
 fn ring_event_overlay(
