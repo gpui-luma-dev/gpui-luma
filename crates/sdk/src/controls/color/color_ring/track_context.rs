@@ -4,7 +4,16 @@ use gpui::Hsla;
 
 use crate::controls::color::style::{Size, active_color_control_theme};
 
-pub use super::ring::sizing;
+pub mod sizing {
+    pub const RING_THICKNESS_XSMALL: f32 = 7.0;
+    pub const RING_THICKNESS_SMALL: f32 = 14.0;
+    pub const RING_THICKNESS_MEDIUM: f32 = 20.0;
+    pub const RING_THICKNESS_LARGE: f32 = 28.0;
+
+    pub const THUMB_SIZE_SMALL: f32 = 12.0;
+    pub const THUMB_SIZE_MEDIUM: f32 = 16.0;
+    pub const THUMB_SIZE_LARGE: f32 = 20.0;
+}
 use super::common::size_px;
 
 #[derive(Clone, Debug, PartialEq)]

@@ -64,6 +64,15 @@ pub struct ThumbConfig {
     pub shape: ThumbShape,
 }
 
+pub fn normalized_value_percent(value: f32, start: f32, end: f32) -> f32 {
+    let span = end - start;
+    if span.abs() <= f32::EPSILON {
+        return 0.0;
+    }
+
+    ((value - start) / span).clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::normalized_value_percent;
@@ -86,13 +95,4 @@ mod tests {
         approx_eq(normalized_value_percent(0.5, 1.0, 0.0), 0.5);
         approx_eq(normalized_value_percent(0.0, 1.0, 0.0), 1.0);
     }
-}
-
-pub fn normalized_value_percent(value: f32, start: f32, end: f32) -> f32 {
-    let span = end - start;
-    if span.abs() <= f32::EPSILON {
-        return 0.0;
-    }
-
-    ((value - start) / span).clamp(0.0, 1.0)
 }

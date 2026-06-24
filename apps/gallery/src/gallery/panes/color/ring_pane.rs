@@ -2,12 +2,14 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Subscription, black, div, hsla, prelude::*, px, white};
 use gpui_luma::controls::color::color_ring::{
-    ColorRingEvent, ColorRingModel, ColorRingRasterState, ColorRingRenderer, ColorRingState, HueRingDelegate,
-    LightnessRingDelegate, SaturationRingDelegate,
+    primary_slider_value, refresh_color_ring, update_ring_delegate, ColorRingBuilder,
+    ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
+    LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate,
 };
 use gpui_luma::controls::color::color_slider::color_spec::{Hsl, Hsv};
 use gpui_luma::controls::color::color_slider::ColorSpecification;
 use gpui_luma::controls::color::style::Size;
+use gpui_luma::controls::slider::{SliderControl, SliderEvent};
 use gpui_luma::theme::ThemeMode;
 use gpui_luma::{vstack, wrappanel};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
@@ -25,35 +27,91 @@ const SLIDER_COLUMN_WIDTH: f32 = 280.0;
 const READOUT_WIDTH: f32 = 160.0;
 
 #[derive(Clone)]
+struct RingDemo {
+    slider: Entity<SliderControl>,
+    renderer: Arc<ColorRingDomainRenderer>,
+    track_context: ColorRingTrackContext,
+}
+
+impl RingDemo {
+    fn spawn(builder: ColorRingBuilder, cx: &mut Context<GalleryApp>) -> Self {
+        let renderer = builder.domain_renderer();
+        let track_context = builder.track_context();
+        let slider = builder.spawn(cx);
+        Self { slider, renderer, track_context }
+    }
+
+    fn sync_saturation(&self, hue: f32, hsv_value: f32, cx: &mut Context<GalleryApp>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(SaturationRingDelegate { hue, hsv_value }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_lightness(&self, hue: f32, saturation: f32, cx: &mut Context<GalleryApp>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(LightnessRingDelegate { hue, saturation }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_hue_raster(&self, saturation: f32, lightness: f32, cx: &mut Context<GalleryApp>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(RasterRingDelegate::hue(saturation, lightness)),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn sync_hue_vector(&self, saturation: f32, lightness: f32, cx: &mut Context<GalleryApp>) {
+        update_ring_delegate(
+            &self.renderer,
+            Arc::new(HueRingDelegate { saturation, lightness }),
+            self.track_context.clone(),
+        );
+        refresh_color_ring(&self.slider, cx);
+    }
+
+    fn set_value(&self, value: f32, cx: &mut Context<GalleryApp>) {
+        self.slider.update(cx, |slider, cx| slider.set_value(value, cx));
+    }
+}
+
+#[derive(Clone)]
 pub(in crate::gallery) struct ColorRingPane {
-    color_ring: Entity<ColorRingState>,
-    color_ring_vector_compare: Entity<ColorRingState>,
-    color_ring_raster: Entity<ColorRingRasterState>,
-    color_ring_vector_compare_inner_target: Entity<ColorRingState>,
-    color_ring_raster_inner_target: Entity<ColorRingRasterState>,
-    color_ring_saturation_vector: Entity<ColorRingState>,
-    color_ring_saturation_vector_rotated: Entity<ColorRingState>,
-    color_ring_saturation_raster: Entity<ColorRingRasterState>,
-    color_ring_saturation_raster_rotated: Entity<ColorRingRasterState>,
-    color_ring_lightness_vector: Entity<ColorRingState>,
-    color_ring_lightness_raster: Entity<ColorRingRasterState>,
-    color_ring_disabled_vector: Entity<ColorRingState>,
-    color_ring_disabled_raster: Entity<ColorRingRasterState>,
-    ring_no_border: Entity<ColorRingState>,
-    ring_inner_border: Entity<ColorRingState>,
-    ring_outer_border: Entity<ColorRingState>,
-    ring_both_borders: Entity<ColorRingState>,
-    ring_foreground_borders: Entity<ColorRingState>,
-    ring_size_xsmall: Entity<ColorRingState>,
-    ring_size_small: Entity<ColorRingState>,
-    ring_size_medium: Entity<ColorRingState>,
-    ring_size_large: Entity<ColorRingState>,
-    ring_thickness_xsmall: Entity<ColorRingState>,
-    ring_thickness_small: Entity<ColorRingState>,
-    ring_thickness_medium: Entity<ColorRingState>,
-    ring_thickness_large: Entity<ColorRingState>,
-    ring_saturation: Entity<ColorRingState>,
-    ring_lightness: Entity<ColorRingState>,
+    color_ring: RingDemo,
+    color_ring_vector_compare: RingDemo,
+    color_ring_raster: RingDemo,
+    color_ring_vector_compare_inner_target: RingDemo,
+    color_ring_raster_inner_target: RingDemo,
+    color_ring_saturation_vector: RingDemo,
+    color_ring_saturation_vector_rotated: RingDemo,
+    color_ring_saturation_raster: RingDemo,
+    color_ring_saturation_raster_rotated: RingDemo,
+    color_ring_lightness_vector: RingDemo,
+    color_ring_lightness_raster: RingDemo,
+    color_ring_disabled_vector: RingDemo,
+    color_ring_disabled_raster: RingDemo,
+    ring_no_border: RingDemo,
+    ring_inner_border: RingDemo,
+    ring_outer_border: RingDemo,
+    ring_both_borders: RingDemo,
+    ring_foreground_borders: RingDemo,
+    ring_size_xsmall: RingDemo,
+    ring_size_small: RingDemo,
+    ring_size_medium: RingDemo,
+    ring_size_large: RingDemo,
+    ring_thickness_xsmall: RingDemo,
+    ring_thickness_small: RingDemo,
+    ring_thickness_medium: RingDemo,
+    ring_thickness_large: RingDemo,
+    ring_saturation: RingDemo,
+    ring_lightness: RingDemo,
     ring_hsl: Hsl,
     ring_color: gpui::Hsla,
     ring_event_name: &'static str,
@@ -75,261 +133,265 @@ impl ColorRingPane {
             black()
         };
 
-        let color_ring = cx.new(|cx| {
-            ColorRingModel::new("color_ring", hsl.h, Box::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .max(360.0)
+        let color_ring = RingDemo::spawn(
+            ColorRingBuilder::hue("color_ring", hsl.h, hsl.s, hsl.l)
                 .size(Size::Medium)
-                .allow_inner_target(true)
-                .build(cx)
-        });
+                .allow_inner_target(true),
+            cx,
+        );
 
-        let color_ring_vector_compare = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
+        let color_ring_vector_compare = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
                 "color_ring_vector_compare",
                 hsl.h,
                 hsl.s,
                 hsl.l,
                 ColorRingRenderer::Vector,
-                cx,
             )
-            .size(Size::Medium)
-        });
-        let color_ring_raster = cx.new(|cx| {
-            ColorRingState::hue_with_renderer("color_ring_raster", hsl.h, hsl.s, hsl.l, ColorRingRenderer::Raster, cx)
-                .size(Size::Medium)
-        });
-        let color_ring_vector_compare_inner_target = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_raster = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer("color_ring_raster", hsl.h, hsl.s, hsl.l, ColorRingRenderer::Raster)
+                .size(Size::Medium),
+            cx,
+        );
+        let color_ring_vector_compare_inner_target = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
                 "color_ring_vector_compare_inner_target",
                 hsl.h,
                 hsl.s,
                 hsl.l,
                 ColorRingRenderer::Vector,
-                cx,
             )
             .size(Size::Medium)
-            .allow_inner_target(true)
-        });
-        let color_ring_raster_inner_target = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
+            .allow_inner_target(true),
+            cx,
+        );
+        let color_ring_raster_inner_target = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
                 "color_ring_raster_inner_target",
                 hsl.h,
                 hsl.s,
                 hsl.l,
                 ColorRingRenderer::Raster,
-                cx,
             )
             .size(Size::Medium)
-            .allow_inner_target(true)
-        });
+            .allow_inner_target(true),
+            cx,
+        );
 
-        let color_ring_saturation_vector = cx.new(|cx| {
-            ColorRingState::saturation_with_renderer(
+        let color_ring_saturation_vector = RingDemo::spawn(
+            ColorRingBuilder::saturation_with_renderer(
                 "color_ring_saturation_vector",
                 hsl.s,
                 hsl.h,
                 hsv_value,
                 ColorRingRenderer::Vector,
-                cx,
             )
-            .size(Size::Medium)
-        });
-        let color_ring_saturation_vector_rotated = cx.new(|cx| {
-            ColorRingState::saturation_with_renderer(
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_saturation_vector_rotated = RingDemo::spawn(
+            ColorRingBuilder::saturation_with_renderer(
                 "color_ring_saturation_vector_rotated",
                 hsl.s,
                 hsl.h,
                 hsv_value,
                 ColorRingRenderer::Vector,
-                cx,
             )
             .size(Size::Medium)
-            .rotation_degrees(180.0)
-        });
-        let color_ring_saturation_raster = cx.new(|cx| {
-            ColorRingState::saturation_with_renderer(
+            .rotation_degrees(180.0),
+            cx,
+        );
+        let color_ring_saturation_raster = RingDemo::spawn(
+            ColorRingBuilder::saturation_with_renderer(
                 "color_ring_saturation_raster",
                 hsl.s,
                 hsl.h,
                 1.0,
                 ColorRingRenderer::Raster,
-                cx,
             )
-            .size(Size::Medium)
-        });
-        let color_ring_saturation_raster_rotated = cx.new(|cx| {
-            ColorRingState::saturation_with_renderer(
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_saturation_raster_rotated = RingDemo::spawn(
+            ColorRingBuilder::saturation_with_renderer(
                 "color_ring_saturation_raster_rotated",
                 hsl.s,
                 hsl.h,
                 1.0,
                 ColorRingRenderer::Raster,
-                cx,
             )
             .size(Size::Medium)
-            .rotation_degrees(180.0)
-        });
+            .rotation_degrees(180.0),
+            cx,
+        );
 
-        let color_ring_lightness_vector = cx.new(|cx| {
-            ColorRingState::lightness_with_renderer(
+        let color_ring_lightness_vector = RingDemo::spawn(
+            ColorRingBuilder::lightness_with_renderer(
                 "color_ring_lightness_vector",
                 hsl.l,
                 hsl.h,
                 hsl.s,
                 ColorRingRenderer::Vector,
-                cx,
             )
-            .size(Size::Medium)
-        });
-        let color_ring_lightness_raster = cx.new(|cx| {
-            ColorRingState::lightness_with_renderer(
+            .size(Size::Medium),
+            cx,
+        );
+        let color_ring_lightness_raster = RingDemo::spawn(
+            ColorRingBuilder::lightness_with_renderer(
                 "color_ring_lightness_raster",
                 hsl.l,
                 hsl.h,
                 hsl.s,
                 ColorRingRenderer::Raster,
-                cx,
             )
-            .size(Size::Medium)
-        });
+            .size(Size::Medium),
+            cx,
+        );
 
-        let color_ring_disabled_vector = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
+        let color_ring_disabled_vector = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
                 "color_ring_disabled_vector",
                 hsl.h,
                 hsl.s,
                 hsl.l,
                 ColorRingRenderer::Vector,
-                cx,
             )
             .size(Size::Medium)
-            .enabled(false)
-        });
-        let color_ring_disabled_raster = cx.new(|cx| {
-            ColorRingState::hue_with_renderer(
+            .enabled(false),
+            cx,
+        );
+        let color_ring_disabled_raster = RingDemo::spawn(
+            ColorRingBuilder::hue_with_renderer(
                 "color_ring_disabled_raster",
                 hsl.h,
                 hsl.s,
                 hsl.l,
                 ColorRingRenderer::Raster,
-                cx,
             )
             .size(Size::Medium)
-            .enabled(false)
-        });
+            .enabled(false),
+            cx,
+        );
 
-        let ring_no_border = cx.new(|cx| {
-            ColorRingState::hue("ring_no_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
+        let ring_no_border = RingDemo::spawn(
+            ColorRingBuilder::new("ring_no_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
                 .size(Size::Small)
                 .ring_inner_border(false)
-                .ring_outer_border(false)
-        });
-        let ring_inner_border = cx.new(|cx| {
-            ColorRingState::hue("ring_inner_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
+                .ring_outer_border(false),
+            cx,
+        );
+        let ring_inner_border = RingDemo::spawn(
+            ColorRingBuilder::new("ring_inner_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
                 .size(Size::Small)
                 .ring_inner_border(true)
-                .ring_outer_border(false)
-        });
-        let ring_outer_border = cx.new(|cx| {
-            ColorRingState::hue("ring_outer_border", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
+                .ring_outer_border(false),
+            cx,
+        );
+        let ring_outer_border = RingDemo::spawn(
+            ColorRingBuilder::new("ring_outer_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
                 .size(Size::Small)
                 .ring_inner_border(false)
-                .ring_outer_border(true)
-        });
-        let ring_both_borders = cx.new(|cx| {
-            ColorRingState::hue("ring_both_borders", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
+                .ring_outer_border(true),
+            cx,
+        );
+        let ring_both_borders = RingDemo::spawn(
+            ColorRingBuilder::new("ring_both_borders", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
                 .size(Size::Small)
                 .ring_inner_border(true)
-                .ring_outer_border(true)
-        });
-        let ring_foreground_borders = cx.new(|cx| {
-            ColorRingState::hue(
+                .ring_outer_border(true),
+            cx,
+        );
+        let ring_foreground_borders = RingDemo::spawn(
+            ColorRingBuilder::new(
                 "ring_foreground_borders",
                 hsl.h,
-                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
-                cx,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
             )
             .size(Size::Small)
             .ring_inner_border(true)
             .ring_outer_border(true)
-            .ring_border_color(contrast_border)
-        });
+            .ring_border_color(contrast_border),
+            cx,
+        );
 
-        let ring_size_xsmall = cx.new(|cx| {
-            ColorRingState::hue("ring_size_xsmall", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
-                .size(Size::XSmall)
-        });
-        let ring_size_small = cx.new(|cx| {
-            ColorRingState::hue("ring_size_small", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
-                .size(Size::Small)
-        });
-        let ring_size_medium = cx.new(|cx| {
-            ColorRingState::hue("ring_size_medium", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
-                .size(Size::Medium)
-        });
-        let ring_size_large = cx.new(|cx| {
-            ColorRingState::hue("ring_size_large", hsl.h, HueRingDelegate { saturation: hsl.s, lightness: hsl.l }, cx)
-                .size(Size::Large)
-        });
+        let ring_size_xsmall = RingDemo::spawn(
+            ColorRingBuilder::new("ring_size_xsmall", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
+                .size(Size::XSmall),
+            cx,
+        );
+        let ring_size_small = RingDemo::spawn(
+            ColorRingBuilder::new("ring_size_small", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
+                .size(Size::Small),
+            cx,
+        );
+        let ring_size_medium = RingDemo::spawn(
+            ColorRingBuilder::new("ring_size_medium", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
+                .size(Size::Medium),
+            cx,
+        );
+        let ring_size_large = RingDemo::spawn(
+            ColorRingBuilder::new("ring_size_large", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
+                .size(Size::Large),
+            cx,
+        );
 
-        let ring_thickness_xsmall = cx.new(|cx| {
-            ColorRingState::hue(
+        let ring_thickness_xsmall = RingDemo::spawn(
+            ColorRingBuilder::new(
                 "ring_thickness_xsmall",
                 hsl.h,
-                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
-                cx,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
             )
             .size(Size::Medium)
-            .ring_thickness_size(Size::XSmall)
-        });
-        let ring_thickness_small = cx.new(|cx| {
-            ColorRingState::hue(
+            .ring_thickness_size(Size::XSmall),
+            cx,
+        );
+        let ring_thickness_small = RingDemo::spawn(
+            ColorRingBuilder::new(
                 "ring_thickness_small",
                 hsl.h,
-                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
-                cx,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
             )
             .size(Size::Medium)
-            .ring_thickness_size(Size::Small)
-        });
-        let ring_thickness_medium = cx.new(|cx| {
-            ColorRingState::hue(
+            .ring_thickness_size(Size::Small),
+            cx,
+        );
+        let ring_thickness_medium = RingDemo::spawn(
+            ColorRingBuilder::new(
                 "ring_thickness_medium",
                 hsl.h,
-                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
-                cx,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
             )
             .size(Size::Medium)
-            .ring_thickness_size(Size::Medium)
-        });
-        let ring_thickness_large = cx.new(|cx| {
-            ColorRingState::hue(
+            .ring_thickness_size(Size::Medium),
+            cx,
+        );
+        let ring_thickness_large = RingDemo::spawn(
+            ColorRingBuilder::new(
                 "ring_thickness_large",
                 hsl.h,
-                HueRingDelegate { saturation: hsl.s, lightness: hsl.l },
-                cx,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
             )
             .size(Size::Medium)
-            .ring_thickness_size(Size::Large)
-        });
+            .ring_thickness_size(Size::Large),
+            cx,
+        );
 
-        let ring_saturation = cx.new(|cx| {
-            ColorRingModel::new("ring_saturation", hsl.s, Box::new(SaturationRingDelegate { hue: hsl.h, hsv_value }))
+        let ring_saturation = RingDemo::spawn(
+            ColorRingBuilder::saturation("ring_saturation", hsl.s, hsl.h, hsv_value)
                 .size(Size::Medium)
-                .allow_inner_target(true)
-                .build(cx)
-        });
+                .allow_inner_target(true),
+            cx,
+        );
 
-        let ring_lightness = cx.new(|cx| {
-            ColorRingModel::new(
-                "ring_lightness",
-                hsl.l,
-                Box::new(LightnessRingDelegate { hue: hsl.h, saturation: hsl.s }),
-            )
-            .size(Size::Medium)
-            .allow_inner_target(true)
-            .build(cx)
-        });
+        let ring_lightness = RingDemo::spawn(
+            ColorRingBuilder::lightness("ring_lightness", hsl.l, hsl.h, hsl.s)
+                .size(Size::Medium)
+                .allow_inner_target(true),
+            cx,
+        );
 
         let mut pane = Self {
             color_ring,
@@ -374,35 +436,14 @@ impl ColorRingPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.color_ring, |app, _, event: &ColorRingEvent, cx| {
-            let (event_name, value) = match event {
-                ColorRingEvent::Change(value) => ("Change", *value),
-                ColorRingEvent::Release(value) => ("Release", *value),
-            };
-            app.panes.color_ring.ring_event_name = event_name;
-            app.panes.color_ring.ring_event_value = value;
-            app.panes.color_ring.ring_hsl.h = value;
-            app.panes.color_ring.sync_ring_from_hue_ring(cx);
+        subscriptions.push(cx.subscribe(&self.color_ring.slider, |app, _, event: &SliderEvent, cx| {
+            app.panes.color_ring.handle_hue_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.ring_saturation, |app, _, event: &ColorRingEvent, cx| {
-            let (event_name, value) = match event {
-                ColorRingEvent::Change(value) => ("Change", *value),
-                ColorRingEvent::Release(value) => ("Release", *value),
-            };
-            app.panes.color_ring.ring_saturation_event_name = event_name;
-            app.panes.color_ring.ring_saturation_event_value = value;
-            app.panes.color_ring.ring_hsl.s = value;
-            app.panes.color_ring.sync_ring_from_saturation_ring(cx);
+        subscriptions.push(cx.subscribe(&self.ring_saturation.slider, |app, _, event: &SliderEvent, cx| {
+            app.panes.color_ring.handle_saturation_event(event, cx);
         }));
-        subscriptions.push(cx.subscribe(&self.ring_lightness, |app, _, event: &ColorRingEvent, cx| {
-            let (event_name, value) = match event {
-                ColorRingEvent::Change(value) => ("Change", *value),
-                ColorRingEvent::Release(value) => ("Release", *value),
-            };
-            app.panes.color_ring.ring_lightness_event_name = event_name;
-            app.panes.color_ring.ring_lightness_event_value = value;
-            app.panes.color_ring.ring_hsl.l = value;
-            app.panes.color_ring.sync_ring_from_lightness_ring(cx);
+        subscriptions.push(cx.subscribe(&self.ring_lightness.slider, |app, _, event: &SliderEvent, cx| {
+            app.panes.color_ring.handle_lightness_event(event, cx);
         }));
     }
 
@@ -428,7 +469,7 @@ impl ColorRingPane {
                 .items_center()
                 .justify_center()
                 .child(ring_event_overlay(
-                    self.color_ring.clone(),
+                    self.color_ring.slider.clone(),
                     self.ring_event_name,
                     self.ring_event_value,
                     look,
@@ -445,7 +486,7 @@ impl ColorRingPane {
                         .items_center()
                         .justify_center()
                         .child(ring_event_overlay(
-                            self.ring_saturation.clone(),
+                            self.ring_saturation.slider.clone(),
                             self.ring_saturation_event_name,
                             self.ring_saturation_event_value,
                             look,
@@ -457,7 +498,7 @@ impl ColorRingPane {
                         .items_center()
                         .justify_center()
                         .child(ring_event_overlay(
-                            self.ring_lightness.clone(),
+                            self.ring_lightness.slider.clone(),
                             self.ring_lightness_event_name,
                             self.ring_lightness_event_value,
                             look,
@@ -494,32 +535,36 @@ impl ColorRingPane {
                         "Vector paths vs raster pre-image for the same hue ring.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector (paths)",
-                                self.color_ring_vector_compare.clone(),
+                                self.color_ring_vector_compare.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                true,
                                 look,
                             ),
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector (paths, inner target)",
-                                self.color_ring_vector_compare_inner_target.clone(),
+                                self.color_ring_vector_compare_inner_target.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                true,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster (pre-imaged)",
-                                self.color_ring_raster.clone(),
+                                self.color_ring_raster.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                false,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster (pre-imaged, inner target)",
-                                self.color_ring_raster_inner_target.clone(),
+                                self.color_ring_raster_inner_target.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                false,
                                 look,
                             ),
                         ]),
@@ -535,32 +580,36 @@ impl ColorRingPane {
                         "Continuous saturation delegates with optional 180° rotation.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector saturation",
-                                self.color_ring_saturation_vector.clone(),
+                                self.color_ring_saturation_vector.slider.clone(),
                                 RING_MEDIUM_PX,
                                 saturation,
+                                true,
                                 look,
                             ),
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector saturation (180deg)",
-                                self.color_ring_saturation_vector_rotated.clone(),
+                                self.color_ring_saturation_vector_rotated.slider.clone(),
                                 RING_MEDIUM_PX,
                                 saturation,
+                                true,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster saturation",
-                                self.color_ring_saturation_raster.clone(),
+                                self.color_ring_saturation_raster.slider.clone(),
                                 RING_MEDIUM_PX,
                                 saturation,
+                                false,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster saturation (180deg)",
-                                self.color_ring_saturation_raster_rotated.clone(),
+                                self.color_ring_saturation_raster_rotated.slider.clone(),
                                 RING_MEDIUM_PX,
                                 saturation,
+                                false,
                                 look,
                             ),
                         ]),
@@ -576,18 +625,20 @@ impl ColorRingPane {
                         "Mirrored lightness delegates in vector and raster modes.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector lightness",
-                                self.color_ring_lightness_vector.clone(),
+                                self.color_ring_lightness_vector.slider.clone(),
                                 RING_MEDIUM_PX,
                                 lightness,
+                                true,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster lightness",
-                                self.color_ring_lightness_raster.clone(),
+                                self.color_ring_lightness_raster.slider.clone(),
                                 RING_MEDIUM_PX,
                                 lightness,
+                                false,
                                 look,
                             ),
                         ]),
@@ -603,18 +654,20 @@ impl ColorRingPane {
                         "Hue rings with pointer interaction disabled.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant(
+                            render_variant(
                                 "Vector (disabled)",
-                                self.color_ring_disabled_vector.clone(),
+                                self.color_ring_disabled_vector.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                true,
                                 look,
                             ),
-                            render_raster_variant(
+                            render_variant(
                                 "Raster (disabled)",
-                                self.color_ring_disabled_raster.clone(),
+                                self.color_ring_disabled_raster.slider.clone(),
                                 RING_MEDIUM_PX,
                                 hue,
+                                false,
                                 look,
                             ),
                         ]),
@@ -630,15 +683,16 @@ impl ColorRingPane {
                         "Inner, outer, and foreground border combinations.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant("no border", self.ring_no_border.clone(), 120.0, hue, look),
-                            render_thumb_variant("inner border", self.ring_inner_border.clone(), 120.0, hue, look),
-                            render_thumb_variant("outer border", self.ring_outer_border.clone(), 120.0, hue, look),
-                            render_thumb_variant("both", self.ring_both_borders.clone(), 120.0, hue, look),
-                            render_thumb_variant(
+                            render_variant("no border", self.ring_no_border.slider.clone(), 120.0, hue, true, look),
+                            render_variant("inner border", self.ring_inner_border.slider.clone(), 120.0, hue, true, look),
+                            render_variant("outer border", self.ring_outer_border.slider.clone(), 120.0, hue, true, look),
+                            render_variant("both", self.ring_both_borders.slider.clone(), 120.0, hue, true, look),
+                            render_variant(
                                 "foreground both",
-                                self.ring_foreground_borders.clone(),
+                                self.ring_foreground_borders.slider.clone(),
                                 120.0,
                                 hue,
+                                true,
                                 look,
                             ),
                         ]),
@@ -654,10 +708,10 @@ impl ColorRingPane {
                         "XSmall through Large ring footprints.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant("XSmall", self.ring_size_xsmall.clone(), 80.0, hue, look),
-                            render_thumb_variant("Small", self.ring_size_small.clone(), 120.0, hue, look),
-                            render_thumb_variant("Medium", self.ring_size_medium.clone(), RING_MEDIUM_PX, hue, look),
-                            render_thumb_variant("Large", self.ring_size_large.clone(), 280.0, hue, look),
+                            render_variant("XSmall", self.ring_size_xsmall.slider.clone(), 80.0, hue, true, look),
+                            render_variant("Small", self.ring_size_small.slider.clone(), 120.0, hue, true, look),
+                            render_variant("Medium", self.ring_size_medium.slider.clone(), RING_MEDIUM_PX, hue, true, look),
+                            render_variant("Large", self.ring_size_large.slider.clone(), 280.0, hue, true, look),
                         ]),
                         look,
                     )],
@@ -671,10 +725,10 @@ impl ColorRingPane {
                         "Medium ring with XSmall through Large track thickness.",
                         WIDE_CARD,
                         variant_panel(vec![
-                            render_thumb_variant("XSmall", self.ring_thickness_xsmall.clone(), RING_MEDIUM_PX, hue, look),
-                            render_thumb_variant("Small", self.ring_thickness_small.clone(), RING_MEDIUM_PX, hue, look),
-                            render_thumb_variant("Medium", self.ring_thickness_medium.clone(), RING_MEDIUM_PX, hue, look),
-                            render_thumb_variant("Large", self.ring_thickness_large.clone(), RING_MEDIUM_PX, hue, look),
+                            render_variant("XSmall", self.ring_thickness_xsmall.slider.clone(), RING_MEDIUM_PX, hue, true, look),
+                            render_variant("Small", self.ring_thickness_small.slider.clone(), RING_MEDIUM_PX, hue, true, look),
+                            render_variant("Medium", self.ring_thickness_medium.slider.clone(), RING_MEDIUM_PX, hue, true, look),
+                            render_variant("Large", self.ring_thickness_large.slider.clone(), RING_MEDIUM_PX, hue, true, look),
                         ]),
                         look,
                     )],
@@ -687,61 +741,84 @@ impl ColorRingPane {
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.color_ring, cx);
-        notify_entity(&self.color_ring_vector_compare, cx);
-        notify_entity(&self.color_ring_raster, cx);
-        notify_entity(&self.color_ring_vector_compare_inner_target, cx);
-        notify_entity(&self.color_ring_raster_inner_target, cx);
-        notify_entity(&self.color_ring_saturation_vector, cx);
-        notify_entity(&self.color_ring_saturation_vector_rotated, cx);
-        notify_entity(&self.color_ring_saturation_raster, cx);
-        notify_entity(&self.color_ring_saturation_raster_rotated, cx);
-        notify_entity(&self.color_ring_lightness_vector, cx);
-        notify_entity(&self.color_ring_lightness_raster, cx);
-        notify_entity(&self.color_ring_disabled_vector, cx);
-        notify_entity(&self.color_ring_disabled_raster, cx);
-        notify_entity(&self.ring_no_border, cx);
-        notify_entity(&self.ring_inner_border, cx);
-        notify_entity(&self.ring_outer_border, cx);
-        notify_entity(&self.ring_both_borders, cx);
-        notify_entity(&self.ring_foreground_borders, cx);
-        notify_entity(&self.ring_size_xsmall, cx);
-        notify_entity(&self.ring_size_small, cx);
-        notify_entity(&self.ring_size_medium, cx);
-        notify_entity(&self.ring_size_large, cx);
-        notify_entity(&self.ring_thickness_xsmall, cx);
-        notify_entity(&self.ring_thickness_small, cx);
-        notify_entity(&self.ring_thickness_medium, cx);
-        notify_entity(&self.ring_thickness_large, cx);
-        notify_entity(&self.ring_saturation, cx);
-        notify_entity(&self.ring_lightness, cx);
+        notify_entity(&self.color_ring.slider, cx);
+        notify_entity(&self.color_ring_vector_compare.slider, cx);
+        notify_entity(&self.color_ring_raster.slider, cx);
+        notify_entity(&self.color_ring_vector_compare_inner_target.slider, cx);
+        notify_entity(&self.color_ring_raster_inner_target.slider, cx);
+        notify_entity(&self.color_ring_saturation_vector.slider, cx);
+        notify_entity(&self.color_ring_saturation_vector_rotated.slider, cx);
+        notify_entity(&self.color_ring_saturation_raster.slider, cx);
+        notify_entity(&self.color_ring_saturation_raster_rotated.slider, cx);
+        notify_entity(&self.color_ring_lightness_vector.slider, cx);
+        notify_entity(&self.color_ring_lightness_raster.slider, cx);
+        notify_entity(&self.color_ring_disabled_vector.slider, cx);
+        notify_entity(&self.color_ring_disabled_raster.slider, cx);
+        notify_entity(&self.ring_no_border.slider, cx);
+        notify_entity(&self.ring_inner_border.slider, cx);
+        notify_entity(&self.ring_outer_border.slider, cx);
+        notify_entity(&self.ring_both_borders.slider, cx);
+        notify_entity(&self.ring_foreground_borders.slider, cx);
+        notify_entity(&self.ring_size_xsmall.slider, cx);
+        notify_entity(&self.ring_size_small.slider, cx);
+        notify_entity(&self.ring_size_medium.slider, cx);
+        notify_entity(&self.ring_size_large.slider, cx);
+        notify_entity(&self.ring_thickness_xsmall.slider, cx);
+        notify_entity(&self.ring_thickness_small.slider, cx);
+        notify_entity(&self.ring_thickness_medium.slider, cx);
+        notify_entity(&self.ring_thickness_large.slider, cx);
+        notify_entity(&self.ring_saturation.slider, cx);
+        notify_entity(&self.ring_lightness.slider, cx);
     }
 
-    fn sync_ring_from_hue_ring(&mut self, cx: &mut Context<GalleryApp>) {
-        self.sync_ring(cx, SyncSource::HueRing);
+    fn handle_hue_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_event_name = match event {
+                SliderEvent::Change { .. } => "Change",
+                SliderEvent::Release { .. } => "Release",
+                _ => self.ring_event_name,
+            };
+            self.ring_event_value = value;
+            self.ring_hsl.h = value;
+            self.sync_ring(cx, SyncSource::HueRing);
+        }
     }
 
-    fn sync_ring_from_saturation_ring(&mut self, cx: &mut Context<GalleryApp>) {
-        self.sync_ring(cx, SyncSource::SaturationRing);
+    fn handle_saturation_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_saturation_event_name = match event {
+                SliderEvent::Change { .. } => "Change",
+                SliderEvent::Release { .. } => "Release",
+                _ => self.ring_saturation_event_name,
+            };
+            self.ring_saturation_event_value = value;
+            self.ring_hsl.s = value;
+            self.sync_ring(cx, SyncSource::SaturationRing);
+        }
     }
 
-    fn sync_ring_from_lightness_ring(&mut self, cx: &mut Context<GalleryApp>) {
-        self.sync_ring(cx, SyncSource::LightnessRing);
+    fn handle_lightness_event(&mut self, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
+        if let Some(value) = primary_slider_value(event) {
+            self.ring_lightness_event_name = match event {
+                SliderEvent::Change { .. } => "Change",
+                SliderEvent::Release { .. } => "Release",
+                _ => self.ring_lightness_event_name,
+            };
+            self.ring_lightness_event_value = value;
+            self.ring_hsl.l = value;
+            self.sync_ring(cx, SyncSource::LightnessRing);
+        }
     }
 
     fn sync_ring(&mut self, cx: &mut Context<GalleryApp>, source: SyncSource) {
         let hsl = self.ring_hsl;
         let hsv_value = hsv_value_for_saturation_ring(hsl);
         self.ring_color = hsl.to_hsla();
+        let lightness = hsl.to_hsla().l;
 
-        let hue_delegate = || HueRingDelegate { saturation: hsl.s, lightness: hsl.l };
-
-        self.color_ring.update(cx, |ring, cx| {
-            ring.set_delegate(Box::new(hue_delegate()), cx);
-            if !matches!(source, SyncSource::HueRing) {
-                ring.set_value(hsl.h, cx);
-            }
-        });
+        if !matches!(source, SyncSource::HueRing) {
+            self.color_ring.set_value(hsl.h, cx);
+        }
 
         for ring in [
             &self.color_ring_vector_compare,
@@ -764,53 +841,67 @@ impl ColorRingPane {
             &self.ring_thickness_medium,
             &self.ring_thickness_large,
         ] {
-            ring.update(cx, |ring, cx| {
-                ring.set_delegate(Box::new(hue_delegate()), cx);
-                ring.set_value(hsl.h, cx);
-            });
+            ring.set_value(hsl.h, cx);
         }
 
-        self.ring_saturation.update(cx, |ring, cx| {
-            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value };
-            ring.set_delegate(Box::new(delegate), cx);
-            if !matches!(source, SyncSource::SaturationRing) {
-                ring.set_value(hsl.s, cx);
-            }
-        });
-        self.ring_lightness.update(cx, |ring, cx| {
-            let delegate = LightnessRingDelegate { hue: hsl.h, saturation: hsl.s };
-            ring.set_delegate(Box::new(delegate), cx);
-            if !matches!(source, SyncSource::LightnessRing) {
-                ring.set_value(hsl.l, cx);
-            }
-        });
+        for ring in [
+            &self.color_ring,
+            &self.color_ring_vector_compare,
+            &self.color_ring_vector_compare_inner_target,
+            &self.color_ring_disabled_vector,
+            &self.ring_no_border,
+            &self.ring_inner_border,
+            &self.ring_outer_border,
+            &self.ring_both_borders,
+            &self.ring_foreground_borders,
+            &self.ring_size_xsmall,
+            &self.ring_size_small,
+            &self.ring_size_medium,
+            &self.ring_size_large,
+            &self.ring_thickness_xsmall,
+            &self.ring_thickness_small,
+            &self.ring_thickness_medium,
+            &self.ring_thickness_large,
+        ] {
+            ring.sync_hue_vector(hsl.s, lightness, cx);
+        }
+
+        for ring in [
+            &self.color_ring_raster,
+            &self.color_ring_raster_inner_target,
+            &self.color_ring_disabled_raster,
+        ] {
+            ring.sync_hue_raster(hsl.s, lightness, cx);
+        }
+
+        if !matches!(source, SyncSource::SaturationRing) {
+            self.ring_saturation.set_value(hsl.s, cx);
+        }
+        self.ring_saturation.sync_saturation(hsl.h, hsv_value, cx);
+
+        if !matches!(source, SyncSource::LightnessRing) {
+            self.ring_lightness.set_value(hsl.l, cx);
+        }
+        self.ring_lightness.sync_lightness(hsl.h, hsl.s, cx);
 
         for ring in [&self.color_ring_saturation_vector, &self.color_ring_saturation_vector_rotated] {
-            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value };
-            ring.update(cx, |ring, cx| {
-                ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(hsl.s, cx);
-            });
+            ring.set_value(hsl.s, cx);
+            ring.sync_saturation(hsl.h, hsv_value, cx);
         }
         for ring in [&self.color_ring_saturation_raster, &self.color_ring_saturation_raster_rotated] {
-            let delegate = SaturationRingDelegate { hue: hsl.h, hsv_value: 1.0 };
-            ring.update(cx, |ring, cx| {
-                ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(hsl.s, cx);
-            });
+            ring.set_value(hsl.s, cx);
+            ring.sync_saturation(hsl.h, 1.0, cx);
         }
         for ring in [&self.color_ring_lightness_vector, &self.color_ring_lightness_raster] {
-            let delegate = LightnessRingDelegate { hue: hsl.h, saturation: hsl.s };
-            ring.update(cx, |ring, cx| {
-                ring.set_delegate(Box::new(delegate), cx);
-                ring.set_value(hsl.l, cx);
-            });
+            ring.set_value(hsl.l, cx);
+            ring.sync_lightness(hsl.h, hsl.s, cx);
         }
 
         cx.notify();
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Clone, Copy)]
 enum SyncSource {
     HueRing,
@@ -823,7 +914,7 @@ fn hsv_value_for_saturation_ring(hsl: Hsl) -> f32 {
 }
 
 fn ring_event_overlay(
-    ring: Entity<ColorRingState>,
+    ring: Entity<SliderControl>,
     event_name: &'static str,
     event_value: f32,
     look: &ShadcnLook,
@@ -889,98 +980,43 @@ fn ring_frame(frame_px: f32, ring: impl IntoElement, overlay: impl IntoElement) 
         .into_any_element()
 }
 
-fn render_ring_with_value(
-    circle: Entity<ColorRingState>,
+fn render_variant(
+    label: &'static str,
+    circle: Entity<SliderControl>,
     frame_px: f32,
     value: f32,
     is_vector: bool,
     look: &ShadcnLook,
 ) -> AnyElement {
-    let label = if is_vector {
+    let label_style = look.typography_scale(ShadcnTextSize::Xs);
+    let display_label = if is_vector {
         format!("*{}", format_ring_value(value))
     } else {
         format_ring_value(value)
     };
     let overlay_style = look.typography_scale(ShadcnTextSize::Xs);
 
-    ring_frame(
-        frame_px,
-        circle,
-        div()
-            .w(px(48.0))
-            .h(px(20.0))
-            .rounded(px(4.0))
-            .bg(black().opacity(0.45))
-            .typography_style(overlay_style)
-            .text_color(white())
-            .flex()
-            .items_center()
-            .justify_center()
-            .child(label),
-    )
-}
-
-fn render_raster_ring_with_value(
-    circle: Entity<ColorRingRasterState>,
-    frame_px: f32,
-    value: f32,
-    look: &ShadcnLook,
-) -> AnyElement {
-    let overlay_style = look.typography_scale(ShadcnTextSize::Xs);
-
-    ring_frame(
-        frame_px,
-        circle,
-        div()
-            .w(px(48.0))
-            .h(px(20.0))
-            .rounded(px(4.0))
-            .bg(black().opacity(0.45))
-            .typography_style(overlay_style)
-            .text_color(white())
-            .flex()
-            .items_center()
-            .justify_center()
-            .child(format_ring_value(value)),
-    )
-}
-
-fn render_thumb_variant(
-    label: &'static str,
-    circle: Entity<ColorRingState>,
-    frame_px: f32,
-    value: f32,
-    look: &ShadcnLook,
-) -> AnyElement {
-    let label_style = look.typography_scale(ShadcnTextSize::Xs);
-
     vstack! {
         gap=8 align=center;
         div()
             .typography_style(label_style)
             .text_color(look.chrome().muted_text)
             .child(label),
-        render_ring_with_value(circle, frame_px, value, true, look),
-    }
-    .into_any_element()
-}
-
-fn render_raster_variant(
-    label: &'static str,
-    circle: Entity<ColorRingRasterState>,
-    frame_px: f32,
-    value: f32,
-    look: &ShadcnLook,
-) -> AnyElement {
-    let label_style = look.typography_scale(ShadcnTextSize::Xs);
-
-    vstack! {
-        gap=8 align=center;
-        div()
-            .typography_style(label_style)
-            .text_color(look.chrome().muted_text)
-            .child(label),
-        render_raster_ring_with_value(circle, frame_px, value, look),
+        ring_frame(
+            frame_px,
+            circle,
+            div()
+                .w(px(48.0))
+                .h(px(20.0))
+                .rounded(px(4.0))
+                .bg(black().opacity(0.45))
+                .typography_style(overlay_style)
+                .text_color(white())
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(display_label),
+        )
     }
     .into_any_element()
 }

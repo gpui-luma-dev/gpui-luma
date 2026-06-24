@@ -430,7 +430,7 @@ Migrate the legacy `ColorArc` control to standard `Slider` entities configured w
 
 **Done:** Wrapper-free `ColorArcBuilder` → `Entity<SliderControl>` with typed hue/sat/lightness factories and vector/raster renderer selection; `ColorArcDomainRenderer` + `ColorArcTemplate` with dynamic dial geometry; legacy `ColorArcState`/`ColorArc`/`surface.rs`/`model.rs` removed; `DomainTrackRenderer::raster_image` hook for bitmap arcs; gallery `arc_pane` and `hue_ring_sl_arcs` migrated.
 
-### Phase 8: Unify Radial Color Controls - Part 2 (ColorRing)
+### Phase 8: Unify Radial Color Controls - Part 2 (ColorRing) ✅
 
 Migrate the legacy `ColorRing` control to standard `Slider` entities configured with circular input strategy and ring template, avoiding wrapping component classes:
 - **`ColorRing` Migration**:
@@ -438,7 +438,9 @@ Migrate the legacy `ColorRing` control to standard `Slider` entities configured 
   - Delegate the circular gradient/spectrum rendering to `DomainTrackRenderer::paint` within the ring canvas.
 - Ensure pointer tracking, wrapping boundary seam logic, and snapping/intervals delegate to the unified slider core.
 
-### Phase 9: Build new gallery prototype surfaces
+**Done:** Expose a `ColorRingBuilder` returning standard unified `Slider` entities, angular wrapping strategy, themed ring template, and circular gradient rendering delegated to track canvas/domain renderer.
+
+### Phase 9: Build new gallery prototype surfaces [Skipped]
 
 Add a dedicated gallery validation pane for the new family instead of immediately replacing existing panes.
 
@@ -459,7 +461,7 @@ The multi-mixer surface is especially relevant as a later consumer:
 
 - [apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/gallery/src/gallery/panes/color_compositions/multi_mixer.rs)
 
-### Phase 10: Prove one real color migration
+### Phase 10: Prove one real color migration ✅
 
 After the prototype feels right, migrate one real color use case that the old `ColorSlider` cannot express cleanly.
 
@@ -470,12 +472,16 @@ Best candidates:
 
 This phase must preserve old color slider demos so the new control is compared against working reference behavior, not developed in a vacuum.
 
-### Phase 11: Finalize cleanup of old controls
+**Done:** OKLCH constrained spectrum slider validated in `MultiMixerState` using allowed intervals and dynamic channel tracking.
+
+### Phase 11: Finalize cleanup of old controls ✅
 
 Only after Phase 10 succeeds:
 
 - Deprecate or remove remaining legacy files and tests.
 - Ensure all radial controls and linear spectrum controls are fully powered by the unified `Slider` control.
+
+**Done:** All legacy `ColorRing` files (`ring.rs`, `surface.rs`, `model.rs`, `control.rs`, `factory.rs`) deleted from `crates/sdk/src/controls/color/color_ring/`. Disallowed old ring pane page references removed from the gallery.
 
 ---
 

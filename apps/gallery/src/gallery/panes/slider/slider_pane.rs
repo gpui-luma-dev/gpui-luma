@@ -388,10 +388,8 @@ impl SliderPane {
     }
 
     fn handle_stops_event(&mut self, slider: &Slider, event: &SliderEvent, cx: &mut Context<GalleryApp>) {
-        if matches!(event, SliderEvent::ThumbSelected { .. }) {
-            if let SliderEvent::ThumbSelected { thumb_id } = event {
-                self.selected_stop = Some(*thumb_id);
-            }
+        if let SliderEvent::ThumbSelected { thumb_id } = event {
+            self.selected_stop = Some(*thumb_id);
         }
 
         self.sync_stop_summary(slider, cx);

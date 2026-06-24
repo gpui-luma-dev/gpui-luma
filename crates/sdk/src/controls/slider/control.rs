@@ -421,7 +421,6 @@ impl SliderControl {
                     cx.stop_propagation();
                     cx.notify();
                 }
-                return;
             }
             SliderInputStrategy::Horizontal | SliderInputStrategy::Vertical => {
                 let interaction_changed = self.interaction.handle_mouse_down(self.model.enabled, window, cx);
@@ -430,7 +429,6 @@ impl SliderControl {
                     cx.stop_propagation();
                     cx.notify();
                 }
-                return;
             }
         }
     }

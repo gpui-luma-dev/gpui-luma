@@ -165,6 +165,7 @@ const COLOR_FIELD_PAGE: GalleryPage =
     GalleryPage { id: "color-field", label: "Color Field", icon: None, kind: GalleryPageKind::ColorField };
 const COLOR_RING_PAGE: GalleryPage =
     GalleryPage { id: "color-ring", label: "Color Ring", icon: None, kind: GalleryPageKind::ColorRing };
+
 const COLOR_ARC_PAGE: GalleryPage =
     GalleryPage { id: "color-arc", label: "Color Arc", icon: None, kind: GalleryPageKind::ColorArc };
 const COLOR_SLIDER_PAGE: GalleryPage =

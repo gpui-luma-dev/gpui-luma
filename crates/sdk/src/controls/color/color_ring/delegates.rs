@@ -1,13 +1,12 @@
 use super::common::{
-    mirrored_lightness, mirrored_saturation, position_from_mirrored_lightness, position_from_mirrored_saturation,
+    mirrored_lightness, mirrored_saturation,
 };
-use super::ring::{ColorRingDelegate, ColorRingState};
 use super::track_context::ColorRingTrackContext;
 use super::types::ColorRingTrackDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
 use crate::controls::color::shape::{Arc, ArcData};
 use crate::controls::color::style::Size;
-use gpui::{prelude::*, *};
+use gpui::*;
 use std::f32::consts::TAU;
 
 fn normalize_hue_degrees(hue: f32) -> f32 {
@@ -76,130 +75,7 @@ pub struct SaturationRingDelegate {
     pub hsv_value: f32,
 }
 
-impl ColorRingDelegate for SaturationRingDelegate {
-    fn style_background(&self, circle: &ColorRingState, container: Div, _window: &mut Window, _cx: &App) -> Div {
-        let hue_deg = normalize_hue_degrees(self.hue);
-        let segments = segments_for_size(circle.size);
-        let ring_thickness = circle.ring_thickness_px();
-        let rotation_turns = circle.rotation_turns();
-        let hsv_value = self.hsv_value.clamp(0.0, 1.0);
 
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
-                        // Sample from segment start so extrema at 0/0.5/1 are hit exactly.
-                        let sat = mirrored_saturation(t0);
-                        Hsv { h: hue_deg, s: sat, v: hsv_value, a: 1.0 }.to_hsla_ext()
-                    });
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
-    }
-
-    fn get_color_at_position(&self, _circle: &ColorRingState, position: f32) -> Hsla {
-        Hsv {
-            h: normalize_hue_degrees(self.hue),
-            s: mirrored_saturation(position),
-            v: self.hsv_value.clamp(0.0, 1.0),
-            a: 1.0,
-        }
-        .to_hsla_ext()
-    }
-
-    fn position_to_value(&self, _circle: &ColorRingState, position: f32) -> f32 {
-        mirrored_saturation(position)
-    }
-
-    fn value_to_position(&self, _circle: &ColorRingState, value: f32) -> f32 {
-        position_from_mirrored_saturation(value)
-    }
-}
-
-#[allow(dead_code)] // Kept as an alternate delegate example.
-pub struct LightnessRingDelegate {
-    pub hue: f32,
-    pub saturation: f32,
-}
-
-impl ColorRingDelegate for LightnessRingDelegate {
-    fn style_background(&self, circle: &ColorRingState, container: Div, _window: &mut Window, _cx: &App) -> Div {
-        let hue = normalize_hue_degrees(self.hue) / 360.0;
-        let saturation = self.saturation.clamp(0.0, 1.0);
-        let segments = segments_for_size(circle.size);
-        let ring_thickness = circle.ring_thickness_px();
-        let rotation_turns = circle.rotation_turns();
-
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
-                        // Sample from segment start so extrema at 0/0.5/1 are hit exactly.
-                        hsla(hue, saturation, mirrored_lightness(t0), 1.0)
-                    });
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
-    }
-
-    fn get_color_at_position(&self, _circle: &ColorRingState, position: f32) -> Hsla {
-        hsla(
-            normalize_hue_degrees(self.hue) / 360.0,
-            self.saturation.clamp(0.0, 1.0),
-            mirrored_lightness(position),
-            1.0,
-        )
-    }
-
-    fn position_to_value(&self, _circle: &ColorRingState, position: f32) -> f32 {
-        mirrored_lightness(position)
-    }
-
-    fn value_to_position(&self, _circle: &ColorRingState, value: f32) -> f32 {
-        position_from_mirrored_lightness(value)
-    }
-}
-
-pub struct HueRingDelegate {
-    pub saturation: f32,
-    pub lightness: f32,
-}
-
-impl ColorRingDelegate for HueRingDelegate {
-    fn style_background(&self, circle: &ColorRingState, container: Div, _window: &mut Window, _cx: &App) -> Div {
-        let saturation = self.saturation;
-        let lightness = self.lightness;
-        let segments = segments_for_size(circle.size);
-        let ring_thickness = circle.ring_thickness_px();
-        let rotation_turns = circle.rotation_turns();
-
-        container.child(
-            canvas(
-                move |bounds, _, _| bounds,
-                move |bounds, _prepaint, window, _| {
-                    paint_segmented_ring(bounds, window, ring_thickness, rotation_turns, segments, |t0| {
-                        let t1 = t0 + (1.0 / segments as f32);
-                        let t_mid = (t0 + t1) * 0.5;
-                        hsla(t_mid, saturation, lightness, 1.0)
-                    });
-                },
-            )
-            .absolute()
-            .inset_0(),
-        )
-    }
-
-    fn get_color_at_position(&self, _circle: &ColorRingState, position: f32) -> Hsla {
-        let hue = position.rem_euclid(1.0);
-        hsla(hue, self.saturation, self.lightness, 1.0)
-    }
-}
 
 impl ColorRingTrackDelegate for SaturationRingDelegate {
     fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
@@ -226,6 +102,11 @@ impl ColorRingTrackDelegate for SaturationRingDelegate {
     }
 }
 
+pub struct LightnessRingDelegate {
+    pub hue: f32,
+    pub saturation: f32,
+}
+
 impl ColorRingTrackDelegate for LightnessRingDelegate {
     fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
         let hue = normalize_hue_degrees(self.hue) / 360.0;
@@ -247,6 +128,11 @@ impl ColorRingTrackDelegate for LightnessRingDelegate {
             1.0,
         )
     }
+}
+
+pub struct HueRingDelegate {
+    pub saturation: f32,
+    pub lightness: f32,
 }
 
 impl ColorRingTrackDelegate for HueRingDelegate {
