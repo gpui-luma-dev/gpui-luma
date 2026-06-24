@@ -14,7 +14,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
-use crate::gallery::panes::color::common::{detail_row, notify_control};
+use crate::gallery::panes::color::common::{control_label, detail_row, notify_control};
 
 pub(in crate::gallery) struct HsvPlaneState {
     look: Arc<ShadcnLook>,
@@ -156,9 +156,9 @@ impl gpui::Render for HsvPlaneState {
             .flex_col()
             .gap(px(10.0))
             .child(div().w(px(plane_size)).h(px(plane_size)).overflow_hidden().child(self.plane.clone()))
-            .child(slider_row("H", self.slider_h.clone()))
-            .child(slider_row("S", self.slider_s.clone()))
-            .child(slider_row("V", self.slider_v.clone()))
+            .child(slider_row("H", self.slider_h.clone(), &self.look))
+            .child(slider_row("S", self.slider_s.clone(), &self.look))
+            .child(slider_row("V", self.slider_v.clone(), &self.look))
             .child(
                 div()
                     .w(px(plane_size))
@@ -173,13 +173,13 @@ impl gpui::Render for HsvPlaneState {
     }
 }
 
-fn slider_row(label: &'static str, slider: Entity<SliderControl>) -> AnyElement {
+fn slider_row(label: &'static str, slider: Entity<SliderControl>, look: &ShadcnLook) -> AnyElement {
     div()
         .w_full()
         .flex()
         .items_center()
         .gap(px(10.0))
-        .child(div().w(px(14.0)).text_xs().child(label))
+        .child(div().w(px(14.0)).child(control_label(label, look)))
         .child(div().flex_1().child(slider))
         .into_any_element()
 }

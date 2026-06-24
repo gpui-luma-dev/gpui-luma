@@ -32,26 +32,38 @@ pub(in crate::gallery) struct MultiMixerState {
 impl MultiMixerState {
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let initial = gpui::hsla(0.55, 1.0, 0.5, 1.0);
-        let hue_alpha =
-            cx.new(|cx| ColorSpaceMixerState::new("Hue + Alpha", None, look.clone(), HueAlpha::from_hsla(initial), cx));
-        let rgb = cx.new(|cx| ColorSpaceMixerState::new("RGB", None, look.clone(), RgbaSpec::from_hsla(initial), cx));
-        let hsla = cx.new(|cx| ColorSpaceMixerState::new("HSLA", None, look.clone(), Hsl::from_hsla(initial), cx));
-        let hsva = cx.new(|cx| ColorSpaceMixerState::new("HSVA", None, look.clone(), Hsv::from_hsla(initial), cx));
-        let lab =
-            cx.new(|cx| ColorSpaceMixerState::new("Lab", Some("Unclamped"), look.clone(), Lab::from_hsla(initial), cx));
+        let hue_alpha = cx.new(|cx| {
+            ColorSpaceMixerState::new("Hue + Alpha", None, true, look.clone(), HueAlpha::from_hsla(initial), cx)
+        });
+        let rgb =
+            cx.new(|cx| ColorSpaceMixerState::new("RGB", None, true, look.clone(), RgbaSpec::from_hsla(initial), cx));
+        let hsla =
+            cx.new(|cx| ColorSpaceMixerState::new("HSLA", None, true, look.clone(), Hsl::from_hsla(initial), cx));
+        let hsva =
+            cx.new(|cx| ColorSpaceMixerState::new("HSVA", None, true, look.clone(), Hsv::from_hsla(initial), cx));
+        let lab = cx.new(|cx| {
+            ColorSpaceMixerState::new("Lab", Some("Unclamped"), true, look.clone(), Lab::from_hsla(initial), cx)
+        });
         let lab_auto = cx.new(|cx| {
             let mut spec = Lab::from_hsla(initial);
             spec.set_auto_clamp(true);
-            ColorSpaceMixerState::new("Lab", Some("Auto-clamped"), look.clone(), spec, cx)
+            ColorSpaceMixerState::new("Lab", Some("Auto-clamped"), true, look.clone(), spec, cx)
         });
         let lab_dynamic = cx.new(|cx| {
             let mut spec = Lab::from_hsla(initial);
             spec.set_dynamic_range(true);
-            ColorSpaceMixerState::new("Lab", Some("Dynamic range"), look.clone(), spec, cx)
+            ColorSpaceMixerState::new("Lab", Some("Dynamic range"), true, look.clone(), spec, cx)
         });
 
         let oklch = cx.new(|cx| {
-            ColorSpaceMixerState::new("OKLCH", Some("Gamut-clamped"), look.clone(), Oklch::from_hsla(initial), cx)
+            ColorSpaceMixerState::new(
+                "OKLCH",
+                Some("Gamut-clamped"),
+                false,
+                look.clone(),
+                Oklch::from_hsla(initial),
+                cx,
+            )
         });
 
         Self { look, hue_alpha, rgb, hsla, hsva, lab, lab_auto, lab_dynamic, oklch }
@@ -124,6 +136,7 @@ struct MixerSliderRow {
 
 struct ColorSpaceMixerState<S: ColorSpecification> {
     subtitle: Option<&'static str>,
+    show_gamut_warning: bool,
     look: Arc<ShadcnLook>,
     spec: S,
     sliders: Vec<MixerSliderRow>,
@@ -134,6 +147,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
     fn new(
         title: &'static str,
         subtitle: Option<&'static str>,
+        show_gamut_warning: bool,
         look: Arc<ShadcnLook>,
         spec: S,
         cx: &mut Context<Self>,
@@ -180,7 +194,7 @@ impl<S: ColorSpecification> ColorSpaceMixerState<S> {
             })
             .collect();
 
-        let state = Self { subtitle, look, spec, sliders, _subscriptions: subscriptions };
+        let state = Self { subtitle, show_gamut_warning, look, spec, sliders, _subscriptions: subscriptions };
         state.sync_sliders(cx);
         state
     }
@@ -260,7 +274,7 @@ impl<S: ColorSpecification> gpui::Render for ColorSpaceMixerState<S> {
             .child(detail_row("Hex", format_hex_color(color), &self.look))
             .child(detail_row("HSLA", format_compact_hsla(color), &self.look))
             .child(detail_row("Spec", self.spec.summary(), &self.look))
-            .when(self.spec.is_out_of_gamut(), |div| {
+            .when(self.show_gamut_warning && self.spec.is_out_of_gamut(), |div| {
                 div.child(detail_row("Gamut", "Out of gamut".to_string(), &self.look))
             })
             .children(self.sliders.iter().map(|row| {

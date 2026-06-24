@@ -177,6 +177,7 @@ mod tests {
             thumb_policy: policy,
             domain_track: None,
             value_map: None,
+            radial_hit_target: None,
         }
     }
 
