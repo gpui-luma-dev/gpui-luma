@@ -5,6 +5,7 @@ use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
 use crate::controls::radio_button::{RadioButtonTheme, RadioScale, default_radio_button_theme};
+use crate::theme::shadow::shadow_projection_insets;
 use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
@@ -32,20 +33,45 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         );
 
         let indicator_radius = scale.indicator_size / 2.0;
-        let indicator_visual = div()
-            .id(format!("{}-indicator", model.id))
-            .flex()
-            .items_center()
-            .justify_center()
-            .size(px(scale.indicator_size))
-            .bg(palette.indicator_background)
-            .border_1()
-            .border_color(palette.indicator_border)
-            .rounded(px(scale.indicator_size))
-            .child(render_dot(model.data, scale.dot_size, palette.dot_color));
+        let indicator_visual = {
+            let mut indicator = div()
+                .id(format!("{}-indicator", model.id))
+                .flex()
+                .items_center()
+                .justify_center()
+                .size(px(scale.indicator_size))
+                .bg(palette.indicator_background)
+                .border_1()
+                .border_color(palette.indicator_border)
+                .rounded(px(scale.indicator_size))
+                .child(render_dot(model.data, scale.dot_size, palette.dot_color));
+
+            if !model.state.disabled
+                && let Some(shadows) = palette.indicator_shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            {
+                indicator = indicator.shadow(shadows.clone());
+            }
+
+            indicator
+        };
+
+        let shadow_extent = if !model.state.disabled {
+            palette
+                .indicator_shadow
+                .as_ref()
+                .filter(|shadows| !shadows.is_empty())
+                .map(|shadows| {
+                    let insets = shadow_projection_insets(shadows, scale_factor);
+                    insets.top.max(insets.right).max(insets.bottom).max(insets.left)
+                })
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        };
 
         let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0))
+            .max(shadow_extent);
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {

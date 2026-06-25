@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{Hsla, SharedString};
+use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::{
@@ -42,11 +42,24 @@ pub struct ButtonFamilyLook {
     pub padding_y: f32,
     pub gap: f32,
     pub height: f32,
+    pub shadow: Option<Vec<BoxShadow>>,
 }
 
 pub trait ButtonFamilyTheme: Send + Sync {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette;
     fn metrics(&self) -> MetricTokens;
+
+    /// Optional full look resolution for themes that resolve geometry and elevation together.
+    fn resolve_look(
+        &self,
+        _role: ButtonFamilyRole,
+        _size: ControlSize,
+        _state: InteractionState,
+        _scale: &StandardBoxScale,
+        _pill_radius: f32,
+    ) -> Option<ButtonFamilyLook> {
+        None
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -175,6 +188,7 @@ pub fn compose_button_family_look(
         },
         gap: scale.gap,
         height: scale.height,
+        shadow: None,
     }
 }
 

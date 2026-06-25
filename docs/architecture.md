@@ -75,7 +75,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.
     *   **Range input:** `slider` (unified single- and multi-thumb engine with linear/angular strategies, optional value-position mapping, and `DomainTrackRenderer`), `color/color_slider` (`ColorSliderBuilder` returns unified `Slider` entities), `color/color_arc` (`ColorArcBuilder` returns unified `Slider` entities for angular spectrum arcs), `color/color_ring` (`ColorRingBuilder` returns unified `Slider` entities for circular spectrum rings while the legacy `ColorRingState` path remains available as a reference surface during migration).
     *   **Selection:** `autocomplete`, `combobox`, `search_selector`, `selector`, `selection_panel`.
-    *   **Menus & overlays:** `popup_menu`, `context_menu`, `floating_menu`, `dialog` (modal/modeless window overlays with deferred window-hosted presentation, dismiss/focus lifecycle in `control.rs`, and template-driven body/footer content).
+    *   **Menus & overlays:** `popup_menu`, `context_menu`, `floating_menu`, `overlay_window` (thin modal/modeless window-hosting primitive with deferred window-hosted presentation, dismiss/focus lifecycle in `control.rs`, and caller-owned content composition).
     *   **Navigation:** `navigation_sidebar`, `tabs_navigation`, `accordion`, `listbox`, `list_view`, `pager`.
 
 ### `crates/look-shadcn` Module Architecture

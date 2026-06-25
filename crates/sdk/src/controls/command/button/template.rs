@@ -20,6 +20,10 @@ fn resolve_theme_look<D>(
     model: &ButtonRenderModel<D>,
     scale: &StandardBoxScale,
 ) -> ButtonFamilyLook {
+    if let Some(look) = theme.resolve_look(model.role, model.size, model.state, scale, theme.metrics().radius.pill) {
+        return look;
+    }
+
     let palette = theme.resolve(model.role, model.size, model.state);
     compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill)
 }
@@ -62,6 +66,10 @@ fn resolve_focus_probe_look<D: Clone>(
     }
 
     let focused_state = InteractionState { focused: true, ..model.state };
+    if let Some(look) = theme.resolve_look(model.role, model.size, focused_state, scale, theme.metrics().radius.pill) {
+        return Some(look);
+    }
+
     let palette = theme.resolve(model.role, model.size, focused_state);
     Some(compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill))
 }
@@ -137,8 +145,13 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
 
         control = control.child(div().text_color(look.foreground).child((model.content)(model, cx)));
 
-        // Generic pipeline call
         control = self.apply_modifiers(control, model);
+
+        if !model.state.disabled
+            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+        {
+            control = control.shadow(shadows.clone());
+        }
 
         let radius = if let Some(r) = model.radius_override.get() {
             r
@@ -202,6 +215,7 @@ mod tests {
             padding_y: 6.0,
             gap: 6.0,
             height: 32.0,
+            shadow: None,
         }
     }
 

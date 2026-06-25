@@ -10,21 +10,14 @@ use super::DialogMode;
 pub struct DialogLook {
     pub background: Hsla,
     pub border: Hsla,
-    pub title_color: Hsla,
-    pub description_color: Hsla,
-    pub body_color: Hsla,
+    pub foreground: Hsla,
     pub backdrop_background: Hsla,
     pub shadow: Vec<BoxShadow>,
     pub radius: f32,
     pub padding: f32,
-    pub section_gap: f32,
-    pub header_gap: f32,
-    pub footer_gap: f32,
     pub min_width: f32,
     pub max_width: f32,
     pub estimated_height: f32,
-    pub title: LumaTextStyle,
-    pub description: LumaTextStyle,
     pub body: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -65,9 +58,7 @@ impl DialogTheme for DefaultDialogTheme {
         DialogLook {
             background: palette.surface.floating.background,
             border: palette.surface.floating.border,
-            title_color: palette.surface.floating.foreground,
-            description_color: palette.app.muted_foreground,
-            body_color: palette.surface.floating.foreground,
+            foreground: palette.surface.floating.foreground,
             backdrop_background: if mode == DialogMode::Modal {
                 Hsla { a: 0.44, ..black() }
             } else {
@@ -85,9 +76,6 @@ impl DialogTheme for DefaultDialogTheme {
             },
             radius: metrics.radius.xl,
             padding: metrics.padding_x(size),
-            section_gap: metrics.gap(size),
-            header_gap: (metrics.gap(size) * 0.5).max(6.0),
-            footer_gap: metrics.gap(size) * 0.75,
             min_width,
             max_width: min_width + 120.0,
             estimated_height: match size {
@@ -95,8 +83,6 @@ impl DialogTheme for DefaultDialogTheme {
                 ControlSize::Md => 228.0,
                 ControlSize::Lg => 264.0,
             },
-            title: typography.text.title,
-            description: typography.text.caption,
             body: typography.text.body,
             font_family: typography.font.sans.family.clone().into(),
         }

@@ -827,7 +827,7 @@ pub struct ResolvedButtonColors {
     pub border: Option<ResolvedColor>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedButtonMetrics {
     pub height: f32,
     pub padding_horizontal: f32,
@@ -849,6 +849,25 @@ pub fn resolve_button_metrics_rule(
         corner_radius: resolve_stylesheet_metric(&rule.corner_radius, metrics, size)
             .unwrap_or_else(|| metrics.radius(size)),
     }
+}
+
+pub fn resolve_stylesheet_shadow_token(raw: &str) -> Option<String> {
+    match raw.trim() {
+        "" | "none" => None,
+        token => Some(token.to_string()),
+    }
+}
+
+pub fn resolve_layered_elevation_shadow(
+    rules: &[crate::stylesheet::config::LayeredElevationRule],
+    layer: InteractionLayer,
+) -> Option<String> {
+    let rule = if layer == InteractionLayer::Disabled {
+        rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"))
+    } else {
+        rules.iter().find(|rule| rule.layer.is_none())
+    }?;
+    resolve_stylesheet_shadow_token(&rule.shadow)
 }
 
 pub fn resolve_typography_rule(rule: &TypographyRule) -> LumaTextStyle {

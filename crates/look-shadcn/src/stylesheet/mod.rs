@@ -6,7 +6,7 @@ pub fn embedded_stylesheet() -> &'static StylesheetConfig {
     embedded()
 }
 
-pub use config::StylesheetConfig;
+pub use config::{ButtonElevationRule, LayeredElevationRule, StylesheetConfig};
 pub use resolve::{
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule, resolve_button_color_rule,
     resolve_badge_color_rule, resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
@@ -17,9 +17,9 @@ pub use resolve::{
     resolve_navigation_sidebar_section_color_rule, resolve_autocomplete_chrome_color_rule, resolve_progress_color_rule,
     resolve_progress_metrics, resolve_radio_color_rule, resolve_resizable_panels_color_rule,
     resolve_scrollbar_color_rule, resolve_scrollbar_metrics, resolve_slider_color_rule, resolve_slider_metrics,
-    resolve_split_view_color_rule, resolve_switch_color_rule, resolve_tabs_navigation_item_color_rule,
-    resolve_tabs_navigation_list_color_rule, resolve_textfield_color_rule, resolve_tree_view_row_color_rule,
-    resolve_typography_rule,
+    resolve_split_view_color_rule, resolve_stylesheet_shadow_token, resolve_layered_elevation_shadow,
+    resolve_switch_color_rule, resolve_tabs_navigation_item_color_rule, resolve_tabs_navigation_list_color_rule,
+    resolve_textfield_color_rule, resolve_tree_view_row_color_rule, resolve_typography_rule,
 };
 
 use std::sync::OnceLock;
@@ -64,6 +64,13 @@ pub fn find_button_color_rule(
         map.get("mode").expect("mode key"),
         selected,
     )
+}
+
+pub fn find_button_elevation_rule(
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+) -> Option<&crate::stylesheet::config::ButtonElevationRule> {
+    stylesheet.button.elevation_rule_for_style(crate::stylesheet::selector::button_style_key(style))
 }
 
 pub fn find_checkbox_color_rule(
@@ -915,8 +922,11 @@ mod tests {
         assert!(!stylesheet.button.color_rules.is_empty());
         assert_eq!(stylesheet.badge.color_rules.len(), 5);
         assert_eq!(stylesheet.checkbox.color_rules.len(), 3);
+        assert_eq!(stylesheet.checkbox.elevation_rules.len(), 2);
         assert_eq!(stylesheet.radio.color_rules.len(), 3);
+        assert_eq!(stylesheet.radio.elevation_rules.len(), 2);
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
+        assert_eq!(stylesheet.switch.elevation_rules.len(), 2);
         assert_eq!(stylesheet.slider.color_rules.len(), 4);
         assert_eq!(stylesheet.scrollbar.color_rules.len(), 5);
         assert_eq!(stylesheet.accordion.trigger.color_rules.len(), 5);

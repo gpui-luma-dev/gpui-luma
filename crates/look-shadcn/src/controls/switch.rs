@@ -10,16 +10,19 @@
 //! surface). Only `focused` adds a focus ring via the adorner.
 
 use gpui_luma::controls::switch::SwitchPalette;
-use gpui_luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
-use crate::elevation::thumb_shadow;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
+use crate::shadow::parse_shadow_token;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_switch_color_rule};
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_layered_elevation_shadow,
+    resolve_switch_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct SwitchColorTable {
@@ -79,7 +82,7 @@ pub fn switch_look(
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let thumb_shadow = thumb_shadow(ctx.theme_mode);
+    let layer = state.layer();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
     let colors =
         resolve_switch_colors(&resolver, style, on, state.disabled).unwrap_or_else(|_| SwitchColorTable::fallback());
@@ -104,12 +107,23 @@ pub fn switch_look(
         track_border,
         thumb_background,
         thumb_border,
-        thumb_shadow,
+        thumb_shadow: switch_elevation_shadow(catalog, embedded_stylesheet(), layer),
         label_color: colors.label_color.hsla(),
         adorner,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
     }
+}
+
+fn switch_elevation_shadow(
+    catalog: &crate::catalog::CssTokenMap,
+    stylesheet: &StylesheetConfig,
+    layer: InteractionLayer,
+) -> Vec<gpui::BoxShadow> {
+    let Some(token) = resolve_layered_elevation_shadow(&stylesheet.switch.elevation_rules, layer) else {
+        return Vec::new();
+    };
+    parse_shadow_token(catalog, &token).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -139,7 +153,30 @@ mod tests {
             ("input".into(), "oklch(0.8 0.02 200)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+            ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
+    }
+
+    #[test]
+    fn switch_look_resolves_stylesheet_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+
+        assert!(!look.thumb_shadow.is_empty());
+    }
+
+    #[test]
+    fn disabled_switch_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let look = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert!(look.thumb_shadow.is_empty());
     }
 
     #[test]

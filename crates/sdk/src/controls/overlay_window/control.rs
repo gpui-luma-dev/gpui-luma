@@ -1,15 +1,13 @@
 use gpui::{
-    anchored, deferred, point, App, ClickEvent, Context, Corner, DragMoveEvent, Entity, EventEmitter, FocusHandle,
-    Focusable, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Render,
-    SharedString, Size, Subscription, Window, div, prelude::*, px,
+    anchored, deferred, point, App, Context, Corner, DragMoveEvent, EventEmitter, FocusHandle, Focusable, IntoElement,
+    KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Render, SharedString, Size, Subscription,
+    Window, div, prelude::*, px,
 };
-use lucide_icons::Icon as LucideIcon;
 
 use super::{
     DialogBuilder, DialogDismissPolicy, DialogEvent, DialogMode, DialogPosition, DialogRenderModel,
     DialogTemplateHandlers, DialogTemplateParts, default_dialog_theme,
 };
-use crate::controls::command::button::{Button, ButtonEvent};
 use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone)]
@@ -29,9 +27,6 @@ pub struct DialogControl {
     restore_focus: Option<FocusHandle>,
     pending_focus: bool,
     pending_focus_restore: bool,
-    close_button: Entity<Button<()>>,
-    cancel_button: Entity<Button<()>>,
-    confirm_button: Entity<Button<()>>,
     dragging: Option<DialogDragState>,
     _subscriptions: Vec<Subscription>,
 }
@@ -51,41 +46,14 @@ impl DialogControl {
     pub(crate) fn from_builder(builder: DialogBuilder, cx: &mut Context<Self>) -> Self {
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
 
-        let close_button = Button::icon(format!("{}-close", builder.model.id), LucideIcon::X)
-            .template(builder.model.close_button_template.clone())
-            .spawn(cx);
-        let cancel_button = Button::new(format!("{}-cancel", builder.model.id))
-            .template(builder.model.cancel_button_template.clone())
-            .spawn(cx);
-        let confirm_button = Button::new(format!("{}-confirm", builder.model.id))
-            .template(builder.model.confirm_button_template.clone())
-            .spawn(cx);
-        cancel_button.update(cx, |button, cx| button.set_label(builder.model.cancel_label.clone(), cx));
-        confirm_button.update(cx, |button, cx| button.set_label(builder.model.confirm_label.clone(), cx));
-
-        let subscriptions = vec![
-            cx.subscribe(&close_button, |this, _, _: &ButtonEvent, cx| {
-                this.dismiss(cx);
-            }),
-            cx.subscribe(&cancel_button, |this, _, _: &ButtonEvent, cx| {
-                this.dismiss(cx);
-            }),
-            cx.subscribe(&confirm_button, |this, _, _: &ButtonEvent, cx| {
-                this.confirm(cx);
-            }),
-        ];
-
         Self {
             focus_handle: cx.focus_handle().tab_stop(true),
             model: builder.model,
             restore_focus: None,
             pending_focus: false,
             pending_focus_restore: false,
-            close_button,
-            cancel_button,
-            confirm_button,
             dragging: None,
-            _subscriptions: subscriptions,
+            _subscriptions: Vec::new(),
         }
     }
 
@@ -116,28 +84,6 @@ impl DialogControl {
         self.pending_focus_restore = self.restore_focus.is_some();
         self.dragging = None;
         cx.emit(DialogEvent::Dismissed);
-        cx.notify();
-    }
-
-    pub fn confirm(&mut self, cx: &mut Context<Self>) {
-        if !self.model.open {
-            return;
-        }
-        self.model.open = false;
-        self.pending_focus = false;
-        self.pending_focus_restore = self.restore_focus.is_some();
-        self.dragging = None;
-        cx.emit(DialogEvent::Confirmed);
-        cx.notify();
-    }
-
-    pub fn set_title(&mut self, title: impl Into<SharedString>, cx: &mut Context<Self>) {
-        self.model.title = title.into();
-        cx.notify();
-    }
-
-    pub fn set_description(&mut self, description: Option<SharedString>, cx: &mut Context<Self>) {
-        self.model.description = description;
         cx.notify();
     }
 
@@ -178,48 +124,27 @@ impl DialogControl {
     fn render_model<'a>(&'a self, window: &Window) -> DialogRenderModel<'a> {
         DialogRenderModel {
             id: &self.model.id,
-            title: &self.model.title,
-            description: self.model.description.as_ref(),
             mode: self.model.mode,
             position: self.model.position,
             dismissible: self.model.dismissible,
             draggable: self.model.draggable,
-            show_footer: self.model.show_footer,
             size: self.model.size,
             width: self.model.width,
             focused: self.focus_handle.is_focused(window),
-            body: &self.model.body,
+            content: &self.model.content,
         }
     }
 
-    fn focus_handles(&self, cx: &App) -> Vec<FocusHandle> {
-        let mut handles = vec![self.focus_handle.clone()];
-        if self.model.dismissible {
-            handles.push(self.close_button.read(cx).focus_handle(cx));
-        }
-        if self.model.show_footer {
-            handles.push(self.cancel_button.read(cx).focus_handle(cx));
-            handles.push(self.confirm_button.read(cx).focus_handle(cx));
-        }
-        handles
+    fn has_internal_focus(&self, window: &Window) -> bool {
+        self.focus_handle.is_focused(window)
     }
 
-    fn has_internal_focus(&self, window: &Window, cx: &App) -> bool {
-        self.focus_handles(cx).into_iter().any(|handle| handle.is_focused(window))
-    }
-
-    fn handle_close_click(&mut self, _event: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        self.dismiss(cx);
-    }
-
-    fn handle_shell_mouse_down(&mut self, event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn handle_shell_mouse_down(&mut self, _event: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.focus_handle.focus(window, cx);
         cx.stop_propagation();
-        self.dragging = None;
         if self.model.dismiss_policy == DialogDismissPolicy::CloseOnFocusLoss {
             self.pending_focus = false;
         }
-        let _ = event;
     }
 
     fn handle_shell_mouse_down_out(&mut self, _event: &MouseDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -273,31 +198,10 @@ impl DialogControl {
     }
 
     fn handle_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        match event.keystroke.key.as_str() {
-            "escape" if self.model.dismissible => {
-                window.prevent_default();
-                cx.stop_propagation();
-                self.dismiss(cx);
-            }
-            "tab" if self.model.mode == DialogMode::Modal => {
-                let handles = self.focus_handles(cx);
-                if handles.is_empty() {
-                    return;
-                }
-                let backwards = event.keystroke.modifiers.shift;
-                let focused_index = handles.iter().position(|handle| handle.is_focused(window));
-                let next_index = match (focused_index, backwards) {
-                    (Some(0), true) => handles.len() - 1,
-                    (Some(index), true) => index.saturating_sub(1),
-                    (Some(index), false) => (index + 1) % handles.len(),
-                    (None, true) => handles.len() - 1,
-                    (None, false) => 0,
-                };
-                handles[next_index].focus(window, cx);
-                window.prevent_default();
-                cx.stop_propagation();
-            }
-            _ => {}
+        if event.keystroke.key.as_str() == "escape" && self.model.dismissible {
+            window.prevent_default();
+            cx.stop_propagation();
+            self.dismiss(cx);
         }
     }
 
@@ -335,7 +239,7 @@ impl Render for DialogControl {
             && self.model.mode == DialogMode::Modeless
             && self.model.dismiss_policy == DialogDismissPolicy::CloseOnFocusLoss
             && !self.pending_focus
-            && !self.has_internal_focus(window, cx)
+            && !self.has_internal_focus(window)
         {
             self.dismiss(cx);
         }
@@ -352,7 +256,7 @@ impl Render for DialogControl {
                 .absolute()
                 .top_0()
                 .left_0()
-                .right(px(56.0 + look.padding))
+                .right_0()
                 .h(px(56.0))
                 .occlude()
                 .cursor_grab()
@@ -363,16 +267,13 @@ impl Render for DialogControl {
                 })
                 .into_any_element()
         });
+
         let shell = self.model.template.render(
             &model,
             &look,
             DialogTemplateParts {
-                close_button: self.close_button.clone().into_any_element(),
-                cancel_button: self.cancel_button.clone().into_any_element(),
-                confirm_button: self.confirm_button.clone().into_any_element(),
                 header_drag_handle,
                 handlers: DialogTemplateHandlers {
-                    close_click: Box::new(cx.listener(Self::handle_close_click)),
                     key_down: Box::new(cx.listener(Self::handle_key_down)),
                     header_mouse_down: Box::new(cx.listener(Self::handle_header_mouse_down)),
                     shell_mouse_down: Box::new(cx.listener(Self::handle_shell_mouse_down)),

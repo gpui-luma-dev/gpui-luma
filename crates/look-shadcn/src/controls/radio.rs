@@ -15,7 +15,11 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_radio_color_rule, resolve_radio_color_rule};
+use crate::shadow::parse_shadow_token;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_radio_color_rule, resolve_layered_elevation_shadow,
+    resolve_radio_color_rule,
+};
 
 #[derive(Clone, Debug)]
 pub struct RadioColorTable {
@@ -97,5 +101,73 @@ pub fn radio_button_look(
         adorner,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
+        indicator_shadow: radio_elevation_shadow(catalog, embedded_stylesheet(), layer),
+    }
+}
+
+fn radio_elevation_shadow(
+    catalog: &crate::catalog::CssTokenMap,
+    stylesheet: &StylesheetConfig,
+    layer: InteractionLayer,
+) -> Option<Vec<gpui::BoxShadow>> {
+    let token = resolve_layered_elevation_shadow(&stylesheet.radio.elevation_rules, layer)?;
+    let shadows = parse_shadow_token(catalog, &token).ok()?;
+    if shadows.is_empty() { None } else { Some(shadows) }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::*;
+    use crate::catalog::CssTokenMap;
+    use crate::mode::ShadcnModeTokens;
+    use gpui_luma::theme::ThemeMode;
+
+    fn retro_arcade_catalog() -> CssTokenMap {
+        CssTokenMap::from_map(BTreeMap::from([
+            ("primary".into(), "hsl(330.9554 64.0816% 51.9608%)".into()),
+            ("primary-foreground".into(), "hsl(0 0% 100%)".into()),
+            ("secondary".into(), "hsl(175.4622 58.6207% 39.8039%)".into()),
+            ("secondary-foreground".into(), "hsl(0 0% 100%)".into()),
+            ("background".into(), "hsl(43.8462 86.6667% 94.1176%)".into()),
+            ("foreground".into(), "hsl(192.2034 80.8219% 14.3137%)".into()),
+            ("muted".into(), "hsl(180 6.9307% 60.3922%)".into()),
+            ("muted-foreground".into(), "hsl(192.2034 80.8219% 14.3137%)".into()),
+            ("accent".into(), "hsl(17.5691 80.4444% 44.1176%)".into()),
+            ("accent-foreground".into(), "hsl(0 0% 100%)".into()),
+            ("destructive".into(), "hsl(1.0405 71.1934% 52.3529%)".into()),
+            ("destructive-foreground".into(), "hsl(0 0% 100%)".into()),
+            ("border".into(), "hsl(186.3158 8.2969% 55.0980%)".into()),
+            ("input".into(), "hsl(186.3158 8.2969% 55.0980%)".into()),
+            ("ring".into(), "hsl(330.9554 64.0816% 51.9608%)".into()),
+            ("card".into(), "hsl(45.6000 42.3729% 88.4314%)".into()),
+            ("radius".into(), "0.25rem".into()),
+            ("spacing".into(), "0.25rem".into()),
+            ("font-sans".into(), "ui-sans-serif, system-ui, 'Outfit', sans-serif".into()),
+            ("shadow-xs".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.05)".into()),
+            ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
+        ]))
+    }
+
+    #[test]
+    fn radio_look_resolves_stylesheet_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+
+        assert!(look.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn disabled_radio_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = radio_button_look(
+            &mode,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert!(look.indicator_shadow.is_none());
     }
 }

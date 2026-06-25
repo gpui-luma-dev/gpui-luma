@@ -89,6 +89,19 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
   * The rendering template **must** enforce that the corner radius applied to the absolute shadow layer scales dynamically with the front-element's radius (e.g., `radius_override` or look radius).
   * Always snap calculated pixel offsets cleanly via `snap_to_pixel(val, scale_factor)` to ensure the shadow backing coordinates align exactly with subpixel boundaries.
 
+### 4. The Transparent-Fill Seam (Textfield / Textarea — Attempted, Reverted)
+
+* **The Problem**: shadcn surface inputs use `bg-transparent` (light mode) with `shadow-xs` / `shadow-sm`. Token resolution and TOML elevation rules worked, but the shadow did not read as a drop shadow beneath the field — it appeared as a dark band at the **top inner edge** of the control interior.
+* **Diagnosis**: GPUI paints `box_shadow` **before** the background quad (`style.rs` → `paint_shadows` then conditional `paint_quad`). When the control fill is fully transparent, no opaque quad is drawn afterward, so shadow blur is visible **inside** the element bounds, not only below it. Opaque controls (buttons, checkbox/radio indicators, switch track) do not hit this because the post-shadow background quad occludes interior bleed. CSS box-shadow on transparent inputs looks correct because the shadow sits behind the border box and does not show through the fill the same way.
+* **What did not help**:
+  * Applying `ShadowProjectionInsets` padding on the shadow wrapper — especially **top** inset — gave upward blur a visible slot and worsened the top-edge artifact; bottom-only padding did not fix interior bleed.
+  * Moving shadow to a focus-ring wrapper or inner `#-control` div — same paint order on the same transparent element.
+* **Likely fix direction** (not implemented):
+  * Paint shadow on a **separate opaque backing plate** behind the chrome (filled with page `background` when the control fill is transparent), with border/text stacked on top and no shadow on the transparent face itself; or
+  * GPUI-level change to exterior-only shadow compositing on transparent elements; or
+  * Accept a non-transparent surface fill (deviates from shadcn light-mode Input).
+* **Status**: Textfield/textarea elevation work was reverted. Do not re-attempt until compositing strategy is chosen. Checkbox/radio/switch/button elevation remains in progress separately.
+
 ---
 
 ## Tasks

@@ -6,9 +6,10 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, Standard
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
+use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_button_color_rule, resolve_button_color_rule,
-    resolve_button_metrics_rule,
+    StylesheetConfig, embedded_stylesheet, find_button_color_rule, find_button_elevation_rule,
+    resolve_button_color_rule, resolve_button_metrics_rule, resolve_stylesheet_shadow_token,
 };
 
 /// Radix-style button look.
@@ -74,7 +75,21 @@ pub fn button_look(
     let stylesheet = embedded_stylesheet();
     let palette = button_palette(&ctx, stylesheet, style, role, size);
     let scale = button_box_scale(&ctx, stylesheet, size, 1.0);
-    compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill)
+    let effective_style = effective_button_style(style, role);
+    let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
+    look.shadow = button_elevation_shadow(&ctx, stylesheet, effective_style);
+    look
+}
+
+fn button_elevation_shadow(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
+) -> Option<Vec<gpui::BoxShadow>> {
+    let rule = find_button_elevation_rule(stylesheet, style)?;
+    let token = resolve_stylesheet_shadow_token(&rule.shadow)?;
+    let shadows = parse_shadow_token(ctx.catalog(), &token).ok()?;
+    if shadows.is_empty() { None } else { Some(shadows) }
 }
 
 pub fn button_box_scale(
@@ -178,6 +193,8 @@ mod tests {
             ("radius".into(), "0.25rem".into()),
             ("spacing".into(), "0.25rem".into()),
             ("font-sans".into(), "ui-sans-serif, system-ui, 'Outfit', sans-serif".into()),
+            ("shadow-xs".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.05)".into()),
+            ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
     }
 
@@ -317,5 +334,50 @@ mod tests {
         );
 
         assert!((palette.typography.size - 12.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn outline_button_look_resolves_stylesheet_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+
+        assert!(look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn primary_button_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+
+        assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn ghost_button_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Ghost,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+
+        assert!(look.shadow.is_none());
     }
 }

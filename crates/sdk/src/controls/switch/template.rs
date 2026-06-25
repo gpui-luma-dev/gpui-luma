@@ -6,6 +6,7 @@ use crate::controls::switch::{SwitchScale, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+use crate::theme::shadow::shadow_projection_insets;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, snap_to_pixel};
 
 define_control_template!(
@@ -46,10 +47,9 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .bg(palette.thumb_background)
             .border_1()
             .border_color(palette.thumb_border)
-            .rounded(px(scale.track_radius))
-            .shadow(palette.thumb_shadow.clone());
+            .rounded(px(scale.track_radius));
 
-        let track_visual = div()
+        let mut track_visual = div()
             .id(format!("{}-track", model.id))
             .relative()
             .w(px(scale.track_width))
@@ -60,8 +60,20 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .rounded(px(scale.track_radius))
             .child(thumb);
 
+        if !model.state.disabled && !palette.thumb_shadow.is_empty() {
+            track_visual = track_visual.shadow(palette.thumb_shadow.clone());
+        }
+
+        let shadow_extent = if !model.state.disabled && !palette.thumb_shadow.is_empty() {
+            let insets = shadow_projection_insets(&palette.thumb_shadow, scale_factor);
+            insets.top.max(insets.right).max(insets.bottom).max(insets.left)
+        } else {
+            0.0
+        };
+
         let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_palette.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+            .max(focused_probe_palette.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0))
+            .max(shadow_extent);
         let mut track = div().relative().child(track_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.track_radius) {

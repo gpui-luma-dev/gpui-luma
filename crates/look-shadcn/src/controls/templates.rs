@@ -5,7 +5,9 @@ use gpui_luma::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
 };
 use gpui_luma::controls::card::{CardTemplate, CardTheme, ThemedCardTemplate};
-use gpui_luma::controls::dialog::{DialogTemplate, DialogTheme, ThemedDialogTemplate};
+use gpui_luma::controls::overlay_window::{
+    OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
+};
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
@@ -48,7 +50,7 @@ use super::checkbox::checkbox_look;
 use super::card::card_look;
 use super::control_group::control_group_list_look;
 use super::context_menu::context_menu_look;
-use super::dialog::dialog_look;
+use super::overlay_window::overlay_window_look;
 use super::floating_menu::floating_menu_look;
 use super::list_view::{list_view_look, list_view_row_palette};
 use super::navigation_sidebar::{
@@ -68,7 +70,7 @@ use super::resizable_panels::resizable_panels_look;
 use super::split_view::split_view_look;
 use super::tree_view::tree_view_row_palette;
 use super::tabs_navigation::{tabs_navigation_item_look, tabs_navigation_list_look};
-use super::button::button_palette;
+use super::button::{button_look, button_palette};
 use crate::look_context::LookContext;
 use super::button::ShadcnButtonStyle;
 use crate::look::ShadcnLook;
@@ -84,6 +86,18 @@ impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
         let stylesheet = self.theme.stylesheet();
         let ctx = LookContext::new(tokens.as_ref(), self.theme.mode(), state);
         button_palette(&ctx, stylesheet.as_ref(), self.style, role, size)
+    }
+
+    fn resolve_look(
+        &self,
+        role: ButtonFamilyRole,
+        size: ControlSize,
+        state: InteractionState,
+        _scale: &gpui_luma::theme::StandardBoxScale,
+        _pill_radius: f32,
+    ) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+        let tokens = self.theme.mode_tokens();
+        Some(button_look(tokens.as_ref(), self.theme.mode(), self.style, role, size, state))
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -826,12 +840,12 @@ pub fn card_template(theme: Arc<ShadcnLook>) -> Arc<dyn CardTemplate> {
     Arc::new(ThemedCardTemplate::new(card_theme(theme)))
 }
 
-pub fn dialog_template(theme: Arc<ShadcnLook>) -> Arc<dyn DialogTemplate> {
-    Arc::new(ThemedDialogTemplate::new(dialog_theme(theme)))
+pub fn overlay_window_template(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTemplate> {
+    Arc::new(ThemedOverlayWindowTemplate::new(overlay_window_theme(theme)))
 }
 
-pub fn dialog_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DialogTheme> {
-    Arc::new(RadixDialogTheme { theme: theme.as_ref().clone() })
+pub fn overlay_window_theme(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTheme> {
+    Arc::new(RadixOverlayWindowTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn card_theme(theme: Arc<ShadcnLook>) -> Arc<dyn CardTheme> {
@@ -848,17 +862,13 @@ impl CardTheme for RadixCardTheme {
     }
 }
 
-struct RadixDialogTheme {
+struct RadixOverlayWindowTheme {
     theme: ShadcnLook,
 }
 
-impl DialogTheme for RadixDialogTheme {
-    fn resolve(
-        &self,
-        size: ControlSize,
-        mode: gpui_luma::controls::dialog::DialogMode,
-    ) -> gpui_luma::controls::dialog::DialogLook {
-        dialog_look(&self.theme, size, mode)
+impl OverlayWindowTheme for RadixOverlayWindowTheme {
+    fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
+        overlay_window_look(&self.theme, size, mode)
     }
 }
 

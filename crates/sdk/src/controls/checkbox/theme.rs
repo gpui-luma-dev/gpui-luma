@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{Hsla, SharedString};
+use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
 use crate::theme::layout::{label_baseline_shift, snap_to_pixel};
@@ -56,6 +56,7 @@ pub struct CheckboxPalette {
     pub adorner: Option<AdornerSpec>,
     pub label_typography: LumaTextStyle,
     pub label_font_family: SharedString,
+    pub indicator_shadow: Option<Vec<BoxShadow>>,
 }
 
 pub type CheckboxLook = CheckboxPalette;
@@ -137,6 +138,7 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             adorner,
             label_typography: typography.text.label,
             label_font_family: typography.font.sans.family.clone().into(),
+            indicator_shadow: None,
         }
     }
 

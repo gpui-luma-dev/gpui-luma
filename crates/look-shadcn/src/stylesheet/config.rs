@@ -89,12 +89,18 @@ pub struct ButtonStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, ButtonMetricsRule>,
     #[serde(default)]
+    pub elevation_rules: Vec<ButtonElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<ButtonColorRule>,
 }
 
 impl ButtonStylesheet {
     pub fn find_color_rule(&self, style: &str, layer: &str, mode: &str, selected: bool) -> Option<&ButtonColorRule> {
         self.color_rules.iter().find(|rule| rule.matches(style, layer, mode, selected))
+    }
+
+    pub fn elevation_rule_for_style(&self, style: &str) -> Option<&ButtonElevationRule> {
+        self.elevation_rules.iter().find(|rule| rule.style == style)
     }
 
     pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ButtonMetricsRule> {
@@ -114,6 +120,11 @@ pub struct ButtonMetricsRule {
     pub font_size: f32,
     pub icon_size: f32,
     pub corner_radius: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ButtonElevationRule {
+    pub style: String,
     pub shadow: String,
 }
 
@@ -295,13 +306,28 @@ pub(crate) fn matches_optional_layer(selector: Option<&str>, layer: InteractionL
     selector.is_none_or(|expected| expected == interaction_layer_key(layer))
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct LayeredElevationRule {
+    pub layer: Option<String>,
+    pub shadow: String,
+}
+
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct CheckboxStylesheet {
+    #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
     #[serde(default)]
     pub color_rules: Vec<CheckboxColorRule>,
 }
 
 impl CheckboxStylesheet {
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
     pub fn find_color_rule(&self, checked: bool, layer: InteractionLayer) -> Option<&CheckboxColorRule> {
         self.color_rules.iter().find(|rule| {
             if rule.layer.as_deref() == Some("disabled") {
@@ -327,10 +353,19 @@ pub struct CheckboxColorRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct RadioStylesheet {
     #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<RadioColorRule>,
 }
 
 impl RadioStylesheet {
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
     pub fn find_color_rule(&self, selected: bool, layer: InteractionLayer) -> Option<&RadioColorRule> {
         self.color_rules.iter().find(|rule| {
             if rule.layer.as_deref() == Some("disabled") {
@@ -359,10 +394,19 @@ pub struct SwitchStylesheet {
     #[serde(default)]
     pub metrics: Option<SwitchMetricsRule>,
     #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<SwitchColorRule>,
 }
 
 impl SwitchStylesheet {
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
     pub fn find_color_rule(&self, on: bool, disabled: bool) -> Option<&SwitchColorRule> {
         self.color_rules
             .iter()
@@ -1092,7 +1136,6 @@ padding_horizontal = 16.0
 font_size = 14.0
 icon_size = 16.0
 corner_radius = "radius"
-shadow = "shadow-sm"
 
 [[button.color_rules]]
 style = "primary"
@@ -1118,6 +1161,25 @@ foreground = "foreground"
         let config = StylesheetConfig::parse(BUTTON_SNIPPET).expect("parse snippet");
         assert!(config.button.metrics.contains_key("md"));
         assert_eq!(config.button.color_rules.len(), 2);
+    }
+
+    #[test]
+    fn parses_button_elevation_rules() {
+        let config = StylesheetConfig::parse(
+            r#"
+[[button.elevation_rules]]
+style = "outline"
+shadow = "shadow-xs"
+
+[[button.elevation_rules]]
+style = "primary"
+shadow = "none"
+"#,
+        )
+        .expect("parse elevation snippet");
+        assert_eq!(config.button.elevation_rules.len(), 2);
+        let outline = config.button.elevation_rule_for_style("outline").expect("outline rule");
+        assert_eq!(outline.shadow, "shadow-xs");
     }
 
     #[test]

@@ -59,9 +59,39 @@ pub(crate) fn label_baseline_shift(size: ControlSize) -> f32 {
     }
 }
 
+/// Outer reach of a box shadow layer used to position absolute shadow backing.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct ShadowProjectionInsets {
+    pub top: f32,
+    pub right: f32,
+    pub bottom: f32,
+    pub left: f32,
+}
+
+impl ShadowProjectionInsets {
+    pub fn compute(offset_x: f32, offset_y: f32, blur: f32, spread: f32) -> Self {
+        let reach = (blur.max(0.0) + spread).max(0.0);
+        Self {
+            top: (reach - offset_y).ceil().max(0.0),
+            right: (reach + offset_x).ceil().max(0.0),
+            bottom: (reach + offset_y).ceil().max(0.0),
+            left: (reach - offset_x).ceil().max(0.0),
+        }
+    }
+
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            top: self.top.max(other.top),
+            right: self.right.max(other.right),
+            bottom: self.bottom.max(other.bottom),
+            left: self.left.max(other.left),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::snap_to_pixel;
+    use super::{ShadowProjectionInsets, snap_to_pixel};
 
     #[test]
     fn snap_to_pixel_snaps_at_1x() {
@@ -79,5 +109,14 @@ mod tests {
     fn snap_to_pixel_snaps_at_2x() {
         assert_eq!(snap_to_pixel(10.2, 2.0), 10.0);
         assert_eq!(snap_to_pixel(10.3, 2.0), 10.5);
+    }
+
+    #[test]
+    fn shadow_projection_insets_accounts_for_offset_and_blur() {
+        let insets = ShadowProjectionInsets::compute(0.0, 5.0, 5.0, 0.0);
+        assert_eq!(insets.top, 0.0);
+        assert_eq!(insets.bottom, 10.0);
+        assert_eq!(insets.left, 5.0);
+        assert_eq!(insets.right, 5.0);
     }
 }

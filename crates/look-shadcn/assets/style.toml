@@ -81,7 +81,6 @@ padding_horizontal = 12.0
 font_size = 12.0
 icon_size = 14.0
 corner_radius = "radius"
-shadow = "shadow-xs"
 
 [button.metrics.md]
 height = "metrics.control.md"
@@ -89,7 +88,6 @@ padding_horizontal = 16.0
 font_size = 14.0
 icon_size = 16.0
 corner_radius = "radius"
-shadow = "shadow-sm"
 
 [button.metrics.lg]
 height = "metrics.control.lg"
@@ -97,7 +95,23 @@ padding_horizontal = 20.0
 font_size = 16.0
 icon_size = 18.0
 corner_radius = "radius"
-shadow = "shadow-md"
+
+# Elevation per shadcn/ui button variant (component layer, not CSS theme tokens).
+[[button.elevation_rules]]
+style = "primary"
+shadow = "none"
+
+[[button.elevation_rules]]
+style = "secondary"
+shadow = "none"
+
+[[button.elevation_rules]]
+style = "ghost"
+shadow = "none"
+
+[[button.elevation_rules]]
+style = "outline"
+shadow = "shadow-xs"
 
 # Primary button states
 [[button.color_rules]]
@@ -384,6 +398,14 @@ foreground = "foreground"
 # =====================================================================
 # 2. CHECKBOX
 # =====================================================================
+# shadcn/ui uses shadow-xs on indicators; shadow-sm reads better at GPUI scale.
+[[checkbox.elevation_rules]]
+shadow = "shadow-sm"
+
+[[checkbox.elevation_rules]]
+layer = "disabled"
+shadow = "none"
+
 [[checkbox.color_rules]]
 layer = "disabled"
 indicator_background = "muted"
@@ -406,6 +428,14 @@ label_color = "foreground"
 # =====================================================================
 # 3. RADIO
 # =====================================================================
+# shadcn/ui uses shadow-xs on indicators; shadow-sm reads better at GPUI scale.
+[[radio.elevation_rules]]
+shadow = "shadow-sm"
+
+[[radio.elevation_rules]]
+layer = "disabled"
+shadow = "none"
+
 [[radio.color_rules]]
 layer = "disabled"
 indicator_background = "muted"
@@ -431,6 +461,14 @@ label_color = "foreground"
 # =====================================================================
 # 4. SWITCH
 # =====================================================================
+# shadcn/ui uses shadow-xs on the track; shadow-sm reads better at GPUI scale.
+[[switch.elevation_rules]]
+shadow = "shadow-sm"
+
+[[switch.elevation_rules]]
+layer = "disabled"
+shadow = "none"
+
 [switch.metrics]
 width = 44.0
 height = 24.0

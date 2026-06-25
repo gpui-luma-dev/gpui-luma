@@ -5,7 +5,6 @@ pub(crate) mod card;
 pub(crate) mod checkbox;
 pub(crate) mod context_menu;
 pub(crate) mod control_group;
-pub(crate) mod dialog;
 pub(crate) mod ext;
 pub(crate) mod floating_menu;
 pub(crate) mod list_view;
@@ -28,6 +27,7 @@ pub(crate) mod templates;
 pub(crate) mod textfield;
 pub(crate) mod textarea;
 pub(crate) mod tree_view;
+pub(crate) mod overlay_window;
 
 pub use button::ShadcnButtonStyle;
 pub use textfield::ShadcnTextFieldStyle;
