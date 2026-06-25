@@ -5,12 +5,21 @@ use gpui::{AppContext, Bounds, Entity, Pixels, SharedString};
 use super::{ControlFocusState, PopupMenu, PopupMenuState, PopupMenuTemplate, MenuPath, default_popup_menu_template};
 use crate::controls::menu_item::MenuItem;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum PopupMenuPlacement {
+    #[default]
     Smart,
     BelowStart,
     AboveStart,
     CenteredOnTrigger,
+}
+
+/// Trigger chrome aligned with command button variants.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum PopupMenuTriggerStyle {
+    #[default]
+    Outline,
+    Ghost,
 }
 
 #[derive(Clone)]
@@ -20,6 +29,7 @@ pub struct PopupMenuModel {
     pub(crate) items: Vec<MenuItem>,
     pub(crate) enabled: bool,
     pub(crate) placement: PopupMenuPlacement,
+    pub(crate) trigger_style: PopupMenuTriggerStyle,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
 }
 
@@ -30,6 +40,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub open: bool,
     pub trigger_bounds: Option<Bounds<Pixels>>,
     pub placement: PopupMenuPlacement,
+    pub trigger_style: PopupMenuTriggerStyle,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
     pub enabled: bool,
@@ -52,6 +63,7 @@ impl PopupMenuBuilder {
                 items: Vec::new(),
                 enabled: true,
                 placement: PopupMenuPlacement::Smart,
+                trigger_style: PopupMenuTriggerStyle::default(),
                 template: default_popup_menu_template(),
             },
         }
@@ -80,6 +92,15 @@ impl PopupMenuBuilder {
     pub fn placement(mut self, placement: PopupMenuPlacement) -> Self {
         self.model.placement = placement;
         self
+    }
+
+    pub fn trigger_style(mut self, style: PopupMenuTriggerStyle) -> Self {
+        self.model.trigger_style = style;
+        self
+    }
+
+    pub fn ghost(self) -> Self {
+        self.trigger_style(PopupMenuTriggerStyle::Ghost)
     }
 
     pub fn template(mut self, template: Arc<dyn PopupMenuTemplate>) -> Self {

@@ -776,13 +776,24 @@ pub struct FloatingMenuMetricsRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct FloatingMenuSurfaceStylesheet {
     #[serde(default)]
+    pub elevation_rules: Vec<FloatingMenuSurfaceElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<FloatingMenuSurfaceColorRule>,
 }
 
 impl FloatingMenuSurfaceStylesheet {
+    pub fn elevation_rule(&self) -> Option<&FloatingMenuSurfaceElevationRule> {
+        self.elevation_rules.first()
+    }
+
     pub fn color_rule(&self) -> Option<&FloatingMenuSurfaceColorRule> {
         self.color_rules.first()
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct FloatingMenuSurfaceElevationRule {
+    pub shadow: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

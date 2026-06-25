@@ -13,13 +13,14 @@ use gpui_luma::controls::floating_menu::FloatingMenuLook;
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
-use crate::elevation::menu_shadow;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
+use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_floating_menu_surface_color_rule,
-    find_floating_menu_trigger_color_rule, resolve_floating_menu_surface_color_rule,
-    resolve_floating_menu_trigger_color_rule,
+    find_floating_menu_surface_elevation_rule, find_floating_menu_trigger_color_rule,
+    resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
+    resolve_stylesheet_shadow_token,
 };
 
 #[derive(Clone, Debug)]
@@ -107,7 +108,7 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let shadow = menu_shadow(ctx.theme_mode);
+    let shadow = floating_menu_elevation_shadow(catalog, embedded_stylesheet());
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
     let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
 
@@ -130,6 +131,19 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_radius: metrics.radius.sm,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }
+}
+
+fn floating_menu_elevation_shadow(
+    catalog: &crate::catalog::CssTokenMap,
+    stylesheet: &StylesheetConfig,
+) -> Vec<gpui::BoxShadow> {
+    let Some(rule) = find_floating_menu_surface_elevation_rule(stylesheet) else {
+        return Vec::new();
+    };
+    let Some(token) = resolve_stylesheet_shadow_token(&rule.shadow) else {
+        return Vec::new();
+    };
+    parse_shadow_token(catalog, &token).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -162,7 +176,16 @@ mod tests {
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
             ("popover".into(), "oklch(0.9306 0.0260 92.4020)".into()),
             ("popover-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
+            ("shadow-md".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
+    }
+
+    #[test]
+    fn floating_menu_resolves_stylesheet_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let look = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+
+        assert!(!look.shadow.is_empty());
     }
 
     #[test]

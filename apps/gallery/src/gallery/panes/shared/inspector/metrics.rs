@@ -412,11 +412,26 @@ pub(in crate::gallery) fn context_menu_target_layout_data(
     super::types::InspectLayoutSizeData { size, properties: context_menu_target_metric_properties(&metrics) }
 }
 
-pub(in crate::gallery) fn popup_menu_trigger_layout_data(
+pub(in crate::gallery) fn popup_menu_outline_trigger_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
 ) -> super::types::InspectLayoutSizeData {
-    let metrics = ShadcnInspect::new(look).inspect_popup_menu_metrics(size);
+    popup_menu_trigger_layout_data(look, gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline, size)
+}
+
+pub(in crate::gallery) fn popup_menu_ghost_trigger_layout_data(
+    look: &gpui_luma_look_shadcn::ShadcnLook,
+    size: gpui_luma::theme::ControlSize,
+) -> super::types::InspectLayoutSizeData {
+    popup_menu_trigger_layout_data(look, gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost, size)
+}
+
+pub(in crate::gallery) fn popup_menu_trigger_layout_data(
+    look: &gpui_luma_look_shadcn::ShadcnLook,
+    trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+    size: gpui_luma::theme::ControlSize,
+) -> super::types::InspectLayoutSizeData {
+    let metrics = ShadcnInspect::new(look).inspect_popup_menu_metrics(trigger_style, size);
     super::types::InspectLayoutSizeData { size, properties: button_metric_properties(&metrics.trigger) }
 }
 

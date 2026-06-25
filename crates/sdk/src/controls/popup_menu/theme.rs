@@ -1,17 +1,20 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{BoxShadow, Hsla, hsla};
 
+use super::PopupMenuTriggerStyle;
 use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
+    ControlSize, InteractionLayer, InteractionState, LumaLayoutCacheExt, LumaTextStyle, MetricTokens,
+    StandardBoxScale, ThemeTokens,
 };
 
 #[derive(Clone, Debug)]
 pub struct PopupMenuPalette {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
-    pub trigger_border: Hsla,
+    pub trigger_border: Option<Hsla>,
+    pub trigger_shadow: Option<Vec<BoxShadow>>,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
     pub floating_menu: FloatingMenuLook,
@@ -21,7 +24,8 @@ pub struct PopupMenuPalette {
 pub struct PopupMenuLook {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
-    pub trigger_border: Hsla,
+    pub trigger_border: Option<Hsla>,
+    pub trigger_shadow: Option<Vec<BoxShadow>>,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
     pub trigger_radius: f32,
@@ -35,12 +39,23 @@ pub struct PopupMenuLook {
 }
 
 pub trait PopupMenuTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> PopupMenuPalette;
+    fn resolve(&self, trigger_style: PopupMenuTriggerStyle, state: InteractionState) -> PopupMenuPalette;
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> PopupMenuLook {
-        compose_popup_menu_look(&self.resolve(state), scale)
+    fn resolve_look(
+        &self,
+        trigger_style: PopupMenuTriggerStyle,
+        state: InteractionState,
+        scale_factor: f32,
+        cx: &mut gpui::App,
+    ) -> PopupMenuLook {
+        let scale = cx.use_cached_layout(
+            self.metrics(),
+            crate::theme::LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        compose_popup_menu_look(&self.resolve(trigger_style, state), &scale)
     }
 }
 
@@ -62,27 +77,55 @@ impl DefaultPopupMenuTheme {
 }
 
 impl PopupMenuTheme for DefaultPopupMenuTheme {
-    fn resolve(&self, state: InteractionState) -> PopupMenuPalette {
+    fn resolve(&self, trigger_style: PopupMenuTriggerStyle, state: InteractionState) -> PopupMenuPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
         let size = ControlSize::Md;
+        let layer = state.layer();
 
-        let trigger_background = match state.layer() {
-            InteractionLayer::Disabled => palette.state.disabled.background,
-            InteractionLayer::Pressed => palette.state.pressed.background,
-            InteractionLayer::Hovered => palette.state.hover.background,
-            InteractionLayer::Default => palette.app.background,
-        };
-        let trigger_foreground = if state.disabled {
-            palette.state.disabled.foreground
-        } else {
-            palette.app.foreground
+        let (trigger_background, trigger_foreground, trigger_border, trigger_shadow) = match trigger_style {
+            PopupMenuTriggerStyle::Outline => {
+                let background = match layer {
+                    InteractionLayer::Disabled => palette.state.disabled.background,
+                    InteractionLayer::Pressed => palette.state.pressed.background,
+                    InteractionLayer::Hovered => palette.state.hover.background,
+                    InteractionLayer::Default => palette.app.background,
+                };
+                (
+                    background,
+                    if state.disabled {
+                        palette.state.disabled.foreground
+                    } else {
+                        palette.app.foreground
+                    },
+                    Some(palette.border.default),
+                    Some(self.tokens.elevation.control.to_box_shadows()),
+                )
+            }
+            PopupMenuTriggerStyle::Ghost => {
+                let background = match layer {
+                    InteractionLayer::Disabled => palette.state.disabled.background,
+                    InteractionLayer::Pressed | InteractionLayer::Hovered => palette.state.hover.background,
+                    InteractionLayer::Default => hsla(0.0, 0.0, 0.0, 0.0),
+                };
+                (
+                    background,
+                    if state.disabled {
+                        palette.state.disabled.foreground
+                    } else {
+                        palette.app.foreground
+                    },
+                    None,
+                    None,
+                )
+            }
         };
 
         PopupMenuPalette {
             trigger_background,
             trigger_foreground,
-            trigger_border: palette.border.default,
+            trigger_border,
+            trigger_shadow,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
             floating_menu: default_floating_menu_look(&self.tokens, size),
@@ -94,11 +137,12 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
     }
 }
 
-pub(crate) fn compose_popup_menu_look(palette: &PopupMenuPalette, scale: &StandardBoxScale) -> PopupMenuLook {
+pub fn compose_popup_menu_look(palette: &PopupMenuPalette, scale: &StandardBoxScale) -> PopupMenuLook {
     PopupMenuLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,
         trigger_border: palette.trigger_border,
+        trigger_shadow: palette.trigger_shadow.clone(),
         focus_ring: palette.focus_ring,
         trigger_typography: palette.trigger_typography,
         trigger_radius: scale.radius,

@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use crate::gallery::panes::shared::inspector::{
     ColorInspectTreeData, floating_menu_item_disabled_branch, floating_menu_item_hover_branch,
     floating_menu_layout_data, floating_menu_surface_branch, ghost_trigger_color_nodes, inspect_slug,
-    popup_menu_trigger_layout_data, sized_layout_branch,
+    popup_menu_outline_trigger_layout_data, sized_layout_branch,
 };
 
 pub(in crate::gallery) fn build_selector_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<ColorInspectTreeData>> {
@@ -49,7 +49,7 @@ fn selector_layout_branch(prefix: &str, expand: bool, look: &ShadcnLook) -> Tree
         .branch(true)
         .expanded(expand)
         .children([
-            sized_layout_branch(&id, "trigger", expand, look, popup_menu_trigger_layout_data),
+            sized_layout_branch(&id, "trigger", expand, look, popup_menu_outline_trigger_layout_data),
             sized_layout_branch(&id, "items panel", expand, look, floating_menu_layout_data),
         ])
 }

@@ -217,14 +217,19 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_popup_menu_color_palette(
         &self,
+        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
         state: InteractionState,
         size: ControlSize,
     ) -> PopupMenuInspectPalette {
-        inspect_popup_menu_color_palette(&self.mode_tokens(), self.theme_mode(), state, size)
+        inspect_popup_menu_color_palette(&self.mode_tokens(), self.theme_mode(), trigger_style, state, size)
     }
 
-    pub fn inspect_popup_menu_metrics(&self, size: ControlSize) -> PopupMenuInspectMetrics {
-        inspect_popup_menu_metrics(&self.mode_tokens(), self.theme_mode(), size)
+    pub fn inspect_popup_menu_metrics(
+        &self,
+        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+        size: ControlSize,
+    ) -> PopupMenuInspectMetrics {
+        inspect_popup_menu_metrics(&self.mode_tokens(), self.theme_mode(), trigger_style, size)
     }
 
     pub fn inspect_tabs_navigation_item_color_palette(

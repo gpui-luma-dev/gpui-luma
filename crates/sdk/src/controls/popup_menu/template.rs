@@ -7,9 +7,9 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
+use crate::controls::button_family::button_family_effective_border;
 use crate::controls::floating_menu::render_floating_menu;
 use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, default_popup_menu_theme};
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -75,12 +75,8 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             item_clicks,
         } = handlers;
         let scale_factor = window.scale_factor();
-        let scale = _cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
-        );
-        let look = self.theme.resolve_look(model.state, &scale);
+        let look = self.theme.resolve_look(model.trigger_style, model.state, scale_factor, _cx);
+        let border = button_family_effective_border(look.trigger_border);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
@@ -92,8 +88,6 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             .h(px(look.trigger_height))
             .bg(look.trigger_background)
             .text_color(look.trigger_foreground)
-            .border_1()
-            .border_color(look.trigger_border)
             .rounded(px(look.trigger_radius))
             .text_size(px(look.trigger_typography.size))
             .line_height(px(look.trigger_typography.line_height))
@@ -114,6 +108,14 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
                 look.trigger_foreground,
                 look.trigger_icon_size,
             ));
+
+        if border.a > 0.0 {
+            trigger = trigger.border_1().border_color(border);
+        }
+
+        if let Some(shadows) = look.trigger_shadow.as_ref().filter(|shadows| !shadows.is_empty()) {
+            trigger = trigger.shadow(shadows.clone());
+        }
 
         if model.state.disabled {
             trigger = trigger.opacity(0.56);
@@ -250,12 +252,13 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
+    use crate::controls::popup_menu::{PopupMenuTriggerStyle, compose_popup_menu_look};
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
     fn look() -> PopupMenuLook {
         let theme = default_popup_menu_theme();
-        theme.resolve_look(
-            InteractionState::default(),
+        compose_popup_menu_look(
+            &theme.resolve(PopupMenuTriggerStyle::Outline, InteractionState::default()),
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )
     }

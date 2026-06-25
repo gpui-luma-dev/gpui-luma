@@ -7,7 +7,7 @@ use gpui::{
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
     ControlFocusState, PopupMenu, PopupMenuEvent, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
-    PopupMenuTemplateHandlers,
+    PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma::theme::{InteractionState};
@@ -26,6 +26,7 @@ pub(in crate::gallery) struct PopupMenuPane {
     popup_below: Entity<PopupMenu>,
     popup_above: Entity<PopupMenu>,
     popup_centered: Entity<PopupMenu>,
+    popup_ghost: Entity<PopupMenu>,
     state_preview: Entity<PopupMenuStatePreview>,
     inspector: Entity<ColorInspectorShell>,
     selection: String,
@@ -72,6 +73,12 @@ impl PopupMenuPane {
                 .items(menu_items())
                 .placement(PopupMenuPlacement::CenteredOnTrigger)
                 .spawn(cx),
+            popup_ghost: look
+                .popup_menu("popup-menu-ghost-example")
+                .label("Ghost popup")
+                .items(menu_items())
+                .ghost()
+                .spawn(cx),
             state_preview: cx.new(|_| PopupMenuStatePreview::new(look.clone(), popup_template)),
             inspector,
             selection: "none".to_string(),
@@ -89,6 +96,9 @@ impl PopupMenuPane {
             app.panes.popup_menu.handle_event(event, cx);
         }));
         subscriptions.push(cx.subscribe(&self.popup_centered, |app, _, event: &PopupMenuEvent, cx| {
+            app.panes.popup_menu.handle_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.popup_ghost, |app, _, event: &PopupMenuEvent, cx| {
             app.panes.popup_menu.handle_event(event, cx);
         }));
     }
@@ -121,7 +131,14 @@ impl PopupMenuPane {
                                 .child(self.popup_below.clone())
                                 .child(self.popup_above.clone()),
                         )
-                        .child(div().flex().items_center().gap_3().child(self.popup_centered.clone()))
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_3()
+                                .child(self.popup_centered.clone())
+                                .child(self.popup_ghost.clone()),
+                        )
                         .child(div().text_color(chrome.body_text).child(format!("Selected: {}", self.selection)))
                         .child(self.state_preview.clone()),
                 )
@@ -137,6 +154,7 @@ impl PopupMenuPane {
         notify_entity(&self.popup_below, cx);
         notify_entity(&self.popup_above, cx);
         notify_entity(&self.popup_centered, cx);
+        notify_entity(&self.popup_ghost, cx);
         notify_entity(&self.state_preview, cx);
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
@@ -167,6 +185,7 @@ struct PopupMenuStatePreview {
 struct PopupMenuStateSample {
     id: &'static str,
     label: &'static str,
+    trigger_style: PopupMenuTriggerStyle,
     state: InteractionState,
     focus: ControlFocusState,
 }
@@ -184,30 +203,58 @@ impl Render for PopupMenuStatePreview {
             PopupMenuStateSample {
                 id: "default",
                 label: "Standard",
+                trigger_style: PopupMenuTriggerStyle::Outline,
                 state: InteractionState::default(),
                 focus: ControlFocusState::default(),
             },
             PopupMenuStateSample {
                 id: "hover",
                 label: "Hover",
+                trigger_style: PopupMenuTriggerStyle::Outline,
                 state: InteractionState { hovered: true, ..InteractionState::default() },
                 focus: ControlFocusState::default(),
             },
             PopupMenuStateSample {
                 id: "focus",
                 label: "Focus",
+                trigger_style: PopupMenuTriggerStyle::Outline,
                 state: InteractionState { focused: true, ..InteractionState::default() },
                 focus: ControlFocusState { focused: true, focus_visible: true },
             },
             PopupMenuStateSample {
                 id: "active",
                 label: "Active",
+                trigger_style: PopupMenuTriggerStyle::Outline,
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
                 focus: ControlFocusState { focused: true, focus_visible: true },
             },
             PopupMenuStateSample {
                 id: "disabled",
                 label: "Disabled",
+                trigger_style: PopupMenuTriggerStyle::Outline,
+                state: InteractionState { disabled: true, ..InteractionState::default() },
+                focus: ControlFocusState::default(),
+            },
+        ];
+        let ghost_samples = [
+            PopupMenuStateSample {
+                id: "ghost-default",
+                label: "Standard",
+                trigger_style: PopupMenuTriggerStyle::Ghost,
+                state: InteractionState::default(),
+                focus: ControlFocusState::default(),
+            },
+            PopupMenuStateSample {
+                id: "ghost-hover",
+                label: "Hover",
+                trigger_style: PopupMenuTriggerStyle::Ghost,
+                state: InteractionState { hovered: true, ..InteractionState::default() },
+                focus: ControlFocusState::default(),
+            },
+            PopupMenuStateSample {
+                id: "ghost-disabled",
+                label: "Disabled",
+                trigger_style: PopupMenuTriggerStyle::Ghost,
                 state: InteractionState { disabled: true, ..InteractionState::default() },
                 focus: ControlFocusState::default(),
             },
@@ -223,11 +270,25 @@ impl Render for PopupMenuStatePreview {
                     .text_sm()
                     .font_weight(FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Template state preview"),
+                    .child("Outline trigger state preview"),
             )
             .child(
                 div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                     samples
+                        .into_iter()
+                        .map(|sample| render_trigger_sample(&self.template, sample, chrome.muted_text, window, cx)),
+                ),
+            )
+            .child(
+                div()
+                    .text_sm()
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Ghost trigger state preview"),
+            )
+            .child(
+                div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                    ghost_samples
                         .into_iter()
                         .map(|sample| render_trigger_sample(&self.template, sample, chrome.muted_text, window, cx)),
                 ),
@@ -252,6 +313,7 @@ fn render_trigger_sample(
         open: false,
         trigger_bounds: None,
         placement: PopupMenuPlacement::BelowStart,
+        trigger_style: sample.trigger_style,
         open_submenu: None,
         active_path: None,
         enabled: !sample.state.disabled,

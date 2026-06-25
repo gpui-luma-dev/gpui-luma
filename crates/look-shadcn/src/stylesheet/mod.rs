@@ -6,7 +6,7 @@ pub fn embedded_stylesheet() -> &'static StylesheetConfig {
     embedded()
 }
 
-pub use config::{ButtonElevationRule, LayeredElevationRule, StylesheetConfig};
+pub use config::{ButtonElevationRule, FloatingMenuSurfaceElevationRule, LayeredElevationRule, StylesheetConfig};
 pub use resolve::{
     resolve_accordion_content_color_rule, resolve_accordion_trigger_color_rule, resolve_button_color_rule,
     resolve_badge_color_rule, resolve_button_metrics_rule, resolve_card_color_rule, resolve_checkbox_color_rule,
@@ -160,6 +160,12 @@ pub fn find_list_view_row_color_rule(
 
 pub fn find_floating_menu_surface_color_rule(stylesheet: &StylesheetConfig) -> Option<&FloatingMenuSurfaceColorRule> {
     stylesheet.floating_menu.surface.color_rule()
+}
+
+pub fn find_floating_menu_surface_elevation_rule(
+    stylesheet: &StylesheetConfig,
+) -> Option<&FloatingMenuSurfaceElevationRule> {
+    stylesheet.floating_menu.surface.elevation_rule()
 }
 
 pub fn find_floating_menu_trigger_color_rule(
@@ -935,6 +941,7 @@ mod tests {
         assert_eq!(stylesheet.listbox.row.color_rules.len(), 6);
         assert_eq!(stylesheet.list_view.row.color_rules.len(), 6);
         assert_eq!(stylesheet.floating_menu.trigger.color_rules.len(), 5);
+        assert_eq!(stylesheet.floating_menu.surface.elevation_rules.len(), 1);
         assert_eq!(stylesheet.tabs_navigation.item.color_rules.len(), 10);
         assert_eq!(stylesheet.tree_view.row.color_rules.len(), 5);
         assert_eq!(stylesheet.navigation_sidebar.item.color_rules.len(), 10);

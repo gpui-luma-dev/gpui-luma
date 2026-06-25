@@ -81,7 +81,7 @@ pub fn button_look(
     look
 }
 
-fn button_elevation_shadow(
+pub(crate) fn button_elevation_shadow(
     ctx: &LookContext,
     stylesheet: &StylesheetConfig,
     style: ShadcnButtonStyle,

@@ -862,6 +862,9 @@ item_icon_size_factor = 0.44
 item_radius = "radius.sm"
 submenu_offset_x_factor = 0.5
 
+[[floating_menu.surface.elevation_rules]]
+shadow = "shadow-md"
+
 [[floating_menu.surface.color_rules]]
 background = "first(popover,card)"
 foreground = "popover-foreground"

@@ -1,13 +1,18 @@
 //! Inspect metadata for `popup_menu`.
 
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::popup_menu::PopupMenuTriggerStyle;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
+
+use super::button::{inspect_button_color_palette, inspect_button_metrics};
 
 pub struct PopupMenuInspectPalette {
-    pub trigger_background: gpui_luma_look_shadcn::ResolvedColor,
-    pub trigger_foreground: gpui_luma_look_shadcn::ResolvedColor,
-    pub trigger_border: gpui_luma_look_shadcn::ResolvedColor,
-    pub focus_ring: Option<gpui_luma_look_shadcn::ResolvedColor>,
+    pub trigger_style: PopupMenuTriggerStyle,
+    pub trigger_background: ResolvedColor,
+    pub trigger_foreground: ResolvedColor,
+    pub trigger_border: ResolvedColor,
+    pub focus_ring: Option<ResolvedColor>,
     pub menu: crate::controls::floating_menu::FloatingMenuInspectPalette,
 }
 
@@ -17,44 +22,45 @@ pub struct PopupMenuInspectMetrics {
     pub menu: crate::controls::floating_menu::FloatingMenuInspectMetrics,
 }
 
+fn button_style(trigger_style: PopupMenuTriggerStyle) -> ShadcnButtonStyle {
+    match trigger_style {
+        PopupMenuTriggerStyle::Outline => ShadcnButtonStyle::Outline,
+        PopupMenuTriggerStyle::Ghost => ShadcnButtonStyle::Ghost,
+    }
+}
+
 pub fn inspect_popup_menu_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    trigger_style: PopupMenuTriggerStyle,
     state: InteractionState,
     size: ControlSize,
 ) -> PopupMenuInspectPalette {
-    use gpui_luma_look_shadcn::{ColorSource, LookResolver, ResolvedColor};
-
-    let ctx = LookContext::new(mode, theme_mode, state);
+    let trigger =
+        inspect_button_color_palette(mode, theme_mode, button_style(trigger_style), ButtonFamilyRole::Text, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
 
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "popup_menu_inspect");
-    let trigger_colors =
-        gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
-    let trigger_background = trigger_colors.background;
-    let trigger_foreground = trigger_colors.foreground;
-    let trigger_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
-        value: ctx.catalog().color("border").expect("border"),
-        source: ColorSource::CssVar { token: "border".into() },
-    });
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
-
-    PopupMenuInspectPalette { trigger_background, trigger_foreground, trigger_border, focus_ring, menu }
+    PopupMenuInspectPalette {
+        trigger_style,
+        trigger_background: trigger.background,
+        trigger_foreground: trigger.foreground,
+        trigger_border: trigger.border,
+        focus_ring: trigger.focus_ring,
+        menu,
+    }
 }
 
 pub fn inspect_popup_menu_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    trigger_style: PopupMenuTriggerStyle,
     size: ControlSize,
 ) -> PopupMenuInspectMetrics {
-    use gpui_luma::controls::button_family::ButtonFamilyRole;
-
     PopupMenuInspectMetrics {
-        trigger: crate::controls::button::inspect_button_metrics(
+        trigger: inspect_button_metrics(
             mode,
             theme_mode,
-            gpui_luma_look_shadcn::ShadcnButtonStyle::Ghost,
+            button_style(trigger_style),
             ButtonFamilyRole::Text,
             size,
             InteractionState::default(),

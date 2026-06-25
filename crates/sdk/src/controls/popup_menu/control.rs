@@ -82,6 +82,11 @@ impl PopupMenu {
         cx.notify();
     }
 
+    pub fn set_trigger_style(&mut self, style: super::PopupMenuTriggerStyle, cx: &mut Context<Self>) {
+        self.model.trigger_style = style;
+        cx.notify();
+    }
+
     fn render_model<'a>(&'a self, window: &Window) -> PopupMenuRenderModel<'a> {
         PopupMenuRenderModel {
             id: &self.model.id,
@@ -90,6 +95,7 @@ impl PopupMenu {
             open: self.open,
             trigger_bounds: self.trigger_bounds,
             placement: self.model.placement,
+            trigger_style: self.model.trigger_style,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
             enabled: self.model.enabled,

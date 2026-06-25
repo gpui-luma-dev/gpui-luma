@@ -102,6 +102,20 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
   * Accept a non-transparent surface fill (deviates from shadcn light-mode Input).
 * **Status**: Textfield/textarea elevation work was reverted. Do not re-attempt until compositing strategy is chosen. Checkbox/radio/switch/button elevation remains in progress separately.
 
+### Addendum: Selection Trigger Chrome (Blocked — outline/ghost templates needed)
+
+* **Context**: Popup menu trigger styling was fixed by introducing `PopupMenuTriggerStyle::Outline` (default) and `Ghost`, each delegating to the same `button_palette()` / `button_elevation_shadow()` path as command buttons. That removed the old hybrid (ghost fill/hover tokens + always-on `border` in the template).
+* **Current problem**: The **selection control family** still uses the same incorrect hybrid pattern popup menu had, and several variants compose a **textfield** for the trigger/input chrome:
+  * **`selector`**: `resolve_ghost_trigger_colors()` for fill/foreground + hardcoded `border` token — reads as outline but behaves like ghost on hover.
+  * **`combobox`**, **`search_selector`**, **`autocomplete`**: textfield surface/soft chrome for the editable or display trigger, plus floating-menu/selector panel for the dropdown. Trigger coloring is textfield-driven, not command-button-driven.
+* **Why this blocks elevation work here**: We cannot wire TOML elevation onto selection triggers until their chrome model is explicit and matches shadcn semantics. Outline triggers should pick up `shadow-xs` (and border/fill/hover) from `[[button.elevation_rules]]` / `[[button.color_rules]]` the way popup menu outline does. Textfield-based triggers cannot reuse textfield elevation rules — textfield elevation remains blocked by §4 (transparent-fill compositing). Pasting ghost+border or surface textfield styling onto a select/combobox trigger will keep diverging from shadcn Select/Combobox/Command input affordances.
+* **Required follow-up** (before selector/combobox/search_selector/autocomplete elevation):
+  * Add a **trigger style** to selection controls (at minimum **`Outline` default**; optionally **`Ghost`** where product calls for it), mirroring popup menu.
+  * Refactor trigger templates so outline/ghost resolve through **command button** tokens (border optional, shadow from button elevation rules, button box metrics) — not `resolve_ghost_trigger_*` and not naked textfield surface rules.
+  * For combobox/autocomplete/search_selector, decide explicitly whether the trigger is **button-like** (read-only select: chevron + label in outline chrome) vs **input-like** (editable combobox: textfield interior *inside* outline shell, or a dedicated composite template). Do not implicitly inherit textfield hybrid coloring.
+  * Gallery/inspector state matrices should show outline vs ghost trigger previews per control, same as popup menu.
+* **Status**: **Paused** at menu/floating-menu elevation. Do not proceed with selection-trigger elevation or textfield-derived trigger polish until this template work lands.
+
 ---
 
 ## Tasks
@@ -117,6 +131,7 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
 - [ ] Register default shadow rules for outline and primary default controls inside `crates/look-shadcn/assets/style.toml`.
 
 ### Phase 3: Upgrade Shadow-Using Controls & Refactor Button Base
+- [ ] **Selection trigger chrome (prerequisite)**: Add outline default (+ optional ghost) trigger templates to `selector`, `combobox`, `search_selector`, and `autocomplete` — delegate to command button palette/elevation, not ghost+border hybrid or naked textfield surface rules. See addendum § “Selection Trigger Chrome”.
 - [ ] Upgrade existing shadow-using controls first to resolve their shadows dynamically via look-shadcn catalog metric rules and stylesheet configurations (`style.toml`):
   - [ ] Floating/Popup surfaces: `floating_menu`, `combobox`, `selector_panel`, `search_selector`, and `autocomplete`.
   - [ ] Containers: `card` and `selection_panel`.

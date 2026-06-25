@@ -342,9 +342,31 @@ struct RadixPopupMenuTheme {
 }
 
 impl PopupMenuTheme for RadixPopupMenuTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::popup_menu::PopupMenuPalette {
+    fn resolve(
+        &self,
+        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+        state: InteractionState,
+    ) -> gpui_luma::controls::popup_menu::PopupMenuPalette {
         let tokens = self.theme.mode_tokens();
-        super::popup_menu::popup_menu_palette(tokens.as_ref(), self.theme.mode(), state)
+        super::popup_menu::popup_menu_palette(tokens.as_ref(), self.theme.mode(), trigger_style, state)
+    }
+
+    fn resolve_look(
+        &self,
+        trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
+        state: InteractionState,
+        scale_factor: f32,
+        cx: &mut gpui::App,
+    ) -> gpui_luma::controls::popup_menu::PopupMenuLook {
+        let tokens = self.theme.mode_tokens();
+        super::popup_menu::popup_menu_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            trigger_style,
+            state,
+            scale_factor,
+            cx,
+        )
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
