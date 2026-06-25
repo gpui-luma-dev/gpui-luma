@@ -1,6 +1,4 @@
-use super::common::{
-    mirrored_lightness, mirrored_saturation,
-};
+use super::common::{mirrored_lightness, mirrored_saturation};
 use super::track_context::ColorRingTrackContext;
 use super::types::ColorRingTrackDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
@@ -74,8 +72,6 @@ pub struct SaturationRingDelegate {
     pub hue: f32,
     pub hsv_value: f32,
 }
-
-
 
 impl ColorRingTrackDelegate for SaturationRingDelegate {
     fn paint_domain_track(&self, context: &ColorRingTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {

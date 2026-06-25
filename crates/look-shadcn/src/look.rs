@@ -678,6 +678,22 @@ impl ShadcnLook {
         templates::card_template(Arc::clone(self))
     }
 
+    pub fn dialog_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::dialog::DialogTemplate> {
+        templates::dialog_template(Arc::clone(self))
+    }
+
+    pub fn dialog_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::dialog::DialogTheme> {
+        templates::dialog_theme(Arc::clone(self))
+    }
+
+    pub fn dialog(self: &Arc<Self>, id: impl Into<SharedString>) -> gpui_luma::controls::dialog::DialogBuilder {
+        gpui_luma::controls::dialog::dialog(id)
+            .template(self.dialog_template())
+            .confirm_button_template(self.button_template(ShadcnButtonStyle::Primary))
+            .cancel_button_template(self.button_template(ShadcnButtonStyle::Outline))
+            .close_button_template(self.button_template(ShadcnButtonStyle::Ghost))
+    }
+
     pub fn card_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::card::CardTheme> {
         templates::card_theme(Arc::clone(self))
     }

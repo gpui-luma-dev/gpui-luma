@@ -21,6 +21,7 @@ use gpui_luma::controls::list_view::{self, ListViewBuilder};
 use gpui_luma::controls::listbox::{self, ListBoxItem};
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarBuilder};
 use gpui_luma::controls::context_menu::ContextMenu;
+use gpui_luma::controls::dialog::DialogBuilder;
 use gpui_luma::controls::pager::{self, PagerBuilder};
 use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
@@ -99,6 +100,7 @@ pub trait ShadcnLookControlExt {
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
+    fn dialog(&self, id: impl Into<SharedString>) -> DialogBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
     fn scrollbar(&self, id: impl Into<SharedString>) -> ScrollbarBuilder;
@@ -319,6 +321,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn card(&self, id: impl Into<SharedString>) -> CardBuilder {
         gpui_luma::controls::card::new(id).template(self.card_template())
+    }
+
+    fn dialog(&self, id: impl Into<SharedString>) -> DialogBuilder {
+        ShadcnLook::dialog(self, id)
     }
 
     fn badge(&self, label: impl Into<SharedString>) -> Badge {

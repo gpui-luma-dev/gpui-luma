@@ -24,4 +24,3 @@ pub use sync::{primary_slider_value, refresh_color_ring, update_ring_delegate};
 pub use template::{ColorRingTemplate, ColorRingTemplateConfig, color_ring_template, default_color_ring_template};
 pub use track_context::{ColorRingTrackContext, sizing};
 pub use types::ColorRingTrackDelegate;
-

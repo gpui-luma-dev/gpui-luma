@@ -5,6 +5,7 @@ use gpui_luma::controls::button_family::{
     ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
 };
 use gpui_luma::controls::card::{CardTemplate, CardTheme, ThemedCardTemplate};
+use gpui_luma::controls::dialog::{DialogTemplate, DialogTheme, ThemedDialogTemplate};
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
 use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
@@ -47,6 +48,7 @@ use super::checkbox::checkbox_look;
 use super::card::card_look;
 use super::control_group::control_group_list_look;
 use super::context_menu::context_menu_look;
+use super::dialog::dialog_look;
 use super::floating_menu::floating_menu_look;
 use super::list_view::{list_view_look, list_view_row_palette};
 use super::navigation_sidebar::{
@@ -824,6 +826,14 @@ pub fn card_template(theme: Arc<ShadcnLook>) -> Arc<dyn CardTemplate> {
     Arc::new(ThemedCardTemplate::new(card_theme(theme)))
 }
 
+pub fn dialog_template(theme: Arc<ShadcnLook>) -> Arc<dyn DialogTemplate> {
+    Arc::new(ThemedDialogTemplate::new(dialog_theme(theme)))
+}
+
+pub fn dialog_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DialogTheme> {
+    Arc::new(RadixDialogTheme { theme: theme.as_ref().clone() })
+}
+
 pub fn card_theme(theme: Arc<ShadcnLook>) -> Arc<dyn CardTheme> {
     Arc::new(RadixCardTheme { theme: theme.as_ref().clone() })
 }
@@ -835,6 +845,20 @@ struct RadixCardTheme {
 impl CardTheme for RadixCardTheme {
     fn resolve(&self, size: ControlSize) -> gpui_luma::controls::card::CardLook {
         card_look(&self.theme, size)
+    }
+}
+
+struct RadixDialogTheme {
+    theme: ShadcnLook,
+}
+
+impl DialogTheme for RadixDialogTheme {
+    fn resolve(
+        &self,
+        size: ControlSize,
+        mode: gpui_luma::controls::dialog::DialogMode,
+    ) -> gpui_luma::controls::dialog::DialogLook {
+        dialog_look(&self.theme, size, mode)
     }
 }
 

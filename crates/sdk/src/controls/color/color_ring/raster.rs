@@ -1,6 +1,4 @@
-use super::common::{
-    mirrored_lightness, mirrored_saturation,
-};
+use super::common::{mirrored_lightness, mirrored_saturation};
 use super::track_context::ColorRingTrackContext;
 use super::types::ColorRingTrackDelegate;
 use crate::controls::color::color_slider::color_spec::Hsv;
@@ -9,8 +7,6 @@ use gpui::*;
 use std::f32::consts::TAU;
 use std::sync::{Arc, Mutex};
 use tiny_skia::{Pixmap, PremultipliedColorU8};
-
-
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ColorRingRenderer {

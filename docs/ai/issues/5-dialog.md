@@ -73,9 +73,21 @@ We will create a new SDK control under `crates/sdk/src/controls/dialog/` with th
       pub dismissible: bool, // Allows closing via Escape key or backdrop clicks
       pub size: ControlSize,
       pub template: Arc<dyn DialogTemplate<T>>,
-      pub header_template: Option<DialogHeaderTemplate>,
-      pub footer_template: Option<DialogFooterTemplate>,
       pub state: T, // Domain state/data hosted inside the dialog
+  }
+  ```
+
+* **`DialogRenderModel<'a, T>`**:
+  Read-only snapshot passed to the renderer/template.
+  ```rust
+  pub struct DialogRenderModel<'a, T> {
+      pub id: &'a SharedString,
+      pub mode: DialogMode,
+      pub position: DialogPosition,
+      pub dismissible: bool,
+      pub size: ControlSize,
+      pub state: &'a T,
+      pub focused: bool,
   }
   ```
 
@@ -94,20 +106,25 @@ We will create a new SDK control under `crates/sdk/src/controls/dialog/` with th
 
 ### 2. Dialog Template Architecture (`template.rs` & `theme.rs`)
 
-We will define a `DialogTemplate` trait to allow layout and style customizability:
+We will define a single `DialogTemplate` trait to allow layout and style customizability:
 ```rust
 pub trait DialogTemplate<T>: Send + Sync {
     fn render(
         &self,
         model: &DialogRenderModel<'_, T>,
-        header: Option<AnyElement>,
-        body: AnyElement,
-        footer: Option<AnyElement>,
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
 }
 ```
+
+Because templating is so flexible (and can contain modifiers), having variations of dialog boxes with individual templates is cleaner. For initial dev work we want an 'x' icon to close the dialog and OK and cancel buttons and that's it:
+
+1.  **Header**: Renders the standard close `(X)` icon button (if `dismissible` is true). Clicking this close button triggers dismissal (`DialogEvent::Dismissed`).
+2.  **Body**: Renders the layout defined by the concrete template utilizing `model.state`.
+3.  **Footer**: Renders two standard action buttons:
+    *   **Cancel Button**: Outline button that triggers dismissal (`DialogEvent::Dismissed`).
+    *   **OK Button**: Filled button that triggers confirmation (`DialogEvent::Confirmed`).
 
 * **`DialogLook`**:
   Contains theme-aware visual rules for shadows, background, and dimming backdrops:
@@ -124,29 +141,20 @@ pub trait DialogTemplate<T>: Send + Sync {
   }
   ```
 
-We will provide standard, pre-built templates to easily instantiate common variations:
-
-* **Message Dialog (Alert / Information)**:
-  - Renders a clean card containing an status icon (Info, Success, Warning, Error), a short title, a descriptive paragraph, and a single dismiss button (e.g., "OK").
-* **Confirmation Dialog**:
-  - Renders title, descriptive body, and a structured footer containing two action buttons: a primary action button (e.g., "Confirm", "Delete") and a cancel button. Supports destructive styling (e.g., red background for "Delete").
-* **Modeless Panel**:
-  - Modeless dialog template that skips dim backdrops, uses a transparent touch-through boundary, renders a close `(X)` icon button in the header, and is designed to float relative to other elements based on `DialogPosition` and `ModelessDismissPolicy`.
-
 ---
 
 ### 3. Focus Lifecycle, Overlay Stacking & Modeless Draggability
 
 * **Focus Restoration**:
   When a dialog is spawned (especially modal), focus is programmatically directed to the dialog's root or first interactive field. To prevent focus from being lost when the dialog is dismissed, the control must capture the currently active `FocusHandle` at the moment of opening and restore focus to it upon dismissal.
-* **Modal Focus Scope**:
-  When configured in `DialogMode::Modal`, the control traps focus navigation (Tab / Shift-Tab) using an active `luma_focus_scope` to ensure focus cycles exclusively within the dialog.
+* **Modal Focus Scope & Trap**:
+  When configured in `DialogMode::Modal`, the control traps focus navigation (Tab / Shift-Tab) using `luma_focus_scope`. Because background elements still exist in the element tree, if `window.focus_next` or `window.focus_prev` moves focus to a handle not contained within the dialog (detected via `FocusHandle::contains`), the control must intercept this transition and programmatically wrap focus back to the dialog's first or last focusable element.
 * **Escape Handling**:
   The dialog intercepts `EscapeFocus` to dismiss itself (if `dismissible: true` is set) and consumes the action rather than propagating it to the host view.
 * **Nesting & Stacking**:
-  If multiple modal dialogs are stacked (e.g. a Confirmation alert over an Options dialog), the system should manage backdrops and layers so that only the topmost dialog is interactive and receives events, and dismissing it restores focus to the underlying dialog.
+  If multiple modal dialogs are stacked, the system manages backdrops and layers so that only the topmost dialog is interactive and receives events, and dismissing it restores focus to the underlying dialog.
 * **Modeless Draggability**:
-  For floating panels (such as color pickers), we will support a draggable header zone. Clicking and dragging the header moves the dialog, updating `DialogPosition::Absolute` in the state.
+  For floating panels (such as color pickers), we will support a draggable header zone. Clicking and dragging the header moves the dialog, updating `DialogPosition::Absolute` in the state using GPUI's `.on_drag` and `.on_drag_move` APIs.
 
 ---
 
@@ -154,27 +162,28 @@ We will provide standard, pre-built templates to easily instantiate common varia
 
 ### Phase 1: SDK Dialog Core (`crates/sdk`)
 - [ ] Create `crates/sdk/src/controls/dialog/mod.rs` to export the dialog types and macros.
-- [ ] Implement the `DialogModel`, `DialogMode`, `DialogPosition`, and `DialogBuilder` in `model.rs`.
-- [ ] Implement the runtime control, event handlers, positioning layouts (flex layout bounds for semantic positions and absolute offsets for `Absolute`), and keyboard/focus trap in `control.rs`.
+- [ ] Implement the `DialogModel`, `DialogMode`, `DialogPosition`, `DialogRenderModel`, and `DialogBuilder` in `model.rs`.
+- [ ] Implement the runtime control `DialogControl<T>` (aliased to `Dialog<T>`), event handlers, positioning layouts (flex layout bounds for semantic positions and absolute offsets for `Absolute`), and keyboard/focus trap in `control.rs`.
 - [ ] Implement **Focus Restoration** tracking (saving and restoring the previously focused handle) in `control.rs`.
-- [ ] Implement **Draggability mouse event handlers** for modeless dialog headers in `control.rs`.
+- [ ] Implement **Draggability mouse event handlers** (`DialogDrag` payload) for modeless dialog headers in `control.rs`.
 - [ ] Implement the baseline look metrics and palette rules in `theme.rs` (including `backdrop_background` and `backdrop_blur`).
-- [ ] Implement `DialogTemplate` and the pre-built templates (`MessageDialogTemplate`, `ConfirmationDialogTemplate`, `ModelessPanelTemplate`) in `template.rs`.
+- [ ] Implement a default concrete `DefaultDialogTemplate` in `template.rs` rendering the header with `(X)` close button, state-defined body content, and OK/Cancel buttons.
 - [ ] Register `dialog` in `crates/sdk/src/controls/mod.rs`.
 
 ### Phase 2: Downstream Look-Shadcn Integration (`crates/look-shadcn`)
 - [ ] Define default stylesheet rule sets in `crates/look-shadcn/assets/style.toml` (handling borders, padding scales, shadows, and backdrop colors).
-- [ ] Add config models for `dialog` in `crates/look-shadcn/src/stylesheet/config.rs` and matching rules in `src/look.rs`.
+- [ ] Add config models for `dialog` in `crates/look-shadcn/src/stylesheet/config.rs`.
+- [ ] Implement resolution functions `resolve_dialog_color_rule` in `crates/look-shadcn/src/stylesheet/resolve.rs` and export them in `crates/look-shadcn/src/stylesheet/mod.rs`.
+- [ ] Implement builder factory extension methods `dialog` in `crates/look-shadcn/src/look.rs` and `crates/look-shadcn/src/controls/ext.rs`.
+- [ ] Declare Radix/Shadcn-themed template and theme adapters in `crates/look-shadcn/src/controls/templates.rs` or `crates/look-shadcn/src/controls/dialog.rs`.
 
 ### Phase 3: Gallery Showcase (`apps/gallery`)
 - [ ] Add a new "Dialog" demo pane in the Gallery page registry (`apps/gallery/src/gallery/panes/registry.rs`).
-- [ ] Implement interactive showcase triggers for:
-  - A standard modal Warning Alert dialog.
-  - A modal Confirmation dialog.
+- [ ] Implement interactive showcase triggers using the standard template:
+  - A standard modal warning / alert dialog.
   - A modeless floating information panel that overlays in a corner (e.g. `DialogPosition::TopRight`) without interrupting main view clicks.
   - An absolute-positioned modeless dialog (e.g., spawning where the click occurred).
-  - A stacked modal demo (triggering a confirmation alert from within a modal form dialog).
-  - A draggable modeless color picker or layout panel.
+  - A draggable modeless dialog panel.
 
 ---
 
@@ -183,7 +192,10 @@ We will provide standard, pre-built templates to easily instantiate common varia
 ### Automated Tests
 - [ ] Add unit tests in `crates/sdk/src/controls/dialog/control.rs` to verify:
   - Escape key dismisses when `dismissible` is true.
+  - Close `(X)` button click dismisses.
   - Click on backdrop dismisses when modal and dismissible.
+  - OK button triggers `DialogEvent::Confirmed` and closes.
+  - Cancel button triggers `DialogEvent::Dismissed` and closes.
   - Focus is successfully returned to the previously focused handle when closed.
   - Modeless configurations do not intercept click events outside bounds.
   - Semantic and concrete positioning layouts generate expected layout properties.
@@ -191,6 +203,7 @@ We will provide standard, pre-built templates to easily instantiate common varia
 ### Manual Verification
 - Run `just gallery` and navigate to the **Dialog Showcase**:
   - Trigger each dialog variation and check positioning (Center, TopRight, and Absolute coordinates).
+  - Verify close button, OK button, and Cancel button dismiss dialogs correctly.
   - Verify focus returns to the previously focused button after closing a dialog.
   - Verify that dragging the header of a modeless panel repositions it smoothly.
   - Verify that nested modal stacking works (underlying dialog remains open, topmost modal takes focus, closing the topmost modal returns focus to the underlying dialog).

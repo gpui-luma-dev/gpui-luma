@@ -17,7 +17,7 @@ use super::{
     combobox, context_menu, dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar,
     palette, popup_menu, pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar,
     search_selector, selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane,
-    slider, switch, tabs_navigation, textarea, textfield, toggle, toggle_group, typography,
+    slider, switch, tabs_navigation, textarea, textfield, toggle, toggle_group, typography, dialog,
 };
 
 #[derive(Clone, Copy)]
@@ -35,6 +35,10 @@ enum GalleryPageKind {
     Typography,
     Badge,
     Card,
+    DialogModal,
+    DialogModeless,
+    DialogPositioning,
+    DialogDraggable,
     DockPanel,
     Button,
     DecoratedButton,
@@ -135,6 +139,22 @@ const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
 
 const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
 const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
+const DIALOG_MODAL_PAGE: GalleryPage =
+    GalleryPage { id: "dialog-modal", label: "Dialog Modal", icon: None, kind: GalleryPageKind::DialogModal };
+const DIALOG_MODELESS_PAGE: GalleryPage =
+    GalleryPage { id: "dialog-modeless", label: "Dialog Modeless", icon: None, kind: GalleryPageKind::DialogModeless };
+const DIALOG_POSITIONING_PAGE: GalleryPage = GalleryPage {
+    id: "dialog-positioning",
+    label: "Dialog Positioning",
+    icon: None,
+    kind: GalleryPageKind::DialogPositioning,
+};
+const DIALOG_DRAGGABLE_PAGE: GalleryPage = GalleryPage {
+    id: "dialog-draggable",
+    label: "Dialog Draggable",
+    icon: None,
+    kind: GalleryPageKind::DialogDraggable,
+};
 const DOCK_PANEL_PAGE: GalleryPage =
     GalleryPage { id: "dock-panel", label: "DockPanel", icon: None, kind: GalleryPageKind::DockPanel };
 const BUTTON_PAGE: GalleryPage =
@@ -342,7 +362,14 @@ const LAYOUT_PAGES: &[GalleryPage] = &[
     SPLIT_VIEW_UNIFIED_PAGE,
 ];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
-const FEEDBACK_PAGES: &[GalleryPage] = &[BADGE_PAGE, PROGRESS_PAGE];
+const FEEDBACK_PAGES: &[GalleryPage] = &[
+    BADGE_PAGE,
+    PROGRESS_PAGE,
+    DIALOG_MODAL_PAGE,
+    DIALOG_MODELESS_PAGE,
+    DIALOG_POSITIONING_PAGE,
+    DIALOG_DRAGGABLE_PAGE,
+];
 const SELECTION_PAGES: &[GalleryPage] = &[
     AUTOCOMPLETE_TEXTFIELD_PAGE,
     COMBOBOX_PAGE,
@@ -413,6 +440,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) introduction: introduction::IntroductionPane,
     pub(super) badge: badge::BadgePane,
     pub(super) card: card::CardPane,
+    pub(super) dialog: dialog::DialogPane,
     pub(super) dock_panel: dock_panel::DockPanelPane,
     pub(super) decorated_button: prototypes::ButtonPane,
     pub(super) shadow_button: prototypes::ShadowButtonPane,
@@ -522,6 +550,7 @@ impl GalleryPanes {
             introduction: introduction::IntroductionPane::new(cx, look.clone()),
             badge: badge::BadgePane::new(cx, look.clone()),
             card: card::CardPane::new(cx, look.clone()),
+            dialog: dialog::DialogPane::new(cx, look.clone()),
             dock_panel: dock_panel::DockPanelPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
             shadow_button: prototypes::ShadowButtonPane::new(cx, look.clone()),
@@ -578,6 +607,7 @@ impl GalleryPanes {
         self.introduction.subscribe(cx, subscriptions);
         self.badge.subscribe(cx, subscriptions);
         self.card.subscribe(cx, subscriptions);
+        self.dialog.subscribe(cx, subscriptions);
         self.dock_panel.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
         self.shadow_button.subscribe(cx, subscriptions);
@@ -640,6 +670,10 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
             GalleryPageKind::Badge => self.badge.notify_controls(cx),
             GalleryPageKind::Card => self.card.notify_controls(cx),
+            GalleryPageKind::DialogModal
+            | GalleryPageKind::DialogModeless
+            | GalleryPageKind::DialogPositioning
+            | GalleryPageKind::DialogDraggable => self.dialog.notify_controls(cx),
             GalleryPageKind::DockPanel => self.dock_panel.notify_controls(window, cx),
             GalleryPageKind::DecoratedButton => self.decorated_button.notify_controls(cx),
             GalleryPageKind::ShadowButton => self.shadow_button.notify_controls(cx),
@@ -706,6 +740,10 @@ impl GalleryPanes {
             GalleryPageKind::Introduction => self.introduction.render(&self.look),
             GalleryPageKind::Badge => self.badge.render(&self.look),
             GalleryPageKind::Card => self.card.render(&self.look),
+            GalleryPageKind::DialogModal => self.dialog.render(dialog::DialogDemoKind::Modal, &self.look),
+            GalleryPageKind::DialogModeless => self.dialog.render(dialog::DialogDemoKind::Modeless, &self.look),
+            GalleryPageKind::DialogPositioning => self.dialog.render(dialog::DialogDemoKind::Positioning, &self.look),
+            GalleryPageKind::DialogDraggable => self.dialog.render(dialog::DialogDemoKind::Draggable, &self.look),
             GalleryPageKind::DockPanel => self.dock_panel.render(&self.look),
             GalleryPageKind::DecoratedButton => self.decorated_button.render(&self.look),
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),

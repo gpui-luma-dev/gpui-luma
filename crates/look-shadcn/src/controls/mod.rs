@@ -5,6 +5,7 @@ pub(crate) mod card;
 pub(crate) mod checkbox;
 pub(crate) mod context_menu;
 pub(crate) mod control_group;
+pub(crate) mod dialog;
 pub(crate) mod ext;
 pub(crate) mod floating_menu;
 pub(crate) mod list_view;

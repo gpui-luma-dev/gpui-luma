@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, Subscription, black, div, hsla, prelude::*, px, white};
 use gpui_luma::controls::color::color_ring::{
-    primary_slider_value, refresh_color_ring, update_ring_delegate, ColorRingBuilder,
-    ColorRingDomainRenderer, ColorRingRenderer, ColorRingTrackContext, HueRingDelegate,
-    LightnessRingDelegate, RasterRingDelegate, SaturationRingDelegate,
+    primary_slider_value, refresh_color_ring, update_ring_delegate, ColorRingBuilder, ColorRingDomainRenderer,
+    ColorRingRenderer, ColorRingTrackContext, HueRingDelegate, LightnessRingDelegate, RasterRingDelegate,
+    SaturationRingDelegate,
 };
 use gpui_luma::controls::color::color_slider::color_spec::{Hsl, Hsv};
 use gpui_luma::controls::color::color_slider::ColorSpecification;
@@ -134,9 +134,7 @@ impl ColorRingPane {
         };
 
         let color_ring = RingDemo::spawn(
-            ColorRingBuilder::hue("color_ring", hsl.h, hsl.s, hsl.l)
-                .size(Size::Medium)
-                .allow_inner_target(true),
+            ColorRingBuilder::hue("color_ring", hsl.h, hsl.s, hsl.l).size(Size::Medium).allow_inner_target(true),
             cx,
         );
 
@@ -277,31 +275,47 @@ impl ColorRingPane {
         );
 
         let ring_no_border = RingDemo::spawn(
-            ColorRingBuilder::new("ring_no_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Small)
-                .ring_inner_border(false)
-                .ring_outer_border(false),
+            ColorRingBuilder::new(
+                "ring_no_border",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Small)
+            .ring_inner_border(false)
+            .ring_outer_border(false),
             cx,
         );
         let ring_inner_border = RingDemo::spawn(
-            ColorRingBuilder::new("ring_inner_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Small)
-                .ring_inner_border(true)
-                .ring_outer_border(false),
+            ColorRingBuilder::new(
+                "ring_inner_border",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Small)
+            .ring_inner_border(true)
+            .ring_outer_border(false),
             cx,
         );
         let ring_outer_border = RingDemo::spawn(
-            ColorRingBuilder::new("ring_outer_border", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Small)
-                .ring_inner_border(false)
-                .ring_outer_border(true),
+            ColorRingBuilder::new(
+                "ring_outer_border",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Small)
+            .ring_inner_border(false)
+            .ring_outer_border(true),
             cx,
         );
         let ring_both_borders = RingDemo::spawn(
-            ColorRingBuilder::new("ring_both_borders", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Small)
-                .ring_inner_border(true)
-                .ring_outer_border(true),
+            ColorRingBuilder::new(
+                "ring_both_borders",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Small)
+            .ring_inner_border(true)
+            .ring_outer_border(true),
             cx,
         );
         let ring_foreground_borders = RingDemo::spawn(
@@ -318,23 +332,39 @@ impl ColorRingPane {
         );
 
         let ring_size_xsmall = RingDemo::spawn(
-            ColorRingBuilder::new("ring_size_xsmall", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::XSmall),
+            ColorRingBuilder::new(
+                "ring_size_xsmall",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::XSmall),
             cx,
         );
         let ring_size_small = RingDemo::spawn(
-            ColorRingBuilder::new("ring_size_small", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Small),
+            ColorRingBuilder::new(
+                "ring_size_small",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Small),
             cx,
         );
         let ring_size_medium = RingDemo::spawn(
-            ColorRingBuilder::new("ring_size_medium", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Medium),
+            ColorRingBuilder::new(
+                "ring_size_medium",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Medium),
             cx,
         );
         let ring_size_large = RingDemo::spawn(
-            ColorRingBuilder::new("ring_size_large", hsl.h, Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }))
-                .size(Size::Large),
+            ColorRingBuilder::new(
+                "ring_size_large",
+                hsl.h,
+                Arc::new(HueRingDelegate { saturation: hsl.s, lightness: hsl.l }),
+            )
+            .size(Size::Large),
             cx,
         );
 
@@ -866,11 +896,7 @@ impl ColorRingPane {
             ring.sync_hue_vector(hsl.s, lightness, cx);
         }
 
-        for ring in [
-            &self.color_ring_raster,
-            &self.color_ring_raster_inner_target,
-            &self.color_ring_disabled_raster,
-        ] {
+        for ring in [&self.color_ring_raster, &self.color_ring_raster_inner_target, &self.color_ring_disabled_raster] {
             ring.sync_hue_raster(hsl.s, lightness, cx);
         }
 

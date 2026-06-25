@@ -11,6 +11,7 @@ mod color_compositions;
 mod choice_controls_template;
 mod context_menu;
 mod dock_panel;
+mod dialog;
 mod floating_menu;
 mod introduction;
 mod listbox;
