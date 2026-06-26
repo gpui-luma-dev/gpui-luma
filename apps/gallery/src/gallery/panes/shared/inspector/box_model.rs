@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use gpui::{Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
+use gpui::{AnyElement, Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
 use gpui_luma::theme::LumaTextStyle;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn_inspect::{
@@ -74,6 +74,49 @@ pub(in crate::gallery) enum MetricFieldHighlight {
     BorderWidth,
     FocusRingWidth,
     FocusRingOffset,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(in crate::gallery) struct InspectEdgeInsets {
+    pub top: f32,
+    pub right: f32,
+    pub bottom: f32,
+    pub left: f32,
+}
+
+impl InspectEdgeInsets {
+    pub fn symmetric(value: f32) -> Self {
+        Self { top: value, right: value, bottom: value, left: value }
+    }
+
+    pub fn max_edge(self) -> f32 {
+        self.top.max(self.right).max(self.bottom).max(self.left)
+    }
+
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            top: self.top.max(other.top),
+            right: self.right.max(other.right),
+            bottom: self.bottom.max(other.bottom),
+            left: self.left.max(other.left),
+        }
+    }
+
+    pub fn has_overflow(self) -> bool {
+        self.top > 0.0 || self.right > 0.0 || self.bottom > 0.0 || self.left > 0.0
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(in crate::gallery) struct InspectOccupationSnapshot {
+    pub paint: InspectEdgeInsets,
+    pub layout: InspectEdgeInsets,
+}
+
+impl InspectOccupationSnapshot {
+    pub fn has_overflow(self) -> bool {
+        self.paint.has_overflow() || self.layout.has_overflow()
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -187,30 +230,47 @@ mod layout {
     pub(super) const CONTENT_LABEL_SIZE: f32 = 11.0;
 }
 
+/// Fixed gutter size for diagram labels; not proportional to the measured value.
+fn label_gutter_band(value: f32) -> f32 {
+    if value > 0.0 { layout::EDGE_BAND } else { 0.0 }
+}
+
+fn label_gutter_side(value: f32) -> f32 {
+    if value > 0.0 { layout::EDGE_SIDE } else { 0.0 }
+}
+
 pub(in crate::gallery) fn render_box_model_diagram(
     id: SharedString,
     model: &InspectBoxModelSnapshot,
+    occupation: Option<&InspectOccupationSnapshot>,
     highlight: MetricFieldHighlight,
     colors: BoxModelLayerColors,
+    chrome_outline: Hsla,
     label_color: Hsla,
     mono: &LumaTextStyle,
     mono_font: SharedString,
 ) -> impl IntoElement {
-    let body = build_box_model_core(model, highlight, colors, label_color, mono, mono_font);
+    let body = build_box_model_core(model, highlight, colors, label_color, mono, mono_font.clone());
     let body = if matches!(highlight, MetricFieldHighlight::FocusRingWidth | MetricFieldHighlight::FocusRingOffset) {
         div()
             .w_full()
             .border_1()
             .border_dashed()
             .border_color(colors.highlight)
-            .p(px(model.focus_ring_offset.max(4.0)))
+            .p(px(layout::EDGE_BAND))
             .child(body)
             .into_any_element()
     } else {
         body.into_any_element()
     };
 
+    let body =
+        wrap_chrome_and_occupation(body, occupation, colors, chrome_outline, label_color, mono, mono_font.clone());
+
     let caption = highlight_caption(model, highlight);
+    let occupation_caption =
+        occupation.and_then(|occupation| occupation_summary_caption(model.height, occupation, mono, label_color));
+
     div()
         .id(id)
         .w_full()
@@ -227,7 +287,154 @@ pub(in crate::gallery) fn render_box_model_diagram(
                     .child(caption),
             )
         })
+        .when_some(occupation_caption, |stack, caption| stack.child(caption))
         .child(body)
+}
+
+fn wrap_chrome_and_occupation(
+    body: AnyElement,
+    occupation: Option<&InspectOccupationSnapshot>,
+    colors: BoxModelLayerColors,
+    chrome_outline: Hsla,
+    label_color: Hsla,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+) -> AnyElement {
+    let Some(occupation) = occupation else {
+        return body;
+    };
+
+    let chrome = div().w_full().min_w(px(0.0)).border_1().border_color(chrome_outline).child(body);
+
+    if !occupation.has_overflow() {
+        return chrome.into_any_element();
+    }
+
+    let paint = occupation.paint;
+    let occupation_fill = Hsla { a: 0.18, ..colors.highlight };
+    let top_band = label_gutter_band(paint.top);
+    let bottom_band = label_gutter_band(paint.bottom);
+    let left_side = label_gutter_side(paint.left);
+    let right_side = label_gutter_side(paint.right);
+
+    let mut shell = div()
+        .w_full()
+        .min_w(px(0.0))
+        .flex()
+        .flex_col()
+        .bg(occupation_fill)
+        .border_1()
+        .border_dashed()
+        .border_color(colors.highlight);
+
+    if top_band > 0.0 {
+        shell = shell.child(
+            div()
+                .relative()
+                .w_full()
+                .h(px(top_band))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(occupation_edge_value(
+                    paint.top,
+                    colors.highlight,
+                    mono_font.clone(),
+                    mono,
+                ))
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(2.0))
+                        .left(px(4.0))
+                        .text_size(px(layout::LAYER_LABEL_SIZE))
+                        .line_height(px(12.0))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(label_color)
+                        .child("occupation"),
+                ),
+        );
+    }
+
+    let mut row = div().flex().w_full().items_stretch();
+    if left_side > 0.0 {
+        row = row.child(
+            div()
+                .w(px(left_side))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(occupation_edge_value(paint.left, colors.highlight, mono_font.clone(), mono)),
+        );
+    }
+    row = row.child(div().flex_1().min_w(px(0.0)).w_full().child(chrome));
+    if right_side > 0.0 {
+        row = row.child(
+            div()
+                .w(px(right_side))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(occupation_edge_value(paint.right, colors.highlight, mono_font.clone(), mono)),
+        );
+    }
+    shell = shell.child(row);
+
+    if bottom_band > 0.0 {
+        shell = shell.child(
+            div()
+                .w_full()
+                .h(px(bottom_band))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(occupation_edge_value(paint.bottom, colors.highlight, mono_font, mono)),
+        );
+    }
+
+    shell.into_any_element()
+}
+
+fn occupation_edge_value(
+    value: f32,
+    color: Hsla,
+    mono_font: SharedString,
+    mono: &LumaTextStyle,
+) -> Div {
+    div()
+        .font_family(mono_font)
+        .text_size(px(layout::EDGE_VALUE_SIZE))
+        .line_height(px(12.0))
+        .font_weight(mono.weight)
+        .text_color(color)
+        .child(format_metric_value(value))
+}
+
+fn occupation_summary_caption(
+    chrome_height: f32,
+    occupation: &InspectOccupationSnapshot,
+    mono: &LumaTextStyle,
+    label_color: Hsla,
+) -> Option<Div> {
+    if !occupation.has_overflow() {
+        return None;
+    }
+
+    let layout_height = chrome_height + occupation.layout.top + occupation.layout.bottom;
+    let paint_height = chrome_height + occupation.paint.top + occupation.paint.bottom;
+    Some(
+        div()
+            .w_full()
+            .pt(px(6.0))
+            .text_size(px(mono.size))
+            .line_height(px(mono.line_height))
+            .text_color(label_color)
+            .child(format!(
+                "layout height {} · paint height {}",
+                format_metric_value(layout_height),
+                format_metric_value(paint_height),
+            )),
+    )
 }
 
 fn highlight_caption(model: &InspectBoxModelSnapshot, highlight: MetricFieldHighlight) -> Option<String> {

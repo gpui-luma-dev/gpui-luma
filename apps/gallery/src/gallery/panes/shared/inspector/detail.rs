@@ -296,6 +296,7 @@ fn render_layout_detail(
 
     if let Some(box_model) = field.box_model.as_ref() {
         let box_colors = BoxModelLayerColors::from_look(look);
+        let chrome_outline = look.token_color("foreground").unwrap_or(chrome.title_text);
         detail = detail.child(
             div()
                 .w_full()
@@ -316,8 +317,10 @@ fn render_layout_detail(
                 .child(render_box_model_diagram(
                     SharedString::from(format!("{detail_id}-box-model")),
                     box_model,
+                    field.occupation.as_ref(),
                     MetricFieldHighlight::None,
                     box_colors,
+                    chrome_outline,
                     chrome.muted_text,
                     mono,
                     mono_font.clone(),

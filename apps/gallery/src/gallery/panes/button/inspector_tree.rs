@@ -20,7 +20,8 @@ use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::format_hex_color;
 use lucide_icons::Icon as LucideIcon;
 
-use crate::gallery::panes::shared::inspector::box_model::InspectBoxModelSnapshot;
+use crate::gallery::panes::shared::inspector::box_model::{InspectBoxModelSnapshot, InspectOccupationSnapshot};
+use crate::gallery::panes::shared::inspector::occupation::{button_family_occupation, occupation_metric_properties};
 
 mod layout {
     pub(super) const ROW_HEIGHT: f32 = 32.0;
@@ -69,6 +70,7 @@ pub(in crate::gallery) struct InspectMetricPropertyData {
 pub(in crate::gallery) struct InspectLayoutSizeData {
     pub size: ControlSize,
     pub box_model: InspectBoxModelSnapshot,
+    pub occupation: InspectOccupationSnapshot,
     pub properties: Vec<InspectMetricPropertyData>,
 }
 
@@ -206,14 +208,23 @@ fn size_metrics_branch(
 ) -> TreeNode<InspectTreeData> {
     let id: SharedString = format!("{prefix}-{size_label}").into();
     let metrics = ShadcnInspect::new(look).inspect_button_metrics(style, ButtonFamilyRole::Text, size, state);
+    let box_model = InspectBoxModelSnapshot::from_button_metrics(&metrics);
+    let occupation =
+        button_family_occupation(look, style, ButtonFamilyRole::Text, size, state, metrics.focus_ring_offset.value_px);
+    let occupation_rows: Vec<InspectMetricPropertyData> = occupation_metric_properties(box_model.height, &occupation)
+        .into_iter()
+        .map(|row| InspectMetricPropertyData {
+            name: row.name,
+            value: row.value,
+            source: row.source,
+            provenance: row.provenance,
+        })
+        .collect();
+    let properties = [layout_metric_properties(&metrics), occupation_rows].concat();
     TreeNode::new(
         id,
         size_label.to_owned(),
-        InspectTreeData::LayoutSize(InspectLayoutSizeData {
-            size,
-            box_model: InspectBoxModelSnapshot::from_button_metrics(&metrics),
-            properties: layout_metric_properties(&metrics),
-        }),
+        InspectTreeData::LayoutSize(InspectLayoutSizeData { size, box_model, occupation, properties }),
     )
 }
 

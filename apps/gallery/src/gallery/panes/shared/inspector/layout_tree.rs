@@ -44,6 +44,7 @@ pub(in crate::gallery) fn fixed_layout_branch(
                 size: ControlSize::Md,
                 properties,
                 box_model: None,
+                occupation: None,
             }),
         )])
 }

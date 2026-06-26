@@ -6,22 +6,29 @@ use gpui_luma_look_shadcn_inspect::{
     format_inspect_metric_provenance, format_inspect_metric_source, format_metric_px,
 };
 
-use super::box_model::InspectBoxModelSnapshot;
+use super::box_model::{InspectBoxModelSnapshot, InspectOccupationSnapshot};
 use super::types::{InspectLayoutSizeData, InspectMetricPropertyData};
 
 fn layout_size(
     size: gpui_luma::theme::ControlSize,
     properties: Vec<InspectMetricPropertyData>,
 ) -> InspectLayoutSizeData {
-    InspectLayoutSizeData { size, properties, box_model: None }
+    InspectLayoutSizeData { size, properties, box_model: None, occupation: None }
 }
 
 fn layout_size_with_box_model(
     size: gpui_luma::theme::ControlSize,
     properties: Vec<InspectMetricPropertyData>,
     box_model: InspectBoxModelSnapshot,
+    occupation: InspectOccupationSnapshot,
 ) -> InspectLayoutSizeData {
-    InspectLayoutSizeData { size, properties, box_model: Some(box_model) }
+    let occupation_metrics = super::occupation::occupation_metric_properties(box_model.height, &occupation);
+    InspectLayoutSizeData {
+        size,
+        properties: [properties, occupation_metrics].concat(),
+        box_model: Some(box_model),
+        occupation: Some(occupation),
+    }
 }
 
 pub(in crate::gallery) fn metric_properties(
@@ -43,11 +50,9 @@ pub(in crate::gallery) fn checkbox_layout_data(
     size: gpui_luma::theme::ControlSize,
 ) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_checkbox_metrics(size);
-    layout_size_with_box_model(
-        size,
-        checkbox_metric_properties(&metrics),
-        InspectBoxModelSnapshot::from_checkbox_metrics(&metrics),
-    )
+    let box_model = InspectBoxModelSnapshot::from_checkbox_metrics(&metrics);
+    let occupation = super::occupation::checkbox_occupation(look, metrics.focus_ring_offset.value_px);
+    layout_size_with_box_model(size, checkbox_metric_properties(&metrics), box_model, occupation)
 }
 
 pub(in crate::gallery) fn radio_layout_data(
@@ -55,11 +60,9 @@ pub(in crate::gallery) fn radio_layout_data(
     size: gpui_luma::theme::ControlSize,
 ) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_radio_button_metrics(size);
-    layout_size_with_box_model(
-        size,
-        radio_metric_properties(&metrics),
-        InspectBoxModelSnapshot::from_radio_metrics(&metrics),
-    )
+    let box_model = InspectBoxModelSnapshot::from_radio_metrics(&metrics);
+    let occupation = super::occupation::radio_occupation(look, metrics.focus_ring_offset.value_px);
+    layout_size_with_box_model(size, radio_metric_properties(&metrics), box_model, occupation)
 }
 
 pub(in crate::gallery) fn switch_layout_data(
@@ -67,11 +70,9 @@ pub(in crate::gallery) fn switch_layout_data(
     size: gpui_luma::theme::ControlSize,
 ) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_switch_metrics(size);
-    layout_size_with_box_model(
-        size,
-        switch_metric_properties(&metrics),
-        InspectBoxModelSnapshot::from_switch_metrics(&metrics),
-    )
+    let box_model = InspectBoxModelSnapshot::from_switch_metrics(&metrics);
+    let occupation = super::occupation::switch_occupation(look, metrics.focus_ring_offset.value_px);
+    layout_size_with_box_model(size, switch_metric_properties(&metrics), box_model, occupation)
 }
 
 pub(in crate::gallery) fn toggle_layout_data(
@@ -88,11 +89,16 @@ pub(in crate::gallery) fn toggle_layout_data(
         size,
         InteractionState::default(),
     );
-    layout_size_with_box_model(
+    let box_model = InspectBoxModelSnapshot::from_button_metrics(&metrics);
+    let occupation = super::occupation::button_family_occupation(
+        look,
+        style,
+        ButtonFamilyRole::Toggle { selected: true },
         size,
-        button_metric_properties(&metrics),
-        InspectBoxModelSnapshot::from_button_metrics(&metrics),
-    )
+        InteractionState::default(),
+        metrics.focus_ring_offset.value_px,
+    );
+    layout_size_with_box_model(size, button_metric_properties(&metrics), box_model, occupation)
 }
 
 pub(in crate::gallery) fn textarea_layout_data(

@@ -266,6 +266,7 @@ fn render_layout_detail(
     cx: &mut Context<ButtonInspectorDetail>,
 ) -> AnyElement {
     let box_colors = BoxModelLayerColors::from_look(look);
+    let chrome_outline = look.token_color("foreground").unwrap_or(chrome.title_text);
 
     let mut values_card = div()
         .flex()
@@ -338,8 +339,10 @@ fn render_layout_detail(
                 .child(render_box_model_diagram(
                     SharedString::from("button-inspector-box-model"),
                     &field.box_model,
+                    Some(&field.occupation),
                     MetricFieldHighlight::None,
                     box_colors,
+                    chrome_outline,
                     chrome.muted_text,
                     mono,
                     mono_font.clone(),

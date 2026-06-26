@@ -1,4 +1,5 @@
 pub(in crate::gallery) mod box_model;
+pub(in crate::gallery) mod occupation;
 mod detail;
 mod layout_tree;
 mod menu_tree;
