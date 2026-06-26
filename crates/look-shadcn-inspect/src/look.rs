@@ -11,21 +11,22 @@ use gpui_luma_look_shadcn::BadgeVariant;
 use crate::controls::{
     AccordionContentInspectPalette, AccordionInspectMetrics, AccordionTriggerInspectPalette,
     AutocompleteChromeInspectPalette, AutocompleteInspectMetrics, BadgeInspectMetrics, BadgeInspectPalette,
-    ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, CardInspectMetrics, CheckboxInspectMetrics,
-    CheckboxInspectPalette, ContextMenuInspectMetrics, ContextMenuInspectPalette, ControlGroupInspectMetrics,
-    ControlGroupListInspectPalette, FloatingMenuInspectMetrics, FloatingMenuInspectPalette, ListBoxInspectMetrics,
-    ListBoxListInspectPalette, ListBoxRowInspectPalette, ListViewInspectMetrics, ListViewInspectPalette,
-    ListViewRowInspectPalette, NavigationSidebarContainerInspectPalette, NavigationSidebarInspectMetrics,
-    NavigationSidebarItemInspectPalette, NavigationSidebarSectionInspectPalette, PopupMenuInspectMetrics,
-    PopupMenuInspectPalette, ProgressInspectMetrics, ProgressInspectPalette, RadioButtonInspectMetrics,
-    RadioButtonInspectPalette, ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette, ScrollbarInspectMetrics,
-    ScrollbarInspectPalette, SelectorInspectMetrics, SelectorInspectPalette, SliderInspectMetrics,
-    SliderInspectPalette, SplitViewInspectMetrics, SplitViewInspectPalette, SwitchInspectMetrics, SwitchInspectPalette,
-    TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette, TabsNavigationListInspectPalette,
-    TextFieldInspectMetrics, TextFieldInspectPalette, TreeViewInspectMetrics, TreeViewRowInspectPalette,
-    inspect_accordion_content_color_palette, inspect_accordion_metrics, inspect_accordion_trigger_color_palette,
-    inspect_autocomplete_chrome_color_palette, inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics,
-    inspect_badge_color_palette, inspect_badge_metrics, inspect_button_color_palette, inspect_button_metrics,
+    ButtonInspectElevation, ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, CardInspectMetrics,
+    CheckboxInspectMetrics, CheckboxInspectPalette, ContextMenuInspectMetrics, ContextMenuInspectPalette,
+    ControlGroupInspectMetrics, ControlGroupListInspectPalette, FloatingMenuInspectMetrics, FloatingMenuInspectPalette,
+    ListBoxInspectMetrics, ListBoxListInspectPalette, ListBoxRowInspectPalette, ListViewInspectMetrics,
+    ListViewInspectPalette, ListViewRowInspectPalette, NavigationSidebarContainerInspectPalette,
+    NavigationSidebarInspectMetrics, NavigationSidebarItemInspectPalette, NavigationSidebarSectionInspectPalette,
+    PopupMenuInspectMetrics, PopupMenuInspectPalette, ProgressInspectMetrics, ProgressInspectPalette,
+    RadioButtonInspectMetrics, RadioButtonInspectPalette, ResizablePanelsInspectMetrics, ResizablePanelsInspectPalette,
+    ScrollbarInspectMetrics, ScrollbarInspectPalette, SelectorInspectMetrics, SelectorInspectPalette,
+    SliderInspectMetrics, SliderInspectPalette, SplitViewInspectMetrics, SplitViewInspectPalette, SwitchInspectMetrics,
+    SwitchInspectPalette, TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette,
+    TabsNavigationListInspectPalette, TextFieldInspectMetrics, TextFieldInspectPalette, TreeViewInspectMetrics,
+    TreeViewRowInspectPalette, inspect_accordion_content_color_palette, inspect_accordion_metrics,
+    inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
+    inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics, inspect_badge_color_palette,
+    inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation, inspect_button_metrics,
     inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette, inspect_checkbox_metrics,
     inspect_context_menu_color_palette, inspect_context_menu_metrics, inspect_control_group_list_color_palette,
     inspect_control_group_metrics, inspect_floating_menu_color_palette, inspect_floating_menu_metrics,
@@ -88,6 +89,15 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_button_typography(&self) -> ButtonInspectTypography {
         inspect_button_typography(&self.mode_tokens(), self.theme_mode())
+    }
+
+    pub fn inspect_button_elevation(
+        &self,
+        style: ShadcnButtonStyle,
+        role: ButtonFamilyRole,
+        state: InteractionState,
+    ) -> ButtonInspectElevation {
+        inspect_button_elevation(&self.mode_tokens(), self.theme_mode(), style, role, state)
     }
 
     pub fn inspect_card_metrics(&self, size: ControlSize) -> CardInspectMetrics {

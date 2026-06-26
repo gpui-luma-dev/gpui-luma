@@ -11,16 +11,16 @@ use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use gpui_luma_look_shadcn_inspect::{
-    ButtonInspectMetrics, ButtonInspectPalette, format_inspect_css_key, format_inspect_metric_provenance,
-    format_inspect_metric_source, format_inspect_provenance, format_inspect_typography_provenance,
-    format_inspect_typography_source, format_metric_px, format_typography_px,
+    ButtonInspectElevation, ButtonInspectMetrics, ButtonInspectPalette, format_inspect_box_shadow_layer,
+    format_inspect_css_key, format_inspect_metric_provenance, format_inspect_metric_source, format_inspect_provenance,
+    format_inspect_typography_provenance, format_inspect_typography_source, format_metric_px, format_typography_px,
 };
 
 use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::format_hex_color;
 use lucide_icons::Icon as LucideIcon;
 
-use super::inspector_box_model::InspectBoxModelSnapshot;
+use crate::gallery::panes::shared::inspector::box_model::InspectBoxModelSnapshot;
 
 mod layout {
     pub(super) const ROW_HEIGHT: f32 = 32.0;
@@ -47,6 +47,7 @@ pub(in crate::gallery) enum InspectTreeData {
     ColorField(InspectColorFieldData),
     LayoutSize(InspectLayoutSizeData),
     Typography(InspectTypographyData),
+    Elevation(InspectElevationData),
 }
 
 #[derive(Clone)]
@@ -69,6 +70,25 @@ pub(in crate::gallery) struct InspectLayoutSizeData {
     pub size: ControlSize,
     pub box_model: InspectBoxModelSnapshot,
     pub properties: Vec<InspectMetricPropertyData>,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) struct InspectElevationLayerData {
+    pub label: SharedString,
+    pub css: SharedString,
+    pub color: gpui::Hsla,
+}
+
+#[derive(Clone)]
+pub(in crate::gallery) struct InspectElevationData {
+    pub applied: bool,
+    pub rule_shadow: SharedString,
+    pub style_key: SharedString,
+    pub token: Option<SharedString>,
+    pub catalog_value: Option<SharedString>,
+    pub layers: Vec<InspectElevationLayerData>,
+    pub properties: Vec<InspectMetricPropertyData>,
+    pub shadows: Option<Vec<gpui::BoxShadow>>,
 }
 
 #[derive(Clone)]
@@ -100,6 +120,7 @@ pub(in crate::gallery) enum InspectFieldKind {
     Color(InspectColorFieldData),
     Layout(InspectLayoutSizeData),
     Typography(InspectTypographyData),
+    Elevation(InspectElevationData),
 }
 
 pub(in crate::gallery) fn build_button_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<InspectTreeData>> {
@@ -147,6 +168,7 @@ fn state_palette_branch(
     let expand_layout = style_label == "Primary" && state_label == "default";
     let mut children = field_nodes(id.as_ref(), &palette);
     children.push(layout_branch(id.as_ref(), style, state, look, expand_layout));
+    children.push(elevation_branch(id.as_ref(), style, state, look));
     children.push(typography_branch(id.as_ref(), look));
     TreeNode::new(id.clone(), state_label.to_owned(), InspectTreeData::Branch)
         .branch(true)
@@ -189,10 +211,84 @@ fn size_metrics_branch(
         size_label.to_owned(),
         InspectTreeData::LayoutSize(InspectLayoutSizeData {
             size,
-            box_model: InspectBoxModelSnapshot::from_metrics(&metrics),
+            box_model: InspectBoxModelSnapshot::from_button_metrics(&metrics),
             properties: layout_metric_properties(&metrics),
         }),
     )
+}
+
+fn elevation_branch(
+    prefix: &str,
+    style: ShadcnButtonStyle,
+    state: InteractionState,
+    look: &ShadcnLook,
+) -> TreeNode<InspectTreeData> {
+    let id: SharedString = format!("{prefix}-elevation").into();
+    let elevation = ShadcnInspect::new(look).inspect_button_elevation(style, ButtonFamilyRole::Text, state);
+    TreeNode::new(id, "elevation", InspectTreeData::Elevation(elevation_data_from(&elevation)))
+}
+
+fn elevation_data_from(elevation: &ButtonInspectElevation) -> InspectElevationData {
+    let layers = elevation
+        .layers
+        .iter()
+        .enumerate()
+        .map(|(index, layer)| InspectElevationLayerData {
+            label: format!("layer {}", index + 1).into(),
+            css: format_inspect_box_shadow_layer(layer).into(),
+            color: layer.color,
+        })
+        .collect();
+
+    let token_display = elevation.token.as_ref().map(|token| format!("--{token}")).unwrap_or_else(|| "—".into());
+
+    let properties = vec![
+        elevation_property(
+            "applied",
+            if elevation.applied { "yes" } else { "no" },
+            if elevation.applied {
+                "resolved button look"
+            } else if elevation.rule_shadow == "none" {
+                "style.toml · shadow = none"
+            } else {
+                "disabled · template skips shadow"
+            },
+            None,
+        ),
+        elevation_property("rule", elevation.rule_shadow.clone(), "style.toml · button.elevation_rules", None),
+        elevation_property(
+            "style",
+            elevation.style_key.clone(),
+            "button.elevation_rules[].style",
+            Some(format!("style = {}", elevation.style_key)),
+        ),
+        elevation_property("token", token_display.to_string(), "catalog token key", elevation.token.clone()),
+    ];
+
+    InspectElevationData {
+        applied: elevation.applied,
+        rule_shadow: elevation.rule_shadow.clone().into(),
+        style_key: elevation.style_key.clone().into(),
+        token: elevation.token.clone().map(SharedString::from),
+        catalog_value: elevation.catalog_value.clone().map(SharedString::from),
+        layers,
+        properties,
+        shadows: elevation.shadows.clone(),
+    }
+}
+
+fn elevation_property(
+    name: &'static str,
+    value: impl Into<SharedString>,
+    source: impl Into<SharedString>,
+    provenance: Option<String>,
+) -> InspectMetricPropertyData {
+    InspectMetricPropertyData {
+        name: SharedString::from(name),
+        value: value.into(),
+        source: source.into(),
+        provenance: provenance.map(SharedString::from),
+    }
 }
 
 fn typography_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<InspectTreeData> {
@@ -315,6 +411,13 @@ pub(in crate::gallery) fn find_field_selection(
                     kind: InspectFieldKind::Typography(field.clone()),
                 });
             }
+            if let InspectTreeData::Elevation(field) = &node.data {
+                return Some(InspectFieldSelection {
+                    id: node.id.clone(),
+                    label: node.label.clone(),
+                    kind: InspectFieldKind::Elevation(field.clone()),
+                });
+            }
             return None;
         }
         if let Some(selection) = find_field_selection(&node.children, id) {
@@ -329,7 +432,10 @@ pub(in crate::gallery) fn first_field_id(items: &[TreeNode<InspectTreeData>]) ->
         for node in nodes {
             if matches!(
                 node.data,
-                InspectTreeData::ColorField(_) | InspectTreeData::LayoutSize(_) | InspectTreeData::Typography(_)
+                InspectTreeData::ColorField(_)
+                    | InspectTreeData::LayoutSize(_)
+                    | InspectTreeData::Typography(_)
+                    | InspectTreeData::Elevation(_)
             ) {
                 return Some(node.id.clone());
             }
@@ -412,7 +518,10 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                 let value = format_hex_color(field.swatch);
                 render_leaf_row(node, handlers, palette, left_padding, chrome, body, mono, Some(field.swatch), value)
             }
-            InspectTreeData::LayoutSize(_) | InspectTreeData::Typography(_) => {
+            InspectTreeData::LayoutSize(_) => {
+                render_leaf_row(node, handlers, palette, left_padding, chrome, body, mono, None, node.label.to_string())
+            }
+            InspectTreeData::Typography(_) => {
                 let mut row = branch_row_shell(node, palette.foreground, left_padding);
                 if node.enabled {
                     row = row
@@ -437,6 +546,17 @@ impl TreeViewTemplate<InspectTreeData> for InspectorTreeTemplate {
                     )
                     .into_any_element()
             }
+            InspectTreeData::Elevation(field) => render_leaf_row(
+                node,
+                handlers,
+                palette,
+                left_padding,
+                chrome,
+                body,
+                mono,
+                None,
+                field.rule_shadow.to_string(),
+            ),
         }
     }
 }

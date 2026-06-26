@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px, transparent_black};
 use gpui_luma::controls::card::Card;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
 use gpui_luma::controls::tree_view::{TreeViewControl, TreeViewEvent};
 use gpui_luma::theme::ThemeMode;
-use gpui_luma::DockPanel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::inspector_detail::ButtonInspectorDetail;
 use super::inspector_tree::{InspectTreeData, build_button_inspect_tree, find_field_selection};
+use super::super::shared::inspector::notify_inspector_shell_entities;
 
 const TREE_PANEL_MIN_PX: f32 = 180.0;
 const DETAIL_PANEL_MIN_PX: f32 = 180.0;
@@ -41,11 +41,11 @@ impl ButtonInspectorShell {
 
     pub fn new(look: Arc<ShadcnLook>, tree: Entity<TreeViewControl<InspectTreeData>>, cx: &mut Context<Self>) -> Self {
         let synced_mode = look.mode();
-        let panel_bg = look.chrome().panel_background;
         let detail = cx.new(|cx| ButtonInspectorDetail::new(look.clone(), tree.clone(), cx));
 
         let tree_panel = {
             let tree = tree.clone();
+            let look = look.clone();
             ResizablePanelSpec::new_render(move || {
                 div()
                     .id("button-inspector-tree-host")
@@ -53,15 +53,17 @@ impl ButtonInspectorShell {
                     .min_h(px(0.0))
                     .min_w(px(0.0))
                     .overflow_hidden()
+                    .bg(look.chrome().panel_background)
                     .child(tree.clone())
             })
             .weight(5.0)
             .min(px(TREE_PANEL_MIN_PX))
-            .bg(panel_bg)
+            .bg(transparent_black())
         };
 
         let detail_panel = {
             let detail = detail.clone();
+            let look = look.clone();
             ResizablePanelSpec::new_render(move || {
                 div()
                     .id("button-inspector-detail-host")
@@ -69,11 +71,12 @@ impl ButtonInspectorShell {
                     .min_h(px(0.0))
                     .min_w(px(0.0))
                     .overflow_hidden()
+                    .bg(look.chrome().panel_background)
                     .child(detail.clone())
             })
             .weight(5.0)
             .min(px(DETAIL_PANEL_MIN_PX))
-            .bg(panel_bg)
+            .bg(transparent_black())
         };
 
         let split = look
@@ -94,15 +97,13 @@ impl ButtonInspectorShell {
             .body_fill(true)
             .elevated(false)
             .child_render(move |_, _| {
-                DockPanel::new()
-                    .fill(
-                        div()
-                            .id("button-inspector-body")
-                            .flex_1()
-                            .min_h(px(0.0))
-                            .overflow_hidden()
-                            .child(split_for_card.clone()),
-                    )
+                div()
+                    .id("button-inspector-body")
+                    .h_full()
+                    .min_h(px(0.0))
+                    .flex_1()
+                    .overflow_hidden()
+                    .child(split_for_card.clone())
                     .into_any_element()
             })
             .spawn(cx);
@@ -144,6 +145,8 @@ impl ButtonInspectorShell {
             }
         });
         self.detail.update(cx, |_, cx| cx.notify());
+        notify_inspector_shell_entities(&self.tree, &self.detail, &self.split, &self.card, cx);
+        cx.notify();
     }
 }
 

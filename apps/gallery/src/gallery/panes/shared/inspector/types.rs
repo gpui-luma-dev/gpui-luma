@@ -2,6 +2,8 @@ use gpui::SharedString;
 use gpui_luma::controls::tree_view::TreeNode;
 use gpui_luma::theme::ControlSize;
 
+use super::box_model::InspectBoxModelSnapshot;
+
 #[derive(Clone)]
 pub(in crate::gallery) enum ColorInspectTreeData {
     Branch,
@@ -28,6 +30,7 @@ pub(in crate::gallery) struct InspectMetricPropertyData {
 pub(in crate::gallery) struct InspectLayoutSizeData {
     pub size: ControlSize,
     pub properties: Vec<InspectMetricPropertyData>,
+    pub box_model: Option<InspectBoxModelSnapshot>,
 }
 
 #[derive(Clone)]

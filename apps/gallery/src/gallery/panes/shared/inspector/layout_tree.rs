@@ -40,7 +40,11 @@ pub(in crate::gallery) fn fixed_layout_branch(
         .children([TreeNode::new(
             format!("{id}-metrics"),
             "metrics",
-            ColorInspectTreeData::LayoutSize(super::types::InspectLayoutSizeData { size: ControlSize::Md, properties }),
+            ColorInspectTreeData::LayoutSize(super::types::InspectLayoutSizeData {
+                size: ControlSize::Md,
+                properties,
+                box_model: None,
+            }),
         )])
 }
 

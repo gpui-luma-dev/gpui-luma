@@ -6,7 +6,23 @@ use gpui_luma_look_shadcn_inspect::{
     format_inspect_metric_provenance, format_inspect_metric_source, format_metric_px,
 };
 
-use super::types::InspectMetricPropertyData;
+use super::box_model::InspectBoxModelSnapshot;
+use super::types::{InspectLayoutSizeData, InspectMetricPropertyData};
+
+fn layout_size(
+    size: gpui_luma::theme::ControlSize,
+    properties: Vec<InspectMetricPropertyData>,
+) -> InspectLayoutSizeData {
+    InspectLayoutSizeData { size, properties, box_model: None }
+}
+
+fn layout_size_with_box_model(
+    size: gpui_luma::theme::ControlSize,
+    properties: Vec<InspectMetricPropertyData>,
+    box_model: InspectBoxModelSnapshot,
+) -> InspectLayoutSizeData {
+    InspectLayoutSizeData { size, properties, box_model: Some(box_model) }
+}
 
 pub(in crate::gallery) fn metric_properties(
     fields: &[(&'static str, &ResolvedMetric)],
@@ -25,32 +41,44 @@ pub(in crate::gallery) fn metric_properties(
 pub(in crate::gallery) fn checkbox_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_checkbox_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: checkbox_metric_properties(&metrics) }
+    layout_size_with_box_model(
+        size,
+        checkbox_metric_properties(&metrics),
+        InspectBoxModelSnapshot::from_checkbox_metrics(&metrics),
+    )
 }
 
 pub(in crate::gallery) fn radio_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_radio_button_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: radio_metric_properties(&metrics) }
+    layout_size_with_box_model(
+        size,
+        radio_metric_properties(&metrics),
+        InspectBoxModelSnapshot::from_radio_metrics(&metrics),
+    )
 }
 
 pub(in crate::gallery) fn switch_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_switch_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: switch_metric_properties(&metrics) }
+    layout_size_with_box_model(
+        size,
+        switch_metric_properties(&metrics),
+        InspectBoxModelSnapshot::from_switch_metrics(&metrics),
+    )
 }
 
 pub(in crate::gallery) fn toggle_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     style: gpui_luma_look_shadcn::ShadcnButtonStyle,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     use gpui_luma::controls::button_family::ButtonFamilyRole;
     use gpui_luma::theme::InteractionState;
 
@@ -60,62 +88,53 @@ pub(in crate::gallery) fn toggle_layout_data(
         size,
         InteractionState::default(),
     );
-    super::types::InspectLayoutSizeData { size, properties: button_metric_properties(&metrics) }
+    layout_size_with_box_model(
+        size,
+        button_metric_properties(&metrics),
+        InspectBoxModelSnapshot::from_button_metrics(&metrics),
+    )
 }
 
 pub(in crate::gallery) fn textarea_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_textarea_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: textfield_metric_properties(&metrics) }
+    layout_size(size, textfield_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn scrollbar_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_scrollbar_metrics(orientation);
-    super::types::InspectLayoutSizeData {
-        size: gpui_luma::theme::ControlSize::Md,
-        properties: scrollbar_metric_properties(&metrics),
-    }
+    layout_size(gpui_luma::theme::ControlSize::Md, scrollbar_metric_properties(&metrics))
 }
 
-pub(in crate::gallery) fn slider_layout_data(
-    look: &gpui_luma_look_shadcn::ShadcnLook,
-) -> super::types::InspectLayoutSizeData {
+pub(in crate::gallery) fn slider_layout_data(look: &gpui_luma_look_shadcn::ShadcnLook) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_slider_metrics();
-    super::types::InspectLayoutSizeData {
-        size: gpui_luma::theme::ControlSize::Md,
-        properties: slider_metric_properties(&metrics),
-    }
+    layout_size(gpui_luma::theme::ControlSize::Md, slider_metric_properties(&metrics))
 }
 
-pub(in crate::gallery) fn progress_layout_data(
-    look: &gpui_luma_look_shadcn::ShadcnLook,
-) -> super::types::InspectLayoutSizeData {
+pub(in crate::gallery) fn progress_layout_data(look: &gpui_luma_look_shadcn::ShadcnLook) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_progress_metrics();
-    super::types::InspectLayoutSizeData {
-        size: gpui_luma::theme::ControlSize::Md,
-        properties: progress_metric_properties(&metrics),
-    }
+    layout_size(gpui_luma::theme::ControlSize::Md, progress_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn card_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_card_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: card_metric_properties(&metrics) }
+    layout_size(size, card_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn badge_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_badge_metrics(gpui_luma_look_shadcn::BadgeVariant::Default, size);
-    super::types::InspectLayoutSizeData { size, properties: badge_metric_properties(&metrics) }
+    layout_size(size, badge_metric_properties(&metrics))
 }
 
 fn textfield_metric_properties(metrics: &TextFieldInspectMetrics) -> Vec<InspectMetricPropertyData> {
@@ -197,25 +216,25 @@ fn tabs_navigation_metric_properties(
 pub(in crate::gallery) fn tabs_navigation_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_tabs_navigation_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: tabs_navigation_metric_properties(&metrics) }
+    layout_size(size, tabs_navigation_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn listbox_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_listbox_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: listbox_metric_properties(&metrics) }
+    layout_size(size, listbox_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn control_group_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_control_group_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: control_group_metric_properties(&metrics) }
+    layout_size(size, control_group_metric_properties(&metrics))
 }
 
 fn control_group_metric_properties(
@@ -246,37 +265,34 @@ fn listbox_metric_properties(
 pub(in crate::gallery) fn tree_view_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_tree_view_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: tree_view_metric_properties(&metrics) }
+    layout_size(size, tree_view_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn navigation_sidebar_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_navigation_sidebar_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: navigation_sidebar_metric_properties(&metrics) }
+    layout_size(size, navigation_sidebar_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn autocomplete_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_autocomplete_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: autocomplete_metric_properties(&metrics) }
+    layout_size(size, autocomplete_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn textfield_and_menu_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let textfield = ShadcnInspect::new(look).inspect_textfield_metrics(size);
     let menu = ShadcnInspect::new(look).inspect_floating_menu_metrics(size);
-    super::types::InspectLayoutSizeData {
-        size,
-        properties: [textfield_metric_properties(&textfield), floating_menu_metric_properties(&menu)].concat(),
-    }
+    layout_size(size, [textfield_metric_properties(&textfield), floating_menu_metric_properties(&menu)].concat())
 }
 
 fn tree_view_metric_properties(
@@ -333,12 +349,9 @@ pub(in crate::gallery) fn split_view_layout_data(
 pub(in crate::gallery) fn resizable_panels_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     handle_size: gpui_luma::controls::resizable_panels::ResizeHandleSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_resizable_panels_metrics(handle_size);
-    super::types::InspectLayoutSizeData {
-        size: gpui_luma::theme::ControlSize::Md,
-        properties: resizable_panels_metric_properties(&metrics),
-    }
+    layout_size(gpui_luma::theme::ControlSize::Md, resizable_panels_metric_properties(&metrics))
 }
 
 fn resizable_panels_metric_properties(
@@ -355,9 +368,9 @@ fn resizable_panels_metric_properties(
 pub(in crate::gallery) fn accordion_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_accordion_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: accordion_metric_properties(&metrics) }
+    layout_size(size, accordion_metric_properties(&metrics))
 }
 
 fn accordion_metric_properties(
@@ -378,9 +391,9 @@ fn accordion_metric_properties(
 pub(in crate::gallery) fn list_view_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_list_view_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: list_view_metric_properties(&metrics) }
+    layout_size(size, list_view_metric_properties(&metrics))
 }
 
 fn list_view_metric_properties(
@@ -399,30 +412,30 @@ fn list_view_metric_properties(
 pub(in crate::gallery) fn floating_menu_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_floating_menu_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: floating_menu_metric_properties(&metrics) }
+    layout_size(size, floating_menu_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn context_menu_target_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_context_menu_metrics(size);
-    super::types::InspectLayoutSizeData { size, properties: context_menu_target_metric_properties(&metrics) }
+    layout_size(size, context_menu_target_metric_properties(&metrics))
 }
 
 pub(in crate::gallery) fn popup_menu_outline_trigger_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     popup_menu_trigger_layout_data(look, gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Outline, size)
 }
 
 pub(in crate::gallery) fn popup_menu_ghost_trigger_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     popup_menu_trigger_layout_data(look, gpui_luma::controls::popup_menu::PopupMenuTriggerStyle::Ghost, size)
 }
 
@@ -430,9 +443,9 @@ pub(in crate::gallery) fn popup_menu_trigger_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
     size: gpui_luma::theme::ControlSize,
-) -> super::types::InspectLayoutSizeData {
+) -> InspectLayoutSizeData {
     let metrics = ShadcnInspect::new(look).inspect_popup_menu_metrics(trigger_style, size);
-    super::types::InspectLayoutSizeData { size, properties: button_metric_properties(&metrics.trigger) }
+    layout_size(size, button_metric_properties(&metrics.trigger))
 }
 
 fn floating_menu_metric_properties(

@@ -20,10 +20,13 @@ use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, format_inspector_hsl, format_inspector_rgba};
 use lucide_icons::Icon as LucideIcon;
 
-use super::inspector_box_model::{BoxModelLayerColors, render_box_model_diagram};
+use crate::gallery::panes::shared::inspector::box_model::{
+    BoxModelLayerColors, MetricFieldHighlight, render_box_model_diagram,
+};
 use super::inspector_tree::{
-    InspectColorFieldData, InspectFieldKind, InspectFieldSelection, InspectLayoutSizeData, InspectMetricPropertyData,
-    InspectTreeData, InspectTypographyData, InspectTypographyPropertyData, find_field_selection,
+    InspectColorFieldData, InspectElevationData, InspectFieldKind, InspectFieldSelection, InspectLayoutSizeData,
+    InspectMetricPropertyData, InspectTreeData, InspectTypographyData, InspectTypographyPropertyData,
+    find_field_selection,
 };
 
 mod layout {
@@ -163,6 +166,9 @@ fn render_inspector_detail(
         InspectFieldKind::Typography(field) => {
             render_typography_detail(selection, field, preview_button, look, chrome, body, mono, mono_font, window, cx)
         }
+        InspectFieldKind::Elevation(field) => {
+            render_elevation_detail(selection, field, preview_button, look, chrome, body, mono, mono_font, window, cx)
+        }
     }
 }
 
@@ -259,8 +265,6 @@ fn render_layout_detail(
     window: &mut Window,
     cx: &mut Context<ButtonInspectorDetail>,
 ) -> AnyElement {
-    use super::inspector_box_model::MetricFieldHighlight;
-
     let box_colors = BoxModelLayerColors::from_look(look);
 
     let mut values_card = div()
@@ -332,6 +336,7 @@ fn render_layout_detail(
                         .child("Box model"),
                 )
                 .child(render_box_model_diagram(
+                    SharedString::from("button-inspector-box-model"),
                     &field.box_model,
                     MetricFieldHighlight::None,
                     box_colors,
@@ -350,6 +355,253 @@ fn render_layout_detail(
             field.size,
         ))
         .into_any_element()
+}
+
+fn render_elevation_detail(
+    selection: &InspectFieldSelection,
+    field: &InspectElevationData,
+    preview_button: impl Fn(ControlSize) -> Entity<Button>,
+    look: &Arc<ShadcnLook>,
+    chrome: LumaChrome,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+    window: &mut Window,
+    cx: &mut Context<ButtonInspectorDetail>,
+) -> AnyElement {
+    let mut values_card = div()
+        .flex()
+        .flex_col()
+        .gap(px(layout::CARD_GAP))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .p(px(layout::CARD_PADDING))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.title_text)
+                .child("Elevation"),
+        );
+
+    for property in &field.properties {
+        values_card = values_card.child(render_layout_property_row(
+            property,
+            chrome.border,
+            chrome.muted_text,
+            body.size,
+            body.line_height,
+            mono.size,
+            mono.line_height,
+            look,
+            window,
+            cx,
+        ));
+    }
+
+    if let Some(catalog_value) = field.catalog_value.as_ref() {
+        values_card = values_card.child(
+            div()
+                .pt(px(layout::CARD_GAP))
+                .font_family(mono_font.clone())
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(chrome.muted_text)
+                .child(catalog_value.clone()),
+        );
+    }
+
+    let mut layers_card = div()
+        .flex()
+        .flex_col()
+        .gap(px(layout::CARD_GAP))
+        .border_1()
+        .border_color(chrome.border)
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .p(px(layout::CARD_PADDING))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(chrome.title_text)
+                .child("Shadow layers"),
+        );
+
+    if field.layers.is_empty() {
+        layers_card = layers_card.child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .text_color(chrome.muted_text)
+                .child("No shadow layers resolved for this state."),
+        );
+    } else {
+        for layer in &field.layers {
+            layers_card = layers_card.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.0))
+                    .child(
+                        div()
+                            .text_size(px(body.size))
+                            .line_height(px(body.line_height))
+                            .font_weight(FontWeight::MEDIUM)
+                            .text_color(chrome.title_text)
+                            .child(layer.label.clone()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(8.0))
+                            .child(
+                                div()
+                                    .size(px(12.0))
+                                    .flex_shrink_0()
+                                    .rounded_full()
+                                    .bg(layer.color)
+                                    .border_1()
+                                    .border_color(chrome.border),
+                            )
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w(px(0.0))
+                                    .font_family(mono_font.clone())
+                                    .text_size(px(mono.size))
+                                    .line_height(px(mono.line_height))
+                                    .text_color(chrome.muted_text)
+                                    .child(layer.css.clone()),
+                            ),
+                    ),
+            );
+        }
+    }
+
+    let mut preview_chip = div()
+        .w(px(120.0))
+        .h(px(36.0))
+        .rounded(px(6.0))
+        .bg(chrome.panel_background)
+        .border_1()
+        .border_color(chrome.border);
+
+    if field.applied
+        && let Some(shadows) = field.shadows.as_ref().filter(|shadows| !shadows.is_empty())
+    {
+        preview_chip = preview_chip.shadow(shadows.clone());
+    }
+
+    div()
+        .id("button-inspector-detail")
+        .h_full()
+        .min_w(px(0.0))
+        .overflow_y_scroll()
+        .flex()
+        .flex_col()
+        .gap(px(layout::SECTION_GAP))
+        .p(px(layout::PANEL_PADDING))
+        .child(elevation_field_header(
+            selection,
+            field.style_key.clone(),
+            field.token.clone(),
+            chrome.title_text,
+            chrome.muted_text,
+            body,
+            mono,
+            mono_font.clone(),
+        ))
+        .child(
+            div()
+                .w_full()
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(layout::SWATCH_RADIUS))
+                .bg(chrome.panel_background)
+                .p(px(layout::CARD_PADDING))
+                .flex()
+                .flex_col()
+                .gap(px(layout::CARD_GAP))
+                .child(
+                    div()
+                        .text_size(px(body.size))
+                        .line_height(px(body.line_height))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.muted_text)
+                        .child("Shadow preview"),
+                )
+                .child(
+                    div()
+                        .w_full()
+                        .h(px(layout::SWATCH_HEIGHT))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(preview_chip),
+                ),
+        )
+        .child(values_card)
+        .child(layers_card)
+        .child(render_layout_size_preview(
+            preview_button(ControlSize::Md),
+            chrome.border,
+            chrome.panel_background,
+            chrome.muted_text,
+            body,
+            ControlSize::Md,
+        ))
+        .into_any_element()
+}
+
+fn elevation_field_header(
+    selection: &InspectFieldSelection,
+    style_key: SharedString,
+    token: Option<SharedString>,
+    title_text: gpui::Hsla,
+    muted_text: gpui::Hsla,
+    body: &LumaTextStyle,
+    mono: &LumaTextStyle,
+    mono_font: SharedString,
+) -> Div {
+    let mut header = div()
+        .flex()
+        .flex_col()
+        .gap(px(4.0))
+        .child(
+            div()
+                .text_size(px(body.size))
+                .line_height(px(body.line_height))
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(title_text)
+                .child(selection.label.clone()),
+        )
+        .child(
+            div()
+                .font_family(mono_font.clone())
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(format!("style.toml · button.elevation_rules[style={style_key}]")),
+        );
+
+    if let Some(token) = token {
+        header = header.child(
+            div()
+                .font_family(mono_font)
+                .text_size(px(mono.size))
+                .line_height(px(mono.line_height))
+                .text_color(muted_text)
+                .child(format!("catalog · --{token}")),
+        );
+    }
+
+    header
 }
 
 fn render_typography_detail(

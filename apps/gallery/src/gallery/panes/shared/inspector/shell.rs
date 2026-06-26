@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px, transparent_black};
 use gpui_luma::controls::card::Card;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
 use gpui_luma::controls::tree_view::{TreeNode, TreeViewControl, TreeViewEvent};
 use gpui_luma::theme::ThemeMode;
-use gpui_luma::DockPanel;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::detail::ColorInspectorDetail;
@@ -15,6 +14,22 @@ use super::types::{ColorInspectTreeData, find_inspect_field_selection};
 
 const TREE_PANEL_MIN_PX: f32 = 180.0;
 const DETAIL_PANEL_MIN_PX: f32 = 180.0;
+
+pub(in crate::gallery) fn notify_inspector_shell_entities<T, D>(
+    tree: &Entity<TreeViewControl<T>>,
+    detail: &Entity<D>,
+    split: &Entity<ResizablePanels>,
+    card: &Card,
+    cx: &mut App,
+) where
+    T: Clone + Send + Sync + 'static,
+    D: 'static,
+{
+    tree.update(cx, |_, cx| cx.notify());
+    detail.update(cx, |_, cx| cx.notify());
+    split.update(cx, |_, cx| cx.notify());
+    card.update(cx, |_, cx| cx.notify());
+}
 
 pub(in crate::gallery) struct ColorInspectorShell {
     look: Arc<ShadcnLook>,
@@ -50,11 +65,11 @@ impl ColorInspectorShell {
         cx: &mut Context<Self>,
     ) -> Self {
         let synced_mode = look.mode();
-        let panel_bg = look.chrome().panel_background;
         let detail = cx.new(|cx| ColorInspectorDetail::new(look.clone(), tree.clone(), detail_id, cx));
 
         let tree_panel = {
             let tree = tree.clone();
+            let look = look.clone();
             let tree_host_id = format!("{inspector_id}-tree-host");
             ResizablePanelSpec::new_render(move || {
                 div()
@@ -63,15 +78,17 @@ impl ColorInspectorShell {
                     .min_h(px(0.0))
                     .min_w(px(0.0))
                     .overflow_hidden()
+                    .bg(look.chrome().panel_background)
                     .child(tree.clone())
             })
             .weight(5.0)
             .min(px(TREE_PANEL_MIN_PX))
-            .bg(panel_bg)
+            .bg(transparent_black())
         };
 
         let detail_panel = {
             let detail = detail.clone();
+            let look = look.clone();
             let detail_host_id = format!("{inspector_id}-detail-host");
             ResizablePanelSpec::new_render(move || {
                 div()
@@ -80,11 +97,12 @@ impl ColorInspectorShell {
                     .min_h(px(0.0))
                     .min_w(px(0.0))
                     .overflow_hidden()
+                    .bg(look.chrome().panel_background)
                     .child(detail.clone())
             })
             .weight(5.0)
             .min(px(DETAIL_PANEL_MIN_PX))
-            .bg(panel_bg)
+            .bg(transparent_black())
         };
 
         let split = look
@@ -106,15 +124,13 @@ impl ColorInspectorShell {
             .body_fill(true)
             .elevated(false)
             .child_render(move |_, _| {
-                DockPanel::new()
-                    .fill(
-                        div()
-                            .id(split_body_id.clone())
-                            .flex_1()
-                            .min_h(px(0.0))
-                            .overflow_hidden()
-                            .child(split_for_card.clone()),
-                    )
+                div()
+                    .id(split_body_id.clone())
+                    .h_full()
+                    .min_h(px(0.0))
+                    .flex_1()
+                    .overflow_hidden()
+                    .child(split_for_card.clone())
                     .into_any_element()
             })
             .spawn(cx);
@@ -156,6 +172,8 @@ impl ColorInspectorShell {
             }
         });
         self.detail.update(cx, |_, cx| cx.notify());
+        notify_inspector_shell_entities(&self.tree, &self.detail, &self.split, &self.card, cx);
+        cx.notify();
     }
 }
 

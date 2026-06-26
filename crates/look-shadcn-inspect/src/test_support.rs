@@ -52,5 +52,7 @@ pub fn retro_arcade_catalog() -> CssTokenMap {
         ("radius".into(), "0.25rem".into()),
         ("spacing".into(), "0.25rem".into()),
         ("font-sans".into(), "ui-sans-serif, system-ui, 'Outfit', sans-serif".into()),
+        ("shadow-xs".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.05)".into()),
+        ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
     ]))
 }

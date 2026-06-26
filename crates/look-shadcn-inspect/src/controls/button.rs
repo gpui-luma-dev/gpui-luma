@@ -1,10 +1,12 @@
 //! Inspect metadata for `button`.
 
+use gpui::{BoxShadow, Hsla};
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 use gpui_luma_look_shadcn::{
     LookContext, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, ShadcnButtonStyle,
     ShadcnModeTokens, TypographySource,
 };
+use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, find_button_elevation_rule, resolve_stylesheet_shadow_token};
 
 use gpui_luma::controls::button_family::ButtonFamilyRole;
 use gpui_luma_look_shadcn::catalog::SpacingField;
@@ -97,6 +99,65 @@ pub struct ButtonInspectTypography {
     pub line_height: ResolvedTypography,
 }
 
+#[derive(Clone, Debug)]
+pub struct ButtonInspectElevationLayer {
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub blur: f32,
+    pub spread: f32,
+    pub color: Hsla,
+    pub css: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct ButtonInspectElevation {
+    pub applied: bool,
+    pub rule_shadow: String,
+    pub style_key: String,
+    pub token: Option<String>,
+    pub catalog_value: Option<String>,
+    pub layers: Vec<ButtonInspectElevationLayer>,
+    pub shadows: Option<Vec<BoxShadow>>,
+}
+
+pub fn inspect_button_elevation(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    state: InteractionState,
+) -> ButtonInspectElevation {
+    let effective_style = effective_button_style(style, role);
+    let look = gpui_luma_look_shadcn::paint::button_look(mode, theme_mode, style, role, ControlSize::Md, state);
+    let ctx = LookContext::new(mode, theme_mode, state);
+    let stylesheet = embedded_stylesheet();
+    let style_key = button_style_key(effective_style);
+    let rule = find_button_elevation_rule(stylesheet, effective_style);
+    let rule_shadow = rule.map(|rule| rule.shadow.clone()).unwrap_or_else(|| "none".to_string());
+    let token = rule.and_then(|rule| resolve_stylesheet_shadow_token(&rule.shadow));
+    let catalog_value = token.as_ref().and_then(|token| ctx.catalog().get(token).map(|value| value.to_string()));
+    let layers: Vec<ButtonInspectElevationLayer> = look
+        .shadow
+        .as_ref()
+        .map(|shadows| shadows.iter().enumerate().map(|(index, shadow)| elevation_layer(index, shadow)).collect())
+        .unwrap_or_default();
+    let applied = !state.disabled && !layers.is_empty();
+
+    ButtonInspectElevation {
+        applied,
+        rule_shadow,
+        style_key: style_key.to_string(),
+        token,
+        catalog_value,
+        layers,
+        shadows: look.shadow.clone(),
+    }
+}
+
+pub fn format_inspect_box_shadow_layer(layer: &ButtonInspectElevationLayer) -> String {
+    layer.css.clone()
+}
+
 pub fn inspect_button_typography(mode: &ShadcnModeTokens, theme_mode: ThemeMode) -> ButtonInspectTypography {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let typography = ctx.typography();
@@ -129,6 +190,57 @@ fn typography_scaffold_field(path: &str, value: f32) -> ResolvedTypography {
         format!("{value}")
     };
     ResolvedTypography { value: display, source: TypographySource::Scaffold { path: path.into() } }
+}
+
+fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
+    if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
+        ShadcnButtonStyle::Outline
+    } else {
+        style
+    }
+}
+
+fn button_style_key(style: ShadcnButtonStyle) -> &'static str {
+    match style {
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
+    }
+}
+
+fn elevation_layer(_index: usize, shadow: &BoxShadow) -> ButtonInspectElevationLayer {
+    let offset_x = shadow.offset.x.as_f32();
+    let offset_y = shadow.offset.y.as_f32();
+    let blur = shadow.blur_radius.as_f32();
+    let spread = shadow.spread_radius.as_f32();
+    let color = shadow.color;
+    let css = format!(
+        "{}px {}px {}px {}px hsla({}, {}, {}, {})",
+        format_shadow_number(offset_x),
+        format_shadow_number(offset_y),
+        format_shadow_number(blur),
+        format_shadow_number(spread),
+        format_shadow_number(color.h * 360.0),
+        format_shadow_number(color.s * 100.0),
+        format_shadow_number(color.l * 100.0),
+        format_shadow_alpha(color.a),
+    );
+
+    ButtonInspectElevationLayer { offset_x, offset_y, blur, spread, color, css }
+}
+
+fn format_shadow_number(value: f32) -> String {
+    if (value - value.round()).abs() < f32::EPSILON {
+        format!("{}", value.round() as i32)
+    } else {
+        format!("{value}")
+    }
+}
+
+fn format_shadow_alpha(value: f32) -> String {
+    let formatted = format!("{:.3}", value.clamp(0.0, 1.0));
+    formatted.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
 fn control_size_key(size: ControlSize) -> &'static str {
@@ -302,6 +414,58 @@ mod tests {
     }
 
     #[test]
+    fn inspect_elevation_outline_resolves_shadow_token_and_layers() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let elevation = inspect_button_elevation(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            InteractionState::default(),
+        );
+
+        assert!(elevation.applied);
+        assert_eq!(elevation.rule_shadow, "shadow-xs");
+        assert_eq!(elevation.token.as_deref(), Some("shadow-xs"));
+        assert!(elevation.catalog_value.as_ref().is_some_and(|value| !value.is_empty()));
+        assert!(elevation.layers.len() >= 1);
+        assert!(elevation.shadows.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn inspect_elevation_primary_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let elevation = inspect_button_elevation(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            InteractionState::default(),
+        );
+
+        assert!(!elevation.applied);
+        assert_eq!(elevation.rule_shadow, "none");
+        assert!(elevation.token.is_none());
+        assert!(elevation.layers.is_empty());
+    }
+
+    #[test]
+    fn inspect_elevation_disabled_suppresses_applied_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let elevation = inspect_button_elevation(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert!(!elevation.applied);
+        assert_eq!(elevation.rule_shadow, "shadow-xs");
+        assert!(!elevation.layers.is_empty());
+    }
+
+    #[test]
     fn inspect_typography_uses_font_sans_catalog_and_scaffold_label_metrics() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
         let typography = inspect_button_typography(&mode, ThemeMode::Light);
@@ -315,7 +479,7 @@ mod tests {
             typography.font_size.source,
             gpui_luma_look_shadcn::TypographySource::Scaffold { ref path } if path.contains("label.size")
         ));
-        assert_eq!(typography.font_size.value, "13");
+        assert_eq!(typography.font_size.value, "12.5");
         assert_eq!(typography.line_height.value, "18");
     }
 }

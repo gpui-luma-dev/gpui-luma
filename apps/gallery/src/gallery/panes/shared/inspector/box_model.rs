@@ -2,8 +2,10 @@
 
 use gpui::{Div, FontWeight, Hsla, IntoElement, SharedString, div, hsla, px, prelude::*};
 use gpui_luma::theme::LumaTextStyle;
-use gpui_luma_look_shadcn::{ShadcnLook};
-use gpui_luma_look_shadcn_inspect::{ButtonInspectMetrics};
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn_inspect::{
+    ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, SwitchInspectMetrics,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub(in crate::gallery) struct BoxModelLayerColors {
@@ -87,7 +89,7 @@ pub(in crate::gallery) struct InspectBoxModelSnapshot {
 }
 
 impl InspectBoxModelSnapshot {
-    pub fn from_metrics(metrics: &ButtonInspectMetrics) -> Self {
+    pub fn from_button_metrics(metrics: &ButtonInspectMetrics) -> Self {
         Self {
             height: metrics.height.value_px,
             padding_x: metrics.padding_x.value_px,
@@ -98,6 +100,66 @@ impl InspectBoxModelSnapshot {
             focus_ring_width: metrics.focus_ring_width.value_px,
             focus_ring_offset: metrics.focus_ring_offset.value_px,
         }
+    }
+
+    pub fn from_checkbox_metrics(metrics: &CheckboxInspectMetrics) -> Self {
+        choice_indicator_box_model(
+            metrics.height.value_px,
+            metrics.indicator_size.value_px,
+            metrics.gap.value_px,
+            metrics.border_width.value_px,
+            metrics.control_radius.value_px,
+            metrics.focus_ring_width.value_px,
+            metrics.focus_ring_offset.value_px,
+        )
+    }
+
+    pub fn from_radio_metrics(metrics: &RadioButtonInspectMetrics) -> Self {
+        choice_indicator_box_model(
+            metrics.height.value_px,
+            metrics.indicator_size.value_px,
+            metrics.gap.value_px,
+            metrics.border_width.value_px,
+            metrics.control_radius.value_px,
+            metrics.focus_ring_width.value_px,
+            metrics.focus_ring_offset.value_px,
+        )
+    }
+
+    pub fn from_switch_metrics(metrics: &SwitchInspectMetrics) -> Self {
+        let track_padding = metrics.track_padding.value_px;
+        Self {
+            height: metrics.track_height.value_px,
+            padding_x: track_padding,
+            padding_y: track_padding,
+            border_width: metrics.border_width.value_px,
+            gap: metrics.gap.value_px,
+            radius: metrics.track_radius.value_px,
+            focus_ring_width: metrics.focus_ring_width.value_px,
+            focus_ring_offset: metrics.focus_ring_offset.value_px,
+        }
+    }
+}
+
+fn choice_indicator_box_model(
+    height: f32,
+    indicator_size: f32,
+    gap: f32,
+    border_width: f32,
+    control_radius: f32,
+    focus_ring_width: f32,
+    focus_ring_offset: f32,
+) -> InspectBoxModelSnapshot {
+    let padding_y = ((height - indicator_size) / 2.0).max(0.0);
+    InspectBoxModelSnapshot {
+        height,
+        padding_x: 0.0,
+        padding_y,
+        border_width,
+        gap,
+        radius: control_radius,
+        focus_ring_width,
+        focus_ring_offset,
     }
 }
 
@@ -126,6 +188,7 @@ mod layout {
 }
 
 pub(in crate::gallery) fn render_box_model_diagram(
+    id: SharedString,
     model: &InspectBoxModelSnapshot,
     highlight: MetricFieldHighlight,
     colors: BoxModelLayerColors,
@@ -149,7 +212,7 @@ pub(in crate::gallery) fn render_box_model_diagram(
 
     let caption = highlight_caption(model, highlight);
     div()
-        .id("button-inspector-box-model")
+        .id(id)
         .w_full()
         .min_w(px(0.0))
         .flex()

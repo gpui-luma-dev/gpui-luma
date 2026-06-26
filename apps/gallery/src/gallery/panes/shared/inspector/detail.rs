@@ -17,6 +17,7 @@ use crate::fonts::gallery_mono_font;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color, format_inspector_hsl, format_inspector_rgba};
 use lucide_icons::Icon as LucideIcon;
 
+use super::box_model::{BoxModelLayerColors, MetricFieldHighlight, render_box_model_diagram};
 use super::types::{
     ColorInspectTreeData, InspectColorFieldData, InspectFieldKind, InspectFieldSelection, InspectLayoutSizeData,
     InspectMetricPropertyData, find_inspect_field_selection,
@@ -26,6 +27,7 @@ mod layout {
     pub(super) const PANEL_PADDING: f32 = 12.0;
     pub(super) const SWATCH_HEIGHT: f32 = 88.0;
     pub(super) const SWATCH_RADIUS: f32 = 8.0;
+    pub(super) const BOX_MODEL_GAP: f32 = 8.0;
     pub(super) const SECTION_GAP: f32 = 12.0;
     pub(super) const CARD_PADDING: f32 = 10.0;
     pub(super) const CARD_GAP: f32 = 6.0;
@@ -271,7 +273,9 @@ fn render_layout_detail(
         ));
     }
 
-    div()
+    let mono_font = gallery_mono_font();
+
+    let mut detail = div()
         .id(detail_id)
         .h_full()
         .min_w(px(0.0))
@@ -288,9 +292,40 @@ fn render_layout_detail(
             body,
             mono,
             gallery_mono_font(),
-        ))
-        .child(values_card)
-        .into_any_element()
+        ));
+
+    if let Some(box_model) = field.box_model.as_ref() {
+        let box_colors = BoxModelLayerColors::from_look(look);
+        detail = detail.child(
+            div()
+                .w_full()
+                .border_1()
+                .border_color(chrome.border)
+                .rounded(px(layout::SWATCH_RADIUS))
+                .bg(chrome.panel_background)
+                .p(px(layout::CARD_PADDING))
+                .child(
+                    div()
+                        .pb(px(layout::BOX_MODEL_GAP))
+                        .text_size(px(body.size))
+                        .line_height(px(body.line_height))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.title_text)
+                        .child("Box model"),
+                )
+                .child(render_box_model_diagram(
+                    SharedString::from(format!("{detail_id}-box-model")),
+                    box_model,
+                    MetricFieldHighlight::None,
+                    box_colors,
+                    chrome.muted_text,
+                    mono,
+                    mono_font.clone(),
+                )),
+        );
+    }
+
+    detail.child(values_card).into_any_element()
 }
 
 fn color_field_header(

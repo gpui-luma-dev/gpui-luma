@@ -34,7 +34,8 @@ pub use autocomplete::{
 };
 pub use badge::{BadgeInspectMetrics, BadgeInspectPalette, inspect_badge_color_palette, inspect_badge_metrics};
 pub use button::{
-    ButtonInspectMetrics, ButtonInspectPalette, ButtonInspectTypography, inspect_button_color_palette,
+    ButtonInspectElevation, ButtonInspectElevationLayer, ButtonInspectMetrics, ButtonInspectPalette,
+    ButtonInspectTypography, format_inspect_box_shadow_layer, inspect_button_color_palette, inspect_button_elevation,
     inspect_button_metrics, inspect_button_typography,
 };
 pub use card::{CardInspectMetrics, inspect_card_metrics};
