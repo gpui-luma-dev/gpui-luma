@@ -113,6 +113,14 @@ shadow = "none"
 style = "outline"
 shadow = "shadow-xs"
 
+# Toggle elevation (full-button toggles; matches checkbox/radio/switch indicator policy).
+[[toggle.elevation_rules]]
+shadow = "shadow-sm"
+
+[[toggle.elevation_rules]]
+layer = "disabled"
+shadow = "none"
+
 # Primary button states
 [[button.color_rules]]
 style = "primary"

@@ -945,6 +945,7 @@ mod tests {
         assert_eq!(stylesheet.badge.color_rules.len(), 5);
         assert_eq!(stylesheet.checkbox.color_rules.len(), 3);
         assert_eq!(stylesheet.checkbox.elevation_rules.len(), 2);
+        assert_eq!(stylesheet.toggle.elevation_rules.len(), 2);
         assert_eq!(stylesheet.radio.color_rules.len(), 3);
         assert_eq!(stylesheet.radio.elevation_rules.len(), 2);
         assert_eq!(stylesheet.switch.color_rules.len(), 3);

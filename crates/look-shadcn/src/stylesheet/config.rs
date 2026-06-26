@@ -12,6 +12,8 @@ pub struct StylesheetConfig {
     #[serde(default)]
     pub button: ButtonStylesheet,
     #[serde(default)]
+    pub toggle: ToggleStylesheet,
+    #[serde(default)]
     pub checkbox: CheckboxStylesheet,
     #[serde(default)]
     pub radio: RadioStylesheet,
@@ -110,6 +112,21 @@ impl ButtonStylesheet {
             ControlSize::Lg => "lg",
         };
         self.metrics.get(key)
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct ToggleStylesheet {
+    #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+}
+
+impl ToggleStylesheet {
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
     }
 }
 

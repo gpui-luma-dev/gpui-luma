@@ -1,8 +1,12 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{FontWeight, Hsla};
 
-use crate::theme::{LumaTextStyle, ThemeTokens};
+use crate::controls::button_family::{
+    ButtonFamilyLook, ButtonFamilyRole, compose_button_family_look, default_button_family_theme,
+};
+use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
+use crate::theme::{ControlSize, LumaTextStyle, StandardBoxScale, ThemeTokens};
 
 use super::PagerStyle;
 
@@ -30,6 +34,50 @@ pub struct PagerLook {
 
 pub trait PagerTheme: Send + Sync {
     fn resolve(&self, enabled: bool, style: PagerStyle) -> PagerLook;
+
+    fn button_template(&self) -> Arc<dyn ButtonTemplate<()>> {
+        default_button_template()
+    }
+
+    fn resolve_button_look(&self, pager_look: &PagerLook, model: &ButtonRenderModel<()>) -> ButtonFamilyLook {
+        let button_theme = default_button_family_theme();
+        let palette = button_theme.resolve(model.role, ControlSize::Sm, model.state);
+        let square = matches!(model.role, ButtonFamilyRole::Icon);
+        let scale = StandardBoxScale {
+            height: pager_look.button_size,
+            padding_x: if square { 0.0 } else { pager_look.padding_x },
+            padding_y: 0.0,
+            gap: pager_look.gap,
+            radius: pager_look.radius,
+        };
+        let base = compose_button_family_look(&palette, model.role, &scale, pager_look.radius);
+        tune_pager_button_look(base, pager_look, model.role)
+    }
+}
+
+pub fn tune_pager_button_look(
+    mut look: ButtonFamilyLook,
+    pager_look: &PagerLook,
+    role: ButtonFamilyRole,
+) -> ButtonFamilyLook {
+    look.height = pager_look.button_size;
+    look.radius = pager_look.radius;
+    look.gap = pager_look.gap;
+    look.typography.size = pager_look.typography.size;
+    look.typography.line_height = pager_look.typography.line_height;
+    look.typography.weight = if matches!(role, ButtonFamilyRole::Toggle { selected: true }) {
+        FontWeight::SEMIBOLD
+    } else {
+        pager_look.typography.weight
+    };
+    if matches!(role, ButtonFamilyRole::Icon) {
+        look.padding_x = 0.0;
+        look.padding_y = 0.0;
+    } else {
+        look.padding_x = pager_look.padding_x;
+        look.padding_y = 0.0;
+    }
+    look
 }
 
 #[derive(Clone, Debug, Default)]

@@ -143,7 +143,7 @@ impl PagerTemplate for ListViewPagerTemplate {
                         },
                     ))
                     .child(render_page_indicator(model, &look))
-                    .child(render_nav_group(model, &look, &handlers, true)),
+                    .child(render_nav_group(model, &look, &self.theme, &handlers, true, window, cx)),
             )
             .into_any_element()
     }

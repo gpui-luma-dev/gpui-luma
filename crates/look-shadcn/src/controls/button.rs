@@ -9,7 +9,8 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_button_color_rule, find_button_elevation_rule,
-    resolve_button_color_rule, resolve_button_metrics_rule, resolve_stylesheet_shadow_token,
+    resolve_button_color_rule, resolve_button_metrics_rule, resolve_layered_elevation_shadow,
+    resolve_stylesheet_shadow_token,
 };
 
 /// Radix-style button look.
@@ -77,8 +78,22 @@ pub fn button_look(
     let scale = button_box_scale(&ctx, stylesheet, size, 1.0);
     let effective_style = effective_button_style(style, role);
     let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
-    look.shadow = button_elevation_shadow(&ctx, stylesheet, effective_style);
+    look.shadow = if matches!(role, ButtonFamilyRole::Toggle { .. }) {
+        toggle_elevation_shadow(ctx.catalog(), stylesheet, ctx.state.layer())
+    } else {
+        button_elevation_shadow(&ctx, stylesheet, effective_style)
+    };
     look
+}
+
+fn toggle_elevation_shadow(
+    catalog: &crate::catalog::CssTokenMap,
+    stylesheet: &StylesheetConfig,
+    layer: InteractionLayer,
+) -> Option<Vec<gpui::BoxShadow>> {
+    let token = resolve_layered_elevation_shadow(&stylesheet.toggle.elevation_rules, layer)?;
+    let shadows = parse_shadow_token(catalog, &token).ok()?;
+    if shadows.is_empty() { None } else { Some(shadows) }
 }
 
 pub(crate) fn button_elevation_shadow(
@@ -376,6 +391,40 @@ mod tests {
             ButtonFamilyRole::Text,
             ControlSize::Md,
             InteractionState::default(),
+        );
+
+        assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn toggle_look_resolves_stylesheet_shadow_for_selected_and_unselected() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        for selected in [false, true] {
+            let look = button_look(
+                &mode,
+                ThemeMode::Light,
+                ShadcnButtonStyle::Primary,
+                ButtonFamilyRole::Toggle { selected },
+                ControlSize::Md,
+                InteractionState::default(),
+            );
+            assert!(
+                look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+                "toggle selected={selected} should resolve shadow-sm"
+            );
+        }
+    }
+
+    #[test]
+    fn disabled_toggle_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Toggle { selected: true },
+            ControlSize::Md,
+            InteractionState { disabled: true, ..InteractionState::default() },
         );
 
         assert!(look.shadow.is_none());

@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
 use gpui_luma::controls::button_family::{
-    ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
+    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
 };
 use gpui_luma::controls::card::{CardTemplate, CardTheme, ThemedCardTemplate};
 use gpui_luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
-use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use gpui_luma::controls::control_group::{
     ControlGroupItemLike, ControlGroupTemplate, ControlGroupTheme, control_group_template_with_theme,
@@ -901,7 +901,7 @@ pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls
 }
 
 struct RadixPagerTheme {
-    theme: ShadcnLook,
+    theme: Arc<ShadcnLook>,
 }
 
 impl PagerTheme for RadixPagerTheme {
@@ -910,7 +910,22 @@ impl PagerTheme for RadixPagerTheme {
         enabled: bool,
         style: gpui_luma::controls::pager::PagerStyle,
     ) -> gpui_luma::controls::pager::PagerLook {
-        pager_look(&self.theme, enabled, style)
+        pager_look(self.theme.as_ref(), enabled, style)
+    }
+
+    fn button_template(&self) -> Arc<dyn ButtonTemplate<()>> {
+        button_template(Arc::clone(&self.theme), ShadcnButtonStyle::Outline)
+    }
+
+    fn resolve_button_look(
+        &self,
+        pager_look: &gpui_luma::controls::pager::PagerLook,
+        model: &ButtonRenderModel<()>,
+    ) -> ButtonFamilyLook {
+        use gpui_luma::controls::pager::tune_pager_button_look;
+
+        let base = self.theme.resolve_outline_button(model.role, ControlSize::Sm, model.state);
+        tune_pager_button_look(base, pager_look, model.role)
     }
 }
 
@@ -919,7 +934,7 @@ pub fn pager_template(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTemplate> {
 }
 
 pub fn pager_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTheme> {
-    Arc::new(RadixPagerTheme { theme: theme.as_ref().clone() })
+    Arc::new(RadixPagerTheme { theme })
 }
 
 pub fn radio_group_template<T>(

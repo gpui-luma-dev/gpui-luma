@@ -4,8 +4,11 @@ use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, SharedString, Windo
 use lucide_icons::Icon as LucideIcon;
 
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
-use super::theme::{PagerTheme, default_pager_theme};
+use super::theme::{PagerLook, PagerTheme, default_pager_theme};
+use crate::controls::button_family::ButtonFamilyRole;
+use crate::controls::command::button::{ButtonRenderModel, ControlPresenter};
 use crate::controls::icon::lucide_glyph;
+use crate::theme::InteractionState;
 
 pub type PagerOutsideMouseDownHandler = Arc<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + Send + Sync + 'static>;
 pub type PagerClickHandler = Arc<dyn Fn(&ClickEvent, &mut Window, &mut App) + Send + Sync + 'static>;
@@ -50,14 +53,14 @@ impl PagerTemplate for ThemedPagerTemplate {
         &self,
         model: &PagerRenderModel<'_>,
         handlers: PagerTemplateHandlers,
-        _window: &mut Window,
-        _cx: &mut App,
+        window: &mut Window,
+        cx: &mut App,
     ) -> AnyElement {
         let look = self.theme.resolve(model.enabled, model.style);
         let body = match model.style {
-            PagerStyle::Minimal => render_minimal_pager(model, &look, &handlers),
-            PagerStyle::MinimalEdge => render_minimal_edge_pager(model, &look, &handlers),
-            PagerStyle::Numeric => render_numeric_pager(model, &look, &handlers),
+            PagerStyle::Minimal => render_minimal_pager(model, &look, &self.theme, &handlers, window, cx),
+            PagerStyle::MinimalEdge => render_minimal_edge_pager(model, &look, &self.theme, &handlers, window, cx),
+            PagerStyle::Numeric => render_numeric_pager(model, &look, &self.theme, &handlers, window, cx),
         };
 
         body.into_any_element()
@@ -107,8 +110,11 @@ pub fn numeric_page_items(current_page: usize, page_count: usize, slot_count: us
 
 fn render_minimal_pager(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     div()
         .w_full()
@@ -120,13 +126,16 @@ fn render_minimal_pager(
         .text_size(px(look.typography.size))
         .line_height(px(look.typography.line_height))
         .child(render_page_indicator(model, look))
-        .child(render_nav_group(model, look, handlers, false))
+        .child(render_nav_group(model, look, theme, handlers, false, window, cx))
 }
 
 fn render_minimal_edge_pager(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     div()
         .w_full()
@@ -138,13 +147,16 @@ fn render_minimal_edge_pager(
         .text_size(px(look.typography.size))
         .line_height(px(look.typography.line_height))
         .child(render_page_indicator(model, look))
-        .child(render_nav_group(model, look, handlers, true))
+        .child(render_nav_group(model, look, theme, handlers, true, window, cx))
 }
 
 fn render_numeric_pager(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     let items = numeric_page_items(model.current_page, model.page_count.max(1), model.numeric_slot_count());
     div()
@@ -154,15 +166,15 @@ fn render_numeric_pager(
         .justify_end()
         .gap(px(look.gap))
         .py(px(look.padding_y))
-        .child(render_nav_group_leading(model, look, handlers, true))
+        .child(render_nav_group_leading(model, look, theme, handlers, true, window, cx))
         .child(div().flex().items_center().gap(px(look.gap)).children(items.into_iter().map(|item| match item {
-            PagerPageItem::Page(page) => render_page_button(model, look, page, handlers).into_any_element(),
-            PagerPageItem::Gap { target } => render_gap_button(model, look, target, handlers).into_any_element(),
+            PagerPageItem::Page(page) => render_page_button(model, look, theme, page, handlers, window, cx),
+            PagerPageItem::Gap { target } => render_gap_button(model, look, theme, target, handlers, window, cx),
         })))
-        .child(render_nav_group_trailing(model, look, handlers, true))
+        .child(render_nav_group_trailing(model, look, theme, handlers, true, window, cx))
 }
 
-pub(crate) fn render_page_indicator(model: &PagerRenderModel<'_>, look: &crate::controls::pager::PagerLook) -> Div {
+pub(crate) fn render_page_indicator(model: &PagerRenderModel<'_>, look: &PagerLook) -> Div {
     div()
         .flex_none()
         .text_color(look.body_text)
@@ -182,7 +194,7 @@ pub(crate) fn render_info_slot(model: &PagerRenderModel<'_>, window: &mut Window
 
 pub(crate) fn render_page_size_select(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
     handlers: &PagerTemplateHandlers,
 ) -> Div {
     div()
@@ -269,30 +281,38 @@ pub(crate) fn render_page_size_select(
 
 pub(crate) fn render_nav_group(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     div()
         .flex()
         .items_center()
         .gap(px(look.gap))
-        .child(render_nav_group_leading(model, look, handlers, include_edges))
-        .child(render_nav_group_trailing(model, look, handlers, include_edges))
+        .child(render_nav_group_leading(model, look, theme, handlers, include_edges, window, cx))
+        .child(render_nav_group_trailing(model, look, theme, handlers, include_edges, window, cx))
 }
 
 fn render_nav_group_leading(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     let mut group = div().flex().items_center().gap(px(look.gap));
     if include_edges {
         group = group.child(render_nav_button(
             model,
             look,
+            theme,
             NavButtonSpec {
+                id_suffix: "nav-first-0".to_string(),
                 icon: LucideIcon::ChevronsLeft,
                 label: model.first_label(),
                 label_position: NavLabelPosition::AfterIcon,
@@ -300,12 +320,16 @@ fn render_nav_group_leading(
                 disabled: model.at_first(),
             },
             handlers,
+            window,
+            cx,
         ));
     }
     group.child(render_nav_button(
         model,
         look,
+        theme,
         NavButtonSpec {
+            id_suffix: format!("nav-prev-{}", model.current_page.saturating_sub(1)),
             icon: LucideIcon::ChevronLeft,
             label: model.previous_label(),
             label_position: NavLabelPosition::AfterIcon,
@@ -313,20 +337,27 @@ fn render_nav_group_leading(
             disabled: model.at_first(),
         },
         handlers,
+        window,
+        cx,
     ))
 }
 
 fn render_nav_group_trailing(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     handlers: &PagerTemplateHandlers,
     include_edges: bool,
+    window: &mut Window,
+    cx: &mut App,
 ) -> Div {
     let last_page = model.page_count.saturating_sub(1);
     let mut group = div().flex().items_center().gap(px(look.gap)).child(render_nav_button(
         model,
         look,
+        theme,
         NavButtonSpec {
+            id_suffix: format!("nav-next-{}", (model.current_page + 1).min(last_page)),
             icon: LucideIcon::ChevronRight,
             label: model.next_label(),
             label_position: NavLabelPosition::BeforeIcon,
@@ -334,12 +365,16 @@ fn render_nav_group_trailing(
             disabled: model.at_last(),
         },
         handlers,
+        window,
+        cx,
     ));
     if include_edges {
         group = group.child(render_nav_button(
             model,
             look,
+            theme,
             NavButtonSpec {
+                id_suffix: format!("nav-last-{last_page}"),
                 icon: LucideIcon::ChevronsRight,
                 label: model.last_label(),
                 label_position: NavLabelPosition::BeforeIcon,
@@ -347,6 +382,8 @@ fn render_nav_group_trailing(
                 disabled: model.at_last(),
             },
             handlers,
+            window,
+            cx,
         ));
     }
     group
@@ -359,6 +396,7 @@ enum NavLabelPosition {
 }
 
 struct NavButtonSpec<'a> {
+    id_suffix: String,
     icon: LucideIcon,
     label: Option<&'a SharedString>,
     label_position: NavLabelPosition,
@@ -366,136 +404,192 @@ struct NavButtonSpec<'a> {
     disabled: bool,
 }
 
+struct PagerButtonLayout {
+    min_width: f32,
+    square: bool,
+    inactive: bool,
+}
+
 fn render_nav_button(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     spec: NavButtonSpec<'_>,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> AnyElement {
     let has_label = spec.label.is_some();
-    let mut button = button_shell(model, look, spec.disabled, false)
-        .min_w(px(look.button_min_width))
-        .h(px(look.button_size));
-
-    if has_label {
-        button = button.px(px(look.padding_x));
-    } else {
-        button = button.size(px(look.button_size));
-    }
-
-    let icon_element = lucide_glyph(spec.icon).into_any_element();
-    let label_element = spec.label.map(|label| div().child(label.clone()).into_any_element());
-    button = button.child(match (spec.label_position, label_element) {
-        (NavLabelPosition::BeforeIcon, Some(label_element)) => div()
-            .flex()
-            .items_center()
-            .gap(px(look.gap))
-            .child(label_element)
-            .child(icon_element)
-            .into_any_element(),
-        (NavLabelPosition::AfterIcon, Some(label_element)) => div()
-            .flex()
-            .items_center()
-            .gap(px(look.gap))
-            .child(icon_element)
-            .child(label_element)
-            .into_any_element(),
-        (_, None) => icon_element,
+    let gap = look.gap;
+    let icon = spec.icon;
+    let label_position = spec.label_position;
+    let label = spec.label.cloned();
+    let content: ControlPresenter<ButtonRenderModel<()>> = Arc::new(move |_, _| {
+        let icon_element = lucide_glyph(icon).into_any_element();
+        let label_element = label.as_ref().map(|label| div().child(label.clone()).into_any_element());
+        match (label_position, label_element) {
+            (NavLabelPosition::BeforeIcon, Some(label_element)) => {
+                div().flex().items_center().gap(px(gap)).child(label_element).child(icon_element).into_any_element()
+            }
+            (NavLabelPosition::AfterIcon, Some(label_element)) => {
+                div().flex().items_center().gap(px(gap)).child(icon_element).child(label_element).into_any_element()
+            }
+            (_, None) => icon_element,
+        }
     });
 
-    if model.enabled && !spec.disabled {
+    let click = (model.enabled && !spec.disabled).then(|| {
         let set_page = handlers.set_page.clone();
-        button
-            .id(format!("{}-nav-{:?}-{}", model.id, spec.icon, spec.target))
-            .cursor_pointer()
-            .on_click(move |event, window, cx| set_page(spec.target, event, window, cx))
-            .into_any_element()
-    } else {
-        button.into_any_element()
-    }
+        let target = spec.target;
+        Arc::new(move |event: &ClickEvent, window: &mut Window, cx: &mut App| {
+            set_page(target, event, window, cx);
+        }) as PagerClickHandler
+    });
+
+    render_pager_button(
+        model,
+        look,
+        theme,
+        PagerButtonSpec {
+            id_suffix: spec.id_suffix,
+            role: if has_label {
+                ButtonFamilyRole::Text
+            } else {
+                ButtonFamilyRole::Icon
+            },
+            content,
+            interaction_disabled: spec.disabled,
+            layout: PagerButtonLayout { min_width: look.button_min_width, square: !has_label, inactive: false },
+        },
+        click,
+        window,
+        cx,
+    )
 }
 
 fn render_page_button(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     page: usize,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> AnyElement {
     let selected = page == model.current_page.min(model.page_count.saturating_sub(1));
-    let button = button_shell(model, look, false, selected)
-        .h(px(look.button_size))
-        .min_w(px(look.button_min_width.max(32.0)))
-        .px(px(look.padding_x))
-        .child(format!("{}", page + 1));
+    let label = SharedString::from(format!("{}", page + 1));
+    let content: ControlPresenter<ButtonRenderModel<()>> =
+        Arc::new(move |_, _| div().child(label.clone()).into_any_element());
 
-    if model.enabled && !selected {
+    let click = (model.enabled && !selected).then(|| {
         let set_page = handlers.set_page.clone();
-        button
-            .id(format!("{}-page-{page}", model.id))
-            .cursor_pointer()
-            .on_click(move |event, window, cx| set_page(page, event, window, cx))
-            .into_any_element()
-    } else {
-        button.into_any_element()
-    }
+        Arc::new(move |event: &ClickEvent, window: &mut Window, cx: &mut App| set_page(page, event, window, cx))
+            as PagerClickHandler
+    });
+
+    render_pager_button(
+        model,
+        look,
+        theme,
+        PagerButtonSpec {
+            id_suffix: format!("page-{page}"),
+            role: ButtonFamilyRole::Toggle { selected },
+            content,
+            interaction_disabled: false,
+            layout: PagerButtonLayout { min_width: look.button_min_width.max(32.0), square: false, inactive: selected },
+        },
+        click,
+        window,
+        cx,
+    )
 }
 
 fn render_gap_button(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
     target: usize,
     handlers: &PagerTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
 ) -> AnyElement {
-    let button = button_shell(model, look, false, false)
-        .h(px(look.button_size))
-        .min_w(px(look.button_min_width.max(32.0)))
-        .px(px(look.padding_x))
-        .child(lucide_glyph(LucideIcon::Ellipsis));
+    let content: ControlPresenter<ButtonRenderModel<()>> =
+        Arc::new(move |_, _| lucide_glyph(LucideIcon::Ellipsis).into_any_element());
 
-    if model.enabled {
+    let click = model.enabled.then(|| {
         let set_page = handlers.set_page.clone();
-        button
-            .id(format!("{}-gap-{target}", model.id))
-            .cursor_pointer()
-            .on_click(move |event, window, cx| set_page(target, event, window, cx))
-            .into_any_element()
-    } else {
-        button.into_any_element()
-    }
+        Arc::new(move |event: &ClickEvent, window: &mut Window, cx: &mut App| set_page(target, event, window, cx))
+            as PagerClickHandler
+    });
+
+    render_pager_button(
+        model,
+        look,
+        theme,
+        PagerButtonSpec {
+            id_suffix: format!("gap-{target}"),
+            role: ButtonFamilyRole::Icon,
+            content,
+            interaction_disabled: false,
+            layout: PagerButtonLayout { min_width: look.button_min_width.max(32.0), square: false, inactive: false },
+        },
+        click,
+        window,
+        cx,
+    )
 }
 
-fn button_shell(
+struct PagerButtonSpec {
+    id_suffix: String,
+    role: ButtonFamilyRole,
+    content: ControlPresenter<ButtonRenderModel<()>>,
+    interaction_disabled: bool,
+    layout: PagerButtonLayout,
+}
+
+fn render_pager_button(
     model: &PagerRenderModel<'_>,
-    look: &crate::controls::pager::PagerLook,
-    disabled: bool,
-    selected: bool,
-) -> Div {
-    div()
-        .rounded(px(look.radius))
-        .border_1()
-        .border_color(look.border)
-        .bg(if selected {
-            look.selected_background
-        } else {
-            look.panel_background
-        })
-        .text_color(if selected {
-            look.selected_foreground
-        } else {
-            look.body_text
-        })
-        .text_size(px(look.typography.size))
-        .line_height(px(look.typography.line_height))
-        .font_weight(if selected {
-            gpui::FontWeight::SEMIBOLD
-        } else {
-            look.typography.weight
-        })
-        .flex()
-        .items_center()
-        .justify_center()
-        .when(model.enabled && !disabled, |slot| slot.cursor_pointer())
-        .when(!model.enabled || disabled, |slot| slot.opacity(look.disabled_opacity))
+    look: &PagerLook,
+    theme: &Arc<dyn PagerTheme>,
+    spec: PagerButtonSpec,
+    click: Option<PagerClickHandler>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let disabled = !model.enabled || spec.interaction_disabled;
+    let id = SharedString::from(format!("{}-{}", model.id, spec.id_suffix));
+    let pager_look = look.clone();
+    let look_theme = Arc::clone(theme);
+    let button_template = theme.button_template();
+    let clickable = click.is_some() && !disabled;
+    let button_model = ButtonRenderModel {
+        id,
+        data: (),
+        content: spec.content,
+        role: spec.role,
+        size: crate::controls::button_family::ButtonSize::Sm,
+        state: InteractionState { disabled, ..InteractionState::default() },
+        round: false,
+        radius_override: std::cell::Cell::new(Some(pager_look.radius)),
+        look: Some(Arc::new(move |model| look_theme.resolve_button_look(&pager_look, model))),
+    };
+
+    let mut button = button_template.render(&button_model, window, cx);
+    if let Some(click) = click.filter(|_| !disabled) {
+        button = button.on_click(move |event, window, cx| click(event, window, cx));
+    }
+
+    let mut slot = div().min_w(px(spec.layout.min_width)).child(button);
+    if spec.layout.square {
+        slot = slot.w(px(look.button_size));
+    }
+    if spec.layout.inactive || disabled {
+        slot = slot.cursor_default();
+    } else if clickable {
+        slot = slot.cursor_pointer();
+    }
+
+    slot.into_any_element()
 }
 
 #[cfg(test)]
