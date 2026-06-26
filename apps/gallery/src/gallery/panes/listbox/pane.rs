@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, FontWeight, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
 use gpui_luma_look_shadcn::prelude::*;
@@ -65,6 +65,8 @@ impl ListBoxPane {
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
+        let section_style = look.typography_scale(ShadcnTextSize::Sm);
+        let status_style = look.typography_scale(ShadcnTextSize::Sm);
 
         gallery_pane_with_inspector(
             "ListBox",
@@ -78,11 +80,17 @@ impl ListBoxPane {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_sm().child("Single select"))
+                        .child(
+                            div()
+                                .typography_style(section_style)
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(chrome.muted_text)
+                                .child("Single select"),
+                        )
                         .child(self.single.clone())
                         .child(
                             div()
-                                .text_sm()
+                                .typography_style(status_style)
                                 .text_color(chrome.body_text)
                                 .child(format!("Selected: {}", self.single_choice)),
                         ),
@@ -92,11 +100,17 @@ impl ListBoxPane {
                         .flex()
                         .flex_col()
                         .gap_2()
-                        .child(div().text_sm().child("Multiple select"))
+                        .child(
+                            div()
+                                .typography_style(section_style)
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(chrome.muted_text)
+                                .child("Multiple select"),
+                        )
                         .child(self.multiple.clone())
                         .child(
                             div()
-                                .text_sm()
+                                .typography_style(status_style)
                                 .text_color(chrome.body_text)
                                 .child(format!("Selected: {}", self.multi_choices.join(", "))),
                         ),

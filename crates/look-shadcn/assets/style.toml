@@ -436,6 +436,12 @@ label_color = "foreground"
 # =====================================================================
 # 3. RADIO
 # =====================================================================
+[radio.indicator_defaults]
+primary = "filled"
+secondary = "ring"
+outline = "ring"
+ghost = "ring"
+
 # shadcn/ui uses shadow-xs on indicators; shadow-sm reads better at GPUI scale.
 [[radio.elevation_rules]]
 shadow = "shadow-sm"
@@ -460,9 +466,26 @@ label_color = "foreground"
 
 [[radio.color_rules]]
 selected = true
+indicator = "filled"
+indicator_background = "@action_layer"
+selection_ring = "@action_layer"
+dot_color = "@action_foreground"
+label_color = "foreground"
+
+[[radio.color_rules]]
+selected = true
+indicator = "ring"
 indicator_background = "@outline_layer"
 selection_ring = "@action_layer"
 dot_color = "@action_foreground"
+label_color = "foreground"
+
+[[radio.color_rules]]
+selected = true
+indicator = "dot"
+indicator_background = "@outline_layer"
+selection_ring = "border"
+dot_color = "@action_layer"
 label_color = "foreground"
 
 

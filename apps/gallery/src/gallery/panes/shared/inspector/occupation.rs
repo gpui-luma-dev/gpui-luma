@@ -10,10 +10,7 @@ use super::box_model::{InspectEdgeInsets, InspectOccupationSnapshot};
 
 const SCALE_FACTOR: f32 = 1.0;
 
-pub(in crate::gallery) fn radio_occupation(
-    look: &ShadcnLook,
-    focus_oversize: f32,
-) -> InspectOccupationSnapshot {
+pub(in crate::gallery) fn radio_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
     let palette = paint::radio_button_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state);

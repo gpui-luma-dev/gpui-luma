@@ -1,10 +1,12 @@
 //! Radio button property mappings (tweakcn / shadcn):
 //!
-//! | State     | Ring token | Dot token              |
-//! |-----------|------------|------------------------|
-//! | Unselected| outline    | `foreground`           |
-//! | Selected  | `{style}`  | `{style}-foreground`   |
-//! | Disabled  | `muted`    | `muted-foreground`     |
+//! Indicator variants (per-style default in `style.toml` `[radio.indicator_defaults]`):
+//!
+//! | Variant | Selected look |
+//! |---------|----------------|
+//! | `filled` | `@action_layer` fill + `@action_foreground` dot |
+//! | `ring`   | `@outline_layer` fill + `@action_layer` ring + `@action_foreground` dot |
+//! | `dot`    | `@outline_layer` fill + `border` ring + `@action_layer` dot |
 
 use gpui_luma::controls::radio_button::RadioButtonPalette;
 use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
@@ -56,7 +58,7 @@ pub fn resolve_radio_colors_with_stylesheet(
     selected: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<RadioColorTable> {
-    let rule = find_radio_color_rule(stylesheet, selected, layer)
+    let rule = find_radio_color_rule(stylesheet, style, selected, layer)
         .ok_or_else(|| anyhow::anyhow!("no matching radio color rule"))?;
     let colors = resolve_radio_color_rule(resolver, rule, style, layer)?;
     Ok(RadioColorTable {
@@ -120,6 +122,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
+    use crate::resolve::resolve_color;
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use gpui_luma::theme::ThemeMode;
@@ -156,6 +159,32 @@ mod tests {
         let look = radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
 
         assert!(look.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn primary_selected_filled_uses_action_fill_and_foreground_dot() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let primary = resolve_color(&retro_arcade_catalog(), "primary").expect("primary");
+        let primary_fg = resolve_color(&retro_arcade_catalog(), "primary-foreground").expect("primary-foreground");
+
+        assert_eq!(look.indicator_background, primary);
+        assert_eq!(look.indicator_border, primary);
+        assert_eq!(look.dot_color, primary_fg);
+    }
+
+    #[test]
+    fn secondary_selected_ring_uses_outline_fill_and_action_ring() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let catalog = retro_arcade_catalog();
+        let look = radio_button_look(&mode, ShadcnButtonStyle::Secondary, true, InteractionState::default());
+        let secondary = resolve_color(&catalog, "secondary").expect("secondary");
+        let secondary_fg = resolve_color(&catalog, "secondary-foreground").expect("secondary-fg");
+        let card = resolve_color(&catalog, "card").expect("card");
+
+        assert_eq!(look.indicator_background, card);
+        assert_eq!(look.indicator_border, secondary);
+        assert_eq!(look.dot_color, secondary_fg);
     }
 
     #[test]

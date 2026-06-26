@@ -336,12 +336,7 @@ fn wrap_chrome_and_occupation(
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(occupation_edge_value(
-                    paint.top,
-                    colors.highlight,
-                    mono_font.clone(),
-                    mono,
-                ))
+                .child(occupation_edge_value(paint.top, colors.highlight, mono_font.clone(), mono))
                 .child(
                     div()
                         .absolute()
@@ -358,25 +353,21 @@ fn wrap_chrome_and_occupation(
 
     let mut row = div().flex().w_full().items_stretch();
     if left_side > 0.0 {
-        row = row.child(
-            div()
-                .w(px(left_side))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(occupation_edge_value(paint.left, colors.highlight, mono_font.clone(), mono)),
-        );
+        row = row.child(div().w(px(left_side)).flex().items_center().justify_center().child(occupation_edge_value(
+            paint.left,
+            colors.highlight,
+            mono_font.clone(),
+            mono,
+        )));
     }
     row = row.child(div().flex_1().min_w(px(0.0)).w_full().child(chrome));
     if right_side > 0.0 {
-        row = row.child(
-            div()
-                .w(px(right_side))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(occupation_edge_value(paint.right, colors.highlight, mono_font.clone(), mono)),
-        );
+        row = row.child(div().w(px(right_side)).flex().items_center().justify_center().child(occupation_edge_value(
+            paint.right,
+            colors.highlight,
+            mono_font.clone(),
+            mono,
+        )));
     }
     shell = shell.child(row);
 
@@ -395,12 +386,7 @@ fn wrap_chrome_and_occupation(
     shell.into_any_element()
 }
 
-fn occupation_edge_value(
-    value: f32,
-    color: Hsla,
-    mono_font: SharedString,
-    mono: &LumaTextStyle,
-) -> Div {
+fn occupation_edge_value(value: f32, color: Hsla, mono_font: SharedString, mono: &LumaTextStyle) -> Div {
     div()
         .font_family(mono_font)
         .text_size(px(layout::EDGE_VALUE_SIZE))

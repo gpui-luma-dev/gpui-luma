@@ -99,10 +99,11 @@ pub fn find_checkbox_color_rule(
 
 pub fn find_radio_color_rule(
     stylesheet: &StylesheetConfig,
+    style: ShadcnButtonStyle,
     selected: bool,
     layer: InteractionLayer,
 ) -> Option<&RadioColorRule> {
-    stylesheet.radio.find_color_rule(selected, layer)
+    stylesheet.radio.find_color_rule(style, selected, layer)
 }
 
 pub fn find_switch_color_rule(stylesheet: &StylesheetConfig, on: bool, disabled: bool) -> Option<&SwitchColorRule> {
@@ -339,6 +340,7 @@ pub fn resolve_radio_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<Table
             inputs: vec![
                 rule.layer.clone().unwrap_or_else(|| "any".into()),
                 rule.selected.map(|selected| selected.to_string()).unwrap_or_else(|| "any".into()),
+                rule.indicator.clone().unwrap_or_else(|| "any".into()),
             ],
             outputs: vec![
                 color_output_label("indicator_background", &rule.indicator_background),
@@ -946,7 +948,7 @@ mod tests {
         assert_eq!(stylesheet.checkbox.color_rules.len(), 3);
         assert_eq!(stylesheet.checkbox.elevation_rules.len(), 2);
         assert_eq!(stylesheet.toggle.elevation_rules.len(), 2);
-        assert_eq!(stylesheet.radio.color_rules.len(), 3);
+        assert_eq!(stylesheet.radio.color_rules.len(), 5);
         assert_eq!(stylesheet.radio.elevation_rules.len(), 2);
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
         assert_eq!(stylesheet.switch.elevation_rules.len(), 2);
