@@ -126,8 +126,8 @@ impl SelectorTemplateControl {
 impl SelectorControlsTemplatePreview {
     fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
-            textfield_template: look.textfield_template(),
-            textfield_theme: look.textfield_theme(),
+            textfield_template: look.input_textfield_template(),
+            textfield_theme: look.input_textfield_theme(),
             autocomplete_template: default_autocomplete_textbox_template(),
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),

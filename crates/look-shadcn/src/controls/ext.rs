@@ -37,8 +37,8 @@ use gpui_luma::controls::switch::{self, SwitchBuilder};
 use gpui_luma::controls::accordion::AccordionBuilder;
 use gpui_luma::controls::tree_view::TreeViewBuilder;
 use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder};
-use gpui_luma::controls::textarea::{self, TextAreaBuilder};
-use gpui_luma::controls::textfield::{self, TextFieldBuilder};
+use gpui_luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
+use gpui_luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
 use gpui_luma::controls::toggle;
 use gpui_luma::theme::ControlSize;
 
@@ -370,7 +370,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         items: impl IntoIterator<Item = gpui_luma::controls::autocomplete::SelectionItem>,
     ) -> AutocompleteTextBoxBuilder {
         autocomplete::new(id, items)
-            .textfield_template(self.textfield_template())
+            .textfield_template(self.input_textfield_template())
             .scrollbar_template(self.scrollbar_template())
     }
 
@@ -381,7 +381,7 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     ) -> ComboBoxBuilder {
         let theme = Arc::clone(self);
         combobox::new(id, items)
-            .textfield_template(self.textfield_template())
+            .textfield_template(self.input_textfield_template())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move || theme.selector_items_panel_look(ControlSize::Md)))
     }
@@ -393,8 +393,8 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     ) -> SearchSelectorBuilder {
         let theme = Arc::clone(self);
         search_selector::new(id, items)
-            .textfield_template(self.textfield_template())
-            .textfield_theme(self.textfield_theme())
+            .textfield_template(self.input_textfield_template())
+            .textfield_theme(self.input_textfield_theme())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move || theme.selector_items_panel_look(ControlSize::Md)))
     }
@@ -477,11 +477,58 @@ impl ShadcnButtonStyleExt for ButtonBuilder<()> {
 /// Binds a shadcn text field template on a [`TextFieldBuilder`].
 pub trait ShadcnTextFieldExt {
     fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
+    fn surface(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
+    fn input(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
+    fn soft(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
+    fn filled(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder;
 }
 
 impl ShadcnTextFieldExt for TextFieldBuilder {
     fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
         self.template(theme.textfield_template())
+    }
+
+    fn surface(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
+        self.look_theme(theme)
+    }
+
+    fn input(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
+        self.template(theme.input_textfield_template())
+    }
+
+    fn soft(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
+        self.template(Arc::new(ThemedTextFieldTemplate::new(theme.soft_textfield_theme())))
+    }
+
+    fn filled(self, theme: &Arc<ShadcnLook>) -> TextFieldBuilder {
+        self.template(theme.filled_textfield_template())
+    }
+}
+
+/// Binds a shadcn text area template and theme on a [`TextAreaBuilder`].
+pub trait ShadcnTextAreaExt {
+    fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
+    fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
+    fn soft(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
+    fn filled(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder;
+}
+
+impl ShadcnTextAreaExt for TextAreaBuilder {
+    fn look_theme(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
+        self.template(theme.textarea_template()).theme(theme.textarea_theme())
+    }
+
+    fn surface(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
+        self.look_theme(theme)
+    }
+
+    fn soft(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
+        self.template(Arc::new(ThemedTextAreaTemplate::new(theme.soft_textarea_theme())))
+            .theme(theme.soft_textarea_theme())
+    }
+
+    fn filled(self, theme: &Arc<ShadcnLook>) -> TextAreaBuilder {
+        self.template(theme.filled_textarea_template()).theme(theme.filled_textarea_theme())
     }
 }
 

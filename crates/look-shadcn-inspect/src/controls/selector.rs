@@ -1,15 +1,17 @@
 //! Inspect metadata for `selector`.
 
+use gpui_luma::controls::textfield::TextFieldState;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{LookContext, ColorSource, LookResolver, ResolvedColor, ShadcnModeTokens};
+use gpui_luma_look_shadcn::{ShadcnModeTokens, ShadcnTextFieldStyle};
 
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
+use super::textfield::inspect_textfield_color_palette;
 
 pub struct SelectorInspectPalette {
-    pub trigger_background: ResolvedColor,
-    pub trigger_foreground: ResolvedColor,
-    pub trigger_border: ResolvedColor,
-    pub focus_ring: Option<ResolvedColor>,
+    pub trigger_background: gpui_luma_look_shadcn::ResolvedColor,
+    pub trigger_foreground: gpui_luma_look_shadcn::ResolvedColor,
+    pub trigger_border: gpui_luma_look_shadcn::ResolvedColor,
+    pub focus_ring: Option<gpui_luma_look_shadcn::ResolvedColor>,
     pub items_panel: FloatingMenuInspectPalette,
 }
 
@@ -19,30 +21,35 @@ pub struct SelectorInspectMetrics {
     pub items_panel: FloatingMenuInspectMetrics,
 }
 
+fn selector_textfield_state(state: InteractionState) -> TextFieldState {
+    TextFieldState {
+        hovered: state.hovered,
+        focused: state.focused,
+        focus_visible: state.focused,
+        ..TextFieldState::default()
+    }
+}
+
 pub fn inspect_selector_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
     size: ControlSize,
 ) -> SelectorInspectPalette {
-    let ctx = LookContext::new(mode, theme_mode, state);
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
-
-    let resolver = LookResolver::new(ctx.catalog(), theme_mode, "selector_inspect");
-    let trigger_colors =
-        gpui_luma_look_shadcn::tables::resolve_ghost_trigger_colors(&resolver, state.layer(), state.disabled)
-            .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::GhostTriggerColorTable::fallback());
-    let trigger_border = resolver.resolve_decl("border").unwrap_or_else(|_| ResolvedColor {
-        value: ctx.catalog().color("border").expect("border"),
-        source: ColorSource::CssVar { token: "border".into() },
-    });
-    let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
+    let trigger = inspect_textfield_color_palette(
+        mode,
+        theme_mode,
+        ShadcnTextFieldStyle::Input,
+        selector_textfield_state(state),
+        !state.disabled,
+    );
 
     SelectorInspectPalette {
-        trigger_background: trigger_colors.background,
-        trigger_foreground: trigger_colors.foreground,
-        trigger_border,
-        focus_ring,
+        trigger_background: trigger.background,
+        trigger_foreground: trigger.foreground,
+        trigger_border: trigger.border,
+        focus_ring: trigger.focus_ring,
         items_panel: menu,
     }
 }

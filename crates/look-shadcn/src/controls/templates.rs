@@ -359,14 +359,7 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
         cx: &mut gpui::App,
     ) -> gpui_luma::controls::popup_menu::PopupMenuLook {
         let tokens = self.theme.mode_tokens();
-        super::popup_menu::popup_menu_look(
-            tokens.as_ref(),
-            self.theme.mode(),
-            trigger_style,
-            state,
-            scale_factor,
-            cx,
-        )
+        super::popup_menu::popup_menu_look(tokens.as_ref(), self.theme.mode(), trigger_style, state, scale_factor, cx)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -470,6 +463,40 @@ pub fn textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
     Arc::new(RadixTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
+struct RadixInputTextFieldTheme {
+    theme: ShadcnLook,
+}
+
+impl TextFieldTheme for RadixInputTextFieldTheme {
+    fn resolve(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_palette(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Input,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+}
+
+pub fn input_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
+    Arc::new(RadixInputTextFieldTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(RadixInputTextFieldTheme { theme: theme.as_ref().clone() })))
+}
+
 struct RadixSoftTextFieldTheme {
     theme: ShadcnLook,
 }
@@ -498,6 +525,40 @@ impl TextFieldTheme for RadixSoftTextFieldTheme {
 
 pub fn soft_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
     Arc::new(RadixSoftTextFieldTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixFilledTextFieldTheme {
+    theme: ShadcnLook,
+}
+
+impl TextFieldTheme for RadixFilledTextFieldTheme {
+    fn resolve(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textfield::TextFieldPalette {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_palette(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Filled,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+}
+
+pub fn filled_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
+    Arc::new(RadixFilledTextFieldTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn filled_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(RadixFilledTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
 struct RadixTextAreaTheme {
@@ -560,6 +621,39 @@ impl TextAreaTheme for RadixSoftTextAreaTheme {
 
 pub fn soft_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
     Arc::new(RadixSoftTextAreaTheme { theme: theme.as_ref().clone() })
+}
+
+struct RadixFilledTextAreaTheme {
+    theme: ShadcnLook,
+}
+
+impl TextAreaTheme for RadixFilledTextAreaTheme {
+    fn resolve(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_palette(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Filled,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+}
+
+pub fn filled_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(RadixFilledTextAreaTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn filled_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(filled_textarea_theme(Arc::clone(&theme))))
 }
 
 pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTextBoxTheme> {

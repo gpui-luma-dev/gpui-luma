@@ -1,4 +1,4 @@
-//! Text area — surface/soft variants share the text field token resolver.
+//! Text area — surface/filled/soft variants share the text field token resolver.
 
 use gpui_luma::controls::textarea::{TextAreaPalette, TextAreaState};
 use gpui_luma::controls::textfield::TextFieldState;
@@ -39,6 +39,7 @@ fn textarea_from_textfield(textfield: gpui_luma::controls::textfield::TextFieldP
         selection_foreground: textfield.selection_foreground,
         caret: textfield.caret,
         focus_ring: textfield.focus_ring,
+        shadow: textfield.shadow.clone(),
         typography: textfield.typography,
         font_family: textfield.font_family.to_string(),
     }
@@ -55,7 +56,7 @@ mod tests {
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
     use crate::controls::textfield::{ShadcnTextFieldStyle, textfield_palette};
-    use super::textarea_from_textfield;
+    use super::{textarea_from_textfield, textarea_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -64,6 +65,7 @@ mod tests {
             ("secondary".into(), "oklch(0.6437 0.1019 187.3840)".into()),
             ("secondary-foreground".into(), "oklch(1 0 0)".into()),
             ("background".into(), "oklch(0.9735 0.0261 90.0953)".into()),
+            ("card".into(), "oklch(0.98 0.02 90.0953)".into()),
             ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
             ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
@@ -72,6 +74,7 @@ mod tests {
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("input".into(), "oklch(0.7200 0.0120 205.0000)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("shadow-xs".into(), "0 1px 2px 0px hsl(0 0% 0% / 0.05)".into()),
         ]))
     }
 
@@ -87,6 +90,24 @@ mod tests {
         assert_eq!(textarea.border, catalog.color("border").expect("border"));
         assert_eq!(textarea.foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(textarea.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
+        assert!(textarea.shadow.is_none());
+    }
+
+    #[test]
+    fn filled_textarea_uses_background_fill_and_shadow() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let textarea = textarea_palette(
+            &mode,
+            ThemeMode::Light,
+            ShadcnTextFieldStyle::Filled,
+            gpui_luma::controls::textarea::TextAreaState::default(),
+            true,
+        );
+
+        assert_eq!(textarea.background, catalog.color("background").expect("background"));
+        assert_eq!(textarea.border, catalog.color("border").expect("border"));
+        assert!(textarea.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
     }
 
     #[test]
@@ -99,5 +120,6 @@ mod tests {
 
         assert_eq!(textarea.background, catalog.color("muted").expect("muted"));
         assert_eq!(textarea.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
+        assert!(textarea.shadow.is_none());
     }
 }

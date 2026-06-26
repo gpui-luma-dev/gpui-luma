@@ -10,8 +10,16 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
     part("surface fill", "background", &["surface light"], &["TextFieldPalette.background"]),
     part("surface fill", "input", &["surface dark"], &["TextFieldPalette.background"]),
     part("surface border", "input", &["surface default"], &["TextFieldPalette.border"]),
-    part("soft fill", "muted", &["soft default"], &["TextFieldPalette.background"]),
-    part("foreground", "foreground", &["surface default", "soft default"], &["TextFieldPalette.foreground"]),
+    part("filled fill", "background", &["filled default"], &["TextFieldPalette.background"]),
+    part("filled border", "border", &["filled default"], &["TextFieldPalette.border"]),
+    part("input fill", "background", &["input light", "input dark"], &["TextFieldPalette.background"]),
+    part("input border", "border", &["input default"], &["TextFieldPalette.border"]),
+    part(
+        "foreground",
+        "foreground",
+        &["surface default", "soft default", "filled default"],
+        &["TextFieldPalette.foreground"],
+    ),
     part(
         "placeholder",
         "muted-foreground",
@@ -125,15 +133,16 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "AutocompleteTextField",
         parts: &[
-            part("textbox background", "background", &["default"], &["AutocompleteTextBoxLook.background"]),
-            part("textbox border", "input", &["default"], &["AutocompleteTextBoxLook.border"]),
+            part("textbox fill", "background", &["default"], &["TextFieldLook.background"]),
+            part("status", "primary", &["default"], &["AutocompleteTextBoxLook.status_color"]),
+            part("muted text", "muted-foreground", &["default"], &["AutocompleteTextBoxLook.muted_text_color"]),
             part("panel surface", "popover", &["open"], &["FloatingMenuLook.background"]),
         ],
     },
     &ThemeUsage {
         label: "SearchSelector",
         parts: &[
-            part("textbox", "background", &["default"], &["TextFieldLook.background"]),
+            part("trigger fill", "background", &["default"], &["TextFieldLook.background"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
         ],
     },
@@ -159,8 +168,8 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
         label: "Selector",
         parts: &[
             part("trigger background", "background", &["default"], &["SelectorPalette.trigger_background"]),
-            part("trigger hover fg", "accent-foreground", &["hovered"], &["SelectorPalette.trigger_foreground"]),
-            part("trigger border", "input", &["default"], &["SelectorPalette.trigger_border"]),
+            part("trigger foreground", "foreground", &["default"], &["SelectorPalette.trigger_foreground"]),
+            part("trigger border", "border", &["default"], &["SelectorPalette.trigger_border"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
             part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelLook.item_hover_background"]),
         ],

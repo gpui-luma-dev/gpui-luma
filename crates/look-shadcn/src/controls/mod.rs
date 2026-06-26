@@ -32,7 +32,8 @@ pub(crate) mod overlay_window;
 pub use button::ShadcnButtonStyle;
 pub use textfield::ShadcnTextFieldStyle;
 pub use ext::{
-    ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
+    ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextAreaExt,
+    ShadcnTextFieldExt,
 };
 
 pub(crate) use button::button_look;

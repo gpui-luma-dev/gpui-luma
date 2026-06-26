@@ -1,12 +1,14 @@
+use gpui_luma::controls::textfield::TextFieldState;
 use gpui_luma::controls::tree_view::TreeNode;
 use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextFieldStyle};
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 
+use crate::gallery::panes::combobox::textfield_color_nodes;
 use crate::gallery::panes::shared::inspector::{
     ColorInspectTreeData, floating_menu_item_disabled_branch, floating_menu_item_hover_branch,
-    floating_menu_layout_data, floating_menu_surface_branch, ghost_trigger_color_nodes, inspect_slug,
-    popup_menu_outline_trigger_layout_data, sized_layout_branch,
+    floating_menu_layout_data, floating_menu_surface_branch, inspect_slug, popup_menu_outline_trigger_layout_data,
+    sized_layout_branch,
 };
 
 pub(in crate::gallery) fn build_selector_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<ColorInspectTreeData>> {
@@ -21,20 +23,29 @@ pub(in crate::gallery) fn build_selector_inspect_tree(look: &ShadcnLook) -> Vec<
     matrix_states.iter().map(|(state_label, state)| state_branch(state_label, *state, look)).collect()
 }
 
+fn selector_textfield_state(state: InteractionState) -> TextFieldState {
+    TextFieldState {
+        hovered: state.hovered,
+        focused: state.focused,
+        focus_visible: state.focused,
+        ..TextFieldState::default()
+    }
+}
+
 fn state_branch(state_label: &str, state: InteractionState, look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     let id = format!("inspect-{}", inspect_slug(state_label));
     let expand = state_label == "default";
-    let palette = ShadcnInspect::new(look).inspect_selector_color_palette(state, ControlSize::Md);
-    let mut children = ghost_trigger_color_nodes(
-        &id,
-        &palette.trigger_background,
-        &palette.trigger_foreground,
-        &palette.trigger_border,
-        palette.focus_ring.as_ref(),
+    let inspect = ShadcnInspect::new(look);
+    let trigger_palette = inspect.inspect_textfield_color_palette(
+        ShadcnTextFieldStyle::Input,
+        selector_textfield_state(state),
+        !state.disabled,
     );
-    children.push(floating_menu_surface_branch(&id, &palette.items_panel, expand));
-    children.push(floating_menu_item_hover_branch(&id, &palette.items_panel, expand));
-    children.push(floating_menu_item_disabled_branch(&id, &palette.items_panel, expand));
+    let items_panel = inspect.inspect_floating_menu_color_palette(ControlSize::Md);
+    let mut children = textfield_color_nodes(&format!("{id}-trigger"), &trigger_palette);
+    children.push(floating_menu_surface_branch(&id, &items_panel, expand));
+    children.push(floating_menu_item_hover_branch(&id, &items_panel, expand));
+    children.push(floating_menu_item_disabled_branch(&id, &items_panel, expand));
     children.push(selector_layout_branch(&id, expand, look));
 
     TreeNode::new(id.clone(), state_label.to_owned(), ColorInspectTreeData::Branch)

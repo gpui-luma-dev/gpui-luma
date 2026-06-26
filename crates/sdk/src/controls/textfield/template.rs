@@ -251,7 +251,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .child(text_viewport);
         }
 
-        let control = div()
+        let mut control = div()
             .id(format!("{}-control", model.id))
             .relative()
             .h(px(look.min_height))
@@ -271,6 +271,12 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .when(model.enabled, |root| root.cursor_text())
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
             .child(text_viewport);
+
+        if model.enabled
+            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+        {
+            control = control.shadow(shadows.clone());
+        }
 
         let mut root = render_button_family_focus_ring(model.id.clone(), control, look.focus_ring, look.radius);
 

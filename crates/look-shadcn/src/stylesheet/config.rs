@@ -1057,10 +1057,16 @@ pub struct NavigationSidebarItemColorRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct TextfieldStylesheet {
     #[serde(default)]
+    pub elevation_rules: Vec<TextfieldElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<TextfieldColorRule>,
 }
 
 impl TextfieldStylesheet {
+    pub fn elevation_rule_for_style(&self, style: &str) -> Option<&TextfieldElevationRule> {
+        self.elevation_rules.iter().find(|rule| rule.style == style)
+    }
+
     pub fn find_color_rule(
         &self,
         style: &str,
@@ -1075,6 +1081,12 @@ impl TextfieldStylesheet {
                 && rule.mode.as_deref().is_none_or(|value| value == mode)
         })
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct TextfieldElevationRule {
+    pub style: String,
+    pub shadow: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

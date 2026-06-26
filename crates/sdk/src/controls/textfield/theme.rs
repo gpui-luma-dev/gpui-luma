@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{Hsla, SharedString};
+use gpui::{BoxShadow, Hsla, SharedString};
 
 use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
@@ -22,6 +22,7 @@ pub struct TextFieldPalette {
     pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
 }
@@ -37,6 +38,7 @@ pub struct TextFieldLook {
     pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: SharedString,
     pub min_height: f32,
@@ -128,6 +130,7 @@ impl TextFieldTheme for DefaultTextFieldTheme {
             selection_foreground,
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
+            shadow: None,
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone().into(),
         }
@@ -153,6 +156,7 @@ pub(crate) fn compose_textfield_look(
         selection_foreground: palette.selection_foreground,
         caret: palette.caret,
         focus_ring: palette.focus_ring,
+        shadow: palette.shadow.clone(),
         typography: palette.typography,
         font_family: palette.font_family.clone(),
         min_height: scale.height,

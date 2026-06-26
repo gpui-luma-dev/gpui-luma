@@ -38,7 +38,7 @@ fn textfield_menu_tree(id: &str, title: &str, look: &ShadcnLook) -> Vec<TreeNode
 fn textfield_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<ColorInspectTreeData> {
     let id = format!("{prefix}-textfield");
     let palette = ShadcnInspect::new(look).inspect_textfield_color_palette(
-        ShadcnTextFieldStyle::Surface,
+        ShadcnTextFieldStyle::Input,
         TextFieldState::default(),
         true,
     );
@@ -61,7 +61,10 @@ fn menu_branch(prefix: &str, look: &ShadcnLook) -> TreeNode<ColorInspectTreeData
         ])
 }
 
-fn textfield_color_nodes(prefix: &str, palette: &TextFieldInspectPalette) -> Vec<TreeNode<ColorInspectTreeData>> {
+pub(in crate::gallery) fn textfield_color_nodes(
+    prefix: &str,
+    palette: &TextFieldInspectPalette,
+) -> Vec<TreeNode<ColorInspectTreeData>> {
     color_field_nodes_optional(
         prefix,
         &[

@@ -1293,7 +1293,7 @@ impl Render for TextArea {
                     .child(char::from(LucideIcon::Scaling).to_string()),
             );
 
-        let control = div()
+        let mut control = div()
             .id(format!("{}-control-{}", self.model.id, self.theme_epoch))
             .relative()
             .flex()
@@ -1328,6 +1328,12 @@ impl Render for TextArea {
                 )
             })
             .when(self.model.enabled, |root| root.child(resize_handle));
+
+        if self.model.enabled
+            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+        {
+            control = control.shadow(shadows.clone());
+        }
 
         let mut root = render_button_family_focus_ring(self.model.id.clone(), control, look.focus_ring, look.radius);
         if self.model.full_width {

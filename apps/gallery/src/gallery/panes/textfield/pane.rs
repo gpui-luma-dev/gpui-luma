@@ -350,6 +350,7 @@ impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let surface_textfield_theme = self.look.textfield_theme();
+        let filled_textfield_theme = self.look.filled_textfield_theme();
         let soft_textfield_theme = self.look.soft_textfield_theme();
         let samples = [
             TextFieldStateSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
@@ -404,6 +405,26 @@ impl Render for TextFieldStatePreview {
                     render_state_sample(
                         &self.template,
                         surface_textfield_theme.clone(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Filled variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.into_iter().map(|sample| {
+                    render_state_sample(
+                        &self.template,
+                        filled_textfield_theme.clone(),
                         sample,
                         chrome.muted_text,
                         window,

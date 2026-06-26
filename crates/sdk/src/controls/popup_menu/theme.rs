@@ -5,8 +5,8 @@ use gpui::{BoxShadow, Hsla, hsla};
 use super::PopupMenuTriggerStyle;
 use crate::controls::floating_menu::{FloatingMenuLook, default_floating_menu_look};
 use crate::theme::{
-    ControlSize, InteractionLayer, InteractionState, LumaLayoutCacheExt, LumaTextStyle, MetricTokens,
-    StandardBoxScale, ThemeTokens,
+    ControlSize, InteractionLayer, InteractionState, LumaLayoutCacheExt, LumaTextStyle, MetricTokens, StandardBoxScale,
+    ThemeTokens,
 };
 
 #[derive(Clone, Debug)]

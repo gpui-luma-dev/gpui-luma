@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{BoxShadow, Hsla};
 
 use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textarea::TextAreaState;
@@ -15,6 +15,7 @@ pub struct TextAreaPalette {
     pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: String,
 }
@@ -29,6 +30,7 @@ pub struct TextAreaLook {
     pub selection_foreground: Hsla,
     pub caret: Hsla,
     pub focus_ring: Option<Hsla>,
+    pub shadow: Option<Vec<BoxShadow>>,
     pub typography: LumaTextStyle,
     pub font_family: String,
     pub min_height: f32,
@@ -109,6 +111,7 @@ impl TextAreaTheme for DefaultTextAreaTheme {
             selection_foreground,
             caret,
             focus_ring: (enabled && state.focus_visible).then_some(palette.focus.ring),
+            shadow: None,
             typography: typography.text.body,
             font_family: typography.font.sans.family.clone(),
         }
@@ -133,6 +136,7 @@ pub(crate) fn compose_textarea_look(
         selection_foreground: palette.selection_foreground,
         caret: palette.caret,
         focus_ring: palette.focus_ring,
+        shadow: palette.shadow.clone(),
         typography: palette.typography,
         font_family: palette.font_family.clone(),
         min_height: scale.height,

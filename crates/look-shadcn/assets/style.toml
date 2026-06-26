@@ -554,6 +554,128 @@ thumb_border = "@primary_default"
 # =====================================================================
 # 6. TEXTFIELD
 # =====================================================================
+[[textfield.elevation_rules]]
+style = "filled"
+shadow = "shadow-xs"
+
+[[textfield.elevation_rules]]
+style = "surface"
+shadow = "none"
+
+[[textfield.elevation_rules]]
+style = "soft"
+shadow = "none"
+
+[[textfield.elevation_rules]]
+style = "input"
+shadow = "none"
+
+[[textfield.color_rules]]
+style = "input"
+enabled = false
+background = "muted"
+foreground = "muted-foreground"
+border = "border"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "muted-foreground"
+selection_foreground = "muted-foreground"
+caret = "muted-foreground"
+
+[[textfield.color_rules]]
+style = "input"
+enabled = true
+invalid = false
+mode = "light"
+background = "background"
+foreground = "foreground"
+border = "border"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
+[[textfield.color_rules]]
+style = "input"
+enabled = true
+invalid = false
+mode = "dark"
+background = "background"
+foreground = "foreground"
+border = "border"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
+[[textfield.color_rules]]
+style = "input"
+enabled = true
+invalid = true
+mode = "light"
+background = "background"
+foreground = "foreground"
+border = "ring"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
+[[textfield.color_rules]]
+style = "input"
+enabled = true
+invalid = true
+mode = "dark"
+background = "background"
+foreground = "foreground"
+border = "ring"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
+[[textfield.color_rules]]
+style = "filled"
+enabled = false
+background = "muted"
+foreground = "muted-foreground"
+border = "border"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "muted-foreground"
+selection_foreground = "muted-foreground"
+caret = "muted-foreground"
+
+[[textfield.color_rules]]
+style = "filled"
+enabled = true
+invalid = false
+background = "background"
+foreground = "foreground"
+border = "border"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
+[[textfield.color_rules]]
+style = "filled"
+enabled = true
+invalid = true
+background = "background"
+foreground = "foreground"
+border = "ring"
+placeholder = "muted-foreground"
+icon = "muted-foreground"
+selection_background = "primary"
+selection_foreground = "primary-foreground"
+caret = "foreground"
+
 [[textfield.color_rules]]
 style = "surface"
 enabled = false

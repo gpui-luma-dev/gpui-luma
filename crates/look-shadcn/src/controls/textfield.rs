@@ -3,6 +3,11 @@
 //! **Surface** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
 //! `selection:bg-primary`, `selection:text-primary-foreground`, `placeholder:text-muted-foreground`.
 //!
+//! **Input** (selector triggers): opaque `background` fill, `border-border`.
+//! Used by selector, combobox, search_selector, and autocomplete — not standalone text fields.
+//!
+//! **Filled**: bordered surface with opaque `background` fill and `shadow-xs` elevation.
+//!
 //! **Soft** (Radix soft): filled `muted` background, no border, same text/selection tokens.
 
 use gpui_luma::controls::textfield::{TextFieldPalette, TextFieldState};
@@ -12,11 +17,17 @@ use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
-use crate::stylesheet::{StylesheetConfig, embedded_stylesheet, find_textfield_color_rule, resolve_textfield_color_rule};
+use crate::shadow::parse_shadow_token;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_textfield_color_rule, find_textfield_elevation_rule,
+    resolve_textfield_color_rule, resolve_stylesheet_shadow_token,
+};
 
 fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
     match style {
         ShadcnTextFieldStyle::Surface => "surface",
+        ShadcnTextFieldStyle::Input => "input",
+        ShadcnTextFieldStyle::Filled => "filled",
         ShadcnTextFieldStyle::Soft => "soft",
     }
 }
@@ -25,6 +36,8 @@ fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
 pub enum ShadcnTextFieldStyle {
     #[default]
     Surface,
+    Input,
+    Filled,
     Soft,
 }
 
@@ -88,6 +101,17 @@ pub fn resolve_textfield_colors_with_stylesheet(
     })
 }
 
+pub(crate) fn textfield_elevation_shadow(
+    ctx: &LookContext,
+    stylesheet: &StylesheetConfig,
+    style: ShadcnTextFieldStyle,
+) -> Option<Vec<gpui::BoxShadow>> {
+    let rule = find_textfield_elevation_rule(stylesheet, style)?;
+    let token = resolve_stylesheet_shadow_token(&rule.shadow)?;
+    let shadows = parse_shadow_token(ctx.catalog(), &token).ok()?;
+    if shadows.is_empty() { None } else { Some(shadows) }
+}
+
 pub fn textfield_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -96,6 +120,7 @@ pub fn textfield_palette(
     enabled: bool,
 ) -> TextFieldPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let stylesheet = embedded_stylesheet();
     let catalog = ctx.catalog();
     let typography = ctx.typography();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "textfield");
@@ -103,6 +128,11 @@ pub fn textfield_palette(
         .unwrap_or_else(|_| TextFieldColorTable::fallback());
     let focus_ring = if enabled && state.focus_visible {
         Some(focus_ring_color(catalog).unwrap_or_else(|err| panic!("textfield properties: {err}")))
+    } else {
+        None
+    };
+    let shadow = if enabled {
+        textfield_elevation_shadow(&ctx, stylesheet, style)
     } else {
         None
     };
@@ -117,6 +147,7 @@ pub fn textfield_palette(
         selection_foreground: colors.selection_foreground.hsla(),
         caret: colors.caret.hsla(),
         focus_ring,
+        shadow,
         typography: typography.text.body,
         font_family: typography.font.sans.family.clone().into(),
     }
@@ -143,6 +174,7 @@ mod tests {
             ("secondary".into(), "oklch(0.6437 0.1019 187.3840)".into()),
             ("secondary-foreground".into(), "oklch(1 0 0)".into()),
             ("background".into(), "oklch(0.9735 0.0261 90.0953)".into()),
+            ("card".into(), "oklch(0.98 0.02 90.0953)".into()),
             ("foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("muted".into(), "oklch(0.6979 0.0159 196.7940)".into()),
             ("muted-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
@@ -151,7 +183,20 @@ mod tests {
             ("border".into(), "oklch(0.6537 0.0197 205.2618)".into()),
             ("input".into(), "oklch(0.7200 0.0120 205.0000)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
+            ("shadow-xs".into(), "0 1px 2px 0px hsl(0 0% 0% / 0.05)".into()),
         ]))
+    }
+
+    #[test]
+    fn input_textfield_light_uses_background_fill_and_border_token() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let look =
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Input, TextFieldState::default(), true);
+
+        assert_eq!(look.background, catalog.color("background").expect("background"));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
+        assert!(look.shadow.is_none());
     }
 
     #[test]
@@ -165,6 +210,30 @@ mod tests {
         assert_eq!(look.border, catalog.color("border").expect("border"));
         assert_eq!(look.foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(look.selection_foreground, catalog.color("primary-foreground").expect("primary-foreground"));
+        assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn filled_textfield_light_uses_background_fill_and_shadow() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let look =
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Filled, TextFieldState::default(), true);
+
+        assert_eq!(look.background, catalog.color("background").expect("background"));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
+        assert!(look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn filled_textfield_disabled_has_no_shadow() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let look =
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Filled, TextFieldState::default(), false);
+
+        assert_eq!(look.background, catalog.color("muted").expect("muted"));
+        assert!(look.shadow.is_none());
     }
 
     #[test]
@@ -188,6 +257,7 @@ mod tests {
 
         assert_eq!(look.background, catalog.color("muted").expect("muted"));
         assert_eq!(look.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
+        assert!(look.shadow.is_none());
     }
 
     #[test]

@@ -73,6 +73,22 @@ pub fn find_button_elevation_rule(
     stylesheet.button.elevation_rule_for_style(crate::stylesheet::selector::button_style_key(style))
 }
 
+pub fn find_textfield_elevation_rule(
+    stylesheet: &StylesheetConfig,
+    style: crate::controls::ShadcnTextFieldStyle,
+) -> Option<&crate::stylesheet::config::TextfieldElevationRule> {
+    stylesheet.textfield.elevation_rule_for_style(textfield_style_key(style))
+}
+
+fn textfield_style_key(style: crate::controls::ShadcnTextFieldStyle) -> &'static str {
+    match style {
+        crate::controls::ShadcnTextFieldStyle::Surface => "surface",
+        crate::controls::ShadcnTextFieldStyle::Input => "input",
+        crate::controls::ShadcnTextFieldStyle::Filled => "filled",
+        crate::controls::ShadcnTextFieldStyle::Soft => "soft",
+    }
+}
+
 pub fn find_checkbox_color_rule(
     stylesheet: &StylesheetConfig,
     checked: bool,
@@ -945,7 +961,8 @@ mod tests {
         assert_eq!(stylesheet.tabs_navigation.item.color_rules.len(), 10);
         assert_eq!(stylesheet.tree_view.row.color_rules.len(), 5);
         assert_eq!(stylesheet.navigation_sidebar.item.color_rules.len(), 10);
-        assert_eq!(stylesheet.textfield.color_rules.len(), 7);
+        assert_eq!(stylesheet.textfield.color_rules.len(), 15);
+        assert_eq!(stylesheet.textfield.elevation_rules.len(), 4);
         assert_eq!(stylesheet.autocomplete.chrome.color_rules.len(), 1);
         assert_eq!(stylesheet.progress.color_rules.len(), 2);
         assert_eq!(stylesheet.split_view.color_rules.len(), 2);
@@ -959,7 +976,9 @@ mod tests {
         assert!(find_progress_color_rule(stylesheet, true).is_some());
         assert!(find_split_view_color_rule(stylesheet, false).is_some());
         assert!(find_control_group_list_color_rule(stylesheet, true).is_some());
-        assert!(find_textfield_color_rule(stylesheet, "surface", true, false, ThemeMode::Light).is_some());
+        assert!(find_textfield_color_rule(stylesheet, "input", true, false, ThemeMode::Light).is_some());
+        assert!(find_textfield_color_rule(stylesheet, "filled", true, false, ThemeMode::Light).is_some());
+        assert!(find_textfield_elevation_rule(stylesheet, crate::controls::ShadcnTextFieldStyle::Filled).is_some());
         assert!(find_autocomplete_chrome_color_rule(stylesheet).is_some());
         assert!(find_checkbox_color_rule(stylesheet, true, InteractionLayer::Default).is_some());
         assert!(find_slider_color_rule(stylesheet, InteractionLayer::Hovered).is_some());

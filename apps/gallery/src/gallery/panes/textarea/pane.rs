@@ -317,6 +317,7 @@ fn render_telemetry(
 struct TextAreaStatePreview {
     look: Arc<ShadcnLook>,
     surface_template: Arc<dyn TextAreaTemplate>,
+    filled_template: Arc<dyn TextAreaTemplate>,
     soft_template: Arc<dyn TextAreaTemplate>,
 }
 
@@ -333,6 +334,7 @@ impl TextAreaStatePreview {
         Self {
             look: look.clone(),
             surface_template: Arc::new(ThemedTextAreaTemplate::new(look.textarea_theme())),
+            filled_template: Arc::new(ThemedTextAreaTemplate::new(look.filled_textarea_theme())),
             soft_template: Arc::new(ThemedTextAreaTemplate::new(look.soft_textarea_theme())),
         }
     }
@@ -389,6 +391,26 @@ impl Render for TextAreaStatePreview {
                     render_state_sample(
                         &self.surface_template,
                         self.look.textarea_theme(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Filled variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.iter().copied().map(|sample| {
+                    render_state_sample(
+                        &self.filled_template,
+                        self.look.filled_textarea_theme(),
                         sample,
                         chrome.muted_text,
                         window,
