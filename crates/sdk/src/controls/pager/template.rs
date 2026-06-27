@@ -571,6 +571,8 @@ fn render_pager_button(
         state: InteractionState { disabled, ..InteractionState::default() },
         round: false,
         radius_override: std::cell::Cell::new(Some(pager_look.radius)),
+        elevation: true,
+        compact: false,
         look: Some(Arc::new(move |model| look_theme.resolve_button_look(&pager_look, model))),
     };
 

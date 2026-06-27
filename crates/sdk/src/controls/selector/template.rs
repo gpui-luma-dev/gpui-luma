@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size,
-    Stateful, Window, anchored, deferred, div, point, px, prelude::*,
+    App, Bounds, ClickEvent, Corner, Div, MouseButton, MouseDownEvent, MouseUpEvent, Pixels, Point, Size, Stateful,
+    Window, anchored, deferred, div, point, px, prelude::*,
 };
 use lucide_icons::Icon as LucideIcon;
 
@@ -138,28 +138,38 @@ where
             .h(px(look.trigger_height))
             .w_full()
             .bg(look.trigger_background)
-            .text_color(look.trigger_foreground)
             .border_1()
             .border_color(look.trigger_border)
             .rounded(px(look.trigger_radius))
-            .text_size(px(look.trigger_typography.size))
-            .line_height(px(look.trigger_typography.line_height))
-            .font_weight(look.trigger_typography.weight)
             .cursor_pointer()
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
             .on_click(trigger_click)
-            .child(div().flex().items_center().gap(px(look.trigger_gap)).child(trigger_content))
-            .child(render_lucide_icon(
-                if model.open {
-                    LucideIcon::ChevronUp
-                } else {
-                    LucideIcon::ChevronDown
-                },
-                look.trigger_foreground,
-                look.trigger_icon_size,
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(look.trigger_gap))
+                    .min_w(px(0.0))
+                    .flex_1()
+                    .text_color(look.trigger_foreground)
+                    .text_size(px(look.trigger_typography.size))
+                    .line_height(px(look.trigger_typography.line_height))
+                    .font_weight(look.trigger_typography.weight)
+                    .child(trigger_content),
+            )
+            .child(div().flex().items_center().justify_center().flex_shrink_0().text_color(look.trigger_icon).child(
+                lucide_icon(
+                    if model.open {
+                        LucideIcon::ChevronUp
+                    } else {
+                        LucideIcon::ChevronDown
+                    },
+                    look.trigger_icon,
+                    look.trigger_icon_size,
+                ),
             ));
 
         if model.state.disabled {
@@ -304,10 +314,6 @@ fn estimated_menu_size(look: &SelectorLook, item_count: usize, trigger_width: Pi
         },
         height: px(look.items_panel.padding * 2.0) + px(look.items_panel.item_height) * item_count,
     }
-}
-
-fn render_lucide_icon(icon: LucideIcon, color: gpui::Hsla, size: f32) -> AnyElement {
-    lucide_icon(icon, color, size)
 }
 
 #[cfg(test)]

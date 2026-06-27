@@ -32,6 +32,8 @@ where
             state: item.state.interaction_state(),
             round,
             radius_override: std::cell::Cell::new(None),
+            elevation: true,
+            compact: false,
             look: None,
         };
 

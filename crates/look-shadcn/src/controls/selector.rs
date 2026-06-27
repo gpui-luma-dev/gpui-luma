@@ -31,6 +31,7 @@ pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: I
     SelectorPalette {
         trigger_background: trigger.background,
         trigger_foreground: trigger.foreground,
+        trigger_icon: trigger.icon,
         trigger_border: trigger.border,
         focus_ring: trigger.focus_ring,
         trigger_typography: typography.text.label,
@@ -46,6 +47,7 @@ mod tests {
     use gpui_luma::theme::ThemeMode;
 
     use crate::catalog::CssTokenMap;
+    use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
     use super::selector_palette;
 
@@ -71,28 +73,50 @@ mod tests {
     }
 
     #[test]
-    fn selector_trigger_uses_background_fill() {
+    fn selector_trigger_light_uses_transparent_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let palette = selector_palette(&mode, ThemeMode::Light, gpui_luma::theme::InteractionState::default());
 
-        assert_eq!(palette.trigger_background, catalog.color("background").expect("background"));
+        assert_eq!(palette.trigger_background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
         assert_eq!(palette.trigger_foreground, catalog.color("foreground").expect("foreground"));
         assert_eq!(palette.trigger_border, catalog.color("border").expect("border"));
     }
 
     #[test]
-    fn selector_trigger_hover_keeps_background_fill() {
+    fn selector_trigger_dark_uses_input_fill() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let default = selector_palette(&mode, ThemeMode::Light, gpui_luma::theme::InteractionState::default());
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let palette = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
+        let input = catalog.color("input").expect("input");
+
+        assert_eq!(palette.trigger_background, with_alpha(input, 0.30));
+        assert_eq!(palette.trigger_border, catalog.color("border").expect("border"));
+    }
+
+    #[test]
+    fn selector_trigger_dark_hover_uses_input_half_fill() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let default = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
         let hovered = selector_palette(
             &mode,
-            ThemeMode::Light,
+            ThemeMode::Dark,
             gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
         );
+        let input = catalog.color("input").expect("input");
 
-        assert_eq!(hovered.trigger_background, default.trigger_background);
+        assert_eq!(default.trigger_background, with_alpha(input, 0.30));
+        assert_eq!(hovered.trigger_background, with_alpha(input, 0.50));
         assert_eq!(hovered.trigger_foreground, default.trigger_foreground);
+    }
+
+    #[test]
+    fn selector_trigger_chevron_uses_muted_icon_color() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let palette = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
+
+        assert_eq!(palette.trigger_icon, catalog.color("muted-foreground").expect("muted-foreground"));
     }
 }

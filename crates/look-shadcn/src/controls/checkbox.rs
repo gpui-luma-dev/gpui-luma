@@ -14,6 +14,7 @@ use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use super::ShadcnButtonStyle;
+use super::choice_indicator::choice_indicator_color_layer;
 use crate::mode::ShadcnModeTokens;
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
@@ -75,7 +76,7 @@ pub fn checkbox_look(
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let typography = ctx.typography();
-    let layer = state.layer();
+    let layer = choice_indicator_color_layer(state);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "checkbox");
     let colors =
         resolve_checkbox_colors(&resolver, style, checked, layer).unwrap_or_else(|_| CheckboxColorTable::fallback());
@@ -165,5 +166,21 @@ mod tests {
         );
 
         assert!(look.indicator_shadow.is_none());
+    }
+
+    #[test]
+    fn checkbox_hover_does_not_recolor_indicator_or_label() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let default = checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let hovered = checkbox_look(
+            &mode,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState { hovered: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(default.indicator_background, hovered.indicator_background);
+        assert_eq!(default.checkmark_color, hovered.checkmark_color);
+        assert_eq!(default.label_color, hovered.label_color);
     }
 }

@@ -2,12 +2,14 @@ use gpui::{AnyElement, App, Div, FontWeight, Stateful, Window, div, px, prelude:
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::button_family::ButtonFamilyRole;
+use crate::controls::choice_indicator_layout::{
+    ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from, should_paint_shadow,
+};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::checkbox::{CheckboxScale, CheckboxTheme, default_checkbox_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::theme::shadow::shadow_projection_insets;
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
@@ -26,11 +28,22 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
         } else {
             Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
         };
+        let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
+        );
+
+        let shadow_extent =
+            shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
+        let oversize_extent = indicator_oversize_extent(
+            layout_policy,
+            model.state.focused,
+            palette.adorner,
+            focused_probe_look.as_ref().and_then(|probe| probe.adorner),
+            shadow_extent,
         );
 
         let indicator_visual = {
@@ -45,8 +58,11 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
                 .rounded(px(scale.indicator_radius))
                 .child(render_checkmark(model.data, scale.glyph_size, palette.checkmark_color));
 
-            if !model.state.disabled
-                && let Some(shadows) = palette.indicator_shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            if should_paint_shadow(
+                layout_policy.elevation,
+                model.state.disabled,
+                palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+            ) && let Some(shadows) = palette.indicator_shadow.as_ref()
             {
                 indicator = indicator.shadow(shadows.clone());
             }
@@ -54,25 +70,7 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             indicator
         };
 
-        let shadow_extent = if !model.state.disabled {
-            palette
-                .indicator_shadow
-                .as_ref()
-                .filter(|shadows| !shadows.is_empty())
-                .map(|shadows| {
-                    let insets = shadow_projection_insets(shadows, scale_factor);
-                    insets.top.max(insets.right).max(insets.bottom).max(insets.left)
-                })
-                .unwrap_or(0.0)
-        } else {
-            0.0
-        };
-
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
-        // Reserve space for the focus ring even when unfocused so layout (e.g. list rows) does not jump.
-        let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0))
-            .max(shadow_extent);
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.indicator_radius) {
@@ -130,7 +128,6 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             root = root.opacity(0.56);
         }
 
-        // Apply modifiers from the pipeline
         self.apply_modifiers(root, model)
     }
 }

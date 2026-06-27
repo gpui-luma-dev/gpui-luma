@@ -29,7 +29,7 @@ declare_form! {
                     this.functional_enabled = !this.functional_enabled;
                     this.functional_switch.update(cx, |button, cx| button.set_data(this.functional_enabled, cx));
                 },
-            save_button: Entity<Button> = look.secondary_button("cookies-save").label("Save preferences"),
+            save_button: Entity<Button> = look.outline_button("cookies-save").label("Save preferences"),
         },
         args: {
             look: Arc<ShadcnLook>,

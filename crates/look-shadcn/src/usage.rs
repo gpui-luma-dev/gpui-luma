@@ -12,7 +12,8 @@ const TEXTFIELD_PARTS: &[ThemePartUsage] = &[
     part("surface border", "input", &["surface default"], &["TextFieldPalette.border"]),
     part("filled fill", "background", &["filled default"], &["TextFieldPalette.background"]),
     part("filled border", "border", &["filled default"], &["TextFieldPalette.border"]),
-    part("input fill", "background", &["input light", "input dark"], &["TextFieldPalette.background"]),
+    part("input fill", "background", &["input light"], &["TextFieldPalette.background"]),
+    part("input fill", "input", &["input dark"], &["TextFieldPalette.background"]),
     part("input border", "border", &["input default"], &["TextFieldPalette.border"]),
     part(
         "foreground",
@@ -167,7 +168,9 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Selector",
         parts: &[
-            part("trigger background", "background", &["default"], &["SelectorPalette.trigger_background"]),
+            part("trigger background", "background", &["default light"], &["SelectorPalette.trigger_background"]),
+            part("trigger background", "input", &["default dark"], &["SelectorPalette.trigger_background"]),
+            part("trigger hover fill", "input", &["hovered dark"], &["SelectorPalette.trigger_background"]),
             part("trigger foreground", "foreground", &["default"], &["SelectorPalette.trigger_foreground"]),
             part("trigger border", "border", &["default"], &["SelectorPalette.trigger_border"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),

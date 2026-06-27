@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::selector::{Selector, SelectorItem};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use gpui_luma::{declare_form, hstack, vstack};
@@ -13,18 +14,30 @@ const TEAM_CARD_WIDTH: f32 = 380.0;
 declare_form! {
     pub struct TeamPanel {
         controls: {
-            sofia_selector: Entity<Selector> = look
-                .selector("team-sofia")
+            sofia_menu: Entity<PopupMenu> = look
+                .popup_menu("team-sofia")
                 .label("Owner")
-                .items(role_items()),
-            jackson_selector: Entity<Selector> = look
-                .selector("team-jackson")
+                .items(role_menu_items())
+                => PopupMenuEvent |this, event, cx| {
+                    let PopupMenuEvent::Select { label, .. } = event;
+                    this.sofia_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
+                },
+            jackson_menu: Entity<PopupMenu> = look
+                .popup_menu("team-jackson")
                 .label("Developer")
-                .items(role_items()),
-            isabella_selector: Entity<Selector> = look
-                .selector("team-isabella")
+                .items(role_menu_items())
+                => PopupMenuEvent |this, event, cx| {
+                    let PopupMenuEvent::Select { label, .. } = event;
+                    this.jackson_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
+                },
+            isabella_menu: Entity<PopupMenu> = look
+                .popup_menu("team-isabella")
                 .label("Billing")
-                .items(role_items()),
+                .items(role_menu_items())
+                => PopupMenuEvent |this, event, cx| {
+                    let PopupMenuEvent::Select { label, .. } = event;
+                    this.isabella_menu.update(cx, |menu, cx| menu.set_label(label.clone(), cx));
+                },
         },
         args: {
             look: Arc<ShadcnLook>,
@@ -40,9 +53,9 @@ impl Render for TeamPanel {
             let title_style = self.look.typography_role(ShadcnTextRole::H4);
             let body_style = self.look.typography_scale(ShadcnTextSize::Sm);
             let caption_style = self.look.typography_scale(ShadcnTextSize::Xs);
-            let sofia_selector = self.sofia_selector.clone();
-            let jackson_selector = self.jackson_selector.clone();
-            let isabella_selector = self.isabella_selector.clone();
+            let sofia_menu = self.sofia_menu.clone();
+            let jackson_menu = self.jackson_menu.clone();
+            let isabella_menu = self.isabella_menu.clone();
 
             card(
                 "theme-studio-team-card",
@@ -61,9 +74,9 @@ impl Render for TeamPanel {
                             .child(
                                 div().typography_style(body_style).text_color(chrome.muted_text).child("Invite your team members to collaborate."),
                             ),
-                        member_row("SD", "Sofia Davis", "m@example.com", &sofia_selector, chrome, body_style, caption_style),
-                        member_row("JL", "Jackson Lee", "m@example.com", &jackson_selector, chrome, body_style, caption_style),
-                        member_row("IN", "Isabella Nguyen", "m@example.com", &isabella_selector, chrome, body_style, caption_style),
+                        member_row("SD", "Sofia Davis", "m@example.com", &sofia_menu, chrome, body_style, caption_style),
+                        member_row("JL", "Jackson Lee", "m@example.com", &jackson_menu, chrome, body_style, caption_style),
+                        member_row("IN", "Isabella Nguyen", "m@example.com", &isabella_menu, chrome, body_style, caption_style),
                     }
                     .w_full()
                     .overflow_hidden()
@@ -80,7 +93,7 @@ fn member_row(
     initials: &'static str,
     name: &'static str,
     email: &'static str,
-    selector: &Entity<Selector>,
+    menu: &Entity<PopupMenu>,
     chrome: gpui_luma::theme::LumaChrome,
     body_style: gpui_luma::theme::LumaTextStyle,
     caption_style: gpui_luma::theme::LumaTextStyle,
@@ -105,16 +118,16 @@ fn member_row(
         .flex_1()
         .min_w_0()
         .overflow_hidden(),
-        div().flex_none().child(selector.clone()),
+        div().flex_none().child(menu.clone()),
     }
     .py(px(6.0))
     .overflow_hidden()
 }
 
-fn role_items() -> Vec<SelectorItem> {
+fn role_menu_items() -> Vec<MenuItem> {
     vec![
-        SelectorItem::new("owner").label("Owner"),
-        SelectorItem::new("developer").label("Developer"),
-        SelectorItem::new("billing").label("Billing"),
+        MenuItem::new("owner").label("Owner"),
+        MenuItem::new("developer").label("Developer"),
+        MenuItem::new("billing").label("Billing"),
     ]
 }

@@ -3,7 +3,8 @@
 //! **Surface** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
 //! `selection:bg-primary`, `selection:text-primary-foreground`, `placeholder:text-muted-foreground`.
 //!
-//! **Input** (selector triggers): opaque `background` fill, `border-border`.
+//! **Input** (selector / combobox triggers): same fill as Surface (`transparent` light,
+//! `input/30` dark; hover `input/50` in selector palette). Opaque controls use `border-border`.
 //! Used by selector, combobox, search_selector, and autocomplete — not standalone text fields.
 //!
 //! **Filled**: bordered surface with opaque `background` fill and `shadow-xs` elevation.
@@ -137,8 +138,18 @@ pub fn textfield_palette(
         None
     };
 
+    let mut background = colors.background.hsla();
+    if style == ShadcnTextFieldStyle::Input
+        && theme_mode == ThemeMode::Dark
+        && enabled
+        && state.hovered
+        && let Ok(hover_fill) = resolver.resolve_decl("input/50")
+    {
+        background = hover_fill.hsla();
+    }
+
     TextFieldPalette {
-        background: colors.background.hsla(),
+        background,
         foreground: colors.foreground.hsla(),
         border: colors.border.hsla(),
         placeholder: colors.placeholder.hsla(),
@@ -188,15 +199,43 @@ mod tests {
     }
 
     #[test]
-    fn input_textfield_light_uses_background_fill_and_border_token() {
+    fn input_textfield_light_uses_transparent_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Input, TextFieldState::default(), true);
 
-        assert_eq!(look.background, catalog.color("background").expect("background"));
+        assert_eq!(look.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
         assert_eq!(look.border, catalog.color("border").expect("border"));
         assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn input_textfield_dark_uses_input_fill_and_border_token() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let look =
+            textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Input, TextFieldState::default(), true);
+        let input = catalog.color("input").expect("input");
+
+        assert_eq!(look.background, with_alpha(input, 0.30));
+        assert_eq!(look.border, catalog.color("border").expect("border"));
+        assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn input_textfield_dark_hover_uses_input_half_fill() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
+        let default =
+            textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Input, TextFieldState::default(), true);
+        let mut hovered = TextFieldState::default();
+        hovered.hovered = true;
+        let look = textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Input, hovered, true);
+        let input = catalog.color("input").expect("input");
+
+        assert_eq!(default.background, with_alpha(input, 0.30));
+        assert_eq!(look.background, with_alpha(input, 0.50));
     }
 
     #[test]

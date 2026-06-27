@@ -206,6 +206,8 @@ impl PrototypeShadowButtonTemplate {
                 state: focused_state,
                 round: model.round,
                 radius_override: std::cell::Cell::new(model.radius_override.get()),
+                elevation: model.elevation,
+                compact: model.compact,
                 look: model.look.clone(),
             };
             return Some(resolve(&focused_model));

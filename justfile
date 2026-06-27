@@ -1,10 +1,10 @@
 set shell := ["bash", "-cu"]
 
 gallery:
-    cargo run -p gpui-luma-gallery -- cosmic-night
+    #cargo run -p gpui-luma-gallery -- cosmic-night
     #cargo run -p gpui-luma-gallery -- steve
-    cargo run -p gpui-luma-gallery -- astrovista
-    #cargo run -p gpui-luma-gallery -- elegent-luxury
+    #cargo run -p gpui-luma-gallery -- astrovista
+    cargo run -p gpui-luma-gallery -- elegent-luxury
     #cargo run -p gpui-luma-gallery -- jarvis
 
 gallery-rel:

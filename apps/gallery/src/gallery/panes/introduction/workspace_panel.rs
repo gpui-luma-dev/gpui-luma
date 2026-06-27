@@ -393,6 +393,8 @@ fn render_density_group(
             state: item.state.interaction_state(),
             round: false,
             radius_override: Cell::new(None),
+            elevation: true,
+            compact: false,
             look: None,
         };
 

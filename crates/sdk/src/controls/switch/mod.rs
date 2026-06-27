@@ -32,6 +32,14 @@ impl SwitchBuilder {
         Self(self.0.tab_stop(tab_stop))
     }
 
+    pub fn without_elevation(self) -> Self {
+        Self(self.0.without_elevation())
+    }
+
+    pub fn compact(self) -> Self {
+        Self(self.0.compact())
+    }
+
     pub fn template(self, template: Arc<dyn ButtonTemplate<bool>>) -> Self {
         Self(self.0.template(template))
     }

@@ -1,12 +1,14 @@
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
+use crate::controls::choice_indicator_layout::{
+    ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from_slice, should_paint_shadow,
+};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
 use crate::controls::switch::{SwitchScale, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
-use crate::theme::shadow::shadow_projection_insets;
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, snap_to_pixel};
 
 define_control_template!(
@@ -25,6 +27,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         } else {
             Some(self.theme.resolve(model.data, crate::theme::InteractionState { focused: true, ..model.state }))
         };
+        let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -49,6 +52,15 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .border_color(palette.thumb_border)
             .rounded(px(scale.track_radius));
 
+        let shadow_extent = shadow_extent_from_slice(&palette.thumb_shadow, scale_factor, layout_policy.elevation);
+        let oversize_extent = indicator_oversize_extent(
+            layout_policy,
+            model.state.focused,
+            palette.adorner,
+            focused_probe_palette.as_ref().and_then(|probe| probe.adorner),
+            shadow_extent,
+        );
+
         let mut track_visual = div()
             .id(format!("{}-track", model.id))
             .relative()
@@ -60,20 +72,10 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .rounded(px(scale.track_radius))
             .child(thumb);
 
-        if !model.state.disabled && !palette.thumb_shadow.is_empty() {
+        if should_paint_shadow(layout_policy.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
             track_visual = track_visual.shadow(palette.thumb_shadow.clone());
         }
 
-        let shadow_extent = if !model.state.disabled && !palette.thumb_shadow.is_empty() {
-            let insets = shadow_projection_insets(&palette.thumb_shadow, scale_factor);
-            insets.top.max(insets.right).max(insets.bottom).max(insets.left)
-        } else {
-            0.0
-        };
-
-        let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_palette.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0))
-            .max(shadow_extent);
         let mut track = div().relative().child(track_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.track_radius) {
@@ -117,7 +119,6 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             root = root.cursor_pointer();
         }
 
-        // Apply modifiers from the pipeline
         self.apply_modifiers(root, model)
     }
 }

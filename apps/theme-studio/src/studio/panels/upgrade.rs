@@ -50,7 +50,7 @@ declare_form! {
                     this.email_opt_in = !this.email_opt_in;
                     this.email_checkbox.update(cx, |button, cx| button.set_data(this.email_opt_in, cx));
                 },
-            cancel_button: Entity<Button> = look.secondary_button("upgrade-cancel").label("Cancel").size(size),
+            cancel_button: Entity<Button> = look.outline_button("upgrade-cancel").label("Cancel").size(size),
             upgrade_button: Entity<Button> = look.primary_button("upgrade-submit").label("Upgrade Plan").size(size),
         },
         args: {

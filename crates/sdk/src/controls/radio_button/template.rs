@@ -1,11 +1,13 @@
 use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
+use crate::controls::choice_indicator_layout::{
+    ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from, should_paint_shadow,
+};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::controls::radio_button::{RadioButtonTheme, RadioScale, default_radio_button_theme};
-use crate::theme::shadow::shadow_projection_insets;
 use crate::theme::{InteractionState, LayoutCacheKey, LumaLayoutCacheExt};
 
 define_control_template!(
@@ -25,6 +27,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         } else {
             Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
         };
+        let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -33,6 +36,16 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         );
 
         let indicator_radius = scale.indicator_size / 2.0;
+        let shadow_extent =
+            shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
+        let oversize_extent = indicator_oversize_extent(
+            layout_policy,
+            model.state.focused,
+            palette.adorner,
+            focused_probe_look.as_ref().and_then(|probe| probe.adorner),
+            shadow_extent,
+        );
+
         let indicator_visual = {
             let mut indicator = div()
                 .id(format!("{}-indicator", model.id))
@@ -46,8 +59,11 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
                 .rounded(px(scale.indicator_size))
                 .child(render_dot(model.data, scale.dot_size, palette.dot_color));
 
-            if !model.state.disabled
-                && let Some(shadows) = palette.indicator_shadow.as_ref().filter(|shadows| !shadows.is_empty())
+            if should_paint_shadow(
+                layout_policy.elevation,
+                model.state.disabled,
+                palette.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+            ) && let Some(shadows) = palette.indicator_shadow.as_ref()
             {
                 indicator = indicator.shadow(shadows.clone());
             }
@@ -55,23 +71,6 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             indicator
         };
 
-        let shadow_extent = if !model.state.disabled {
-            palette
-                .indicator_shadow
-                .as_ref()
-                .filter(|shadows| !shadows.is_empty())
-                .map(|shadows| {
-                    let insets = shadow_projection_insets(shadows, scale_factor);
-                    insets.top.max(insets.right).max(insets.bottom).max(insets.left)
-                })
-                .unwrap_or(0.0)
-        } else {
-            0.0
-        };
-
-        let oversize_extent = adorner_oversize_extent(palette.adorner)
-            .max(focused_probe_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0))
-            .max(shadow_extent);
         let mut indicator = div().relative().child(indicator_visual);
 
         if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {

@@ -35,6 +35,8 @@ pub struct ButtonModel<D = ()> {
     pub(crate) enabled: bool,
     pub(crate) tab_stop: bool,
     pub(crate) round: bool,
+    pub(crate) elevation: bool,
+    pub(crate) compact: bool,
     pub(crate) look: Option<ButtonLookSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
@@ -48,6 +50,8 @@ pub struct ButtonRenderModel<D> {
     pub state: ButtonState,
     pub round: bool,
     pub radius_override: Cell<Option<f32>>,
+    pub elevation: bool,
+    pub compact: bool,
     pub look: Option<ButtonLookSource<D>>,
 }
 
@@ -69,6 +73,8 @@ impl ButtonBuilder<()> {
                 enabled: true,
                 tab_stop: true,
                 round: false,
+                elevation: true,
+                compact: false,
                 look: None,
                 template: super::template::default_button_template(),
             },
@@ -110,6 +116,8 @@ impl ButtonBuilder<()> {
                 enabled: old.enabled,
                 tab_stop: old.tab_stop,
                 round: old.round,
+                elevation: old.elevation,
+                compact: old.compact,
                 look: None,
                 template: super::template::default_button_template(),
             },
@@ -166,6 +174,19 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
+    /// Disables indicator/body elevation shadow paint and layout reservation.
+    pub fn without_elevation(mut self) -> Self {
+        self.model.elevation = false;
+        self
+    }
+
+    /// Dense embedding: no elevation and no focus-ring layout reserve until focused.
+    pub fn compact(mut self) -> Self {
+        self.model.compact = true;
+        self.model.elevation = false;
+        self
+    }
+
     pub fn template(mut self, template: Arc<dyn ButtonTemplate<D>>) -> Self {
         self.model.template = template;
         self
@@ -186,6 +207,13 @@ impl<D: 'static> HasPresenter<ButtonRenderModel<D>> for ButtonBuilder<D> {
 mod tests {
     use super::*;
     use crate::controls::checkbox::default_checkbox_template;
+
+    #[test]
+    fn compact_sets_elevation_off() {
+        let builder = ButtonBuilder::new("compact-test").compact();
+        assert!(!builder.model.elevation);
+        assert!(builder.model.compact);
+    }
 
     #[test]
     fn with_data_preserves_specialized_template() {

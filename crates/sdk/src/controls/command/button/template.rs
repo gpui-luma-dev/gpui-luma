@@ -12,7 +12,7 @@ use crate::theme::InteractionState;
 const DISABLED_OPACITY: f32 = 0.56;
 
 use crate::controls::template::{Modifier, TemplateWithModifiers};
-use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner_with_focus_radius};
+use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 fn resolve_theme_look<D>(
@@ -60,6 +60,8 @@ fn resolve_focus_probe_look<D: Clone>(
             state: focused_state,
             round: model.round,
             radius_override: std::cell::Cell::new(model.radius_override.get()),
+            elevation: model.elevation,
+            compact: model.compact,
             look: model.look.clone(),
         };
         return Some(resolve(&focused_model));
@@ -147,8 +149,11 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
 
         control = self.apply_modifiers(control, model);
 
-        if !model.state.disabled
-            && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
+        if crate::controls::choice_indicator_layout::should_paint_shadow(
+            model.elevation,
+            model.state.disabled,
+            look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+        ) && let Some(shadows) = look.shadow.as_ref()
         {
             control = control.shadow(shadows.clone());
         }
@@ -167,7 +172,12 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             .as_ref()
             .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics));
 
-        let oversize_extent = adorner_oversize_extent(adorner).max(adorner_oversize_extent(focused_adorner));
+        let oversize_extent = crate::controls::choice_indicator_layout::button_family_oversize_extent(
+            model.compact,
+            model.state.focused,
+            adorner,
+            focused_adorner,
+        );
 
         let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);
 
@@ -231,6 +241,8 @@ mod tests {
             state: InteractionState::default(),
             round: false,
             radius_override: std::cell::Cell::new(None),
+            elevation: true,
+            compact: false,
             look: Some(Arc::new(|_| lime_look())),
         };
 

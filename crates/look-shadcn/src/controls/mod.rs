@@ -3,6 +3,7 @@ pub(crate) mod autocomplete;
 pub(crate) mod button;
 pub(crate) mod card;
 pub(crate) mod checkbox;
+pub(crate) mod choice_indicator;
 pub(crate) mod context_menu;
 pub(crate) mod control_group;
 pub(crate) mod ext;

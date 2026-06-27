@@ -11,6 +11,7 @@ use crate::theme::{
 pub struct SelectorPalette {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
+    pub trigger_icon: Hsla,
     pub trigger_border: Hsla,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
@@ -21,6 +22,7 @@ pub struct SelectorPalette {
 pub struct SelectorLook {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
+    pub trigger_icon: Hsla,
     pub trigger_border: Hsla,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
@@ -82,6 +84,7 @@ impl SelectorTheme for DefaultSelectorTheme {
         SelectorPalette {
             trigger_background,
             trigger_foreground,
+            trigger_icon: palette.app.muted_foreground,
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
@@ -98,6 +101,7 @@ pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardB
     SelectorLook {
         trigger_background: palette.trigger_background,
         trigger_foreground: palette.trigger_foreground,
+        trigger_icon: palette.trigger_icon,
         trigger_border: palette.trigger_border,
         focus_ring: palette.focus_ring,
         trigger_typography: palette.trigger_typography,
