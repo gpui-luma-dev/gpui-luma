@@ -222,6 +222,11 @@ impl ShadcnLook {
         self.mode_tokens().resolve_color_state(token, layer)
     }
 
+    /// Mode-aware lightness shift for outline/surface fills (darker in light, lighter in dark).
+    pub fn adjust_surface_color(&self, base: Hsla, layer: InteractionLayer) -> Hsla {
+        crate::state_color::algorithmic_state_color(base, layer, self.mode(), false)
+    }
+
     /// Resolves fonts to their loaded families.
     pub fn font(&self, role: ShadcnFont) -> SharedString {
         let key = match role {

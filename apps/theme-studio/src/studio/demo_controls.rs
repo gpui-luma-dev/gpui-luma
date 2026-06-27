@@ -6,8 +6,8 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
 use super::panels::{
-    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DashboardPanel, PaymentsPanel, ReportPanel,
-    SystemPreferencesPanel, TeamPanel, TreeViewPanel, UpgradePanel,
+    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DateRangePanel, DashboardPanel, PaymentsPanel, ReportPanel,
+    SharePanel, SystemPreferencesPanel, TeamPanel, TreeViewPanel, UpgradePanel,
 };
 
 #[derive(Clone)]
@@ -19,6 +19,8 @@ pub struct DemoControls {
     pub cookies: Entity<CookiesPanel>,
     pub report: Entity<ReportPanel>,
     pub payments: Entity<PaymentsPanel>,
+    pub share: Entity<SharePanel>,
+    pub date_range: Entity<DateRangePanel>,
     pub tree_view: Entity<TreeViewPanel>,
     pub accordion: Entity<AccordionPanel>,
     pub system_preferences: Entity<SystemPreferencesPanel>,
@@ -35,6 +37,8 @@ impl DemoControls {
             cookies: cx.new(|cx| CookiesPanel::new(cx, look.clone())),
             report: cx.new(|cx| ReportPanel::new(cx, look.clone(), size)),
             payments: cx.new(|cx| PaymentsPanel::new(cx, look.clone(), size)),
+            share: cx.new(|cx| SharePanel::new(cx, look.clone(), size)),
+            date_range: cx.new(|cx| DateRangePanel::new(cx, look.clone())),
             tree_view: cx.new(|cx| TreeViewPanel::new(cx, look.clone())),
             accordion: cx.new(|cx| AccordionPanel::new(cx, look.clone())),
             system_preferences: cx.new(|cx| SystemPreferencesPanel::new(cx, look.clone(), 72.0)),

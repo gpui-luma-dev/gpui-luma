@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
+use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use gpui_luma::{declare_form, hstack, vstack};
@@ -17,6 +18,8 @@ declare_form! {
             sofia_menu: Entity<PopupMenu> = look
                 .popup_menu("team-sofia")
                 .label("Owner")
+                .size(ControlSize::Sm)
+                .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
                     let PopupMenuEvent::Select { label, .. } = event;
@@ -25,6 +28,8 @@ declare_form! {
             jackson_menu: Entity<PopupMenu> = look
                 .popup_menu("team-jackson")
                 .label("Developer")
+                .size(ControlSize::Sm)
+                .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
                     let PopupMenuEvent::Select { label, .. } = event;
@@ -33,6 +38,8 @@ declare_form! {
             isabella_menu: Entity<PopupMenu> = look
                 .popup_menu("team-isabella")
                 .label("Billing")
+                .size(ControlSize::Sm)
+                .without_elevation()
                 .items(role_menu_items())
                 => PopupMenuEvent |this, event, cx| {
                     let PopupMenuEvent::Select { label, .. } = event;

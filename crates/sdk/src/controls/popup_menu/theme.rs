@@ -38,24 +38,37 @@ pub struct PopupMenuLook {
     pub floating_menu: FloatingMenuLook,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PopupMenuTriggerMetrics {
+    pub size: ControlSize,
+    pub without_elevation: bool,
+    pub icon_only: bool,
+}
+
 pub trait PopupMenuTheme: Send + Sync {
-    fn resolve(&self, trigger_style: PopupMenuTriggerStyle, state: InteractionState) -> PopupMenuPalette;
+    fn resolve(
+        &self,
+        trigger_style: PopupMenuTriggerStyle,
+        metrics: PopupMenuTriggerMetrics,
+        state: InteractionState,
+    ) -> PopupMenuPalette;
 
     fn metrics(&self) -> MetricTokens;
 
     fn resolve_look(
         &self,
         trigger_style: PopupMenuTriggerStyle,
+        metrics: PopupMenuTriggerMetrics,
         state: InteractionState,
         scale_factor: f32,
         cx: &mut gpui::App,
     ) -> PopupMenuLook {
         let scale = cx.use_cached_layout(
             self.metrics(),
-            crate::theme::LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            crate::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics_tokens| StandardBoxScale::compute(metrics.size, metrics_tokens, scale_factor),
         );
-        compose_popup_menu_look(&self.resolve(trigger_style, state), &scale)
+        compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale)
     }
 }
 
@@ -77,10 +90,15 @@ impl DefaultPopupMenuTheme {
 }
 
 impl PopupMenuTheme for DefaultPopupMenuTheme {
-    fn resolve(&self, trigger_style: PopupMenuTriggerStyle, state: InteractionState) -> PopupMenuPalette {
+    fn resolve(
+        &self,
+        trigger_style: PopupMenuTriggerStyle,
+        metrics: PopupMenuTriggerMetrics,
+        state: InteractionState,
+    ) -> PopupMenuPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
-        let size = ControlSize::Md;
+        let size = metrics.size;
         let layer = state.layer();
 
         let (trigger_background, trigger_foreground, trigger_border, trigger_shadow) = match trigger_style {
@@ -119,6 +137,12 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
                     None,
                 )
             }
+        };
+
+        let trigger_shadow = if metrics.without_elevation {
+            None
+        } else {
+            trigger_shadow
         };
 
         PopupMenuPalette {

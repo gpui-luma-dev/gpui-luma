@@ -7,8 +7,8 @@ pub use control::{PopupMenu, PopupMenuEvent};
 pub use model::{PopupMenuBuilder, PopupMenuModel, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTriggerStyle};
 pub use template::{PopupMenuTemplate, PopupMenuTemplateHandlers, ThemedPopupMenuTemplate, default_popup_menu_template};
 pub use theme::{
-    DefaultPopupMenuTheme, PopupMenuLook, PopupMenuPalette, PopupMenuTheme, compose_popup_menu_look,
-    default_popup_menu_theme,
+    DefaultPopupMenuTheme, PopupMenuLook, PopupMenuPalette, PopupMenuTheme, PopupMenuTriggerMetrics,
+    compose_popup_menu_look, default_popup_menu_theme,
 };
 
 pub use crate::theme::InteractionState as PopupMenuState;

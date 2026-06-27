@@ -1,5 +1,6 @@
 use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
+use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::choice_indicator_layout::{
     ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from, should_paint_shadow,
 };
@@ -36,15 +37,20 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         );
 
         let indicator_radius = scale.indicator_size / 2.0;
+        let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         let shadow_extent =
             shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
-        let oversize_extent = indicator_oversize_extent(
-            layout_policy,
-            model.state.focused,
-            palette.adorner,
-            focused_probe_look.as_ref().and_then(|probe| probe.adorner),
-            shadow_extent,
-        );
+        let oversize_extent = if indicator_only {
+            0.0
+        } else {
+            indicator_oversize_extent(
+                layout_policy,
+                model.state.focused,
+                palette.adorner,
+                focused_probe_look.as_ref().and_then(|probe| probe.adorner),
+                shadow_extent,
+            )
+        };
 
         let indicator_visual = {
             let mut indicator = div()
@@ -73,7 +79,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
 
         let mut indicator = div().relative().child(indicator_visual);
 
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {
+        if !indicator_only && let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {
             indicator = indicator.child(adorner);
         }
 
@@ -101,14 +107,20 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             .min_h(px(scale.height))
             .px(px(scale.control_padding_x))
             .py(px(scale.control_padding_y))
-            .text_color(palette.label_color)
-            .text_size(px(palette.label_typography.size))
-            .line_height(px(palette.label_typography.line_height))
-            .font_family(palette.label_font_family.clone())
-            .font_weight(palette.label_typography.weight)
-            .rounded(px(scale.control_radius))
-            .child(indicator)
-            .child(label);
+            .rounded(px(scale.control_radius));
+
+        if indicator_only {
+            root = root.child(indicator);
+        } else {
+            root = root
+                .text_color(palette.label_color)
+                .text_size(px(palette.label_typography.size))
+                .line_height(px(palette.label_typography.line_height))
+                .font_family(palette.label_font_family.clone())
+                .font_weight(palette.label_typography.weight)
+                .child(indicator)
+                .child(label);
+        }
 
         if let Some(background) = palette.control_background {
             root = root.bg(background);
@@ -120,7 +132,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
 
         if model.state.disabled {
             root = root.opacity(0.56);
-        } else {
+        } else if !indicator_only {
             root = root.cursor_pointer();
         }
 

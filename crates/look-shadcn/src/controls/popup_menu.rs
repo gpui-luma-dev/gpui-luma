@@ -26,48 +26,61 @@ pub fn popup_menu_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     trigger_style: PopupMenuTriggerStyle,
+    metrics: gpui_luma::controls::popup_menu::PopupMenuTriggerMetrics,
     state: InteractionState,
 ) -> PopupMenuPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let stylesheet = embedded_stylesheet();
     let button_style = shadcn_button_style(trigger_style);
-    let button = button_palette(&ctx, stylesheet, button_style, ButtonFamilyRole::Text, ControlSize::Md);
+    let role = if metrics.icon_only {
+        ButtonFamilyRole::Icon
+    } else {
+        ButtonFamilyRole::Text
+    };
+    let button = button_palette(&ctx, stylesheet, button_style, role, metrics.size);
+    let trigger_shadow = if metrics.without_elevation {
+        None
+    } else {
+        button_elevation_shadow(&ctx, stylesheet, button_style)
+    };
 
     PopupMenuPalette {
         trigger_background: button.background,
         trigger_foreground: button.foreground,
         trigger_border: button.border,
-        trigger_shadow: button_elevation_shadow(&ctx, stylesheet, button_style),
+        trigger_shadow,
         focus_ring: state.focused.then_some(button.focus_ring),
         trigger_typography: button.typography,
-        floating_menu: floating_menu_look(mode, theme_mode, ControlSize::Md),
+        floating_menu: floating_menu_look(mode, theme_mode, metrics.size),
     }
 }
 
 pub fn popup_menu_trigger_scale(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    size: ControlSize,
     state: InteractionState,
     scale_factor: f32,
 ) -> gpui_luma::theme::StandardBoxScale {
     let ctx = LookContext::new(mode, theme_mode, state);
-    button_box_scale(&ctx, embedded_stylesheet(), ControlSize::Md, scale_factor)
+    button_box_scale(&ctx, embedded_stylesheet(), size, scale_factor)
 }
 
 pub fn popup_menu_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     trigger_style: PopupMenuTriggerStyle,
+    metrics: gpui_luma::controls::popup_menu::PopupMenuTriggerMetrics,
     state: InteractionState,
     scale_factor: f32,
     cx: &mut gpui::App,
 ) -> PopupMenuLook {
     let scale = cx.use_cached_layout(
         mode.metrics,
-        gpui_luma::theme::LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-        |_| popup_menu_trigger_scale(mode, theme_mode, state, scale_factor),
+        gpui_luma::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
+        |_| popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor),
     );
-    compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, state), &scale)
+    compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale)
 }
 
 #[cfg(test)]
@@ -76,7 +89,7 @@ mod tests {
     use std::collections::BTreeMap;
     use gpui_luma::theme::ThemeMode;
 
-    use gpui_luma::controls::popup_menu::PopupMenuTriggerStyle;
+    use gpui_luma::controls::popup_menu::{PopupMenuTriggerMetrics, PopupMenuTriggerStyle};
     use gpui_luma::theme::InteractionState;
 
     use crate::catalog::CssTokenMap;
@@ -115,7 +128,8 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let state = InteractionState::default();
-        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Outline, state);
+        let metrics = PopupMenuTriggerMetrics::default();
+        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Outline, metrics, state);
         let ctx = LookContext::new(&mode, ThemeMode::Light, state);
         let button = button_palette(
             &ctx,
@@ -136,7 +150,8 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let state = InteractionState::default();
-        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Ghost, state);
+        let metrics = PopupMenuTriggerMetrics::default();
+        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Ghost, metrics, state);
         let ctx = LookContext::new(&mode, ThemeMode::Light, state);
         let button = button_palette(
             &ctx,
@@ -156,8 +171,9 @@ mod tests {
     fn ghost_hovered_trigger_uses_accent_fill_like_command_button() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let metrics = PopupMenuTriggerMetrics::default();
         let hovered = InteractionState { hovered: true, ..InteractionState::default() };
-        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Ghost, hovered);
+        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Ghost, metrics, hovered);
         let ctx = LookContext::new(&mode, ThemeMode::Light, hovered);
         let button = button_palette(
             &ctx,

@@ -95,8 +95,8 @@ Team Developer and Team Billing are **identical** in HTML (byte-identical classe
 | Report an issue | `ReportPanel` | ✓ |
 | Payments | `PaymentsPanel` | ✓ |
 | Cookie Settings | `CookiesPanel` | ✓ |
-| Date picker with range | — | missing |
-| Share this document | — | missing |
+| Date picker with range | `DateRangePanel` | ✓ |
+| Share this document | `SharePanel` | ✓ |
 | Move Goal / Exercise Minutes / charts | — | missing |
 | Chat | `ChatPanel` | theme-studio only |
 | Tree view | `TreeViewPanel` | theme-studio only |
@@ -109,10 +109,10 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 
 | Panel | tweakcn HTML | theme-studio (`apps/theme-studio/src/studio/panels/`) | Match? |
 |-------|--------------|--------------------------------------------------------|--------|
-| **Team Members** | 3× `popover-trigger` outline sm | 3× `PopupMenu` outline (`team.rs`) | ✓ |
+| **Team Members** | 3× `popover-trigger` outline sm | 3× `PopupMenu` outline sm, no elevation (`team.rs`) | ✓ |
 | **Report issue** | 2× `select-trigger` | 2× `Selector` (`report.rs`) | ✓ |
 | **Report issue** | Cancel `ghost/sm`, Submit `default/sm` | `ghost_button`, `primary_button` | ≈ |
-| **Payments** | Row ⋯ `dropdown-menu-trigger` ghost | `PopupMenu` ghost per row (`payments.rs`) | ✓ |
+| **Payments** | Row ⋯ `dropdown-menu-trigger` ghost | `PopupMenu` ghost icon-only sm (`payments.rs`) | ✓ |
 | **Payments** | Table + footer prev/next outline/sm | `PagingListView` + `outline_button` | ≈ |
 | **Upgrade** | `radio-group`, 2× `checkbox` | `RadioGroup`, 2× `Checkbox` (`upgrade.rs`) | ✓ |
 | **Upgrade** | Cancel **outline/sm** | `outline_button` | ✓ |
@@ -121,7 +121,8 @@ Cards tab panels: `InspectableId::CARDS` in `apps/theme-studio/src/studio/inspec
 | **Create account** | Create account **default** | `primary_button` | ≈ |
 | **Cookie Settings** | 2× `switch` | 2× `Switch` (`cookies.rs`) | ✓ |
 | **Cookie Settings** | Save **outline** | `outline_button` | ✓ |
-| **Chat** | (no tweakcn card) | TextField + icon buttons (`chat.rs`) | theme-studio only |
+| **Share document** | `select-trigger` + Copy Link outline | `Selector` + `outline_button` (`share.rs`) | ✓ |
+| **Date picker range** | `popover-trigger` outline | `PopupMenu` outline sm (`date_range.rs`) | ✓ (stub menu) |
 
 ### Label vs component (theme-studio specifics)
 

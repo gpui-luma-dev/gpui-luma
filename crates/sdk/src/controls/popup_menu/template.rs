@@ -9,7 +9,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::{PopupMenuPlacement, PopupMenuRenderModel};
 use crate::controls::button_family::button_family_effective_border;
 use crate::controls::floating_menu::render_floating_menu;
-use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, default_popup_menu_theme};
+use crate::controls::popup_menu::{PopupMenuLook, PopupMenuTheme, PopupMenuTriggerMetrics, default_popup_menu_theme};
 
 pub type PopupMenuBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
 pub type PopupMenuClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
@@ -75,39 +75,56 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             item_clicks,
         } = handlers;
         let scale_factor = window.scale_factor();
-        let look = self.theme.resolve_look(model.trigger_style, model.state, scale_factor, _cx);
+        let metrics = PopupMenuTriggerMetrics {
+            size: model.trigger_size,
+            without_elevation: model.without_elevation,
+            icon_only: model.trigger_icon.is_some(),
+        };
+        let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
         let border = button_family_effective_border(look.trigger_border);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
             .flex()
             .items_center()
-            .justify_between()
-            .gap(px(look.trigger_gap))
-            .px(px(look.trigger_padding_x))
-            .py(px(look.trigger_padding_y))
-            .h(px(look.trigger_height))
-            .bg(look.trigger_background)
-            .text_color(look.trigger_foreground)
-            .rounded(px(look.trigger_radius))
-            .text_size(px(look.trigger_typography.size))
-            .line_height(px(look.trigger_typography.line_height))
-            .font_weight(look.trigger_typography.weight)
             .cursor_pointer()
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
-            .on_click(trigger_click)
-            .child(model.label.clone())
-            .child(render_lucide_icon(
-                if model.open {
-                    LucideIcon::ChevronUp
-                } else {
-                    LucideIcon::ChevronDown
-                },
-                look.trigger_foreground,
-                look.trigger_icon_size,
-            ));
+            .on_click(trigger_click);
+
+        if let Some(icon) = model.trigger_icon {
+            trigger = trigger
+                .justify_center()
+                .size(px(look.trigger_height))
+                .bg(look.trigger_background)
+                .text_color(look.trigger_foreground)
+                .rounded(px(look.trigger_radius))
+                .child(render_lucide_icon(icon, look.trigger_foreground, look.trigger_icon_size));
+        } else {
+            trigger = trigger
+                .justify_between()
+                .gap(px(look.trigger_gap))
+                .px(px(look.trigger_padding_x))
+                .py(px(look.trigger_padding_y))
+                .h(px(look.trigger_height))
+                .bg(look.trigger_background)
+                .text_color(look.trigger_foreground)
+                .rounded(px(look.trigger_radius))
+                .text_size(px(look.trigger_typography.size))
+                .line_height(px(look.trigger_typography.line_height))
+                .font_weight(look.trigger_typography.weight)
+                .child(model.label.clone())
+                .child(render_lucide_icon(
+                    if model.open {
+                        LucideIcon::ChevronUp
+                    } else {
+                        LucideIcon::ChevronDown
+                    },
+                    look.trigger_foreground,
+                    look.trigger_icon_size,
+                ));
+        }
 
         if border.a > 0.0 {
             trigger = trigger.border_1().border_color(border);
@@ -252,13 +269,17 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
-    use crate::controls::popup_menu::{PopupMenuTriggerStyle, compose_popup_menu_look};
+    use crate::controls::popup_menu::{PopupMenuTriggerMetrics, PopupMenuTriggerStyle, compose_popup_menu_look};
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
     fn look() -> PopupMenuLook {
         let theme = default_popup_menu_theme();
         compose_popup_menu_look(
-            &theme.resolve(PopupMenuTriggerStyle::Outline, InteractionState::default()),
+            &theme.resolve(
+                PopupMenuTriggerStyle::Outline,
+                PopupMenuTriggerMetrics::default(),
+                InteractionState::default(),
+            ),
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
         )
     }

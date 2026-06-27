@@ -7,6 +7,8 @@ pub enum InspectableId {
     CookieSettings,
     ReportIssue,
     Payments,
+    ShareDocument,
+    DatePickerRange,
     TreeView,
     Accordion,
     SystemPreferences,
@@ -14,7 +16,7 @@ pub enum InspectableId {
 }
 
 impl InspectableId {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 13] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -22,6 +24,8 @@ impl InspectableId {
         Self::CookieSettings,
         Self::ReportIssue,
         Self::Payments,
+        Self::ShareDocument,
+        Self::DatePickerRange,
         Self::TreeView,
         Self::Accordion,
         Self::SystemPreferences,
@@ -32,7 +36,7 @@ impl InspectableId {
         &Self::ALL
     }
 
-    pub const CARDS: [Self; 10] = [
+    pub const CARDS: [Self; 12] = [
         Self::UpgradeSubscription,
         Self::CreateAccount,
         Self::TeamMembers,
@@ -40,6 +44,8 @@ impl InspectableId {
         Self::CookieSettings,
         Self::ReportIssue,
         Self::Payments,
+        Self::ShareDocument,
+        Self::DatePickerRange,
         Self::TreeView,
         Self::Accordion,
         Self::SystemPreferences,
@@ -56,6 +62,8 @@ impl InspectableId {
             Self::CookieSettings => "cookie_settings",
             Self::ReportIssue => "report_issue",
             Self::Payments => "payments",
+            Self::ShareDocument => "share_document",
+            Self::DatePickerRange => "date_picker_range",
             Self::TreeView => "tree_view",
             Self::Accordion => "accordion",
             Self::SystemPreferences => "system_preferences",

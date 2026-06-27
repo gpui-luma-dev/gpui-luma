@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use lucide_icons::Icon as LucideIcon;
 use gpui_luma::column_numeric;
 use gpui_luma::column_text;
 use gpui_luma::controls::checkbox::Checkbox;
@@ -203,7 +204,8 @@ fn spawn_row_menus(look: Arc<ShadcnLook>, row_count: usize, cx: &mut Context<Pay
         .map(|index| {
             look.popup_menu(format!("studio-payments-row-menu-{index}"))
                 .ghost()
-                .label("")
+                .size(ControlSize::Sm)
+                .trigger_icon(LucideIcon::EllipsisVertical)
                 .items(payment_action_items())
                 .spawn(cx)
         })

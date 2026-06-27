@@ -1,18 +1,61 @@
+use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, Render, Window, div, prelude::*, px};
-use gpui_luma::controls::presenter::HasPresenter;
+use gpui::{Context, Entity, FontWeight, MouseButton, Render, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::checkbox::Checkbox;
-use gpui_luma::controls::command::button::{Button, ButtonEvent};
-use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItem};
+use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::radio_button::ThemedRadioButtonTemplate;
+use gpui_luma::controls::radio_group::{
+    RadioGroup, RadioGroupItemLike, RadioGroupTemplate, RadioGroupTemplateHandlers, horizontal as horizontal_radio_group,
+};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{ControlSize};
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
+use gpui_luma_look_shadcn::ShadcnToken;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 
 use super::common::titled_card;
+
+const PLAN_CARD_RADIUS: f32 = 8.0;
+const PLAN_CARD_PADDING: f32 = 12.0;
+const PLAN_CARD_GAP: f32 = 8.0;
+const PLAN_DISABLED_OPACITY: f32 = 0.56;
+
+#[derive(Clone, Debug)]
+struct PlanOptionItem {
+    id: SharedString,
+    title: SharedString,
+    description: SharedString,
+}
+
+impl PlanOptionItem {
+    fn new(id: impl Into<SharedString>, title: impl Into<SharedString>, description: impl Into<SharedString>) -> Self {
+        Self {
+            id: id.into(),
+            title: title.into(),
+            description: description.into(),
+        }
+    }
+}
+
+impl RadioGroupItemLike for PlanOptionItem {
+    fn id(&self) -> &SharedString {
+        &self.id
+    }
+
+    fn label(&self) -> &SharedString {
+        &self.title
+    }
+}
+
+struct PlanOptionTemplateSpec {
+    title_style: LumaTextStyle,
+    caption_style: LumaTextStyle,
+}
 
 declare_form! {
     pub struct UpgradePanel {
@@ -22,12 +65,9 @@ declare_form! {
             card_field: TextField = look.textfield("upgrade-card").placeholder("Card Number").full_width(true),
             expiry_field: TextField = look.textfield("upgrade-expiry").placeholder("MM/YY"),
             cvc_field: TextField = look.textfield("upgrade-cvc").placeholder("CVC"),
-            plan_group: RadioGroup<RadioGroupItem> = look
-                .radio_group("upgrade-plan")
-                .items([
-                    RadioGroupItem::new("starter").label("Starter Plan"),
-                    RadioGroupItem::new("pro").label("Pro Plan"),
-                ])
+            plan_group: RadioGroup<PlanOptionItem> = horizontal_radio_group("upgrade-plan")
+                .template(plan_option_group_template(look.clone()))
+                .items(plan_items())
                 .selected("starter"),
             notes_area: Entity<TextArea> = look
                 .textarea("upgrade-notes")
@@ -37,6 +77,7 @@ declare_form! {
             terms_checkbox: Checkbox = look
                 .primary_checkbox("upgrade-terms")
                 .with_data(true)
+                .compact()
                 .content(|_, _| div().child("I agree to the terms and conditions").into_any_element())
                 => ButtonEvent |this, _event, cx| {
                     this.terms_accepted = !this.terms_accepted;
@@ -45,6 +86,7 @@ declare_form! {
             email_checkbox: Checkbox = look
                 .primary_checkbox("upgrade-email-opt")
                 .with_data(false)
+                .compact()
                 .content(|_, _| div().child("Allow us to send you emails").into_any_element())
                 => ButtonEvent |this, _event, cx| {
                     this.email_opt_in = !this.email_opt_in;
@@ -67,6 +109,8 @@ declare_form! {
 impl Render for UpgradePanel {
     fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let label_style = self.look.typography_scale(ShadcnTextSize::Sm);
+        let caption_style = self.look.typography_scale(ShadcnTextSize::Xs);
         let name_field = self.name_field.clone();
         let email_field = self.email_field.clone();
         let card_field = self.card_field.clone();
@@ -101,10 +145,25 @@ impl Render for UpgradePanel {
                             div().w(px(64.0)).child(cvc_field.clone()),
                         }
                     ),
-                    form_field!("Plan", chrome; plan_group.clone()),
+                    vstack! {
+                        gap=4;
+                        div()
+                            .typography_style(label_style)
+                            .font_weight(FontWeight::MEDIUM)
+                            .text_color(chrome.body_text)
+                            .child("Plan"),
+                        div()
+                            .typography_style(caption_style)
+                            .text_color(chrome.muted_text)
+                            .child("Select the plan that best fits your needs."),
+                        plan_group.clone(),
+                    },
                     form_field!("Notes", chrome; notes_area.clone()),
-                    terms_checkbox.clone(),
-                    email_checkbox.clone(),
+                    vstack! {
+                        gap=4;
+                        terms_checkbox.clone(),
+                        email_checkbox.clone(),
+                    },
                     hstack! {
                         gap=8 justify=end;
                         cancel_button.clone(),
@@ -117,4 +176,147 @@ impl Render for UpgradePanel {
             _cx,
         )
     }
+}
+
+fn plan_items() -> [PlanOptionItem; 2] {
+    [
+        PlanOptionItem::new("starter", "Starter Plan", "Perfect for small businesses."),
+        PlanOptionItem::new("pro", "Pro Plan", "More features and storage."),
+    ]
+}
+
+fn plan_radio_indicator_template(look: Arc<ShadcnLook>) -> Arc<dyn ButtonTemplate<bool>> {
+    Arc::new(
+        ThemedRadioButtonTemplate::new(look.radio_button_theme()).with_modifier(|element, _| {
+            element.min_h(px(0.0)).px(px(0.0)).py(px(0.0))
+        }),
+    )
+}
+
+fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanOptionItem> {
+    let radio_template = plan_radio_indicator_template(look.clone());
+    let spec = Arc::new(PlanOptionTemplateSpec {
+        title_style: look.typography_scale(ShadcnTextSize::Sm),
+        caption_style: look.typography_scale(ShadcnTextSize::Xs),
+    });
+
+    Arc::new(move |model, handlers, window, cx| {
+        let chrome = look.chrome();
+        let border = chrome.border;
+        let body_text = chrome.body_text;
+        let muted_text = chrome.muted_text;
+        let card_surface = look.color(ShadcnToken::Card);
+        let selected_surface = look.adjust_surface_color(card_surface, InteractionLayer::Pressed);
+        let RadioGroupTemplateHandlers {
+            item_hovers,
+            item_mouse_downs,
+            item_mouse_ups,
+            item_mouse_up_outs,
+            item_clicks,
+        } = handlers;
+
+        let mut item_hovers = item_hovers.into_iter();
+        let mut item_mouse_downs = item_mouse_downs.into_iter();
+        let mut item_mouse_ups = item_mouse_ups.into_iter();
+        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
+        let mut item_clicks = item_clicks.into_iter();
+
+        let mut root = div().id(model.id.clone()).flex().w_full().gap(px(PLAN_CARD_GAP));
+
+        for item in &model.items {
+            let Some(item_hover) = item_hovers.next() else {
+                break;
+            };
+            let Some(item_mouse_down) = item_mouse_downs.next() else {
+                break;
+            };
+            let Some(item_mouse_up) = item_mouse_ups.next() else {
+                break;
+            };
+            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
+                break;
+            };
+            let Some(item_click) = item_clicks.next() else {
+                break;
+            };
+
+            let interaction = item.state.interaction_state();
+            let render_model = ButtonRenderModel {
+                id: format!("{}-{}", model.id, item.item.id()).into(),
+                data: item.selected,
+                content: Arc::new(|_, _| div().into_any_element()),
+                role: ButtonFamilyRole::Icon,
+                size: ButtonSize::Sm,
+                state: InteractionState {
+                    focused: false,
+                    hovered: interaction.hovered,
+                    pressed: interaction.pressed,
+                    disabled: interaction.disabled,
+                },
+                round: false,
+                radius_override: Cell::new(None),
+                elevation: false,
+                compact: true,
+                look: None,
+            };
+
+            let indicator = radio_template.render(&render_model, window, cx);
+            let title = item.item.title.clone();
+            let description = item.item.description.clone();
+            let title_style = spec.title_style;
+            let caption_style = spec.caption_style;
+
+            let body = hstack! {
+                gap=10 align=start;
+                div().flex_none().child(indicator),
+                vstack! {
+                    gap=2;
+                    div()
+                        .w_full()
+                        .typography_style(title_style)
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(body_text)
+                        .child(title),
+                    div()
+                        .w_full()
+                        .typography_style(caption_style)
+                        .text_color(muted_text)
+                        .line_clamp(3)
+                        .child(description),
+                }
+                .flex_1()
+                .min_w_0()
+                .overflow_hidden(),
+            }
+            .w_full()
+            .overflow_hidden();
+
+            let mut card = div()
+                .id(format!("{}-card", render_model.id))
+                .flex_1()
+                .min_w_0()
+                .overflow_hidden()
+                .rounded(px(PLAN_CARD_RADIUS))
+                .border_1()
+                .border_color(border)
+                .when(item.selected, |card| card.bg(selected_surface))
+                .p(px(PLAN_CARD_PADDING))
+                .on_hover(item_hover)
+                .on_mouse_down(MouseButton::Left, item_mouse_down)
+                .on_mouse_up(MouseButton::Left, item_mouse_up)
+                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
+                .on_click(item_click)
+                .child(body);
+
+            if item.enabled {
+                card = card.cursor_pointer();
+            } else {
+                card = card.opacity(PLAN_DISABLED_OPACITY);
+            }
+
+            root = root.child(card);
+        }
+
+        root
+    })
 }
