@@ -34,6 +34,10 @@ fn axis_total_size(bounds: Bounds<Pixels>, axis: Axis) -> Pixels {
     }
 }
 
+fn size_along_axis(bounds: Bounds<Pixels>, axis: Axis) -> Pixels {
+    axis_total_size(bounds, axis)
+}
+
 fn axis_gradient_angle(axis: Axis) -> f32 {
     if axis == Axis::Vertical { 180.0 } else { 90.0 }
 }
@@ -221,17 +225,45 @@ fn hue_spectrum_color_at_position(context: &ColorSliderTrackContext, position: f
 
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
-pub struct GradientDelegate {
-    pub colors: Vec<Hsla>,
+pub struct GradientStop {
+    pub position: f32,
+    pub color: Hsla,
 }
 
-fn gradient_colors(delegate: &GradientDelegate, context: &ColorSliderTrackContext) -> Vec<Hsla> {
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GradientDelegate {
+    pub stops: Vec<GradientStop>,
+}
+
+impl GradientDelegate {
+    pub fn from_colors(colors: Vec<Hsla>) -> Self {
+        let stops = match colors.len() {
+            0 => Vec::new(),
+            1 => vec![GradientStop { position: 0.0, color: colors[0] }],
+            len => colors
+                .into_iter()
+                .enumerate()
+                .map(|(index, color)| GradientStop { position: index as f32 / (len - 1) as f32, color })
+                .collect(),
+        };
+
+        Self { stops }
+    }
+}
+
+fn gradient_stops(delegate: &GradientDelegate, context: &ColorSliderTrackContext) -> Vec<GradientStop> {
+    let mut stops = delegate.stops.clone();
+    stops.sort_by(|left, right| left.position.total_cmp(&right.position));
+
     if context.reversed {
-        let mut colors = delegate.colors.clone();
-        colors.reverse();
-        colors
+        stops
+            .into_iter()
+            .rev()
+            .map(|stop| GradientStop { position: 1.0 - stop.position, color: stop.color })
+            .collect()
     } else {
-        delegate.colors.clone()
+        stops
     }
 }
 
@@ -243,15 +275,15 @@ fn paint_gradient_spectrum(
 ) {
     let axis = context.axis;
     let interpolation = context.interpolation;
-    let colors = gradient_colors(delegate, context);
+    let stops = gradient_stops(delegate, context);
 
-    if colors.len() <= 1 {
-        if let Some(color) = colors.first() {
+    if stops.len() <= 1 {
+        if let Some(stop) = stops.first() {
             let corner_radius = track_corner_radius(context, bounds, window.rem_size());
             window.paint_quad(PaintQuad {
                 bounds,
                 corner_radii: Corners::all(corner_radius),
-                background: (*color).into(),
+                background: stop.color.into(),
                 border_widths: Edges::default(),
                 border_color: transparent_black(),
                 border_style: BorderStyle::default(),
@@ -262,18 +294,41 @@ fn paint_gradient_spectrum(
 
     let rem_size = window.rem_size();
     let total_size = axis_total_size(bounds, axis);
-    let segment_count = colors.len() - 1;
-    let segment_size = total_size / segment_count as f32;
     let corner_radius = track_corner_radius(context, bounds, rem_size);
+    let first = &stops[0];
+    let last = &stops[stops.len() - 1];
 
-    for i in 0..segment_count {
-        let start_color = colors[i];
-        let end_color = colors[i + 1];
-        let (start_offset, current_segment_size) =
-            calculate_overlapping_segment(i, segment_count, segment_size, total_size);
-        let band_bounds = axis_segment_bounds(bounds, axis, start_offset, current_segment_size);
+    if first.position > 0.0 {
+        let leading_size = total_size * first.position;
         let mut corner_radii = Corners::default();
-        apply_edge_corner_radii(&mut corner_radii, axis, corner_radius, i == 0, i == segment_count - 1);
+        apply_edge_corner_radii(&mut corner_radii, axis, corner_radius, true, false);
+        window.paint_quad(PaintQuad {
+            bounds: axis_segment_bounds(bounds, axis, px(0.0), leading_size),
+            corner_radii,
+            background: first.color.into(),
+            border_widths: Edges::default(),
+            border_color: transparent_black(),
+            border_style: BorderStyle::default(),
+        });
+    }
+
+    for pair in stops.windows(2) {
+        let start = &pair[0];
+        let end = &pair[1];
+        let span = (end.position - start.position).max(0.0);
+        if span <= f32::EPSILON {
+            continue;
+        }
+
+        let band_bounds = axis_segment_bounds(bounds, axis, total_size * start.position, total_size * span);
+        let mut corner_radii = Corners::default();
+        apply_edge_corner_radii(
+            &mut corner_radii,
+            axis,
+            corner_radius,
+            start.position <= f32::EPSILON,
+            end.position >= 1.0 - f32::EPSILON,
+        );
         let angle = axis_gradient_angle(axis);
 
         if interpolation == ColorInterpolation::Rgb {
@@ -282,8 +337,8 @@ fn paint_gradient_spectrum(
                 corner_radii,
                 background: linear_gradient(
                     angle,
-                    linear_color_stop(start_color, 0.0),
-                    linear_color_stop(end_color, 1.0),
+                    linear_color_stop(start.color, 0.0),
+                    linear_color_stop(end.color, 1.0),
                 ),
                 border_widths: Edges::default(),
                 border_color: transparent_black(),
@@ -291,31 +346,32 @@ fn paint_gradient_spectrum(
             });
         } else {
             let sub_steps = 10;
-            let sub_segment_size = segment_size / sub_steps as f32;
+            let band_size = size_along_axis(band_bounds, axis);
+            let sub_segment_size = band_size / sub_steps as f32;
 
             for j in 0..sub_steps {
                 let t_start = j as f32 / sub_steps as f32;
                 let t_end = (j + 1) as f32 / sub_steps as f32;
                 let sub_start_color = match interpolation {
-                    ColorInterpolation::Hsl => color_spec::interpolate_hsl(start_color, end_color, t_start),
-                    ColorInterpolation::Lab => color_spec::interpolate_lab(start_color, end_color, t_start),
+                    ColorInterpolation::Hsl => color_spec::interpolate_hsl(start.color, end.color, t_start),
+                    ColorInterpolation::Lab => color_spec::interpolate_lab(start.color, end.color, t_start),
                     ColorInterpolation::Rgb => unreachable!(),
                 };
                 let sub_end_color = match interpolation {
-                    ColorInterpolation::Hsl => color_spec::interpolate_hsl(start_color, end_color, t_end),
-                    ColorInterpolation::Lab => color_spec::interpolate_lab(start_color, end_color, t_end),
+                    ColorInterpolation::Hsl => color_spec::interpolate_hsl(start.color, end.color, t_end),
+                    ColorInterpolation::Lab => color_spec::interpolate_lab(start.color, end.color, t_end),
                     ColorInterpolation::Rgb => unreachable!(),
                 };
                 let (sub_start_offset, current_sub_size) =
-                    calculate_overlapping_segment(j, sub_steps, sub_segment_size, segment_size);
+                    calculate_overlapping_segment(j, sub_steps, sub_segment_size, band_size);
                 let sub_bounds = axis_segment_bounds(band_bounds, axis, sub_start_offset, current_sub_size);
                 let mut sub_radii = Corners::default();
                 apply_edge_corner_radii(
                     &mut sub_radii,
                     axis,
                     corner_radius,
-                    i == 0 && j == 0,
-                    i == segment_count - 1 && j == sub_steps - 1,
+                    start.position <= f32::EPSILON && j == 0,
+                    end.position >= 1.0 - f32::EPSILON && j == sub_steps - 1,
                 );
 
                 window.paint_quad(PaintQuad {
@@ -333,6 +389,21 @@ fn paint_gradient_spectrum(
             }
         }
     }
+
+    if last.position < 1.0 {
+        let trailing_offset = total_size * last.position;
+        let trailing_size = total_size - trailing_offset;
+        let mut corner_radii = Corners::default();
+        apply_edge_corner_radii(&mut corner_radii, axis, corner_radius, false, true);
+        window.paint_quad(PaintQuad {
+            bounds: axis_segment_bounds(bounds, axis, trailing_offset, trailing_size),
+            corner_radii,
+            background: last.color.into(),
+            border_widths: Edges::default(),
+            border_color: transparent_black(),
+            border_style: BorderStyle::default(),
+        });
+    }
 }
 
 impl ColorSliderDelegate for GradientDelegate {
@@ -342,27 +413,41 @@ impl ColorSliderDelegate for GradientDelegate {
 
     fn get_color_for_context(&self, context: &ColorSliderTrackContext, position: f32) -> Hsla {
         let pct = if context.reversed { 1.0 - position } else { position };
+        let stops = gradient_stops(self, context);
 
-        if self.colors.is_empty() {
+        if stops.is_empty() {
             return hsla(0.0, 0.0, 0.0, 1.0);
         }
-        if self.colors.len() == 1 {
-            return self.colors[0];
+        if stops.len() == 1 {
+            return stops[0].color;
         }
 
-        let scaled_pct = pct * (self.colors.len() - 1) as f32;
-        let idx = scaled_pct.floor() as usize;
-        let next_idx = (idx + 1).min(self.colors.len() - 1);
-        let t = scaled_pct - idx as f32;
-
-        let start = self.colors[idx];
-        let end = self.colors[next_idx];
-
-        match context.interpolation {
-            ColorInterpolation::Rgb => color_spec::interpolate_rgb(start, end, t),
-            ColorInterpolation::Hsl => color_spec::interpolate_hsl(start, end, t),
-            ColorInterpolation::Lab => color_spec::interpolate_lab(start, end, t),
+        let pct = pct.clamp(0.0, 1.0);
+        if pct <= stops[0].position {
+            return stops[0].color;
         }
+        if pct >= stops[stops.len() - 1].position {
+            return stops[stops.len() - 1].color;
+        }
+
+        for pair in stops.windows(2) {
+            let start = &pair[0];
+            let end = &pair[1];
+            if pct < start.position || pct > end.position {
+                continue;
+            }
+
+            let span = (end.position - start.position).max(f32::EPSILON);
+            let t = (pct - start.position) / span;
+
+            return match context.interpolation {
+                ColorInterpolation::Rgb => color_spec::interpolate_rgb(start.color, end.color, t),
+                ColorInterpolation::Hsl => color_spec::interpolate_hsl(start.color, end.color, t),
+                ColorInterpolation::Lab => color_spec::interpolate_lab(start.color, end.color, t),
+            };
+        }
+
+        stops[stops.len() - 1].color
     }
 }
 
@@ -639,6 +724,35 @@ mod tests {
             corner_radii: Default::default(),
             theme_is_dark: false,
         }
+    }
+
+    #[::core::prelude::v1::test]
+    fn gradient_delegate_uses_explicit_stop_positions_for_sampling() {
+        let delegate = GradientDelegate {
+            stops: vec![GradientStop { position: 0.2, color: black() }, GradientStop { position: 0.8, color: white() }],
+        };
+        let context = test_track_context(0.0..1.0);
+
+        assert_eq!(delegate.get_color_for_context(&context, 0.0), black());
+        assert_eq!(delegate.get_color_for_context(&context, 0.2), black());
+        assert_eq!(delegate.get_color_for_context(&context, 1.0), white());
+
+        let middle = delegate.get_color_for_context(&context, 0.5).to_rgb();
+        assert!((middle.r - 0.5).abs() < 0.05, "expected midpoint mix, got {:?}", middle);
+    }
+
+    #[::core::prelude::v1::test]
+    fn gradient_delegate_from_colors_evenly_spaces_stops() {
+        let delegate = GradientDelegate::from_colors(vec![black(), white(), black()]);
+
+        assert_eq!(
+            delegate.stops,
+            vec![
+                GradientStop { position: 0.0, color: black() },
+                GradientStop { position: 0.5, color: white() },
+                GradientStop { position: 1.0, color: black() },
+            ]
+        );
     }
 
     #[::core::prelude::v1::test]

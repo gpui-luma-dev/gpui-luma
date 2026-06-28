@@ -55,7 +55,7 @@ impl ColorSliderBuilder {
     }
 
     pub fn gradient(id: impl Into<SharedString>, value: f32, colors: Vec<gpui::Hsla>) -> Self {
-        Self::new(id, value, Arc::new(GradientDelegate { colors })).range(0.0..1.0).step(0.01)
+        Self::new(id, value, Arc::new(GradientDelegate::from_colors(colors))).range(0.0..1.0).step(0.01)
     }
 
     pub fn multi_stop(mut self) -> Self {

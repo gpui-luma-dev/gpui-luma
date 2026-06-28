@@ -68,6 +68,7 @@ pub fn paint_horizontal_gradient_track(
     window: &mut Window,
     bounds: Bounds<Pixels>,
     stops: &[(f32, Hsla)],
+    reverse: bool,
     corner_radii: Corners<Pixels>,
 ) {
     let stops = sorted_stops(stops);
@@ -85,7 +86,22 @@ pub fn paint_horizontal_gradient_track(
         return;
     }
 
-    let (first_pos, first_color) = stops[0];
+    let (first_pos, first_color, tail_pos, tail_color, iter) = if reverse {
+        let last = stops[stops.len() - 1];
+        let first = stops[0];
+        let reversed = stops
+            .windows(2)
+            .rev()
+            .map(|pair| (1.0 - pair[1].0, pair[1].1, 1.0 - pair[0].0, pair[0].1))
+            .collect::<Vec<_>>();
+        (1.0 - last.0, last.1, 1.0 - first.0, first.1, reversed)
+    } else {
+        let first = stops[0];
+        let last = stops[stops.len() - 1];
+        let forward = stops.windows(2).map(|pair| (pair[0].0, pair[0].1, pair[1].0, pair[1].1)).collect::<Vec<_>>();
+        (first.0, first.1, last.0, last.1, forward)
+    };
+
     if first_pos > 0.0 {
         let segment_end = bounds.origin.x + bounds.size.width * first_pos;
         paint_solid(
@@ -96,9 +112,7 @@ pub fn paint_horizontal_gradient_track(
         );
     }
 
-    for pair in stops.windows(2) {
-        let (start_pos, start_color) = pair[0];
-        let (end_pos, end_color) = pair[1];
+    for (start_pos, start_color, end_pos, end_color) in iter {
         let segment_start = bounds.origin.x + bounds.size.width * start_pos;
         let segment_end = bounds.origin.x + bounds.size.width * end_pos;
         if segment_end <= segment_start {
@@ -121,16 +135,15 @@ pub fn paint_horizontal_gradient_track(
         });
     }
 
-    let (last_pos, last_color) = stops[stops.len() - 1];
-    if last_pos < 1.0 {
-        let segment_start = bounds.origin.x + bounds.size.width * last_pos;
+    if tail_pos < 1.0 {
+        let segment_start = bounds.origin.x + bounds.size.width * tail_pos;
         paint_solid(
             window,
             Bounds {
                 origin: gpui::point(segment_start, bounds.origin.y),
                 size: gpui::size(bounds.origin.x + bounds.size.width - segment_start, bounds.size.height),
             },
-            last_color,
+            tail_color,
             horizontal_edge_corner_radii(corner_radii, false, true),
         );
     }
@@ -153,8 +166,13 @@ pub fn paint_linear_gradient_preview(
         return;
     }
 
-    if (rotation_deg - 90.0).rem_euclid(180.0).abs() < f32::EPSILON {
-        paint_horizontal_gradient_track(window, bounds, &stops, corner_radii);
+    if (rotation_deg - 270.0).rem_euclid(360.0).abs() < f32::EPSILON {
+        paint_horizontal_gradient_track(window, bounds, &stops, true, corner_radii);
+        return;
+    }
+
+    if (rotation_deg - 90.0).rem_euclid(360.0).abs() < f32::EPSILON {
+        paint_horizontal_gradient_track(window, bounds, &stops, false, corner_radii);
         return;
     }
 
@@ -179,6 +197,22 @@ fn paint_vertical_gradient_preview(
     }
 
     let reverse = (rotation_deg - 180.0).abs() < f32::EPSILON;
+    let (first_pos, first_color) = if reverse {
+        let last = stops[stops.len() - 1];
+        (1.0 - last.0, last.1)
+    } else {
+        stops[0]
+    };
+    if first_pos > 0.0 {
+        let segment_end = bounds.origin.y + bounds.size.height * first_pos;
+        paint_solid(
+            window,
+            Bounds { origin: bounds.origin, size: gpui::size(bounds.size.width, segment_end - bounds.origin.y) },
+            first_color,
+            vertical_edge_corner_radii(corner_radii, true, false),
+        );
+    }
+
     for pair in stops.windows(2) {
         let (start_pos, start_color) = pair[0];
         let (end_pos, end_color) = pair[1];
@@ -204,6 +238,25 @@ fn paint_vertical_gradient_preview(
             border_color: transparent_black(),
             border_style: gpui::BorderStyle::default(),
         });
+    }
+
+    let (last_pos, last_color) = if reverse {
+        let first = stops[0];
+        (1.0 - first.0, first.1)
+    } else {
+        stops[stops.len() - 1]
+    };
+    if last_pos < 1.0 {
+        let segment_start = bounds.origin.y + bounds.size.height * last_pos;
+        paint_solid(
+            window,
+            Bounds {
+                origin: gpui::point(bounds.origin.x, segment_start),
+                size: gpui::size(bounds.size.width, bounds.origin.y + bounds.size.height - segment_start),
+            },
+            last_color,
+            vertical_edge_corner_radii(corner_radii, false, true),
+        );
     }
 }
 

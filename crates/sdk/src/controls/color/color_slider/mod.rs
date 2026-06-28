@@ -16,7 +16,7 @@ pub use color_spec::{ColorSpecification, Hsl, RgbaSpec};
 pub use oklch_spec::Oklch;
 pub use color_thumb::ThumbShape;
 pub use builder::ColorSliderBuilder;
-pub use delegates::{AlphaDelegate, ChannelDelegate, GradientDelegate, HueDelegate};
+pub use delegates::{AlphaDelegate, ChannelDelegate, GradientDelegate, GradientStop, HueDelegate};
 pub use domain_renderer::ColorSliderDomainRenderer;
 pub use sync::{primary_slider_value, refresh_color_slider, update_domain_delegate};
 pub use template::{ColorSliderTemplate, ColorSliderTemplateConfig, color_slider_template, default_color_slider_template};

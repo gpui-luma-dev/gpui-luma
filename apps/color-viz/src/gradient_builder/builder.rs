@@ -9,8 +9,8 @@ use gpui_luma::controls::color::color_field::ColorFieldEvent;
 use gpui_luma::controls::color::color_ring::primary_slider_value;
 use gpui_luma::controls::color::style::{ElementExt, StyledExt};
 use gpui_luma::controls::color::color_slider::{
-    ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext, GradientDelegate, refresh_color_slider,
-    update_domain_delegate,
+    ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext, GradientDelegate, GradientStop,
+    refresh_color_slider, update_domain_delegate,
 };
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent, ThumbId};
@@ -295,10 +295,10 @@ impl GradientBuilder {
                 })
                 .collect::<Vec<_>>(),
         );
-        let colors = stops.iter().map(|(_, color)| *color).collect();
+        let stops = stops.into_iter().map(|(position, color)| GradientStop { position, color }).collect();
         let mut track_context = self.track_context.clone();
         track_context.theme_is_dark = matches!(self.look.mode(), ThemeMode::Dark);
-        update_domain_delegate(&self.domain_renderer, Arc::new(GradientDelegate { colors }), track_context);
+        update_domain_delegate(&self.domain_renderer, Arc::new(GradientDelegate { stops }), track_context);
         refresh_color_slider(&self.gradient_stops, cx);
         cx.notify();
     }
