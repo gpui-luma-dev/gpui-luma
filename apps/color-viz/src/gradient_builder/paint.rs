@@ -1,12 +1,22 @@
 use gpui::{
     Bounds, Corners, Edges, Hsla, PaintQuad, Pixels, Window, linear_color_stop, linear_gradient, px, transparent_black,
 };
+use image::{Frame, ImageBuffer, Rgba};
+use smallvec::smallvec;
+use std::sync::Arc;
+use tiny_skia::{Pixmap, PremultipliedColorU8};
 
 use super::color::interpolate_rgb;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GradientType {
     Linear,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PreviewRenderer {
+    Quads,
+    RenderImage,
 }
 
 const EDGE_EPSILON: f32 = 0.001;
@@ -155,6 +165,7 @@ pub fn paint_linear_gradient_preview(
     stops: &[(f32, Hsla)],
     rotation_deg: f32,
     corner_radii: Corners<Pixels>,
+    allow_native_two_stop: bool,
 ) {
     let stops = sorted_stops(stops);
     if stops.is_empty() {
@@ -166,7 +177,7 @@ pub fn paint_linear_gradient_preview(
         return;
     }
 
-    if stops.len() == 2 {
+    if allow_native_two_stop && stops.len() == 2 {
         let (start_pos, start_color) = stops[0];
         let (end_pos, end_color) = stops[1];
         window.paint_quad(PaintQuad {
@@ -200,6 +211,64 @@ pub fn paint_linear_gradient_preview(
     }
 
     paint_rasterized_gradient_preview(window, bounds, &stops, rotation_deg, corner_radii);
+}
+
+pub fn rasterize_linear_gradient_preview(
+    size: gpui::Size<Pixels>,
+    stops: &[(f32, Hsla)],
+    rotation_deg: f32,
+) -> Option<Arc<gpui::RenderImage>> {
+    let stops = sorted_stops(stops);
+    if stops.is_empty() {
+        return None;
+    }
+
+    let scale = raster_scale_for_size(size);
+    let width = (size.width.as_f32() * scale).round() as u32;
+    let height = (size.height.as_f32() * scale).round() as u32;
+    if width == 0 || height == 0 {
+        return None;
+    }
+
+    let radians = rotation_deg.to_radians();
+    let direction = (radians.sin(), -radians.cos());
+    let corners = [(0.0_f32, 0.0_f32), (1.0_f32, 0.0_f32), (0.0_f32, 1.0_f32), (1.0_f32, 1.0_f32)];
+    let mut min_projection = f32::INFINITY;
+    let mut max_projection = f32::NEG_INFINITY;
+    for (x, y) in corners {
+        let projection = x * direction.0 + y * direction.1;
+        min_projection = min_projection.min(projection);
+        max_projection = max_projection.max(projection);
+    }
+    let projection_span = (max_projection - min_projection).max(f32::EPSILON);
+
+    let mut pixmap = Pixmap::new(width, height)?;
+    let pixels = pixmap.pixels_mut();
+
+    for y in 0..height {
+        for x in 0..width {
+            let sample_x = (x as f32 + 0.5) / width as f32;
+            let sample_y = (y as f32 + 0.5) / height as f32;
+            let projection = sample_x * direction.0 + sample_y * direction.1;
+            let sample = ((projection - min_projection) / projection_span).clamp(0.0, 1.0);
+            let color = color_at_position(&stops, sample);
+            let rgb = color.to_rgb();
+            let alpha = color.a.clamp(0.0, 1.0);
+            let r_u8 = (rgb.r.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;
+            let g_u8 = (rgb.g.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;
+            let b_u8 = (rgb.b.clamp(0.0, 1.0) * alpha * 255.0).round() as u8;
+            let a_u8 = (alpha * 255.0).round() as u8;
+
+            if let Some(pixel) = PremultipliedColorU8::from_rgba(b_u8, g_u8, r_u8, a_u8) {
+                pixels[(y * width + x) as usize] = pixel;
+            }
+        }
+    }
+
+    let raw_bytes = pixmap.data().to_vec();
+    let image_buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, raw_bytes)?;
+    let frame = Frame::new(image_buffer);
+    Some(Arc::new(gpui::RenderImage::new(smallvec![frame])))
 }
 
 fn paint_vertical_gradient_preview(
@@ -280,6 +349,17 @@ fn paint_vertical_gradient_preview(
             last_color,
             vertical_edge_corner_radii(corner_radii, false, true),
         );
+    }
+}
+
+fn raster_scale_for_size(size: gpui::Size<Pixels>) -> f32 {
+    let max_side = size.width.max(size.height).as_f32();
+    if max_side <= 220.0 {
+        2.0
+    } else if max_side <= 420.0 {
+        1.5
+    } else {
+        1.25
     }
 }
 

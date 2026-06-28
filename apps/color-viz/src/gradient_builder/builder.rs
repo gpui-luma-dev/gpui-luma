@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use gpui::{
-    Bounds, ClickEvent, Context, Corner, Corners, Entity, MouseDownEvent, Pixels, Render, Subscription, Window,
-    anchored, canvas, deferred, div, point, prelude::*, px,
+    Bounds, ClickEvent, Context, Corner, Corners, Entity, ImageSource, MouseDownEvent, Pixels, Render, RenderImage,
+    SharedString, Size, Subscription, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, size,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::color::color_field::ColorFieldEvent;
@@ -21,7 +22,10 @@ use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt,
 use lucide_icons::Icon as LucideIcon;
 
 use super::color::{format_css_linear_gradient, format_hex_color, format_percent};
-use super::paint::{GradientType, color_at_position, paint_linear_gradient_preview, sorted_stops};
+use super::paint::{
+    GradientType, PreviewRenderer, color_at_position, paint_linear_gradient_preview, rasterize_linear_gradient_preview,
+    sorted_stops,
+};
 use super::sv_triangle_picker::SvTrianglePicker;
 
 const SHELL_RADIUS: f32 = 12.0;
@@ -52,12 +56,35 @@ pub struct GradientBuilder {
     stop_delete_buttons: HashMap<ThumbId, Entity<Button>>,
     rotation_slider: Entity<SliderControl>,
     type_selector: Entity<Selector>,
+    renderer_selector: Entity<Selector>,
     rotation_deg: f32,
     gradient_type: GradientType,
+    preview_renderer: PreviewRenderer,
+    preview_size: Size<Pixels>,
+    preview_image_cache: Option<(PreviewImageCacheKey, Arc<RenderImage>)>,
+    active_preview_strategy: &'static str,
+    last_render_ms: Option<f32>,
     color_picker: Entity<SvTrianglePicker>,
     color_picker_open: bool,
     stop_swatch_bounds: HashMap<ThumbId, Bounds<Pixels>>,
     _subscriptions: Vec<Subscription>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PreviewStopKey {
+    position_millis: u16,
+    red: u8,
+    green: u8,
+    blue: u8,
+    alpha: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PreviewImageCacheKey {
+    width_px: u16,
+    height_px: u16,
+    rotation_tenths: u16,
+    stops: Vec<PreviewStopKey>,
 }
 
 impl GradientBuilder {
@@ -95,6 +122,8 @@ impl GradientBuilder {
             look.slider("color-viz-gradient-rotation").range(0.0..360.0).step(1.0).value(90.0).spawn(cx);
         let type_selector =
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
+        let renderer_selector =
+            look.selector("color-viz-gradient-renderer").items(renderer_items()).selected_id("quads").spawn(cx);
         let color_picker = cx.new(|cx| SvTrianglePicker::new(start, cx));
 
         let mut builder = Self {
@@ -108,15 +137,29 @@ impl GradientBuilder {
             stop_delete_buttons: HashMap::new(),
             rotation_slider: rotation_slider.clone(),
             type_selector: type_selector.clone(),
+            renderer_selector: renderer_selector.clone(),
             rotation_deg: 90.0,
             gradient_type: GradientType::Linear,
+            preview_renderer: PreviewRenderer::Quads,
+            preview_size: size(px(0.0), px(0.0)),
+            preview_image_cache: None,
+            active_preview_strategy: "quads",
+            last_render_ms: None,
             color_picker: color_picker.clone(),
             color_picker_open: false,
             stop_swatch_bounds: HashMap::new(),
             _subscriptions: Vec::new(),
         };
 
-        builder.wire_subscriptions(cx, gradient_stops, add_stop_button, rotation_slider, type_selector, color_picker);
+        builder.wire_subscriptions(
+            cx,
+            gradient_stops,
+            add_stop_button,
+            rotation_slider,
+            type_selector,
+            renderer_selector,
+            color_picker,
+        );
         builder.sync_stop_buttons(cx);
         builder.rebuild_stops(cx);
         builder
@@ -129,6 +172,7 @@ impl GradientBuilder {
         add_stop_button: Entity<Button>,
         rotation_slider: Entity<SliderControl>,
         type_selector: Entity<Selector>,
+        renderer_selector: Entity<Selector>,
         color_picker: Entity<SvTrianglePicker>,
     ) {
         self._subscriptions.push(cx.subscribe(&gradient_stops, |this, _, event, cx| {
@@ -144,6 +188,9 @@ impl GradientBuilder {
         }));
         self._subscriptions.push(cx.subscribe(&type_selector, |this, _, event, cx| {
             this.handle_type_event(event, cx);
+        }));
+        self._subscriptions.push(cx.subscribe(&renderer_selector, |this, _, event, cx| {
+            this.handle_renderer_event(event, cx);
         }));
         self._subscriptions.push(cx.subscribe(&color_picker.read(cx).ring(), |this, _, event, cx| {
             if primary_slider_value(event).is_some() {
@@ -214,6 +261,8 @@ impl GradientBuilder {
     fn handle_rotation_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
         if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
             self.rotation_deg = *value;
+            self.invalidate_preview_cache();
+            let _ = self.ensure_preview_image_cache(self.preview_size, cx);
             cx.notify();
         }
     }
@@ -222,6 +271,21 @@ impl GradientBuilder {
         let SelectorEvent::Change { item_id, .. } = event;
         if item_id.as_ref() == "linear" {
             self.gradient_type = GradientType::Linear;
+            cx.notify();
+        }
+    }
+
+    fn handle_renderer_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
+        let SelectorEvent::Change { item_id, .. } = event;
+        let next = if item_id.as_ref() == "render" {
+            PreviewRenderer::RenderImage
+        } else {
+            PreviewRenderer::Quads
+        };
+        if self.preview_renderer != next {
+            self.preview_renderer = next;
+            self.invalidate_preview_cache();
+            let _ = self.ensure_preview_image_cache(self.preview_size, cx);
             cx.notify();
         }
     }
@@ -353,6 +417,8 @@ impl GradientBuilder {
         let mut track_context = self.track_context.clone();
         track_context.theme_is_dark = matches!(self.look.mode(), ThemeMode::Dark);
         update_domain_delegate(&self.domain_renderer, Arc::new(GradientDelegate { stops }), track_context);
+        self.invalidate_preview_cache();
+        let _ = self.ensure_preview_image_cache(self.preview_size, cx);
         refresh_color_slider(&self.gradient_stops, cx);
         cx.notify();
     }
@@ -420,24 +486,140 @@ impl GradientBuilder {
     fn gradient_spec(&self, cx: &Context<Self>) -> String {
         format_css_linear_gradient(&self.preview_stops(cx), self.rotation_deg)
     }
+
+    fn uses_render_preview(&self, cx: &Context<Self>) -> bool {
+        self.preview_renderer == PreviewRenderer::RenderImage && self.preview_stops(cx).len() > 1
+    }
+
+    fn sync_preview_strategy(&mut self, stop_count: usize) {
+        self.active_preview_strategy = match (stop_count, self.preview_renderer) {
+            (0, _) => "empty",
+            (1, _) => "solid",
+            (2, PreviewRenderer::RenderImage) => "render",
+            (2, PreviewRenderer::Quads) => "quads",
+            (_, PreviewRenderer::RenderImage) => "render",
+            _ => "quads",
+        };
+        if self.active_preview_strategy != "render" {
+            self.last_render_ms = None;
+        }
+    }
+
+    fn handle_preview_bounds(&mut self, bounds: Bounds<Pixels>, cx: &mut Context<Self>) -> bool {
+        let mut refreshed = false;
+        if self.preview_size != bounds.size {
+            self.preview_size = bounds.size;
+            self.invalidate_preview_cache();
+        }
+
+        if self.uses_render_preview(cx) && self.ensure_preview_image_cache(bounds.size, cx) {
+            refreshed = true;
+            cx.notify();
+        }
+        refreshed
+    }
+
+    fn ensure_preview_image_cache(&mut self, preview_size: Size<Pixels>, cx: &Context<Self>) -> bool {
+        if !self.uses_render_preview(cx) || preview_size.width <= px(0.0) || preview_size.height <= px(0.0) {
+            return false;
+        }
+
+        let stops = self.preview_stops(cx);
+        let key = preview_image_cache_key(preview_size, self.rotation_deg, &stops);
+        if let Some((cached_key, _)) = &self.preview_image_cache
+            && *cached_key == key
+        {
+            return false;
+        }
+
+        let started = Instant::now();
+        let Some(image) = rasterize_linear_gradient_preview(preview_size, &stops, self.rotation_deg) else {
+            return false;
+        };
+
+        self.preview_image_cache = Some((key, image));
+        self.last_render_ms = Some(started.elapsed().as_secs_f32() * 1000.0);
+        true
+    }
+
+    fn cached_preview_image(&self) -> Option<Arc<RenderImage>> {
+        self.preview_image_cache.as_ref().map(|(_, image)| image.clone())
+    }
+
+    fn invalidate_preview_cache(&mut self) {
+        self.preview_image_cache = None;
+    }
 }
 
 impl Render for GradientBuilder {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let stops = self.preview_stops(cx);
+        self.sync_preview_strategy(stops.len());
         let rotation_deg = self.rotation_deg;
         let gradient_spec = self.gradient_spec(cx);
         let code_style = self.look.typography_scale(ShadcnTextSize::Xs);
+        let info_label_style = self.look.mode_tokens().typography.text.label;
+        let info_value_style = self.look.mode_tokens().typography.text.label;
         let gradient_stops = self.gradient_stops.clone();
         let add_stop_button = self.add_stop_button.clone();
         let rotation_slider = self.rotation_slider.clone();
         let type_selector = self.type_selector.clone();
+        let renderer_selector = self.renderer_selector.clone();
         let color_picker = self.color_picker.clone();
         let color_picker_open = self.color_picker_open;
         let card_bg = self.look.token_color("card").unwrap_or(chrome.panel_background);
         let stop_rows = self.ordered_stop_rows(cx);
         let preview_corner_radii = preview_panel_corner_radii();
+        let preview_surface_radii =
+            Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: px(0.0) };
+        let preview_uses_render_image = self.preview_renderer == PreviewRenderer::RenderImage && stops.len() > 1;
+        let allow_native_two_stop = stops.len() == 2 && self.preview_renderer != PreviewRenderer::Quads;
+        let preview_image = if preview_uses_render_image {
+            self.cached_preview_image()
+        } else {
+            None
+        };
+        let diagnostics_panel = div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_4()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(render_info_row("Active", self.active_preview_strategy, info_label_style, info_value_style, chrome))
+            .child(render_info_row(
+                "Requested",
+                match self.preview_renderer {
+                    PreviewRenderer::Quads => "quads",
+                    PreviewRenderer::RenderImage => "render",
+                },
+                info_label_style,
+                info_value_style,
+                chrome,
+            ))
+            .child(render_info_row("Stops", format!("{}", stops.len()), info_label_style, info_value_style, chrome))
+            .child(render_info_row(
+                "Preview",
+                format!(
+                    "{} x {}",
+                    self.preview_size.width.as_f32().round() as i32,
+                    self.preview_size.height.as_f32().round() as i32
+                ),
+                info_label_style,
+                info_value_style,
+                chrome,
+            ))
+            .child(render_info_row(
+                "Raster",
+                self.last_render_ms.map(|ms| format!("{ms:.2} ms")).unwrap_or_else(|| "n/a".to_string()),
+                info_label_style,
+                info_value_style,
+                chrome,
+            ));
         let stop_editor = div()
             .w_full()
             .flex()
@@ -463,6 +645,7 @@ impl Render for GradientBuilder {
                     )
             ))
             .child(form_field!("Type", chrome; type_selector))
+            .child(form_field!("Renderer", chrome; renderer_selector))
             .child(
                 div()
                     .id("color-viz-gradient-spec")
@@ -507,6 +690,7 @@ impl Render for GradientBuilder {
                     )
                 })),
             stop_editor,
+            diagnostics_panel,
         }
         .id("color-viz-gradient-controls")
         .w(px(432.0))
@@ -552,23 +736,49 @@ impl Render for GradientBuilder {
             controls
         };
 
-        let preview = div()
+        let preview_builder = cx.entity();
+        let preview_surface = div()
             .id("color-viz-gradient-preview")
+            .relative()
+            .size_full()
+            .rounded(px(0.0))
+            .overflow_hidden()
+            .on_prepaint(move |bounds, window, cx| {
+                preview_builder.update(cx, |this, cx| {
+                    if this.handle_preview_bounds(bounds, cx) {
+                        window.refresh();
+                    }
+                });
+            })
+            .when_some(preview_image, |this, image| {
+                this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
+            })
+            .when(!preview_uses_render_image, |this| {
+                this.child({
+                    let stops = stops.clone();
+                    canvas(
+                        move |_, _, _| {},
+                        move |bounds, _, window, _cx| {
+                            paint_linear_gradient_preview(
+                                window,
+                                bounds,
+                                &stops,
+                                rotation_deg,
+                                preview_surface_radii,
+                                allow_native_two_stop,
+                            );
+                        },
+                    )
+                    .size_full()
+                })
+            });
+        let preview = div()
             .flex_1()
             .min_w(px(0.0))
             .h_full()
             .corner_radii(preview_corner_radii)
-            .overflow_hidden()
-            .child({
-                let stops = stops.clone();
-                canvas(
-                    move |_, _, _| {},
-                    move |bounds, _, window, _cx| {
-                        paint_linear_gradient_preview(window, bounds, &stops, rotation_deg, preview_corner_radii);
-                    },
-                )
-                .size_full()
-            });
+            .p(px(10.0))
+            .child(preview_surface);
 
         let shell = hstack! {
             gap=0;
@@ -699,6 +909,51 @@ fn render_stop_row(
         .when_some(delete_button, |row, button| row.child(button))
 }
 
+fn render_info_row(
+    label: &'static str,
+    value: impl Into<SharedString>,
+    label_style: LumaTextStyle,
+    value_style: LumaTextStyle,
+    chrome: gpui_luma::theme::LumaChrome,
+) -> impl IntoElement {
+    div()
+        .w_full()
+        .flex()
+        .items_center()
+        .justify_between()
+        .gap_3()
+        .child(div().typography_style(label_style).text_color(chrome.muted_text).child(label))
+        .child(div().typography_style(value_style).text_color(chrome.body_text).child(value.into()))
+}
+
 fn type_items() -> Vec<SelectorItem> {
     vec![SelectorItem::new("linear").label("Linear")]
+}
+
+fn renderer_items() -> Vec<SelectorItem> {
+    vec![SelectorItem::new("quads").label("Quads"), SelectorItem::new("render").label("Render")]
+}
+
+fn preview_image_cache_key(
+    preview_size: Size<Pixels>,
+    rotation_deg: f32,
+    stops: &[(f32, gpui::Hsla)],
+) -> PreviewImageCacheKey {
+    PreviewImageCacheKey {
+        width_px: preview_size.width.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
+        height_px: preview_size.height.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
+        rotation_tenths: (rotation_deg.rem_euclid(360.0) * 10.0).round().clamp(0.0, u16::MAX as f32) as u16,
+        stops: stops.iter().map(|(position, color)| preview_stop_key(*position, *color)).collect(),
+    }
+}
+
+fn preview_stop_key(position: f32, color: gpui::Hsla) -> PreviewStopKey {
+    let rgb = color.to_rgb();
+    PreviewStopKey {
+        position_millis: (position.clamp(0.0, 1.0) * 1000.0).round() as u16,
+        red: (rgb.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+        green: (rgb.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+        blue: (rgb.b.clamp(0.0, 1.0) * 255.0).round() as u8,
+        alpha: (color.a.clamp(0.0, 1.0) * 255.0).round() as u8,
+    }
 }

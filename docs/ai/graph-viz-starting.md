@@ -76,9 +76,9 @@ The `graph-viz` app will structure its user interface strictly around the `gpui-
 
 ### 4.1 Composing SDK Controls
 All interface widgets must be created using the `ShadcnLook` extension builders:
-*   **Navigation:** Use `TabsNavigation` (in [content_pane.rs](file:///Users/scg/Developer/GitHub/gpui-luma/apps/graph-viz/src/graph/content_pane.rs)) to switch between tabs (e.g., "Summary", "Telemetry", "Route Map").
-*   **Selections:** Use `Selector` in the sidebar to pick the active telemetry metric (e.g., Heart Rate, Elevation, Power) to plot.
-*   **Timeline Scrubbing:** Use `Slider` to drag/scrub through the ride timeline, updating the stats view in real-time.
+*   **Vertical Scrolling Layout:** A tabbed interface can come later. For now, stack all graph panels, summary metrics, and maps vertically (`vstack!`) inside a scrollable main window viewport.
+*   **Selections:** Use `Selector` in the sidebar or control header to choose or filter which telemetry metrics (e.g., Heart Rate, Elevation, Power) are plotted in the stack.
+*   **Timeline Scrubbing:** Use a unified `Slider` to scrub through the ride timeline, syncing the highlight crosshairs/tooltips across all stacked graphs simultaneously.
 
 ### 4.2 Layout Macro Enforcement
 In compliance with the workspace rules, do not write raw multi-child flex chains. All layouts must use `vstack!`, `hstack!`, or `wrappanel!`:

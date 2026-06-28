@@ -2361,8 +2361,11 @@ dependencies = [
  "gpui-luma-look-shadcn",
  "gpui_platform",
  "gtk",
+ "image",
  "lucide-icons",
  "palette",
+ "smallvec",
+ "tiny-skia",
  "tracing",
  "zed-font-kit",
 ]
