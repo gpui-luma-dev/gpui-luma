@@ -1,4 +1,5 @@
 use gpui::{Context, Entity, FocusHandle, Render, Window, div, prelude::*};
+use gpui_luma::controls::color::style::{ColorControlTheme, set_active_color_control_theme};
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::ThemeMode;
@@ -19,10 +20,21 @@ impl ColorVizApp {
         let focus_scope = cx.focus_handle();
         let look = theme_choice.shadcn_look();
         look.set_mode(ThemeMode::Dark);
+        sync_color_control_theme(&look);
         let gradient_builder = cx.new(|cx| GradientBuilder::new(look.clone(), cx));
 
         Self { focus_scope, look, gradient_builder }
     }
+}
+
+fn sync_color_control_theme(look: &ShadcnLook) {
+    let chrome = look.chrome();
+
+    set_active_color_control_theme(ColorControlTheme::new(
+        chrome.border,
+        chrome.panel_background,
+        matches!(look.mode(), ThemeMode::Dark),
+    ));
 }
 
 impl Render for ColorVizApp {
@@ -40,7 +52,7 @@ impl Render for ColorVizApp {
                 .px_2()
                 .text_color(chrome.title_text)
                 .font_family(sans_family.clone())
-                .child(div().child("Color Viz")),
+                .child(div().child("Color Viz - Gradients")),
         );
 
         div()

@@ -33,13 +33,13 @@ neumorphic-demo-rel:
     cargo run -p gpui-luma-neumorphic-demo --release
 
 color-viz:
-    cargo run -p gpui-luma-color-viz -- awesome-open-claw
+    cargo run -p gpui-luma-color-viz -- elegent-luxury
 
 color-viz-rel:
     MTL_HUD_ENABLED=1 cargo run -p gpui-luma-color-viz --release -- retro-arcade
 
 graph-viz:
-    cargo run -p gpui-luma-graph-viz -- retro-arcade
+    cargo run -p gpui-luma-graph-viz -- awesome-open-claw
 
 loc:
     tokei --types Rust

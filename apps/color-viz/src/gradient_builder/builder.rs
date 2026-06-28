@@ -20,7 +20,7 @@ use gpui_luma::theme::{ControlSize, LumaTextStyle, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
-use super::color::{format_css_linear_gradient, format_hex_color, format_percent, parse_hex_color};
+use super::color::{format_css_linear_gradient, format_hex_color, format_percent};
 use super::paint::{GradientType, color_at_position, paint_linear_gradient_preview, sorted_stops};
 use super::sv_triangle_picker::SvTrianglePicker;
 
@@ -63,10 +63,11 @@ pub struct GradientBuilder {
 impl GradientBuilder {
     pub fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
         let theme_is_dark = matches!(look.mode(), ThemeMode::Dark);
-        let start = parse_hex_color("#864B6A").expect("seed color");
-        let end = parse_hex_color("#C48770").expect("seed color");
+        let start = gpui::hsla(198.0 / 360.0, 1.0, 0.24, 1.0);
+        let middle = gpui::hsla(313.0 / 360.0, 0.48, 0.45, 1.0);
+        let end = gpui::hsla(33.0 / 360.0, 1.0, 0.46, 1.0);
 
-        let slider_builder = ColorSliderBuilder::gradient("color-viz-gradient-stops", 0.22, vec![start, end])
+        let slider_builder = ColorSliderBuilder::gradient("color-viz-gradient-stops", 0.0, vec![start, middle, end])
             .thumb_policy(SliderThumbPolicy {
                 min_count: 2,
                 max_count: 8,
@@ -75,11 +76,9 @@ impl GradientBuilder {
                 allow_remove: true,
                 allow_overlap: false,
             })
-            .thumb_values([(0.22, Some(start)), (1.0, Some(end))])
+            .thumb_values([(0.0, Some(start)), (0.5, Some(middle)), (1.0, Some(end))])
             .size(ControlSize::Md)
             .thumb_medium()
-            //.edge_to_edge()
-            .rounded(px(8.0))
             .theme_is_dark(theme_is_dark);
         let domain_renderer = slider_builder.domain_renderer();
         let track_context = slider_builder.track_context();
@@ -568,7 +567,6 @@ impl Render for GradientBuilder {
         .items_stretch()
         .id("color-viz-gradient-shell")
         .w_full()
-        .max_w(px(1152.0))
         .h_full()
         .min_h_0()
         .rounded(px(SHELL_RADIUS))
