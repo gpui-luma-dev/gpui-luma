@@ -7,8 +7,10 @@ members = [
   "apps/gallery",
   "apps/theme-studio",
   "apps/neumorphic-demo",
+  "apps/color-viz",
+  "apps/graph-viz",
 ]
-default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio", "apps/neumorphic-demo"]
+default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
 [workspace.package]
 edition = "2024"
@@ -47,6 +49,12 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.gpui-luma-neumorphic-demo]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-color-viz]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-graph-viz]
 opt-level = 1
 
 [profile.dev.package.gpui]

@@ -3,6 +3,7 @@ pub mod color_spec;
 pub mod color_thumb;
 pub mod delegates;
 pub mod domain_renderer;
+mod radius;
 mod oklch_spec;
 pub mod sync;
 pub mod template;

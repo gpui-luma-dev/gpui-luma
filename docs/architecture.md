@@ -15,6 +15,8 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/gallery` (`gpui-luma-gallery`)**: The main showcase and interactive validation app for controls and styles.
 *   **`apps/theme-studio` (`gpui-luma-theme-studio`)**: The theme customization dashboard and visual design testing studio.
+*   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, same theme CLI as gallery).
+*   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with theme-studio workbench shell (theme sidebar + tabbed content).
 
 ### Crate Dependencies
 
@@ -24,6 +26,10 @@ graph TD
     Gallery --> Look[crates/look-shadcn]
     Studio[apps/theme-studio] --> SDK
     Studio --> Look
+    ColorViz[apps/color-viz] --> SDK
+    ColorViz --> Look
+    GraphViz[apps/graph-viz] --> SDK
+    GraphViz --> Look
     Look --> SDK
     LookInspect[crates/look-shadcn-inspect] --> Look
     LookInspect --> SDK

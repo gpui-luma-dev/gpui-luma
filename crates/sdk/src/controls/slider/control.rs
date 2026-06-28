@@ -195,6 +195,10 @@ impl SliderControl {
         cx.notify();
     }
 
+    pub fn set_thumb_position(&mut self, thumb_id: ThumbId, percentage: f32, cx: &mut Context<Self>) -> bool {
+        self.set_thumb_position_internal(thumb_id, percentage.clamp(0.0, 1.0), true, cx)
+    }
+
     pub fn sync_domain_thumb_previews(&mut self) {
         sync_thumb_previews(&mut self.model);
     }

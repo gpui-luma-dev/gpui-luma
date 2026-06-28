@@ -2352,6 +2352,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-color-viz"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+ "palette",
+ "tracing",
+ "zed-font-kit",
+]
+
+[[package]]
 name = "gpui-luma-gallery"
 version = "0.1.0"
 dependencies = [
@@ -2360,6 +2376,21 @@ dependencies = [
  "gpui-luma",
  "gpui-luma-look-shadcn",
  "gpui-luma-look-shadcn-inspect",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+ "tracing",
+ "zed-font-kit",
+]
+
+[[package]]
+name = "gpui-luma-graph-viz"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
  "gpui_platform",
  "gtk",
  "lucide-icons",

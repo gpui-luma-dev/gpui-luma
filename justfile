@@ -32,6 +32,15 @@ neumorphic-demo:
 neumorphic-demo-rel:
     cargo run -p gpui-luma-neumorphic-demo --release
 
+color-viz:
+    cargo run -p gpui-luma-color-viz -- awesome-open-claw
+
+color-viz-rel:
+    cargo run -p gpui-luma-color-viz -- retro-arcade --release
+
+graph-viz:
+    cargo run -p gpui-luma-graph-viz -- retro-arcade
+
 loc:
     tokei --types Rust
 

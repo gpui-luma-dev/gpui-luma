@@ -13,6 +13,7 @@ use super::domain_renderer::ColorSliderDomainRenderer;
 use super::types::{Axis, ColorInterpolation, ColorSliderDelegate, ThumbPosition, ThumbSize};
 use super::template::{ColorSliderTemplateConfig, color_slider_template};
 use super::track_context::ColorSliderTrackContext;
+use crate::controls::slider::SliderThumbPolicy;
 
 /// Builder for a unified [`Slider`] entity configured as a color spectrum slider.
 pub struct ColorSliderBuilder {
@@ -34,7 +35,8 @@ impl ColorSliderBuilder {
             corner_radii: CornersRefinement::default(),
             theme_is_dark: false,
         };
-        let domain_renderer = Arc::new(ColorSliderDomainRenderer::new(delegate, track_context.clone()));
+        let domain_renderer =
+            Arc::new(ColorSliderDomainRenderer::new(delegate, track_context.clone(), Arc::clone(&template_config)));
 
         Self {
             slider: new_slider(id)
@@ -54,6 +56,34 @@ impl ColorSliderBuilder {
 
     pub fn gradient(id: impl Into<SharedString>, value: f32, colors: Vec<gpui::Hsla>) -> Self {
         Self::new(id, value, Arc::new(GradientDelegate { colors })).range(0.0..1.0).step(0.01)
+    }
+
+    pub fn multi_stop(mut self) -> Self {
+        self.slider = self.slider.multi_stop();
+        self
+    }
+
+    /// Exactly two fixed gradient stops (no click-to-add or delete).
+    pub fn dual_stop(mut self) -> Self {
+        self.slider = self.slider.thumb_policy(SliderThumbPolicy {
+            min_count: 2,
+            max_count: 2,
+            min_distance: 0.02,
+            allow_insert: false,
+            allow_remove: false,
+            allow_overlap: false,
+        });
+        self
+    }
+
+    pub fn thumb_policy(mut self, policy: SliderThumbPolicy) -> Self {
+        self.slider = self.slider.thumb_policy(policy);
+        self
+    }
+
+    pub fn thumb_values(mut self, values: impl IntoIterator<Item = (impl Into<f64>, Option<gpui::Hsla>)>) -> Self {
+        self.slider = self.slider.thumb_values(values);
+        self
     }
 
     pub fn alpha<S: ColorSpecification>(id: impl Into<SharedString>, value: f32, spec: S) -> Self {

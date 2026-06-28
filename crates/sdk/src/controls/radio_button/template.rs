@@ -79,7 +79,9 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
 
         let mut indicator = div().relative().child(indicator_visual);
 
-        if !indicator_only && let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius) {
+        if !indicator_only
+            && let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius)
+        {
             indicator = indicator.child(adorner);
         }
 

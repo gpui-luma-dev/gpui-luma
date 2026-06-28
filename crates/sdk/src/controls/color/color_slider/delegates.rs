@@ -1,6 +1,7 @@
 use gpui::*;
 
 use super::color_spec::{self, ColorChannel, ColorSpecification};
+use super::radius::inner_track_paint_corner_radius;
 use super::types::{Axis, ColorInterpolation, ColorSliderDelegate};
 use super::track_context::ColorSliderTrackContext;
 use crate::controls::color::checkerboard_paint::paint_masked_checkerboard;
@@ -30,14 +31,6 @@ fn axis_total_size(bounds: Bounds<Pixels>, axis: Axis) -> Pixels {
         bounds.size.height
     } else {
         bounds.size.width
-    }
-}
-
-fn axis_default_radius(bounds: Bounds<Pixels>, axis: Axis) -> Pixels {
-    if axis == Axis::Vertical {
-        bounds.size.width / 2.0
-    } else {
-        bounds.size.height / 2.0
     }
 }
 
@@ -86,6 +79,10 @@ fn apply_edge_corner_radii(
             corner_radii.bottom_right = radius;
         }
     }
+}
+
+fn track_corner_radius(context: &ColorSliderTrackContext, bounds: Bounds<Pixels>, rem_size: Pixels) -> Pixels {
+    inner_track_paint_corner_radius(&context.corner_radii, rem_size, bounds, context.axis)
 }
 
 fn effective_channel_range(ctx: &ColorSliderTrackContext, channel: ColorChannel) -> (f32, f32) {
@@ -141,12 +138,10 @@ pub struct HueDelegate;
 fn paint_hue_spectrum(context: &ColorSliderTrackContext, bounds: Bounds<Pixels>, window: &mut Window) {
     let reversed = context.reversed;
     let axis = context.axis;
-    let style_corner_radii = context.corner_radii.clone();
     let rem_size = window.rem_size();
     let total_size = axis_total_size(bounds, axis);
     let band_size = total_size / 6.0;
-    let default_radius = axis_default_radius(bounds, axis);
-    let corner_radius = style_corner_radii.top_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius);
+    let corner_radius = track_corner_radius(context, bounds, rem_size);
 
     let mut bands = [
         (hsla(0.0, 1.0, 0.5, 1.0), hsla(60.0 / 360.0, 1.0, 0.5, 1.0)),
@@ -252,9 +247,10 @@ fn paint_gradient_spectrum(
 
     if colors.len() <= 1 {
         if let Some(color) = colors.first() {
+            let corner_radius = track_corner_radius(context, bounds, window.rem_size());
             window.paint_quad(PaintQuad {
                 bounds,
-                corner_radii: Corners::all(axis_default_radius(bounds, axis)),
+                corner_radii: Corners::all(corner_radius),
                 background: (*color).into(),
                 border_widths: Edges::default(),
                 border_color: transparent_black(),
@@ -268,8 +264,7 @@ fn paint_gradient_spectrum(
     let total_size = axis_total_size(bounds, axis);
     let segment_count = colors.len() - 1;
     let segment_size = total_size / segment_count as f32;
-    let default_radius = axis_default_radius(bounds, axis);
-    let corner_radius = context.corner_radii.top_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius);
+    let corner_radius = track_corner_radius(context, bounds, rem_size);
 
     for i in 0..segment_count {
         let start_color = colors[i];
@@ -385,8 +380,7 @@ fn paint_alpha_spectrum<S: ColorSpecification>(
     let (start, end) = if context.reversed { (1.0, 0.0) } else { (0.0, 1.0) };
     let is_dark = context.theme_is_dark;
     let rem_size = window.rem_size();
-    let default_radius = axis_default_radius(bounds, axis);
-    let radius = context.corner_radii.top_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius);
+    let radius = track_corner_radius(context, bounds, rem_size);
 
     let mut opaque_color = delegate.spec.to_hsla();
     opaque_color.a = 1.0;
@@ -481,15 +475,10 @@ fn paint_channel_spectrum<S: ColorSpecification>(
         let mut end_spec = delegate.spec;
         end_spec.set_value(delegate.channel_name.as_ref(), range_max);
         let angle = axis_gradient_angle(axis);
+        let radius = track_corner_radius(context, bounds, window.rem_size());
         window.paint_quad(PaintQuad {
             bounds,
-            corner_radii: Corners::all(
-                context
-                    .corner_radii
-                    .top_left
-                    .map(|v| v.to_pixels(window.rem_size()))
-                    .unwrap_or(axis_default_radius(bounds, axis)),
-            ),
+            corner_radii: Corners::all(radius),
             background: linear_gradient(
                 angle,
                 linear_color_stop(start_spec.to_hsla(), start),
@@ -506,8 +495,7 @@ fn paint_channel_spectrum<S: ColorSpecification>(
     let total_size = axis_total_size(bounds, axis);
     let segment_count = 10;
     let segment_size = total_size / segment_count as f32;
-    let default_radius = axis_default_radius(bounds, axis);
-    let corner_radius = context.corner_radii.top_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius);
+    let corner_radius = track_corner_radius(context, bounds, rem_size);
     let spec = delegate.spec;
     let channel_name = delegate.channel_name.clone();
 

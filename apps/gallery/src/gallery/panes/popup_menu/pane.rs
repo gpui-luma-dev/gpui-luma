@@ -10,7 +10,7 @@ use gpui_luma::controls::popup_menu::{
     PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{InteractionState};
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -314,6 +314,9 @@ fn render_trigger_sample(
         trigger_bounds: None,
         placement: PopupMenuPlacement::BelowStart,
         trigger_style: sample.trigger_style,
+        trigger_size: ControlSize::Md,
+        trigger_icon: None,
+        without_elevation: false,
         open_submenu: None,
         active_path: None,
         enabled: !sample.state.disabled,

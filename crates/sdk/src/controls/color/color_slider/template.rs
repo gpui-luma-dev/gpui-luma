@@ -11,6 +11,7 @@ use crate::controls::slider::{
 use crate::theme::ControlSize;
 
 use super::color_thumb::{ColorThumb, ThumbAxis, ThumbShape};
+use super::radius::{inner_track_corner_radius, inset_corner_radii, resolve_track_corner_radii, TRACK_BORDER_WIDTH};
 use super::types::{Axis, ThumbConfig, ThumbPosition, ThumbSize, sizing};
 use super::visual::default_color_slider_visual;
 
@@ -70,7 +71,10 @@ impl SliderTemplate for ColorSliderTemplate {
         let thumb_size = thumb_size_for_config(&config.thumb);
         let track_inset = track_inset(&config.thumb, thumb_size);
         let track_hitsize = track_thickness.max(thumb_size);
-        let track_radius = resolve_track_radius(&config.corner_radii, config.thumb.shape, window.rem_size());
+        let track_radius =
+            resolve_track_corner_radii(&config.corner_radii, window.rem_size(), px(track_thickness / 2.0));
+        let inner_track_radii = inset_corner_radii(track_radius, TRACK_BORDER_WIDTH);
+        let inner_track_radius = inner_track_corner_radius(track_radius.top_left);
 
         let SliderTemplateHandlers {
             track_bounds,
@@ -90,15 +94,6 @@ impl SliderTemplate for ColorSliderTemplate {
             mouse_up_out,
             drag_move: drag_move.clone(),
         };
-
-        let primary_thumb =
-            model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());
-        let display_percentage = primary_thumb
-            .map(|thumb| display_position(thumb.position.clamp(0.0, 1.0), model.reversed))
-            .unwrap_or(0.0);
-        let thumb_main_adjust = px(thumb_main_axis_size(&config.thumb, thumb_size) * display_percentage);
-        let fill_color =
-            primary_thumb.and_then(|thumb| thumb_fill_color(&config.thumb, thumb_size, track_thickness, thumb));
 
         let mut track = div()
             .id(format!("{}-track", model.id))
@@ -120,7 +115,7 @@ impl SliderTemplate for ColorSliderTemplate {
                     .right(px(track_inset))
             });
 
-        if let Some(layer) = render_domain_track_layer(model, track_radius.top_left) {
+        if let Some(layer) = render_domain_track_layer(model, inner_track_radius) {
             track = track.child(layer);
         }
 
@@ -132,7 +127,7 @@ impl SliderTemplate for ColorSliderTemplate {
                             segment,
                             model.orientation,
                             model.reversed,
-                            track_radius.top_left,
+                            inner_track_radius,
                             visual.blocked_overlay,
                         )
                     },
@@ -146,34 +141,37 @@ impl SliderTemplate for ColorSliderTemplate {
             ThumbAxis::Horizontal
         };
         let thumb_cross_offset = px((track_hitsize - thumb_size) / 2.0);
-        let thumb = div()
-            .id(format!("{}-thumb", model.id))
-            .absolute()
-            .when(is_vertical, |this| {
-                this.left(thumb_cross_offset).top(relative(display_percentage)).mt(-thumb_main_adjust)
-            })
-            .when(!is_vertical, |this| {
-                this.top(thumb_cross_offset).left(relative(display_percentage)).ml(-thumb_main_adjust)
-            })
-            .child(
-                ColorThumb::new(px(thumb_size))
-                    .shape(config.thumb.shape)
-                    .axis(thumb_axis)
-                    .active(model.active_thumb_id == primary_thumb.map(|thumb| thumb.id))
-                    .when_some(fill_color, |this, color| this.color(color)),
-            );
-
-        let thumb = if model.enabled {
-            attach_thumb_drag(
-                thumb,
-                model.id,
-                primary_thumb_id,
-                thumb_mouse_down.clone(),
-                drag_move.clone(),
-                model.enabled,
-            )
-        } else {
-            thumb
+        let render_thumb = |thumb: &SliderThumbValue, id_suffix: &str| {
+            let display_percentage = display_position(thumb.position.clamp(0.0, 1.0), model.reversed);
+            let thumb_main_adjust = px(thumb_main_axis_size(&config.thumb, thumb_size) * display_percentage);
+            let fill_color = thumb_fill_color(&config.thumb, thumb_size, track_thickness, thumb);
+            let mut node = div()
+                .id(format!("{}-thumb{}", model.id, id_suffix))
+                .absolute()
+                .when(is_vertical, |this| {
+                    this.left(thumb_cross_offset).top(relative(display_percentage)).mt(-thumb_main_adjust)
+                })
+                .when(!is_vertical, |this| {
+                    this.top(thumb_cross_offset).left(relative(display_percentage)).ml(-thumb_main_adjust)
+                })
+                .child(
+                    ColorThumb::new(px(thumb_size))
+                        .shape(config.thumb.shape)
+                        .axis(thumb_axis)
+                        .active(model.active_thumb_id == Some(thumb.id))
+                        .when_some(fill_color, |this, color| this.color(color)),
+                );
+            if model.enabled {
+                node = attach_thumb_drag(
+                    node,
+                    model.id,
+                    thumb.id,
+                    thumb_mouse_down.clone(),
+                    drag_move.clone(),
+                    model.enabled,
+                );
+            }
+            node
         };
 
         let mut root = div()
@@ -188,15 +186,37 @@ impl SliderTemplate for ColorSliderTemplate {
                     track_thickness,
                     track_hitsize,
                     track_inset,
-                    track_radius,
+                    inner_track_radii,
                     visual.disabled_overlay,
                 ))
-            })
-            .when(model.enabled, |this| this.child(thumb));
+            });
+
+        if model.enabled {
+            if model.thumb_policy.is_multi_thumb() {
+                root = root.children(
+                    ordered_thumbs(model)
+                        .into_iter()
+                        .map(|thumb| render_thumb(thumb, &format!("-{}", thumb.id.as_u64()))),
+                );
+            } else {
+                let primary_thumb =
+                    model.thumbs.iter().find(|thumb| thumb.id == primary_thumb_id).or_else(|| model.thumbs.first());
+                if let Some(thumb) = primary_thumb {
+                    root = root.child(render_thumb(thumb, ""));
+                }
+            }
+        }
 
         root = attach_linear_interaction(root, model, interaction);
         root
     }
+}
+
+/// Inactive thumbs first; active thumb last so it paints on top while dragging.
+fn ordered_thumbs<'a>(model: &'a SliderRenderModel<'_>) -> Vec<&'a SliderThumbValue> {
+    let mut thumbs: Vec<_> = model.thumbs.iter().collect();
+    thumbs.sort_by_key(|thumb| model.active_thumb_id == Some(thumb.id));
+    thumbs
 }
 
 fn render_blocked_segment(
@@ -266,22 +286,6 @@ fn thumb_main_axis_size(thumb: &ThumbConfig, thumb_size: f32) -> f32 {
     match thumb.shape {
         ThumbShape::Bar => super::color_thumb::bar_main_axis_size(px(thumb_size)).as_f32(),
         ThumbShape::Circle | ThumbShape::Square => thumb_size,
-    }
-}
-
-fn resolve_track_radius(
-    corner_radii: &CornersRefinement<gpui::AbsoluteLength>,
-    shape: ThumbShape,
-    rem_size: Pixels,
-) -> Corners<Pixels> {
-    let default_radius = px(999.0);
-    let _ = shape;
-
-    Corners {
-        top_left: corner_radii.top_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius),
-        top_right: corner_radii.top_right.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius),
-        bottom_left: corner_radii.bottom_left.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius),
-        bottom_right: corner_radii.bottom_right.map(|v| v.to_pixels(rem_size)).unwrap_or(default_radius),
     }
 }
 

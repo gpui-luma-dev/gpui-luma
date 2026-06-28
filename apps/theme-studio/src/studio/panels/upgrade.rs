@@ -8,7 +8,8 @@ use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderMode
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_button::ThemedRadioButtonTemplate;
 use gpui_luma::controls::radio_group::{
-    RadioGroup, RadioGroupItemLike, RadioGroupTemplate, RadioGroupTemplateHandlers, horizontal as horizontal_radio_group,
+    RadioGroup, RadioGroupItemLike, RadioGroupTemplate, RadioGroupTemplateHandlers,
+    horizontal as horizontal_radio_group,
 };
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
@@ -34,11 +35,7 @@ struct PlanOptionItem {
 
 impl PlanOptionItem {
     fn new(id: impl Into<SharedString>, title: impl Into<SharedString>, description: impl Into<SharedString>) -> Self {
-        Self {
-            id: id.into(),
-            title: title.into(),
-            description: description.into(),
-        }
+        Self { id: id.into(), title: title.into(), description: description.into() }
     }
 }
 
@@ -187,9 +184,8 @@ fn plan_items() -> [PlanOptionItem; 2] {
 
 fn plan_radio_indicator_template(look: Arc<ShadcnLook>) -> Arc<dyn ButtonTemplate<bool>> {
     Arc::new(
-        ThemedRadioButtonTemplate::new(look.radio_button_theme()).with_modifier(|element, _| {
-            element.min_h(px(0.0)).px(px(0.0)).py(px(0.0))
-        }),
+        ThemedRadioButtonTemplate::new(look.radio_button_theme())
+            .with_modifier(|element, _| element.min_h(px(0.0)).px(px(0.0)).py(px(0.0))),
     )
 }
 
