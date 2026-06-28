@@ -199,6 +199,30 @@ impl SliderControl {
         self.set_thumb_position_internal(thumb_id, percentage.clamp(0.0, 1.0), true, cx)
     }
 
+    pub fn select_thumb_id(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) -> bool {
+        let changed = self.select_thumb(thumb_id, true, cx);
+        if changed {
+            cx.notify();
+        }
+        changed
+    }
+
+    pub fn insert_thumb_at(&mut self, percentage: f32, cx: &mut Context<Self>) -> Option<ThumbId> {
+        let percentage = percentage.clamp(0.0, 1.0);
+        let thumb_id = insert_thumb(&mut self.model, percentage)?;
+        sync_thumb_preview(&mut self.model, thumb_id);
+        self.select_thumb(thumb_id, true, cx);
+        let value = self.thumb_value(thumb_id).unwrap_or(self.model.range.start);
+        cx.emit(SliderEvent::ThumbAdded { thumb_id, value });
+        cx.emit(SliderEvent::Change { thumb_id, value });
+        cx.notify();
+        Some(thumb_id)
+    }
+
+    pub fn remove_thumb_id(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) -> bool {
+        self.remove_thumb(thumb_id, cx)
+    }
+
     pub fn sync_domain_thumb_previews(&mut self) {
         sync_thumb_previews(&mut self.model);
     }

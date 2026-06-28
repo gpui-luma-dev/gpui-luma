@@ -53,11 +53,6 @@ pub fn sdk_hsv_to_hsla(hsv: SdkHsv) -> Hsla {
     Rgba { r: srgb.red, g: srgb.green, b: srgb.blue, a: hsv.a }.into()
 }
 
-pub fn parse_percent(raw: &str) -> Option<f32> {
-    let trimmed = raw.trim().trim_end_matches('%').trim();
-    trimmed.parse::<f32>().ok().map(|value| (value / 100.0).clamp(0.0, 1.0))
-}
-
 pub fn format_percent(position: f32) -> String {
     format!("{}%", (position * 100.0).round() as i32)
 }
