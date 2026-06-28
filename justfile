@@ -36,7 +36,7 @@ color-viz:
     cargo run -p gpui-luma-color-viz -- awesome-open-claw
 
 color-viz-rel:
-    cargo run -p gpui-luma-color-viz -- retro-arcade --release
+    MTL_HUD_ENABLED=1 cargo run -p gpui-luma-color-viz --release -- retro-arcade
 
 graph-viz:
     cargo run -p gpui-luma-graph-viz -- retro-arcade
