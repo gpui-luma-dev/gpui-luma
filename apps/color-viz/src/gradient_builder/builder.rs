@@ -50,7 +50,7 @@ pub struct GradientBuilder {
     track_context: ColorSliderTrackContext,
     add_stop_button: Entity<Button>,
     stop_delete_buttons: HashMap<ThumbId, Entity<Button>>,
-    rotation_selector: Entity<Selector>,
+    rotation_slider: Entity<SliderControl>,
     type_selector: Entity<Selector>,
     rotation_deg: f32,
     gradient_type: GradientType,
@@ -77,7 +77,7 @@ impl GradientBuilder {
                 allow_overlap: false,
             })
             .thumb_values([(0.0, Some(start)), (0.5, Some(middle)), (1.0, Some(end))])
-            .size(ControlSize::Md)
+            .size(ControlSize::Sm)
             .thumb_medium()
             .theme_is_dark(theme_is_dark);
         let domain_renderer = slider_builder.domain_renderer();
@@ -91,8 +91,8 @@ impl GradientBuilder {
         let selected_stop = gradient_stops.read(cx).active_thumb_id();
         let add_stop_button = look.outline_icon_button("color-viz-gradient-add-stop", LucideIcon::Plus).spawn(cx);
 
-        let rotation_selector =
-            look.selector("color-viz-gradient-rotation").items(rotation_items()).selected_id("90").spawn(cx);
+        let rotation_slider =
+            look.slider("color-viz-gradient-rotation").range(0.0..360.0).step(1.0).value(90.0).spawn(cx);
         let type_selector =
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
         let color_picker = cx.new(|cx| SvTrianglePicker::new(start, cx));
@@ -106,7 +106,7 @@ impl GradientBuilder {
             track_context,
             add_stop_button: add_stop_button.clone(),
             stop_delete_buttons: HashMap::new(),
-            rotation_selector: rotation_selector.clone(),
+            rotation_slider: rotation_slider.clone(),
             type_selector: type_selector.clone(),
             rotation_deg: 90.0,
             gradient_type: GradientType::Linear,
@@ -116,7 +116,7 @@ impl GradientBuilder {
             _subscriptions: Vec::new(),
         };
 
-        builder.wire_subscriptions(cx, gradient_stops, add_stop_button, rotation_selector, type_selector, color_picker);
+        builder.wire_subscriptions(cx, gradient_stops, add_stop_button, rotation_slider, type_selector, color_picker);
         builder.sync_stop_buttons(cx);
         builder.rebuild_stops(cx);
         builder
@@ -127,7 +127,7 @@ impl GradientBuilder {
         cx: &mut Context<Self>,
         gradient_stops: Entity<SliderControl>,
         add_stop_button: Entity<Button>,
-        rotation_selector: Entity<Selector>,
+        rotation_slider: Entity<SliderControl>,
         type_selector: Entity<Selector>,
         color_picker: Entity<SvTrianglePicker>,
     ) {
@@ -139,7 +139,7 @@ impl GradientBuilder {
                 this.handle_add_stop(cx);
             }
         }));
-        self._subscriptions.push(cx.subscribe(&rotation_selector, |this, _, event, cx| {
+        self._subscriptions.push(cx.subscribe(&rotation_slider, |this, _, event, cx| {
             this.handle_rotation_event(event, cx);
         }));
         self._subscriptions.push(cx.subscribe(&type_selector, |this, _, event, cx| {
@@ -211,10 +211,9 @@ impl GradientBuilder {
         cx.notify();
     }
 
-    fn handle_rotation_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
-        let SelectorEvent::Change { item_id, .. } = event;
-        if let Ok(rotation) = item_id.parse::<f32>() {
-            self.rotation_deg = rotation;
+    fn handle_rotation_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
+        if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
+            self.rotation_deg = *value;
             cx.notify();
         }
     }
@@ -432,7 +431,7 @@ impl Render for GradientBuilder {
         let code_style = self.look.typography_scale(ShadcnTextSize::Xs);
         let gradient_stops = self.gradient_stops.clone();
         let add_stop_button = self.add_stop_button.clone();
-        let rotation_selector = self.rotation_selector.clone();
+        let rotation_slider = self.rotation_slider.clone();
         let type_selector = self.type_selector.clone();
         let color_picker = self.color_picker.clone();
         let color_picker_open = self.color_picker_open;
@@ -449,7 +448,20 @@ impl Render for GradientBuilder {
             .border_1()
             .border_color(chrome.border)
             .bg(chrome.panel_background)
-            .child(form_field!("Rotation", chrome; rotation_selector))
+            .child(form_field!("Angle", chrome;
+                div()
+                    .w_full()
+                    .flex()
+                    .flex_col()
+                    .gap_2()
+                    .child(rotation_slider)
+                    .child(
+                        div()
+                            .typography_style(code_style)
+                            .text_color(chrome.muted_text)
+                            .child(format!("{rotation_deg:.0}deg"))
+                    )
+            ))
             .child(form_field!("Type", chrome; type_selector))
             .child(
                 div()
@@ -685,15 +697,6 @@ fn render_stop_row(
                 ),
         )
         .when_some(delete_button, |row, button| row.child(button))
-}
-
-fn rotation_items() -> Vec<SelectorItem> {
-    vec![
-        SelectorItem::new("0").label("0°"),
-        SelectorItem::new("90").label("90°"),
-        SelectorItem::new("180").label("180°"),
-        SelectorItem::new("270").label("270°"),
-    ]
 }
 
 fn type_items() -> Vec<SelectorItem> {

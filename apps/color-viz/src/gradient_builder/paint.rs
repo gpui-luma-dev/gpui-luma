@@ -161,6 +161,29 @@ pub fn paint_linear_gradient_preview(
         return;
     }
 
+    if stops.len() == 1 {
+        paint_solid(window, bounds, stops[0].1, corner_radii);
+        return;
+    }
+
+    if stops.len() == 2 {
+        let (start_pos, start_color) = stops[0];
+        let (end_pos, end_color) = stops[1];
+        window.paint_quad(PaintQuad {
+            bounds,
+            corner_radii,
+            background: linear_gradient(
+                rotation_deg,
+                linear_color_stop(start_color, start_pos),
+                linear_color_stop(end_color, end_pos),
+            ),
+            border_widths: Edges::default(),
+            border_color: transparent_black(),
+            border_style: gpui::BorderStyle::default(),
+        });
+        return;
+    }
+
     if rotation_deg.rem_euclid(180.0).abs() < f32::EPSILON {
         paint_vertical_gradient_preview(window, bounds, &stops, rotation_deg, corner_radii);
         return;
@@ -176,7 +199,7 @@ pub fn paint_linear_gradient_preview(
         return;
     }
 
-    paint_striped_gradient_preview(window, bounds, &stops, corner_radii);
+    paint_rasterized_gradient_preview(window, bounds, &stops, rotation_deg, corner_radii);
 }
 
 fn paint_vertical_gradient_preview(
@@ -260,29 +283,76 @@ fn paint_vertical_gradient_preview(
     }
 }
 
-fn paint_striped_gradient_preview(
+fn paint_rasterized_gradient_preview(
     window: &mut Window,
     bounds: Bounds<Pixels>,
     stops: &[(f32, Hsla)],
+    rotation_deg: f32,
     corner_radii: Corners<Pixels>,
 ) {
-    let strips = 128usize;
     let width = bounds.size.width.as_f32();
-    if width <= 0.0 {
+    let height = bounds.size.height.as_f32();
+    if width <= 0.0 || height <= 0.0 {
         return;
     }
 
-    for index in 0..strips {
-        let t0 = index as f32 / strips as f32;
-        let t1 = (index + 1) as f32 / strips as f32;
-        let sample = (t0 + t1) * 0.5;
-        let x0 = bounds.origin.x + bounds.size.width * t0;
-        let x1 = bounds.origin.x + bounds.size.width * t1;
-        let color = color_at_position(stops, sample);
-        let segment_bounds =
-            Bounds { origin: gpui::point(x0, bounds.origin.y), size: gpui::size(x1 - x0, bounds.size.height) };
-        let radii = horizontal_edge_corner_radii(corner_radii, index == 0, index + 1 == strips);
-        paint_solid(window, segment_bounds, color, radii);
+    let radians = rotation_deg.to_radians();
+    let direction = (radians.sin(), -radians.cos());
+    let corners = [(0.0_f32, 0.0_f32), (1.0_f32, 0.0_f32), (0.0_f32, 1.0_f32), (1.0_f32, 1.0_f32)];
+    let mut min_projection = f32::INFINITY;
+    let mut max_projection = f32::NEG_INFINITY;
+    for (x, y) in corners {
+        let projection = x * direction.0 + y * direction.1;
+        min_projection = min_projection.min(projection);
+        max_projection = max_projection.max(projection);
+    }
+    let projection_span = (max_projection - min_projection).max(f32::EPSILON);
+
+    let columns = ((width / 8.0).ceil() as usize).clamp(24, 160);
+    let rows = ((height / 8.0).ceil() as usize).clamp(16, 96);
+
+    for row in 0..rows {
+        let y0 = row as f32 / rows as f32;
+        let y1 = (row + 1) as f32 / rows as f32;
+        for column in 0..columns {
+            let x0 = column as f32 / columns as f32;
+            let x1 = (column + 1) as f32 / columns as f32;
+            let sample_x = (x0 + x1) * 0.5;
+            let sample_y = (y0 + y1) * 0.5;
+            let projection = sample_x * direction.0 + sample_y * direction.1;
+            let sample = ((projection - min_projection) / projection_span).clamp(0.0, 1.0);
+            let color = color_at_position(stops, sample);
+
+            let left = bounds.origin.x + bounds.size.width * x0;
+            let right = bounds.origin.x + bounds.size.width * x1;
+            let top = bounds.origin.y + bounds.size.height * y0;
+            let bottom = bounds.origin.y + bounds.size.height * y1;
+            let segment_bounds =
+                Bounds { origin: gpui::point(left, top), size: gpui::size(right - left, bottom - top) };
+            let radii = Corners {
+                top_left: if row == 0 && column == 0 {
+                    corner_radii.top_left
+                } else {
+                    px(0.0)
+                },
+                top_right: if row == 0 && column + 1 == columns {
+                    corner_radii.top_right
+                } else {
+                    px(0.0)
+                },
+                bottom_left: if row + 1 == rows && column == 0 {
+                    corner_radii.bottom_left
+                } else {
+                    px(0.0)
+                },
+                bottom_right: if row + 1 == rows && column + 1 == columns {
+                    corner_radii.bottom_right
+                } else {
+                    px(0.0)
+                },
+            };
+            paint_solid(window, segment_bounds, color, radii);
+        }
     }
 }
 
