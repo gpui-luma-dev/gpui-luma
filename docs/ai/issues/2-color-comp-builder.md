@@ -1,301 +1,294 @@
-# Color Composition Builder & Coordinator
+# Color Composition Sync Helper
 
-This document outlines the architecture for a new declarative `ColorCompositionBuilder` and event coordinator pattern to simplify, unify, and robustly test complex multi-control color picker layouts (such as the Pixagram-style split-ring picker).
+This note should stay narrow.
 
----
-
-## 1. Background: The Problem with Hand-Tuned Compositions
-
-During the development and testing of radial color pickers and sliders, several critical issues emerged:
-* **Circular Sync Feedback Loops**: When multiple controls represent overlapping fields of a single color model (e.g. saturation changing HSV value, which updates lightness), programmatic synchronizations trigger cascading event listeners. Developers were forced to use manual state enums (e.g., `SyncSource`) or boolean guard flags (e.g., `programmatic_update_in_progress`) to prevent stack overflows.
-* **Scattered Delegate/Renderer Lifetimes**: Each color component (Hue Ring, Saturation Arc, Lightness Arc) requires holding reference entities for:
-  1. The `Entity<SliderControl>` (logical interaction, value tracking)
-  2. The `Arc<DomainRenderer>` (custom background rasterization)
-  3. The `TrackContext` (physical dimensions, radius, sweep angles, thickness)
-  
-  Keeping all three components synchronized during an update loop required calling `update_*_delegate(...)` followed by `refresh_*(...)` in specific sequences. A single missed call caused the thumb position to drift away from the background gradient coordinates.
-* **Floating Point Drift**: Converting continuously between degrees ($0..360$), turns ($0..1$), and normalized percentages ($0..1$) caused minor float fluctuations. When synced back to controls, these tiny drifts triggered continuous change events.
-* **Coordinate Mapping Gotchas**: For elements that placed color controls at non-standard rotations (e.g., mirrored saturation arcs or radial controllers rotated $180^{\circ}$), the logic mapping saturation to physical positions was manually calculated inside the composition, hiding bugs that should have been managed at the engine level.
+The problem is real: complex color compositions still require too much hand-wired sync code. But the answer is not a large declarative `ColorCompositionBuilder` framework. The right fix is a small SDK helper that centralizes shared-state sync suppression, sibling control updates, and dependent renderer refresh ordering.
 
 ---
 
-## 2. The Improved Architecture
+## 1. What Is Still Wrong
 
-To eliminate these problems, we introduce the **Composition Coordinator** pattern. The coordinator owns the shared color state, acts as the single source of truth, manages all subscriptions, and handles recursive update suppression.
+Today, compositions like the split ring and HSV plane repeat the same pattern:
 
-### Proposed Coordinator & Builder Design (Pseudo-code)
+- own canonical color state in the pane entity
+- subscribe to each control manually
+- write one changed value into shared state
+- push sibling values back into other controls
+- rebuild dependent track delegates
+- call `refresh_*` helpers in the right order
+
+That is the real duplication.
+
+The note's original motivation is still valid for:
+
+- `apps/gallery/.../hue_ring_sl_arcs.rs`
+- `apps/gallery/.../hsv_photoshop.rs`
+
+---
+
+## 2. What This Should Become
+
+Add a small SDK color-composition sync helper.
+
+It should own only:
+
+- re-entrancy suppression for programmatic updates
+- shared-state mutation from control events
+- pushing sibling control values from shared state
+- `update_*_delegate(...)` + `refresh_*` ordering
+
+It should not own:
+
+- layout composition (delegated to GPUI layouts and resolved sizing metrics)
+- theme concerns
+- generic "product color" abstractions
+- `color-viz` yet
+
+---
+
+## 3. Minimal API Shape
+
+Keep the surface small and concrete.
 
 ```rust
-use std::sync::Arc;
-use gpui::{AppContext, Entity, EntityId, ViewContext};
-use gpui_luma::controls::slider::{SliderControl, SliderEvent, primary_slider_value, DomainTrackRenderer};
-
-/// Trait representing a shared color model (e.g. HSLA, OKLCH, HSV)
-pub trait ColorState: Clone + PartialEq + 'static {
-    /// The final mixed color product output (e.g., gpui::Hsla or a custom swatch color type)
-    type Product: Clone + PartialEq + 'static;
-
-    /// Computes the final product color from the current state values
-    fn product(&self) -> Self::Product;
-}
-
-/// Holds the configuration and callbacks for a single slider component in the composition
-struct ControlBinding<S: ColorState> {
-    control: Entity<SliderControl>,
-    // Extracts the logical value from the state to update the slider
-    getter: Box<dyn Fn(&S) -> f32 + Send + Sync>,
-    // Commits the slider value back to the state
-    setter: Box<dyn Fn(&mut S, f32) + Send + Sync>,
-    // Dynamically reconstructs the track delegate when the state changes
-    track_factory: Option<Box<dyn Fn(&S) -> Arc<dyn ColorTrackDelegate> + Send + Sync>>,
-    renderer: Option<Arc<dyn DomainTrackRenderer>>,
-    context: Option<TrackContext>,
-}
-
-/// The Coordinator managing all synchronized sliders
-pub struct ColorCompositionCoordinator<S: ColorState> {
+pub struct ColorCompositionSync<S> {
     state: S,
-    bindings: Vec<ControlBinding<S>>,
-    is_updating: bool, // Update lock guard to prevent recursive event loop cycles
-    // Fired whenever the resolved product changes
-    on_product_change: Option<Box<dyn Fn(&S::Product, &mut ViewContext<Self>) + Send + Sync>>,
+    is_syncing: bool,
+    epsilon: f32,
 }
 
-impl<S: ColorState> ColorCompositionCoordinator<S> {
-    pub fn new(initial_state: S) -> Self {
-        Self {
-            state: initial_state,
-            bindings: Vec::new(),
-            is_updating: false,
-            on_product_change: None,
-        }
-    }
+impl<S> ColorCompositionSync<S> {
+    pub fn new(state: S) -> Self { /* ... */ }
 
-    /// Sets a callback to be run whenever the mixed product color changes
-    pub fn on_product_change<F>(&mut self, callback: F)
-    where
-        F: Fn(&S::Product, &mut ViewContext<Self>) + Send + Sync + 'static,
-    {
-        self.on_product_change = Some(Box::new(callback));
-    }
-
-    /// Retrieves the current mixed color product
-    pub fn product(&self) -> S::Product {
-        self.state.product()
-    }
-
-    /// Primary event entry point called whenever any bound control fires a change event
-    pub fn handle_control_change(&mut self, control_id: EntityId, value: f32, cx: &mut ViewContext<Self>) {
-        if self.is_updating {
+    pub fn handle_slider(
+        &mut self,
+        value: f32,
+        write_to_state: impl FnOnce(&mut S, f32),
+        sync_controls: impl FnOnce(&S),
+    ) {
+        if self.is_syncing {
             return;
         }
 
-        self.is_updating = true;
-
-        // 1. Update the central color state with the new value
-        if let Some(binding) = self.bindings.iter_mut().find(|b| b.control.entity_id() == control_id) {
-            (binding.setter)(&mut self.state, value);
-        }
-
-        // 2. Synchronize all other controls to match the updated state
-        for binding in &self.bindings {
-            let target_value = (binding.getter)(&self.state);
-
-            // Epsilon check prevents microscopic float discrepancies from triggering updates
-            if (binding.control.read(cx).value() - target_value).abs() > 0.001 {
-                binding.control.update(cx, |slider, cx| {
-                    slider.set_value(target_value, cx);
-                });
-            }
-
-            // 3. Atomically regenerate track graphics if delegate dependencies changed
-            if let Some(factory) = &binding.track_factory
-                && let Some(renderer) = &binding.renderer
-                && let Some(context) = &binding.context
-            {
-                let new_delegate = factory(&self.state);
-                renderer.set_delegate(new_delegate);
-                renderer.set_context(context.clone());
-
-                // Trigger domain layout and thumb preview refreshes
-                binding.control.update(cx, |slider, cx| {
-                    slider.sync_domain_thumb_previews();
-                    cx.notify();
-                });
-            }
-        }
-
-        self.is_updating = false;
-
-        // 4. Notify about product changes if the color was modified
-        if let Some(on_change) = &self.on_product_change {
-            let product = self.state.product();
-            (on_change)(&product, cx);
-        }
-
-        cx.notify(); // Redraws composition container
+        self.is_syncing = true;
+        write_to_state(&mut self.state, value);
+        sync_controls(&self.state);
+        self.is_syncing = false;
     }
+
+    pub fn state(&self) -> &S { &self.state }
+    pub fn state_mut(&mut self) -> &mut S { &mut self.state }
 }
 ```
 
+The important part is the responsibility split, not the exact type signature.
+
+The helper is just a small sync coordinator around existing controls.
+
 ---
 
-## 3. Sample Build: Refactoring the Split Ring
+## 4. Helper-Level Refresh Wrappers
 
-Using the proposed coordinator pattern, we can implement the Pixagram-style `SplitRing` (`split_ring_pixagram.rs`) without any custom event subscriptions, recursion guards, or manual delegate updates in the view code.
-
-### The Refactored Implementation
+The helper should hide the repeated renderer refresh sequence.
 
 ```rust
-use std::sync::Arc;
-use gpui::{Context, Entity, Hsla, px, Size, hsla};
-use gpui_luma::controls::color::color_arc::{ColorArcBuilder, RasterArcDelegate};
-use gpui_luma::controls::color::color_ring::{ColorRingBuilder, HueRingDelegate};
-use gpui_luma::controls::slider::SliderControl;
+pub fn sync_ring(
+    slider: &Entity<SliderControl>,
+    renderer: &ColorRingDomainRenderer,
+    delegate: Arc<dyn ColorRingTrackDelegate>,
+    context: ColorRingTrackContext,
+    value: f32,
+    cx: &mut App,
+) {
+    slider.update(cx, |slider, cx| {
+        if (slider.value() - value).abs() > 0.001 {
+            slider.set_value(value, cx);
+        }
+    });
+    update_ring_delegate(renderer, delegate, context);
+    refresh_color_ring(slider, cx);
+}
+```
 
-// Define our shared color state
-#[derive(Clone, PartialEq)]
-struct SplitRingColor {
-    hue: f32,       // 0..360
-    saturation: f32, // 0..1
-    lightness: f32,  // 0..1
+Same idea for arcs and sliders.
+
+This is the actual seam we keep repeating manually today.
+
+---
+
+## 5. First Target: Split Ring
+
+Use the helper first on the split ring.
+
+Success means:
+
+- no app-local `SyncSource` enum
+- no app-local "if source is external" sync branching
+- no scattered `update_*_delegate(...)` + `refresh_*` calls in the pane
+
+Sketch:
+
+```rust
+#[derive(Clone, Copy)]
+struct SplitRingState {
+    hue_degrees: f32,
+    saturation: f32,
+    lightness: f32,
 }
 
-impl ColorState for SplitRingColor {
-    type Product = Hsla;
+fn sync_split_ring_controls(&self, state: &SplitRingState, cx: &mut Context<Self>) {
+    let hsv_value = Hsv::from_hsla_ext(hsla(
+        (state.hue_degrees / 360.0).rem_euclid(1.0),
+        state.saturation,
+        state.lightness,
+        1.0,
+    ))
+    .v;
 
-    // The mixed output color "product"
-    fn product(&self) -> Self::Product {
-        hsla(self.hue / 360.0, self.saturation, self.lightness, 1.0)
-    }
+    sync_ring(
+        &self.hue_ring,
+        &self.hue_ring_renderer,
+        Arc::new(HueRingDelegate {
+            saturation: state.saturation,
+            lightness: state.lightness,
+        }),
+        self.hue_ring_context.clone(),
+        state.hue_degrees,
+        cx,
+    );
+
+    sync_arc(
+        &self.saturation_arc,
+        &self.saturation_renderer,
+        Arc::new(RasterArcDelegate::saturation(state.hue_degrees, hsv_value)),
+        self.saturation_context.clone(),
+        state.saturation,
+        cx,
+    );
+
+    sync_arc(
+        &self.lightness_arc,
+        &self.lightness_renderer,
+        Arc::new(RasterArcDelegate::lightness(state.hue_degrees, state.saturation)),
+        self.lightness_context.clone(),
+        state.lightness,
+        cx,
+    );
+}
+```
+
+That is enough to prove the seam.
+
+---
+
+## 6. Second Target: HSV Plane
+
+If split ring works cleanly, apply the same helper to the HSV plane.
+
+That validates the seam for:
+
+- slider-only compositions
+- field + slider compositions
+- dependent track refresh
+
+No broader rollout is needed before those two are clean.
+
+---
+
+## 7. `color-viz`
+
+Do not apply this in `color-viz` yet.
+
+`color-viz` currently has gradient-stop editing, not the same multi-control composition problem. If it later grows coordinated per-stop color editors, it should reuse this helper instead of inventing a separate sync loop.
+
+---
+
+## 8. Sizing & Dimensions System (Abstract & Pixel)
+
+Compositions (like the split ring) should support standard abstract sizes (`sm`, `md`, `lg`) as well as custom pixel-based measurements, mapping them to concrete dimensions (outer size, track thickness, margins, gaps).
+
+### The Sizing Pattern
+
+Use a composition sizing enum:
+
+```rust
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum CompositionSize {
+    Sm,
+    #[default]
+    Md,
+    Lg,
+    Custom(Pixels),
+}
+```
+
+A composition pane/view resolves these using a layout helper struct (e.g. `SplitRingMetrics`) to obtain derived dimensions:
+
+```rust
+pub struct SplitRingMetrics {
+    pub outer_size: Pixels,
+    pub track_width: Pixels,
+    pub arc_ring_gap: Pixels,
+    pub ring_swatch_gap: Pixels,
+    pub outer_padding: Pixels,
+    pub border_gap: Pixels,
 }
 
-pub struct SplitRingComposition {
-    coordinator: Entity<ColorCompositionCoordinator<SplitRingColor>>,
-    hue_ring: Entity<SliderControl>,
-    saturation_arc: Entity<SliderControl>,
-    lightness_arc: Entity<SliderControl>,
-}
-
-impl SplitRingComposition {
-    pub fn new(cx: &mut Context<Self>) -> Self {
-        let initial_color = SplitRingColor {
-            hue: 18.0,
-            saturation: 0.85,
-            lightness: 0.49,
-        };
-
-        // 1. Initialize the builder with a target outer size (e.g., 300px for desktop, 150px for mobile)
-        let target_size = px(150.0); // Simple single-point diameter adjustment!
-        let mut builder = ColorCompositionBuilder::new(initial_color, target_size, cx);
-
-        // Define ratio measurements relative to the target outer diameter
-        let track_ratio = 0.067;       // 20px / 300px
-        let ring_size_ratio = 0.733;    // 220px / 300px
-
-        // 2. Bind Hue Ring (Middle ring - scaled proportionally)
-        let hue_ring = builder.add_ring(
-            "split-ring-hue",
-            |color| color.hue,
-            |color, val| color.hue = val,
-            |color| HueRingDelegate {
-                saturation: color.saturation,
-                lightness: color.lightness,
+impl SplitRingMetrics {
+    pub fn resolve(size: CompositionSize) -> Self {
+        match size {
+            CompositionSize::Sm => Self {
+                outer_size: px(180.0),
+                track_width: px(14.0),
+                arc_ring_gap: px(4.0),
+                ring_swatch_gap: px(8.0),
+                outer_padding: px(8.0),
+                border_gap: px(10.0),
             },
-            |ring, layout| ring
-                .size(layout.relative_size(ring_size_ratio))
-                .ring_thickness_size(layout.relative_thickness(track_ratio)),
-            cx,
-        );
-
-        // 3. Bind Saturation Arc (Top sweep - outer)
-        let saturation_arc = builder.add_arc(
-            "split-ring-saturation",
-            |color| color.saturation,
-            |color, val| color.saturation = val,
-            |color| {
-                let hsv_v = Hsv::from_hsla_ext(color.product()).v;
-                RasterArcDelegate::saturation(color.hue, hsv_v)
+            CompositionSize::Md => Self {
+                outer_size: px(240.0),
+                track_width: px(16.0),
+                arc_ring_gap: px(5.0),
+                ring_swatch_gap: px(12.0),
+                outer_padding: px(10.0),
+                border_gap: px(12.0),
             },
-            |arc, layout| arc
-                .size(layout.outer_size()) // Defaults to target_size (1.0 ratio)
-                .start_degrees(184.0)
-                .sweep_degrees(172.0)
-                .arc_thickness_size(layout.relative_thickness(track_ratio)),
-            cx,
-        );
-
-        // 4. Bind Lightness Arc (Bottom sweep - outer)
-        let lightness_arc = builder.add_arc(
-            "split-ring-lightness",
-            |color| color.lightness,
-            |color, val| color.lightness = val,
-            |color| RasterArcDelegate::lightness(color.hue, color.saturation),
-            |arc, layout| arc
-                .size(layout.outer_size())
-                .start_degrees(4.0)
-                .sweep_degrees(172.0)
-                .arc_thickness_size(layout.relative_thickness(track_ratio)),
-            cx,
-        );
-
-        // Register action on product change
-        builder.on_product_change(|product_color, cx| {
-            println!("Mixed product color updated: {:?}", product_color);
-        });
-
-        Self {
-            coordinator: builder.build(),
-            hue_ring,
-            saturation_arc,
-            lightness_arc,
+            CompositionSize::Lg => Self {
+                outer_size: px(300.0),
+                track_width: px(20.0),
+                arc_ring_gap: px(5.0),
+                ring_swatch_gap: px(14.0),
+                outer_padding: px(12.0),
+                border_gap: px(14.0),
+            },
+            CompositionSize::Custom(custom_outer_size) => {
+                // Scale derived dimensions proportionally relative to a 300px reference size
+                let factor = custom_outer_size.0 / 300.0;
+                Self {
+                    outer_size: custom_outer_size,
+                    track_width: px(20.0 * factor),
+                    arc_ring_gap: px(5.0 * factor),
+                    ring_swatch_gap: px(14.0 * factor),
+                    outer_padding: px(12.0 * factor),
+                    border_gap: px(14.0 * factor),
+                }
+            }
         }
     }
 }
 ```
 
----
-
-## 4. Proportional Layout & Size Scaling
-
-To avoid "chasing pixel measurements" when scaling a composition up or down, the `ColorCompositionBuilder` utilizes a **proportional layout context** during child control construction.
-
-### Layout Helper (Pseudo-code)
-
-```rust
-/// Helper passed to child configurators to scale widths, radius, and margins proportionally
-pub struct CompositionLayoutContext {
-    base_diameter: Pixels,
-}
-
-impl CompositionLayoutContext {
-    /// Returns the target outer diameter of the entire composition container
-    pub fn outer_size(&self) -> Size {
-        Size::Size(self.base_diameter)
-    }
-
-    /// Computes a scaled diameter relative to the base diameter
-    pub fn relative_size(&self, ratio: f32) -> Size {
-        Size::Size(self.base_diameter * ratio)
-    }
-
-    /// Computes a scaled track/border/margin thickness relative to the base diameter
-    pub fn relative_thickness(&self, ratio: f32) -> Size {
-        Size::Size(self.base_diameter * ratio)
-    }
-}
-```
-
-By expressing child properties in terms of the layout context, changing the composition size requires updating only **one parameter** (e.g. changing `target_size` from `px(300.0)` to `px(150.0)`). The builder automatically scales the rings, arcs, gaps, and borders proportionally without layout overlapping or breaking.
+This ensures we get pixel-perfect curated layouts for standard sizes, and robust proportional scaling for arbitrary user-defined pixel sizes.
 
 ---
 
-## 5. Key Gotchas Resolved
+## 9. Success Criteria
 
-1. **Synchronous Updates**: Visual track gradients now update *atomically* alongside physical thumb coordinate recalculations. There is no longer a frame lag where the thumb jumps prior to the rasterized track cache regenerating.
-2. **Unified Directionality**: The builder handles translating the coordinate system (e.g. clockwise vs counter-clockwise angles, linear ranges) so that setters/getters only see normalized logical color spaces.
-3. **Product Color Isolation**: Parent views can subscribe to the final product color event directly, without needing to know anything about the underlying component composition structure (e.g. rings, triangles, or sliders).
-4. **Proportional Scaling**: Eliminates absolute pixel adjustments. High-resolution desktop pickers and compact mobile sliders can share the exact same builder layout definition by passing a different base diameter.
-5. **Robust Unit Testing**: Since the `ColorCompositionCoordinator` contains all coordinate mapping, bounds clamping, and synchronization logic in a pure state machine, it can be tested completely in memory without requiring a UI/window layout engine.
+This change is good if:
 
+- split ring loses most of its manual sync plumbing
+- HSV plane can use the same seam
+- no new control framework is introduced
+- existing color controls remain the real primitives
+- compositions support both abstract sizes and custom pixel-based measurements via resolved metric helpers
 

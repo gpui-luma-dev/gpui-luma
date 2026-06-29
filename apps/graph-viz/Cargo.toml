@@ -13,6 +13,8 @@ gpui_platform = { workspace = true }
 lucide-icons = { workspace = true }
 gpui-luma-look-shadcn = { path = "../../crates/look-shadcn" }
 tracing = "0.1"
+fitparser = "0.7"
+serde = { workspace = true, features = ["derive"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18" }

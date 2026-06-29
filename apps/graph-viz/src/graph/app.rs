@@ -10,6 +10,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::GraphVizThemeChoice;
 
+use super::activity::load_sample_ride;
 use super::content_pane::ContentPaneHost;
 use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
 use super::theme_sidebar::ThemeSidebar;
@@ -34,7 +35,8 @@ impl GraphVizApp {
         look.set_mode(ThemeMode::Dark);
 
         let theme_sidebar = cx.new(|cx| ThemeSidebar::new(look.clone(), active_theme_id.clone(), cx));
-        let content_pane = cx.new(|cx| ContentPaneHost::new(look.clone(), cx));
+        let ride = load_sample_ride().expect("bundled sample FIT ride should parse");
+        let content_pane = cx.new(|cx| ContentPaneHost::new(look.clone(), ride, cx));
 
         let left_sidebar_entity = theme_sidebar.clone();
         let content_pane_entity = content_pane.clone();
