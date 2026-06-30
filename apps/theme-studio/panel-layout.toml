@@ -1,24 +1,52 @@
 # Luma Theme Studio layout — window size (px) and panel upper-right corners (right, top).
 
 [window]
-width = 2487.0
-height = 1424.0
+width = 2310.0
+height = 1520.0
 
-[system_preferences]
-right = 2045.4453125
-top = 425.00390625
+[report_issue]
+right = 1629.8671875
+top = 345.9453125
 
 [tree_view]
 right = 380.55859375
 top = 668.94140625
 
-[payments]
-right = 1173.921875
-top = 711.7578125
+[accordion]
+right = 1654.76171875
+top = 16.1171875
+
+[team_members]
+right = 825.97265625
+top = 17.96484375
+
+[create_account]
+right = 784.1484375
+top = 300.42578125
+
+[share_document]
+right = 1608.69921875
+top = 928.09375
+
+[cookie_settings]
+right = 1236.1015625
+top = 23.69921875
 
 [upgrade_subscription]
 right = 400.30859375
 top = 17.51171875
+
+[payments]
+right = 1173.921875
+top = 711.7578125
+
+[date_picker_range]
+right = 1609.5546875
+top = 775.91015625
+
+[system_preferences]
+right = 2045.4453125
+top = 425.00390625
 
 [navigation_sidebar]
 right = 324.53125
@@ -27,31 +55,3 @@ top = 54.703125
 [chat]
 right = 1210.84765625
 top = 326.984375
-
-[report_issue]
-right = 1629.8671875
-top = 345.9453125
-
-[date_picker_range]
-right = 1609.5546875
-top = 775.91015625
-
-[accordion]
-right = 1654.76171875
-top = 16.1171875
-
-[create_account]
-right = 784.1484375
-top = 300.42578125
-
-[cookie_settings]
-right = 1236.1015625
-top = 23.69921875
-
-[share_document]
-right = 1608.69921875
-top = 928.09375
-
-[team_members]
-right = 825.97265625
-top = 17.96484375

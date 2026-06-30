@@ -13,23 +13,9 @@ impl PlotDomain2D {
         Self { x_range, y_range }
     }
 
-    pub fn from_x_and_samples(x_range: RangeInclusive<f32>, samples: &[(f32, f32)]) -> Option<Self> {
-        if samples.is_empty() {
-            return None;
-        }
-
-        let mut min_y = samples[0].1;
-        let mut max_y = samples[0].1;
-        for &(_, y) in samples.iter().skip(1) {
-            min_y = min_y.min(y);
-            max_y = max_y.max(y);
-        }
-
-        Some(Self { x_range, y_range: min_y..=max_y })
-    }
-
     /// Projects `(x_data, y_data)` into normalized UV `(0.0..=1.0, 0.0..=1.0)`.
     /// Low data values map to low UV Y (bottom of chart domain).
+    #[allow(dead_code)]
     pub fn to_uv(&self, x: f32, y: f32) -> Point<f32> {
         let x_min = *self.x_range.start();
         let x_max = *self.x_range.end();
@@ -61,6 +47,7 @@ impl PlotDomain2D {
         x_min + fraction.clamp(0.0, 1.0) * (x_max - x_min)
     }
 
+    #[allow(dead_code)]
     pub fn y_from_fraction(&self, fraction: f32) -> f32 {
         let y_min = *self.y_range.start();
         let y_max = *self.y_range.end();

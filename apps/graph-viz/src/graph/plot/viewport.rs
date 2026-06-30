@@ -9,6 +9,7 @@ pub struct ChartMargins {
 }
 
 impl ChartMargins {
+    #[allow(dead_code)]
     pub const DEFAULT: Self = Self { left: 44.0, right: 12.0, top: 10.0, bottom: 24.0 };
 }
 
@@ -18,6 +19,7 @@ pub struct Viewport2D {
 }
 
 impl Viewport2D {
+    #[allow(dead_code)]
     pub fn new(bounds: Bounds<Pixels>) -> Self {
         Self { bounds }
     }
@@ -46,10 +48,12 @@ impl Viewport2D {
         point(x, y)
     }
 
+    #[allow(dead_code)]
     pub fn data_to_pixels(&self, domain: &super::PlotDomain2D, x: f32, y: f32) -> Point<Pixels> {
         self.uv_to_pixels(domain.to_uv(x, y))
     }
 
+    #[allow(dead_code)]
     pub fn fraction_to_x(&self, fraction: f32) -> Pixels {
         self.bounds.origin.x + self.bounds.size.width * fraction.clamp(0.0, 1.0)
     }

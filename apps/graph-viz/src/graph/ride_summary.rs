@@ -112,10 +112,6 @@ pub(crate) fn render_stat_cell(
     }
 }
 
-pub fn format_distance(meters: f32, unit: SpeedUnit) -> String {
-    unit.format_distance(meters)
-}
-
 pub fn format_duration(seconds: f32) -> String {
     let total = seconds.round().max(0.0) as u32;
     let hours = total / 3600;
@@ -166,8 +162,8 @@ mod tests {
             avg_power: Some(178.0),
         };
 
-        assert_eq!(format_distance(summary.total_distance_meters, SpeedUnit::Kmh), "32.1 km");
-        assert_eq!(format_distance(summary.total_distance_meters, SpeedUnit::Mph), "19.9 mi");
+        assert_eq!(SpeedUnit::Kmh.format_distance(summary.total_distance_meters), "32.1 km");
+        assert_eq!(SpeedUnit::Mph.format_distance(summary.total_distance_meters), "19.9 mi");
         assert_eq!(format_duration(summary.total_duration_seconds), "1:09:26");
         assert_eq!(format_elevation(summary.elevation_gain_meters), "139 m");
         assert_eq!(format_elevation_for_unit(summary.elevation_gain_meters, SpeedUnit::Mph), "456 ft");

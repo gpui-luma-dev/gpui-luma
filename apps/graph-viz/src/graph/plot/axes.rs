@@ -27,6 +27,7 @@ enum XLabelPlacement {
 pub enum YAxisLabelSide {
     #[default]
     Left,
+    #[allow(dead_code)]
     Right,
 }
 

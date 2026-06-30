@@ -16,7 +16,7 @@ pub use distance::{
     cumulative_distance_profile, distance_axis_available, remap_time_samples_to_x, ride_distance_display_extent,
     scrub_x_fraction, total_distance_meters,
 };
-pub use cycling_dynamics::{CyclingDynamics, CyclingDynamicsField, CyclingDynamicsSection, cycling_dynamics_sections};
+pub use cycling_dynamics::{CyclingDynamicsSection, cycling_dynamics_sections};
 pub use fit::parse_fit_bytes;
 pub use lap::LapSummary;
 pub use model::{RideActivity, RideSummary, TelemetryPoint};
@@ -24,6 +24,7 @@ pub use stats::ActivityStats;
 pub use power_curve::{ActivityPowerCurve, PowerCurvePoint, compute_activity_power_curve};
 pub use zones::{ZoneEntry, ZoneTimeProfile};
 
+#[allow(dead_code)]
 pub const SAMPLE_FIT_PATH: &str = "assets/garmin-data/23386792539_ACTIVITY.fit";
 
 pub(crate) const SAMPLE_FIT_BYTES: &[u8] = include_bytes!("../../../assets/garmin-data/23386792539_ACTIVITY.fit");
@@ -34,6 +35,7 @@ pub fn load_sample_ride() -> Result<RideActivity> {
 }
 
 /// Load a ride from FIT bytes on disk relative to the graph-viz crate root.
+#[allow(dead_code)]
 pub fn load_fit_from_crate_path(relative_path: &str) -> Result<RideActivity> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative_path);
     let bytes = std::fs::read(&path).with_context(|| format!("failed to read FIT file at {}", path.display()))?;
@@ -41,11 +43,13 @@ pub fn load_fit_from_crate_path(relative_path: &str) -> Result<RideActivity> {
 }
 
 /// Load a ride from any FIT byte slice.
+#[allow(dead_code)]
 pub fn load_fit_from_bytes(bytes: &[u8]) -> Result<RideActivity> {
     parse_fit_bytes(bytes).context("failed to parse FIT bytes")
 }
 
 /// Load a ride from any reader containing FIT data.
+#[allow(dead_code)]
 pub fn load_fit_from_reader(mut reader: impl std::io::Read) -> Result<RideActivity> {
     let mut bytes = Vec::new();
     std::io::Read::read_to_end(&mut reader, &mut bytes).context("failed to read FIT data")?;

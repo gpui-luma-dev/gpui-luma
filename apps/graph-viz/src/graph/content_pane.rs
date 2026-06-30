@@ -21,7 +21,6 @@ use super::graph_tab::{
 };
 use super::laps_tab::{refresh_laps_list_view, render_laps_tab, spawn_laps_list_view, LapRow};
 use super::metrics::TelemetryMetric;
-use super::placeholder_tab::render_placeholder_tab;
 use super::power_curve_tab::render_power_curve_tab;
 use super::stats_tab::render_stats_tab;
 use super::units::SpeedUnit;

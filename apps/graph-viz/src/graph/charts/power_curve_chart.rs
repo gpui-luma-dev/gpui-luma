@@ -253,7 +253,6 @@ fn paint_text_label(
         TextAlign::Left => point(anchor_x, y),
         TextAlign::Center => point(anchor_x - width / 2.0, y),
         TextAlign::Right => point(anchor_x - width, y),
-        _ => point(anchor_x, y),
     };
     let _ = line.paint(origin, px(style.line_height), align, None, window, cx);
 }

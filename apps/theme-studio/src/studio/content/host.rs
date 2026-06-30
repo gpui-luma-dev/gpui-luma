@@ -20,7 +20,8 @@ use super::super::demo_controls::DemoControls;
 use super::super::inspectable::InspectableId;
 use super::super::overrides::StudioOverrides;
 use super::super::panel_layout::DemoPanelDrag;
-use super::super::panels::{PalettePanel, ThemeUsagePanel, TypographyPanel};
+use super::super::panels::{PalettePanel, ThemeUsagePanel};
+use super::super::style::StyleGuidePanel;
 
 /// Cached board state — `ContentPaneHost::render` must not read `ThemeStudioApp` (re-entrancy panic).
 #[derive(Clone)]
@@ -36,7 +37,7 @@ pub struct BoardSnapshot {
 pub struct ContentPaneHost {
     app: Entity<ThemeStudioApp>,
     tabs: Entity<TabsNavigation>,
-    typography_panel: Entity<TypographyPanel>,
+    style_guide_panel: Entity<StyleGuidePanel>,
     palette_panel: Entity<PalettePanel>,
     theme_usage_panel: Entity<ThemeUsagePanel>,
     board: BoardSnapshot,
@@ -55,7 +56,7 @@ impl ContentPaneHost {
             .items([
                 TabsNavigationItem::new("cards").label("Cards"),
                 TabsNavigationItem::new("dashboard").label("Dashboard"),
-                TabsNavigationItem::new("typography").label("Typography"),
+                TabsNavigationItem::new("typography").label("Style Guide"),
                 TabsNavigationItem::new("palette").label("Palette"),
                 TabsNavigationItem::new("theme-usage").label("Theme Usage"),
             ])
@@ -73,14 +74,14 @@ impl ContentPaneHost {
             }
         }));
 
-        let typography_panel = cx.new(|cx| TypographyPanel::new(cx, board.look.clone()));
+        let style_guide_panel = cx.new(|cx| StyleGuidePanel::new(cx, board.look.clone()));
         let palette_panel = cx.new(|cx| PalettePanel::new(cx, board.look.clone(), board.overrides.clone()));
         let theme_usage_panel = cx.new(|cx| ThemeUsagePanel::new(cx, board.look.clone()));
 
         Self {
             app,
             tabs,
-            typography_panel,
+            style_guide_panel,
             palette_panel,
             theme_usage_panel,
             board,
@@ -97,7 +98,7 @@ impl ContentPaneHost {
 
         if tab == ContentTab::Typography {
             let look = self.board.look.clone();
-            self.typography_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
+            self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         }
 
         if tab == ContentTab::Palette {
@@ -135,7 +136,7 @@ impl ContentPaneHost {
             tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
             tabs.set_template(theme_studio_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
         });
-        self.typography_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
+        self.style_guide_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), cx));
         self.palette_panel.update(cx, |panel, cx| panel.sync_snapshot(look.clone(), overrides, cx));
         self.theme_usage_panel.update(cx, |panel, cx| panel.sync_snapshot(look, cx));
         cx.notify();
@@ -196,7 +197,7 @@ impl Render for ContentPaneHost {
                     cx,
                 ))),
                 ContentTab::Dashboard => dashboard_viewport().child(board.demos.dashboard.clone()),
-                ContentTab::Typography => content_viewport().child(self.typography_panel.clone()),
+                ContentTab::Typography => content_viewport().child(self.style_guide_panel.clone()),
                 ContentTab::Palette => content_viewport().child(self.palette_panel.clone()),
                 ContentTab::ThemeUsage => content_viewport().child(self.theme_usage_panel.clone()),
             })

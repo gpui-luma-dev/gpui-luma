@@ -17,7 +17,6 @@ mod system_preferences;
 mod team;
 mod theme_usage;
 mod tree_view;
-mod typography;
 mod upgrade;
 
 pub use account::AccountPanel;
@@ -34,5 +33,4 @@ pub use system_preferences::SystemPreferencesPanel;
 pub use team::TeamPanel;
 pub use theme_usage::ThemeUsagePanel;
 pub use tree_view::TreeViewPanel;
-pub use typography::TypographyPanel;
 pub use upgrade::UpgradePanel;

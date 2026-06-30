@@ -10,6 +10,7 @@ mod hs_mixer;
 mod inspectable;
 mod overrides;
 mod panels;
+mod style;
 mod theme_sidebar;
 mod token_color_row;
 

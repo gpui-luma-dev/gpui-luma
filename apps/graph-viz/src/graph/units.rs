@@ -10,10 +10,6 @@ impl XAxisMode {
         if distance_selected { Self::Distance } else { Self::Time }
     }
 
-    pub fn to_toggle(self) -> bool {
-        matches!(self, Self::Distance)
-    }
-
     pub fn label(self) -> &'static str {
         match self {
             Self::Time => "Time",
@@ -30,13 +26,6 @@ pub enum SpeedUnit {
 }
 
 impl SpeedUnit {
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::Mph => "mph",
-            Self::Kmh => "kmh",
-        }
-    }
-
     pub fn label(self) -> &'static str {
         match self {
             Self::Mph => "mph",
@@ -44,20 +33,8 @@ impl SpeedUnit {
         }
     }
 
-    pub fn to_toggle(self) -> bool {
-        matches!(self, Self::Kmh)
-    }
-
     pub fn from_toggle(kmh_selected: bool) -> Self {
         if kmh_selected { Self::Kmh } else { Self::Mph }
-    }
-
-    pub fn from_id(id: &str) -> Option<Self> {
-        match id {
-            "mph" => Some(Self::Mph),
-            "kmh" => Some(Self::Kmh),
-            _ => None,
-        }
     }
 
     pub fn from_mps(self, meters_per_second: f32) -> f32 {
@@ -127,10 +104,6 @@ impl PowerUnit {
         }
     }
 
-    pub fn to_toggle(self) -> bool {
-        matches!(self, Self::WattsPerKg)
-    }
-
     pub fn from_toggle(w_per_kg_selected: bool) -> Self {
         if w_per_kg_selected {
             Self::WattsPerKg
@@ -148,12 +121,6 @@ pub struct MetricDisplay {
     pub rider_weight_kg: Option<f32>,
 }
 
-impl MetricDisplay {
-    pub fn with_speed_unit(speed_unit: SpeedUnit) -> Self {
-        Self { speed_unit, ..Self::default() }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,16 +129,12 @@ mod tests {
     fn from_toggle_maps_units() {
         assert_eq!(SpeedUnit::from_toggle(false), SpeedUnit::Mph);
         assert_eq!(SpeedUnit::from_toggle(true), SpeedUnit::Kmh);
-        assert!(!SpeedUnit::Mph.to_toggle());
-        assert!(SpeedUnit::Kmh.to_toggle());
     }
 
     #[test]
     fn x_axis_toggle_maps_modes() {
         assert_eq!(XAxisMode::from_toggle(false), XAxisMode::Time);
         assert_eq!(XAxisMode::from_toggle(true), XAxisMode::Distance);
-        assert!(!XAxisMode::Time.to_toggle());
-        assert!(XAxisMode::Distance.to_toggle());
     }
 
     #[test]
@@ -193,8 +156,6 @@ mod tests {
     fn power_unit_toggle_maps_modes() {
         assert_eq!(PowerUnit::from_toggle(false), PowerUnit::Watts);
         assert_eq!(PowerUnit::from_toggle(true), PowerUnit::WattsPerKg);
-        assert!(!PowerUnit::Watts.to_toggle());
-        assert!(PowerUnit::WattsPerKg.to_toggle());
     }
 
     #[test]

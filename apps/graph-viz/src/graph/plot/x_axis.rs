@@ -3,7 +3,7 @@ use gpui::Window;
 use super::axes::{AxisLabelStyle, measure_label_widths};
 use super::ticks::{cull_ticks_by_label_width, nice_distance_ticks, nice_time_ticks};
 use crate::graph::ride_summary::format_duration;
-use crate::graph::units::{MetricDisplay, SpeedUnit, XAxisMode};
+use crate::graph::units::{MetricDisplay, XAxisMode};
 
 const MIN_X_LABEL_PX: f32 = 72.0;
 
@@ -22,6 +22,7 @@ pub fn format_x_axis_tick(value: f32, step: f32, units: MetricDisplay) -> String
     }
 }
 
+#[allow(dead_code)]
 pub fn x_axis_span(units: MetricDisplay, duration_seconds: f32, distance_extent_display: f32) -> f32 {
     match units.x_axis {
         XAxisMode::Time => duration_seconds.max(f32::EPSILON),

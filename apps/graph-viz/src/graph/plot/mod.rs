@@ -8,9 +8,7 @@ mod ticks;
 mod viewport;
 mod x_axis;
 
-pub use axes::{
-    AxisLabelStyle, AxisLabelsLayer, RightAxisLabelsLayer, YAxisLabelSide, paint_axis_labels, paint_right_axis_labels,
-};
+pub use axes::{AxisLabelStyle, AxisLabelsLayer, RightAxisLabelsLayer, paint_axis_labels, paint_right_axis_labels};
 pub use decimate::{minmax_decimate, uniform_subsample};
 pub use domain::PlotDomain2D;
 pub use layers::{
@@ -19,7 +17,6 @@ pub use layers::{
 };
 pub use layout::build_telemetry_chart_stack;
 pub use overlay::build_speed_hr_overlay_stack;
-pub use ticks::fixed_value_ticks;
 pub use x_axis::format_x_axis_tick;
 pub use viewport::{ChartMargins, Viewport2D};
 
