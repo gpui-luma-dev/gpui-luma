@@ -1,37 +1,70 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, Hsla, IntoElement, Subscription, div, prelude::*, px};
-use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
+use gpui_luma::controls::color::composition::ColorCompositionSync;
 use gpui_luma::controls::color::color_field::model::ColorFieldModelKind;
+use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldModel2D, ColorFieldState, TriangleDomain};
 use gpui_luma::controls::color::color_ring::{ColorRingBuilder, primary_slider_value, sizing};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::controls::slider::SliderControl;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use super::CompositionSize;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
 use crate::gallery::panes::color::common::{detail_row, notify_control};
 
 pub(in crate::gallery) struct SvTriangleState {
     look: Arc<ShadcnLook>,
+    metrics: SvTriangleMetrics,
+    sync: ColorCompositionSync,
     hsv: Hsv,
     ring: Entity<SliderControl>,
     triangle: Entity<ColorFieldState>,
     _subscriptions: Vec<Subscription>,
 }
 
-impl SvTriangleState {
-    const RING_SIZE_PX: f32 = 300.0;
-    const RING_THICKNESS_PX: f32 = sizing::RING_THICKNESS_MEDIUM;
+#[derive(Clone, Copy)]
+struct SvTriangleMetrics {
+    ring_size: f32,
+    ring_thickness: f32,
+    thumb_size: f32,
+    inner_gap: f32,
+}
 
+impl SvTriangleMetrics {
+    fn resolve(size: CompositionSize) -> Self {
+        let ring_size = size.resolve_primary(220.0, 300.0, 380.0);
+        let scale = ring_size / 300.0;
+        Self {
+            ring_size,
+            ring_thickness: sizing::RING_THICKNESS_MEDIUM * scale,
+            thumb_size: (14.0 * scale).max(12.0),
+            inner_gap: (2.0 * scale).max(2.0),
+        }
+    }
+
+    fn triangle_size(self) -> f32 {
+        let inner = (self.ring_size - 2.0 * self.ring_thickness).max(0.0);
+        (inner - self.inner_gap).max(40.0)
+    }
+}
+
+impl SvTriangleState {
+    #[allow(dead_code)]
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+        Self::with_size(look, CompositionSize::Md, cx)
+    }
+
+    pub(in crate::gallery) fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 317.0, s: 0.83, v: 0.84, a: 1.0 };
+        let metrics = SvTriangleMetrics::resolve(size);
 
         let ring = ColorRingBuilder::hue("composition-sv-triangle-ring", initial_hsv.h, 1.0, 0.5)
-            .size(Size::Size(px(Self::RING_SIZE_PX)))
-            .ring_thickness_size(Size::Medium)
-            .thumb_size(14.0)
+            .size(Size::Size(px(metrics.ring_size)))
+            .ring_thickness(metrics.ring_thickness)
+            .thumb_size(metrics.thumb_size)
             .spawn(cx);
 
         let triangle = cx.new(|_| {
@@ -42,7 +75,7 @@ impl SvTriangleState {
                 Arc::new(TriangleDomain { a: white, b: black, c: hue }),
                 Arc::new(PhotoshopSvTriangleModel),
             )
-            .thumb_size(14.0)
+            .thumb_size(metrics.thumb_size)
             .raster_image()
             .rounded(px(0.0))
             .no_border()
@@ -50,43 +83,62 @@ impl SvTriangleState {
         });
 
         let subscriptions = vec![
-            cx.subscribe(&ring, |this, _, event: &SliderEvent, cx| {
+            cx.subscribe(&ring, |this, _, event, cx| {
                 let Some(hue) = primary_slider_value(event) else {
                     return;
                 };
+                if !this.sync.begin_sync() {
+                    return;
+                }
                 this.hsv.h = hue;
-                this.ring.update(cx, |ring, cx| {
-                    ring.set_value(hue, cx);
-                });
-                this.triangle.update(cx, |field, cx| {
-                    field.set_hsv_components(this.hsv.h, this.hsv.s, this.hsv.v, cx);
-                });
+                this.sync_controls(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&triangle, |this, _, event: &ColorFieldEvent, cx| {
+                if !this.sync.begin_sync() {
+                    return;
+                }
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
                 };
                 this.hsv.s = hsv.s;
                 this.hsv.v = hsv.v;
+                this.sync_controls(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
         ];
 
-        Self { look, hsv: initial_hsv, ring, triangle, _subscriptions: subscriptions }
+        Self {
+            look,
+            metrics,
+            sync: ColorCompositionSync::new(),
+            hsv: initial_hsv,
+            ring,
+            triangle,
+            _subscriptions: subscriptions,
+        }
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<Self>) {
         notify_control(&self.ring, cx);
         notify_control(&self.triangle, cx);
     }
+
+    fn sync_controls(&self, cx: &mut Context<Self>) {
+        let hsv = self.hsv;
+        self.sync.sync_slider_value(&self.ring, hsv.h, cx);
+        self.triangle.update(cx, |field, cx| {
+            field.set_hsv_components(hsv.h, hsv.s, hsv.v, cx);
+        });
+    }
 }
 
 impl gpui::Render for SvTriangleState {
     fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let ring_outer_size = Self::RING_SIZE_PX;
-        let inner = (ring_outer_size - 2.0 * Self::RING_THICKNESS_PX).max(0.0);
-        let triangle_size = (inner - 2.0).max(40.0);
+        let ring_outer_size = self.metrics.ring_size;
+        let triangle_size = self.metrics.triangle_size();
         let triangle_half = triangle_size * 0.5;
 
         let swatch = self.hsv.to_hsla_ext();

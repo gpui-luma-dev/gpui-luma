@@ -7,28 +7,25 @@ use gpui::{
     hsla, px, rgb,
 };
 use gpui_luma::{hstack, vstack};
+use gpui_luma::controls::color::composition::ColorCompositionSync;
 use gpui_luma::controls::color::color_field::{CircleDomain, ColorFieldEvent, ColorFieldState, WhiteMixHueWheelModel};
 use gpui_luma::controls::color::color_ring::{
     ColorRingBuilder, ColorRingDomainRenderer, ColorRingTrackContext, LightnessRingDelegate, primary_slider_value,
-    refresh_color_ring, sizing, update_ring_delegate,
+    sizing,
 };
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::style::Size;
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::controls::slider::SliderControl;
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::textfield::{TextField, TextFieldEvent};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use super::CompositionSize;
 use crate::gallery::panes::shared::format_inspector_hsl;
 
 use crate::gallery::panes::color::common::notify_control;
 
-const RING_SIZE: f32 = 300.0;
-const RING_CANVAS_PADDING: f32 = 20.0;
-const RING_TO_WHEEL_INNER_GAP: f32 = 12.0;
-const WHEEL_SIZE: f32 = (RING_SIZE - 2.0 * sizing::RING_THICKNESS_MEDIUM - RING_TO_WHEEL_INNER_GAP).max(40.0);
-const WHEEL_HALF: f32 = WHEEL_SIZE * 0.5;
 const CARD_WIDTH: f32 = 520.0;
 const COMPONENT_GAP_PX: f32 = 28.0;
 const ROW_GAP_PX: f32 = 16.0;
@@ -37,6 +34,8 @@ const RESULT_SWATCH_HEIGHT: f32 = 112.0;
 
 pub(in crate::gallery) struct ColorHarmoniesState {
     look: Arc<ShadcnLook>,
+    metrics: ColorHarmoniesMetrics,
+    sync: ColorCompositionSync,
     wheel: Entity<ColorFieldState>,
     lightness_ring: Entity<SliderControl>,
     lightness_renderer: Arc<ColorRingDomainRenderer>,
@@ -49,9 +48,52 @@ pub(in crate::gallery) struct ColorHarmoniesState {
     _subscriptions: Vec<Subscription>,
 }
 
+#[derive(Clone, Copy)]
+struct ColorHarmoniesMetrics {
+    ring_size: f32,
+    ring_canvas_padding: f32,
+    ring_to_wheel_inner_gap: f32,
+    ring_thickness: f32,
+    wheel_thumb_size: f32,
+    ring_thumb_size: f32,
+}
+
+impl ColorHarmoniesMetrics {
+    fn resolve(size: CompositionSize) -> Self {
+        let ring_size = size.resolve_primary(220.0, 300.0, 380.0);
+        let scale = ring_size / 300.0;
+        let ring_thickness = sizing::RING_THICKNESS_MEDIUM * scale;
+        let ring_to_wheel_inner_gap = (12.0 * scale).max(8.0);
+        let wheel_size = (ring_size - 2.0 * ring_thickness - ring_to_wheel_inner_gap).max(40.0);
+
+        Self {
+            ring_size,
+            ring_canvas_padding: (20.0 * scale).max(12.0),
+            ring_to_wheel_inner_gap,
+            ring_thickness,
+            wheel_thumb_size: (wheel_size * 0.07).max(10.0),
+            ring_thumb_size: (14.0 * scale).max(12.0),
+        }
+    }
+
+    fn wheel_size(self) -> f32 {
+        (self.ring_size - 2.0 * self.ring_thickness - self.ring_to_wheel_inner_gap).max(40.0)
+    }
+
+    fn wheel_half(self) -> f32 {
+        self.wheel_size() * 0.5
+    }
+}
+
 impl ColorHarmoniesState {
+    #[allow(dead_code)]
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+        Self::with_size(look, CompositionSize::Md, cx)
+    }
+
+    pub(in crate::gallery) fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
         let color: Hsla = rgb(0x47c424).into();
+        let metrics = ColorHarmoniesMetrics::resolve(size);
         let wheel = cx.new(|_| {
             ColorFieldState::new(
                 "color-harmonies-wheel",
@@ -59,15 +101,15 @@ impl ColorHarmoniesState {
                 Arc::new(CircleDomain),
                 Arc::new(WhiteMixHueWheelModel),
             )
-            .thumb_size((WHEEL_SIZE * 0.07).max(10.0))
+            .thumb_size(metrics.wheel_thumb_size)
             .inside_field()
-            .raster_image_prewarmed_square(WHEEL_SIZE)
+            .raster_image_prewarmed_square(metrics.wheel_size())
         });
         let lightness_builder =
             ColorRingBuilder::lightness("color-harmonies-lightness-ring", color.l, color.h * 360.0, color.s)
-                .size(Size::Size(px(RING_SIZE)))
-                .ring_thickness_size(Size::Medium)
-                .thumb_size(14.0)
+                .size(Size::Size(px(metrics.ring_size)))
+                .ring_thickness(metrics.ring_thickness)
+                .thumb_size(metrics.ring_thumb_size)
                 .allow_inner_target(true)
                 .rotation_degrees(180.0);
         let lightness_renderer = lightness_builder.domain_renderer();
@@ -88,20 +130,29 @@ impl ColorHarmoniesState {
 
         let subscriptions = vec![
             cx.subscribe(&wheel, |this, _, event: &ColorFieldEvent, cx| {
+                if !this.sync.begin_sync() {
+                    return;
+                }
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
                 };
                 this.color.h = (hsv.h / 360.0).rem_euclid(1.0);
                 this.color.s = hsv.s.clamp(0.0, 1.0);
                 this.sync_ring(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
-            cx.subscribe(&lightness_ring, |this, _, event: &SliderEvent, cx| {
+            cx.subscribe(&lightness_ring, |this, _, event, cx| {
                 let Some(lightness) = primary_slider_value(event) else {
                     return;
                 };
+                if !this.sync.begin_sync() {
+                    return;
+                }
                 this.color.l = lightness.clamp(0.0, 1.0);
                 this.sync_wheel(cx);
+                this.sync_ring(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
             cx.subscribe(&harmony_menu, |this, _, event: &SelectorEvent, cx| {
@@ -127,6 +178,8 @@ impl ColorHarmoniesState {
 
         Self {
             look,
+            metrics,
+            sync: ColorCompositionSync::new(),
             wheel,
             lightness_ring,
             lightness_renderer,
@@ -149,13 +202,14 @@ impl ColorHarmoniesState {
 
     fn sync_ring(&mut self, cx: &mut Context<Self>) {
         let color = self.color;
-        self.lightness_ring.update(cx, |ring, cx| ring.set_value(color.l, cx));
-        update_ring_delegate(
+        self.sync.sync_color_ring(
+            &self.lightness_ring,
             &self.lightness_renderer,
             Arc::new(LightnessRingDelegate { hue: color.h * 360.0, saturation: color.s }),
             self.lightness_context.clone(),
+            color.l,
+            cx,
         );
-        refresh_color_ring(&self.lightness_ring, cx);
         self.sync_color_input(cx);
     }
 
@@ -193,6 +247,7 @@ impl gpui::Render for ColorHarmoniesState {
         let wheel = self.wheel.clone();
         let color_input = self.color_input.clone();
         let harmony_menu = self.harmony_menu.clone();
+        let metrics = self.metrics;
 
         vstack! {
             align=center;
@@ -208,6 +263,7 @@ impl gpui::Render for ColorHarmoniesState {
                         wheel.clone(),
                         color_input.clone(),
                         harmony_menu.clone(),
+                        metrics,
                         color,
                         harmony_points.clone(),
                         swatches.clone(),
@@ -388,14 +444,16 @@ fn harmony_points_from_swatches(swatches: &[CombinationSwatch]) -> Vec<Combinati
 fn render_combo_wheel_layer(
     wheel: Entity<ColorFieldState>,
     harmony_points: Vec<CombinationSwatch>,
+    metrics: ColorHarmoniesMetrics,
 ) -> impl IntoElement {
-    let center = WHEEL_SIZE * 0.5;
-    let marker_size = (((WHEEL_SIZE * 0.07).max(10.0)) * 0.64).max(8.0);
+    let wheel_size = metrics.wheel_size();
+    let center = wheel_size * 0.5;
+    let marker_size = (metrics.wheel_thumb_size * 0.64).max(8.0);
     let marker_half = marker_size * 0.5;
     let marker_radius_max = (center - marker_half).max(0.0);
 
     div()
-        .size(px(WHEEL_SIZE))
+        .size(px(wheel_size))
         .relative()
         .child(wheel)
         .children(harmony_points.into_iter().map(|swatch| {
@@ -436,6 +494,7 @@ fn render_combinations_card_body(
     wheel: Entity<ColorFieldState>,
     color_input: TextField,
     harmony_menu: Entity<Selector>,
+    metrics: ColorHarmoniesMetrics,
     color: Hsla,
     harmony_points: Vec<CombinationSwatch>,
     swatches: Vec<CombinationSwatch>,
@@ -443,7 +502,7 @@ fn render_combinations_card_body(
     vstack! {
         gap=COMPONENT_GAP_PX align=center;
         div()
-            .size(px(RING_SIZE + RING_CANVAS_PADDING))
+            .size(px(metrics.ring_size + metrics.ring_canvas_padding))
             .relative()
             .flex()
             .items_center()
@@ -454,12 +513,12 @@ fn render_combinations_card_body(
                     .absolute()
                     .left_1_2()
                     .top_1_2()
-                    .ml(px(-WHEEL_HALF))
-                    .mt(px(-WHEEL_HALF))
-                    .size(px(WHEEL_SIZE))
+                    .ml(px(-metrics.wheel_half()))
+                    .mt(px(-metrics.wheel_half()))
+                    .size(px(metrics.wheel_size()))
                     .rounded_full()
                     .overflow_hidden()
-                    .child(render_combo_wheel_layer(wheel, harmony_points)),
+                    .child(render_combo_wheel_layer(wheel, harmony_points, metrics)),
             ),
         hstack! {
             gap=ROW_GAP_PX align=center;

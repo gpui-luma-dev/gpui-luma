@@ -1,23 +1,26 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Entity, IntoElement, Subscription, div, prelude::*, px};
+use gpui_luma::controls::color::composition::ColorCompositionSync;
 use gpui_luma::controls::color::color_field::{ColorFieldEvent, ColorFieldState};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv;
 use gpui_luma::controls::color::color_slider::{
-    ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, refresh_color_slider, sizing,
-    update_domain_delegate,
+    ChannelDelegate, ColorSliderBuilder, ColorSliderDomainRenderer, primary_slider_value, sizing,
 };
 use gpui_luma::controls::color::ColorSwatch;
-use gpui_luma::controls::slider::{SliderControl, SliderEvent};
+use gpui_luma::controls::slider::SliderControl;
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
+use super::CompositionSize;
 use crate::gallery::panes::shared::{format_compact_hsla, format_hex_color};
 
 use crate::gallery::panes::color::common::{control_label, detail_row, notify_control};
 
 pub(in crate::gallery) struct HsvPlaneState {
     look: Arc<ShadcnLook>,
+    metrics: HsvPlaneMetrics,
+    sync: ColorCompositionSync,
     hsv: Hsv,
     plane: Entity<ColorFieldState>,
     slider_h: Entity<SliderControl>,
@@ -28,9 +31,26 @@ pub(in crate::gallery) struct HsvPlaneState {
     _subscriptions: Vec<Subscription>,
 }
 
+#[derive(Clone, Copy)]
+struct HsvPlaneMetrics {
+    plane_size: f32,
+}
+
+impl HsvPlaneMetrics {
+    fn resolve(size: CompositionSize) -> Self {
+        Self { plane_size: size.resolve_primary(220.0, 280.0, 340.0) }
+    }
+}
+
 impl HsvPlaneState {
+    #[allow(dead_code)]
     pub(in crate::gallery) fn new(look: Arc<ShadcnLook>, cx: &mut Context<Self>) -> Self {
+        Self::with_size(look, CompositionSize::Md, cx)
+    }
+
+    pub(in crate::gallery) fn with_size(look: Arc<ShadcnLook>, size: CompositionSize, cx: &mut Context<Self>) -> Self {
         let initial_hsv = Hsv { h: 266.0, s: 0.78, v: 0.76, a: 1.0 };
+        let metrics = HsvPlaneMetrics::resolve(size);
 
         let plane = cx.new(|_| {
             ColorFieldState::hue_saturation_value("composition-hsv-plane", initial_hsv, sizing::THUMB_SIZE_MEDIUM)
@@ -67,6 +87,9 @@ impl HsvPlaneState {
 
         let subscriptions = vec![
             cx.subscribe(&plane, |this, _, event: &ColorFieldEvent, cx| {
+                if !this.sync.begin_sync() {
+                    return;
+                }
                 let hsv = match event {
                     ColorFieldEvent::Change(hsv) | ColorFieldEvent::Release(hsv) => *hsv,
                 };
@@ -74,26 +97,39 @@ impl HsvPlaneState {
                 this.hsv.s = hsv.s;
                 this.hsv.v = hsv.v;
                 this.sync_controls(cx);
+                this.sync.end_sync();
                 cx.notify();
             }),
-            cx.subscribe(&slider_h, |this, _, event: &SliderEvent, cx| {
+            cx.subscribe(&slider_h, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
+                    if !this.sync.begin_sync() {
+                        return;
+                    }
                     this.hsv.h = value;
                     this.sync_controls(cx);
+                    this.sync.end_sync();
                     cx.notify();
                 }
             }),
-            cx.subscribe(&slider_s, |this, _, event: &SliderEvent, cx| {
+            cx.subscribe(&slider_s, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
+                    if !this.sync.begin_sync() {
+                        return;
+                    }
                     this.hsv.s = value;
                     this.sync_controls(cx);
+                    this.sync.end_sync();
                     cx.notify();
                 }
             }),
-            cx.subscribe(&slider_v, |this, _, event: &SliderEvent, cx| {
+            cx.subscribe(&slider_v, |this, _, event, cx| {
                 if let Some(value) = primary_slider_value(event) {
+                    if !this.sync.begin_sync() {
+                        return;
+                    }
                     this.hsv.v = value;
                     this.sync_controls(cx);
+                    this.sync.end_sync();
                     cx.notify();
                 }
             }),
@@ -101,6 +137,8 @@ impl HsvPlaneState {
 
         Self {
             look,
+            metrics,
+            sync: ColorCompositionSync::new(),
             hsv: initial_hsv,
             plane,
             slider_h,
@@ -124,30 +162,32 @@ impl HsvPlaneState {
         self.plane.update(cx, |plane, cx| {
             plane.set_hsv_components(hsv.h, hsv.s, hsv.v, cx);
         });
-        update_domain_delegate(
+        self.sync.sync_color_slider(
+            &self.slider_s,
             &self.slider_s_domain,
             Arc::new(
                 ChannelDelegate::new(hsv, Hsv::SATURATION.into()).expect("HSV saturation delegate should be valid"),
             ),
             self.slider_s_domain.context(),
+            hsv.s,
+            cx,
         );
-        update_domain_delegate(
+        self.sync.sync_color_slider(
+            &self.slider_v,
             &self.slider_v_domain,
             Arc::new(ChannelDelegate::new(hsv, Hsv::VALUE.into()).expect("HSV value delegate should be valid")),
             self.slider_v_domain.context(),
+            hsv.v,
+            cx,
         );
-        self.slider_h.update(cx, |slider, cx| slider.set_value(hsv.h, cx));
-        self.slider_s.update(cx, |slider, cx| slider.set_value(hsv.s, cx));
-        self.slider_v.update(cx, |slider, cx| slider.set_value(hsv.v, cx));
-        refresh_color_slider(&self.slider_s, cx);
-        refresh_color_slider(&self.slider_v, cx);
+        self.sync.sync_slider_value(&self.slider_h, hsv.h, cx);
     }
 }
 
 impl gpui::Render for HsvPlaneState {
     fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let hsla = self.hsv.to_hsla_ext();
-        let plane_size = 280.0;
+        let plane_size = self.metrics.plane_size;
 
         div()
             .w(px(plane_size))
