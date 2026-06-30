@@ -42,8 +42,8 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
 
     section_shell_with_width(
         860.0,
-        "Button template matrix preview",
-        "Initial style-guide experiment copied from Gallery. This keeps the real template/state matrix in Theme Studio so future template examples can live beside typography references.",
+        "Buttons",
+        "State and variant matrix.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -145,8 +145,8 @@ pub(in crate::studio::style::style_guide) fn render_choice_template_matrix_secti
 
     section_shell_with_width(
         960.0,
-        "Choice template matrix preview",
-        "Copied from Gallery as the next style-guide surface. It compares radio, checkbox, switch, and toggle templates across selected and unselected states.",
+        "Choice Controls",
+        "Selection states across control families.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -201,8 +201,8 @@ pub(in crate::studio::style::style_guide) fn render_toggle_template_matrix_secti
 
     section_shell_with_width(
         860.0,
-        "Toggle template matrix preview",
-        "Copied from Gallery. It compares selected and unselected toggle text and round-icon variants across interaction states.",
+        "Toggles",
+        "Selected and unselected interaction states.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,

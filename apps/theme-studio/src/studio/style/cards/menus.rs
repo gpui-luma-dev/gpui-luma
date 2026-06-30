@@ -13,8 +13,8 @@ pub(in crate::studio::style::style_guide) fn render_menu_template_state_section(
 
     section_shell_with_width(
         960.0,
-        "Menu Template State Preview",
-        "Combines the Gallery floating-menu and popup-menu template state previews into a single style-guide panel.",
+        "Menus",
+        "Popup and floating menu states.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -40,8 +40,8 @@ pub(in crate::studio::style::style_guide) fn render_tabs_navigation_template_sec
 
     section_shell_with_width(
         960.0,
-        "Tabs Navigation Template State Preview",
-        "Copied from Gallery. It previews inactive, active, hover, focus, pressed, and disabled tabs using the shared tabs-navigation template.",
+        "Tabs",
+        "Inactive, active, hover, focus, pressed, and disabled.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,

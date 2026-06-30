@@ -17,8 +17,8 @@ pub(in crate::studio::style::style_guide) fn render_selector_templates_section(
 
     section_shell_with_width(
         960.0,
-        "Selector Templates",
-        "Copied from Gallery. Rows are interaction states; columns are autocomplete textbox, combobox, selector, and search selector templates.",
+        "Selectors",
+        "Interaction states across selector triggers.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -28,14 +28,6 @@ pub(in crate::studio::style::style_guide) fn render_selector_templates_section(
             .flex_col()
             .items_start()
             .gap(px(10.0))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(chrome.muted_text)
-                    .child("Template matrix preview"),
-            )
             .child(render_selector_header_row(&controls, chrome.muted_text))
             .children(
                 states

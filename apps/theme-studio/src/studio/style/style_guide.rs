@@ -224,7 +224,7 @@ impl Render for StyleGuidePanel {
                                     }
                                 })
                                 .child(
-                                    div().w_full().flex().justify_center().pb(px(12.0)).child(
+                                    div().w_full().flex().justify_start().pb(px(12.0)).child(
                                         div()
                                             .w_full()
                                             .max_w(px(980.0))
@@ -688,30 +688,30 @@ fn section_shell_with_width(
     description: &'static str,
     title_color: gpui::Hsla,
     muted_text: gpui::Hsla,
-    border: gpui::Hsla,
-    background: gpui::Hsla,
+    _border: gpui::Hsla,
+    _background: gpui::Hsla,
     content: AnyElement,
 ) -> AnyElement {
     div()
         .w(px(width))
         .max_w_full()
         .flex()
-        .flex_col()
-        .gap(px(14.0))
-        .rounded(px(12.0))
-        .border_1()
-        .border_color(border)
-        .bg(background)
-        .p(px(18.0))
+        .flex_wrap()
+        .items_start()
+        .gap(px(40.0))
+        .py(px(12.0))
         .child(
-            vstack! {
-                gap=4;
-                div().text_h4().text_color(title_color).child(title),
-                div().typography_sm().text_color(muted_text).child(description),
-            }
-            .into_any_element(),
+            div()
+                .w(px(240.0))
+                .max_w(px(240.0))
+                .flex_shrink_0()
+                .flex()
+                .flex_col()
+                .gap(px(8.0))
+                .child(div().text_h2().text_color(title_color).child(title))
+                .child(div().typography_sm().text_color(muted_text).child(description)),
         )
-        .child(content)
+        .child(div().flex_1().min_w(px(0.0)).child(content))
         .into_any_element()
 }
 

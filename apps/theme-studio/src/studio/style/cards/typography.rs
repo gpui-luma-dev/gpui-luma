@@ -6,7 +6,7 @@ pub(in crate::studio::style::style_guide) fn render_typography_section(look: &Sh
     section_shell_with_width(
         860.0,
         "Typography",
-        "Combines the semantic role references, composition example, and both theme-aware and fixed text scale samples into a single style-guide card.",
+        "Theme-aware type roles and scale references.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -16,56 +16,12 @@ pub(in crate::studio::style::style_guide) fn render_typography_section(look: &Sh
             .flex_col()
             .gap(px(24.0))
             .children([
-                render_typography_subsection(
-                    "Luma semantic roles",
-                    "Theme-resolved document-style roles from `ShadcnLook::typography_role(...)` and the `LumaTypographyExt` semantic helpers.",
-                    chrome.muted_text,
-                    render_semantic_content(look),
-                ),
-                render_typography_subsection(
-                    "Luma scale helpers",
-                    "Theme-aware scale steps using SDK-owned names that avoid GPUI method collisions.",
-                    chrome.muted_text,
-                    render_scale_content(look),
-                ),
-                render_typography_subsection(
-                    "GPUI built-in text scale helpers",
-                    "App-level fixed utilities. Useful for pragmatic local sizing, but not theme-resolved typography.",
-                    chrome.muted_text,
-                    render_gpui_scale_content(chrome.body_text),
-                ),
+                render_semantic_content(look),
+                render_scale_content(look),
+                render_gpui_scale_content(chrome.body_text),
             ])
             .into_any_element(),
     )
-}
-
-fn render_typography_subsection(
-    title: &'static str,
-    description: &'static str,
-    muted_text: gpui::Hsla,
-    content: AnyElement,
-) -> AnyElement {
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(12.0))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(4.0))
-                .child(
-                    div()
-                        .text_size(px(13.0))
-                        .line_height(px(18.0))
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(muted_text)
-                        .child(title),
-                )
-                .child(div().typography_sm().text_color(muted_text).child(description)),
-        )
-        .child(content)
-        .into_any_element()
 }
 
 fn render_semantic_content(look: &ShadcnLook) -> AnyElement {

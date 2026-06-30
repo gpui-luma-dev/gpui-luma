@@ -9,8 +9,8 @@ pub(in crate::studio::style::style_guide) fn render_input_controls_template_sect
 
     section_shell_with_width(
         960.0,
-        "Input Controls Template Preview",
-        "Single style-guide container for input-family previews copied from Gallery: scrollbar, slider, textfield, and textarea.",
+        "Input Controls",
+        "Scrollbar, slider, text field, and text area states.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
