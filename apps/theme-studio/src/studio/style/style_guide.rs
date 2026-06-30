@@ -1,11 +1,14 @@
+use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, DragMoveEvent, FontWeight, IntoElement, KeyDownEvent, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollWheelEvent, SharedString, TextRun, Window, div, font,
-    prelude::*, px, svg,
+    AnyElement, App, Bounds, ClickEvent, Context, DragMoveEvent, FontWeight, IntoElement, KeyDownEvent, MouseButton,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollHandle, ScrollWheelEvent, SharedString,
+    TextRun, Window, div, font, point, prelude::*, px, svg,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
+use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::controls::command::button::{
     ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, default_button_template,
 };
@@ -83,13 +86,46 @@ const STYLE_GUIDE_DESCRIPTION: &str = concat!(
     "Starts with Gallery template previews, then keeps the existing typography references."
 );
 
+const TRACKER_HEIGHT: f32 = 280.0;
+const TRACKER_INSET: f32 = 22.0;
+const TRACKER_THUMB_HEIGHT: f32 = 40.0;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum StyleGuideSection {
+    Buttons,
+    Choice,
+    Toggle,
+    Menus,
+    Selectors,
+    Tabs,
+    Inputs,
+    Typography,
+}
+
+impl StyleGuideSection {
+    const ALL: [Self; 8] = [
+        Self::Typography,
+        Self::Buttons,
+        Self::Choice,
+        Self::Toggle,
+        Self::Menus,
+        Self::Selectors,
+        Self::Tabs,
+        Self::Inputs,
+    ];
+}
+
 declare_form! {
     pub struct StyleGuidePanel {
         controls: {},
         args: {
             look: Arc<ShadcnLook>,
         },
-        fields: {}
+        fields: {
+            scroll_handle: ScrollHandle = ScrollHandle::new(),
+            last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
+            last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
+        }
     }
 }
 
@@ -98,12 +134,33 @@ impl StyleGuidePanel {
         self.look = look;
         cx.notify();
     }
+
+    fn set_vertical_offset(&self, value: f32, cx: &mut Context<Self>) {
+        self.scroll_handle.set_offset(point(px(0.0), px(-value.max(0.0))));
+        cx.notify();
+    }
+
+    fn scroll_vertical_by(&self, delta: Pixels, cx: &mut Context<Self>) -> bool {
+        let current = (-self.scroll_handle.offset().y.as_f32()).max(0.0);
+        let max = self.scroll_handle.max_offset().y.as_f32().max(0.0);
+        let target = (current + delta.as_f32()).clamp(0.0, max);
+        if (target - current).abs() <= 0.5 {
+            return false;
+        }
+
+        self.set_vertical_offset(target, cx);
+        true
+    }
 }
 
 impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         with_look(&self.look, || {
             let chrome = self.look.chrome();
+            let scroll_progress = self.scroll_progress();
+            let scroll_handle = self.scroll_handle.clone();
+            let last_scroll_offset = self.last_scroll_offset.clone();
+            let last_max_scroll = self.last_max_scroll.clone();
 
             div()
                 .id("theme-studio-typography")
@@ -138,64 +195,211 @@ impl Render for StyleGuidePanel {
                         ),
                 )
                 .child(
-                    div().w_full().min_h(px(0.0)).flex_1().child(
-                        div()
-                            .id("typography-content")
-                            .size_full()
-                            .flex()
-                            .flex_col()
-                            .gap(px(18.0))
-                            .overflow_y_scroll()
-                            .pt(px(18.0))
-                            .child(
-                                div()
-                                    .w_full()
-                                    .flex()
-                                    .flex_wrap()
-                                    .items_start()
-                                    .gap(px(20.0))
-                                    .when_some(render_sparse_catalog_callout(self.look.as_ref()), |panel, callout| {
-                                        panel.child(callout)
-                                    })
-                                    .children([
-                                        cards::buttons::render_button_template_matrix_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::buttons::render_choice_template_matrix_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::buttons::render_toggle_template_matrix_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::menus::render_menu_template_state_section(self.look.clone(), window, cx),
-                                        cards::selectors::render_selector_templates_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::menus::render_tabs_navigation_template_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::inputs::render_input_controls_template_section(
-                                            self.look.clone(),
-                                            window,
-                                            cx,
-                                        ),
-                                        cards::typography::render_typography_section(self.look.as_ref()),
-                                    ]),
-                            ),
-                    ),
+                    div()
+                        .w_full()
+                        .min_h(px(0.0))
+                        .flex_1()
+                        .flex()
+                        .items_stretch()
+                        .gap(px(16.0))
+                        .pt(px(18.0))
+                        .child(
+                            div()
+                                .id("style-guide-content")
+                                .flex_1()
+                                .min_h(px(0.0))
+                                .overflow_y_scroll()
+                                .scrollbar_width(px(0.0))
+                                .track_scroll(&self.scroll_handle)
+                                .on_prepaint(move |_, window: &mut Window, cx: &mut App| {
+                                    let offset = (-scroll_handle.offset().y.as_f32()).max(0.0);
+                                    let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
+                                    let offset_changed = (last_scroll_offset.get() - offset).abs() > 0.5;
+                                    let max_changed = (last_max_scroll.get() - max_scroll).abs() > 0.5;
+
+                                    if offset_changed || max_changed {
+                                        last_scroll_offset.set(offset);
+                                        last_max_scroll.set(max_scroll);
+                                        cx.notify(window.current_view());
+                                    }
+                                })
+                                .child(
+                                    div().w_full().flex().justify_center().pb(px(12.0)).child(
+                                        div()
+                                            .w_full()
+                                            .max_w(px(980.0))
+                                            .flex()
+                                            .flex_col()
+                                            .gap(px(20.0))
+                                            .when_some(
+                                                render_sparse_catalog_callout(self.look.as_ref()),
+                                                |panel, callout| panel.child(callout),
+                                            )
+                                            .children(
+                                                StyleGuideSection::ALL
+                                                    .into_iter()
+                                                    .map(|section| self.render_section_shell(section, window, cx)),
+                                            ),
+                                    ),
+                                ),
+                        )
+                        .child(self.render_scroll_tracker(scroll_progress)),
                 )
         })
     }
+}
+
+impl StyleGuidePanel {
+    fn render_section_shell(
+        &self,
+        section: StyleGuideSection,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        div()
+            .relative()
+            .w_full()
+            .child(self.render_section(section, window, cx))
+            .child(
+                div()
+                    .absolute()
+                    .inset_0()
+                    .occlude()
+                    .on_mouse_down(MouseButton::Left, |_, window, cx| {
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    })
+                    .on_mouse_down(MouseButton::Right, |_, window, cx| {
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    })
+                    .on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel))
+                    .on_key_down(cx.listener(Self::handle_section_overlay_key_down)),
+            )
+            .into_any_element()
+    }
+
+    fn scroll_progress(&self) -> f32 {
+        let max_scroll = self.scroll_handle.max_offset().y.as_f32().max(0.0);
+        if max_scroll <= 0.5 {
+            return 0.0;
+        }
+
+        (-self.scroll_handle.offset().y.as_f32()).clamp(0.0, max_scroll) / max_scroll
+    }
+
+    fn render_section(&self, section: StyleGuideSection, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+        match section {
+            StyleGuideSection::Buttons => {
+                cards::buttons::render_button_template_matrix_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Choice => {
+                cards::buttons::render_choice_template_matrix_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Toggle => {
+                cards::buttons::render_toggle_template_matrix_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Menus => cards::menus::render_menu_template_state_section(self.look.clone(), window, cx),
+            StyleGuideSection::Selectors => {
+                cards::selectors::render_selector_templates_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Tabs => {
+                cards::menus::render_tabs_navigation_template_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Inputs => {
+                cards::inputs::render_input_controls_template_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Typography => cards::typography::render_typography_section(self.look.as_ref()),
+        }
+    }
+
+    fn render_scroll_tracker(&self, progress: f32) -> AnyElement {
+        let chrome = self.look.chrome();
+        let track_span = TRACKER_HEIGHT - (TRACKER_INSET * 2.0) - TRACKER_THUMB_HEIGHT;
+        let thumb_top = TRACKER_INSET + (track_span.max(0.0) * progress.clamp(0.0, 1.0));
+
+        div()
+            .id("style-guide-scroll-tracker-shell")
+            .w(px(28.0))
+            .flex_shrink_0()
+            .child(
+                div().w_full().h_full().flex().items_center().justify_center().child(
+                    div()
+                        .relative()
+                        .w(px(12.0))
+                        .h(px(TRACKER_HEIGHT))
+                        .child(
+                            div()
+                                .absolute()
+                                .top(px(TRACKER_INSET))
+                                .bottom(px(TRACKER_INSET))
+                                .left(px(5.0))
+                                .w(px(2.0))
+                                .rounded_full()
+                                .bg(gpui::hsla(chrome.border.h, chrome.border.s, chrome.border.l, 0.9)),
+                        )
+                        .children(
+                            StyleGuideSection::ALL
+                                .into_iter()
+                                .enumerate()
+                                .map(|(index, _)| render_tracker_marker(index, chrome.muted_text)),
+                        )
+                        .child(
+                            div()
+                                .absolute()
+                                .top(px(thumb_top))
+                                .left(px(0.0))
+                                .w(px(12.0))
+                                .h(px(TRACKER_THUMB_HEIGHT))
+                                .rounded_full()
+                                .bg(chrome.title_text),
+                        ),
+                ),
+            )
+            .into_any_element()
+    }
+
+    fn handle_section_overlay_scroll_wheel(
+        &mut self,
+        event: &ScrollWheelEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let delta = event.delta.pixel_delta(px(40.0)).y.as_f32();
+        if !delta.is_finite() || delta.abs() <= f32::EPSILON {
+            return;
+        }
+
+        if self.scroll_vertical_by(px(-delta), cx) {
+            window.prevent_default();
+            cx.stop_propagation();
+        }
+    }
+
+    fn handle_section_overlay_key_down(&mut self, _: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        window.prevent_default();
+        cx.stop_propagation();
+    }
+}
+
+fn render_tracker_marker(index: usize, color: gpui::Hsla) -> AnyElement {
+    let count = StyleGuideSection::ALL.len();
+    let usable_height = TRACKER_HEIGHT - (TRACKER_INSET * 2.0);
+    let step = if count > 1 {
+        usable_height / (count.saturating_sub(1) as f32)
+    } else {
+        0.0
+    };
+    let top = TRACKER_INSET + (index as f32 * step) - 2.0;
+
+    div()
+        .absolute()
+        .top(px(top))
+        .left(px(3.0))
+        .size(px(6.0))
+        .rounded_full()
+        .bg(gpui::hsla(color.h, color.s, color.l, 0.85))
+        .into_any_element()
 }
 
 #[derive(Clone, Copy)]

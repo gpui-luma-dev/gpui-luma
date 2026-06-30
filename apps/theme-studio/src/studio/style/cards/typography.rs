@@ -23,12 +23,6 @@ pub(in crate::studio::style::style_guide) fn render_typography_section(look: &Sh
                     render_semantic_content(look),
                 ),
                 render_typography_subsection(
-                    "Semantic composition example",
-                    "A practical example of how the semantic heading and paragraph roles could be composed in a product surface.",
-                    chrome.muted_text,
-                    render_semantic_composition_content(look),
-                ),
-                render_typography_subsection(
                     "Luma scale helpers",
                     "Theme-aware scale steps using SDK-owned names that avoid GPUI method collisions.",
                     chrome.muted_text,
@@ -107,55 +101,6 @@ fn render_semantic_row(label: &'static str, sample: impl IntoElement) -> AnyElem
         div().flex_1().min_w(px(0.0)).child(sample),
     }
     .into_any_element()
-}
-
-fn render_semantic_composition_content(look: &ShadcnLook) -> AnyElement {
-    let chrome = look.chrome();
-
-    div()
-        .flex()
-        .flex_wrap()
-        .items_start()
-        .gap(px(14.0))
-        .child(
-            div()
-                .w(px(420.0))
-                .max_w_full()
-                .flex()
-                .flex_col()
-                .gap(px(14.0))
-                .rounded(px(12.0))
-                .border_1()
-                .border_color(chrome.border)
-                .bg(chrome.content_background)
-                .p(px(18.0))
-                .child(div().text_h1().text_color(chrome.title_text).child("Foundation Controls"))
-                .child(div().text_p().text_color(chrome.body_text).child(
-                    "A hero section for a product shell using the larger semantic page title and paragraph copy.",
-                ))
-                .child(div().text_h2().text_color(chrome.title_text).child("Primary Section"))
-                .child(
-                    div()
-                        .text_p()
-                        .text_color(chrome.body_text)
-                        .child("Use h2 for the main page sections that structure the content and orient the user."),
-                )
-                .child(div().text_h3().text_color(chrome.title_text).child("Panel Heading"))
-                .child(
-                    div()
-                        .text_p()
-                        .text_color(chrome.body_text)
-                        .child("Use h3 for a panel or content block title inside the main section."),
-                )
-                .child(div().text_h4().text_color(chrome.title_text).child("Field Group"))
-                .child(
-                    div()
-                        .text_p()
-                        .text_color(chrome.body_text)
-                        .child("Use h4 for smaller grouped content or component subheaders."),
-                ),
-        )
-        .into_any_element()
 }
 
 fn render_scale_content(look: &ShadcnLook) -> AnyElement {
