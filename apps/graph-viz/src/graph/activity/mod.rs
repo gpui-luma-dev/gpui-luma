@@ -1,7 +1,10 @@
+pub mod cycling_dynamics;
 pub mod fit;
 pub mod lap;
 pub mod model;
 pub mod stats;
+pub mod power_curve;
+pub mod zones;
 
 mod distance;
 
@@ -13,10 +16,13 @@ pub use distance::{
     cumulative_distance_profile, distance_axis_available, remap_time_samples_to_x, ride_distance_display_extent,
     scrub_x_fraction, total_distance_meters,
 };
+pub use cycling_dynamics::{CyclingDynamics, CyclingDynamicsField, CyclingDynamicsSection, cycling_dynamics_sections};
 pub use fit::parse_fit_bytes;
 pub use lap::LapSummary;
 pub use model::{RideActivity, RideSummary, TelemetryPoint};
 pub use stats::ActivityStats;
+pub use power_curve::{ActivityPowerCurve, PowerCurvePoint, compute_activity_power_curve};
+pub use zones::{ZoneEntry, ZoneTimeProfile};
 
 pub const SAMPLE_FIT_PATH: &str = "assets/garmin-data/23386792539_ACTIVITY.fit";
 

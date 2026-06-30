@@ -7,6 +7,7 @@ use gpui::{
     SharedString, Size, Subscription, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, size,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::color::composition::CompositionSize;
 use gpui_luma::controls::color::color_field::ColorFieldEvent;
 use gpui_luma::controls::color::color_ring::primary_slider_value;
 use gpui_luma::controls::color::style::{ElementExt, StyledExt};
@@ -124,7 +125,7 @@ impl GradientBuilder {
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
         let renderer_selector =
             look.selector("color-viz-gradient-renderer").items(renderer_items()).selected_id("quads").spawn(cx);
-        let color_picker = cx.new(|cx| SvTrianglePicker::new(start, cx));
+        let color_picker = cx.new(|cx| SvTrianglePicker::with_size(start, CompositionSize::Md, cx));
 
         let mut builder = Self {
             look: look.clone(),

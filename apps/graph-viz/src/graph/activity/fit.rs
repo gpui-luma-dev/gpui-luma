@@ -4,9 +4,11 @@ use anyhow::{Context, Result, bail};
 use fitparser::profile::MesgNum;
 use fitparser::{FitDataRecord, Value, from_bytes};
 
+use super::cycling_dynamics::extract_cycling_dynamics;
 use super::lap::LapSummary;
 use super::model::{RideActivity, RideSummary, TelemetryPoint};
 use super::stats::ActivityStats;
+use super::zones::extract_zone_time_profile;
 
 const SEMICIRCLE_TO_DEGREES: f64 = 180.0 / 2_147_483_648.0;
 
@@ -21,7 +23,10 @@ pub fn parse_fit_bytes(bytes: &[u8]) -> Result<RideActivity> {
     let summary = RideSummary::from_stats(&stats);
     let laps = extract_laps(&records);
     let rider_weight_kg = extract_rider_weight_kg(&records);
-    Ok(RideActivity { stats, summary, laps, points, rider_weight_kg })
+    let zones = extract_zone_time_profile(&records);
+    let session = records.iter().find(|record| record.kind() == MesgNum::Session);
+    let cycling_dynamics = Some(extract_cycling_dynamics(session, &points));
+    Ok(RideActivity { stats, summary, laps, points, rider_weight_kg, zones, cycling_dynamics })
 }
 
 fn extract_record_points(records: &[FitDataRecord]) -> Result<Vec<TelemetryPoint>> {
@@ -428,5 +433,21 @@ mod tests {
         assert!(ride.stats.training_stress_score.is_some());
         assert!(ride.stats.left_right_balance.is_some());
         assert_eq!(ride.summary.total_distance_meters, ride.stats.total_distance_meters);
+    }
+
+    #[test]
+    fn sample_fit_parses_zone_time_profile() {
+        let ride = crate::graph::activity::load_sample_ride().expect("sample ride");
+        let zones = ride.zones.expect("expected zone time profile");
+        assert_eq!(zones.heart_rate_zones.len(), 5);
+        assert_eq!(zones.power_zones.len(), 7);
+    }
+
+    #[test]
+    fn sample_fit_parses_cycling_dynamics() {
+        let ride = crate::graph::activity::load_sample_ride().expect("sample ride");
+        let dynamics = ride.cycling_dynamics.expect("cycling dynamics");
+        assert!(dynamics.avg_left_power_phase_deg.len() >= 2);
+        assert!(dynamics.left_pco_sample_count > 100);
     }
 }

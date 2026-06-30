@@ -9,4 +9,5 @@ pub mod shape;
 pub mod style;
 pub mod swatch;
 
+pub use composition::CompositionSize;
 pub use swatch::ColorSwatch;

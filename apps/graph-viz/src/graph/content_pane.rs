@@ -12,16 +12,20 @@ use gpui_luma::controls::tabs_navigation::{
 use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
-use super::activity::RideActivity;
+use super::activity::{RideActivity, compute_activity_power_curve};
 use super::content_tabs::graph_viz_tabs_navigation_template;
+use super::cycling_dynamics_tab::render_cycling_dynamics_tab;
 use super::graph_tab::{
     default_selected_metric_ids, metric_listbox_items, power_unit_toggle_label, render_graph_tab,
     visible_metrics_from_ids,
 };
 use super::laps_tab::{refresh_laps_list_view, render_laps_tab, spawn_laps_list_view, LapRow};
 use super::metrics::TelemetryMetric;
+use super::placeholder_tab::render_placeholder_tab;
+use super::power_curve_tab::render_power_curve_tab;
 use super::stats_tab::render_stats_tab;
 use super::units::SpeedUnit;
+use super::zones_tab::render_zones_tab;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum ContentTab {
@@ -29,6 +33,9 @@ pub enum ContentTab {
     Graph,
     Stats,
     Laps,
+    TimeInZones,
+    CyclingDynamics,
+    PowerCurve,
 }
 
 impl ContentTab {
@@ -37,6 +44,9 @@ impl ContentTab {
             "graph" => Some(Self::Graph),
             "stats" => Some(Self::Stats),
             "laps" => Some(Self::Laps),
+            "zones" => Some(Self::TimeInZones),
+            "cycling-dynamics" => Some(Self::CyclingDynamics),
+            "power-curve" => Some(Self::PowerCurve),
             _ => None,
         }
     }
@@ -87,12 +97,15 @@ impl ContentPaneHost {
         let tabs = look
             .tabs_navigation("graph-viz-content-tabs")
             .size(ControlSize::Lg)
-            .width_mode(TabsNavigationWidthMode::Uniform)
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
             .template(graph_viz_tabs_navigation_template(look.clone(), ControlSize::Lg))
             .items([
                 TabsNavigationItem::new("graph").label("Graph"),
                 TabsNavigationItem::new("stats").label("Stats"),
                 TabsNavigationItem::new("laps").label("Laps"),
+                TabsNavigationItem::new("zones").label("Time In Zones"),
+                TabsNavigationItem::new("cycling-dynamics").label("Cycling Dynamics"),
+                TabsNavigationItem::new("power-curve").label("Power Curve"),
             ])
             .active("graph")
             .spawn(cx);
@@ -170,7 +183,7 @@ impl ContentPaneHost {
         self.look = look.clone();
         self.tabs.update(cx, |tabs, cx| {
             tabs.set_size(ControlSize::Lg, cx);
-            tabs.set_width_mode(TabsNavigationWidthMode::Uniform, cx);
+            tabs.set_width_mode(TabsNavigationWidthMode::Intrinsic, cx);
             tabs.set_template(graph_viz_tabs_navigation_template(look.clone(), ControlSize::Lg), cx);
         });
         self.metric_listbox.update(cx, |listbox, cx| {
@@ -270,6 +283,39 @@ impl Render for ContentPaneHost {
                     .p(px(24.0))
                     .child(render_laps_tab(&self.ride, &self.laps_list_view, &self.look, window, cx))
                     .into_any_element(),
+                ContentTab::TimeInZones => {
+                    let profile = self.ride.zones.as_ref().cloned().unwrap_or_default();
+                    div()
+                        .id("graph-viz-zones-tab")
+                        .flex_1()
+                        .min_h_0()
+                        .size_full()
+                        .overflow_y_scroll()
+                        .p(px(24.0))
+                        .child(render_zones_tab(&profile, &self.look, window, cx))
+                        .into_any_element()
+                }
+                ContentTab::CyclingDynamics => div()
+                    .id("graph-viz-cycling-dynamics-tab")
+                    .flex_1()
+                    .min_h_0()
+                    .size_full()
+                    .overflow_y_scroll()
+                    .p(px(24.0))
+                    .child(render_cycling_dynamics_tab(&self.ride, &self.look, window, cx))
+                    .into_any_element(),
+                ContentTab::PowerCurve => {
+                    let curve = compute_activity_power_curve(&self.ride.points);
+                    div()
+                        .id("graph-viz-power-curve-tab")
+                        .flex_1()
+                        .min_h_0()
+                        .size_full()
+                        .overflow_y_scroll()
+                        .p(px(24.0))
+                        .child(render_power_curve_tab(&curve, &self.look, window, cx))
+                        .into_any_element()
+                }
             })
     }
 }

@@ -14,6 +14,10 @@ mod plot;
 mod laps_tab;
 mod ride_summary;
 mod stats_tab;
+mod cycling_dynamics_tab;
+mod placeholder_tab;
+mod power_curve_tab;
 mod theme_sidebar;
+mod zones_tab;
 
 pub use app::GraphVizApp;

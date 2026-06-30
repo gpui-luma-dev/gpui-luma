@@ -49,4 +49,6 @@ pub struct RideActivity {
     pub laps: Vec<super::lap::LapSummary>,
     pub points: Vec<TelemetryPoint>,
     pub rider_weight_kg: Option<f32>,
+    pub zones: Option<super::zones::ZoneTimeProfile>,
+    pub cycling_dynamics: Option<super::cycling_dynamics::CyclingDynamics>,
 }
