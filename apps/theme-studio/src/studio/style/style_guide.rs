@@ -7,11 +7,9 @@ use gpui::{
     MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollHandle, ScrollWheelEvent,
     SharedString, TextRun, Window, div, font, point, prelude::*, px, svg,
 };
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::color::style::ElementExt;
-use gpui_luma::controls::command::button::{
-    ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, default_button_template,
-};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
 use gpui_luma::controls::progress::{ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
@@ -74,7 +72,7 @@ use gpui_luma::controls::textfield::{
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
-use gpui_luma::{declare_form, hstack, vstack};
+use gpui_luma::{GridLayout, GridTrack, declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;

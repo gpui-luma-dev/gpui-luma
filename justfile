@@ -17,7 +17,7 @@ gallery-dbg:
     RUST_BACKTRACE=1 cargo run -p gpui-luma-gallery -- jarvis
 
 theme-studio:
-    cargo run -p gpui-luma-theme-studio -- steve
+    cargo run -p gpui-luma-theme-studio -- modern-minimal --light
     #cargo run -p gpui-luma-theme-studio -- elegent-luxury
 
 theme-studio-rel:

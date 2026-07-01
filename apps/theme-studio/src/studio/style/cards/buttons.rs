@@ -1,5 +1,8 @@
 use super::super::*;
 
+const TEMPLATE_GRID_COLUMN_WIDTH: f32 = 152.0;
+const TEMPLATE_GRID_GAP: f32 = 10.0;
+
 pub(in crate::studio::style::style_guide) fn render_button_template_matrix_section(
     look: Arc<ShadcnLook>,
     window: &mut Window,
@@ -7,9 +10,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
 ) -> AnyElement {
     let chrome = look.chrome();
     let template: Arc<dyn ButtonTemplate<()>> = default_button_template();
-    let uniform_template: Arc<dyn ButtonTemplate<()>> = Arc::new(
-        DefaultButtonTemplate::new(default_button_family_theme()).with_modifier(|element, _| element.w_full()),
-    );
     let samples = [
         ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
         ButtonStateSample {
@@ -41,7 +41,7 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
     ];
 
     section_shell_with_width(
-        860.0,
+        960.0,
         "Buttons",
         "State and variant matrix.",
         chrome.title_text,
@@ -53,10 +53,10 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
             .flex_col()
             .gap(px(20.0))
             .children([
+                render_button_size_preview_row(look.as_ref(), &template, chrome.muted_text, window, cx),
                 render_button_template_section(
                     look.as_ref(),
                     &template,
-                    &uniform_template,
                     "Primary",
                     ShadcnButtonStyle::Primary,
                     &variants,
@@ -68,7 +68,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
                 render_button_template_section(
                     look.as_ref(),
                     &template,
-                    &uniform_template,
                     "Secondary",
                     ShadcnButtonStyle::Secondary,
                     &variants,
@@ -80,7 +79,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
                 render_button_template_section(
                     look.as_ref(),
                     &template,
-                    &uniform_template,
                     "Outline",
                     ShadcnButtonStyle::Outline,
                     &variants,
@@ -92,7 +90,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
                 render_button_template_section(
                     look.as_ref(),
                     &template,
-                    &uniform_template,
                     "Ghost",
                     ShadcnButtonStyle::Ghost,
                     &variants,
@@ -104,6 +101,41 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
             ])
             .into_any_element(),
     )
+}
+
+fn render_button_size_preview_row(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<()>>,
+    label_color: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let sizes = [(ButtonSize::Sm, "Small"), (ButtonSize::Md, "Medium"), (ButtonSize::Lg, "Large")];
+
+    div()
+        .flex()
+        .flex_col()
+        .items_start()
+        .gap(px(10.0))
+        .child(
+            div()
+                .text_size(px(12.0))
+                .line_height(px(16.0))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(label_color)
+                .child("Standard sizes"),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .items_start()
+                .gap(px(12.0))
+                .children(sizes.into_iter().map(|(size, label)| {
+                    render_button_size_sample(template, look, ShadcnButtonStyle::Primary, size, label, window, cx)
+                })),
+        )
+        .into_any_element()
 }
 
 pub(in crate::studio::style::style_guide) fn render_choice_template_matrix_section(
@@ -200,7 +232,7 @@ pub(in crate::studio::style::style_guide) fn render_toggle_template_matrix_secti
     ];
 
     section_shell_with_width(
-        860.0,
+        960.0,
         "Toggles",
         "Selected and unselected interaction states.",
         chrome.title_text,
@@ -242,7 +274,6 @@ pub(in crate::studio::style::style_guide) fn render_toggle_template_matrix_secti
 fn render_button_template_section(
     look: &ShadcnLook,
     template: &Arc<dyn ButtonTemplate<()>>,
-    uniform_template: &Arc<dyn ButtonTemplate<()>>,
     section_label: &'static str,
     style: ShadcnButtonStyle,
     variants: &[ButtonTemplateVariant],
@@ -256,35 +287,7 @@ fn render_button_template_section(
         .items_start()
         .gap(px(10.0))
         .child(render_vertical_section_rail(section_label, label_color))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(8.0))
-                .child(render_button_header_row(samples, label_color))
-                .children(variants.iter().map(|variant| {
-                    render_button_variant_row(template, uniform_template, look, style, *variant, samples, window, cx)
-                })),
-        )
-        .into_any_element()
-}
-
-fn render_button_header_row(samples: &[ButtonStateSample], label_color: gpui::Hsla) -> AnyElement {
-    div()
-        .flex()
-        .items_center()
-        .gap(px(8.0))
-        .children(samples.iter().map(|sample| {
-            div()
-                .w(px(116.0))
-                .flex()
-                .justify_center()
-                .text_xs()
-                .line_height(px(15.0))
-                .text_color(label_color)
-                .child(sample.header)
-        }))
+        .child(render_button_matrix_grid(template, look, style, variants, samples, label_color, window, cx))
         .into_any_element()
 }
 
@@ -308,29 +311,53 @@ fn render_choice_header_row(controls: &[ChoiceTemplateControl], label_color: gpu
         .into_any_element()
 }
 
-fn render_button_variant_row(
+fn render_button_matrix_grid(
     template: &Arc<dyn ButtonTemplate<()>>,
-    uniform_template: &Arc<dyn ButtonTemplate<()>>,
     look: &ShadcnLook,
     style: ShadcnButtonStyle,
-    variant: ButtonTemplateVariant,
+    variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
+    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let mut grid = GridLayout::new()
+        .rows(variants.len() + 1)
+        .columns((0..samples.len()).map(|_| GridTrack::Px(TEMPLATE_GRID_COLUMN_WIDTH)))
+        .gap_x(TEMPLATE_GRID_GAP)
+        .gap_y(8.0);
+
+    for (col, sample) in samples.iter().enumerate() {
+        grid = grid.child(render_button_header_cell(sample.header, label_color), 0, col);
+    }
+
+    for (row, variant) in variants.iter().enumerate() {
+        for (col, sample) in samples.iter().enumerate() {
+            grid = grid.child(
+                render_button_state_sample(template, look, style, *variant, sample, window, cx),
+                row + 1,
+                col,
+            );
+        }
+    }
+
+    grid.into_any_element()
+}
+
+fn render_button_header_cell(label: &'static str, label_color: gpui::Hsla) -> AnyElement {
     div()
+        .w_full()
         .flex()
-        .items_center()
-        .gap(px(8.0))
-        .children(samples.iter().map(|sample| {
-            render_button_state_sample(template, uniform_template, look, style, variant, sample, window, cx)
-        }))
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .text_color(label_color)
+        .child(label)
         .into_any_element()
 }
 
 fn render_button_state_sample(
     template: &Arc<dyn ButtonTemplate<()>>,
-    uniform_template: &Arc<dyn ButtonTemplate<()>>,
     look: &ShadcnLook,
     style: ShadcnButtonStyle,
     variant: ButtonTemplateVariant,
@@ -363,20 +390,47 @@ fn render_button_state_sample(
         look: Some(look),
     };
 
-    let active_template = if matches!(variant, ButtonTemplateVariant::IconButton) {
-        template
-    } else {
-        uniform_template
+    div()
+        .w_full()
+        .flex()
+        .justify_center()
+        .items_center()
+        .child(template.render(&model, window, cx))
+        .into_any_element()
+}
+
+fn render_button_size_sample(
+    template: &Arc<dyn ButtonTemplate<()>>,
+    look: &ShadcnLook,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    label: &'static str,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!("theme-studio-button-size-preview-{}-{}", shadcn_style_id(style), label));
+    let model = ButtonRenderModel {
+        id,
+        data: (),
+        content: Arc::new(|_, _| div().child("Button").into_any_element()),
+        role: ButtonFamilyRole::Text,
+        size,
+        state: InteractionState::default(),
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+        elevation: true,
+        compact: false,
+        look: Some(button_look_for_style(Arc::new(look.clone()), style)),
     };
 
-    let rendered = active_template.render(&model, window, cx);
-    let rendered = if matches!(variant, ButtonTemplateVariant::IconButton) {
-        rendered
-    } else {
-        rendered.w_full()
-    };
-
-    div().w(px(116.0)).flex().justify_center().items_center().child(rendered).into_any_element()
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(6.0))
+        .child(template.render(&model, window, cx))
+        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(look.chrome().muted_text).child(label))
+        .into_any_element()
 }
 
 fn render_choice_matrix(
@@ -494,58 +548,52 @@ fn render_toggle_template_section(
         .items_start()
         .gap(px(8.0))
         .child(render_vertical_section_rail(section_label, label_color))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(8.0))
-                .child(render_toggle_header_row(samples, label_color))
-                .children(
-                    variants
-                        .iter()
-                        .map(|variant| render_toggle_variant_row(template, look, style, *variant, samples, window, cx)),
-                ),
-        )
+        .child(render_toggle_matrix_grid(template, look, style, variants, samples, label_color, window, cx))
         .into_any_element()
 }
 
-fn render_toggle_header_row(samples: &[ToggleStateSample], label_color: gpui::Hsla) -> AnyElement {
-    div()
-        .flex()
-        .items_center()
-        .gap(px(8.0))
-        .children(samples.iter().map(|sample| {
-            div()
-                .w(px(116.0))
-                .flex()
-                .justify_center()
-                .text_size(px(11.0))
-                .line_height(px(15.0))
-                .text_color(label_color)
-                .child(sample.header)
-        }))
-        .into_any_element()
-}
-
-fn render_toggle_variant_row(
+fn render_toggle_matrix_grid(
     template: &Arc<dyn ButtonTemplate<bool>>,
     look: &Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
-    variant: ToggleTemplateVariant,
+    variants: &[ToggleTemplateVariant],
     samples: &[ToggleStateSample],
+    label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let mut grid = GridLayout::new()
+        .rows(variants.len() + 1)
+        .columns((0..samples.len()).map(|_| GridTrack::Px(TEMPLATE_GRID_COLUMN_WIDTH)))
+        .gap_x(TEMPLATE_GRID_GAP)
+        .gap_y(8.0);
+
+    for (col, sample) in samples.iter().enumerate() {
+        grid = grid.child(render_toggle_header_cell(sample.header, label_color), 0, col);
+    }
+
+    for (row, variant) in variants.iter().enumerate() {
+        for (col, sample) in samples.iter().enumerate() {
+            grid = grid.child(
+                render_toggle_state_sample(template, look, style, *variant, sample, window, cx),
+                row + 1,
+                col,
+            );
+        }
+    }
+
+    grid.into_any_element()
+}
+
+fn render_toggle_header_cell(label: &'static str, label_color: gpui::Hsla) -> AnyElement {
     div()
+        .w_full()
         .flex()
-        .items_center()
-        .gap(px(8.0))
-        .children(
-            samples
-                .iter()
-                .map(|sample| render_toggle_state_sample(template, look, style, variant, sample, window, cx)),
-        )
+        .justify_center()
+        .text_size(px(11.0))
+        .line_height(px(15.0))
+        .text_color(label_color)
+        .child(label)
         .into_any_element()
 }
 
@@ -580,7 +628,7 @@ fn render_toggle_state_sample(
     };
 
     div()
-        .w(px(116.0))
+        .w_full()
         .flex()
         .justify_center()
         .items_center()

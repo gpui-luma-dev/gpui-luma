@@ -12,7 +12,7 @@ use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
-use crate::theme::StudioThemeChoice;
+use crate::theme::{StudioLaunchOptions, StudioThemeChoice};
 
 use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
@@ -63,11 +63,11 @@ pub struct ThemeStudioApp {
 }
 
 impl ThemeStudioApp {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>, theme_choice: StudioThemeChoice) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>, launch_options: StudioLaunchOptions) -> Self {
         let app = cx.entity();
         let focus_scope = cx.focus_handle();
-        let active_theme_id = theme_choice.id();
-        let mode = ThemeMode::Dark;
+        let active_theme_id = launch_options.theme_choice.id();
+        let mode = launch_options.initial_mode;
         let look = Self::load_theme(&active_theme_id);
         look.set_mode(mode);
         let control_size = ControlSize::Md;

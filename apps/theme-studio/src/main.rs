@@ -8,7 +8,7 @@ mod theme;
 
 use assets::Assets;
 use gpui::{actions, App, KeyBinding, Menu, MenuItem};
-use theme::StudioThemeChoice;
+use theme::StudioLaunchOptions;
 
 actions!(theme_studio_app, [Quit]);
 
@@ -17,7 +17,7 @@ fn quit(_: &Quit, cx: &mut App) {
 }
 
 fn main() {
-    let theme_choice = StudioThemeChoice::from_args();
+    let launch_options = StudioLaunchOptions::from_args();
     let app = gpui_platform::application().with_assets(Assets);
 
     app.run(move |cx| {
@@ -27,10 +27,10 @@ fn main() {
         if let Err(error) = gpui_luma::init(cx).and_then(|_| {
             gpui_luma::focus::bind_default_focus_keys(cx);
             gpui_luma::keyhandling::bind_default_control_keys(cx);
-            if theme_choice.loads_rajdhani_font() {
+            if launch_options.loads_rajdhani_font() {
                 fonts::load_rajdhani(cx)?;
             }
-            app_shell::open(cx, theme_choice)
+            app_shell::open(cx, launch_options.clone())
         }) {
             eprintln!("failed to open Luma Theme Studio: {error:?}");
         }
