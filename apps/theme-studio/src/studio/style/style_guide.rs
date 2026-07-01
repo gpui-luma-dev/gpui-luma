@@ -3,15 +3,16 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, DragMoveEvent, FontWeight, IntoElement, KeyDownEvent, MouseButton,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollHandle, ScrollWheelEvent, SharedString,
-    TextRun, Window, div, font, point, prelude::*, px, svg,
+    AnyElement, App, Bounds, ClickEvent, Context, DragMoveEvent, Entity, FontWeight, IntoElement, KeyDownEvent,
+    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollHandle, ScrollWheelEvent,
+    SharedString, TextRun, Window, div, font, point, prelude::*, px, svg,
 };
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize, default_button_family_theme};
 use gpui_luma::controls::color::style::ElementExt;
 use gpui_luma::controls::command::button::{
     ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate, default_button_template,
 };
+use gpui_luma::controls::progress::{ProgressRenderModel, ProgressTemplate};
 use gpui_luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
     AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
@@ -30,6 +31,7 @@ use gpui_luma::controls::popup_menu::{
     ControlFocusState as PopupMenuControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
     PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
 };
+use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
 use gpui_luma::controls::search_selector::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
     SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SearchSelectorRenderModel,
@@ -92,6 +94,8 @@ const TRACKER_THUMB_HEIGHT: f32 = 40.0;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum StyleGuideSection {
+    Sidebar,
+    Feedback,
     Buttons,
     Choice,
     Toggle,
@@ -103,15 +107,17 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 8] = [
+    const ALL: [Self; 10] = [
         Self::Typography,
         Self::Buttons,
         Self::Choice,
         Self::Toggle,
         Self::Menus,
         Self::Selectors,
+        Self::Sidebar,
         Self::Tabs,
         Self::Inputs,
+        Self::Feedback,
     ];
 }
 
@@ -125,6 +131,7 @@ declare_form! {
             scroll_handle: ScrollHandle = ScrollHandle::new(),
             last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
+            sidebar_preview: Option<Entity<NavigationSidebar>> = None,
         }
     }
 }
@@ -132,6 +139,7 @@ declare_form! {
 impl StyleGuidePanel {
     pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
+        self.sync_sidebar_preview(cx);
         cx.notify();
     }
 
@@ -151,10 +159,44 @@ impl StyleGuidePanel {
         self.set_vertical_offset(target, cx);
         true
     }
+
+    fn sidebar_preview(&mut self, cx: &mut Context<Self>) -> Entity<NavigationSidebar> {
+        if let Some(sidebar) = self.sidebar_preview.clone() {
+            return sidebar;
+        }
+
+        let sidebar = self
+            .look
+            .navigation_sidebar("theme-studio-style-guide-sidebar-preview")
+            .title("Properties")
+            .subtitle("Task workspace")
+            .collapsible(true)
+            .selected_id(INITIAL_SIDEBAR_SELECTION_ID)
+            .items(style_guide_sidebar_nodes())
+            .footer_nodes(style_guide_sidebar_footer_nodes())
+            .spawn(cx);
+
+        self.sidebar_preview = Some(sidebar.clone());
+        sidebar
+    }
+
+    fn sync_sidebar_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(sidebar) = self.sidebar_preview.clone() {
+            let look = self.look.clone();
+            sidebar.update(cx, move |sidebar, cx| {
+                sidebar.set_template(look.navigation_sidebar_template(), cx);
+                sidebar.set_scrollbar_template(look.scrollbar_template(), cx);
+                sidebar.set_items(style_guide_sidebar_nodes(), cx);
+                sidebar.set_footer_nodes(style_guide_sidebar_footer_nodes(), cx);
+                sidebar.set_selected_id(INITIAL_SIDEBAR_SELECTION_ID, cx);
+            });
+        }
+    }
 }
 
 impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let _ = self.sidebar_preview(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -290,6 +332,13 @@ impl StyleGuidePanel {
 
     fn render_section(&self, section: StyleGuideSection, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         match section {
+            StyleGuideSection::Sidebar => cards::sidebar::render_sidebar_template_section(
+                self.sidebar_preview.clone().expect("sidebar preview"),
+                self.look.as_ref(),
+            ),
+            StyleGuideSection::Feedback => {
+                cards::feedback::render_feedback_template_section(self.look.clone(), window, cx)
+            }
             StyleGuideSection::Buttons => {
                 cards::buttons::render_button_template_matrix_section(self.look.clone(), window, cx)
             }
@@ -402,6 +451,54 @@ fn render_tracker_marker(index: usize, color: gpui::Hsla) -> AnyElement {
         .into_any_element()
 }
 
+const INITIAL_SIDEBAR_SELECTION_ID: &str = "dimensions";
+
+fn style_guide_sidebar_nodes() -> Vec<NavNode> {
+    vec![
+        NavNode::section("pinned-label", "Pinned"),
+        sidebar_leaf_node("summary", "Summary", Some(LucideIcon::Info), true),
+        sidebar_leaf_node("tokens", "Design Tokens", Some(LucideIcon::Tags), true),
+        NavNode::section("properties-label", "Properties"),
+        NavNode::new("layout").label("Layout").icon(LucideIcon::Ruler).expanded(true).children([
+            sidebar_leaf_node("position", "Position", None, true),
+            sidebar_leaf_node(INITIAL_SIDEBAR_SELECTION_ID, "Dimensions", None, true),
+            sidebar_leaf_node("constraints", "Constraints", None, true),
+            sidebar_leaf_node("grid", "Grid", None, true),
+        ]),
+        NavNode::new("look").label("Look").icon(LucideIcon::Palette).expanded(true).children([
+            sidebar_leaf_node("fill", "Fill", None, true),
+            sidebar_leaf_node("stroke", "Stroke", None, true),
+            sidebar_leaf_node("typography", "Typography", None, true),
+            sidebar_leaf_node("effects", "Effects", None, true),
+        ]),
+        NavNode::new("behavior")
+            .label("Behavior")
+            .icon(LucideIcon::MousePointer2)
+            .expanded(false)
+            .children([
+                sidebar_leaf_node("interactions", "Interactions", None, true),
+                sidebar_leaf_node("conditions", "Conditions", None, true),
+                sidebar_leaf_node("validation", "Validation", None, true),
+                sidebar_leaf_node("data-binding", "Data Binding", None, false),
+            ]),
+    ]
+}
+
+fn style_guide_sidebar_footer_nodes() -> Vec<NavNode> {
+    vec![
+        sidebar_leaf_node("audit-log", "Audit Log", Some(LucideIcon::FileText), true),
+        sidebar_leaf_node("reset-overrides", "Reset Overrides", Some(LucideIcon::RotateCcw), false),
+    ]
+}
+
+fn sidebar_leaf_node(id: &'static str, label: &'static str, icon: Option<LucideIcon>, enabled: bool) -> NavNode {
+    let mut node = NavNode::new(id).label(label).enabled(enabled);
+    if let Some(icon) = icon {
+        node = node.icon(icon);
+    }
+    node
+}
+
 #[derive(Clone, Copy)]
 struct ButtonStateSample {
     id: &'static str,
@@ -482,6 +579,14 @@ struct SelectorTemplateStateSample {
     selector_state: InteractionState,
     selector_focus: ControlFocusState,
     selector_enabled: bool,
+}
+
+#[derive(Clone, Copy)]
+struct ProgressStateSample {
+    id: &'static str,
+    label: &'static str,
+    value: f32,
+    enabled: bool,
 }
 
 #[derive(Clone, Copy)]
