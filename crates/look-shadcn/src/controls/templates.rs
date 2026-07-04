@@ -461,7 +461,7 @@ impl AutocompleteTextBoxTheme for RadixAutocompleteTextBoxTheme {
 pub fn selector_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::selector::SelectorTemplate> {
     Arc::new(ThemedSelectorTemplate::new(
         Arc::new(RadixSelectorTheme { theme: theme.as_ref().clone() }),
-        default_selector_items_template(),
+        default_selector_items_template::<gpui_luma::controls::selector::SelectorItem>(),
     ))
 }
 

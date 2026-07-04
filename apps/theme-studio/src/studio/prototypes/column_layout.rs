@@ -43,6 +43,8 @@ pub enum ColumnPlacementStrategy {
 
 pub struct ColumnLayout {
     columns: usize,
+    column_min_width: f32,
+    column_preferred_width: Option<f32>,
     gap_x: f32,
     gap_y: f32,
     strategy: ColumnPlacementStrategy,
@@ -53,6 +55,8 @@ impl ColumnLayout {
     pub fn new() -> Self {
         Self {
             columns: 1,
+            column_min_width: 320.0,
+            column_preferred_width: None,
             gap_x: 0.0,
             gap_y: 0.0,
             strategy: ColumnPlacementStrategy::GreedyByEstimatedHeight,
@@ -68,6 +72,16 @@ impl ColumnLayout {
     pub fn gap(mut self, gap: f32) -> Self {
         self.gap_x = gap;
         self.gap_y = gap;
+        self
+    }
+
+    pub fn column_min_width(mut self, column_min_width: f32) -> Self {
+        self.column_min_width = column_min_width.max(1.0);
+        self
+    }
+
+    pub fn column_preferred_width(mut self, column_preferred_width: f32) -> Self {
+        self.column_preferred_width = Some(column_preferred_width.max(self.column_min_width));
         self
     }
 
@@ -97,14 +111,18 @@ impl ColumnLayout {
     }
 
     pub fn build(self) -> Div {
-        let ColumnLayout { columns, gap_x, gap_y, strategy, tiles } = self;
+        let ColumnLayout { columns, column_min_width, column_preferred_width, gap_x, gap_y, strategy, tiles } = self;
         let partitioned = partition_tiles(columns, strategy, tiles);
 
-        let mut root = div().w_full().min_w(px(0.0)).flex().items_start();
+        let mut root = div().w_full().min_w(px(0.0)).flex().flex_wrap().items_start().content_start();
         root.style().gap.width = Some(px(gap_x).into());
+        root.style().gap.height = Some(px(gap_y).into());
 
         for column_tiles in partitioned {
-            let mut column = div().flex_1().min_w(px(0.0)).flex().flex_col();
+            let mut column = div().flex_1().min_w(px(column_min_width)).flex().flex_col();
+            if let Some(column_preferred_width) = column_preferred_width {
+                column = column.flex_basis(px(column_preferred_width));
+            }
             column.style().gap.height = Some(px(gap_y).into());
 
             for tile in column_tiles {

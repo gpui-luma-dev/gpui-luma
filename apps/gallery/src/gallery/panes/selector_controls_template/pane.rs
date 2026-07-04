@@ -549,6 +549,7 @@ fn render_popup_preview(
                     focus: ControlFocusState { focused: true, focus_visible: true },
                     item_template: None,
                     look: look.clone(),
+                    max_height: px(240.0),
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,

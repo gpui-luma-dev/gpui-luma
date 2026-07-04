@@ -118,6 +118,7 @@ fn render_sample(
                 focus: ControlFocusState::default(),
                 item_template: None,
                 look,
+                max_height: px(240.0),
             },
             SelectorItemsTemplateHandlers { item_hovers: noop_hovers(count), item_clicks: noop_clicks(count) },
             cx,

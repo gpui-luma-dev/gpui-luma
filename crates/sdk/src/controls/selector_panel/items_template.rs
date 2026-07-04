@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, ClickEvent, Div, SharedString, Stateful, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, ClickEvent, Div, Pixels, SharedString, Stateful, Window, div, prelude::*, px};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
@@ -76,6 +76,7 @@ where
     pub focus: ControlFocusState,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub look: SelectorItemsPanelLook,
+    pub max_height: Pixels,
 }
 
 pub trait SelectorItemsTemplate<T>: Send + Sync
@@ -108,13 +109,15 @@ where
             .id(format!("{}-menu", model.menu_id))
             .relative()
             .min_w(px(look.min_width))
+            .max_h(model.max_height)
             .p(px(look.padding))
             .bg(look.background)
             .border_1()
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow.clone())
-            .occlude();
+            .occlude()
+            .overflow_y_scroll();
 
         let mut clicks = item_clicks.into_iter();
 

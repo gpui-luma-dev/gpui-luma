@@ -2,7 +2,7 @@ use gpui::{IntoElement, div, prelude::*};
 
 use super::super::demo_controls::DemoControls;
 use super::super::inspectable::InspectableId;
-use super::super::panel_layout::{GAP, panel_height_class};
+use super::super::panel_layout::{COLUMN_MIN_WIDTH, COLUMN_PREFERRED_WIDTH, GAP, panel_height_class};
 use super::super::prototypes::column_layout::{ColumnLayout, ColumnPlacementStrategy, ColumnTile};
 
 pub fn render_demo_board(demos: DemoControls, filter: Option<&'static [InspectableId]>) -> impl IntoElement {
@@ -23,6 +23,8 @@ pub fn render_demo_board(demos: DemoControls, filter: Option<&'static [Inspectab
 
     ColumnLayout::new()
         .columns(3)
+        .column_min_width(COLUMN_MIN_WIDTH)
+        .column_preferred_width(COLUMN_PREFERRED_WIDTH)
         .gap_x(GAP)
         .gap_y(GAP)
         .strategy(ColumnPlacementStrategy::GreedyByEstimatedHeight)

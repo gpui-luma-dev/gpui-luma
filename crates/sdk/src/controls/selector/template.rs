@@ -64,6 +64,8 @@ pub trait SelectorTemplate<T = SelectorItem>: Send + Sync
 where
     T: SelectorItemLike + 'static,
 {
+    fn resolve_look(&self, model: &SelectorRenderModel<'_, T>, window: &Window, cx: &mut App) -> SelectorLook;
+
     fn render(
         &self,
         model: &SelectorRenderModel<'_, T>,
@@ -94,13 +96,23 @@ pub fn default_selector_template<T>() -> Arc<dyn SelectorTemplate<T>>
 where
     T: SelectorItemLike + 'static,
 {
-    Arc::new(ThemedSelectorTemplate::new(default_selector_theme(), default_selector_items_template()))
+    Arc::new(ThemedSelectorTemplate::new(default_selector_theme(), default_selector_items_template::<T>()))
 }
 
 impl<T> SelectorTemplate<T> for ThemedSelectorTemplate<T>
 where
     T: SelectorItemLike + 'static,
 {
+    fn resolve_look(&self, model: &SelectorRenderModel<'_, T>, window: &Window, cx: &mut App) -> SelectorLook {
+        let scale_factor = window.scale_factor();
+        let scale = cx.use_cached_layout(
+            self.theme.metrics(),
+            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+        );
+        self.theme.resolve_look(model.state, &scale)
+    }
+
     fn render(
         &self,
         model: &SelectorRenderModel<'_, T>,
@@ -119,13 +131,7 @@ where
             on_item_hover,
             on_item_click,
         } = handlers;
-        let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
-        );
-        let look = self.theme.resolve_look(model.state, &scale);
+        let look = self.resolve_look(model, window, cx);
         let trigger_content = render_item_content(model, &look, cx);
         let mut trigger = div()
             .id(format!("{}-trigger", model.id))
@@ -195,7 +201,7 @@ where
             .child(trigger);
 
         if model.open {
-            let placement = resolve_selector_placement(
+            let popup_metrics = resolve_selector_popup_metrics(
                 model.trigger_bounds,
                 model.placement,
                 &look,
@@ -230,16 +236,17 @@ where
                     enabled: model.enabled,
                     focus: model.focus,
                     item_template: model.item_template,
-                    look: look.items_panel,
+                    look: look.items_panel.clone(),
+                    max_height: popup_metrics.max_height,
                 },
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks },
                 cx,
             );
             let overlay = anchored()
                 .snap_to_window_with_margin(px(8.0))
-                .anchor(placement.anchor)
-                .position(placement.position)
-                .offset(placement.offset)
+                .anchor(popup_metrics.placement.anchor)
+                .position(popup_metrics.placement.position)
+                .offset(popup_metrics.placement.offset)
                 .child(menu);
 
             root = root.child(deferred(overlay).with_priority(1));
@@ -250,28 +257,44 @@ where
 }
 
 #[derive(Clone, Copy, Debug)]
-struct ResolvedSelectorPlacement {
+pub(crate) struct ResolvedSelectorPlacement {
     anchor: Corner,
     position: Point<Pixels>,
     offset: Point<Pixels>,
 }
 
-fn resolve_selector_placement(
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ResolvedSelectorPopupMetrics {
+    pub placement: ResolvedSelectorPlacement,
+    pub max_height: Pixels,
+    pub needs_scroll: bool,
+}
+
+pub(crate) fn resolve_selector_popup_metrics(
     trigger_bounds: Option<Bounds<Pixels>>,
     placement: SelectorPlacement,
     look: &SelectorLook,
     item_count: usize,
     viewport_size: Size<Pixels>,
-) -> ResolvedSelectorPlacement {
+) -> ResolvedSelectorPopupMetrics {
     let trigger_bounds = trigger_bounds.unwrap_or_else(|| {
         Bounds::new(point(px(0.0), px(0.0)), Size { width: px(0.0), height: px(look.trigger_height) })
     });
     let menu_size = estimated_menu_size(look, item_count, trigger_bounds.size.width);
     let offset_y = px(look.menu_offset_y);
+    let viewport_margin = px(8.0);
+    let viewport_top = viewport_margin;
+    let viewport_bottom = viewport_size.height - viewport_margin;
+    let available_below = (viewport_bottom - (trigger_bounds.bottom() + offset_y)).max(px(0.0));
+    let available_above = (trigger_bounds.top() - offset_y - viewport_top).max(px(0.0));
+    let minimum_height = px((look.items_panel.padding * 2.0) + look.items_panel.item_height);
     let resolved = match placement {
         SelectorPlacement::Smart => {
-            let viewport_bottom = viewport_size.height - px(8.0);
             if trigger_bounds.bottom() + offset_y + menu_size.height <= viewport_bottom {
+                SelectorPlacement::BelowStart
+            } else if trigger_bounds.top() - offset_y - menu_size.height >= viewport_top {
+                SelectorPlacement::AboveStart
+            } else if available_below >= available_above {
                 SelectorPlacement::BelowStart
             } else {
                 SelectorPlacement::AboveStart
@@ -280,7 +303,7 @@ fn resolve_selector_placement(
         placement => placement,
     };
 
-    match resolved {
+    let placement = match resolved {
         SelectorPlacement::Smart | SelectorPlacement::BelowStart => ResolvedSelectorPlacement {
             anchor: Corner::TopLeft,
             position: point(trigger_bounds.left(), trigger_bounds.bottom()),
@@ -301,7 +324,18 @@ fn resolve_selector_placement(
             position: trigger_bounds.origin,
             offset: point(px(0.0), px(0.0)),
         },
+    };
+
+    let available_height = match resolved {
+        SelectorPlacement::Smart | SelectorPlacement::BelowStart => available_below,
+        SelectorPlacement::AboveStart => available_above,
+        SelectorPlacement::CenteredOnTrigger => (viewport_size.height - (viewport_margin * 2.0)).max(minimum_height),
+        SelectorPlacement::OverlayOnTrigger => (viewport_bottom - trigger_bounds.top()).max(minimum_height),
     }
+    .max(minimum_height);
+    let max_height = menu_size.height.min(available_height);
+
+    ResolvedSelectorPopupMetrics { placement, max_height, needs_scroll: menu_size.height > max_height }
 }
 
 fn estimated_menu_size(look: &SelectorLook, item_count: usize, trigger_width: Pixels) -> Size<Pixels> {
@@ -335,18 +369,24 @@ mod tests {
     fn smart_placement_uses_below_when_it_fits() {
         let look = look();
         let trigger = Bounds::new(point(px(12.0), px(80.0)), size(px(160.0), px(32.0)));
-        let placement =
-            resolve_selector_placement(Some(trigger), SelectorPlacement::Smart, &look, 3, size(px(320.0), px(360.0)));
+        let popup_metrics = resolve_selector_popup_metrics(
+            Some(trigger),
+            SelectorPlacement::Smart,
+            &look,
+            3,
+            size(px(320.0), px(360.0)),
+        );
 
-        assert_eq!(placement.anchor, Corner::TopLeft);
-        assert_eq!(placement.position, point(px(12.0), px(112.0)));
+        assert_eq!(popup_metrics.placement.anchor, Corner::TopLeft);
+        assert_eq!(popup_metrics.placement.position, point(px(12.0), px(112.0)));
+        assert!(!popup_metrics.needs_scroll);
     }
 
     #[test]
     fn overlay_placement_anchors_to_trigger_origin() {
         let look = look();
         let trigger = Bounds::new(point(px(30.0), px(70.0)), size(px(150.0), px(30.0)));
-        let placement = resolve_selector_placement(
+        let popup_metrics = resolve_selector_popup_metrics(
             Some(trigger),
             SelectorPlacement::OverlayOnTrigger,
             &look,
@@ -354,8 +394,25 @@ mod tests {
             size(px(320.0), px(360.0)),
         );
 
-        assert_eq!(placement.anchor, Corner::TopLeft);
-        assert_eq!(placement.position, point(px(30.0), px(70.0)));
-        assert_eq!(placement.offset, point(px(0.0), px(0.0)));
+        assert_eq!(popup_metrics.placement.anchor, Corner::TopLeft);
+        assert_eq!(popup_metrics.placement.position, point(px(30.0), px(70.0)));
+        assert_eq!(popup_metrics.placement.offset, point(px(0.0), px(0.0)));
+    }
+
+    #[test]
+    fn smart_placement_prefers_larger_visible_side_and_enables_scroll() {
+        let look = look();
+        let trigger = Bounds::new(point(px(12.0), px(210.0)), size(px(160.0), px(32.0)));
+        let popup_metrics = resolve_selector_popup_metrics(
+            Some(trigger),
+            SelectorPlacement::Smart,
+            &look,
+            20,
+            size(px(320.0), px(280.0)),
+        );
+
+        assert_eq!(popup_metrics.placement.anchor, Corner::BottomLeft);
+        assert!(popup_metrics.needs_scroll);
+        assert!(popup_metrics.max_height < estimated_menu_size(&look, 20, trigger.size.width).height);
     }
 }

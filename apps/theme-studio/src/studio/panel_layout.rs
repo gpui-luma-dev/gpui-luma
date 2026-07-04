@@ -2,6 +2,8 @@ use super::inspectable::InspectableId;
 use super::prototypes::column_layout::TileHeightClass;
 
 pub const GAP: f32 = 16.0;
+pub const COLUMN_MIN_WIDTH: f32 = 320.0;
+pub const COLUMN_PREFERRED_WIDTH: f32 = 380.0;
 
 pub fn panel_height_class(id: InspectableId) -> TileHeightClass {
     match id {
