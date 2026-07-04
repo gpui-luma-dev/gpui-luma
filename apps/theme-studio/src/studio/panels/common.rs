@@ -87,13 +87,13 @@ pub fn panel_box_shadow() -> Vec<gpui::BoxShadow> {
 pub fn card(
     id: impl Into<SharedString>,
     look: &Arc<ShadcnLook>,
-    width: f32,
+    _width: f32,
     content: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     div()
-        .w(px(width))
+        .w_full()
         .max_w_full()
         .child(look.card(id).child_render(content).render(window, cx))
         .into_any_element()
@@ -103,7 +103,7 @@ pub fn card(
 pub fn titled_card(
     id: impl Into<SharedString>,
     look: &Arc<ShadcnLook>,
-    width: f32,
+    _width: f32,
     title: &'static str,
     subtitle: &'static str,
     content: impl Fn(&mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
@@ -111,7 +111,7 @@ pub fn titled_card(
     cx: &mut App,
 ) -> AnyElement {
     div()
-        .w(px(width))
+        .w_full()
         .max_w_full()
         .child(look.card(id).title(title).description(subtitle).child_render(content).render(window, cx))
         .into_any_element()

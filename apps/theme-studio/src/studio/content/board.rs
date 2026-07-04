@@ -1,8 +1,9 @@
-use gpui::{IntoElement, div, prelude::*, px};
+use gpui::{IntoElement, div, prelude::*};
 
 use super::super::demo_controls::DemoControls;
 use super::super::inspectable::InspectableId;
-use super::super::panel_layout::panel_width;
+use super::super::panel_layout::{GAP, panel_height_class};
+use super::super::prototypes::column_layout::{ColumnLayout, ColumnPlacementStrategy, ColumnTile};
 
 pub fn render_demo_board(demos: DemoControls, filter: Option<&'static [InspectableId]>) -> impl IntoElement {
     let all_panels: [(InspectableId, gpui::AnyElement); 12] = [
@@ -20,11 +21,15 @@ pub fn render_demo_board(demos: DemoControls, filter: Option<&'static [Inspectab
         (InspectableId::SystemPreferences, demos.system_preferences.clone().into_any_element()),
     ];
 
-    div().id("theme-studio-demo-board").flex().flex_wrap().items_start().gap(px(16.0)).children(
-        all_panels.into_iter().filter(|(id, _)| filter.is_none_or(|allowed| allowed.contains(id))).map(
+    ColumnLayout::new()
+        .columns(3)
+        .gap_x(GAP)
+        .gap_y(GAP)
+        .strategy(ColumnPlacementStrategy::GreedyByEstimatedHeight)
+        .tiles(all_panels.into_iter().filter(|(id, _)| filter.is_none_or(|allowed| allowed.contains(id))).map(
             |(id, child)| {
-                div().id(format!("panel-{id:?}")).w(px(panel_width(id))).max_w(px(panel_width(id))).child(child)
+                ColumnTile::new(div().id(format!("panel-{id:?}")).w_full().child(child))
+                    .height_class(panel_height_class(id))
             },
-        ),
-    )
+        ))
 }

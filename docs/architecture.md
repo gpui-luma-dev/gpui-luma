@@ -92,6 +92,10 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
     *   `resolve.rs`: Layout metric calculations, variables (`@field`), and opacity resolver.
 *   [`ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`).
 
+### `apps/theme-studio` Experimental Layout Prototypes
+*   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Theme Studio experimentation and not part of the SDK surface.
+*   `studio/prototypes/column_layout.rs`: App-local estimated masonry / column-packing prototype retained for Theme Studio experimentation and not part of the SDK surface.
+
 ---
 
 ## 4. Event & State Communication Boundaries
