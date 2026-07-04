@@ -31,8 +31,4 @@ impl ContentTab {
             Self::ThemeUsage => None,
         }
     }
-
-    pub fn contains(self, id: InspectableId) -> bool {
-        self.panels().is_some_and(|panels| panels.contains(&id))
-    }
 }

@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, Context, DragMoveEvent, Entity, FocusHandle, MouseButton, MouseDownEvent, Point, Pixels, Render, Size,
-    Subscription, Window, div, prelude::*, px,
+    AnyElement, Context, Entity, FocusHandle, MouseButton, Pixels, Render, Size, Subscription, Window, div, prelude::*,
+    px,
 };
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
@@ -20,33 +20,20 @@ use super::hs_mixer::{
     ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount,
     derive_palette_hs_color_overrides,
 };
-use super::inspectable::InspectableId;
 use super::overrides::{
     StudioOverrides, ThemePaletteHslOverride, ThemeShadowOverride, clamp_palette_hue_deg,
     clamp_palette_lightness_multiplier, clamp_palette_saturation_multiplier, clamp_shadow_blur, clamp_shadow_offset_x,
     clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
 };
-use super::panel_layout::{DemoPanelDrag, default_panel_position, offset_panel_position};
-use super::panel_layout_config::{load_panel_positions, load_window_size, save_studio_layout};
+use super::panel_layout_config::{load_window_size, save_studio_layout};
 use super::content::{BoardSnapshot, ContentPaneHost};
 use super::theme_sidebar::{ThemeSidebar, palette_tokens};
-
-struct PanelDragState {
-    id: InspectableId,
-    mouse_origin: Point<Pixels>,
-    panel_origin: Point<Pixels>,
-}
 
 pub struct ThemeStudioApp {
     focus_scope: FocusHandle,
     pub(super) look: Arc<ShadcnLook>,
     pub(super) control_size: ControlSize,
     pub(super) demos: DemoControls,
-    pub(super) panel_positions: HashMap<InspectableId, Point<Pixels>>,
-    pub(super) panel_z_order: HashMap<InspectableId, u32>,
-    next_panel_z: u32,
-    panel_drag: Option<PanelDragState>,
-    pub(super) selected: Option<InspectableId>,
     pub(super) overrides: StudioOverrides,
     last_window_size: Size<Pixels>,
     active_theme_id: String,
@@ -74,21 +61,10 @@ impl ThemeStudioApp {
         let demos = DemoControls::spawn(cx, look.clone(), control_size);
 
         let overrides = StudioOverrides::default();
-        let panel_positions = load_panel_positions();
-        let panel_z_order: HashMap<InspectableId, u32> =
-            InspectableId::all().iter().enumerate().map(|(index, &id)| (id, index as u32)).collect();
-        let next_panel_z = InspectableId::all().len() as u32;
         let theme_sidebar =
             cx.new(|cx| ThemeSidebar::new(app.clone(), look.clone(), active_theme_id.clone(), &overrides, cx));
 
-        let board_snapshot = BoardSnapshot {
-            selected: None,
-            panel_positions: panel_positions.clone(),
-            panel_z_order: panel_z_order.clone(),
-            demos: demos.clone(),
-            look: look.clone(),
-            overrides: overrides.clone(),
-        };
+        let board_snapshot = BoardSnapshot { demos: demos.clone(), look: look.clone(), overrides: overrides.clone() };
         let content_pane = cx.new(|cx| ContentPaneHost::new(app.clone(), board_snapshot, cx));
         let left_sidebar_entity = theme_sidebar.clone();
         let content_pane_entity = content_pane.clone();
@@ -128,11 +104,6 @@ impl ThemeStudioApp {
             look,
             control_size,
             demos,
-            panel_positions,
-            panel_z_order,
-            next_panel_z,
-            panel_drag: None,
-            selected: None,
             overrides,
             last_window_size,
             active_theme_id,
@@ -224,14 +195,7 @@ impl ThemeStudioApp {
     }
 
     fn board_snapshot(&self) -> BoardSnapshot {
-        BoardSnapshot {
-            selected: self.selected,
-            panel_positions: self.panel_positions.clone(),
-            panel_z_order: self.panel_z_order.clone(),
-            demos: self.demos.clone(),
-            look: self.look.clone(),
-            overrides: self.overrides.clone(),
-        }
+        BoardSnapshot { demos: self.demos.clone(), look: self.look.clone(), overrides: self.overrides.clone() }
     }
 
     fn refresh_content_pane(&self, cx: &mut Context<Self>) {
@@ -468,59 +432,8 @@ impl ThemeStudioApp {
             return;
         }
         self.last_window_size = size;
-        self.persist_layout();
-    }
-
-    fn persist_layout(&self) {
-        if let Err(err) = save_studio_layout(self.last_window_size, &self.panel_positions) {
+        if let Err(err) = save_studio_layout(self.last_window_size) {
             tracing::warn!("failed to save studio layout: {err:?}");
-        }
-    }
-
-    pub fn panel_position(&self, id: InspectableId) -> Point<Pixels> {
-        self.panel_positions.get(&id).copied().unwrap_or_else(|| default_panel_position(id))
-    }
-
-    pub fn begin_panel_drag(&mut self, id: InspectableId, event: &MouseDownEvent, cx: &mut Context<Self>) {
-        if self.selected != Some(id) {
-            self.selected = Some(id);
-        }
-        self.bring_panel_to_front(id);
-        self.panel_drag =
-            Some(PanelDragState { id, mouse_origin: event.position, panel_origin: self.panel_position(id) });
-        cx.notify();
-    }
-
-    fn bring_panel_to_front(&mut self, id: InspectableId) {
-        let z = self.next_panel_z;
-        self.next_panel_z += 1;
-        self.panel_z_order.insert(id, z);
-    }
-
-    pub fn handle_panel_drag_move(
-        &mut self,
-        event: &DragMoveEvent<DemoPanelDrag>,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let Some(ref state) = self.panel_drag else {
-            return;
-        };
-        if event.drag(cx).id != state.id {
-            return;
-        }
-        let delta = event.event.position.relative_to(&state.mouse_origin);
-        let position = offset_panel_position(state.panel_origin, delta);
-        self.panel_positions.insert(state.id, position);
-        cx.notify();
-    }
-
-    pub fn end_panel_drag(&mut self, window: &Window, cx: &mut Context<Self>) {
-        if self.panel_drag.is_some() {
-            self.panel_drag = None;
-            self.last_window_size = window.bounds().size;
-            self.persist_layout();
-            cx.notify();
         }
     }
 
