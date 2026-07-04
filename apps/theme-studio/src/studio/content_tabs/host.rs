@@ -8,10 +8,14 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 
-use super::board::render_demo_board;
-use super::tabs::ContentTab;
+use super::cards::render_demo_board;
+use super::dashboard;
+use super::navigation::theme_studio_tabs_navigation_template;
+use super::palette;
+use super::style_guide;
+use super::tab::ContentTab;
+use super::theme_usage;
 use super::super::app::ThemeStudioApp;
-use super::super::content_tabs::theme_studio_tabs_navigation_template;
 use super::super::demo_controls::DemoControls;
 use super::super::overrides::StudioOverrides;
 use super::super::panels::{PalettePanel, ThemeUsagePanel};
@@ -53,8 +57,6 @@ impl ContentPaneHost {
             .active("cards")
             .spawn(cx);
 
-        // Subscribe on ContentPaneHost, not ThemeStudioApp: a parent subscription that updates
-        // the parent entity re-enters and panics (see ThemeSidebar::wire_subscriptions).
         let tabs_for_sub = tabs.clone();
         let mut subscriptions = Vec::new();
         subscriptions.push(cx.subscribe(&tabs_for_sub, |host, _, event: &TabsNavigationEvent, cx| {
@@ -147,22 +149,14 @@ impl Render for ContentPaneHost {
                         ),
                     )
                 }
-                ContentTab::Dashboard => dashboard_viewport().child(board.demos.dashboard.clone()),
-                ContentTab::Typography => content_viewport().child(self.style_guide_panel.clone()),
-                ContentTab::Palette => content_viewport().child(self.palette_panel.clone()),
-                ContentTab::ThemeUsage => content_viewport().child(self.theme_usage_panel.clone()),
+                ContentTab::Dashboard => dashboard::viewport().child(board.demos.dashboard.clone()),
+                ContentTab::Typography => style_guide::viewport().child(self.style_guide_panel.clone()),
+                ContentTab::Palette => palette::viewport().child(self.palette_panel.clone()),
+                ContentTab::ThemeUsage => theme_usage::viewport().child(self.theme_usage_panel.clone()),
             })
     }
 }
 
 fn scrollable_body() -> gpui::Div {
     div().flex_1().min_h_0().size_full().flex().flex_col()
-}
-
-fn dashboard_viewport() -> gpui::Div {
-    div().flex_1().min_h_0().size_full().overflow_hidden()
-}
-
-fn content_viewport() -> gpui::Div {
-    div().flex_1().min_h_0().size_full().overflow_hidden()
 }

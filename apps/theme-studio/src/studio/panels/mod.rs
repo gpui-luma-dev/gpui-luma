@@ -1,36 +1,8 @@
-mod account;
-mod accordion;
-mod chat;
-mod common;
-
-pub(crate) use common::{format_hex_color, parse_hex_color};
-mod cookies;
 mod dashboard;
 mod navigation_sidebar;
 pub(crate) mod palette;
-mod payments;
 mod task_list;
-mod date_range;
-mod report;
-mod share;
-mod system_preferences;
-mod team;
 mod theme_usage;
-mod tree_view;
-mod upgrade;
-
-pub use account::AccountPanel;
-pub use accordion::AccordionPanel;
-pub use chat::ChatPanel;
-pub use cookies::CookiesPanel;
 pub use dashboard::DashboardPanel;
 pub use palette::PalettePanel;
-pub use payments::PaymentsPanel;
-pub use report::ReportPanel;
-pub use date_range::DateRangePanel;
-pub use share::SharePanel;
-pub use system_preferences::SystemPreferencesPanel;
-pub use team::TeamPanel;
 pub use theme_usage::ThemeUsagePanel;
-pub use tree_view::TreeViewPanel;
-pub use upgrade::UpgradePanel;

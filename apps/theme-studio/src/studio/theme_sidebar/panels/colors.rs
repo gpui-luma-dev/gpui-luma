@@ -15,7 +15,7 @@ use super::super::parsing::{effective_token_color, token_hex_value};
 use super::{category_item_id, expanded_category_ids, spawn_compact_textfield};
 use crate::studio::app::ThemeStudioApp;
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::panels::parse_hex_color;
+use crate::studio::content_tabs::cards::parse_hex_color;
 use crate::studio::token_color_row::token_color_row;
 
 pub struct ColorsPanel {

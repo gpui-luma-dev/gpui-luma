@@ -26,7 +26,7 @@ use super::overrides::{
     clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
 };
 use super::panel_layout_config::{load_window_size, save_studio_layout};
-use super::content::{BoardSnapshot, ContentPaneHost};
+use super::content_tabs::{BoardSnapshot, ContentPaneHost};
 use super::theme_sidebar::{ThemeSidebar, palette_tokens};
 
 pub struct ThemeStudioApp {

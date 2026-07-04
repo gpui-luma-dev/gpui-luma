@@ -17,7 +17,7 @@ use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
-use super::common::panel_box_shadow;
+use crate::studio::content_tabs::cards::panel_box_shadow;
 use super::navigation_sidebar::{
     property_navigation_footer_nodes, property_navigation_nodes, INITIAL_PROPERTY_SELECTION_ID,
 };

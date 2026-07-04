@@ -9,7 +9,7 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnModeTokens, ShadcnTextRole, Shadcn
 
 use crate::studio::export::token_css_name;
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::panels::format_hex_color;
+use crate::studio::content_tabs::cards::format_hex_color;
 
 const PALETTE_SWATCH_SIZE: f32 = 40.0;
 const PALETTE_ITEM_GAP: f32 = 12.0;

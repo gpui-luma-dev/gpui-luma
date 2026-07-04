@@ -95,6 +95,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 ### `apps/theme-studio` Experimental Layout Prototypes
 *   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Theme Studio experimentation and not part of the SDK surface.
 *   `studio/prototypes/column_layout.rs`: App-local estimated masonry / column-packing prototype retained for Theme Studio experimentation and not part of the SDK surface.
+*   `studio/content_tabs/cards/`: Cards-tab board composition and app-local layout tuning layered on top of the experimental layout prototypes.
 
 ---
 

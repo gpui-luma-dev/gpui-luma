@@ -5,10 +5,11 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::app::ThemeStudioApp;
-use super::panels::{
-    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DateRangePanel, DashboardPanel, PaymentsPanel, ReportPanel,
-    SharePanel, SystemPreferencesPanel, TeamPanel, TreeViewPanel, UpgradePanel,
+use super::content_tabs::cards::{
+    AccordionPanel, AccountPanel, ChatPanel, CookiesPanel, DateRangePanel, PaymentsPanel, ReportPanel, SharePanel,
+    SystemPreferencesPanel, TeamPanel, TreeViewPanel, UpgradePanel,
 };
+use super::panels::DashboardPanel;
 
 #[derive(Clone)]
 pub struct DemoControls {

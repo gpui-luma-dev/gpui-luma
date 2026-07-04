@@ -1,9 +1,9 @@
 use gpui::{IntoElement, div, prelude::*};
 
-use super::super::demo_controls::DemoControls;
-use super::super::inspectable::InspectableId;
-use super::super::panel_layout::{COLUMN_MIN_WIDTH, COLUMN_PREFERRED_WIDTH, GAP, panel_height_class};
-use super::super::prototypes::column_layout::{ColumnLayout, ColumnPlacementStrategy, ColumnTile};
+use super::super::super::super::demo_controls::DemoControls;
+use super::super::super::super::inspectable::InspectableId;
+use super::super::super::super::prototypes::column_layout::{ColumnLayout, ColumnPlacementStrategy, ColumnTile};
+use super::{COLUMN_MIN_WIDTH, COLUMN_PREFERRED_WIDTH, GAP, panel_height_class};
 
 pub fn render_demo_board(demos: DemoControls, filter: Option<&'static [InspectableId]>) -> impl IntoElement {
     let all_panels: [(InspectableId, gpui::AnyElement); 12] = [

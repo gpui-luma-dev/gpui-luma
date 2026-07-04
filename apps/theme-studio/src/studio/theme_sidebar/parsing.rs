@@ -6,7 +6,7 @@ use gpui_luma_look_shadcn::ShadcnLook;
 use super::model::{DEFAULT_RADIUS_REM, DEFAULT_SPACING_REM, REM_IN_PX};
 use crate::studio::export::{catalog_color_for_token, token_css_name};
 use crate::studio::overrides::StudioOverrides;
-use crate::studio::panels::{format_hex_color, parse_hex_color};
+use crate::studio::content_tabs::cards::{format_hex_color, parse_hex_color};
 
 fn parse_number(value: &str, min: f32, max: f32) -> Option<f32> {
     value
