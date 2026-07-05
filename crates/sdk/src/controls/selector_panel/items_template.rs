@@ -113,8 +113,7 @@ where
         let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks } = handlers;
         let look = model.look.clone();
         let content_max_height = (model.max_height - px(look.padding * 2.0)).max(px(look.item_height));
-        let mut rows =
-            div().id(format!("{}-rows", model.menu_id)).relative().flex().flex_col().min_w(px(look.min_width));
+        let mut rows = div().id(format!("{}-rows", model.menu_id)).relative().flex().flex_col().w_full();
 
         if model.scrolling {
             rows = rows.max_h(content_max_height).overflow_y_scroll();
@@ -206,6 +205,7 @@ where
             .border_color(look.border)
             .rounded(px(look.radius))
             .shadow(look.shadow.clone())
+            .overflow_hidden()
             .occlude()
             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                 cx.stop_propagation();

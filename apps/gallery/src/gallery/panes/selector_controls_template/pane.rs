@@ -611,7 +611,7 @@ fn render_popup_preview(
         }
     };
 
-    div().w(px(168.0)).child(rows).into_any_element()
+    div().w(px(look.min_width)).child(rows).into_any_element()
 }
 
 fn popup_items_for_control(control: SelectorTemplateControl) -> Vec<SelectorPanelItem> {

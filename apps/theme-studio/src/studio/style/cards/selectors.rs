@@ -432,7 +432,7 @@ fn render_selector_popup_preview(
         }
     };
 
-    div().w(px(168.0)).child(rows).into_any_element()
+    div().w(px(popup_look.min_width)).child(rows).into_any_element()
 }
 
 fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {

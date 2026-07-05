@@ -55,7 +55,7 @@ impl ComboBoxItemsTemplate for DefaultComboBoxItemsTemplate {
             .relative()
             .flex()
             .flex_col()
-            .min_w(px(look.min_width))
+            .w_full()
             .p(px(look.padding));
         let mut clicks = item_clicks.into_iter();
 
