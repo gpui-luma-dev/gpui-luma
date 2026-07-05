@@ -7,6 +7,6 @@ pub use crate::controls::template::{ControlTemplate, Modifier, TemplateWithModif
 pub use model::{
     ButtonLookSource, ButtonBuilder, ButtonModel, ButtonRenderModel, ControlPresenter, HasPresenter, ControlIcon,
 };
-pub use template::{ButtonTemplate, DefaultButtonTemplate, default_button_template};
+pub use template::{ButtonTemplate, ButtonTemplateModifier, DefaultButtonTemplate, default_button_template};
 
 pub use crate::controls::button_family::{ButtonInteractionState as ButtonState, ButtonSize};

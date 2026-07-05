@@ -5,7 +5,7 @@ use gpui::{App, AppContext, Div, Entity, IntoElement, SharedString, Stateful, Wi
 use super::control::ControlGroupControl;
 use super::template::{
     ControlGroupItemTemplate, ControlGroupTemplate, default_control_group_template, make_control_group_item_template,
-    template_with_modifier,
+    modified_control_group_template,
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 
@@ -324,7 +324,7 @@ where
     where
         F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,
     {
-        self.model.template = template_with_modifier(self.model.template.clone(), modifier);
+        self.model.template = modified_control_group_template(self.model.template.clone(), modifier);
         self
     }
 

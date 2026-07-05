@@ -45,7 +45,10 @@ pub use model::{
     SelectorBuilder, SelectorItemRenderModel, SelectorItemTemplate, SelectorModel, SelectorPath, SelectorPlacement,
     SelectorRenderModel, SelectorItem, SelectorItemLike,
 };
-pub use template::{SelectorTemplate, SelectorTemplateHandlers, ThemedSelectorTemplate, default_selector_template};
+pub use template::{
+    SelectorTemplate, SelectorTemplateHandlers, SelectorTemplateModifier, ThemedSelectorTemplate,
+    default_selector_template,
+};
 pub use theme::{DefaultSelectorTheme, SelectorLook, SelectorPalette, SelectorTheme, default_selector_theme};
 #[allow(unused_imports)]
 pub(crate) use theme::compose_selector_look;

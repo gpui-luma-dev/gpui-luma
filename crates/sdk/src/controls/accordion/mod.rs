@@ -10,7 +10,7 @@ pub use model::{
 };
 pub use template::{
     AccordionTemplate, AccordionTemplateHandlers, AccordionTemplateModifier, ThemedAccordionTemplate,
-    accordion_template_with_modifier, default_accordion_template,
+    default_accordion_template,
 };
 pub use theme::{
     AccordionContentPalette, AccordionPalette, AccordionScale, AccordionTheme, DefaultAccordionTheme,

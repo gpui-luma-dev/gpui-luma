@@ -15,6 +15,8 @@ use crate::controls::template::{Modifier, TemplateWithModifiers};
 use crate::theme::adorner::render_optional_adorner_with_focus_radius;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
+pub type ButtonTemplateModifier<D> = Modifier<ButtonRenderModel<D>>;
+
 fn resolve_theme_look<D>(
     theme: &Arc<dyn ButtonFamilyTheme>,
     model: &ButtonRenderModel<D>,
@@ -82,7 +84,12 @@ pub trait ButtonTemplate<D = ()>: Send + Sync {
 
 pub struct DefaultButtonTemplate<D = ()> {
     pub theme: Arc<dyn ButtonFamilyTheme>,
-    pub modifiers: Vec<Modifier<ButtonRenderModel<D>>>,
+    pub modifiers: Vec<ButtonTemplateModifier<D>>,
+}
+
+struct ModifiedButtonTemplate<D = ()> {
+    base: Arc<dyn ButtonTemplate<D>>,
+    modifiers: Vec<ButtonTemplateModifier<D>>,
 }
 
 impl<D> DefaultButtonTemplate<D> {
@@ -100,13 +107,56 @@ impl<D> DefaultButtonTemplate<D> {
 }
 
 impl<D: 'static> TemplateWithModifiers<ButtonRenderModel<D>> for DefaultButtonTemplate<D> {
-    fn modifiers(&self) -> &[Modifier<ButtonRenderModel<D>>] {
+    fn modifiers(&self) -> &[ButtonTemplateModifier<D>] {
         &self.modifiers
+    }
+}
+
+impl<D> ModifiedButtonTemplate<D> {
+    fn new(base: Arc<dyn ButtonTemplate<D>>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: ButtonTemplateModifier<D>) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ButtonRenderModel<D>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+
+    fn into_arc(self) -> Arc<dyn ButtonTemplate<D>>
+    where
+        D: 'static,
+    {
+        Arc::new(self)
     }
 }
 
 pub fn default_button_template<D: Clone + 'static>() -> Arc<dyn ButtonTemplate<D>> {
     Arc::new(DefaultButtonTemplate::new(default_button_family_theme()))
+}
+
+pub(super) fn modified_button_template<D, F>(
+    template: Arc<dyn ButtonTemplate<D>>,
+    modifier: F,
+) -> Arc<dyn ButtonTemplate<D>>
+where
+    D: 'static,
+    F: Fn(Stateful<Div>, &ButtonRenderModel<D>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    ModifiedButtonTemplate::new(template).with_modifier(Box::new(modifier)).into_arc()
+}
+
+impl<D: 'static> ButtonTemplate<D> for ModifiedButtonTemplate<D> {
+    fn render(&self, model: &ButtonRenderModel<D>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let root = self.base.render(model, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {

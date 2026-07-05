@@ -20,6 +20,27 @@ We should make the customization ladder explicit and consistent:
 
 The important point is not "modifiers replace all other customization." The point is that modifiers should be the first and easiest place to try when the desired change is a tweak rather than a rewrite.
 
+## Current Direction
+The pilot work clarified the naming direction we should standardize going forward:
+
+1. Builder-level affordances should use `with_template_modifier(...)` and, for compound controls, `with_item_template_modifier(...)` / `with_panel_template_modifier(...)` where those seams exist.
+2. Concrete template values should use `.with_modifier(...)`.
+3. Wrapper-style helper functions such as `*_template_with_modifier(...)` should not be the preferred public story. Where possible, they should stay internal implementation details behind the builder or concrete template APIs.
+4. Public wrapper types like `Modified*Template` should generally stay private unless callers truly need to name them.
+
+This is not just style trivia. If modifiers are the default tweak path, the API has to make that path feel native rather than exceptional.
+
+## Completed So Far
+The recent pilot work established a clearer baseline that is good enough to carry forward into the next families:
+
+- `ButtonBuilder`, `SelectorBuilder`, `AccordionBuilder`, `ListViewBuilder`, and `ControlGroupBuilder` expose `with_template_modifier(...)`.
+- Concrete template values in the active pilot families expose `.with_modifier(...)`.
+- `SelectorTemplate` now has a real top-level trigger-shell modifier seam rather than forcing the Theme Studio case into a theme override.
+- Public wrapper-shaped helper names have been reduced in the newer pilot families, and public `Modified*Template` wrapper types have been pushed out of the preferred API story where possible.
+- `SelectionPanel` remains the main reference family that still exposes modifier functionality primarily through helper functions rather than first-class builder affordances.
+
+This is not the end-state for the whole SDK, but it is enough to establish the naming standard and move on from the initial pilot.
+
 ## Problem
 The current SDK mixes several incompatible patterns:
 
@@ -29,13 +50,13 @@ The current SDK mixes several incompatible patterns:
 - Many control families expose only `.template(...)`, forcing callers to replace the whole template even for minor tweaks.
 - Compound controls are especially inconsistent: trigger shell, popup panel, item row, and list shell seams vary from family to family.
 
-This creates repeated friction in design and implementation reviews:
+This created repeated friction in design and implementation reviews:
 
 - "Why is this customization so hard?"
 - "Why didn't you use a modifier?"
 - "Why did this need a custom theme wrapper?"
 
-The answer changes per control family, which means the SDK currently lacks a coherent customization contract.
+The answer changed per control family, which is why the pilot work focused first on locking the vocabulary and the preferred public path.
 
 ## Concrete Example: Theme Studio Selector
 The recent Theme Studio theme chooser change is a good example of the current gap.
@@ -49,16 +70,24 @@ In `apps/theme-studio/src/studio/theme_sidebar/mod.rs`, the theme selector neede
 ### What Worked Cleanly
 The swatch row was easy to do with `Selector::with_item_template(...)` because selector item content already has a dedicated seam.
 
-### What Did Not Work Cleanly
+### What Did Not Work Cleanly Before The Pilot
 The transparent trigger background could not be done with an item template modifier because the trigger chrome is rendered by `SelectorTemplate`, not by the item template. The actual trigger shell lives in `crates/sdk/src/controls/selector/template.rs`, where the outer trigger `div` applies:
 
 - `bg(look.trigger_background)`
 - `border_color(look.trigger_border)`
 - padding, radius, layout, icon placement
 
-Since `SelectorTemplate` currently has no modifier seam, the only narrow app-local option was to derive the selector theme and override `trigger_background` while preserving the shared template.
+Before the pilot, `SelectorTemplate` had no useful top-level modifier seam, so the only narrow app-local option was to derive the selector theme and override `trigger_background` while preserving the shared template.
 
-That solution was valid for a more significant tweak, but this is exactly the kind of request that should have been possible through a modifier if the selector template had adopted the intended seam.
+That solution was valid for a more significant tweak, but it was the wrong ergonomics for this size of change.
+
+### What Works After The Pilot
+The selector trigger shell now has a real template modifier seam, and the Theme Studio theme chooser can express the transparent trigger tweak through the template path itself:
+
+- custom item content via `Selector::with_item_template(...)`
+- trigger-shell tweak via `ThemedSelectorTemplate::with_modifier(...)`
+
+That is much closer to the intended customization ladder: item content stays on the item seam, while trigger chrome stays on the selector template seam.
 
 ## Audit Summary
 ### Top-Level Template Seams
@@ -93,8 +122,8 @@ Reviewed top-level SDK template traits:
 Count:
 
 - `25` top-level template seams reviewed
-- `4` with built-in modifier support on the template itself
-- `21` currently missing top-level modifier support
+- `5` with built-in modifier support on the template itself
+- `20` currently missing top-level modifier support
 
 ### Template Families With Built-In Modifier Support
 These already support modifiers at the template layer:
@@ -103,26 +132,30 @@ These already support modifiers at the template layer:
 - `AccordionTemplate`
 - `ListViewTemplate`
 - `SelectionPanelTemplate`
+- `SelectorTemplate`
 
 ### Additional Family With Modifier Support Outside the Top-Level Trait Count
-`ControlGroupTemplate` is closure-based rather than a named top-level trait, but it does support modifiers via `template_with_modifier(...)` and a builder-level `with_template_modifier(...)`.
+`ControlGroupTemplate` is closure-based rather than a named top-level trait, but it supports modifiers behind a builder-level `with_template_modifier(...)`.
 
 ### Builder-Level Exposure
 This is a second problem separate from template support itself.
 
-Direct builder-level `with_template_modifier(...)` entrypoints currently exist only for:
+Direct builder-level `with_template_modifier(...)` entrypoints currently exist for:
 
+- `AccordionBuilder`
+- `ButtonBuilder`
 - `ControlGroupBuilder`
 - `ListViewBuilder`
+- `SelectorBuilder`
 
-That means even where a template family does support modifiers, the "easy path" is often still not surfaced to normal callers.
+This is materially better than the starting point. The main remaining builder-surface gap among the current reference families is `SelectionPanel`, whose panel/item modifier seams still require helper-function usage rather than first-class builder affordances.
 
 ## Findings
-### 1. Modifier support is not a universal SDK contract
-The shared seam exists, but most control families do not use it.
+### 1. Modifier support is still not a universal SDK contract
+The shared seam exists, and the pilot families are in better shape, but most control families still do not use it.
 
-### 2. Builder ergonomics are more inconsistent than template internals
-Even some families that support modifiers internally still force callers into manual template wrapping or full replacement.
+### 2. Builder ergonomics remain the main adoption risk
+This is improving, but it is still the main rollout risk. The standard should remain "builder first, concrete template second, wrapper machinery hidden."
 
 ### 3. Compound controls are the highest-friction area
 Selector, search selector, combobox, popup/context menus, tree/list/navigation surfaces all have multiple render layers. These are exactly the places where a small chrome tweak is common, and exactly the places where modifier seams are least consistent.
@@ -150,22 +183,37 @@ Before treating this doc as an implementation-ready broad refactor spec, we shou
 ### Pilot Rollout
 Recommended first batch:
 
-- [ ] `ButtonTemplate` / `ButtonBuilder`
+- [x] `ButtonTemplate` / `ButtonBuilder`
   Reason: simplest case, already demonstrated in Gallery prototype/custom button panes, validates modifier-first ergonomics for a single-root control.
 - [ ] `SelectionPanel`
   Reason: already has panel/item modifier precedent and is the best reference for compound modifier layering.
-- [ ] `Selector`
+- [x] `Selector`
   Reason: highest-value missing seam and the clearest example of current friction between item customization and trigger-shell customization.
+
+Current pilot status:
+
+- `ButtonBuilder` now exposes `with_template_modifier(...)`.
+- `SelectorBuilder` now exposes `with_template_modifier(...)`.
+- `AccordionBuilder` now exposes `with_template_modifier(...)`.
+- `ListViewBuilder` and `ControlGroupBuilder` already fit the preferred builder-level pattern and remain the reference for earlier adoption.
+- Public wrapper-shaped helper names have been reduced in the newer pilot families so the preferred API reads more like a native contract and less like an adapter.
+- Public `Modified*Template` wrapper types are no longer part of the preferred public story in the newer pilot families.
+- `SelectionPanel` is still the main unresolved builder-surface gap in the pilot set.
 
 Pilot success criteria:
 
-- [ ] A small tweak to each pilot control can be expressed through a modifier without replacing the full template.
-- [ ] A more significant tweak can still be expressed by deriving/replacing the template.
-- [ ] A broader appearance change can still be expressed by deriving/replacing theme/look inputs.
-- [ ] Builder ergonomics make the modifier path obvious.
-- [ ] Tests cover modifier composition and default-path non-regression for the pilot families.
+- [x] A small tweak to each completed pilot control can be expressed through a modifier without replacing the full template.
+- [x] A more significant tweak can still be expressed by deriving/replacing the template.
+- [x] A broader appearance change can still be expressed by deriving/replacing theme/look inputs.
+- [x] Builder ergonomics make the modifier path obvious for the completed pilot families.
+- [~] Tests cover modifier composition and default-path non-regression for the pilot families.
+  Status: button/selector builder wrapping has focused test coverage; broader composition coverage is still worth adding as more families adopt the standard.
 
-After the pilot batch lands cleanly, continue to the larger template inventory below.
+Pilot conclusion:
+
+- The naming direction is now clear enough to treat as the standard for new work.
+- The remaining work is rollout, not naming discovery.
+- `SelectionPanel` is the main unresolved reference family if we want one more compound-control cleanup pass before broader adoption.
 
 ### Phase 1: Add Top-Level Template Modifier Support Where Missing
 These top-level control templates should support a root-level modifier seam.
@@ -198,7 +246,7 @@ These top-level control templates should support a root-level modifier seam.
   Path: `crates/sdk/src/controls/scrollbar/template.rs`
 - [ ] `SearchSelectorTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
-- [ ] `SelectorTemplate`
+- [x] `SelectorTemplate`
   Path: `crates/sdk/src/controls/selector/template.rs`
 - [ ] `SliderTemplate`
   Path: `crates/sdk/src/controls/slider/template/mod.rs`
@@ -216,15 +264,18 @@ These top-level control templates should support a root-level modifier seam.
 ### Phase 2: Add Builder-Level Modifier Entry Points Where the Template Already Supports or Will Support Modifiers
 The template seam is not enough if callers still have to hand-roll wrappers.
 
-- [ ] `ButtonBuilder`
+- [x] `ButtonBuilder`
   Path: `crates/sdk/src/controls/command/button/model.rs`
   Reason: `DefaultButtonTemplate` already supports modifiers, but callers only get `.template(...)`.
-- [ ] `AccordionBuilder`
+- [x] `AccordionBuilder`
   Path: `crates/sdk/src/controls/accordion/model.rs`
-  Reason: `AccordionTemplate` already has `accordion_template_with_modifier(...)`, but builder ergonomics do not expose it.
+  Reason: `AccordionTemplate` already supported modifiers internally, and the builder should expose the standard path directly.
 - [ ] `SelectionPanel` builder/model surface
   Path: `crates/sdk/src/controls/selection_panel/model.rs`
   Reason: panel and item template modifier helpers exist, but there is no direct builder affordance mirroring `ControlGroupBuilder` / `ListViewBuilder`.
+- [x] `SelectorBuilder`
+  Path: `crates/sdk/src/controls/selector/model.rs`
+  Reason: selector trigger-shell tweaks should be expressible from the normal builder path as well as from concrete template construction.
 - [ ] Every Phase 1 family should expose a direct builder-level modifier helper once template support lands.
 
 ### Phase 3: Add Consistent Modifier Support to Important Subtemplate Layers
@@ -258,6 +309,7 @@ These already have some modifier support and should be used as reference pattern
   Note: keep this as the model for panel-root modifier wrapping.
 - [ ] `SelectionPanelItemTemplate`
   Path: `crates/sdk/src/controls/selection_panel/item_template.rs`
+  Note: this is still useful reference functionality, but the public API should eventually favor builder or concrete-template affordances over wrapper-oriented helper names.
   Note: keep this as the model for item-content modifier wrapping.
 - [ ] `ListViewColumnCellTemplate`
   Path: `crates/sdk/src/controls/list_view/column_template.rs`
@@ -277,6 +329,12 @@ Recommended default:
 1. Use `ControlTemplate<T, M>` for simple themed single-root controls.
 2. Use explicit `Modified*Template` wrappers for compound templates that cannot easily fit the generic helper.
 3. Always expose a builder-level `with_template_modifier(...)` when the family supports template modifiers.
+
+Current status:
+
+- The public naming direction is now stable enough to follow.
+- Internal implementation style is still mixed, but that is acceptable for now as long as the public API stays coherent.
+- Future cleanup should prioritize public consistency over forcing all families onto one internal helper immediately.
 
 ### Phase 4A: Wrapper Flattening
 Wrapping existing templates via `Modified*Template` is still the right default pattern for compound controls because it preserves the base template logic and keeps modifier composition explicit.

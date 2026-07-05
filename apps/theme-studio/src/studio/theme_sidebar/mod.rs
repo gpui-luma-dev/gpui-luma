@@ -4,7 +4,10 @@ mod parsing;
 mod subscriptions;
 mod sync;
 
-use gpui::{AnyElement, App, Context, Entity, Hsla, Render, SharedString, Subscription, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, Context, Entity, Hsla, Render, SharedString, Subscription, Window, div, prelude::*, px,
+    transparent_black,
+};
 use gpui_luma::controls::selector::{
     Selector, SelectorItemLike, SelectorItemRenderModel, SelectorTemplate, ThemedSelectorTemplate,
 };
@@ -158,10 +161,10 @@ fn swatches_for_look(look: &ShadcnLook) -> ThemeSwatches {
 fn theme_selector_template(
     theme: &std::sync::Arc<ShadcnLook>,
 ) -> std::sync::Arc<dyn SelectorTemplate<ThemeSelectorItem>> {
-    std::sync::Arc::new(ThemedSelectorTemplate::new(
-        theme.selector_theme(),
-        default_selector_items_template::<ThemeSelectorItem>(),
-    ))
+    std::sync::Arc::new(
+        ThemedSelectorTemplate::new(theme.selector_theme(), default_selector_items_template::<ThemeSelectorItem>())
+            .with_modifier(|element, _| element.bg(transparent_black())),
+    )
 }
 
 fn render_theme_selector_item(model: &SelectorItemRenderModel<'_, ThemeSelectorItem>, _cx: &mut App) -> AnyElement {

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use gpui::{Context, Entity, IntoElement, SharedString, div, prelude::*};
 
 use super::control::Button;
-use super::template::ButtonTemplate;
+use super::template::{ButtonTemplate, modified_button_template};
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
 use crate::controls::button_family::{
     ButtonFamilyLook, ButtonFamilyRole, ButtonInteractionState as ButtonState, ButtonSize,
@@ -192,6 +192,14 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &ButtonRenderModel<D>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_button_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<Button<D>> {
         cx.new(|cx| Button::from_builder(self, cx))
     }
@@ -221,5 +229,16 @@ mod tests {
         let builder = ButtonBuilder::new("checkbox-test").typed(false).template(template.clone()).with_data(true);
 
         assert!(std::sync::Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_checkbox_template();
+        let builder = ButtonBuilder::new("checkbox-test")
+            .typed(false)
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!std::sync::Arc::ptr_eq(&builder.model.template, &template));
     }
 }

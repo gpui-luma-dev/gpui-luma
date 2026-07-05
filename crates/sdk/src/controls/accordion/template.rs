@@ -105,7 +105,7 @@ pub fn default_accordion_template() -> Arc<dyn AccordionTemplate> {
     TEMPLATE.get_or_init(|| Arc::new(ThemedAccordionTemplate::new(default_accordion_theme()))).clone()
 }
 
-pub fn accordion_template_with_modifier<F>(
+pub(super) fn modified_accordion_template<F>(
     template: Arc<dyn AccordionTemplate>,
     modifier: F,
 ) -> Arc<dyn AccordionTemplate>

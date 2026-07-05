@@ -72,7 +72,10 @@ where
     Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
 }
 
-pub fn template_with_modifier<T, F>(template: ControlGroupTemplate<T>, modifier: F) -> ControlGroupTemplate<T>
+pub(super) fn modified_control_group_template<T, F>(
+    template: ControlGroupTemplate<T>,
+    modifier: F,
+) -> ControlGroupTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
     F: Fn(Stateful<Div>, &ControlGroupChromeModel) -> Stateful<Div> + Send + Sync + 'static,

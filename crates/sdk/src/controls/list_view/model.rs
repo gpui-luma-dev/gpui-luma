@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, AppContext, Div, Entity, ListAlignment, SharedString, Stateful, Window, div, prelude::*, px};
 
 use super::control::ListViewControl;
-use super::template::{ListViewTemplate, default_list_view_template, list_view_template_with_modifier};
+use super::template::{ListViewTemplate, default_list_view_template, modified_list_view_template};
 use super::theme::{ListViewLook, ListViewRowLook, ListViewTheme, default_list_view_theme};
 use crate::controls::state::ControlFocusState;
 use crate::theme::ControlSize;
@@ -506,7 +506,7 @@ where
     where
         F: Fn(Stateful<Div>, &ListViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
     {
-        self.model.template = list_view_template_with_modifier(std::sync::Arc::clone(&self.model.template), modifier);
+        self.model.template = modified_list_view_template(std::sync::Arc::clone(&self.model.template), modifier);
         self
     }
 

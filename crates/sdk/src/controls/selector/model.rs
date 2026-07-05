@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{App, AppContext, Bounds, Entity, IntoElement, Pixels, SharedString};
 
 use super::{ControlFocusState, Selector, SelectorState, SelectorTemplate, default_selector_template};
+use super::template::modified_selector_template;
 pub use crate::controls::selector_item_template::{
     SelectorItemRenderModel, SelectorItemTemplate, make_selector_item_template,
 };
@@ -127,6 +128,17 @@ where
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(gpui::Stateful<gpui::Div>, &SelectorRenderModel<'a, T>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = modified_selector_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn panel_template(mut self, template: Arc<dyn SelectorItemsTemplate<T>>) -> Self {
         self.model.panel_template = template;
         self
@@ -134,5 +146,20 @@ where
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Selector<T>> {
         cx.new(|cx| Selector::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_selector_template::<SelectorItem>();
+        let builder = SelectorBuilder::new("selector-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

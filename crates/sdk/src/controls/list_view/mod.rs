@@ -26,7 +26,7 @@ pub use model::{
 };
 pub use template::{
     DefaultListViewShellTemplate, ListViewTemplate, ListViewTemplateModifier, default_list_view_template,
-    list_view_template_with_modifier, list_view_template_with_theme,
+    list_view_template_with_theme,
 };
 pub use theme::{
     DefaultListViewTheme, ListViewLook, ListViewRowLook, ListViewRowPalette, ListViewTheme, default_list_view_theme,

@@ -46,7 +46,7 @@ pub type SelectionPanelItemTemplateModifier<T> = Box<
     dyn for<'a> Fn(AnyElement, &SelectionPanelItemRenderModel<'a, T>, &mut App) -> AnyElement + Send + Sync + 'static,
 >;
 
-pub struct ModifiedSelectionPanelItemTemplate<T>
+struct ModifiedSelectionPanelItemTemplate<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
@@ -58,11 +58,11 @@ impl<T> ModifiedSelectionPanelItemTemplate<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
-    pub fn new(base: SelectionPanelItemTemplate<T>) -> Self {
+    fn new(base: SelectionPanelItemTemplate<T>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    fn with_modifier<F>(mut self, modifier: F) -> Self
     where
         F: for<'a> Fn(AnyElement, &SelectionPanelItemRenderModel<'a, T>, &mut App) -> AnyElement
             + Send
@@ -73,7 +73,7 @@ where
         self
     }
 
-    pub fn into_template(self) -> SelectionPanelItemTemplate<T> {
+    fn into_template(self) -> SelectionPanelItemTemplate<T> {
         let base = self.base;
         let modifiers = self.modifiers;
         Arc::new(move |model, cx| {

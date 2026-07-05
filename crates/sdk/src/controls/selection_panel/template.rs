@@ -58,7 +58,7 @@ where
     ) -> Stateful<Div>;
 }
 
-pub struct ModifiedSelectionPanelTemplate<T>
+struct ModifiedSelectionPanelTemplate<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
@@ -70,11 +70,11 @@ impl<T> ModifiedSelectionPanelTemplate<T>
 where
     T: SelectionPanelItemLike + 'static,
 {
-    pub fn new(base: Arc<dyn SelectionPanelTemplate<T>>) -> Self {
+    fn new(base: Arc<dyn SelectionPanelTemplate<T>>) -> Self {
         Self { base, modifiers: Vec::new() }
     }
 
-    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    fn with_modifier<F>(mut self, modifier: F) -> Self
     where
         F: for<'a> Fn(Stateful<Div>, &SelectionPanelRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
     {

@@ -9,6 +9,7 @@ use lucide_icons::Icon as LucideIcon;
 use super::{SelectorPlacement, SelectorRenderModel};
 use super::item_template::render_item_content;
 
+use crate::controls::color::style::ElementExt;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
@@ -26,6 +27,8 @@ pub type SelectorMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut Ap
 pub type SelectorItemHoverHandler = Arc<dyn Fn(usize, &bool, &mut Window, &mut App) + 'static>;
 pub type SelectorItemMouseDownHandler = Arc<dyn Fn(usize, &MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorItemClickHandler = Arc<dyn Fn(usize, &ClickEvent, &mut Window, &mut App) + 'static>;
+pub type SelectorTemplateModifier<T> =
+    Box<dyn for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static>;
 
 pub struct SelectorTemplateHandlers {
     pub trigger_bounds: SelectorBoundsHandler,
@@ -84,6 +87,15 @@ where
 {
     theme: Arc<dyn SelectorTheme>,
     items_template: Arc<dyn SelectorItemsTemplate<T>>,
+    modifiers: Vec<SelectorTemplateModifier<T>>,
+}
+
+struct ModifiedSelectorTemplate<T = SelectorItem>
+where
+    T: SelectorItemLike + 'static,
+{
+    base: Arc<dyn SelectorTemplate<T>>,
+    modifiers: Vec<SelectorTemplateModifier<T>>,
 }
 
 impl<T> ThemedSelectorTemplate<T>
@@ -91,7 +103,47 @@ where
     T: SelectorItemLike + 'static,
 {
     pub fn new(theme: Arc<dyn SelectorTheme>, items_template: Arc<dyn SelectorItemsTemplate<T>>) -> Self {
-        Self { theme, items_template }
+        Self { theme, items_template, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SelectorRenderModel<'_, T>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+impl<T> ModifiedSelectorTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    fn new(base: Arc<dyn SelectorTemplate<T>>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: SelectorTemplateModifier<T>) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SelectorRenderModel<'_, T>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+
+    fn into_arc(self) -> Arc<dyn SelectorTemplate<T>> {
+        Arc::new(self)
     }
 }
 
@@ -100,6 +152,37 @@ where
     T: SelectorItemLike + 'static,
 {
     Arc::new(ThemedSelectorTemplate::new(default_selector_theme(), default_selector_items_template::<T>()))
+}
+
+pub(super) fn modified_selector_template<T, F>(
+    template: Arc<dyn SelectorTemplate<T>>,
+    modifier: F,
+) -> Arc<dyn SelectorTemplate<T>>
+where
+    T: SelectorItemLike + 'static,
+    F: for<'a> Fn(Stateful<Div>, &SelectorRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    ModifiedSelectorTemplate::new(template).with_modifier(Box::new(modifier)).into_arc()
+}
+
+impl<T> SelectorTemplate<T> for ModifiedSelectorTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    fn resolve_look(&self, model: &SelectorRenderModel<'_, T>, window: &Window, cx: &mut App) -> SelectorLook {
+        self.base.resolve_look(model, window, cx)
+    }
+
+    fn render(
+        &self,
+        model: &SelectorRenderModel<'_, T>,
+        handlers: SelectorTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl<T> SelectorTemplate<T> for ThemedSelectorTemplate<T>
@@ -137,8 +220,8 @@ where
         } = handlers;
         let look = self.resolve_look(model, window, cx);
         let trigger_content = render_item_content(model, &look, cx);
-        let mut trigger = div()
-            .id(format!("{}-trigger", model.id))
+        let mut root = div()
+            .id(model.id.clone())
             .flex()
             .items_center()
             .justify_between()
@@ -152,11 +235,16 @@ where
             .border_color(look.trigger_border)
             .rounded(px(look.trigger_radius))
             .cursor_pointer()
+            .relative()
+            .on_prepaint(move |bounds, window, cx| {
+                trigger_bounds(&bounds, window, cx);
+            })
             .on_hover(trigger_hover)
             .on_mouse_down(MouseButton::Left, trigger_mouse_down)
             .on_mouse_up(MouseButton::Left, trigger_mouse_up)
             .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
             .on_click(trigger_click)
+            .on_mouse_down_out(root_mouse_down_out)
             .child(
                 div()
                     .flex()
@@ -183,26 +271,12 @@ where
             ));
 
         if model.state.disabled {
-            trigger = trigger.opacity(0.56);
+            root = root.opacity(0.56);
         }
 
         if let Some(focus_ring) = look.focus_ring {
-            trigger = trigger.border_1().border_color(focus_ring);
+            root = root.border_1().border_color(focus_ring);
         }
-
-        let mut root = div()
-            .on_children_prepainted(move |bounds, window, cx| {
-                if let Some(bounds) = bounds.first() {
-                    trigger_bounds(bounds, window, cx);
-                }
-            })
-            .id(model.id.clone())
-            .flex()
-            .flex_col()
-            .items_stretch()
-            .relative()
-            .on_mouse_down_out(root_mouse_down_out)
-            .child(trigger);
 
         if model.open {
             let popup_metrics = resolve_selector_popup_metrics(
@@ -265,7 +339,7 @@ where
             root = root.child(deferred(overlay).with_priority(1));
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

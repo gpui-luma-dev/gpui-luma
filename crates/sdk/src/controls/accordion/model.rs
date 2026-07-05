@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, AppContext, Entity, IntoElement, SharedString, Window};
+use gpui::{AnyElement, App, AppContext, Div, Entity, IntoElement, SharedString, Stateful, Window};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionControl, AccordionTemplate, default_accordion_template};
+use super::template::modified_accordion_template;
 
 pub type AccordionElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
 
@@ -215,6 +216,14 @@ impl AccordionBuilder {
 
     pub fn template(mut self, template: Arc<dyn AccordionTemplate>) -> Self {
         self.model.template = template;
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &AccordionRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_accordion_template(Arc::clone(&self.model.template), modifier);
         self
     }
 

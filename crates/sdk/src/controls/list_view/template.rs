@@ -155,7 +155,7 @@ pub fn list_view_template_with_theme(
     default_list_view_template()
 }
 
-pub fn list_view_template_with_modifier<F>(
+pub(super) fn modified_list_view_template<F>(
     template: Arc<dyn ListViewTemplate>,
     modifier: F,
 ) -> Arc<dyn ListViewTemplate>
