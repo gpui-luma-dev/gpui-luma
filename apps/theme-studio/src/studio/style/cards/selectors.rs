@@ -256,7 +256,7 @@ fn render_selector_selector_trigger(
     let model = SelectorRenderModel {
         id,
         label: &label,
-        selected_index: None,
+        selected_index: Some(1),
         items: &items,
         open: false,
         trigger_bounds: None,
@@ -364,7 +364,7 @@ fn render_selector_popup_preview(
                     menu_id: &popup_id,
                     selector_id: id,
                     items: &items,
-                    selected_index: None,
+                    selected_index: Some(1),
                     active_path: Some(SelectorPath::Item(0)),
                     open: true,
                     enabled: true,
