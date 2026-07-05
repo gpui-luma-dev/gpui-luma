@@ -34,7 +34,8 @@ impl ThemeSidebar {
 
     fn sync_theme_selector_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.theme_selector.update(cx, |selector, cx| {
-            selector.set_template(theme.selector_template(), cx);
+            selector.set_items(super::theme_selector_items(theme.as_ref()), cx);
+            selector.set_template(super::theme_selector_template(theme), cx);
         });
     }
 
