@@ -155,6 +155,7 @@ where
     fn template_handlers(&self, cx: &mut Context<Self>) -> SelectorTemplateHandlers {
         let entity = cx.entity();
         let hover_entity = entity.clone();
+        let mouse_down_entity = entity.clone();
         let click_entity = entity.clone();
 
         SelectorTemplateHandlers {
@@ -168,6 +169,11 @@ where
             on_item_hover: Arc::new(move |model_index, hovered, _window, app| {
                 hover_entity.update(app, |this, cx| {
                     this.handle_item_hover(model_index, *hovered, cx);
+                });
+            }),
+            on_item_mouse_down: Arc::new(move |model_index, _event, _window, app| {
+                mouse_down_entity.update(app, |this, cx| {
+                    this.handle_item_mouse_down(model_index, cx);
                 });
             }),
             on_item_click: Arc::new(move |model_index, event, _window, app| {
@@ -328,6 +334,12 @@ where
             return;
         }
 
+        if self.select_index(index, true, cx) {
+            cx.notify();
+        }
+    }
+
+    fn handle_item_mouse_down(&mut self, index: usize, cx: &mut Context<Self>) {
         if self.select_index(index, true, cx) {
             cx.notify();
         }

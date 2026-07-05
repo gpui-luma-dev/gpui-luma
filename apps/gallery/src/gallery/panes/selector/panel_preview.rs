@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, ClickEvent, Context, FontWeight, IntoElement, Render, SharedString, Window, div, prelude::*, px,
+    AnyElement, App, ClickEvent, Context, FontWeight, IntoElement, MouseDownEvent, Render, SharedString, Window, div,
+    prelude::*, px,
 };
 use gpui_luma::controls::selector::ControlFocusState;
 use gpui_luma::controls::selector_panel::{
     SelectorItem, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
-    SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPath, default_selector_items_template,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPanelMouseDownHandler, SelectorPath,
+    default_selector_items_template,
 };
 use gpui_luma::theme::{ControlSize};
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -119,8 +121,13 @@ fn render_sample(
                 item_template: None,
                 look,
                 max_height: px(240.0),
+                scrolling: true,
             },
-            SelectorItemsTemplateHandlers { item_hovers: noop_hovers(count), item_clicks: noop_clicks(count) },
+            SelectorItemsTemplateHandlers {
+                item_hovers: noop_hovers(count),
+                item_mouse_downs: noop_mouse_downs(count),
+                item_clicks: noop_clicks(count),
+            },
             cx,
         ))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
@@ -147,10 +154,16 @@ fn noop_hovers(count: usize) -> Vec<SelectorPanelHoverHandler> {
     (0..count).map(|_| Box::new(noop_hover) as SelectorPanelHoverHandler).collect()
 }
 
+fn noop_mouse_downs(count: usize) -> Vec<SelectorPanelMouseDownHandler> {
+    (0..count).map(|_| Box::new(noop_mouse_down) as SelectorPanelMouseDownHandler).collect()
+}
+
 fn noop_clicks(count: usize) -> Vec<SelectorPanelClickHandler> {
     (0..count).map(|_| Box::new(noop_click) as SelectorPanelClickHandler).collect()
 }
 
 fn noop_hover(_: &bool, _: &mut Window, _: &mut App) {}
+
+fn noop_mouse_down(_: &MouseDownEvent, _: &mut Window, _: &mut App) {}
 
 fn noop_click(_: &ClickEvent, _: &mut Window, _: &mut App) {}

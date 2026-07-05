@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, ClickEvent, Div, Pixels, SharedString, Stateful, Window, div, prelude::*, px};
+use gpui::{
+    AnyElement, App, ClickEvent, Div, MouseButton, MouseDownEvent, Pixels, SharedString, Stateful, Window, div,
+    prelude::*, px,
+};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::controls::icon::lucide_icon;
@@ -56,9 +59,12 @@ pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize
 
 pub type SelectorPanelClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type SelectorPanelHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
+pub type SelectorPanelMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 
+#[derive(Default)]
 pub struct SelectorItemsTemplateHandlers {
     pub item_hovers: Vec<SelectorPanelHoverHandler>,
+    pub item_mouse_downs: Vec<SelectorPanelMouseDownHandler>,
     pub item_clicks: Vec<SelectorPanelClickHandler>,
 }
 
@@ -77,6 +83,7 @@ where
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub look: SelectorItemsPanelLook,
     pub max_height: Pixels,
+    pub scrolling: bool,
 }
 
 pub trait SelectorItemsTemplate<T>: Send + Sync
@@ -103,22 +110,17 @@ where
         handlers: SelectorItemsTemplateHandlers,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let SelectorItemsTemplateHandlers { item_hovers, item_clicks } = handlers;
+        let SelectorItemsTemplateHandlers { item_hovers, item_mouse_downs, item_clicks } = handlers;
         let look = model.look.clone();
-        let mut menu = div()
-            .id(format!("{}-menu", model.menu_id))
-            .relative()
-            .min_w(px(look.min_width))
-            .max_h(model.max_height)
-            .p(px(look.padding))
-            .bg(look.background)
-            .border_1()
-            .border_color(look.border)
-            .rounded(px(look.radius))
-            .shadow(look.shadow.clone())
-            .occlude()
-            .overflow_y_scroll();
+        let content_max_height = (model.max_height - px(look.padding * 2.0)).max(px(look.item_height));
+        let mut rows =
+            div().id(format!("{}-rows", model.menu_id)).relative().flex().flex_col().min_w(px(look.min_width));
 
+        if model.scrolling {
+            rows = rows.max_h(content_max_height).overflow_y_scroll();
+        }
+
+        let mut mouse_downs = item_mouse_downs.into_iter();
         let mut clicks = item_clicks.into_iter();
 
         for ((index, item), hover) in model.items.iter().enumerate().zip(item_hovers) {
@@ -176,6 +178,13 @@ where
                     row = row.bg(look.item_hover_background).text_color(look.item_hover_foreground);
                 }
 
+                if let Some(mouse_down) = mouse_downs.next() {
+                    row = row.on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                        cx.stop_propagation();
+                        mouse_down(event, window, cx);
+                    });
+                }
+
                 if let Some(click) = clicks.next() {
                     row = row.on_click(click);
                 }
@@ -183,10 +192,25 @@ where
                 row = row.opacity(0.56);
             }
 
-            menu = menu.child(row);
+            rows = rows.child(row);
         }
 
-        menu
+        div()
+            .id(format!("{}-menu", model.menu_id))
+            .relative()
+            .min_w(px(look.min_width))
+            .max_h(model.max_height)
+            .p(px(look.padding))
+            .bg(look.background)
+            .border_1()
+            .border_color(look.border)
+            .rounded(px(look.radius))
+            .shadow(look.shadow.clone())
+            .occlude()
+            .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                cx.stop_propagation();
+            })
+            .child(rows)
     }
 }
 

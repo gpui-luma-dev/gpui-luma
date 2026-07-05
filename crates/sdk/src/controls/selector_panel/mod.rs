@@ -7,6 +7,6 @@ pub use model::{
 };
 pub use items_template::{
     DefaultSelectorItemsTemplate, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplate,
-    SelectorItemsTemplateHandlers, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+    SelectorItemsTemplateHandlers, SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPanelMouseDownHandler,
     default_selector_items_panel_look, default_selector_items_template,
 };

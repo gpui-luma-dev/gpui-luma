@@ -372,8 +372,9 @@ fn render_selector_popup_preview(
                     item_template: None,
                     look: popup_look.clone(),
                     max_height: px(240.0),
+                    scrolling: true,
                 },
-                SelectorItemsTemplateHandlers { item_hovers, item_clicks },
+                SelectorItemsTemplateHandlers { item_hovers, item_clicks, ..Default::default() },
                 cx,
             )
             .into_any_element(),
