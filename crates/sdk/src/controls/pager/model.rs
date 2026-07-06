@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, AppContext, SharedString, Window};
 
 use super::control::PagerControl;
-use super::template::{PagerTemplate, ThemedPagerTemplate, default_pager_template};
+use super::template::{PagerTemplate, ThemedPagerTemplate, default_pager_template, template_with_modifier};
 use super::theme::PagerTheme;
 
 pub type PagerInfoSlot =
@@ -331,6 +331,14 @@ impl PagerBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &PagerRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn theme(mut self, theme: Arc<dyn PagerTheme>) -> Self {
         self.model.theme = Some(theme.clone());
         self.model.template = Arc::new(ThemedPagerTemplate::new(theme));
@@ -348,7 +356,7 @@ pub fn new(id: impl Into<SharedString>) -> PagerBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::{PagerRenderModel, PagerTemplateParameters};
+    use super::{PagerBuilder, PagerRenderModel, PagerTemplateParameters, default_pager_template};
     use gpui::SharedString;
 
     #[test]
@@ -421,5 +429,15 @@ mod tests {
 
         assert_eq!(model.numeric_slot_count(), 5);
         assert!(!model.show_first_last());
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_pager_template();
+        let builder = PagerBuilder::new("pager-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!std::sync::Arc::ptr_eq(&builder.model.template, &template));
     }
 }

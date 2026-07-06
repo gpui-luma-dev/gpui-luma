@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AnyElement, App, AppContext, Entity, IntoElement, SharedString, Window};
 
+use super::template::template_with_modifier;
 use super::{CardTemplate, default_card_template};
 use super::control::CardControl;
 use crate::theme::ControlSize;
@@ -129,6 +130,17 @@ impl CardBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(gpui::Stateful<gpui::Div>, &CardRenderModel<'a>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn render(self, window: &mut Window, cx: &mut App) -> gpui::Stateful<gpui::Div> {
         let model = self.model.render_model();
         self.model.template.render(&model, window, cx)
@@ -158,4 +170,19 @@ impl CardModel {
 
 fn renderer_from_element(element: impl IntoElement + Clone + Send + Sync + 'static) -> CardElementRenderer {
     Arc::new(move |_, _| element.clone().into_any_element())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_card_template();
+        let builder = CardBuilder::new("card-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
 }

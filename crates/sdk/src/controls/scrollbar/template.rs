@@ -26,6 +26,9 @@ pub struct ScrollbarTemplateHandlers {
     pub scroll_wheel: ScrollbarScrollWheelHandler,
 }
 
+pub type ScrollbarTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &ScrollbarRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait ScrollbarTemplate: Send + Sync {
     fn render(
         &self,
@@ -38,11 +41,50 @@ pub trait ScrollbarTemplate: Send + Sync {
 
 pub struct ThemedScrollbarTemplate {
     theme: Arc<dyn ScrollbarTheme>,
+    modifiers: Vec<ScrollbarTemplateModifier>,
 }
 
 impl ThemedScrollbarTemplate {
     pub fn new(theme: Arc<dyn ScrollbarTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ScrollbarRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ScrollbarRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedScrollbarTemplate {
+    base: Arc<dyn ScrollbarTemplate>,
+    modifiers: Vec<ScrollbarTemplateModifier>,
+}
+
+impl ModifiedScrollbarTemplate {
+    fn new(base: Arc<dyn ScrollbarTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: ScrollbarTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ScrollbarRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -50,6 +92,26 @@ pub fn default_scrollbar_template() -> Arc<dyn ScrollbarTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ScrollbarTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedScrollbarTemplate::new(default_scrollbar_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn ScrollbarTemplate>, modifier: F) -> Arc<dyn ScrollbarTemplate>
+where
+    F: Fn(Stateful<Div>, &ScrollbarRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedScrollbarTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl ScrollbarTemplate for ModifiedScrollbarTemplate {
+    fn render(
+        &self,
+        model: &ScrollbarRenderModel<'_>,
+        handlers: ScrollbarTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl ScrollbarTemplate for ThemedScrollbarTemplate {
@@ -188,7 +250,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
                 root.child(div().absolute().size_full().border_1().border_color(focus_ring).rounded(px(look.radius)));
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

@@ -17,6 +17,9 @@ pub struct DockSplitterTemplateHandlers {
     pub key_down: DockSplitterKeyDownHandler,
 }
 
+pub type DockSplitterTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &DockSplitterRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait DockSplitterTemplate: Send + Sync {
     fn render(
         &self,
@@ -30,11 +33,27 @@ pub trait DockSplitterTemplate: Send + Sync {
 
 pub struct ThemedDockSplitterTemplate {
     show_thumb: bool,
+    modifiers: Vec<DockSplitterTemplateModifier>,
 }
 
 impl ThemedDockSplitterTemplate {
     pub fn new(show_thumb: bool) -> Self {
-        Self { show_thumb }
+        Self { show_thumb, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &DockSplitterRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DockSplitterRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -50,6 +69,53 @@ pub fn default_dock_splitter_template() -> Arc<dyn DockSplitterTemplate> {
     TEMPLATE.get_or_init(|| Arc::new(ThemedDockSplitterTemplate::new(false))).clone()
 }
 
+struct ModifiedDockSplitterTemplate {
+    base: Arc<dyn DockSplitterTemplate>,
+    modifiers: Vec<DockSplitterTemplateModifier>,
+}
+
+impl ModifiedDockSplitterTemplate {
+    fn new(base: Arc<dyn DockSplitterTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: DockSplitterTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DockSplitterRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+pub(super) fn template_with_modifier<F>(
+    template: Arc<dyn DockSplitterTemplate>,
+    modifier: F,
+) -> Arc<dyn DockSplitterTemplate>
+where
+    F: Fn(Stateful<Div>, &DockSplitterRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedDockSplitterTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl DockSplitterTemplate for ModifiedDockSplitterTemplate {
+    fn render(
+        &self,
+        model: &DockSplitterRenderModel<'_>,
+        look: &DockSplitterLook,
+        handlers: DockSplitterTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, look, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
+}
+
 impl DockSplitterTemplate for ThemedDockSplitterTemplate {
     fn render(
         &self,
@@ -59,7 +125,8 @@ impl DockSplitterTemplate for ThemedDockSplitterTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        render_splitter(model, look, handlers, self.show_thumb)
+        let root = render_splitter(model, look, handlers, self.show_thumb);
+        self.apply_modifiers(root, model)
     }
 }
 

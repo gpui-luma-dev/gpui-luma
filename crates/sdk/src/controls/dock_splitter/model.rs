@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{App, AppContext, Entity, FocusHandle, Pixels, SharedString, Window};
 
+use super::template::template_with_modifier;
 use super::{DockSplitterTemplate, DockSplitterTheme, default_dock_splitter_template, default_dock_splitter_theme};
 use super::control::DockSplitter;
 
@@ -79,6 +80,17 @@ impl DockSplitterBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &DockSplitterRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn theme(mut self, theme: Arc<dyn DockSplitterTheme>) -> Self {
         self.model.theme = theme;
         self
@@ -86,5 +98,20 @@ impl DockSplitterBuilder {
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<DockSplitter> {
         cx.new(|cx| DockSplitter::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_dock_splitter_template();
+        let builder = DockSplitterBuilder::new("splitter-test", SplitterOrientation::Vertical)
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

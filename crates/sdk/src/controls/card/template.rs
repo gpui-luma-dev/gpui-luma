@@ -4,17 +4,62 @@ use gpui::{App, Stateful, Window, div, px, prelude::*};
 
 use super::{CardRenderModel, CardTheme, default_card_theme};
 
+pub type CardTemplateModifier =
+    Box<dyn for<'a> Fn(Stateful<gpui::Div>, &CardRenderModel<'a>) -> Stateful<gpui::Div> + Send + Sync + 'static>;
+
 pub trait CardTemplate: Send + Sync {
     fn render(&self, model: &CardRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<gpui::Div>;
 }
 
 pub struct ThemedCardTemplate {
     theme: Arc<dyn CardTheme>,
+    modifiers: Vec<CardTemplateModifier>,
 }
 
 impl ThemedCardTemplate {
     pub fn new(theme: Arc<dyn CardTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<gpui::Div>, &CardRenderModel<'a>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<gpui::Div>, model: &CardRenderModel<'_>) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedCardTemplate {
+    base: Arc<dyn CardTemplate>,
+    modifiers: Vec<CardTemplateModifier>,
+}
+
+impl ModifiedCardTemplate {
+    fn new(base: Arc<dyn CardTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<gpui::Div>, &CardRenderModel<'a>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<gpui::Div>, model: &CardRenderModel<'_>) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -22,6 +67,20 @@ pub fn default_card_template() -> Arc<dyn CardTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn CardTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedCardTemplate::new(default_card_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn CardTemplate>, modifier: F) -> Arc<dyn CardTemplate>
+where
+    F: for<'a> Fn(Stateful<gpui::Div>, &CardRenderModel<'a>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedCardTemplate::new(template).with_modifier(modifier))
+}
+
+impl CardTemplate for ModifiedCardTemplate {
+    fn render(&self, model: &CardRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<gpui::Div> {
+        let root = self.base.render(model, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl CardTemplate for ThemedCardTemplate {
@@ -111,6 +170,6 @@ impl CardTemplate for ThemedCardTemplate {
             );
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }

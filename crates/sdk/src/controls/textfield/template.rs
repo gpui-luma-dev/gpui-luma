@@ -33,6 +33,9 @@ pub struct TextFieldTemplateHandlers {
     pub key_down: TextFieldKeyDownHandler,
 }
 
+pub type TextFieldTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait TextFieldTemplate: Send + Sync {
     fn resolve_look(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldLook {
         default_textfield_theme().resolve_look(
@@ -65,11 +68,50 @@ pub trait TextFieldTemplate: Send + Sync {
 
 pub struct ThemedTextFieldTemplate {
     theme: Arc<dyn TextFieldTheme>,
+    modifiers: Vec<TextFieldTemplateModifier>,
 }
 
 impl ThemedTextFieldTemplate {
     pub fn new(theme: Arc<dyn TextFieldTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextFieldRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedTextFieldTemplate {
+    base: Arc<dyn TextFieldTemplate>,
+    modifiers: Vec<TextFieldTemplateModifier>,
+}
+
+impl ModifiedTextFieldTemplate {
+    fn new(base: Arc<dyn TextFieldTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: TextFieldTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextFieldRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -77,6 +119,26 @@ pub fn default_textfield_template() -> Arc<dyn TextFieldTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn TextFieldTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedTextFieldTemplate::new(default_textfield_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn TextFieldTemplate>, modifier: F) -> Arc<dyn TextFieldTemplate>
+where
+    F: Fn(Stateful<Div>, &TextFieldRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedTextFieldTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl TextFieldTemplate for ModifiedTextFieldTemplate {
+    fn render(
+        &self,
+        model: &TextFieldRenderModel<'_>,
+        handlers: TextFieldTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl TextFieldTemplate for ThemedTextFieldTemplate {
@@ -293,7 +355,7 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .on_click(handlers.click)
             .on_key_down(handlers.key_down);
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

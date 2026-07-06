@@ -36,6 +36,9 @@ pub struct TextAreaTemplateHandlers {
     pub drag_move: TextAreaDragMoveHandler,
 }
 
+pub type TextAreaTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TextAreaRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait TextAreaTemplate: Send + Sync {
     fn theme(&self) -> Option<Arc<dyn TextAreaTheme>> {
         None
@@ -52,11 +55,50 @@ pub trait TextAreaTemplate: Send + Sync {
 
 pub struct ThemedTextAreaTemplate {
     theme: Arc<dyn TextAreaTheme>,
+    modifiers: Vec<TextAreaTemplateModifier>,
 }
 
 impl ThemedTextAreaTemplate {
     pub fn new(theme: Arc<dyn TextAreaTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &TextAreaRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextAreaRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedTextAreaTemplate {
+    base: Arc<dyn TextAreaTemplate>,
+    modifiers: Vec<TextAreaTemplateModifier>,
+}
+
+impl ModifiedTextAreaTemplate {
+    fn new(base: Arc<dyn TextAreaTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: TextAreaTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TextAreaRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -64,6 +106,30 @@ pub fn default_textarea_template() -> Arc<dyn TextAreaTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn TextAreaTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedTextAreaTemplate::new(default_textarea_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn TextAreaTemplate>, modifier: F) -> Arc<dyn TextAreaTemplate>
+where
+    F: Fn(Stateful<Div>, &TextAreaRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedTextAreaTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl TextAreaTemplate for ModifiedTextAreaTemplate {
+    fn theme(&self) -> Option<Arc<dyn TextAreaTheme>> {
+        self.base.theme()
+    }
+
+    fn render(
+        &self,
+        model: &TextAreaRenderModel<'_>,
+        handlers: TextAreaTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl TextAreaTemplate for ThemedTextAreaTemplate {
@@ -210,7 +276,8 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
             root = root.w_full();
         }
 
-        root.on_hover(handlers.hover)
+        self.apply_modifiers(root, model)
+            .on_hover(handlers.hover)
             .on_mouse_down(gpui::MouseButton::Left, handlers.mouse_down)
             .on_mouse_move(handlers.mouse_move)
             .on_mouse_up(gpui::MouseButton::Left, handlers.mouse_up)

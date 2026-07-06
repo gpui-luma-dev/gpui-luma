@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
+use super::template::template_with_modifier;
 use super::{TextFieldLook, TextFieldState, TextFieldTemplate, TextFieldVariant, default_textfield_template};
 use super::control::TextFieldControl;
 use crate::controls::command::button::ControlIcon;
@@ -136,7 +137,33 @@ impl TextFieldBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &TextFieldRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextFieldControl> {
         cx.new(|cx| TextFieldControl::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_textfield_template();
+        let builder = TextFieldBuilder::new("textfield-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

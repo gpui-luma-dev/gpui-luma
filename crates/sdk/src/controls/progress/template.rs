@@ -6,17 +6,59 @@ use gpui::{App, Div, PathBuilder, Stateful, Window, canvas, div, point, px, prel
 use super::ProgressRenderModel;
 use crate::controls::progress::{ProgressTheme, default_progress_theme};
 
+pub type ProgressTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &ProgressRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait ProgressTemplate: Send + Sync {
     fn render(&self, model: &ProgressRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div>;
 }
 
 pub struct ThemedProgressTemplate {
     theme: Arc<dyn ProgressTheme>,
+    modifiers: Vec<ProgressTemplateModifier>,
 }
 
 impl ThemedProgressTemplate {
     pub fn new(theme: Arc<dyn ProgressTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ProgressRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ProgressRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedProgressTemplate {
+    base: Arc<dyn ProgressTemplate>,
+    modifiers: Vec<ProgressTemplateModifier>,
+}
+
+impl ModifiedProgressTemplate {
+    fn new(base: Arc<dyn ProgressTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: ProgressTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ProgressRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -24,6 +66,20 @@ pub fn default_progress_template() -> Arc<dyn ProgressTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ProgressTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedProgressTemplate::new(default_progress_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn ProgressTemplate>, modifier: F) -> Arc<dyn ProgressTemplate>
+where
+    F: Fn(Stateful<Div>, &ProgressRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedProgressTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl ProgressTemplate for ModifiedProgressTemplate {
+    fn render(&self, model: &ProgressRenderModel<'_>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
+        let root = self.base.render(model, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl ProgressTemplate for ThemedProgressTemplate {
@@ -48,7 +104,8 @@ impl ProgressTemplate for ThemedProgressTemplate {
         )
         .size_full();
 
-        div().id(model.id.clone()).relative().size(size).child(progress_canvas)
+        let root = div().id(model.id.clone()).relative().size(size).child(progress_canvas);
+        self.apply_modifiers(root, model)
     }
 }
 

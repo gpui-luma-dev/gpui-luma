@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, SharedString, Window, div, prelude::*, px};
+use gpui::{AnyElement, App, ClickEvent, Div, MouseDownEvent, SharedString, Stateful, Window, div, prelude::*, px};
 use lucide_icons::Icon as LucideIcon;
 
 use super::model::{PagerPageItem, PagerRenderModel, PagerStyle};
@@ -22,6 +22,9 @@ pub struct PagerTemplateHandlers {
     pub set_page_size: PagerPageSizeClickHandler,
 }
 
+pub type PagerTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &PagerRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait PagerTemplate: Send + Sync {
     fn render(
         &self,
@@ -34,11 +37,50 @@ pub trait PagerTemplate: Send + Sync {
 
 pub struct ThemedPagerTemplate {
     theme: Arc<dyn PagerTheme>,
+    modifiers: Vec<PagerTemplateModifier>,
 }
 
 impl ThemedPagerTemplate {
     pub fn new(theme: Arc<dyn PagerTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &PagerRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &PagerRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedPagerTemplate {
+    base: Arc<dyn PagerTemplate>,
+    modifiers: Vec<PagerTemplateModifier>,
+}
+
+impl ModifiedPagerTemplate {
+    fn new(base: Arc<dyn PagerTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: PagerTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &PagerRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -46,6 +88,27 @@ pub fn default_pager_template() -> Arc<dyn PagerTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn PagerTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedPagerTemplate::new(default_pager_theme()))).clone()
+}
+
+pub(super) fn template_with_modifier<F>(template: Arc<dyn PagerTemplate>, modifier: F) -> Arc<dyn PagerTemplate>
+where
+    F: Fn(Stateful<Div>, &PagerRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedPagerTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl PagerTemplate for ModifiedPagerTemplate {
+    fn render(
+        &self,
+        model: &PagerRenderModel<'_>,
+        handlers: PagerTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        let root = div().id(format!("{}-template-modifier", model.id));
+        let root = root.child(self.base.render(model, handlers, window, cx));
+        self.apply_modifiers(root, model).into_any_element()
+    }
 }
 
 impl PagerTemplate for ThemedPagerTemplate {
@@ -57,13 +120,13 @@ impl PagerTemplate for ThemedPagerTemplate {
         cx: &mut App,
     ) -> AnyElement {
         let look = self.theme.resolve(model.enabled, model.style);
-        let body = match model.style {
+        let root = match model.style {
             PagerStyle::Minimal => render_minimal_pager(model, &look, &self.theme, &handlers, window, cx),
             PagerStyle::MinimalEdge => render_minimal_edge_pager(model, &look, &self.theme, &handlers, window, cx),
             PagerStyle::Numeric => render_numeric_pager(model, &look, &self.theme, &handlers, window, cx),
         };
 
-        body.into_any_element()
+        self.apply_modifiers(root, model).into_any_element()
     }
 }
 
@@ -115,8 +178,9 @@ fn render_minimal_pager(
     handlers: &PagerTemplateHandlers,
     window: &mut Window,
     cx: &mut App,
-) -> Div {
+) -> Stateful<Div> {
     div()
+        .id(model.id.clone())
         .w_full()
         .flex()
         .items_center()
@@ -136,8 +200,9 @@ fn render_minimal_edge_pager(
     handlers: &PagerTemplateHandlers,
     window: &mut Window,
     cx: &mut App,
-) -> Div {
+) -> Stateful<Div> {
     div()
+        .id(model.id.clone())
         .w_full()
         .flex()
         .items_center()
@@ -157,9 +222,10 @@ fn render_numeric_pager(
     handlers: &PagerTemplateHandlers,
     window: &mut Window,
     cx: &mut App,
-) -> Div {
+) -> Stateful<Div> {
     let items = numeric_page_items(model.current_page, model.page_count.max(1), model.numeric_slot_count());
     div()
+        .id(model.id.clone())
         .w_full()
         .flex()
         .items_center()

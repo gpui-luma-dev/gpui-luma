@@ -21,6 +21,9 @@ pub struct TabsNavigationTemplateHandlers {
     pub item_clicks: Vec<TabsNavigationClickHandler>,
 }
 
+pub type TabsNavigationTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 struct TabsNavigationItemVisualModel<'a> {
     id: ElementId,
     label: &'a SharedString,
@@ -39,11 +42,50 @@ pub trait TabsNavigationTemplate: Send + Sync {
 
 pub struct ThemedTabsNavigationTemplate {
     theme: Arc<dyn TabsNavigationTheme>,
+    modifiers: Vec<TabsNavigationTemplateModifier>,
 }
 
 impl ThemedTabsNavigationTemplate {
     pub fn new(theme: Arc<dyn TabsNavigationTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsNavigationRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedTabsNavigationTemplate {
+    base: Arc<dyn TabsNavigationTemplate>,
+    modifiers: Vec<TabsNavigationTemplateModifier>,
+}
+
+impl ModifiedTabsNavigationTemplate {
+    fn new(base: Arc<dyn TabsNavigationTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: TabsNavigationTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TabsNavigationRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, model);
+        }
+        root
     }
 }
 
@@ -53,6 +95,29 @@ pub fn default_tabs_navigation_template() -> Arc<dyn TabsNavigationTemplate> {
     TEMPLATE
         .get_or_init(|| Arc::new(ThemedTabsNavigationTemplate::new(default_tabs_navigation_theme())))
         .clone()
+}
+
+pub(super) fn template_with_modifier<F>(
+    template: Arc<dyn TabsNavigationTemplate>,
+    modifier: F,
+) -> Arc<dyn TabsNavigationTemplate>
+where
+    F: Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedTabsNavigationTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl TabsNavigationTemplate for ModifiedTabsNavigationTemplate {
+    fn render(
+        &self,
+        model: &TabsNavigationRenderModel<'_>,
+        handlers: TabsNavigationTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
@@ -140,7 +205,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             root = root.child(tab);
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

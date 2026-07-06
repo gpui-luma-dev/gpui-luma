@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
+use super::template::template_with_modifier;
 use super::{TextArea, TextAreaLook, TextAreaState, TextAreaTemplate, default_textarea_template};
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
 
@@ -127,6 +128,14 @@ impl TextAreaBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &TextAreaRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn theme(mut self, theme: Arc<dyn TextAreaTheme>) -> Self {
         self.model.theme = theme;
         self
@@ -134,5 +143,20 @@ impl TextAreaBuilder {
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TextArea> {
         cx.new(|cx| TextArea::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_textarea_template();
+        let builder = TextAreaBuilder::new("textarea-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

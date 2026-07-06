@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
+use super::template::template_with_modifier;
 use super::{Scrollbar, ScrollbarState, ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 
@@ -120,6 +121,17 @@ impl ScrollbarBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &ScrollbarRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Scrollbar> {
         cx.new(|cx| Scrollbar::from_builder(self, cx))
     }
@@ -135,7 +147,7 @@ pub(crate) fn normalized_thumb_fraction(value: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::normalized_thumb_fraction;
+    use super::{ScrollbarBuilder, default_scrollbar_template, normalized_thumb_fraction};
 
     #[test]
     fn thumb_fraction_stays_visible_and_finite() {
@@ -143,5 +155,15 @@ mod tests {
         assert_eq!(normalized_thumb_fraction(0.5), 0.5);
         assert_eq!(normalized_thumb_fraction(2.0), 1.0);
         assert_eq!(normalized_thumb_fraction(f32::NAN), 0.25);
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_scrollbar_template();
+        let builder = ScrollbarBuilder::new("scrollbar-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!std::sync::Arc::ptr_eq(&builder.model.template, &template));
     }
 }
