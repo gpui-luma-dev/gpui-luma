@@ -30,7 +30,7 @@ use gpui_luma::controls::radio_button;
 use gpui_luma::controls::radio_group::{self, RadioGroupBuilder, RadioGroupLayout, radio_group_buttons_template};
 use gpui_luma::controls::scrollbar::{self, ScrollbarBuilder};
 use gpui_luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
-use gpui_luma::controls::selection_panel::{SelectionPanelControl, SelectionPanelItem};
+use gpui_luma::controls::selection_panel::{SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem};
 use gpui_luma::controls::search_selector::{self, SearchSelectorBuilder};
 use gpui_luma::controls::slider::{self, SliderBuilder};
 use gpui_luma::controls::switch::{self, SwitchBuilder};
@@ -142,6 +142,7 @@ pub trait ShadcnLookControlExt {
         id: impl Into<SharedString>,
         cx: &mut impl AppContext,
     ) -> Entity<SelectionPanelControl<SelectionPanelItem>>;
+    fn selection_panel_builder(&self, id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem>;
 
     fn textfield(&self, id: impl Into<SharedString>) -> TextFieldBuilder;
     fn textarea(&self, id: impl Into<SharedString>) -> TextAreaBuilder;
@@ -369,9 +370,11 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = gpui_luma::controls::autocomplete::SelectionItem>,
     ) -> AutocompleteTextBoxBuilder {
+        let theme = Arc::clone(self);
         autocomplete::new(id, items)
             .textfield_template(self.input_textfield_template())
             .scrollbar_template(self.scrollbar_template())
+            .popup_look_provider(Arc::new(move || theme.selector_items_panel_look(ControlSize::Md)))
     }
 
     fn combobox(
@@ -425,13 +428,14 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         id: impl Into<SharedString>,
         cx: &mut impl AppContext,
     ) -> Entity<SelectionPanelControl<SelectionPanelItem>> {
+        self.selection_panel_builder(id).spawn(cx)
+    }
+
+    fn selection_panel_builder(&self, id: impl Into<SharedString>) -> SelectionPanelBuilder<SelectionPanelItem> {
         let theme = Arc::clone(self);
-        let panel = SelectionPanelControl::new(id, cx);
-        panel.update(cx, |panel, cx| {
-            panel.set_scrollbar_template(theme.scrollbar_template(), cx);
-            panel.set_look_provider(Arc::new(move |size| theme.selection_panel_look(size)), cx);
-        });
-        panel
+        gpui_luma::controls::selection_panel::new(id)
+            .scrollbar_template(theme.scrollbar_template())
+            .look_provider(Arc::new(move |size| theme.selection_panel_look(size)))
     }
 
     fn textfield(&self, id: impl Into<SharedString>) -> TextFieldBuilder {

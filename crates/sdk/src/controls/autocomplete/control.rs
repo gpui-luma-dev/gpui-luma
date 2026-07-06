@@ -2,12 +2,9 @@ use gpui::{
     Bounds, ClickEvent, Context, Entity, EventEmitter, IntoElement, KeyDownEvent, Pixels, Render, ScrollWheelEvent,
     SharedString, Subscription, TextRun, Window, font, px,
 };
-use crate::controls::selector_panel::{
-    SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_panel_look,
-};
+use crate::controls::selector_panel::{SelectorItem, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::scrollbar::ScrollbarEvent;
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::theme::ControlSize;
 
 use super::behavior::{SelectionBehavior, SelectionEvent, SelectionStatus, SubmitResult};
 use super::model::AutocompleteTextBoxBuilder;
@@ -307,7 +304,7 @@ impl Render for AutocompleteTextBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let look = default_selector_items_panel_look(&tokens, ControlSize::Md);
+        let look = (self.model.popup_look_provider)();
         let selected_label = self
             .behavior
             .state

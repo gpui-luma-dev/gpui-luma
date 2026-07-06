@@ -8,8 +8,12 @@ use super::template::{
     AutocompleteItemsTemplate, AutocompleteTextBoxTemplate, default_autocomplete_items_template,
     default_autocomplete_textbox_template,
 };
+use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
+use crate::theme::{ControlSize, ThemeTokens};
+
+pub type AutocompletePopupLookProvider = Arc<dyn Fn() -> SelectorItemsPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct AutocompleteTextBoxModel {
@@ -24,6 +28,7 @@ pub struct AutocompleteTextBoxModel {
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn AutocompleteTextBoxTemplate>,
     pub(crate) items_template: Arc<dyn AutocompleteItemsTemplate>,
+    pub(crate) popup_look_provider: AutocompletePopupLookProvider,
 }
 
 pub struct AutocompleteTextBoxBuilder {
@@ -45,6 +50,9 @@ impl AutocompleteTextBoxBuilder {
                 scrollbar_template: default_scrollbar_template(),
                 template: default_autocomplete_textbox_template(),
                 items_template: default_autocomplete_items_template(),
+                popup_look_provider: Arc::new(|| {
+                    default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
+                }),
             },
         }
     }
@@ -96,6 +104,11 @@ impl AutocompleteTextBoxBuilder {
 
     pub fn items_template(mut self, template: Arc<dyn AutocompleteItemsTemplate>) -> Self {
         self.model.items_template = template;
+        self
+    }
+
+    pub fn popup_look_provider(mut self, provider: AutocompletePopupLookProvider) -> Self {
+        self.model.popup_look_provider = provider;
         self
     }
 

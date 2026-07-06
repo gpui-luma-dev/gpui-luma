@@ -7,7 +7,7 @@ use crate::controls::popup_scroll_surface::PopupScrollSurface;
 use crate::controls::scrollbar::{ScrollbarEvent, ScrollbarTemplate};
 use crate::controls::selection_panel::item_template::{SelectionPanelItemTemplate, make_selection_panel_item_template};
 use crate::controls::selection_panel::model::{
-    SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
+    SelectionPanelBuilder, SelectionPanelLookProvider, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelModel,
     default_selection_panel_model,
 };
 use crate::controls::selection_panel::template::SelectionPanelTemplate;
@@ -68,6 +68,10 @@ where
     pub fn new_typed(id: impl Into<SharedString>, cx: &mut impl AppContext) -> Entity<Self> {
         let model = default_selection_panel_model::<T>(id);
         cx.new(|cx| Self::from_model(model, None, cx))
+    }
+
+    pub(crate) fn from_builder(builder: SelectionPanelBuilder<T>, cx: &mut Context<Self>) -> Self {
+        Self::from_model(builder.model, builder.initial_active_visible_index, cx)
     }
 
     pub(crate) fn from_model(

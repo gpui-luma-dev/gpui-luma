@@ -26,11 +26,52 @@ pub trait SearchSelectorPanelTemplate: Send + Sync {
     fn render(&self, model: SearchSelectorPanelRenderModel<'_>, cx: &mut App) -> AnyElement;
 }
 
+pub type SearchSelectorPanelTemplateModifier = Box<dyn Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static>;
+
 pub struct DefaultSearchSelectorPanelTemplate;
 
 pub fn default_search_selector_panel_template() -> Arc<dyn SearchSelectorPanelTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SearchSelectorPanelTemplate>> = OnceLock::new();
     TEMPLATE.get_or_init(|| Arc::new(DefaultSearchSelectorPanelTemplate)).clone()
+}
+
+struct ModifiedSearchSelectorPanelTemplate {
+    base: Arc<dyn SearchSelectorPanelTemplate>,
+    modifiers: Vec<SearchSelectorPanelTemplateModifier>,
+}
+
+impl ModifiedSearchSelectorPanelTemplate {
+    fn new(base: Arc<dyn SearchSelectorPanelTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+}
+
+impl SearchSelectorPanelTemplate for ModifiedSearchSelectorPanelTemplate {
+    fn render(&self, model: SearchSelectorPanelRenderModel<'_>, cx: &mut App) -> AnyElement {
+        let mut element = self.base.render(model, cx);
+        for modifier in &self.modifiers {
+            element = modifier(element, cx);
+        }
+        element
+    }
+}
+
+pub fn panel_template_with_modifier<F>(
+    template: Arc<dyn SearchSelectorPanelTemplate>,
+    modifier: F,
+) -> Arc<dyn SearchSelectorPanelTemplate>
+where
+    F: Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSearchSelectorPanelTemplate::new(template).with_modifier(modifier))
 }
 
 impl SearchSelectorPanelTemplate for DefaultSearchSelectorPanelTemplate {

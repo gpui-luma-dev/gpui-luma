@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Entity, IntoElement, SharedString};
+use gpui::{App, AppContext, Entity, IntoElement, ParentElement, SharedString, Styled};
 
 use super::behavior::SelectionItem;
 use super::control::SearchSelectorControl;
-use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate, make_search_selector_item_template};
-use super::panel_template::{SearchSelectorPanelTemplate, default_search_selector_panel_template};
+use super::item_template::{
+    SearchSelectorItemRenderModel, SearchSelectorItemTemplate, item_template_with_modifier,
+    make_search_selector_item_template,
+};
+use super::panel_template::{
+    SearchSelectorPanelTemplate, default_search_selector_panel_template, panel_template_with_modifier,
+};
 use super::template::{
     SearchSelectorItemsTemplate, SearchSelectorTemplate, default_search_selector_items_template,
-    default_search_selector_template,
+    default_search_selector_template, template_with_modifier,
 };
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
@@ -170,6 +175,42 @@ impl SearchSelectorBuilder {
         self
     }
 
+    pub fn with_item_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(
+                gpui::AnyElement,
+                &SearchSelectorItemRenderModel<'a, SelectionItem>,
+                &mut App,
+            ) -> gpui::AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        let base = self.model.item_template.take().unwrap_or_else(|| {
+            make_search_selector_item_template(|item: &SearchSelectorItemRenderModel<'_, SelectionItem>, _cx| {
+                gpui::div().flex_1().child(item.item.label.clone())
+            })
+        });
+        self.model.item_template = Some(item_template_with_modifier(base, modifier));
+        self
+    }
+
+    pub fn with_panel_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::AnyElement, &mut App) -> gpui::AnyElement + Send + Sync + 'static,
+    {
+        self.model.panel_template = panel_template_with_modifier(Arc::clone(&self.model.panel_template), modifier);
+        self
+    }
+
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &mut App) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = template_with_modifier(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SearchSelectorControl> {
         cx.new(|cx| SearchSelectorControl::from_builder(self, cx))
     }
@@ -177,4 +218,37 @@ impl SearchSelectorBuilder {
 
 pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> SearchSelectorBuilder {
     SearchSelectorBuilder::new(id, items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_item_template_modifier_creates_template_from_default_content() {
+        let builder = SearchSelectorBuilder::new("search-selector-test", Vec::<SelectionItem>::new())
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(builder.model.item_template.is_some());
+    }
+
+    #[test]
+    fn with_panel_template_modifier_wraps_panel_template() {
+        let template = default_search_selector_panel_template();
+        let builder = SearchSelectorBuilder::new("search-selector-test", Vec::<SelectionItem>::new())
+            .panel_template(template.clone())
+            .with_panel_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.panel_template, &template));
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_search_selector_template();
+        let builder = SearchSelectorBuilder::new("search-selector-test", Vec::<SelectionItem>::new())
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
 }

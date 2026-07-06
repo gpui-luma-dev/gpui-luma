@@ -18,9 +18,16 @@ mod text_selection;
 pub use behavior::SelectionItem;
 pub use control::{ComboBox, ComboBoxControl, ComboBoxEvent};
 pub use model::{ComboBoxBuilder, ComboBoxModel, TypingPolicy, new};
-pub use item_template::{ComboBoxItemRenderModel, ComboBoxItemTemplate, make_combobox_item_template};
-pub use panel_template::{ComboBoxPanelRenderModel, ComboBoxPanelTemplate, default_combobox_panel_template};
+pub use item_template::{
+    ComboBoxItemRenderModel, ComboBoxItemTemplate, ComboBoxItemTemplateModifier, item_template_with_modifier,
+    make_combobox_item_template,
+};
+pub use panel_template::{
+    ComboBoxPanelRenderModel, ComboBoxPanelTemplate, ComboBoxPanelTemplateModifier, default_combobox_panel_template,
+    panel_template_with_modifier,
+};
 pub use template::{
     ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxRenderModel,
-    ComboBoxTemplate, ComboBoxTemplateHandlers, default_combobox_items_template, default_combobox_template,
+    ComboBoxTemplate, ComboBoxTemplateHandlers, ComboBoxTemplateModifier, default_combobox_items_template,
+    default_combobox_template, template_with_modifier,
 };

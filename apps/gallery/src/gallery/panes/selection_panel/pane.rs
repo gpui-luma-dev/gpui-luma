@@ -63,101 +63,81 @@ impl SelectionPanelPane {
             })
             .collect::<Vec<_>>();
 
-        let interactive_panel = look.selection_panel("gallery-selection-panel", cx);
-        interactive_panel.update(cx, |panel, cx| {
-            panel.set_panel_id("gallery-selection-panel-popup", cx);
-            panel.set_items(interactive_items.clone(), cx);
-            panel.set_item_template_fn(
-                |item, _cx| {
-                    let swatch = swatch_color(item.item.id().as_ref());
-                    let selected_weight = if item.selected {
-                        gpui::FontWeight::SEMIBOLD
-                    } else {
-                        gpui::FontWeight::NORMAL
-                    };
-
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(8.0))
-                        .child(
-                            div()
-                                .size(px(18.0))
-                                .rounded(px(2.0))
-                                .bg(swatch)
-                                .border_1()
-                                .border_color(hsla(0.0, 0.0, 1.0, 0.18)),
-                        )
-                        .child(
-                            div()
-                                .flex()
-                                .flex_col()
-                                .gap(px(1.0))
-                                .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
-                                .child(
-                                    div()
-                                        .font_family("Monaco")
-                                        .text_size(px(10.0))
-                                        .line_height(px(14.0))
-                                        .opacity(0.72)
-                                        .child(format_compact_hsla(swatch)),
-                                ),
-                        )
-                },
-                cx,
-            );
-            panel.set_scrolling(true, cx);
-            panel.set_look_provider(
-                std::sync::Arc::new({
-                    let radix = look.clone();
-                    move |size| {
-                        let mut look = radix.selection_panel_look(size);
-                        look.min_width = 320.0;
-                        look
-                    }
-                }),
-                cx,
-            );
-            panel.set_visible_row_limits(5, 5, cx);
-            panel.set_selected_source_index(Some(1), cx);
-            panel.set_active_visible_index(Some(1), cx);
+        let wide_panel_look = std::sync::Arc::new({
+            let radix = look.clone();
+            move |size| {
+                let mut look = radix.selection_panel_look(size);
+                look.min_width = 320.0;
+                look
+            }
         });
 
-        let parameterized_panel = look.selection_panel("gallery-selection-panel-parameterized", cx);
-        parameterized_panel.update(cx, |panel, cx| {
-            panel.set_panel_id("gallery-selection-panel-parameterized-popup", cx);
-            panel.set_items(interactive_items, cx);
-            panel.set_template(
-                make_parameterized_panel_template::<SelectionPanelItem>(ParameterizedPanelStyle {
-                    open_opacity: 1.0,
-                    closed_opacity: 0.88,
-                }),
-                cx,
-            );
-            panel.set_item_template(
-                Some(make_parameterized_item_template(ParameterizedItemStyle {
-                    active_badge_text: "ACTIVE",
-                    active_badge_color: hsla(0.60, 0.70, 0.42, 1.0),
-                    show_active_badge: true,
-                })),
-                cx,
-            );
-            panel.set_scrolling(true, cx);
-            panel.set_look_provider(
-                std::sync::Arc::new({
-                    let radix = look.clone();
-                    move |size| {
-                        let mut look = radix.selection_panel_look(size);
-                        look.min_width = 320.0;
-                        look
-                    }
-                }),
-                cx,
-            );
-            panel.set_visible_row_limits(5, 5, cx);
-            panel.set_selected_source_index(Some(1), cx);
-            panel.set_active_visible_index(Some(1), cx);
-        });
+        let interactive_panel = look
+            .selection_panel_builder("gallery-selection-panel")
+            .panel_id("gallery-selection-panel-popup")
+            .items(interactive_items.clone())
+            .with_item_template(|item, _cx| {
+                let swatch = swatch_color(item.item.id().as_ref());
+                let selected_weight = if item.selected {
+                    gpui::FontWeight::SEMIBOLD
+                } else {
+                    gpui::FontWeight::NORMAL
+                };
+
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(8.0))
+                    .child(
+                        div()
+                            .size(px(18.0))
+                            .rounded(px(2.0))
+                            .bg(swatch)
+                            .border_1()
+                            .border_color(hsla(0.0, 0.0, 1.0, 0.18)),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(1.0))
+                            .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
+                            .child(
+                                div()
+                                    .font_family("Monaco")
+                                    .text_size(px(10.0))
+                                    .line_height(px(14.0))
+                                    .opacity(0.72)
+                                    .child(format_compact_hsla(swatch)),
+                            ),
+                    )
+            })
+            .scrolling(true)
+            .look_provider(wide_panel_look.clone())
+            .visible_row_limits(5, 5)
+            .selected_source_index(Some(1))
+            .active_visible_index(Some(1))
+            .spawn(cx);
+
+        let parameterized_panel = look
+            .selection_panel_builder("gallery-selection-panel-parameterized")
+            .panel_id("gallery-selection-panel-parameterized-popup")
+            .items(interactive_items)
+            .template(make_parameterized_panel_template::<SelectionPanelItem>(ParameterizedPanelStyle {
+                open_opacity: 1.0,
+                closed_opacity: 0.88,
+            }))
+            .item_template(make_parameterized_item_template(ParameterizedItemStyle {
+                active_badge_text: "ACTIVE",
+                active_badge_color: hsla(0.60, 0.70, 0.42, 1.0),
+                show_active_badge: true,
+            }))
+            .scrolling(true)
+            .look_provider(wide_panel_look)
+            .visible_row_limits(5, 5)
+            .selected_source_index(Some(1))
+            .active_visible_index(Some(1))
+            .spawn(cx);
 
         Self {
             template_preview: cx.new(|_| SelectionPanelTemplatePreview::new(look.clone())),

@@ -21,6 +21,8 @@ pub type SearchSelectorTriggerHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut
 pub type SearchSelectorTriggerMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorTriggerMouseUpHandler = Box<dyn Fn(&gpui::MouseUpEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type SearchSelectorTemplateModifier =
+    Box<dyn Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static>;
 
 pub struct SearchSelectorTemplateHandlers {
     pub key_down: SearchSelectorKeyDownHandler,
@@ -80,6 +82,25 @@ pub trait SearchSelectorTemplate: Send + Sync {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<gpui::Div>;
+}
+
+struct ModifiedSearchSelectorTemplate {
+    base: Arc<dyn SearchSelectorTemplate>,
+    modifiers: Vec<SearchSelectorTemplateModifier>,
+}
+
+impl ModifiedSearchSelectorTemplate {
+    fn new(base: Arc<dyn SearchSelectorTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
 }
 
 pub struct DefaultSearchSelectorTemplate;
@@ -197,6 +218,34 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             )
             .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
     }
+}
+
+impl SearchSelectorTemplate for ModifiedSearchSelectorTemplate {
+    fn render(
+        &self,
+        model: SearchSelectorRenderModel,
+        handlers: SearchSelectorTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<gpui::Div> {
+        let mut element = self.base.render(model, handlers, window, cx);
+
+        for modifier in &self.modifiers {
+            element = (modifier)(element, cx);
+        }
+
+        element
+    }
+}
+
+pub fn template_with_modifier<F>(
+    template: Arc<dyn SearchSelectorTemplate>,
+    modifier: F,
+) -> Arc<dyn SearchSelectorTemplate>
+where
+    F: Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSearchSelectorTemplate::new(template).with_modifier(modifier))
 }
 
 pub struct SearchSelectorItemsRenderModel<'a> {

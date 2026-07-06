@@ -14,6 +14,7 @@ pub type ComboBoxClearClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut A
 pub type ComboBoxTriggerClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type ComboBoxTriggerMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
 pub type ComboBoxTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type ComboBoxTemplateModifier = Box<dyn Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static>;
 
 pub struct ComboBoxTemplateHandlers {
     pub key_down: ComboBoxKeyDownHandler,
@@ -67,6 +68,25 @@ pub trait ComboBoxTemplate: Send + Sync {
         _window: &mut Window,
         _cx: &mut App,
     ) -> AnyElement;
+}
+
+struct ModifiedComboBoxTemplate {
+    base: Arc<dyn ComboBoxTemplate>,
+    modifiers: Vec<ComboBoxTemplateModifier>,
+}
+
+impl ModifiedComboBoxTemplate {
+    fn new(base: Arc<dyn ComboBoxTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
 }
 
 pub struct DefaultComboBoxTemplate;
@@ -153,6 +173,31 @@ impl ComboBoxTemplate for DefaultComboBoxTemplate {
             .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
             .into_any_element()
     }
+}
+
+impl ComboBoxTemplate for ModifiedComboBoxTemplate {
+    fn render(
+        &self,
+        model: ComboBoxRenderModel,
+        handlers: ComboBoxTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        let mut element = self.base.render(model, handlers, window, cx);
+
+        for modifier in &self.modifiers {
+            element = (modifier)(element, cx);
+        }
+
+        element
+    }
+}
+
+pub fn template_with_modifier<F>(template: Arc<dyn ComboBoxTemplate>, modifier: F) -> Arc<dyn ComboBoxTemplate>
+where
+    F: Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static,
+{
+    Arc::new(ModifiedComboBoxTemplate::new(template).with_modifier(modifier))
 }
 
 pub use super::items_template::{

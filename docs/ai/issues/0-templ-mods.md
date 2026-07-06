@@ -34,12 +34,26 @@ This is not just style trivia. If modifiers are the default tweak path, the API 
 The recent pilot work established a clearer baseline that is good enough to carry forward into the next families:
 
 - `ButtonBuilder`, `SelectorBuilder`, `AccordionBuilder`, `ListViewBuilder`, and `ControlGroupBuilder` expose `with_template_modifier(...)`.
+- `SelectionPanelBuilder`, `ComboBoxBuilder`, and `SearchSelectorBuilder` now also expose first-class builder modifier affordances on their main template seams.
 - Concrete template values in the active pilot families expose `.with_modifier(...)`.
 - `SelectorTemplate` now has a real top-level trigger-shell modifier seam rather than forcing the Theme Studio case into a theme override.
+- The selector-family pressed-preview/list-shell bug was repaired in the shared selector-family list templates rather than patched only in the preview host. `Selector`, `ComboBox`, and `SearchSelector` now share the corrected padded-width behavior.
+- The autocomplete popup theming bug was also fixed in the shared control path by routing popup styling through the builder/model `popup_look_provider` seam instead of a hardcoded default look.
 - Public wrapper-shaped helper names have been reduced in the newer pilot families, and public `Modified*Template` wrapper types have been pushed out of the preferred API story where possible.
-- `SelectionPanel` remains the main reference family that still exposes modifier functionality primarily through helper functions rather than first-class builder affordances.
+- `SelectionPanel` is no longer a builder-surface gap in the selector family, though helper-style template wrappers still exist for direct template construction and gallery experiments.
 
 This is not the end-state for the whole SDK, but it is enough to establish the naming standard and move on from the initial pilot.
+
+## Current Code State
+As the code stands now:
+
+- `SelectorBuilder` exposes the top-level `with_template_modifier(...)` affordance.
+- `SelectionPanelBuilder` exposes `with_template_modifier(...)` and `with_item_template_modifier(...)`.
+- `ComboBoxBuilder` exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
+- `SearchSelectorBuilder` exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
+- `AutocompleteTextBoxBuilder` still has no modifier-first builder affordance; its recent work was popup-look theming parity, not template-modifier rollout.
+
+So the naming direction is effectively settled, and the selector family is now largely normalized at the builder/API level.
 
 ## Problem
 The current SDK mixes several incompatible patterns:
@@ -122,8 +136,8 @@ Reviewed top-level SDK template traits:
 Count:
 
 - `25` top-level template seams reviewed
-- `5` with built-in modifier support on the template itself
-- `20` currently missing top-level modifier support
+- `7` with built-in modifier support on the template itself
+- `18` currently missing top-level modifier support
 
 ### Template Families With Built-In Modifier Support
 These already support modifiers at the template layer:
@@ -133,6 +147,8 @@ These already support modifiers at the template layer:
 - `ListViewTemplate`
 - `SelectionPanelTemplate`
 - `SelectorTemplate`
+- `ComboBoxTemplate`
+- `SearchSelectorTemplate`
 
 ### Additional Family With Modifier Support Outside the Top-Level Trait Count
 `ControlGroupTemplate` is closure-based rather than a named top-level trait, but it supports modifiers behind a builder-level `with_template_modifier(...)`.
@@ -146,9 +162,12 @@ Direct builder-level `with_template_modifier(...)` entrypoints currently exist f
 - `ButtonBuilder`
 - `ControlGroupBuilder`
 - `ListViewBuilder`
+- `SelectionPanelBuilder`
 - `SelectorBuilder`
+- `ComboBoxBuilder`
+- `SearchSelectorBuilder`
 
-This is materially better than the starting point. The main remaining builder-surface gap among the current reference families is `SelectionPanel`, whose panel/item modifier seams still require helper-function usage rather than first-class builder affordances.
+This is materially better than the starting point. The main remaining gaps are now outside the normalized selector/reference families.
 
 ## Findings
 ### 1. Modifier support is still not a universal SDK contract
@@ -185,7 +204,7 @@ Recommended first batch:
 
 - [x] `ButtonTemplate` / `ButtonBuilder`
   Reason: simplest case, already demonstrated in Gallery prototype/custom button panes, validates modifier-first ergonomics for a single-root control.
-- [ ] `SelectionPanel`
+- [x] `SelectionPanel`
   Reason: already has panel/item modifier precedent and is the best reference for compound modifier layering.
 - [x] `Selector`
   Reason: highest-value missing seam and the clearest example of current friction between item customization and trigger-shell customization.
@@ -196,9 +215,13 @@ Current pilot status:
 - `SelectorBuilder` now exposes `with_template_modifier(...)`.
 - `AccordionBuilder` now exposes `with_template_modifier(...)`.
 - `ListViewBuilder` and `ControlGroupBuilder` already fit the preferred builder-level pattern and remain the reference for earlier adoption.
+- `SelectionPanelBuilder` now exposes `with_template_modifier(...)` and `with_item_template_modifier(...)`.
+- `ComboBoxBuilder` now exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
+- `SearchSelectorBuilder` now exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
 - Public wrapper-shaped helper names have been reduced in the newer pilot families so the preferred API reads more like a native contract and less like an adapter.
 - Public `Modified*Template` wrapper types are no longer part of the preferred public story in the newer pilot families.
-- `SelectionPanel` is still the main unresolved builder-surface gap in the pilot set.
+- The selector-family preview/rendering bug that briefly distracted this work is fixed and should not block the API rollout anymore.
+- The selector-family API normalization phase is effectively complete; remaining work is broader rollout beyond this family.
 
 Pilot success criteria:
 
@@ -212,8 +235,15 @@ Pilot success criteria:
 Pilot conclusion:
 
 - The naming direction is now clear enough to treat as the standard for new work.
-- The remaining work is rollout, not naming discovery.
-- `SelectionPanel` is the main unresolved reference family if we want one more compound-control cleanup pass before broader adoption.
+- The selector-family normalization pass is complete enough to stop debating names and move on.
+- The remaining work is broader rollout, not selector-family naming or builder-surface cleanup.
+
+### Next Step
+The next concrete phase should move beyond the selector family:
+
+1. Treat `Selector`, `SelectionPanel`, `ComboBox`, and `SearchSelector` as the reference compound-control families for modifier naming.
+2. Use that selector-family baseline to drive the next rollout batch in non-selector controls that still only expose `.template(...)`.
+3. Keep the public goal narrow: consistent builder ergonomics and seam naming across the remaining families, without reopening the broader naming debate.
 
 ### Phase 1: Add Top-Level Template Modifier Support Where Missing
 These top-level control templates should support a root-level modifier seam.
@@ -222,7 +252,7 @@ These top-level control templates should support a root-level modifier seam.
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
 - [ ] `CardTemplate`
   Path: `crates/sdk/src/controls/card/template.rs`
-- [ ] `ComboBoxTemplate`
+- [x] `ComboBoxTemplate`
   Path: `crates/sdk/src/controls/combobox/template.rs`
 - [ ] `ContextMenuTemplate`
   Path: `crates/sdk/src/controls/context_menu/template.rs`
@@ -244,7 +274,7 @@ These top-level control templates should support a root-level modifier seam.
   Path: `crates/sdk/src/controls/resizable_panels/template.rs`
 - [ ] `ScrollbarTemplate`
   Path: `crates/sdk/src/controls/scrollbar/template.rs`
-- [ ] `SearchSelectorTemplate`
+- [x] `SearchSelectorTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
 - [x] `SelectorTemplate`
   Path: `crates/sdk/src/controls/selector/template.rs`
@@ -270,12 +300,18 @@ The template seam is not enough if callers still have to hand-roll wrappers.
 - [x] `AccordionBuilder`
   Path: `crates/sdk/src/controls/accordion/model.rs`
   Reason: `AccordionTemplate` already supported modifiers internally, and the builder should expose the standard path directly.
-- [ ] `SelectionPanel` builder/model surface
+- [x] `SelectionPanel` builder/model surface
   Path: `crates/sdk/src/controls/selection_panel/model.rs`
-  Reason: panel and item template modifier helpers exist, but there is no direct builder affordance mirroring `ControlGroupBuilder` / `ListViewBuilder`.
+  Reason: builder-level top-level and item modifier affordances now exist and establish the reference pattern for a compound panel control.
 - [x] `SelectorBuilder`
   Path: `crates/sdk/src/controls/selector/model.rs`
   Reason: selector trigger-shell tweaks should be expressible from the normal builder path as well as from concrete template construction.
+- [x] Selector-family follow-up refactor
+  Paths:
+  - `crates/sdk/src/controls/selection_panel/model.rs`
+  - `crates/sdk/src/controls/combobox/model.rs`
+  - `crates/sdk/src/controls/search_selector/model.rs`
+  Reason: the family now shares the normalized builder naming pattern: top-level `with_template_modifier(...)` plus item/panel modifier affordances where those seams exist.
 - [ ] Every Phase 1 family should expose a direct builder-level modifier helper once template support lands.
 
 ### Phase 3: Add Consistent Modifier Support to Important Subtemplate Layers
@@ -283,13 +319,13 @@ These are not always the first priority, but they are frequent tweak points and 
 
 - [ ] `AutocompleteItemsTemplate`
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
-- [ ] `ComboBoxItemsTemplate`
+- [x] `ComboBoxItemsTemplate`
   Path: `crates/sdk/src/controls/combobox/items_template.rs`
-- [ ] `ComboBoxPanelTemplate`
+- [x] `ComboBoxPanelTemplate`
   Path: `crates/sdk/src/controls/combobox/panel_template.rs`
-- [ ] `SearchSelectorItemsTemplate`
+- [x] `SearchSelectorItemsTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
-- [ ] `SearchSelectorPanelTemplate`
+- [x] `SearchSelectorPanelTemplate`
   Path: `crates/sdk/src/controls/search_selector/panel_template.rs`
 - [ ] `SelectorItemsTemplate`
   Path: `crates/sdk/src/controls/selector_panel/items_template.rs`
