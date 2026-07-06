@@ -8,9 +8,8 @@ use gpui::{
 };
 use gpui_luma::controls::selection_panel::{
     SelectionPanelLook, SelectionPanelClickHandler, SelectionPanelControl, SelectionPanelEvent,
-    SelectionPanelHoverHandler, SelectionPanelItem, SelectionPanelItemLike, SelectionPanelMouseDownHandler,
-    SelectionPanelMouseUpHandler, SelectionPanelRenderModel, SelectionPanelTemplate, item_template_with_modifier,
-    make_selection_panel_item_template, template_with_modifier, default_selection_panel_template,
+    SelectionPanelHoverHandler, SelectionPanelItem, SelectionPanelMouseDownHandler, SelectionPanelMouseUpHandler,
+    SelectionPanelRenderModel, SelectionPanelTemplate, SelectionPanelItemLike, default_selection_panel_template,
     render_selection_panel,
 };
 use gpui_luma::controls::state::ControlFocusState;
@@ -123,14 +122,15 @@ impl SelectionPanelPane {
             .selection_panel_builder("gallery-selection-panel-parameterized")
             .panel_id("gallery-selection-panel-parameterized-popup")
             .items(interactive_items)
-            .template(make_parameterized_panel_template::<SelectionPanelItem>(ParameterizedPanelStyle {
-                open_opacity: 1.0,
-                closed_opacity: 0.88,
-            }))
-            .item_template(make_parameterized_item_template(ParameterizedItemStyle {
+            .with_item_template(parameterized_item_content)
+            .with_item_template_modifier(parameterized_item_modifier(ParameterizedItemStyle {
                 active_badge_text: "ACTIVE",
                 active_badge_color: hsla(0.60, 0.70, 0.42, 1.0),
                 show_active_badge: true,
+            }))
+            .with_template_modifier(parameterized_panel_modifier(ParameterizedPanelStyle {
+                open_opacity: 1.0,
+                closed_opacity: 0.88,
             }))
             .scrolling(true)
             .look_provider(wide_panel_look)
@@ -586,57 +586,65 @@ struct ParameterizedItemStyle {
     show_active_badge: bool,
 }
 
-fn make_parameterized_panel_template<T>(style: ParameterizedPanelStyle) -> Arc<dyn SelectionPanelTemplate<T>>
-where
-    T: SelectionPanelItemLike + 'static,
-{
-    template_with_modifier(default_selection_panel_template(), move |root, model| {
+fn parameterized_panel_modifier(
+    style: ParameterizedPanelStyle,
+) -> impl for<'a> Fn(
+    gpui::Stateful<gpui::Div>,
+    &SelectionPanelRenderModel<'a, SelectionPanelItem>,
+) -> gpui::Stateful<gpui::Div>
++ Copy {
+    move |root, model| {
         root.opacity(if model.open {
             style.open_opacity
         } else {
             style.closed_opacity
         })
-    })
+    }
 }
 
-fn make_parameterized_item_template(
-    style: ParameterizedItemStyle,
-) -> gpui_luma::controls::selection_panel::SelectionPanelItemTemplate<SelectionPanelItem> {
-    let base = make_selection_panel_item_template(
-        |item: &gpui_luma::controls::selection_panel::SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
-            let swatch = swatch_color(item.item.id().as_ref());
-            let selected_weight = if item.selected {
-                FontWeight::SEMIBOLD
-            } else {
-                FontWeight::NORMAL
-            };
+fn parameterized_item_content(
+    item: &gpui_luma::controls::selection_panel::SelectionPanelItemRenderModel<'_, SelectionPanelItem>,
+    _cx: &mut App,
+) -> AnyElement {
+    let swatch = swatch_color(item.item.id().as_ref());
+    let selected_weight = if item.selected {
+        FontWeight::SEMIBOLD
+    } else {
+        FontWeight::NORMAL
+    };
 
+    div()
+        .flex()
+        .items_center()
+        .gap(px(8.0))
+        .child(div().size(px(18.0)).rounded(px(2.0)).bg(swatch).border_1().border_color(hsla(0.0, 0.0, 1.0, 0.18)))
+        .child(
             div()
                 .flex()
-                .items_center()
-                .gap(px(8.0))
-                .child(
-                    div().size(px(18.0)).rounded(px(2.0)).bg(swatch).border_1().border_color(hsla(0.0, 0.0, 1.0, 0.18)),
-                )
+                .flex_col()
+                .gap(px(1.0))
+                .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
                 .child(
                     div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(1.0))
-                        .child(div().font_weight(selected_weight).child(item.item.label_text().clone()))
-                        .child(
-                            div()
-                                .font_family("Monaco")
-                                .text_size(px(10.0))
-                                .line_height(px(14.0))
-                                .opacity(0.72)
-                                .child(format_compact_hsla(swatch)),
-                        ),
-                )
-        },
-    );
+                        .font_family("Monaco")
+                        .text_size(px(10.0))
+                        .line_height(px(14.0))
+                        .opacity(0.72)
+                        .child(format_compact_hsla(swatch)),
+                ),
+        )
+        .into_any_element()
+}
 
-    item_template_with_modifier(base, move |content, item, _cx| {
+fn parameterized_item_modifier(
+    style: ParameterizedItemStyle,
+) -> impl for<'a> Fn(
+    gpui::AnyElement,
+    &gpui_luma::controls::selection_panel::SelectionPanelItemRenderModel<'a, SelectionPanelItem>,
+    &mut App,
+) -> gpui::AnyElement
++ Copy {
+    move |content, item, _cx| {
         div()
             .flex()
             .items_center()
@@ -654,7 +662,7 @@ fn make_parameterized_item_template(
             })
             .child(content)
             .into_any_element()
-    })
+    }
 }
 
 fn swatch_color(item_id: &str) -> gpui::Hsla {

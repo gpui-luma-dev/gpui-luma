@@ -136,6 +136,7 @@ fn render_selector_autocomplete_trigger(
     let popup_look = look.selector_items_panel_look(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
+        id: id.clone(),
         textfield: render_selector_preview_textfield(
             &textfield_template,
             &textfield_theme,

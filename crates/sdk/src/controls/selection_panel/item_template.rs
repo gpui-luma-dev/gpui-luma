@@ -86,7 +86,7 @@ where
     }
 }
 
-pub fn item_template_with_modifier<T, F>(
+pub(super) fn item_template_with_modifier<T, F>(
     template: SelectionPanelItemTemplate<T>,
     modifier: F,
 ) -> SelectionPanelItemTemplate<T>

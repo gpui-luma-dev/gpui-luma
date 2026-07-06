@@ -18,17 +18,15 @@ pub use behavior::SelectionItem;
 pub use control::{SearchSelector, SearchSelectorControl, SearchSelectorEvent};
 pub use item_template::{
     SearchSelectorItemRenderModel, SearchSelectorItemTemplate, SearchSelectorItemTemplateModifier,
-    item_template_with_modifier, make_search_selector_item_template,
+    make_search_selector_item_template,
 };
 pub use model::{SearchSelectorBuilder, SearchSelectorModel, new};
 pub use panel_template::{
     SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SearchSelectorPanelTemplateModifier,
-    default_search_selector_panel_template, panel_template_with_modifier,
+    default_search_selector_panel_template,
 };
 pub use template::{
     SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
     SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SearchSelectorTemplateModifier,
-    default_search_selector_items_template, default_search_selector_template, template_with_modifier,
+    default_search_selector_items_template, default_search_selector_template,
 };
-#[allow(deprecated)]
-pub use template::render_popup_rows;

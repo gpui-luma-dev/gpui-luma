@@ -15,6 +15,8 @@ pub type AutocompleteTextBoxKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Wind
 pub type AutocompleteTextBoxScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTextBoxClearClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub type AutocompleteTextBoxTriggerBoundsHandler = Box<dyn Fn(&Bounds<Pixels>, &mut Window, &mut App) + 'static>;
+pub type AutocompleteTextBoxTemplateModifier =
+    Box<dyn Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static>;
 
 pub struct AutocompleteTextBoxTemplateHandlers {
     pub key_down: AutocompleteTextBoxKeyDownHandler,
@@ -40,6 +42,7 @@ impl Default for AutocompleteTextBoxTemplateHandlers {
 }
 
 pub struct AutocompleteTextBoxRenderModel {
+    pub id: SharedString,
     pub textfield: AnyElement,
     pub query_is_empty: bool,
     pub popup_width: Pixels,
@@ -59,14 +62,89 @@ pub trait AutocompleteTextBoxTemplate: Send + Sync {
         handlers: AutocompleteTextBoxTemplateHandlers,
         _window: &mut Window,
         _cx: &mut App,
-    ) -> AnyElement;
+    ) -> Stateful<gpui::Div>;
 }
 
-pub struct DefaultAutocompleteTextBoxTemplate;
+pub struct DefaultAutocompleteTextBoxTemplate {
+    modifiers: Vec<AutocompleteTextBoxTemplateModifier>,
+}
+
+struct ModifiedAutocompleteTextBoxTemplate {
+    base: Arc<dyn AutocompleteTextBoxTemplate>,
+    modifiers: Vec<AutocompleteTextBoxTemplateModifier>,
+}
+
+impl DefaultAutocompleteTextBoxTemplate {
+    pub fn new() -> Self {
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<gpui::Div>, cx: &mut App) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, cx);
+        }
+        root
+    }
+}
+
+impl Default for DefaultAutocompleteTextBoxTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ModifiedAutocompleteTextBoxTemplate {
+    fn new(base: Arc<dyn AutocompleteTextBoxTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: AutocompleteTextBoxTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<gpui::Div>, cx: &mut App) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = modifier(root, cx);
+        }
+        root
+    }
+}
 
 pub fn default_autocomplete_textbox_template() -> Arc<dyn AutocompleteTextBoxTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn AutocompleteTextBoxTemplate>> = OnceLock::new();
-    TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteTextBoxTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteTextBoxTemplate::new())).clone()
+}
+
+pub(super) fn modified_autocomplete_textbox_template<F>(
+    template: Arc<dyn AutocompleteTextBoxTemplate>,
+    modifier: F,
+) -> Arc<dyn AutocompleteTextBoxTemplate>
+where
+    F: Fn(Stateful<gpui::Div>, &mut App) -> Stateful<gpui::Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedAutocompleteTextBoxTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl AutocompleteTextBoxTemplate for ModifiedAutocompleteTextBoxTemplate {
+    fn render(
+        &self,
+        model: AutocompleteTextBoxRenderModel,
+        handlers: AutocompleteTextBoxTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<gpui::Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, cx)
+    }
 }
 
 impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
@@ -75,8 +153,8 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
         model: AutocompleteTextBoxRenderModel,
         handlers: AutocompleteTextBoxTemplateHandlers,
         _window: &mut Window,
-        _cx: &mut App,
-    ) -> AnyElement {
+        cx: &mut App,
+    ) -> Stateful<gpui::Div> {
         let AutocompleteTextBoxTemplateHandlers { key_down, scroll_wheel, clear_click, trigger_bounds } = handlers;
 
         let has_status_text = !model.status_label.is_empty() || !model.status_detail.is_empty();
@@ -104,7 +182,8 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                     .child(model.status_detail),
             );
 
-        div()
+        let root = div()
+            .id(format!("{}-root", model.id))
             .w_full()
             .flex()
             .flex_col()
@@ -168,8 +247,9 @@ impl AutocompleteTextBoxTemplate for DefaultAutocompleteTextBoxTemplate {
                         .with_priority(1),
                     )
                 })
-            })
-            .into_any_element()
+            });
+
+        self.apply_modifiers(root, cx)
     }
 }
 

@@ -410,6 +410,7 @@ impl Render for AutocompleteTextBoxControl {
         };
 
         let render_model = AutocompleteTextBoxRenderModel {
+            id: self.model.id.clone(),
             textfield: self.textfield.clone().into_any_element(),
             query_is_empty: self.behavior.state.query.is_empty(),
             popup_width,

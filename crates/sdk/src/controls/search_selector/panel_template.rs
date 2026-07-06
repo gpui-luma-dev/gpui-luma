@@ -64,7 +64,7 @@ impl SearchSelectorPanelTemplate for ModifiedSearchSelectorPanelTemplate {
     }
 }
 
-pub fn panel_template_with_modifier<F>(
+pub(super) fn panel_template_with_modifier<F>(
     template: Arc<dyn SearchSelectorPanelTemplate>,
     modifier: F,
 ) -> Arc<dyn SearchSelectorPanelTemplate>

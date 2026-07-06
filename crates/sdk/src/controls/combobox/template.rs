@@ -193,7 +193,7 @@ impl ComboBoxTemplate for ModifiedComboBoxTemplate {
     }
 }
 
-pub fn template_with_modifier<F>(template: Arc<dyn ComboBoxTemplate>, modifier: F) -> Arc<dyn ComboBoxTemplate>
+pub(super) fn template_with_modifier<F>(template: Arc<dyn ComboBoxTemplate>, modifier: F) -> Arc<dyn ComboBoxTemplate>
 where
     F: Fn(AnyElement, &mut App) -> AnyElement + Send + Sync + 'static,
 {

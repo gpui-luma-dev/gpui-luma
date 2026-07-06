@@ -58,7 +58,7 @@ impl<T: 'static> ModifiedComboBoxItemTemplate<T> {
     }
 }
 
-pub fn item_template_with_modifier<T: 'static, F>(
+pub(super) fn item_template_with_modifier<T: 'static, F>(
     template: ComboBoxItemTemplate<T>,
     modifier: F,
 ) -> ComboBoxItemTemplate<T>

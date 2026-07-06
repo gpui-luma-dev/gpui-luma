@@ -30,6 +30,13 @@ The pilot work clarified the naming direction we should standardize going forwar
 
 This is not just style trivia. If modifiers are the default tweak path, the API has to make that path feel native rather than exceptional.
 
+## Interface Policy
+This project is still new enough that interface quality matters more than preserving old seams:
+
+1. We do **not** need to preserve backward compatibility with awkward or transitional modifier APIs just because they existed earlier in the rollout.
+2. If a wrapper-style or adapter-style API conflicts with a cleaner, more consistent builder-first interface, prefer the cleaner interface and update call sites.
+3. The goal is a release-quality public surface with consistent naming and ownership, not a permanent accumulation of rollout-era compatibility shims.
+
 ## Completed So Far
 The recent pilot work established a clearer baseline that is good enough to carry forward into the next families:
 
@@ -40,7 +47,7 @@ The recent pilot work established a clearer baseline that is good enough to carr
 - The selector-family pressed-preview/list-shell bug was repaired in the shared selector-family list templates rather than patched only in the preview host. `Selector`, `ComboBox`, and `SearchSelector` now share the corrected padded-width behavior.
 - The autocomplete popup theming bug was also fixed in the shared control path by routing popup styling through the builder/model `popup_look_provider` seam instead of a hardcoded default look.
 - Public wrapper-shaped helper names have been reduced in the newer pilot families, and public `Modified*Template` wrapper types have been pushed out of the preferred API story where possible.
-- `SelectionPanel` is no longer a builder-surface gap in the selector family, though helper-style template wrappers still exist for direct template construction and gallery experiments.
+- `SelectionPanel` is no longer a builder-surface gap in the selector family, and the Gallery modifier examples now route through the builder-first seams rather than public helper wrapper adapters.
 
 This is not the end-state for the whole SDK, but it is enough to establish the naming standard and move on from the initial pilot.
 
@@ -51,7 +58,7 @@ As the code stands now:
 - `SelectionPanelBuilder` exposes `with_template_modifier(...)` and `with_item_template_modifier(...)`.
 - `ComboBoxBuilder` exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
 - `SearchSelectorBuilder` exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
-- `AutocompleteTextBoxBuilder` still has no modifier-first builder affordance; its recent work was popup-look theming parity, not template-modifier rollout.
+- `AutocompleteTextBoxBuilder` now exposes `with_template_modifier(...)`; popup-look theming remains a separate seam rather than the only narrow customization path.
 
 So the naming direction is effectively settled, and the selector family is now largely normalized at the builder/API level.
 
@@ -136,12 +143,13 @@ Reviewed top-level SDK template traits:
 Count:
 
 - `25` top-level template seams reviewed
-- `7` with built-in modifier support on the template itself
-- `18` currently missing top-level modifier support
+- `8` with built-in modifier support on the template itself
+- `17` currently missing top-level modifier support
 
 ### Template Families With Built-In Modifier Support
 These already support modifiers at the template layer:
 
+- `AutocompleteTextBoxTemplate`
 - `ButtonTemplate`
 - `AccordionTemplate`
 - `ListViewTemplate`
@@ -160,6 +168,7 @@ Direct builder-level `with_template_modifier(...)` entrypoints currently exist f
 
 - `AccordionBuilder`
 - `ButtonBuilder`
+- `AutocompleteTextBoxBuilder`
 - `ControlGroupBuilder`
 - `ListViewBuilder`
 - `SelectionPanelBuilder`
@@ -167,7 +176,7 @@ Direct builder-level `with_template_modifier(...)` entrypoints currently exist f
 - `ComboBoxBuilder`
 - `SearchSelectorBuilder`
 
-This is materially better than the starting point. The main remaining gaps are now outside the normalized selector/reference families.
+This is materially better than the starting point. The main remaining gaps are now outside the normalized selector/reference families and the autocomplete trigger shell.
 
 ## Findings
 ### 1. Modifier support is still not a universal SDK contract
@@ -220,6 +229,7 @@ Current pilot status:
 - `SearchSelectorBuilder` now exposes `with_template_modifier(...)`, `with_panel_template_modifier(...)`, and `with_item_template_modifier(...)`.
 - Public wrapper-shaped helper names have been reduced in the newer pilot families so the preferred API reads more like a native contract and less like an adapter.
 - Public `Modified*Template` wrapper types are no longer part of the preferred public story in the newer pilot families.
+- Gallery selector-control examples now route through the builder-first seams for parameterized modifier demos instead of depending on public helper wrapper adapters.
 - The selector-family preview/rendering bug that briefly distracted this work is fixed and should not block the API rollout anymore.
 - The selector-family API normalization phase is effectively complete; remaining work is broader rollout beyond this family.
 
@@ -230,13 +240,14 @@ Pilot success criteria:
 - [x] A broader appearance change can still be expressed by deriving/replacing theme/look inputs.
 - [x] Builder ergonomics make the modifier path obvious for the completed pilot families.
 - [~] Tests cover modifier composition and default-path non-regression for the pilot families.
-  Status: button/selector builder wrapping has focused test coverage; broader composition coverage is still worth adding as more families adopt the standard.
+  Status: button/selector builder wrapping plus selector-family builder composition coverage now exist; deeper render-level non-regression coverage is still worth adding if these seams keep expanding.
 
 Pilot conclusion:
 
 - The naming direction is now clear enough to treat as the standard for new work.
 - The selector-family normalization pass is complete enough to stop debating names and move on.
-- The remaining work is broader rollout, not selector-family naming or builder-surface cleanup.
+- Remaining selector-family work is now mostly render-level regression coverage, not builder-surface cleanup.
+- Where cleanup choices conflict with backward compatibility, favor the cleaner release-quality interface and migrate local call sites.
 
 ### Next Step
 The next concrete phase should move beyond the selector family:
@@ -248,7 +259,7 @@ The next concrete phase should move beyond the selector family:
 ### Phase 1: Add Top-Level Template Modifier Support Where Missing
 These top-level control templates should support a root-level modifier seam.
 
-- [ ] `AutocompleteTextBoxTemplate`
+- [x] `AutocompleteTextBoxTemplate`
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
 - [ ] `CardTemplate`
   Path: `crates/sdk/src/controls/card/template.rs`

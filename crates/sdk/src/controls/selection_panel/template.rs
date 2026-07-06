@@ -105,7 +105,7 @@ where
     }
 }
 
-pub fn template_with_modifier<T, F>(
+pub(super) fn template_with_modifier<T, F>(
     template: Arc<dyn SelectionPanelTemplate<T>>,
     modifier: F,
 ) -> Arc<dyn SelectionPanelTemplate<T>>

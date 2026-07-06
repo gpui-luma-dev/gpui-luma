@@ -238,7 +238,7 @@ impl SearchSelectorTemplate for ModifiedSearchSelectorTemplate {
     }
 }
 
-pub fn template_with_modifier<F>(
+pub(super) fn template_with_modifier<F>(
     template: Arc<dyn SearchSelectorTemplate>,
     modifier: F,
 ) -> Arc<dyn SearchSelectorTemplate>
@@ -369,39 +369,4 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
 
         root
     }
-}
-
-#[deprecated(note = "Use SearchSelectorItemsTemplate::render with SearchSelectorItemsRenderModel")]
-#[allow(clippy::too_many_arguments)]
-pub fn render_popup_rows(
-    menu_id: &SharedString,
-    search_selector_id: &SharedString,
-    items: &[SelectionItem],
-    visible_indices: &[usize],
-    selected_source_index: Option<usize>,
-    active_visible_index: Option<usize>,
-    open: bool,
-    enabled: bool,
-    item_template: Option<&SearchSelectorItemTemplate<SelectionItem>>,
-    look: SelectorItemsPanelLook,
-    item_hovers: Vec<SelectorPanelHoverHandler>,
-    item_clicks: Vec<SelectorPanelClickHandler>,
-    cx: &mut App,
-) -> Stateful<gpui::Div> {
-    DefaultSearchSelectorItemsTemplate.render(
-        &SearchSelectorItemsRenderModel {
-            menu_id,
-            search_selector_id,
-            items,
-            visible_indices,
-            selected_source_index,
-            active_visible_index,
-            open,
-            enabled,
-            item_template,
-            look,
-        },
-        SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
-        cx,
-    )
 }

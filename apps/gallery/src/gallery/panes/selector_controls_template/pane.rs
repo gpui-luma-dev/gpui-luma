@@ -327,6 +327,7 @@ fn render_autocomplete_trigger(
     let popup_look = preview.look.selector_items_panel_look(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
+        id: id.clone(),
         textfield: render_preview_textfield(preview, id, &placeholder, &value, state, window, cx),
         query_is_empty: false,
         popup_width: px(168.0),

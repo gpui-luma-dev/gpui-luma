@@ -339,4 +339,34 @@ mod tests {
 
         assert!(builder.model.item_template.is_some());
     }
+
+    #[test]
+    fn with_item_template_modifier_wraps_existing_item_template() {
+        let item_template =
+            make_selection_panel_item_template(|_item: &SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
+                gpui::div()
+            });
+        let builder = SelectionPanelBuilder::new("selection-panel-test")
+            .item_template(item_template.clone())
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+
+    #[test]
+    fn template_and_item_modifiers_compose_on_builder() {
+        let template = default_selection_panel_template::<SelectionPanelItem>();
+        let item_template =
+            make_selection_panel_item_template(|_item: &SelectionPanelItemRenderModel<'_, SelectionPanelItem>, _cx| {
+                gpui::div()
+            });
+        let builder = SelectionPanelBuilder::new("selection-panel-test")
+            .template(template.clone())
+            .item_template(item_template.clone())
+            .with_template_modifier(|element, _| element)
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
 }

@@ -6,7 +6,7 @@ use super::behavior::SelectionItem;
 use super::control::AutocompleteTextBoxControl;
 use super::template::{
     AutocompleteItemsTemplate, AutocompleteTextBoxTemplate, default_autocomplete_items_template,
-    default_autocomplete_textbox_template,
+    default_autocomplete_textbox_template, modified_autocomplete_textbox_template,
 };
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
@@ -102,6 +102,14 @@ impl AutocompleteTextBoxBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &mut gpui::App) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_autocomplete_textbox_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn items_template(mut self, template: Arc<dyn AutocompleteItemsTemplate>) -> Self {
         self.model.items_template = template;
         self
@@ -119,4 +127,32 @@ impl AutocompleteTextBoxBuilder {
 
 pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> AutocompleteTextBoxBuilder {
     AutocompleteTextBoxBuilder::new(id, items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_autocomplete_textbox_template();
+        let builder = AutocompleteTextBoxBuilder::new("autocomplete-test", Vec::<SelectionItem>::new())
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn template_modifier_composes_with_items_template() {
+        let template = default_autocomplete_textbox_template();
+        let items_template = default_autocomplete_items_template();
+        let builder = AutocompleteTextBoxBuilder::new("autocomplete-test", Vec::<SelectionItem>::new())
+            .template(template.clone())
+            .items_template(items_template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+        assert!(Arc::ptr_eq(&builder.model.items_template, &items_template));
+    }
 }

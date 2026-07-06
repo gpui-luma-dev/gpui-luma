@@ -251,4 +251,33 @@ mod tests {
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
+
+    #[test]
+    fn with_item_template_modifier_wraps_existing_item_template() {
+        let builder = SearchSelectorBuilder::new("search-selector-test", Vec::<SelectionItem>::new())
+            .with_item_template(|_item: &SearchSelectorItemRenderModel<'_, SelectionItem>, _cx| gpui::div());
+        let item_template = builder.model.item_template.as_ref().unwrap().clone();
+        let builder = builder.with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+
+    #[test]
+    fn template_panel_and_item_modifiers_compose_on_builder() {
+        let template = default_search_selector_template();
+        let panel_template = default_search_selector_panel_template();
+        let builder = SearchSelectorBuilder::new("search-selector-test", Vec::<SelectionItem>::new())
+            .template(template.clone())
+            .panel_template(panel_template.clone())
+            .with_item_template(|_item: &SearchSelectorItemRenderModel<'_, SelectionItem>, _cx| gpui::div());
+        let item_template = builder.model.item_template.as_ref().unwrap().clone();
+        let builder = builder
+            .with_template_modifier(|element, _| element)
+            .with_panel_template_modifier(|element, _| element)
+            .with_item_template_modifier(|content, _, _| content);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+        assert!(!Arc::ptr_eq(&builder.model.panel_template, &panel_template));
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
 }

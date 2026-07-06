@@ -62,7 +62,7 @@ impl<T: 'static> ModifiedSearchSelectorItemTemplate<T> {
     }
 }
 
-pub fn item_template_with_modifier<T, F>(
+pub(super) fn item_template_with_modifier<T, F>(
     template: SearchSelectorItemTemplate<T>,
     modifier: F,
 ) -> SearchSelectorItemTemplate<T>

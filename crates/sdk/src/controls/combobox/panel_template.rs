@@ -63,7 +63,7 @@ impl ComboBoxPanelTemplate for ModifiedComboBoxPanelTemplate {
     }
 }
 
-pub fn panel_template_with_modifier<F>(
+pub(super) fn panel_template_with_modifier<F>(
     template: Arc<dyn ComboBoxPanelTemplate>,
     modifier: F,
 ) -> Arc<dyn ComboBoxPanelTemplate>
