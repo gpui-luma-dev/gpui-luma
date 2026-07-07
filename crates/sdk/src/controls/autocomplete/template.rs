@@ -265,6 +265,13 @@ pub struct AutocompleteItemsTemplateHandlers {
     pub item_clicks: Vec<SelectorPanelClickHandler>,
 }
 
+pub type AutocompleteItemsTemplateModifier = Box<
+    dyn for<'a> Fn(Stateful<gpui::Div>, &AutocompleteItemsRenderModel<'a>) -> Stateful<gpui::Div>
+        + Send
+        + Sync
+        + 'static,
+>;
+
 pub trait AutocompleteItemsTemplate: Send + Sync {
     fn render(
         &self,
@@ -273,11 +280,80 @@ pub trait AutocompleteItemsTemplate: Send + Sync {
     ) -> Stateful<gpui::Div>;
 }
 
-pub struct DefaultAutocompleteItemsTemplate;
+pub struct DefaultAutocompleteItemsTemplate {
+    modifiers: Vec<AutocompleteItemsTemplateModifier>,
+}
+
+struct ModifiedAutocompleteItemsTemplate {
+    base: Arc<dyn AutocompleteItemsTemplate>,
+    modifiers: Vec<AutocompleteItemsTemplateModifier>,
+}
+
+impl DefaultAutocompleteItemsTemplate {
+    pub fn new() -> Self {
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<gpui::Div>, &AutocompleteItemsRenderModel<'a>) -> Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(
+        &self,
+        mut root: Stateful<gpui::Div>,
+        model: &AutocompleteItemsRenderModel<'_>,
+    ) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl Default for DefaultAutocompleteItemsTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ModifiedAutocompleteItemsTemplate {
+    fn new(base: Arc<dyn AutocompleteItemsTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<gpui::Div>, &AutocompleteItemsRenderModel<'a>) -> Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(
+        &self,
+        mut root: Stateful<gpui::Div>,
+        model: &AutocompleteItemsRenderModel<'_>,
+    ) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
 
 pub fn default_autocomplete_items_template() -> Arc<dyn AutocompleteItemsTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn AutocompleteItemsTemplate>> = OnceLock::new();
-    TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteItemsTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(DefaultAutocompleteItemsTemplate::new())).clone()
 }
 
 impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
@@ -339,6 +415,30 @@ impl AutocompleteItemsTemplate for DefaultAutocompleteItemsTemplate {
             root = root.child(row);
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
+}
+
+impl AutocompleteItemsTemplate for ModifiedAutocompleteItemsTemplate {
+    fn render(
+        &self,
+        model: &AutocompleteItemsRenderModel<'_>,
+        handlers: AutocompleteItemsTemplateHandlers,
+    ) -> Stateful<gpui::Div> {
+        let root = self.base.render(model, handlers);
+        self.apply_modifiers(root, model)
+    }
+}
+
+pub(super) fn modified_autocomplete_items_template<F>(
+    template: Arc<dyn AutocompleteItemsTemplate>,
+    modifier: F,
+) -> Arc<dyn AutocompleteItemsTemplate>
+where
+    F: for<'a> Fn(Stateful<gpui::Div>, &AutocompleteItemsRenderModel<'a>) -> Stateful<gpui::Div>
+        + Send
+        + Sync
+        + 'static,
+{
+    Arc::new(ModifiedAutocompleteItemsTemplate::new(template).with_modifier(modifier))
 }

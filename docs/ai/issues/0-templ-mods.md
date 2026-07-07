@@ -328,17 +328,19 @@ The template seam is not enough if callers still have to hand-roll wrappers.
 ### Phase 3: Add Consistent Modifier Support to Important Subtemplate Layers
 These are not always the first priority, but they are frequent tweak points and should follow the same philosophy.
 
-- [ ] `AutocompleteItemsTemplate`
+- [x] `AutocompleteItemsTemplate`
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
-- [x] `ComboBoxItemsTemplate`
+- [~] `ComboBoxItemsTemplate`
   Path: `crates/sdk/src/controls/combobox/items_template.rs`
+  Note: builder-level `with_item_template_modifier(...)` is already the preferred public seam; native item-template modifier parity is optional cleanup, not a rollout blocker.
 - [x] `ComboBoxPanelTemplate`
   Path: `crates/sdk/src/controls/combobox/panel_template.rs`
-- [x] `SearchSelectorItemsTemplate`
+- [~] `SearchSelectorItemsTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
+  Note: builder-level `with_item_template_modifier(...)` is already the preferred public seam; native item-template modifier parity is optional cleanup, not a rollout blocker.
 - [x] `SearchSelectorPanelTemplate`
   Path: `crates/sdk/src/controls/search_selector/panel_template.rs`
-- [ ] `SelectorItemsTemplate`
+- [x] `SelectorItemsTemplate`
   Path: `crates/sdk/src/controls/selector_panel/items_template.rs`
 
 For compound controls, modifier support is only useful if the render model is rich enough to drive conditional styling without forcing full template replacement. As these seams are added, verify that the models passed to modifiers expose the relevant interaction and composition state for that layer.

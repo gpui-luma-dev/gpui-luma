@@ -98,9 +98,82 @@ where
     ) -> Stateful<Div>;
 }
 
-pub struct DefaultSelectorItemsTemplate;
+pub type SelectorItemsTemplateModifier<T> =
+    Box<dyn for<'a> Fn(Stateful<Div>, &SelectorItemsRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static>;
 
-impl<T> SelectorItemsTemplate<T> for DefaultSelectorItemsTemplate
+pub struct DefaultSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    modifiers: Vec<SelectorItemsTemplateModifier<T>>,
+}
+
+struct ModifiedSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    base: Arc<dyn SelectorItemsTemplate<T>>,
+    modifiers: Vec<SelectorItemsTemplateModifier<T>>,
+}
+
+impl<T> DefaultSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    pub fn new() -> Self {
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<Div>, &SelectorItemsRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SelectorItemsRenderModel<'_, T>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl<T> Default for DefaultSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> ModifiedSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    fn new(base: Arc<dyn SelectorItemsTemplate<T>>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(Stateful<Div>, &SelectorItemsRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SelectorItemsRenderModel<'_, T>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl<T> SelectorItemsTemplate<T> for DefaultSelectorItemsTemplate<T>
 where
     T: SelectorItemLike + 'static,
 {
@@ -194,7 +267,7 @@ where
             rows = rows.child(row);
         }
 
-        div()
+        let root = div()
             .id(format!("{}-menu", model.menu_id))
             .relative()
             .min_w(px(look.min_width))
@@ -210,7 +283,24 @@ where
             .on_mouse_down(MouseButton::Left, |_, _, cx| {
                 cx.stop_propagation();
             })
-            .child(rows)
+            .child(rows);
+
+        self.apply_modifiers(root, model)
+    }
+}
+
+impl<T> SelectorItemsTemplate<T> for ModifiedSelectorItemsTemplate<T>
+where
+    T: SelectorItemLike + 'static,
+{
+    fn render(
+        &self,
+        model: &SelectorItemsRenderModel<'_, T>,
+        handlers: SelectorItemsTemplateHandlers,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, cx);
+        self.apply_modifiers(root, model)
     }
 }
 
@@ -218,7 +308,18 @@ pub fn default_selector_items_template<T>() -> Arc<dyn SelectorItemsTemplate<T>>
 where
     T: SelectorItemLike + 'static,
 {
-    Arc::new(DefaultSelectorItemsTemplate)
+    Arc::new(DefaultSelectorItemsTemplate::<T>::new())
+}
+
+pub(crate) fn items_template_with_modifier<T, F>(
+    template: Arc<dyn SelectorItemsTemplate<T>>,
+    modifier: F,
+) -> Arc<dyn SelectorItemsTemplate<T>>
+where
+    T: SelectorItemLike + 'static,
+    F: for<'a> Fn(Stateful<Div>, &SelectorItemsRenderModel<'a, T>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSelectorItemsTemplate::new(template).with_modifier(modifier))
 }
 
 fn render_selection_checkmark(selected: bool, color: gpui::Hsla, size: f32) -> AnyElement {

@@ -10,9 +10,9 @@ pub use control::{AutocompleteTextBox, AutocompleteTextBoxControl, AutocompleteT
 pub use model::{AutocompleteTextBoxBuilder, AutocompleteTextBoxModel, new};
 pub use template::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplate, AutocompleteItemsTemplateHandlers,
-    AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate, AutocompleteTextBoxTemplateHandlers,
-    AutocompleteTextBoxTemplateModifier, DefaultAutocompleteTextBoxTemplate, default_autocomplete_items_template,
-    default_autocomplete_textbox_template,
+    AutocompleteItemsTemplateModifier, AutocompleteTextBoxRenderModel, AutocompleteTextBoxTemplate,
+    AutocompleteTextBoxTemplateHandlers, AutocompleteTextBoxTemplateModifier, DefaultAutocompleteItemsTemplate,
+    DefaultAutocompleteTextBoxTemplate, default_autocomplete_items_template, default_autocomplete_textbox_template,
 };
 pub use theme::{
     DefaultAutocompleteTextBoxTheme, AutocompleteTextBoxLook, AutocompleteTextBoxTheme,

@@ -6,7 +6,8 @@ use super::behavior::SelectionItem;
 use super::control::AutocompleteTextBoxControl;
 use super::template::{
     AutocompleteItemsTemplate, AutocompleteTextBoxTemplate, default_autocomplete_items_template,
-    default_autocomplete_textbox_template, modified_autocomplete_textbox_template,
+    default_autocomplete_textbox_template, modified_autocomplete_items_template,
+    modified_autocomplete_textbox_template,
 };
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
@@ -115,6 +116,21 @@ impl AutocompleteTextBoxBuilder {
         self
     }
 
+    pub fn with_items_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(
+                gpui::Stateful<gpui::Div>,
+                &super::template::AutocompleteItemsRenderModel<'a>,
+            ) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.items_template =
+            modified_autocomplete_items_template(Arc::clone(&self.model.items_template), modifier);
+        self
+    }
+
     pub fn popup_look_provider(mut self, provider: AutocompletePopupLookProvider) -> Self {
         self.model.popup_look_provider = provider;
         self
@@ -154,5 +170,15 @@ mod tests {
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
         assert!(Arc::ptr_eq(&builder.model.items_template, &items_template));
+    }
+
+    #[test]
+    fn with_items_template_modifier_wraps_items_template() {
+        let items_template = default_autocomplete_items_template();
+        let builder = AutocompleteTextBoxBuilder::new("autocomplete-test", Vec::<SelectionItem>::new())
+            .items_template(items_template.clone())
+            .with_items_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.items_template, &items_template));
     }
 }

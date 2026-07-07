@@ -7,6 +7,7 @@ pub use model::{
 };
 pub use items_template::{
     DefaultSelectorItemsTemplate, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplate,
-    SelectorItemsTemplateHandlers, SelectorPanelClickHandler, SelectorPanelHoverHandler, SelectorPanelMouseDownHandler,
-    default_selector_items_panel_look, default_selector_items_template,
+    SelectorItemsTemplateHandlers, SelectorItemsTemplateModifier, SelectorPanelClickHandler, SelectorPanelHoverHandler,
+    SelectorPanelMouseDownHandler, default_selector_items_panel_look, default_selector_items_template,
 };
+pub(crate) use items_template::items_template_with_modifier;

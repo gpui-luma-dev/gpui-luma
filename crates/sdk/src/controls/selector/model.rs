@@ -11,6 +11,7 @@ pub use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsTemplate, SelectorPath, default_selector_items_template,
     normalize_selector_items,
 };
+use crate::controls::selector_panel::items_template_with_modifier;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {
@@ -144,6 +145,20 @@ where
         self
     }
 
+    pub fn with_panel_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(
+                gpui::Stateful<gpui::Div>,
+                &crate::controls::selector_panel::SelectorItemsRenderModel<'a, T>,
+            ) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.panel_template = items_template_with_modifier(Arc::clone(&self.model.panel_template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<Selector<T>> {
         cx.new(|cx| Selector::from_builder(self, cx))
     }
@@ -161,5 +176,15 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn with_panel_template_modifier_wraps_panel_template() {
+        let panel_template = default_selector_items_template::<SelectorItem>();
+        let builder = SelectorBuilder::new("selector-test")
+            .panel_template(panel_template.clone())
+            .with_panel_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.panel_template, &panel_template));
     }
 }
