@@ -13,7 +13,7 @@ use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 
 pub(super) use colors::ColorsPanel;
 pub(super) use other::OtherPanel;
-pub(super) use typography::render_typography_panel;
+pub(super) use typography::TypographyPanel;
 
 pub(super) fn category_item_id(prefix: &str, category: &str) -> String {
     format!("{prefix}-{}", category.to_lowercase().replace(' ', "-").replace('&', "and"))

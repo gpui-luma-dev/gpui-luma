@@ -14,7 +14,7 @@ This document defines the core architecture, crate layout, module mapping, and d
 *   **`crates/look-shadcn` (`gpui-luma-look-shadcn`)**: The CSS-first product runtime theme (Shadcn/CSS look crate). It defines styling catalogs, stylesheet config matching, and look-specific extensions.
 *   **`crates/look-shadcn-inspect`**: Support utilities for theme visual inspection and palette debugging.
 *   **`apps/gallery` (`gpui-luma-gallery`)**: The main showcase and interactive validation app for controls and styles.
-*   **`apps/theme-studio` (`gpui-luma-theme-studio`)**: The theme customization dashboard and visual design testing studio.
+*   **`apps/theme-studio` (`gpui-luma-theme-studio`)**: The theme customization dashboard and visual design testing studio. System font classification for typography pickers lives in `studio/font_catalog/`.
 *   **`apps/color-viz` (`gpui-luma-color-viz`)**: Color visualization workspace (Shadcn look, same theme CLI as gallery).
 *   **`apps/graph-viz` (`gpui-luma-graph-viz`)**: Graph visualization workspace with theme-studio workbench shell (theme sidebar + tabbed content).
 

@@ -24,6 +24,7 @@ use super::overrides::{
     StudioOverrides, ThemePaletteHslOverride, ThemeShadowOverride, clamp_palette_hue_deg,
     clamp_palette_lightness_multiplier, clamp_palette_saturation_multiplier, clamp_shadow_blur, clamp_shadow_offset_x,
     clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
+    format_font_family_stack,
 };
 use super::panel_layout_config::{load_window_size, save_studio_layout};
 use super::content_tabs::{BoardSnapshot, ContentPaneHost};
@@ -314,6 +315,43 @@ impl ThemeStudioApp {
         self.syncing_sidebar_tokens = true;
         let overrides = self.overrides.clone();
         self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
+        self.syncing_sidebar_tokens = false;
+        cx.notify();
+    }
+
+    pub fn set_font_sans(&mut self, family: &str, cx: &mut Context<Self>) {
+        self.set_font_stack_override("font-sans", family, "sans-serif", cx);
+    }
+
+    pub fn set_font_serif(&mut self, family: &str, cx: &mut Context<Self>) {
+        self.set_font_stack_override("font-serif", family, "serif", cx);
+    }
+
+    pub fn set_font_mono(&mut self, family: &str, cx: &mut Context<Self>) {
+        self.set_font_stack_override("font-mono", family, "monospace", cx);
+    }
+
+    fn set_font_stack_override(&mut self, token: &str, family: &str, generic: &str, cx: &mut Context<Self>) {
+        if self.syncing_sidebar_tokens {
+            return;
+        }
+
+        let stack = format_font_family_stack(family, generic);
+        if self.overrides.font_stack(token) == Some(stack.as_str()) {
+            return;
+        }
+
+        match token {
+            "font-sans" => self.overrides.set_font_sans(stack),
+            "font-serif" => self.overrides.set_font_serif(stack),
+            "font-mono" => self.overrides.set_font_mono(stack),
+            _ => return,
+        }
+
+        self.apply_theme_overrides(cx);
+        self.syncing_sidebar_tokens = true;
+        let look = self.look.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_typography_selectors(look, cx));
         self.syncing_sidebar_tokens = false;
         cx.notify();
     }

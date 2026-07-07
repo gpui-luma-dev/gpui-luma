@@ -39,7 +39,6 @@ pub struct SearchSelectorControl {
     model: super::model::SearchSelectorModel,
     behavior: SelectionBehavior,
     interaction: ControlInteraction,
-    trigger_focused: bool,
     trigger_bounds: Option<Bounds<Pixels>>,
     last_event: SharedString,
     last_keyboard_event: SharedString,
@@ -96,19 +95,59 @@ impl SearchSelectorControl {
             observe_theme_revision(cx, |_, cx| cx.notify()),
         ];
 
+        let committed_selection = builder
+            .initial_selected_id
+            .as_ref()
+            .and_then(|selected_id| model.items.iter().position(|item| item.id == *selected_id && item.enabled));
+
         Self {
             popup_search_textfield,
             popup_surface,
             model,
             behavior: SelectionBehavior::new(),
             interaction: ControlInteraction::new(enabled, cx),
-            trigger_focused: false,
             trigger_bounds: None,
             last_event: SharedString::from("none"),
             last_keyboard_event: SharedString::from("none"),
-            committed_selection: None,
+            committed_selection,
             _subscriptions: subscriptions,
         }
+    }
+
+    fn index_by_id(&self, item_id: &SharedString) -> Option<usize> {
+        self.model.items.iter().position(|item| item.id == *item_id && item.enabled)
+    }
+
+    pub fn selected_id(&self) -> Option<&SharedString> {
+        self.committed_selection.and_then(|index| self.model.items.get(index)).map(|item| &item.id)
+    }
+
+    pub fn set_selected_id(&mut self, item_id: impl Into<SharedString>, cx: &mut Context<Self>) -> bool {
+        let item_id = item_id.into();
+        let next = self.index_by_id(&item_id);
+        let changed = self.committed_selection != next;
+        self.committed_selection = next;
+        if changed {
+            cx.notify();
+        }
+        changed
+    }
+
+    pub fn set_items(
+        &mut self,
+        items: impl IntoIterator<Item = super::behavior::SelectionItem>,
+        cx: &mut Context<Self>,
+    ) {
+        let previous_selection = self.selected_id().cloned();
+        self.model.items = items.into_iter().collect();
+        self.committed_selection = previous_selection.as_ref().and_then(|id| self.index_by_id(id));
+        self.behavior.apply(SelectionEvent::Blur, &self.model.items);
+        cx.notify();
+    }
+
+    pub fn set_placeholder(&mut self, placeholder: impl Into<SharedString>, cx: &mut Context<Self>) {
+        self.model.placeholder = placeholder.into();
+        cx.notify();
     }
 
     fn handle_popup_search_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
@@ -147,7 +186,11 @@ impl SearchSelectorControl {
             }
             TextSelectionEvent::FocusLeave => {
                 self.behavior.apply(SelectionEvent::Blur, &self.model.items);
-                cx.notify();
+                if self.behavior.state.open {
+                    self.close_popup(cx);
+                } else {
+                    cx.notify();
+                }
             }
         }
     }
@@ -423,7 +466,6 @@ impl SearchSelectorControl {
         self.interaction.set_enabled(enabled);
         self.popup_search_textfield.update(cx, |textfield, cx| textfield.set_enabled(enabled, cx));
         if !enabled {
-            self.trigger_focused = false;
             self.behavior.state.open = false;
             self.behavior.state.highlighted_filtered = None;
             self.clear_popup_search(cx);
@@ -479,35 +521,12 @@ impl SearchSelectorControl {
         }
     }
 
-    fn sync_trigger_focus(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.model.enabled {
-            if self.trigger_focused || self.behavior.state.open {
-                self.trigger_focused = false;
-                self.behavior.state.open = false;
-                self.behavior.state.highlighted_filtered = None;
-                self.clear_popup_search(cx);
-            }
+    fn sync_disabled_state(&mut self, cx: &mut Context<Self>) {
+        if self.model.enabled || !self.behavior.state.open {
             return;
         }
 
-        let focused = self.interaction.focus_handle().is_focused(window);
-        if focused == self.trigger_focused {
-            return;
-        }
-
-        self.trigger_focused = focused;
-
-        if focused {
-            self.behavior.apply(SelectionEvent::Focus, &self.model.items);
-            self.open_popup_with_all_items(cx);
-            self.focus_popup_search(window, cx);
-        } else {
-            self.behavior.apply(SelectionEvent::Blur, &self.model.items);
-            self.behavior.state.open = false;
-            self.behavior.state.highlighted_filtered = None;
-            self.clear_popup_search(cx);
-            cx.notify();
-        }
+        self.close_popup(cx);
     }
 
     fn focus_popup_search(&self, window: &mut Window, cx: &mut Context<Self>) {
@@ -524,8 +543,9 @@ impl Focusable for SearchSelectorControl {
 
 impl Render for SearchSelectorControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.sync_trigger_focus(window, cx);
+        self.sync_disabled_state(cx);
 
+        let trigger_focused = self.interaction.focus_handle().is_focused(window);
         let tokens = crate::theme::ThemeTokens::default();
         let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
         let look = (self.model.popup_look_provider)();
@@ -688,8 +708,8 @@ impl Render for SearchSelectorControl {
             trigger_label_is_placeholder: self.committed_selection.is_none(),
             trigger_state: TextFieldState {
                 hovered: interaction_state.hovered,
-                focused: self.behavior.state.open || self.trigger_focused,
-                focus_visible: self.behavior.state.open || self.trigger_focused,
+                focused: self.behavior.state.open || trigger_focused,
+                focus_visible: self.behavior.state.open || trigger_focused,
                 ..TextFieldState::default()
             },
             trigger_theme: self.model.textfield_theme.clone(),

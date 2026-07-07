@@ -28,6 +28,7 @@ impl ThemeSidebar {
         self.sync_theme_selector_template(&theme, cx);
         self.sync_tabs_template(&theme, cx);
         self.colors_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme.clone(), overrides, cx));
+        self.typography_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme.clone(), cx));
         self.other_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme, overrides, cx));
         cx.notify();
     }
@@ -61,6 +62,12 @@ impl ThemeSidebar {
         self.global_overrides = overrides.global_color_overrides.clone();
         self.colors_panel.update(cx, |panel, cx| panel.sync_global_overrides(overrides, cx));
         self.other_panel.update(cx, |panel, cx| panel.sync_global_overrides(overrides, cx));
+        cx.notify();
+    }
+
+    pub fn sync_typography_selectors(&mut self, look: std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        self.look = look.clone();
+        self.typography_panel.update(cx, |panel, cx| panel.sync_font_selectors(look, cx));
         cx.notify();
     }
 

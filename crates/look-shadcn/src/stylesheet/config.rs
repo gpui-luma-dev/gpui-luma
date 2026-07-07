@@ -423,7 +423,7 @@ impl RadioStylesheet {
             if layer == InteractionLayer::Disabled {
                 return false;
             }
-            if !rule.layer.is_none() {
+            if rule.layer.is_some() {
                 return false;
             }
             if !matches_optional_bool(rule.selected, selected) {

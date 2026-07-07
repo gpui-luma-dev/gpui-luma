@@ -46,11 +46,13 @@ pub struct SearchSelectorModel {
 
 pub struct SearchSelectorBuilder {
     pub(crate) model: SearchSelectorModel,
+    pub(crate) initial_selected_id: Option<SharedString>,
 }
 
 impl SearchSelectorBuilder {
     pub fn new(id: impl Into<SharedString>, items: impl IntoIterator<Item = SelectionItem>) -> Self {
         Self {
+            initial_selected_id: None,
             model: SearchSelectorModel {
                 id: id.into(),
                 items: items.into_iter().collect(),
@@ -93,6 +95,11 @@ impl SearchSelectorBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn selected_id(mut self, selected_id: impl Into<SharedString>) -> Self {
+        self.initial_selected_id = Some(selected_id.into());
         self
     }
 

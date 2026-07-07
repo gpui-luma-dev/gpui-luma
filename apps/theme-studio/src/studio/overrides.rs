@@ -94,6 +94,9 @@ pub struct StudioOverrides {
     pub radius_rem: Option<f32>,
     pub spacing_rem: Option<f32>,
     pub shadow: Option<ThemeShadowOverride>,
+    pub font_sans: Option<String>,
+    pub font_serif: Option<String>,
+    pub font_mono: Option<String>,
 }
 
 impl StudioOverrides {
@@ -125,6 +128,27 @@ impl StudioOverrides {
 
     pub fn shadow_override(&self) -> Option<&ThemeShadowOverride> {
         self.shadow.as_ref()
+    }
+
+    pub fn font_sans(&self) -> Option<&str> {
+        self.font_sans.as_deref()
+    }
+
+    pub fn font_serif(&self) -> Option<&str> {
+        self.font_serif.as_deref()
+    }
+
+    pub fn font_mono(&self) -> Option<&str> {
+        self.font_mono.as_deref()
+    }
+
+    pub fn font_stack(&self, token: &str) -> Option<&str> {
+        match token {
+            "font-sans" => self.font_sans(),
+            "font-serif" => self.font_serif(),
+            "font-mono" => self.font_mono(),
+            _ => None,
+        }
     }
 
     pub fn set_global_color(&mut self, token: String, color: Hsla) {
@@ -169,6 +193,18 @@ impl StudioOverrides {
         self.shadow = Some(shadow);
     }
 
+    pub fn set_font_sans(&mut self, stack: String) {
+        self.font_sans = Some(stack);
+    }
+
+    pub fn set_font_serif(&mut self, stack: String) {
+        self.font_serif = Some(stack);
+    }
+
+    pub fn set_font_mono(&mut self, stack: String) {
+        self.font_mono = Some(stack);
+    }
+
     pub fn token_overrides(&self) -> HashMap<String, String> {
         let mut overrides = HashMap::new();
         if let Some(radius_rem) = self.radius_rem {
@@ -179,6 +215,15 @@ impl StudioOverrides {
         }
         if let Some(shadow) = &self.shadow {
             overrides.insert("shadow".to_string(), shadow.to_css_value());
+        }
+        if let Some(font_sans) = &self.font_sans {
+            overrides.insert("font-sans".to_string(), font_sans.clone());
+        }
+        if let Some(font_serif) = &self.font_serif {
+            overrides.insert("font-serif".to_string(), font_serif.clone());
+        }
+        if let Some(font_mono) = &self.font_mono {
+            overrides.insert("font-mono".to_string(), font_mono.clone());
         }
         overrides
     }
@@ -202,12 +247,19 @@ impl StudioOverrides {
         self.shadow = None;
     }
 
+    pub fn clear_font_overrides(&mut self) {
+        self.font_sans = None;
+        self.font_serif = None;
+        self.font_mono = None;
+    }
+
     pub fn clear_all_overrides(&mut self) {
         self.global_color_overrides.clear();
         self.clear_palette_hsl_overrides();
         self.clear_palette_hs_overrides();
         self.clear_metric_overrides();
         self.clear_shadow_override();
+        self.clear_font_overrides();
     }
 }
 
@@ -281,6 +333,19 @@ fn rem_css_value(rem: f32) -> String {
     format!("{:.4}rem", rem)
 }
 
+pub fn format_font_family_stack(family: &str, generic: &str) -> String {
+    format!("{}, {generic}", quote_css_font_family(family))
+}
+
+pub fn quote_css_font_family(family: &str) -> String {
+    let family = family.trim();
+    if family.contains(' ') {
+        format!("'{family}'")
+    } else {
+        family.to_string()
+    }
+}
+
 fn format_shadow_number(value: f32) -> String {
     let rounded = (value * 100.0).round() / 100.0;
     let mut text = format!("{rounded:.2}");
@@ -291,4 +356,26 @@ fn format_shadow_number(value: f32) -> String {
         text.pop();
     }
     text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn font_stack_quotes_spaced_family_names() {
+        assert_eq!(format_font_family_stack("Helvetica Neue", "sans-serif"), "'Helvetica Neue', sans-serif");
+        assert_eq!(format_font_family_stack("Inter", "sans-serif"), "Inter, sans-serif");
+    }
+
+    #[test]
+    fn token_overrides_include_font_stacks() {
+        let mut overrides = StudioOverrides::default();
+        overrides.set_font_sans("Poppins, sans-serif".to_string());
+        overrides.set_font_mono("'IBM Plex Mono', monospace".to_string());
+
+        let tokens = overrides.token_overrides();
+        assert_eq!(tokens.get("font-sans").map(String::as_str), Some("Poppins, sans-serif"));
+        assert_eq!(tokens.get("font-mono").map(String::as_str), Some("'IBM Plex Mono', monospace"));
+    }
 }

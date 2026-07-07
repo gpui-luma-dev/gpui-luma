@@ -20,7 +20,7 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma_look_shadcn::{BuiltInTheme, ShadcnLook, ShadcnLookControlExt};
 
 use self::model::{SidebarTab, TOKEN_CATEGORIES};
-use self::panels::{ColorsPanel, OtherPanel, render_typography_panel};
+use self::panels::{ColorsPanel, OtherPanel, TypographyPanel};
 use self::parsing::token_color_with_fallback;
 use super::content_tabs::theme_studio_tabs_navigation_template;
 use crate::studio::app::ThemeStudioApp;
@@ -34,6 +34,7 @@ pub struct ThemeSidebar {
     tabs: Entity<TabsNavigation>,
     active_tab: SidebarTab,
     colors_panel: Entity<ColorsPanel>,
+    typography_panel: Entity<TypographyPanel>,
     other_panel: Entity<OtherPanel>,
     _subscriptions: Vec<Subscription>,
 }
@@ -49,6 +50,7 @@ impl ThemeSidebar {
         let active_theme_id = active_theme_id.into();
         let global_overrides = overrides.global_color_overrides.clone();
         let colors_panel = cx.new(|cx| ColorsPanel::new(look.clone(), overrides, cx));
+        let typography_panel = cx.new(|cx| TypographyPanel::new(look.clone(), cx));
         let other_panel = cx.new(|cx| OtherPanel::new(look.clone(), overrides, cx));
         let theme_items = theme_selector_items(look.as_ref());
         let theme_selector = Selector::new_typed("theme-studio-theme-selector")
@@ -88,6 +90,7 @@ impl ThemeSidebar {
             tabs,
             active_tab: SidebarTab::Colors,
             colors_panel,
+            typography_panel,
             other_panel,
             _subscriptions: subscriptions,
         }
@@ -207,7 +210,7 @@ impl Render for ThemeSidebar {
 
         let tab_body = match self.active_tab {
             SidebarTab::Colors => self.colors_panel.clone().into_any_element(),
-            SidebarTab::Typography => render_typography_panel(),
+            SidebarTab::Typography => self.typography_panel.clone().into_any_element(),
             SidebarTab::Other => self.other_panel.clone().into_any_element(),
         };
 
