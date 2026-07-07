@@ -1,9 +1,9 @@
 use gpui::SharedString;
 use gpui_luma_look_shadcn_inspect::ShadcnInspect;
 use gpui_luma_look_shadcn_inspect::{
-    BadgeInspectMetrics, ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics,
-    ResolvedMetric, SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics,
-    format_inspect_metric_provenance, format_inspect_metric_source, format_metric_px,
+    BadgeInspectMetrics, ButtonInspectMetrics, CheckboxInspectMetrics, RadioButtonInspectMetrics, ResolvedMetric,
+    SliderInspectMetrics, SwitchInspectMetrics, TextFieldInspectMetrics, format_inspect_metric_provenance,
+    format_inspect_metric_source, format_metric_px,
 };
 
 use super::box_model::{InspectBoxModelSnapshot, InspectOccupationSnapshot};

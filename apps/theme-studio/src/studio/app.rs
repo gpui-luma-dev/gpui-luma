@@ -33,7 +33,6 @@ use super::theme_sidebar::{ThemeSidebar, palette_tokens};
 pub struct ThemeStudioApp {
     focus_scope: FocusHandle,
     pub(super) look: Arc<ShadcnLook>,
-    pub(super) control_size: ControlSize,
     pub(super) demos: DemoControls,
     pub(super) overrides: StudioOverrides,
     last_window_size: Size<Pixels>,
@@ -58,8 +57,7 @@ impl ThemeStudioApp {
         let mode = launch_options.initial_mode;
         let look = Self::load_theme(&active_theme_id);
         look.set_mode(mode);
-        let control_size = ControlSize::Md;
-        let demos = DemoControls::spawn(cx, look.clone(), control_size);
+        let demos = DemoControls::spawn(cx, look.clone(), ControlSize::Md);
 
         let overrides = StudioOverrides::default();
         let theme_sidebar =
@@ -103,7 +101,6 @@ impl ThemeStudioApp {
         Self {
             focus_scope,
             look,
-            control_size,
             demos,
             overrides,
             last_window_size,
@@ -475,16 +472,6 @@ impl ThemeStudioApp {
         }
     }
 
-    pub fn set_control_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
-        if self.control_size == size {
-            return;
-        }
-        self.control_size = size;
-        self.demos = DemoControls::spawn(cx, self.look.clone(), self.control_size);
-        self.refresh_content_pane(cx);
-        cx.notify();
-    }
-
     fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
         self.sidebar_collapsed = !self.sidebar_collapsed;
         cx.notify();
@@ -507,10 +494,8 @@ impl Render for ThemeStudioApp {
             ThemeMode::Light => LucideIcon::Moon,
             ThemeMode::Dark => LucideIcon::Sun,
         };
-        let size = self.control_size;
         let _sidebar_widths = (self.left_sidebar_width_px.get(), self.right_sidebar_width_px.get());
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
-        let toggle_label_style = self.look.typography_scale(ShadcnTextSize::Xs);
         let sidebar_toggle_icon = if self.sidebar_collapsed {
             LucideIcon::PanelLeftOpen
         } else {
@@ -542,7 +527,6 @@ impl Render for ThemeStudioApp {
                         .flex()
                         .items_center()
                         .gap(px(12.0))
-                        .child(render_size_toggle(size, chrome, toggle_label_style, cx))
                         .child(
                             div()
                                 .id("theme-studio-sidebar-toggle")
@@ -695,45 +679,4 @@ fn render_right_sidebar(look: Arc<ShadcnLook>) -> AnyElement {
         )
         .child(div().flex_1().min_h_0().w_full())
         .into_any_element()
-}
-
-fn render_size_toggle(
-    active: ControlSize,
-    chrome: gpui_luma::theme::LumaChrome,
-    label_style: gpui_luma::theme::LumaTextStyle,
-    cx: &mut Context<ThemeStudioApp>,
-) -> impl IntoElement {
-    div()
-        .flex()
-        .items_center()
-        .gap(px(4.0))
-        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("Size:"))
-        .children([ControlSize::Sm, ControlSize::Md, ControlSize::Lg].map(|size| {
-            let selected = active == size;
-            let label = match size {
-                ControlSize::Sm => "SM",
-                ControlSize::Md => "MD",
-                ControlSize::Lg => "LG",
-            };
-            div()
-                .px(px(8.0))
-                .py(px(4.0))
-                .rounded(px(5.0))
-                .typography_style(label_style)
-                .text_color(if selected { chrome.title_text } else { chrome.muted_text })
-                .bg(if selected {
-                    gpui::hsla(0.0, 0.0, 1.0, 0.12)
-                } else {
-                    gpui::hsla(0.0, 0.0, 0.0, 0.0)
-                })
-                .cursor_pointer()
-                .child(label)
-                .on_mouse_down(
-                    MouseButton::Left,
-                    cx.listener(move |app, _, _, cx| {
-                        cx.stop_propagation();
-                        app.set_control_size(size, cx);
-                    }),
-                )
-        }))
 }
