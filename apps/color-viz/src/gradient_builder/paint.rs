@@ -16,7 +16,8 @@ pub enum GradientType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PreviewRenderer {
     Quads,
-    RenderImage,
+    RenderImageSync,
+    RenderImageAsync,
 }
 
 const EDGE_EPSILON: f32 = 0.001;

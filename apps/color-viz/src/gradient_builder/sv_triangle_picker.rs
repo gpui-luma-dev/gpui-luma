@@ -89,10 +89,12 @@ impl SvTrianglePicker {
         picker
     }
 
+    #[allow(dead_code)]
     pub fn ring(&self) -> Entity<SliderControl> {
         self.ring.clone()
     }
 
+    #[allow(dead_code)]
     pub fn triangle(&self) -> Entity<ColorFieldState> {
         self.triangle.clone()
     }

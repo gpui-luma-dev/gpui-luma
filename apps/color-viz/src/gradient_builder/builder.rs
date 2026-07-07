@@ -8,8 +8,6 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::color::composition::CompositionSize;
-use gpui_luma::controls::color::color_field::ColorFieldEvent;
-use gpui_luma::controls::color::color_ring::primary_slider_value;
 use gpui_luma::controls::color::style::{ElementExt, StyledExt};
 use gpui_luma::controls::color::color_slider::{
     ColorSliderBuilder, ColorSliderDomainRenderer, ColorSliderTrackContext, GradientDelegate, GradientStop,
@@ -68,6 +66,7 @@ pub struct GradientBuilder {
     color_picker: Entity<SvTrianglePicker>,
     color_picker_open: bool,
     stop_swatch_bounds: HashMap<ThumbId, Bounds<Pixels>>,
+    render_task: Option<gpui::Task<()>>,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -149,6 +148,7 @@ impl GradientBuilder {
             color_picker: color_picker.clone(),
             color_picker_open: false,
             stop_swatch_bounds: HashMap::new(),
+            render_task: None,
             _subscriptions: Vec::new(),
         };
 
@@ -193,15 +193,8 @@ impl GradientBuilder {
         self._subscriptions.push(cx.subscribe(&renderer_selector, |this, _, event, cx| {
             this.handle_renderer_event(event, cx);
         }));
-        self._subscriptions.push(cx.subscribe(&color_picker.read(cx).ring(), |this, _, event, cx| {
-            if primary_slider_value(event).is_some() {
-                this.apply_picker_color(cx);
-            }
-        }));
-        self._subscriptions.push(cx.subscribe(&color_picker.read(cx).triangle(), |this, _, event, cx| {
-            if matches!(event, ColorFieldEvent::Change(_) | ColorFieldEvent::Release(_)) {
-                this.apply_picker_color(cx);
-            }
+        self._subscriptions.push(cx.observe(&color_picker, |this, _, cx| {
+            this.apply_picker_color(cx);
         }));
     }
 
@@ -262,7 +255,6 @@ impl GradientBuilder {
     fn handle_rotation_event(&mut self, event: &SliderEvent, cx: &mut Context<Self>) {
         if let SliderEvent::Change { value, .. } | SliderEvent::Release { value, .. } = event {
             self.rotation_deg = *value;
-            self.invalidate_preview_cache();
             let _ = self.ensure_preview_image_cache(self.preview_size, cx);
             cx.notify();
         }
@@ -278,14 +270,13 @@ impl GradientBuilder {
 
     fn handle_renderer_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
         let SelectorEvent::Change { item_id, .. } = event;
-        let next = if item_id.as_ref() == "render" {
-            PreviewRenderer::RenderImage
-        } else {
-            PreviewRenderer::Quads
+        let next = match item_id.as_ref() {
+            "render" => PreviewRenderer::RenderImageSync,
+            "render_async" => PreviewRenderer::RenderImageAsync,
+            _ => PreviewRenderer::Quads,
         };
         if self.preview_renderer != next {
             self.preview_renderer = next;
-            self.invalidate_preview_cache();
             let _ = self.ensure_preview_image_cache(self.preview_size, cx);
             cx.notify();
         }
@@ -418,7 +409,6 @@ impl GradientBuilder {
         let mut track_context = self.track_context.clone();
         track_context.theme_is_dark = matches!(self.look.mode(), ThemeMode::Dark);
         update_domain_delegate(&self.domain_renderer, Arc::new(GradientDelegate { stops }), track_context);
-        self.invalidate_preview_cache();
         let _ = self.ensure_preview_image_cache(self.preview_size, cx);
         refresh_color_slider(&self.gradient_stops, cx);
         cx.notify();
@@ -489,19 +479,22 @@ impl GradientBuilder {
     }
 
     fn uses_render_preview(&self, cx: &Context<Self>) -> bool {
-        self.preview_renderer == PreviewRenderer::RenderImage && self.preview_stops(cx).len() > 1
+        matches!(self.preview_renderer, PreviewRenderer::RenderImageSync | PreviewRenderer::RenderImageAsync)
+            && self.preview_stops(cx).len() > 1
     }
 
     fn sync_preview_strategy(&mut self, stop_count: usize) {
         self.active_preview_strategy = match (stop_count, self.preview_renderer) {
             (0, _) => "empty",
             (1, _) => "solid",
-            (2, PreviewRenderer::RenderImage) => "render",
+            (2, PreviewRenderer::RenderImageSync) => "render (sync)",
+            (2, PreviewRenderer::RenderImageAsync) => "render (async)",
             (2, PreviewRenderer::Quads) => "quads",
-            (_, PreviewRenderer::RenderImage) => "render",
+            (_, PreviewRenderer::RenderImageSync) => "render (sync)",
+            (_, PreviewRenderer::RenderImageAsync) => "render (async)",
             _ => "quads",
         };
-        if self.active_preview_strategy != "render" {
+        if !self.active_preview_strategy.starts_with("render") {
             self.last_render_ms = None;
         }
     }
@@ -510,7 +503,6 @@ impl GradientBuilder {
         let mut refreshed = false;
         if self.preview_size != bounds.size {
             self.preview_size = bounds.size;
-            self.invalidate_preview_cache();
         }
 
         if self.uses_render_preview(cx) && self.ensure_preview_image_cache(bounds.size, cx) {
@@ -520,7 +512,7 @@ impl GradientBuilder {
         refreshed
     }
 
-    fn ensure_preview_image_cache(&mut self, preview_size: Size<Pixels>, cx: &Context<Self>) -> bool {
+    fn ensure_preview_image_cache(&mut self, preview_size: Size<Pixels>, cx: &mut Context<Self>) -> bool {
         if !self.uses_render_preview(cx) || preview_size.width <= px(0.0) || preview_size.height <= px(0.0) {
             return false;
         }
@@ -533,22 +525,39 @@ impl GradientBuilder {
             return false;
         }
 
-        let started = Instant::now();
-        let Some(image) = rasterize_linear_gradient_preview(preview_size, &stops, self.rotation_deg) else {
-            return false;
-        };
+        self.render_task = None;
 
-        self.preview_image_cache = Some((key, image));
-        self.last_render_ms = Some(started.elapsed().as_secs_f32() * 1000.0);
-        true
+        if self.preview_renderer == PreviewRenderer::RenderImageSync {
+            let started = Instant::now();
+            let Some(image) = rasterize_linear_gradient_preview(preview_size, &stops, self.rotation_deg) else {
+                return false;
+            };
+            self.preview_image_cache = Some((key, image));
+            self.last_render_ms = Some(started.elapsed().as_secs_f32() * 1000.0);
+            true
+        } else {
+            let rotation_deg = self.rotation_deg;
+            self.render_task = Some(cx.spawn(async move |this, cx| {
+                let started = Instant::now();
+                let image = cx
+                    .background_executor()
+                    .spawn(async move { rasterize_linear_gradient_preview(preview_size, &stops, rotation_deg) })
+                    .await;
+
+                let _ = this.update(cx, |this, cx| {
+                    if let Some(image) = image {
+                        this.preview_image_cache = Some((key, image));
+                        this.last_render_ms = Some(started.elapsed().as_secs_f32() * 1000.0);
+                        cx.notify();
+                    }
+                });
+            }));
+            false
+        }
     }
 
     fn cached_preview_image(&self) -> Option<Arc<RenderImage>> {
         self.preview_image_cache.as_ref().map(|(_, image)| image.clone())
-    }
-
-    fn invalidate_preview_cache(&mut self) {
-        self.preview_image_cache = None;
     }
 }
 
@@ -574,7 +583,9 @@ impl Render for GradientBuilder {
         let preview_corner_radii = preview_panel_corner_radii();
         let preview_surface_radii =
             Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: px(0.0) };
-        let preview_uses_render_image = self.preview_renderer == PreviewRenderer::RenderImage && stops.len() > 1;
+        let preview_uses_render_image =
+            matches!(self.preview_renderer, PreviewRenderer::RenderImageSync | PreviewRenderer::RenderImageAsync)
+                && stops.len() > 1;
         let allow_native_two_stop = stops.len() == 2 && self.preview_renderer != PreviewRenderer::Quads;
         let preview_image = if preview_uses_render_image {
             self.cached_preview_image()
@@ -596,7 +607,8 @@ impl Render for GradientBuilder {
                 "Requested",
                 match self.preview_renderer {
                     PreviewRenderer::Quads => "quads",
-                    PreviewRenderer::RenderImage => "render",
+                    PreviewRenderer::RenderImageSync => "render (sync)",
+                    PreviewRenderer::RenderImageAsync => "render (async)",
                 },
                 info_label_style,
                 info_value_style,
@@ -932,7 +944,11 @@ fn type_items() -> Vec<SelectorItem> {
 }
 
 fn renderer_items() -> Vec<SelectorItem> {
-    vec![SelectorItem::new("quads").label("Quads"), SelectorItem::new("render").label("Render")]
+    vec![
+        SelectorItem::new("quads").label("Quads"),
+        SelectorItem::new("render").label("Render (Sync)"),
+        SelectorItem::new("render_async").label("Render (Async)"),
+    ]
 }
 
 fn preview_image_cache_key(
