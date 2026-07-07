@@ -55,10 +55,10 @@ use gpui_luma::controls::slider::{
     SliderThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId, TrackPresentation, build_track_segments,
 };
 use gpui_luma::controls::tabs_navigation::{
-    ControlFocusState as TabsControlFocusState, TabsNavigationClickHandler, TabsNavigationHoverHandler,
-    TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler, TabsNavigationMouseUpHandler,
-    TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
-    TabsNavigationWidthMode,
+    ControlFocusState as TabsControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent,
+    TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
+    TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
+    TabsNavigationTemplateHandlers, TabsNavigationWidthMode,
 };
 use gpui_luma::controls::textarea::{
     TextAreaClickHandler, TextAreaDrag, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
@@ -78,13 +78,11 @@ use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 use self::cards::buttons::{render_lucide_icon, round_icon_glyph};
 
+#[path = "variant_state_table.rs"]
+mod variant_state_table;
+
 #[path = "cards/mod.rs"]
 mod cards;
-
-const STYLE_GUIDE_DESCRIPTION: &str = concat!(
-    "Theme Studio style guide surface. ",
-    "Starts with Gallery template previews, then keeps the existing typography references."
-);
 
 const TRACKER_HEIGHT: f32 = 280.0;
 const TRACKER_INSET: f32 = 22.0;
@@ -95,6 +93,7 @@ enum StyleGuideSection {
     Sidebar,
     Feedback,
     Buttons,
+    IconButtons,
     Choice,
     Toggle,
     Menus,
@@ -105,9 +104,10 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 11] = [
         Self::Typography,
         Self::Buttons,
+        Self::IconButtons,
         Self::Choice,
         Self::Toggle,
         Self::Menus,
@@ -130,6 +130,8 @@ declare_form! {
             last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             sidebar_preview: Option<Entity<NavigationSidebar>> = None,
+            buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
         }
     }
 }
@@ -138,6 +140,8 @@ impl StyleGuidePanel {
     pub fn sync_snapshot(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look;
         self.sync_sidebar_preview(cx);
+        self.sync_buttons_preview_tabs(cx);
+        self.sync_icon_buttons_preview_tabs(cx);
         cx.notify();
     }
 
@@ -190,11 +194,83 @@ impl StyleGuidePanel {
             });
         }
     }
+
+    fn sync_buttons_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        if let Some(tabs) = self.buttons_preview_tabs.clone() {
+            let look = self.look.clone();
+            tabs.update(cx, move |tabs, cx| {
+                tabs.set_template(look.tabs_navigation_template(), cx);
+            });
+        }
+    }
+
+    fn buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.buttons_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-buttons-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.buttons_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn sync_icon_buttons_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        if let Some(tabs) = self.icon_buttons_preview_tabs.clone() {
+            let look = self.look.clone();
+            tabs.update(cx, move |tabs, cx| {
+                tabs.set_template(look.tabs_navigation_template(), cx);
+            });
+        }
+    }
+
+    fn icon_buttons_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.icon_buttons_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-icon-buttons-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.icon_buttons_preview_tabs = Some(tabs.clone());
+        tabs
+    }
 }
 
 impl Render for StyleGuidePanel {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _ = self.sidebar_preview(cx);
+        let _ = self.buttons_preview_tabs(cx);
+        let _ = self.icon_buttons_preview_tabs(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -214,35 +290,11 @@ impl Render for StyleGuidePanel {
                 .child(
                     div()
                         .w_full()
-                        .flex()
-                        .flex_col()
-                        .gap(px(4.0))
-                        .child(
-                            div()
-                                .text_size(px(20.0))
-                                .line_height(px(28.0))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(chrome.title_text)
-                                .child("Style Guide"),
-                        )
-                        .child(
-                            div()
-                                .max_w(px(760.0))
-                                .text_size(px(13.0))
-                                .line_height(px(18.0))
-                                .text_color(chrome.muted_text)
-                                .child(STYLE_GUIDE_DESCRIPTION),
-                        ),
-                )
-                .child(
-                    div()
-                        .w_full()
                         .min_h(px(0.0))
                         .flex_1()
                         .flex()
                         .items_stretch()
                         .gap(px(16.0))
-                        .pt(px(18.0))
                         .child(
                             div()
                                 .id("style-guide-content")
@@ -296,10 +348,16 @@ impl StyleGuidePanel {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        div()
-            .relative()
-            .w_full()
-            .child(self.render_section(section, window, cx))
+        let content = self.render_section(section, window, cx);
+        let shell = div().relative().w_full().child(content);
+
+        if Self::section_allows_interaction(section) {
+            return shell
+                .on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel))
+                .into_any_element();
+        }
+
+        shell
             .child(
                 div()
                     .absolute()
@@ -317,6 +375,10 @@ impl StyleGuidePanel {
                     .on_key_down(cx.listener(Self::handle_section_overlay_key_down)),
             )
             .into_any_element()
+    }
+
+    fn section_allows_interaction(section: StyleGuideSection) -> bool {
+        matches!(section, StyleGuideSection::Buttons | StyleGuideSection::IconButtons)
     }
 
     fn scroll_progress(&self) -> f32 {
@@ -337,9 +399,18 @@ impl StyleGuidePanel {
             StyleGuideSection::Feedback => {
                 cards::feedback::render_feedback_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Buttons => {
-                cards::buttons::render_button_template_matrix_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Buttons => cards::buttons::render_button_template_matrix_section(
+                self.look.clone(),
+                self.buttons_preview_tabs.clone().expect("buttons preview tabs"),
+                window,
+                cx,
+            ),
+            StyleGuideSection::IconButtons => cards::buttons::render_icon_button_template_matrix_section(
+                self.look.clone(),
+                self.icon_buttons_preview_tabs.clone().expect("icon buttons preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Choice => {
                 cards::buttons::render_choice_template_matrix_section(self.look.clone(), window, cx)
             }
@@ -791,44 +862,69 @@ fn section_shell_with_width(
     description: &'static str,
     title_color: gpui::Hsla,
     muted_text: gpui::Hsla,
-    _border: gpui::Hsla,
+    border: gpui::Hsla,
     _background: gpui::Hsla,
     content: AnyElement,
 ) -> AnyElement {
     div()
-        .w(px(width))
-        .max_w_full()
+        .w_full()
         .flex()
-        .flex_wrap()
-        .items_start()
-        .gap(px(40.0))
+        .flex_col()
         .py(px(12.0))
         .child(
             div()
-                .w(px(240.0))
-                .max_w(px(240.0))
-                .flex_shrink_0()
+                .w_full()
                 .flex()
                 .flex_col()
-                .gap(px(8.0))
+                .gap(px(4.0))
                 .child(div().text_h2().text_color(title_color).child(title))
-                .child(div().typography_sm().text_color(muted_text).child(description)),
+                .child(
+                    div().w_full().min_w(px(0.0)).truncate().typography_sm().text_color(muted_text).child(description),
+                ),
         )
-        .child(div().flex_1().min_w(px(0.0)).child(content))
+        .child(div().w_full().h(px(1.0)).mt(px(10.0)).bg(border))
+        .child(
+            div()
+                .w_full()
+                .flex()
+                .justify_center()
+                .mt(px(16.0))
+                .child(div().w(px(width)).max_w_full().child(content)),
+        )
         .into_any_element()
 }
 
-fn render_vertical_section_rail(label: &'static str, color: gpui::Hsla) -> AnyElement {
+fn render_vertical_section_rail(label: &'static str, color: gpui::Hsla, data_rows: usize) -> AnyElement {
+    let min_height = section_rail_min_height(data_rows);
+    let label_height = section_rail_label_height(data_rows);
+
     div()
         .w(px(28.0))
-        .min_h(px(188.0))
+        .min_h(px(min_height))
         .flex()
         .items_center()
         .justify_center()
         .gap(px(4.0))
-        .child(svg().path(section_label_asset_path(label)).w(px(20.0)).h(px(104.0)).text_color(color))
+        .child(svg().path(section_label_asset_path(label)).w(px(20.0)).h(px(label_height)).text_color(color))
         .child(div().w(px(1.0)).h_full().bg(color))
         .into_any_element()
+}
+
+fn section_rail_min_height(data_rows: usize) -> f32 {
+    match data_rows {
+        0 => 48.0,
+        1 => 64.0,
+        _ => 188.0,
+    }
+}
+
+fn section_rail_label_height(data_rows: usize) -> f32 {
+    match data_rows {
+        0 | 1 => 38.0,
+        2 => 60.0,
+        3 => 80.0,
+        _ => 104.0,
+    }
 }
 
 fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: gpui::Hsla) -> AnyElement {
