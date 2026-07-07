@@ -62,6 +62,8 @@ pub struct NavigationSidebarTemplateHandlers {
     pub rail_submenu_item_clicks: Vec<FloatingMenuClickHandler>,
 }
 
+pub type NavigationSidebarTemplateModifier = Box<dyn Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait NavigationSidebarTemplate: Send + Sync {
     fn render(
         &self,
@@ -76,18 +78,57 @@ pub trait NavigationSidebarTemplate: Send + Sync {
 pub struct ThemedNavigationSidebarTemplate {
     theme: Arc<dyn NavigationSidebarTheme>,
     floating_menu_theme: Arc<dyn FloatingMenuTheme>,
+    modifiers: Vec<NavigationSidebarTemplateModifier>,
 }
 
 impl ThemedNavigationSidebarTemplate {
     pub fn new(theme: Arc<dyn NavigationSidebarTheme>) -> Self {
-        Self { theme, floating_menu_theme: default_floating_menu_theme() }
+        Self { theme, floating_menu_theme: default_floating_menu_theme(), modifiers: Vec::new() }
     }
 
     pub fn new_with_floating_menu_theme(
         theme: Arc<dyn NavigationSidebarTheme>,
         floating_menu_theme: Arc<dyn FloatingMenuTheme>,
     ) -> Self {
-        Self { theme, floating_menu_theme }
+        Self { theme, floating_menu_theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root);
+        }
+        root
+    }
+}
+
+struct ModifiedNavigationSidebarTemplate {
+    base: Arc<dyn NavigationSidebarTemplate>,
+    modifiers: Vec<NavigationSidebarTemplateModifier>,
+}
+
+impl ModifiedNavigationSidebarTemplate {
+    fn new(base: Arc<dyn NavigationSidebarTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: NavigationSidebarTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root);
+        }
+        root
     }
 }
 
@@ -101,6 +142,30 @@ pub fn default_navigation_sidebar_template() -> Arc<dyn NavigationSidebarTemplat
     static TEMPLATE: OnceLock<Arc<dyn NavigationSidebarTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedNavigationSidebarTemplate::default())).clone()
+}
+
+pub(super) fn modified_navigation_sidebar_template<F>(
+    template: Arc<dyn NavigationSidebarTemplate>,
+    modifier: F,
+) -> Arc<dyn NavigationSidebarTemplate>
+where
+    F: Fn(Stateful<Div>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedNavigationSidebarTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl NavigationSidebarTemplate for ModifiedNavigationSidebarTemplate {
+    fn render(
+        &self,
+        model: NavigationSidebarRenderModel,
+        main_scroll: &ScrollContainer,
+        handlers: NavigationSidebarTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, main_scroll, handlers, window, cx);
+        self.apply_modifiers(root)
+    }
 }
 
 impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
@@ -275,7 +340,7 @@ impl NavigationSidebarTemplate for ThemedNavigationSidebarTemplate {
             );
         }
 
-        root
+        self.apply_modifiers(root)
     }
 }
 

@@ -21,6 +21,9 @@ pub struct TreeViewTemplateHandlers {
     pub click: TreeViewClickHandler,
 }
 
+pub type TreeViewTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &TreeViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait TreeViewTemplate<T>: Send + Sync
 where
     T: Send + Sync + 'static,
@@ -52,11 +55,77 @@ impl ThemedTreeViewTemplate {
     }
 }
 
+struct ModifiedTreeViewTemplate<T>
+where
+    T: Send + Sync + 'static,
+{
+    base: Arc<dyn TreeViewTemplate<T>>,
+    modifiers: Vec<TreeViewTemplateModifier>,
+}
+
+impl<T> ModifiedTreeViewTemplate<T>
+where
+    T: Send + Sync + 'static,
+{
+    fn new(base: Arc<dyn TreeViewTemplate<T>>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: TreeViewTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &TreeViewRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
 pub fn default_tree_view_template<T>() -> Arc<dyn TreeViewTemplate<T>>
 where
     T: Send + Sync + 'static,
 {
     Arc::new(ThemedTreeViewTemplate::new(default_tree_view_theme()))
+}
+
+pub(super) fn modified_tree_view_template<T, F>(
+    template: Arc<dyn TreeViewTemplate<T>>,
+    modifier: F,
+) -> Arc<dyn TreeViewTemplate<T>>
+where
+    T: Send + Sync + 'static,
+    F: Fn(Stateful<Div>, &TreeViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedTreeViewTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl<T> TreeViewTemplate<T> for ModifiedTreeViewTemplate<T>
+where
+    T: Send + Sync + 'static,
+{
+    fn render(
+        &self,
+        model: &TreeViewRenderModel<'_>,
+        body: AnyElement,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, body, window, cx);
+        self.apply_modifiers(root, model)
+    }
+
+    fn render_node(
+        &self,
+        node: &FlatTreeNode<'_, T>,
+        handlers: TreeViewTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> AnyElement {
+        self.base.render_node(node, handlers, window, cx)
+    }
 }
 
 impl<T> TreeViewTemplate<T> for ThemedTreeViewTemplate

@@ -5,7 +5,10 @@ mod theme;
 
 pub use control::{CollapseNode, ExpandNode, TreeViewControl, TreeViewEvent};
 pub use model::{FlatTreeNode, TreeNode, TreeViewBuilder, TreeViewModel, TreeViewRenderModel, TreeViewSelectionMode};
-pub use template::{TreeViewTemplate, TreeViewTemplateHandlers, ThemedTreeViewTemplate, default_tree_view_template};
+pub use template::{
+    TreeViewTemplate, TreeViewTemplateHandlers, TreeViewTemplateModifier, ThemedTreeViewTemplate,
+    default_tree_view_template,
+};
 pub use theme::{DefaultTreeViewTheme, TreeViewPalette, TreeViewScale, TreeViewTheme, default_tree_view_theme};
 
 pub use crate::controls::state::{CompositeItemState as TreeViewItemState, ControlFocusState};

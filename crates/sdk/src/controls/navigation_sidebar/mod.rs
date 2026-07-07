@@ -10,8 +10,8 @@ pub use model::{
     RenderedRailSubmenu, entity_presenter,
 };
 pub use template::{
-    NavigationSidebarTemplate, NavigationSidebarTemplateHandlers, ThemedNavigationSidebarTemplate,
-    default_navigation_sidebar_template,
+    NavigationSidebarTemplate, NavigationSidebarTemplateHandlers, NavigationSidebarTemplateModifier,
+    ThemedNavigationSidebarTemplate, default_navigation_sidebar_template,
 };
 pub use theme::{
     DefaultNavigationSidebarTheme, NavigationSidebarContainerLook, NavigationSidebarSectionLook,

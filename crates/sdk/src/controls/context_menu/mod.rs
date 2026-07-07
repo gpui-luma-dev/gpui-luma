@@ -6,7 +6,8 @@ mod theme;
 pub use control::{ContextMenu, ContextMenuEvent};
 pub use model::{ContextMenuBuilder, ContextMenuModel, ContextMenuRenderModel};
 pub use template::{
-    ContextMenuTemplate, ContextMenuTemplateHandlers, ThemedContextMenuTemplate, default_context_menu_template,
+    ContextMenuTemplate, ContextMenuTemplateHandlers, ContextMenuTemplateModifier, ThemedContextMenuTemplate,
+    default_context_menu_template,
 };
 
 pub use theme::{DefaultContextMenuTheme, ContextMenuLook, ContextMenuTheme, default_context_menu_theme};

@@ -27,6 +27,9 @@ pub struct ContextMenuTemplateHandlers {
     pub item_clicks: Vec<ContextMenuClickHandler>,
 }
 
+pub type ContextMenuTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &ContextMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait ContextMenuTemplate: Send + Sync {
     fn render(
         &self,
@@ -39,11 +42,50 @@ pub trait ContextMenuTemplate: Send + Sync {
 
 pub struct ThemedContextMenuTemplate {
     theme: Arc<dyn ContextMenuTheme>,
+    modifiers: Vec<ContextMenuTemplateModifier>,
 }
 
 impl ThemedContextMenuTemplate {
     pub fn new(theme: Arc<dyn ContextMenuTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ContextMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ContextMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedContextMenuTemplate {
+    base: Arc<dyn ContextMenuTemplate>,
+    modifiers: Vec<ContextMenuTemplateModifier>,
+}
+
+impl ModifiedContextMenuTemplate {
+    fn new(base: Arc<dyn ContextMenuTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: ContextMenuTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ContextMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -53,6 +95,29 @@ pub fn default_context_menu_template() -> Arc<dyn ContextMenuTemplate> {
     TEMPLATE
         .get_or_init(|| Arc::new(ThemedContextMenuTemplate::new(default_context_menu_theme())))
         .clone()
+}
+
+pub(super) fn modified_context_menu_template<F>(
+    template: Arc<dyn ContextMenuTemplate>,
+    modifier: F,
+) -> Arc<dyn ContextMenuTemplate>
+where
+    F: Fn(Stateful<Div>, &ContextMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedContextMenuTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl ContextMenuTemplate for ModifiedContextMenuTemplate {
+    fn render(
+        &self,
+        model: &ContextMenuRenderModel<'_>,
+        handlers: ContextMenuTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl ContextMenuTemplate for ThemedContextMenuTemplate {
@@ -137,6 +202,6 @@ impl ContextMenuTemplate for ThemedContextMenuTemplate {
             root = root.child(deferred(overlay).with_priority(1));
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }

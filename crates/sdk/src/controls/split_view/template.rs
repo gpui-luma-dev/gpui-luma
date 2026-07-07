@@ -32,6 +32,9 @@ pub struct SplitViewTemplateHandlers {
     pub drag_move: SplitViewDragMoveHandler,
 }
 
+pub type SplitViewTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &SplitViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait SplitViewTemplate: Send + Sync {
     fn render(
         &self,
@@ -44,11 +47,28 @@ pub trait SplitViewTemplate: Send + Sync {
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedSplitViewTemplate;
+pub struct ThemedSplitViewTemplate {
+    modifiers: Vec<SplitViewTemplateModifier>,
+}
 
 impl ThemedSplitViewTemplate {
     pub fn new() -> Self {
-        Self
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &SplitViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SplitViewRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -61,7 +81,55 @@ impl Default for ThemedSplitViewTemplate {
 pub fn default_split_view_template() -> Arc<dyn SplitViewTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SplitViewTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedSplitViewTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedSplitViewTemplate::new())).clone()
+}
+
+struct ModifiedSplitViewTemplate {
+    base: Arc<dyn SplitViewTemplate>,
+    modifiers: Vec<SplitViewTemplateModifier>,
+}
+
+impl ModifiedSplitViewTemplate {
+    fn new(base: Arc<dyn SplitViewTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: SplitViewTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SplitViewRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+pub(super) fn modified_split_view_template<F>(
+    template: Arc<dyn SplitViewTemplate>,
+    modifier: F,
+) -> Arc<dyn SplitViewTemplate>
+where
+    F: Fn(Stateful<Div>, &SplitViewRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSplitViewTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl SplitViewTemplate for ModifiedSplitViewTemplate {
+    fn render(
+        &self,
+        model: &SplitViewRenderModel<'_>,
+        sidebar: AnyElement,
+        content: AnyElement,
+        handlers: SplitViewTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, sidebar, content, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl SplitViewTemplate for ThemedSplitViewTemplate {
@@ -157,7 +225,7 @@ impl SplitViewTemplate for ThemedSplitViewTemplate {
             root = root.child(expand_separator);
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

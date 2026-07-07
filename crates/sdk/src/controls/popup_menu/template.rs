@@ -29,6 +29,9 @@ pub struct PopupMenuTemplateHandlers {
     pub item_clicks: Vec<PopupMenuClickHandler>,
 }
 
+pub type PopupMenuTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &PopupMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait PopupMenuTemplate: Send + Sync {
     fn render(
         &self,
@@ -41,11 +44,50 @@ pub trait PopupMenuTemplate: Send + Sync {
 
 pub struct ThemedPopupMenuTemplate {
     theme: Arc<dyn PopupMenuTheme>,
+    modifiers: Vec<PopupMenuTemplateModifier>,
 }
 
 impl ThemedPopupMenuTemplate {
     pub fn new(theme: Arc<dyn PopupMenuTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &PopupMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &PopupMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedPopupMenuTemplate {
+    base: Arc<dyn PopupMenuTemplate>,
+    modifiers: Vec<PopupMenuTemplateModifier>,
+}
+
+impl ModifiedPopupMenuTemplate {
+    fn new(base: Arc<dyn PopupMenuTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: PopupMenuTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &PopupMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -53,6 +95,29 @@ pub fn default_popup_menu_template() -> Arc<dyn PopupMenuTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn PopupMenuTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedPopupMenuTemplate::new(default_popup_menu_theme()))).clone()
+}
+
+pub(super) fn modified_popup_menu_template<F>(
+    template: Arc<dyn PopupMenuTemplate>,
+    modifier: F,
+) -> Arc<dyn PopupMenuTemplate>
+where
+    F: Fn(Stateful<Div>, &PopupMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedPopupMenuTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl PopupMenuTemplate for ModifiedPopupMenuTemplate {
+    fn render(
+        &self,
+        model: &PopupMenuRenderModel<'_>,
+        handlers: PopupMenuTemplateHandlers,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl PopupMenuTemplate for ThemedPopupMenuTemplate {
@@ -183,7 +248,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             root = root.child(deferred(overlay).with_priority(1));
         }
 
-        root
+        self.apply_modifiers(root, model)
     }
 }
 

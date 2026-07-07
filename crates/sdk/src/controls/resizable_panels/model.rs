@@ -7,6 +7,7 @@ use super::{
     ResizablePanels, ResizablePanelsTemplate, ResizablePanelsTheme, default_resizable_panels_template,
     default_resizable_panels_theme,
 };
+use super::template::modified_resizable_panels_template;
 
 pub type PanelRender = Rc<dyn Fn() -> AnyElement>;
 
@@ -310,6 +311,17 @@ impl ResizablePanelsBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &ResizablePanelsRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = modified_resizable_panels_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn theme(mut self, theme: Arc<dyn ResizablePanelsTheme>) -> Self {
         self.model.theme = theme;
         self
@@ -330,7 +342,10 @@ where
 
 #[cfg(test)]
 mod resize_handle_tests {
+    use std::sync::Arc;
+
     use super::ResizeHandleSize;
+    use super::{ResizablePanelsBuilder, default_resizable_panels_template};
 
     #[test]
     fn metrics_increase_across_presets() {
@@ -347,5 +362,15 @@ mod resize_handle_tests {
         assert_eq!(ResizeHandleSize::from_lane_px(18.0), ResizeHandleSize::Lg);
         assert_eq!(ResizeHandleSize::from_lane_px(10.0), ResizeHandleSize::Md);
         assert_eq!(ResizeHandleSize::from_lane_px(8.0), ResizeHandleSize::Sm);
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_resizable_panels_template();
+        let builder = ResizablePanelsBuilder::new("panels-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

@@ -261,45 +261,45 @@ These top-level control templates should support a root-level modifier seam.
 
 - [x] `AutocompleteTextBoxTemplate`
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
-- [ ] `CardTemplate`
+- [x] `CardTemplate`
   Path: `crates/sdk/src/controls/card/template.rs`
 - [x] `ComboBoxTemplate`
   Path: `crates/sdk/src/controls/combobox/template.rs`
-- [ ] `ContextMenuTemplate`
+- [x] `ContextMenuTemplate`
   Path: `crates/sdk/src/controls/context_menu/template.rs`
-- [ ] `DialogTemplate`
+- [x] `DialogTemplate`
   Path: `crates/sdk/src/controls/overlay_window/template.rs`
-- [ ] `DockSplitterTemplate`
+- [x] `DockSplitterTemplate`
   Path: `crates/sdk/src/controls/dock_splitter/template.rs`
-- [ ] `FloatingMenuTemplate`
+- [x] `FloatingMenuTemplate`
   Path: `crates/sdk/src/controls/floating_menu/template.rs`
-- [ ] `NavigationSidebarTemplate`
+- [x] `NavigationSidebarTemplate`
   Path: `crates/sdk/src/controls/navigation_sidebar/template.rs`
-- [ ] `PagerTemplate`
+- [x] `PagerTemplate`
   Path: `crates/sdk/src/controls/pager/template.rs`
-- [ ] `PopupMenuTemplate`
+- [x] `PopupMenuTemplate`
   Path: `crates/sdk/src/controls/popup_menu/template.rs`
-- [ ] `ProgressTemplate`
+- [x] `ProgressTemplate`
   Path: `crates/sdk/src/controls/progress/template.rs`
-- [ ] `ResizablePanelsTemplate`
+- [x] `ResizablePanelsTemplate`
   Path: `crates/sdk/src/controls/resizable_panels/template.rs`
-- [ ] `ScrollbarTemplate`
+- [x] `ScrollbarTemplate`
   Path: `crates/sdk/src/controls/scrollbar/template.rs`
 - [x] `SearchSelectorTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
 - [x] `SelectorTemplate`
   Path: `crates/sdk/src/controls/selector/template.rs`
-- [ ] `SliderTemplate`
+- [x] `SliderTemplate`
   Path: `crates/sdk/src/controls/slider/template/mod.rs`
-- [ ] `SplitViewTemplate`
+- [x] `SplitViewTemplate`
   Path: `crates/sdk/src/controls/split_view/template.rs`
-- [ ] `TabsNavigationTemplate`
+- [x] `TabsNavigationTemplate`
   Path: `crates/sdk/src/controls/tabs_navigation/template.rs`
-- [ ] `TextAreaTemplate`
+- [x] `TextAreaTemplate`
   Path: `crates/sdk/src/controls/textarea/template.rs`
-- [ ] `TextFieldTemplate`
+- [x] `TextFieldTemplate`
   Path: `crates/sdk/src/controls/textfield/template.rs`
-- [ ] `TreeViewTemplate`
+- [x] `TreeViewTemplate`
   Path: `crates/sdk/src/controls/tree_view/template.rs`
 
 ### Phase 2: Add Builder-Level Modifier Entry Points Where the Template Already Supports or Will Support Modifiers
@@ -323,7 +323,8 @@ The template seam is not enough if callers still have to hand-roll wrappers.
   - `crates/sdk/src/controls/combobox/model.rs`
   - `crates/sdk/src/controls/search_selector/model.rs`
   Reason: the family now shares the normalized builder naming pattern: top-level `with_template_modifier(...)` plus item/panel modifier affordances where those seams exist.
-- [ ] Every Phase 1 family should expose a direct builder-level modifier helper once template support lands.
+- [~] Every Phase 1 family should expose a direct builder-level modifier helper once template support lands.
+  Status: top-level template support is now broadly in place across the SDK control set; the main remaining follow-up is whether helper-only surfaces without builders need any additional public affordances beyond their template helpers.
 
 ### Phase 3: Add Consistent Modifier Support to Important Subtemplate Layers
 These are not always the first priority, but they are frequent tweak points and should follow the same philosophy.

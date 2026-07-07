@@ -23,11 +23,66 @@ pub struct FloatingMenuTemplateHandlers {
     pub item_clicks: Vec<FloatingMenuClickHandler>,
 }
 
+pub type FloatingMenuTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &FloatingMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait FloatingMenuTemplate: Send + Sync {
     fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div>;
 }
 
-pub struct ThemedFloatingMenuTemplate;
+pub struct ThemedFloatingMenuTemplate {
+    modifiers: Vec<FloatingMenuTemplateModifier>,
+}
+
+impl ThemedFloatingMenuTemplate {
+    pub fn new() -> Self {
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &FloatingMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &FloatingMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl Default for ThemedFloatingMenuTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+struct ModifiedFloatingMenuTemplate {
+    base: Arc<dyn FloatingMenuTemplate>,
+    modifiers: Vec<FloatingMenuTemplateModifier>,
+}
+
+impl ModifiedFloatingMenuTemplate {
+    fn new(base: Arc<dyn FloatingMenuTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: FloatingMenuTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &FloatingMenuRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
 
 impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
     fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div> {
@@ -113,14 +168,31 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             menu = menu.child(submenu);
         }
 
-        menu
+        self.apply_modifiers(menu, model)
+    }
+}
+
+impl FloatingMenuTemplate for ModifiedFloatingMenuTemplate {
+    fn render(&self, model: &FloatingMenuRenderModel<'_>, handlers: FloatingMenuTemplateHandlers) -> Stateful<Div> {
+        let root = self.base.render(model, handlers);
+        self.apply_modifiers(root, model)
     }
 }
 
 pub fn default_floating_menu_template() -> Arc<dyn FloatingMenuTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn FloatingMenuTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedFloatingMenuTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedFloatingMenuTemplate::new())).clone()
+}
+
+pub fn floating_menu_template_with_modifier<F>(
+    template: Arc<dyn FloatingMenuTemplate>,
+    modifier: F,
+) -> Arc<dyn FloatingMenuTemplate>
+where
+    F: Fn(Stateful<Div>, &FloatingMenuRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedFloatingMenuTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
 pub fn render_floating_menu(

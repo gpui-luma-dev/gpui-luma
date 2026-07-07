@@ -14,6 +14,9 @@ pub struct DialogTemplateHandlers {
     pub shell_mouse_down_out: DialogMouseDownHandler,
 }
 
+pub type DialogTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub struct DialogTemplateParts {
     pub header_drag_handle: Option<gpui::AnyElement>,
     pub handlers: DialogTemplateHandlers,
@@ -32,11 +35,50 @@ pub trait DialogTemplate: Send + Sync {
 
 pub struct ThemedDialogTemplate {
     theme: Arc<dyn DialogTheme>,
+    modifiers: Vec<DialogTemplateModifier>,
 }
 
 impl ThemedDialogTemplate {
     pub fn new(theme: Arc<dyn DialogTheme>) -> Self {
-        Self { theme }
+        Self { theme, modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DialogRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+struct ModifiedDialogTemplate {
+    base: Arc<dyn DialogTemplate>,
+    modifiers: Vec<DialogTemplateModifier>,
+}
+
+impl ModifiedDialogTemplate {
+    fn new(base: Arc<dyn DialogTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: DialogTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &DialogRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -44,6 +86,27 @@ pub fn default_dialog_template() -> Arc<dyn DialogTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn DialogTemplate>> = OnceLock::new();
 
     TEMPLATE.get_or_init(|| Arc::new(ThemedDialogTemplate::new(default_dialog_theme()))).clone()
+}
+
+pub(super) fn modified_dialog_template<F>(template: Arc<dyn DialogTemplate>, modifier: F) -> Arc<dyn DialogTemplate>
+where
+    F: Fn(Stateful<Div>, &DialogRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedDialogTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl DialogTemplate for ModifiedDialogTemplate {
+    fn render(
+        &self,
+        model: &DialogRenderModel<'_>,
+        look: &DialogLook,
+        parts: DialogTemplateParts,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, look, parts, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl DialogTemplate for ThemedDialogTemplate {
@@ -84,6 +147,7 @@ impl DialogTemplate for ThemedDialogTemplate {
             shell = shell.child(header_drag_handle);
         }
 
-        shell.child(div().w_full().min_w_0().child((model.content)(model, window, cx)))
+        let root = shell.child(div().w_full().min_w_0().child((model.content)(model, window, cx)));
+        self.apply_modifiers(root, model)
     }
 }

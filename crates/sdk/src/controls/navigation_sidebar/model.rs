@@ -4,6 +4,7 @@ use gpui::{AnyElement, AppContext, Bounds, Entity, FocusHandle, IntoElement, Pix
 use lucide_icons::Icon as LucideIcon;
 
 use super::{NavigationSidebar, NavigationSidebarTemplate, default_navigation_sidebar_template};
+use super::template::modified_navigation_sidebar_template;
 use crate::controls::presenter::{Presenter, HostedContent, IntoPresenter};
 use crate::controls::menu_item::MenuItem;
 use crate::controls::state::MenuPath;
@@ -271,6 +272,14 @@ impl NavigationSidebarBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_navigation_sidebar_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn scrollbar_template(mut self, template: Arc<dyn ScrollbarTemplate>) -> Self {
         self.model.scrollbar_template = template;
         self
@@ -289,4 +298,19 @@ where
         element: div().w_full().child(entity.clone()).into_any_element(),
         focus_handle: Some(focus_handle.clone()),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_navigation_sidebar_template();
+        let builder = NavigationSidebarBuilder::new("nav-test")
+            .template(template.clone())
+            .with_template_modifier(|element| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
 }

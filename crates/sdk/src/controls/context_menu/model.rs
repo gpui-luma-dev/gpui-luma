@@ -5,6 +5,7 @@ use gpui::{AppContext, Entity, Pixels, Point, SharedString};
 use super::{
     ContextMenu, ContextMenuState, ContextMenuTemplate, ControlFocusState, MenuPath, default_context_menu_template,
 };
+use super::template::modified_context_menu_template;
 use crate::controls::menu_item::MenuItem;
 
 #[derive(Clone)]
@@ -72,7 +73,33 @@ impl ContextMenuBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &ContextMenuRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = modified_context_menu_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ContextMenu> {
         cx.new(|cx| ContextMenu::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_context_menu_template();
+        let builder = ContextMenuBuilder::new("context-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

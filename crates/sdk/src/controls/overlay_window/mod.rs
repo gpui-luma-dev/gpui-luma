@@ -19,8 +19,8 @@ pub use model::{
 };
 pub use template::{
     DialogTemplate as OverlayWindowTemplate, DialogTemplateHandlers as OverlayWindowTemplateHandlers,
-    DialogTemplateParts as OverlayWindowTemplateParts, ThemedDialogTemplate as ThemedOverlayWindowTemplate,
-    default_dialog_template as default_overlay_window_template,
+    DialogTemplateModifier as OverlayWindowTemplateModifier, DialogTemplateParts as OverlayWindowTemplateParts,
+    ThemedDialogTemplate as ThemedOverlayWindowTemplate, default_dialog_template as default_overlay_window_template,
 };
 pub use theme::{
     DefaultDialogTheme as DefaultOverlayWindowTheme, DialogLook as OverlayWindowLook,

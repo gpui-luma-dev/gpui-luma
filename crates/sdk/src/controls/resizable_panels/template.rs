@@ -12,6 +12,9 @@ use super::{
 /// Back-compat alias for [`super::math::MIN_HANDLE_LANE_PX`].
 pub const MIN_HIDDEN_HANDLE_HIT_TARGET_PX: f32 = super::math::MIN_HANDLE_LANE_PX;
 
+pub type ResizablePanelsTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &ResizablePanelsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub trait ResizablePanelsTemplate: Send + Sync {
     fn render(
         &self,
@@ -23,11 +26,28 @@ pub trait ResizablePanelsTemplate: Send + Sync {
     ) -> Stateful<Div>;
 }
 
-pub struct ThemedResizablePanelsTemplate;
+pub struct ThemedResizablePanelsTemplate {
+    modifiers: Vec<ResizablePanelsTemplateModifier>,
+}
 
 impl ThemedResizablePanelsTemplate {
     pub fn new() -> Self {
-        Self
+        Self { modifiers: Vec::new() }
+    }
+
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<Div>, &ResizablePanelsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ResizablePanelsRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
     }
 }
 
@@ -40,7 +60,54 @@ impl Default for ThemedResizablePanelsTemplate {
 pub fn default_resizable_panels_template() -> Arc<dyn ResizablePanelsTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn ResizablePanelsTemplate>> = OnceLock::new();
 
-    TEMPLATE.get_or_init(|| Arc::new(ThemedResizablePanelsTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(ThemedResizablePanelsTemplate::new())).clone()
+}
+
+struct ModifiedResizablePanelsTemplate {
+    base: Arc<dyn ResizablePanelsTemplate>,
+    modifiers: Vec<ResizablePanelsTemplateModifier>,
+}
+
+impl ModifiedResizablePanelsTemplate {
+    fn new(base: Arc<dyn ResizablePanelsTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: ResizablePanelsTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &ResizablePanelsRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+pub(super) fn modified_resizable_panels_template<F>(
+    template: Arc<dyn ResizablePanelsTemplate>,
+    modifier: F,
+) -> Arc<dyn ResizablePanelsTemplate>
+where
+    F: Fn(Stateful<Div>, &ResizablePanelsRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedResizablePanelsTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl ResizablePanelsTemplate for ModifiedResizablePanelsTemplate {
+    fn render(
+        &self,
+        model: &ResizablePanelsRenderModel<'_>,
+        look: &ResizablePanelsLook,
+        handle_focuses: &[FocusHandle],
+        window: &mut Window,
+        cx: &mut Context<ResizablePanels>,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, look, handle_focuses, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
@@ -132,7 +199,8 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         }
 
         let _panel_count = panel_count;
-        root.child(track)
+        let root = root.child(track);
+        self.apply_modifiers(root, model)
     }
 }
 

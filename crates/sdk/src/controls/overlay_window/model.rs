@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, AppContext, Context, Entity, IntoElement, SharedString, Window, point, px};
 
 use super::{DialogControl, DialogTemplate, default_dialog_template};
+use super::template::modified_dialog_template;
 use crate::theme::ControlSize;
 
 pub type DialogElementRenderer = Arc<dyn Fn(&DialogRenderModel<'_>, &mut Window, &mut App) -> AnyElement + Send + Sync>;
@@ -162,7 +163,30 @@ impl DialogBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &DialogRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_dialog_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> Entity<DialogControl> {
         cx.new(|cx| DialogControl::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_dialog_template();
+        let builder = DialogBuilder::new("dialog-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

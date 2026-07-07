@@ -41,6 +41,9 @@ pub struct SliderTemplateHandlers {
     pub thumb_mouse_down: SliderThumbMouseDownHandler,
 }
 
+pub type SliderTemplateModifier =
+    Box<dyn Fn(Stateful<Div>, &SliderRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+
 pub(crate) struct SliderInteractionHandlers {
     pub hover: SliderHoverHandler,
     pub mouse_down: SliderMouseDownHandler,
@@ -75,6 +78,50 @@ pub trait SliderTemplate: Send + Sync {
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div>;
+}
+
+struct ModifiedSliderTemplate {
+    base: Arc<dyn SliderTemplate>,
+    modifiers: Vec<SliderTemplateModifier>,
+}
+
+impl ModifiedSliderTemplate {
+    fn new(base: Arc<dyn SliderTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: SliderTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(&self, mut root: Stateful<Div>, model: &SliderRenderModel<'_>) -> Stateful<Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+pub(super) fn modified_slider_template<F>(template: Arc<dyn SliderTemplate>, modifier: F) -> Arc<dyn SliderTemplate>
+where
+    F: Fn(Stateful<Div>, &SliderRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSliderTemplate::new(template).with_modifier(Box::new(modifier)))
+}
+
+impl SliderTemplate for ModifiedSliderTemplate {
+    fn render(
+        &self,
+        model: &SliderRenderModel<'_>,
+        handlers: SliderTemplateHandlers,
+        primary_thumb_id: ThumbId,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Stateful<Div> {
+        let root = self.base.render(model, handlers, primary_thumb_id, window, cx);
+        self.apply_modifiers(root, model)
+    }
 }
 
 pub(crate) const DISABLED_OPACITY: f32 = 0.56;

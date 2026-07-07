@@ -9,7 +9,7 @@ use super::control::SliderControl;
 use super::domain::DomainTrackRenderer;
 use super::input::{SliderInputStrategy, wrap_and_snap};
 use super::segments::build_track_segments;
-use super::template::{SliderTemplate, default_slider_template};
+use super::template::{SliderTemplate, default_slider_template, modified_slider_template};
 use crate::controls::slider::SliderState;
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
 use crate::theme::ControlSize;
@@ -360,6 +360,14 @@ impl SliderBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &SliderRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_slider_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn thumb_policy(mut self, policy: SliderThumbPolicy) -> Self {
         self.model.thumb_policy = policy;
         self.ensure_thumb_count();
@@ -424,6 +432,21 @@ impl SliderBuilder {
         if self.model.thumbs.len() > policy.max_count {
             self.model.thumbs.truncate(policy.max_count);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_slider_template();
+        let builder = SliderBuilder::new("slider-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }
 

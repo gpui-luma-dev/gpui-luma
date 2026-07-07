@@ -21,7 +21,7 @@ pub use model::{
 };
 pub use template::{
     SliderBoundsHandler, SliderDragMoveHandler, SliderHoverHandler, SliderMouseDownHandler, SliderMouseMoveHandler,
-    SliderMouseUpHandler, SliderTemplate, SliderTemplateHandlers, SliderThumbMouseDownHandler,
+    SliderMouseUpHandler, SliderTemplate, SliderTemplateHandlers, SliderTemplateModifier, SliderThumbMouseDownHandler,
     ThemedAngularDialTemplate, ThemedCircularRingTemplate, ThemedSliderTemplate, default_angular_dial_template,
     default_circular_ring_template, default_slider_template,
 };

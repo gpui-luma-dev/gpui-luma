@@ -4,6 +4,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, AppContext, Entity, Hsla, IntoElement, Pixels, SharedString, div, px};
 
 use super::{SplitView, SplitViewTemplate, SplitViewTheme, default_split_view_template, default_split_view_theme};
+use super::template::modified_split_view_template;
 
 pub type PaneRender = Rc<dyn Fn() -> AnyElement>;
 
@@ -161,6 +162,17 @@ impl SplitViewBuilder {
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &SplitViewRenderModel<'_>) -> gpui::Stateful<gpui::Div>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.model.template = modified_split_view_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<SplitView> {
         cx.new(|cx| SplitView::from_builder(self, cx))
     }
@@ -189,8 +201,9 @@ pub(crate) fn effective_sidebar_width(collapsed: bool, sidebar_width: Pixels, co
 #[cfg(test)]
 mod tests {
     use gpui::px;
+    use std::sync::Arc;
 
-    use super::{clamp_sidebar_width, effective_sidebar_width};
+    use super::{SplitViewBuilder, clamp_sidebar_width, default_split_view_template, effective_sidebar_width};
 
     #[test]
     fn sidebar_width_clamps_to_configured_range() {
@@ -204,5 +217,15 @@ mod tests {
         assert_eq!(effective_sidebar_width(false, px(320.0), px(0.0)), px(320.0));
         assert_eq!(effective_sidebar_width(true, px(320.0), px(0.0)), px(0.0));
         assert_eq!(effective_sidebar_width(true, px(320.0), px(64.0)), px(64.0));
+    }
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_split_view_template();
+        let builder = SplitViewBuilder::new("split-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }

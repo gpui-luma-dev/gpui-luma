@@ -4,6 +4,7 @@ use gpui::{AppContext, Entity, SharedString};
 use lucide_icons::Icon as LucideIcon;
 
 use super::{TreeViewControl, TreeViewTemplate, default_tree_view_template};
+use super::template::modified_tree_view_template;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum TreeViewSelectionMode {
@@ -143,7 +144,30 @@ where
         self
     }
 
+    pub fn with_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(gpui::Stateful<gpui::Div>, &TreeViewRenderModel<'_>) -> gpui::Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.model.template = modified_tree_view_template(Arc::clone(&self.model.template), modifier);
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TreeViewControl<T>> {
         cx.new(|cx| TreeViewControl::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_tree_view_template::<()>();
+        let builder = TreeViewBuilder::new("tree-test")
+            .template(template.clone())
+            .with_template_modifier(|element, _| element);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
     }
 }
