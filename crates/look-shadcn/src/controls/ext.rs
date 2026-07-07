@@ -11,7 +11,7 @@ use gpui::{AppContext, Entity, SharedString};
 
 use gpui_luma::controls::autocomplete::{self, AutocompleteTextBoxBuilder};
 use gpui_luma::controls::button_group::{self, IconGroupBuilder};
-use gpui_luma::controls::card::CardBuilder;
+use super::card::ShadcnCardBuilder;
 use gpui_luma::controls::checkbox::{self, CheckboxBuilder};
 use gpui_luma::controls::combobox::{self, ComboBoxBuilder};
 use gpui_luma::controls::command::button::{Button, ButtonBuilder, ControlIcon};
@@ -99,7 +99,7 @@ pub trait ShadcnLookControlExt {
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
-    fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
+    fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
     fn resizable_panels(&self, id: impl Into<SharedString>) -> ResizablePanelsBuilder;
@@ -320,8 +320,8 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         progress::new(id).template(self.progress_template())
     }
 
-    fn card(&self, id: impl Into<SharedString>) -> CardBuilder {
-        gpui_luma::controls::card::new(id).template(self.card_template())
+    fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder {
+        ShadcnCardBuilder::new(Arc::clone(self), id)
     }
 
     fn overlay_window(&self, id: impl Into<SharedString>) -> OverlayWindowBuilder {

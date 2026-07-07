@@ -43,19 +43,25 @@ graph TD
 To maintain visual and behavioral flexibility, each control family is split into four distinct boundaries:
 1.  **Model (`model.rs`)**: The builder and static configuration payload. It defines what options the caller can configure and is cheap and side-effect-free to construct.
 2.  **Control (`control.rs`)**: The live GPUI entity (`cx.new(..)`). It owns runtime interaction state, coordinates input and focus events, manages validation, and triggers rendering updates with `cx.notify()`.
-3.  **Template (`template.rs`)**: The presentation engine. It turns a readonly render model snapshot into concrete GPUI elements (`Div`). It is stateless and does not handle business logic or modify control states directly.
+3.  **Template (`template.rs`)**: The presentation engine. It turns a readonly render model snapshot into concrete GPUI elements (`Div`). It is stateless and does not handle business logic or modify control states directly. Templates support a standardized modifier seam (`with_modifier` / `with_template_modifier`) to allow callers to apply styling overrides.
 4.  **Theme (`theme.rs` or Look Crate)**: Resolves semantic parameters (interaction layer, size, styling variants) into concrete values (colors, margins, borders).
 
-### 2.2 Lookless SDK Core
+### 2.2 The Customization Ladder
+To customize a control, developers must follow the customization hierarchy:
+1.  **Modifier (First Tier)**: Apply minor structural or chrome tweaks (margins, borders, padding, overlays) to the existing template root via `.with_template_modifier(...)`.
+2.  **Derived Template (Second Tier)**: Implement/replace the template trait for larger rendering or structural changes that still preserve the control's interaction contract.
+3.  **Derived Theme/Look (Third Tier)**: Derive/extend look-level styling rules for family-wide defaults or metric overrides.
+
+### 2.3 Lookless SDK Core
 The SDK core (`crates/sdk`) is lookless. It does not hardcode theme colors (like hex codes or HSLA values), paddings, or border-radii. Instead, it queries layout metrics from cached scales (e.g., `StandardBoxScale`, `ListRowScale`) and delegates state resolution to look-defined themes. This decouples behavior from design systems, allowing themes (e.g., Radix, Shadcn) to be hot-swapped without modifying SDK controls.
 
-### 2.3 Typed Boundaries
+### 2.4 Typed Boundaries
 APIs utilize strongly typed contracts rather than strings:
 *   Use `ControlSize::Md` instead of `"medium"`.
 *   Pass typed icon markers (e.g. `lucide_icons::Icon` or explicit SVG paths) instead of magic string names.
 *   Avoid arbitrary string-to-token parsing within the SDK core.
 
-### 2.4 SDK/App Boundary
+### 2.5 SDK/App Boundary
 Apps under `apps/` must **only compose** SDK controls using builders and factories (such as `ShadcnLookControlExt` methods).
 *   **Allowed in apps:** Routing, domain models, page compositions, section containers, and static text.
 *   **Not allowed in apps:** Inventing alternative buttons, checkboxes, text fields, or custom focus/hover overlays using raw `div` styles.

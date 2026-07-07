@@ -15,7 +15,19 @@ Builders own initial models and build them cheap.
 *   Store templates as `Arc<dyn <Control>Template>`.
 *   Coerce values (min/max range snapping) at the builder stage using `ControlRange` to avoid layout drifts during draw cycles.
 
-### 1.2 Shared Interaction Primitives
+### 1.2 Control Template Modifier Pattern
+All templates and builders must implement standardized modifier seams to enable small visual/chrome tweaks without replacing the full template.
+*   **Template Modifier Type**: Define a modifier type alias in `template.rs`:
+    ```rust
+    pub type FooTemplateModifier = Box<dyn Fn(Stateful<Div>, &FooRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
+    ```
+    *(Note: If the render model is consumed by value in `render()`, the modifier closure takes only `Stateful<Div>`)*.
+*   **Concrete Template**: Expose `.with_modifier(...)` on the themed template struct.
+*   **Builder**: Expose `.with_template_modifier(...)` on the builder.
+*   **Compound Controls**: Expose layered subtemplate modifiers explicitly where they exist (e.g. `with_item_template_modifier(...)`, `with_panel_template_modifier(...)`).
+*   **Unit Tests**: Every builder supporting modifiers must include a unit test verifying that calling `with_template_modifier` wraps the template (asserting pointer inequality with the default template).
+
+### 1.3 Shared Interaction Primitives
 Always reuse core SDK interaction layers instead of building custom pointer listeners:
 *   Use `ControlInteraction` for single-surface controls to automatically manage hover, press, disabled, focus, and tab-stop states.
 *   Use `CompositeItemState` for multi-item controls (e.g., choice rows or navigation lists) to map active/selected/hover indicators.
@@ -171,3 +183,4 @@ Verify this checklist before finalizing any changes:
 - [ ] Do pointer and keyboard activation paths share a unified handler?
 - [ ] If I'm using parent/child views, does `render` avoid all `.read` calls on parent entities?
 - [ ] If this is a prototype, is it structured cleanly to graduate to the SDK?
+- [ ] Did I implement template modifier support (and corresponding unit tests) for any new/modified controls?

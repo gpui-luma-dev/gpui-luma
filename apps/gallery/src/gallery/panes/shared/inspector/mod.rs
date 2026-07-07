@@ -16,7 +16,7 @@ pub(in crate::gallery) use menu_tree::{
     ghost_trigger_color_nodes,
 };
 pub(in crate::gallery) use metrics::{
-    accordion_layout_data, autocomplete_layout_data, badge_layout_data, card_layout_data, checkbox_layout_data,
+    accordion_layout_data, autocomplete_layout_data, badge_layout_data, checkbox_layout_data,
     control_group_layout_data, context_menu_target_layout_data, floating_menu_layout_data, list_view_layout_data,
     listbox_layout_data, navigation_sidebar_layout_data, popup_menu_ghost_trigger_layout_data,
     popup_menu_outline_trigger_layout_data, progress_layout_data, radio_layout_data, resizable_panels_layout_data,

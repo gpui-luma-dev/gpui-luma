@@ -703,10 +703,6 @@ impl ShadcnLook {
         templates::progress_theme(Arc::clone(self))
     }
 
-    pub fn card_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::card::CardTemplate> {
-        templates::card_template(Arc::clone(self))
-    }
-
     pub fn overlay_window_template(
         self: &Arc<Self>,
     ) -> Arc<dyn gpui_luma::controls::overlay_window::OverlayWindowTemplate> {
@@ -724,12 +720,8 @@ impl ShadcnLook {
         gpui_luma::controls::overlay_window::overlay_window(id).template(self.overlay_window_template())
     }
 
-    pub fn card_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::card::CardTheme> {
-        templates::card_theme(Arc::clone(self))
-    }
-
-    pub fn card(self: &Arc<Self>, id: impl Into<SharedString>) -> gpui_luma::controls::card::CardBuilder {
-        gpui_luma::controls::card::new(id).template(self.card_template())
+    pub fn card(self: &Arc<Self>, id: impl Into<SharedString>) -> crate::controls::ShadcnCardBuilder {
+        crate::controls::ShadcnCardBuilder::new(Arc::clone(self), id)
     }
 
     pub fn toggle_template(

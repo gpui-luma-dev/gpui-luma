@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{App, Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px, transparent_black};
-use gpui_luma::controls::card::Card;
+use gpui_luma_look_shadcn::ShadcnCard;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
@@ -19,7 +19,7 @@ pub(in crate::gallery) fn notify_inspector_shell_entities<T, D>(
     tree: &Entity<TreeViewControl<T>>,
     detail: &Entity<D>,
     split: &Entity<ResizablePanels>,
-    card: &Card,
+    card: &Entity<ShadcnCard>,
     cx: &mut App,
 ) where
     T: Clone + Send + Sync + 'static,
@@ -33,7 +33,7 @@ pub(in crate::gallery) fn notify_inspector_shell_entities<T, D>(
 
 pub(in crate::gallery) struct ColorInspectorShell {
     look: Arc<ShadcnLook>,
-    card: Card,
+    card: Entity<ShadcnCard>,
     tree: Entity<TreeViewControl<ColorInspectTreeData>>,
     detail: Entity<ColorInspectorDetail>,
     split: Entity<ResizablePanels>,

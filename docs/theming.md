@@ -95,18 +95,18 @@ SDK and look crates must **never** use GPUI's text helpers directly. Instead, th
 
 ## 5. Look-Specific Extensions
 
-Design-language specifics (like Shadcn variants or specialized cards and badges) reside entirely inside the look crate (`crates/look-shadcn`), leaving the core SDK look-agnostic.
+Design-language specifics (like Shadcn variants, styled card containers, and badges) reside entirely inside the look crate (`crates/look-shadcn`), leaving the core SDK look-agnostic.
 
 These extensions are implemented via trait extension on the active theme:
 ```rust
 pub trait ShadcnLookControlExt {
     fn button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
-    fn card(&self, id: impl Into<SharedString>) -> CardBuilder;
+    fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
     fn badge(&self, label: impl Into<SharedString>) -> Badge;
     // ... maps specialized controls directly to Shadcn templates
 }
 ```
- Downstream applications call these methods (e.g. `look.primary_button("save")`) to spawn templates that are pre-bound to look configurations.
+ Downstream applications call these methods (e.g. `look.primary_button("save")`, `look.card("panel")`) to spawn controls or look-layer styled containers pre-bound to Shadcn tokens.
 
 ---
 

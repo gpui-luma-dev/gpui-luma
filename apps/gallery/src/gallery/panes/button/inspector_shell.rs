@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, IntoElement, Render, Subscription, Window, div, prelude::*, px, transparent_black};
-use gpui_luma::controls::card::Card;
+use gpui_luma_look_shadcn::ShadcnCard;
 use gpui_luma::controls::resizable_panels::{
     ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsOrientation,
 };
@@ -18,7 +18,7 @@ const DETAIL_PANEL_MIN_PX: f32 = 180.0;
 
 pub(in crate::gallery) struct ButtonInspectorShell {
     look: Arc<ShadcnLook>,
-    card: Card,
+    card: Entity<ShadcnCard>,
     tree: Entity<TreeViewControl<InspectTreeData>>,
     detail: Entity<ButtonInspectorDetail>,
     split: Entity<ResizablePanels>,

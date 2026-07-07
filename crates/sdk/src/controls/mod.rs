@@ -1,7 +1,6 @@
 pub mod accordion;
 pub mod tree_view;
 pub mod autocomplete;
-pub mod card;
 pub mod combobox;
 pub mod choice_indicator_layout;
 pub mod command;

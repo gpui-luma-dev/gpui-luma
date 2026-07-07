@@ -13,11 +13,11 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 
 use super::{
-    accordion, autocomplete, badge, button, card, checkbox, choice_controls_template, color, color_compositions,
-    combobox, context_menu, dock_panel, floating_menu, tree_view, introduction, list_view, listbox, navigation_sidebar,
-    palette, popup_menu, pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar,
-    search_selector, selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane,
-    slider, switch, tabs_navigation, textarea, textfield, toggle, toggle_group, typography, dialog,
+    accordion, autocomplete, badge, button, checkbox, choice_controls_template, color, color_compositions, combobox,
+    context_menu, dock_panel, floating_menu, tree_view, list_view, listbox, navigation_sidebar, palette, popup_menu,
+    pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search_selector,
+    selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
+    tabs_navigation, textarea, textfield, toggle, toggle_group, typography, dialog,
 };
 
 #[derive(Clone, Copy)]
@@ -30,11 +30,9 @@ struct GalleryPage {
 
 #[derive(Clone, Copy)]
 enum GalleryPageKind {
-    Introduction,
     Palette,
     Typography,
     Badge,
-    Card,
     DialogModal,
     DialogModeless,
     DialogPositioning,
@@ -121,13 +119,6 @@ pub(in crate::gallery) struct GalleryBranchButton {
     pub(in crate::gallery) button: Entity<Button<bool>>,
 }
 
-const INTRODUCTION_PAGE: GalleryPage = GalleryPage {
-    id: "introduction",
-    label: "Introduction",
-    icon: Some(LucideIcon::BookOpenText),
-    kind: GalleryPageKind::Introduction,
-};
-
 const PALETTE_PAGE: GalleryPage =
     GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
 const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
@@ -138,7 +129,6 @@ const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
 };
 
 const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
-const CARD_PAGE: GalleryPage = GalleryPage { id: "card", label: "Card", icon: None, kind: GalleryPageKind::Card };
 const DIALOG_MODAL_PAGE: GalleryPage =
     GalleryPage { id: "dialog-modal", label: "Dialog Modal", icon: None, kind: GalleryPageKind::DialogModal };
 const DIALOG_MODELESS_PAGE: GalleryPage =
@@ -318,7 +308,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] = &[INTRODUCTION_PAGE, PALETTE_PAGE, TYPOGRAPHY_PAGE];
+const PRIMARY_PAGES: &[GalleryPage] = &[PALETTE_PAGE, TYPOGRAPHY_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
@@ -353,7 +343,6 @@ const COLOR_PAGES: &[GalleryPage] = &[
 ];
 const MENU_PAGES: &[GalleryPage] = &[CONTEXT_MENU_PAGE, FLOATING_MENU_PAGE, POPUP_MENU_PAGE];
 const LAYOUT_PAGES: &[GalleryPage] = &[
-    CARD_PAGE,
     DOCK_PANEL_PAGE,
     RESIZABLE_PANELS_PAGE,
     SPLIT_VIEW_DETACHED_PAGE,
@@ -437,9 +426,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) look: Arc<ShadcnLook>,
-    pub(super) introduction: introduction::IntroductionPane,
     pub(super) badge: badge::BadgePane,
-    pub(super) card: card::CardPane,
     pub(super) dialog: dialog::DialogPane,
     pub(super) dock_panel: dock_panel::DockPanelPane,
     pub(super) decorated_button: prototypes::ButtonPane,
@@ -494,7 +481,7 @@ pub(in crate::gallery) struct GalleryPanes {
 
 impl GalleryPanes {
     pub(in crate::gallery) fn initial_selection() -> &'static str {
-        INTRODUCTION_PAGE.id
+        PALETTE_PAGE.id
     }
 
     pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> GalleryNavigation {
@@ -547,9 +534,7 @@ impl GalleryPanes {
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
         Self {
             look: look.clone(),
-            introduction: introduction::IntroductionPane::new(cx, look.clone()),
             badge: badge::BadgePane::new(cx, look.clone()),
-            card: card::CardPane::new(cx, look.clone()),
             dialog: dialog::DialogPane::new(cx, look.clone()),
             dock_panel: dock_panel::DockPanelPane::new(cx, look.clone()),
             decorated_button: prototypes::ButtonPane::new(cx, look.clone()),
@@ -604,9 +589,7 @@ impl GalleryPanes {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        self.introduction.subscribe(cx, subscriptions);
         self.badge.subscribe(cx, subscriptions);
-        self.card.subscribe(cx, subscriptions);
         self.dialog.subscribe(cx, subscriptions);
         self.dock_panel.subscribe(cx, subscriptions);
         self.decorated_button.subscribe(cx, subscriptions);
@@ -667,9 +650,7 @@ impl GalleryPanes {
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => self.introduction.notify_controls(cx),
             GalleryPageKind::Badge => self.badge.notify_controls(cx),
-            GalleryPageKind::Card => self.card.notify_controls(cx),
             GalleryPageKind::DialogModal
             | GalleryPageKind::DialogModeless
             | GalleryPageKind::DialogPositioning
@@ -737,9 +718,7 @@ impl GalleryPanes {
         };
 
         match page.kind {
-            GalleryPageKind::Introduction => self.introduction.render(&self.look),
             GalleryPageKind::Badge => self.badge.render(&self.look),
-            GalleryPageKind::Card => self.card.render(&self.look),
             GalleryPageKind::DialogModal => self.dialog.render(dialog::DialogDemoKind::Modal, &self.look),
             GalleryPageKind::DialogModeless => self.dialog.render(dialog::DialogDemoKind::Modeless, &self.look),
             GalleryPageKind::DialogPositioning => self.dialog.render(dialog::DialogDemoKind::Positioning, &self.look),
@@ -827,7 +806,7 @@ fn nav_node_for_page(
     let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
     let label = page.label;
     let button = Button::new(page.id)
-        .typed(page.id == INTRODUCTION_PAGE.id)
+        .typed(page.id == PALETTE_PAGE.id)
         .content(move |_, _| div().child(label).into_any_element())
         .template(sidebar_leaf_template(page.icon, reserve_icon_space, sidebar_theme.clone()))
         .spawn(cx);
