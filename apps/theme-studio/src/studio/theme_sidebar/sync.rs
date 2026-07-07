@@ -3,6 +3,7 @@ use gpui_luma::theme::ControlSize;
 use gpui_luma::controls::tabs_navigation::TabsNavigationWidthMode;
 
 use super::ThemeSidebar;
+use super::theme_selector::theme_selector_state;
 use crate::studio::content_tabs::theme_studio_tabs_navigation_template;
 use crate::studio::overrides::StudioOverrides;
 use gpui_luma_look_shadcn::ShadcnLook;
@@ -25,7 +26,7 @@ impl ThemeSidebar {
         self.look = look;
         self.global_overrides = overrides.global_color_overrides.clone();
         let theme = self.look.clone();
-        self.sync_theme_selector_template(&theme, cx);
+        self.sync_theme_selector_items(&theme, cx);
         self.sync_tabs_template(&theme, cx);
         self.colors_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme.clone(), overrides, cx));
         self.typography_panel.update(cx, |panel, cx| panel.apply_theme_snapshot(theme.clone(), cx));
@@ -33,10 +34,19 @@ impl ThemeSidebar {
         cx.notify();
     }
 
-    fn sync_theme_selector_template(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    fn sync_theme_selector_items(&self, theme: &std::sync::Arc<ShadcnLook>, cx: &mut Context<Self>) {
+        let (items, swatch_cache) = theme_selector_state(theme.as_ref());
+        *self.theme_selector_swatches.write().expect("theme selector swatches lock") = swatch_cache;
         self.theme_selector.update(cx, |selector, cx| {
-            selector.set_items(super::theme_selector_items(theme.as_ref()), cx);
-            selector.set_template(super::theme_selector_template(theme), cx);
+            selector.set_items(items, cx);
+            selector.set_template(
+                super::theme_selector::theme_search_selector_template(
+                    theme,
+                    self.theme_selector_swatches.clone(),
+                    self.theme_selector_selected_id.clone(),
+                ),
+                cx,
+            );
         });
     }
 
@@ -73,8 +83,10 @@ impl ThemeSidebar {
 
     pub fn sync_theme_selector(&mut self, active_theme_id: impl Into<gpui::SharedString>, cx: &mut Context<Self>) {
         let active_theme_id = active_theme_id.into();
+        *self.theme_selector_selected_id.write().expect("theme selector selected id lock") = active_theme_id.clone();
         self.theme_selector.update(cx, |selector, cx| {
             selector.set_selected_id(active_theme_id, cx);
         });
+        cx.notify();
     }
 }

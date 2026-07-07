@@ -34,6 +34,7 @@ pub struct SearchSelectorModel {
     pub(crate) scrolling: bool,
     pub(crate) min_visible_rows: usize,
     pub(crate) max_visible_rows: usize,
+    pub(crate) fill_popup_viewport: bool,
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
     pub(crate) textfield_theme: Arc<dyn TextFieldTheme>,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
@@ -64,6 +65,7 @@ impl SearchSelectorBuilder {
                 scrolling: true,
                 min_visible_rows: 1,
                 max_visible_rows: 7,
+                fill_popup_viewport: false,
                 textfield_template: default_textfield_template(),
                 textfield_theme: default_textfield_theme(),
                 scrollbar_template: default_scrollbar_template(),
@@ -131,6 +133,13 @@ impl SearchSelectorBuilder {
         if self.model.min_visible_rows > self.model.max_visible_rows {
             self.model.min_visible_rows = self.model.max_visible_rows;
         }
+        self
+    }
+
+    /// Expand the popup list to use available viewport space below the trigger,
+    /// similar to `Selector` smart placement, instead of capping at `max_visible_rows`.
+    pub fn fill_popup_viewport(mut self, fill_popup_viewport: bool) -> Self {
+        self.model.fill_popup_viewport = fill_popup_viewport;
         self
     }
 

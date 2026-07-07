@@ -5,7 +5,7 @@ use gpui::{
 };
 
 use crate::controls::autocomplete::{AutocompleteTextBoxTheme, DefaultAutocompleteTextBoxTheme};
-use crate::controls::selector_panel::{SelectorPanelClickHandler, SelectorPanelHoverHandler};
+use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 use crate::controls::interaction::ControlInteraction;
 
 use crate::controls::popup_scroll_surface::PopupScrollSurface;
@@ -625,9 +625,19 @@ impl Render for SearchSelectorControl {
             let item_count = visible_indices.len();
             let min_visible_rows = self.model.min_visible_rows.max(1);
             let max_visible_rows = self.model.max_visible_rows.max(min_visible_rows);
-            let visible_rows = item_count.max(1).clamp(min_visible_rows, max_visible_rows) as f32;
+            let effective_max_visible_rows = if self.model.fill_popup_viewport {
+                max_visible_rows_for_viewport(
+                    self.trigger_bounds,
+                    window.viewport_size().height,
+                    &look,
+                    min_visible_rows,
+                )
+            } else {
+                max_visible_rows
+            };
+            let visible_rows = item_count.max(1).clamp(min_visible_rows, effective_max_visible_rows) as f32;
             let viewport_height = px((look.padding * 2.0) + (look.item_height * visible_rows));
-            let allow_scrolling = self.model.scrolling && item_count > max_visible_rows;
+            let allow_scrolling = self.model.scrolling && item_count > effective_max_visible_rows;
 
             self.popup_surface.set_scrolling_enabled(allow_scrolling);
             self.popup_surface.configure(item_count.max(1), row_height, content_top_padding, viewport_height);
@@ -724,6 +734,7 @@ impl Render for SearchSelectorControl {
         };
 
         div()
+            .when(self.model.full_width, |root| root.w_full().h_full())
             .child(
                 self.model
                     .template
@@ -732,4 +743,23 @@ impl Render for SearchSelectorControl {
             )
             .into_any_element()
     }
+}
+
+const POPUP_SEARCH_CHROME_HEIGHT: f32 = 57.0;
+const POPUP_OFFSET_Y: f32 = 4.0;
+const POPUP_VIEWPORT_MARGIN: f32 = 8.0;
+
+fn max_visible_rows_for_viewport(
+    trigger_bounds: Option<Bounds<Pixels>>,
+    viewport_height: Pixels,
+    look: &SelectorItemsPanelLook,
+    min_visible_rows: usize,
+) -> usize {
+    let viewport_bottom = viewport_height - px(POPUP_VIEWPORT_MARGIN);
+    let available_below = trigger_bounds
+        .map(|bounds| (viewport_bottom - (bounds.bottom() + px(POPUP_OFFSET_Y))).max(px(0.0)))
+        .unwrap_or(viewport_bottom)
+        .as_f32();
+    let list_area = (available_below - POPUP_SEARCH_CHROME_HEIGHT - (look.padding * 2.0)).max(look.item_height);
+    ((list_area / look.item_height).floor() as usize).max(min_visible_rows).max(1)
 }

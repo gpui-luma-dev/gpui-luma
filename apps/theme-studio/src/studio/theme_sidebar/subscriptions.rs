@@ -1,5 +1,5 @@
 use gpui::{Context, Entity, Subscription};
-use gpui_luma::controls::selector::SelectorEvent;
+use gpui_luma::controls::search_selector::SearchSelectorEvent;
 
 use super::panels::{ColorsPanel, OtherPanel, TypographyPanel};
 use super::ThemeSidebar;
@@ -16,9 +16,14 @@ impl ThemeSidebar {
         subscriptions: &mut Vec<Subscription>,
     ) {
         let theme_selector = sidebar.read(cx).theme_selector.clone();
-        subscriptions.push(cx.subscribe(&theme_selector, |app, _, event: &SelectorEvent, cx| {
-            let SelectorEvent::Change { item_id, .. } = event;
-            app.change_theme(item_id.as_ref(), cx);
+        subscriptions.push(cx.subscribe(&theme_selector, |app, selector, event: &SearchSelectorEvent, cx| {
+            if !matches!(event, SearchSelectorEvent::Select | SearchSelectorEvent::Complete) {
+                return;
+            }
+            let Some(theme_id) = selector.read(cx).selected_id().map(|id| id.clone()) else {
+                return;
+            };
+            app.change_theme(theme_id.as_ref(), cx);
         }));
 
         let colors_panel = sidebar.read(cx).colors_panel.clone();
