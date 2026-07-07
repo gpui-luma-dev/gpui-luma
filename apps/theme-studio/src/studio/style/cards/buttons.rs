@@ -4,15 +4,15 @@ const TEMPLATE_GRID_COLUMN_WIDTH: f32 = 152.0;
 const TEMPLATE_GRID_GAP: f32 = 10.0;
 const BUTTON_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
 const BUTTON_TABLE_ROW_HEIGHT: f32 = 140.0;
-const BUTTON_TABLE_SIZE_COLUMN_WIDTH: f32 = 120.0;
-const BUTTON_TABLE_SIZE_ROW_HEIGHT: f32 = 80.0;
+const BUTTON_TABLE_RADIUS_COLUMN_WIDTH: f32 = 136.0;
+const BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT: f32 = 55.0;
+const BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH: f32 = 120.0;
+const BUTTON_TABLE_SIZE_HEADER_HEIGHT: f32 = 40.0;
+
 const BUTTON_TABLE_VARIANT_GAP: f32 = 10.0;
 
-const BUTTON_SIZES: [(ButtonSize, &'static str); 3] = [
-    (ButtonSize::Sm, "Small"),
-    (ButtonSize::Md, "Medium"),
-    (ButtonSize::Lg, "Large"),
-];
+const BUTTON_SIZES: [(ButtonSize, &'static str); 3] =
+    [(ButtonSize::Sm, "Small"), (ButtonSize::Md, "Medium"), (ButtonSize::Lg, "Large")];
 
 struct ButtonStyleVariantDef {
     label: &'static str,
@@ -319,57 +319,125 @@ fn render_icon_button_size_matrix(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    render_button_size_radius_matrix(look, template, ShadcnButtonStyle::Primary, true, window, cx)
+}
+
+fn render_button_size_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<()>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_button_size_radius_matrix(look, template, ShadcnButtonStyle::Primary, false, window, cx)
+}
+
+fn render_button_size_radius_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<()>>,
+    style: ShadcnButtonStyle,
+    icon_only: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     let chrome = look.chrome();
 
     super::super::variant_state_table::VariantStateTable::new(
         super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
-            .state_column_width(BUTTON_TABLE_SIZE_COLUMN_WIDTH)
-            .row_height(BUTTON_TABLE_SIZE_ROW_HEIGHT),
+            .variant_column_width(BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(BUTTON_TABLE_RADIUS_COLUMN_WIDTH)
+            .header_height(BUTTON_TABLE_SIZE_HEADER_HEIGHT)
+            .row_height(BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT)
+            .variant_column_align_center(true),
     )
+    .row_group_label("SIZE")
     .column_headers(
-        BUTTON_SIZES
+        ButtonRadiusPreset::ALL
             .iter()
-            .map(|(_, label)| render_button_size_header_cell(label, chrome.muted_text)),
+            .map(|preset| render_button_radius_header_cell(preset.label(), chrome.muted_text)),
     )
-    .rows(ICON_BUTTON_VARIANTS.iter().map(|row| {
+    .rows(BUTTON_SIZES.iter().map(|(size, label)| {
         super::super::variant_state_table::VariantStateTableRow {
-            label: SharedString::from(row.label),
-            description: SharedString::from(row.description),
-            cells: BUTTON_SIZES
+            label: SharedString::from(*label),
+            description: SharedString::from(""),
+            cells: ButtonRadiusPreset::ALL
                 .iter()
-                .map(|(size, _)| render_icon_button_size_cell(template, look, row.style, *size, window, cx))
+                .map(|radius| {
+                    render_button_size_radius_cell(template, look, style, *size, *radius, icon_only, window, cx)
+                })
                 .collect(),
         }
     }))
     .build()
 }
 
-fn render_icon_button_size_cell(
+fn render_button_radius_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(label)
+        .into_any_element()
+}
+
+fn render_button_size_radius_cell(
     template: &Arc<dyn ButtonTemplate<()>>,
     look: &ShadcnLook,
     style: ShadcnButtonStyle,
     size: ButtonSize,
+    radius: ButtonRadiusPreset,
+    icon_only: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let variant = ButtonTemplateVariant::IconButton;
     let id = SharedString::from(format!(
-        "theme-studio-icon-button-size-preview-{}-{}",
+        "theme-studio-button-size-radius-preview-{}-{}-{}-{}",
         shadcn_style_id(style),
-        button_size_id(size)
+        button_size_id(size),
+        radius_label_id(radius),
+        if icon_only { "icon" } else { "text" }
     ));
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> = if icon_only {
+        Arc::new(move |model, _| {
+            let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
+            render_lucide_icon(LucideIcon::Heart, icon_size)
+        })
+    } else {
+        let label = SharedString::from("Next");
+        Arc::new(move |model, _| {
+            let look = button_preview_look(model);
+            let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
+            let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
+            div()
+                .flex()
+                .items_center()
+                .gap(px(gap))
+                .child(label.clone())
+                .child(render_lucide_icon(LucideIcon::ChevronRight, icon_size))
+                .into_any_element()
+        })
+    };
     let model = ButtonRenderModel {
         id,
         data: (),
-        content: variant.content(),
-        role: ButtonFamilyRole::Icon,
+        content,
+        role: if icon_only {
+            ButtonFamilyRole::Icon
+        } else {
+            ButtonFamilyRole::Text
+        },
         size,
         state: InteractionState::default(),
-        round: variant.round(),
+        round: false,
         radius_override: std::cell::Cell::new(None),
         elevation: true,
         compact: false,
-        look: Some(button_look_for_style(Arc::new(look.clone()), style)),
+        look: Some(button_look_for_semantic(Arc::new(look.clone()), style, size, radius)),
     };
 
     div()
@@ -382,6 +450,20 @@ fn render_icon_button_size_cell(
         .into_any_element()
 }
 
+fn button_preview_look(model: &ButtonRenderModel<()>) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+    model.look.as_ref().map(|resolve| resolve(model))
+}
+
+fn radius_label_id(radius: ButtonRadiusPreset) -> &'static str {
+    match radius {
+        ButtonRadiusPreset::None => "none",
+        ButtonRadiusPreset::Small => "small",
+        ButtonRadiusPreset::Medium => "medium",
+        ButtonRadiusPreset::Large => "large",
+        ButtonRadiusPreset::Full => "full",
+    }
+}
+
 fn render_icon_button_state_header_cell(sample: &ButtonStateSample, muted_text: gpui::Hsla) -> AnyElement {
     div()
         .w_full()
@@ -391,7 +473,11 @@ fn render_icon_button_state_header_cell(sample: &ButtonStateSample, muted_text: 
         .items_center()
         .justify_center()
         .gap(px(4.0))
-        .child(div().text_color(muted_text).child(render_lucide_icon(icon_button_state_header_icon(sample.id))))
+        .child(
+            div()
+                .text_color(muted_text)
+                .child(render_lucide_icon(icon_button_state_header_icon(sample.id), 16.0)),
+        )
         .child(
             div()
                 .text_xs()
@@ -423,89 +509,6 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
         "disabled" => "Disabled",
         _ => header,
     }
-}
-
-fn render_button_size_matrix(
-    look: &ShadcnLook,
-    template: &Arc<dyn ButtonTemplate<()>>,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let chrome = look.chrome();
-
-    super::super::variant_state_table::VariantStateTable::new(
-        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
-            .state_column_width(BUTTON_TABLE_SIZE_COLUMN_WIDTH)
-            .row_height(BUTTON_TABLE_SIZE_ROW_HEIGHT),
-    )
-    .column_headers(
-        BUTTON_SIZES
-            .iter()
-            .map(|(_, label)| render_button_size_header_cell(label, chrome.muted_text)),
-    )
-    .rows(BUTTON_STYLE_VARIANTS.iter().map(|row| {
-        super::super::variant_state_table::VariantStateTableRow {
-            label: SharedString::from(row.label),
-            description: SharedString::from(row.description),
-            cells: BUTTON_SIZES
-                .iter()
-                .map(|(size, _)| render_button_size_cell(template, look, row.style, *size, window, cx))
-                .collect(),
-        }
-    }))
-    .build()
-}
-
-fn render_button_size_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
-    div()
-        .w_full()
-        .h_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_xs()
-        .line_height(px(15.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(muted_text)
-        .child(label)
-        .into_any_element()
-}
-
-fn render_button_size_cell(
-    template: &Arc<dyn ButtonTemplate<()>>,
-    look: &ShadcnLook,
-    style: ShadcnButtonStyle,
-    size: ButtonSize,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let id = SharedString::from(format!(
-        "theme-studio-button-size-preview-{}-{}",
-        shadcn_style_id(style),
-        button_size_id(size)
-    ));
-    let model = ButtonRenderModel {
-        id,
-        data: (),
-        content: Arc::new(|_, _| div().child("Button").into_any_element()),
-        role: ButtonFamilyRole::Text,
-        size,
-        state: InteractionState::default(),
-        round: false,
-        radius_override: std::cell::Cell::new(None),
-        elevation: true,
-        compact: false,
-        look: Some(button_look_for_style(Arc::new(look.clone()), style)),
-    };
-
-    div()
-        .w_full()
-        .h_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .child(template.render(&model, window, cx))
-        .into_any_element()
 }
 
 pub(in crate::studio::style::style_guide) fn render_choice_template_matrix_section(
@@ -922,6 +925,26 @@ fn toggle_button_look_for_style(
     })
 }
 
+fn button_look_for_semantic(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    radius: ButtonRadiusPreset,
+) -> gpui_luma::controls::command::button::ButtonLookSource<()> {
+    Arc::new(move |model| {
+        let tokens = theme.mode_tokens();
+        gpui_luma_look_shadcn::paint::button_look_semantic(
+            tokens.as_ref(),
+            theme.mode(),
+            style,
+            model.role,
+            size,
+            Some(radius),
+            model.state,
+        )
+    })
+}
+
 fn button_look_for_style(
     theme: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
@@ -951,16 +974,20 @@ fn button_size_id(size: ButtonSize) -> &'static str {
     }
 }
 
-pub(in crate::studio::style::style_guide) fn render_lucide_icon(icon: LucideIcon) -> AnyElement {
+pub(in crate::studio::style::style_guide) fn render_lucide_icon(icon: LucideIcon, size: f32) -> AnyElement {
     div()
         .font_family("lucide")
-        .text_size(px(16.0))
-        .line_height(px(16.0))
+        .text_size(px(size))
+        .line_height(px(size))
         .child(char::from(icon).to_string())
         .into_any_element()
 }
 
-pub(in crate::studio::style::style_guide) fn round_icon_glyph(selected: bool) -> AnyElement {
+pub(in crate::studio::style::style_guide) fn round_icon_glyph(
+    model: &ButtonRenderModel<bool>,
+    selected: bool,
+) -> AnyElement {
     let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-    render_lucide_icon(icon)
+    let icon_size = model.look.as_ref().map(|resolve| resolve(model).icon_size).unwrap_or(16.0);
+    render_lucide_icon(icon, icon_size)
 }

@@ -42,6 +42,7 @@ pub struct ButtonFamilyLook {
     pub padding_y: f32,
     pub gap: f32,
     pub height: f32,
+    pub icon_size: f32,
     pub shadow: Option<Vec<BoxShadow>>,
 }
 
@@ -188,7 +189,16 @@ pub fn compose_button_family_look(
         },
         gap: scale.gap,
         height: scale.height,
+        icon_size: default_button_icon_size(role, scale, &palette.typography),
         shadow: None,
+    }
+}
+
+fn default_button_icon_size(role: ButtonFamilyRole, scale: &StandardBoxScale, typography: &LumaTextStyle) -> f32 {
+    if matches!(role, ButtonFamilyRole::Icon) {
+        scale.height * 0.44
+    } else {
+        typography.size
     }
 }
 

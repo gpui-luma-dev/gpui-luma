@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseButton, MouseDownEvent,
-    MouseUpEvent, Render, SharedString, Window, div, prelude::*, px,
+    MouseUpEvent, Render, SharedString, Window, div, prelude::*,
 };
 
 pub use crate::controls::presenter::{ControlPresenter, HasPresenter};
@@ -30,12 +30,11 @@ impl Button<()> {
     pub fn icon(id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         let icon = icon.into();
         ButtonBuilder::new(id).role(ButtonFamilyRole::Icon).round(true).content(move |_, _| match &icon {
-            ControlIcon::Lucide(lucide) => div()
-                .font_family("lucide")
-                .text_size(px(16.0))
-                .child(char::from(*lucide).to_string())
-                .into_any_element(),
-            ControlIcon::SvgPath(path) => gpui::svg().size(px(16.0)).path(path.clone()).into_any_element(),
+            ControlIcon::Lucide(lucide) => {
+                use crate::controls::icon::lucide_glyph;
+                lucide_glyph(*lucide)
+            }
+            ControlIcon::SvgPath(path) => gpui::svg().path(path.clone()).size_full().into_any_element(),
         })
     }
 }

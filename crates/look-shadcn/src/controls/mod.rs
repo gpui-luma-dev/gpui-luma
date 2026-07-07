@@ -30,7 +30,7 @@ pub(crate) mod textarea;
 pub(crate) mod tree_view;
 pub(crate) mod overlay_window;
 
-pub use button::ShadcnButtonStyle;
+pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
 pub use card::{ShadcnCard, ShadcnCardBuilder};
 pub use textfield::ShadcnTextFieldStyle;
 pub use ext::{

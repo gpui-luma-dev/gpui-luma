@@ -4,7 +4,7 @@ use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use super::ButtonRenderModel;
 use crate::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyTheme, button_family_effective_border, button_family_focus_adorner,
+    ButtonFamilyLook, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border, button_family_focus_adorner,
     compose_button_family_look, default_button_family_theme,
 };
 use crate::theme::InteractionState;
@@ -189,13 +189,37 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.border_1().border_color(border);
         }
 
-        if model.round {
+        if matches!(model.role, ButtonFamilyRole::Icon) {
+            let corner_radius = model.radius_override.get().unwrap_or(look.radius);
+            control = control.w(px(look.height)).flex_shrink_0().p_0();
+            if model.round || corner_radius >= look.height / 2.0 {
+                control = control.rounded_full();
+            } else {
+                control = control.rounded(px(corner_radius));
+            }
+        } else if model.round {
             control = control.w(px(look.height)).p_0().rounded_full();
         } else {
-            control = control.px(px(look.padding_x)).py(px(look.padding_y)).rounded(px(look.radius));
+            let corner_radius = model.radius_override.get().unwrap_or(look.radius);
+            control = control.px(px(look.padding_x)).py(px(look.padding_y)).rounded(px(corner_radius));
         }
 
-        control = control.child(div().text_color(look.foreground).child((model.content)(model, cx)));
+        let content = (model.content)(model, cx);
+        let content = if matches!(model.role, ButtonFamilyRole::Icon) {
+            div()
+                .size(px(look.icon_size))
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(px(look.icon_size))
+                .line_height(px(look.icon_size))
+                .child(content)
+                .into_any_element()
+        } else {
+            content
+        };
+
+        control = control.child(div().text_color(look.foreground).child(content));
 
         control = self.apply_modifiers(control, model);
 
@@ -275,6 +299,7 @@ mod tests {
             padding_y: 6.0,
             gap: 6.0,
             height: 32.0,
+            icon_size: 14.0,
             shadow: None,
         }
     }

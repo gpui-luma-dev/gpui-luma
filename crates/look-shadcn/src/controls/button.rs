@@ -13,7 +13,44 @@ use crate::stylesheet::{
     resolve_stylesheet_shadow_token,
 };
 
-/// Radix-style button look.
+/// Button-local corner radius presets (shadcn/Radix `radius` prop).
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ButtonRadiusPreset {
+    None,
+    Small,
+    Medium,
+    Large,
+    Full,
+}
+
+impl ButtonRadiusPreset {
+    pub const ALL: [Self; 5] = [Self::None, Self::Small, Self::Medium, Self::Large, Self::Full];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::None => "No radius",
+            Self::Small => "Small",
+            Self::Medium => "Medium",
+            Self::Large => "Large",
+            Self::Full => "Full",
+        }
+    }
+}
+
+pub fn resolve_button_radius_preset(
+    preset: ButtonRadiusPreset,
+    metrics: &gpui_luma::theme::MetricTokens,
+    height: f32,
+) -> f32 {
+    match preset {
+        ButtonRadiusPreset::None => metrics.radius.none,
+        ButtonRadiusPreset::Small => metrics.radius.sm,
+        ButtonRadiusPreset::Medium => metrics.radius.md,
+        ButtonRadiusPreset::Large => metrics.radius.lg,
+        ButtonRadiusPreset::Full => height / 2.0,
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ShadcnButtonStyle {
     Primary,
@@ -72,12 +109,30 @@ pub fn button_look(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    button_look_semantic(mode, theme_mode, style, role, size, None, state)
+}
+
+pub fn button_look_semantic(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    role: ButtonFamilyRole,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    state: InteractionState,
+) -> ButtonFamilyLook {
     let ctx = LookContext::new(mode, theme_mode, state);
     let stylesheet = embedded_stylesheet();
     let palette = button_palette(&ctx, stylesheet, style, role, size);
     let scale = button_box_scale(&ctx, stylesheet, size, 1.0);
     let effective_style = effective_button_style(style, role);
     let mut look = compose_button_family_look(&palette, role, &scale, ctx.metrics().radius.pill);
+    if let Some(rule) = stylesheet.button.metrics_for_size(size) {
+        look.icon_size = resolve_button_metrics_rule(rule, ctx.metrics(), size).icon_size;
+    }
+    if let Some(radius) = radius {
+        look.radius = resolve_button_radius_preset(radius, ctx.metrics(), look.height);
+    }
     look.shadow = if matches!(role, ButtonFamilyRole::Toggle { .. }) {
         toggle_elevation_shadow(ctx.catalog(), stylesheet, ctx.state.layer())
     } else {
@@ -155,7 +210,11 @@ pub fn button_palette(
 
     let mut typography = ctx.typography().text.label;
     if let Some(metrics) = size_metrics {
+        let base_size = typography.size;
         typography.size = metrics.font_size;
+        if base_size > 0.0 {
+            typography.line_height = metrics.font_size * (typography.line_height / base_size);
+        }
     }
 
     ButtonFamilyPalette {
@@ -334,6 +393,80 @@ mod tests {
             );
             assert!((default.background.l - hovered.background.l).abs() < 0.08);
         }
+    }
+
+    #[test]
+    fn button_look_resolves_radius_preset() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let none = button_look_semantic(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            Some(ButtonRadiusPreset::None),
+            InteractionState::default(),
+        );
+        let full = button_look_semantic(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+            Some(ButtonRadiusPreset::Full),
+            InteractionState::default(),
+        );
+
+        assert!((none.radius - 0.0).abs() < f32::EPSILON);
+        assert!((full.radius - full.height / 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn button_look_resolves_stylesheet_icon_size() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let sm = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Sm,
+            InteractionState::default(),
+        );
+        let lg = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Lg,
+            InteractionState::default(),
+        );
+
+        assert!((sm.icon_size - 14.0).abs() < f32::EPSILON);
+        assert!((lg.icon_size - 18.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn lg_button_look_is_larger_than_sm() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let sm = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Sm,
+            InteractionState::default(),
+        );
+        let lg = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ButtonFamilyRole::Text,
+            ControlSize::Lg,
+            InteractionState::default(),
+        );
+
+        assert!(lg.height > sm.height);
+        assert!(lg.icon_size > sm.icon_size);
     }
 
     #[test]

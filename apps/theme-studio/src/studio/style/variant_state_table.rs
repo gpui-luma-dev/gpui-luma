@@ -52,6 +52,11 @@ impl VariantStateTableStyle {
         self
     }
 
+    pub(in crate::studio::style::style_guide) fn header_height(mut self, header_height: f32) -> Self {
+        self.header_height = header_height;
+        self
+    }
+
     pub(in crate::studio::style::style_guide) fn state_column_width(mut self, width: f32) -> Self {
         self.state_column_width = width;
         self
@@ -224,7 +229,7 @@ fn render_variant_column_cell(style: &VariantStateTableStyle, row: &VariantState
             .items_center()
             .justify_center()
             .px(px(16.0))
-            .py(px(8.0))
+            .py(px(4.0))
             .child(
                 div()
                     .text_sm()

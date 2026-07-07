@@ -73,6 +73,7 @@ pub fn tune_pager_button_look(
     if matches!(role, ButtonFamilyRole::Icon) {
         look.padding_x = 0.0;
         look.padding_y = 0.0;
+        look.icon_size = pager_look.button_size * 0.44;
     } else {
         look.padding_x = pager_look.padding_x;
         look.padding_y = 0.0;

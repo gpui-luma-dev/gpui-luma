@@ -39,7 +39,7 @@ pub use stylesheet::{
 };
 pub use elements::{Badge, BadgeLook, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_look, resolve_badge_colors};
 pub use controls::{
-    ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ShadcnCheckboxStyleExt,
+    ButtonRadiusPreset, ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ShadcnCheckboxStyleExt,
     ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt, ShadcnTextFieldStyle,
 };
 pub use provenance::{

@@ -74,7 +74,7 @@ use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
 use gpui_luma::{GridLayout, GridTrack, declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 use self::cards::buttons::{render_lucide_icon, round_icon_glyph};
 
@@ -352,9 +352,7 @@ impl StyleGuidePanel {
         let shell = div().relative().w_full().child(content);
 
         if Self::section_allows_interaction(section) {
-            return shell
-                .on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel))
-                .into_any_element();
+            return shell.on_scroll_wheel(cx.listener(Self::handle_section_overlay_scroll_wheel)).into_any_element();
         }
 
         shell
@@ -715,7 +713,10 @@ impl ChoiceTemplateControl {
             Self::Toggle => Arc::new(move |_, _| div().child("Toggle").into_any_element()),
             Self::ToggleIcon => {
                 let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-                Arc::new(move |_, _| render_lucide_icon(icon))
+                Arc::new(move |model, _| {
+                    let icon_size = button_preview_look_bool(model).map(|look| look.icon_size).unwrap_or(16.0);
+                    render_lucide_icon(icon, icon_size)
+                })
             }
         }
     }
@@ -749,8 +750,8 @@ impl ToggleTemplateVariant {
                 let label = SharedString::from("Toggle");
                 Arc::new(move |_, _| div().child(label.clone()).into_any_element())
             }
-            Self::RoundIconUnselected => Arc::new(move |_, _| round_icon_glyph(false)),
-            Self::RoundIconSelected => Arc::new(move |_, _| round_icon_glyph(true)),
+            Self::RoundIconUnselected => Arc::new(move |model, _| round_icon_glyph(model, false)),
+            Self::RoundIconSelected => Arc::new(move |model, _| round_icon_glyph(model, true)),
         }
     }
 }
@@ -764,6 +765,16 @@ impl SelectorTemplateControl {
             Self::SearchSelector => "SearchSelector",
         }
     }
+}
+
+fn button_preview_look(model: &ButtonRenderModel<()>) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+    model.look.as_ref().map(|resolve| resolve(model))
+}
+
+fn button_preview_look_bool(
+    model: &ButtonRenderModel<bool>,
+) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+    model.look.as_ref().map(|resolve| resolve(model))
 }
 
 impl ButtonTemplateVariant {
@@ -784,25 +795,34 @@ impl ButtonTemplateVariant {
         let label = SharedString::from("Button");
         match self {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
-            Self::TextButtonLeadingIcon => Arc::new(move |_, _| {
+            Self::TextButtonLeadingIcon => Arc::new(move |model, _| {
+                let look = button_preview_look(model);
+                let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
+                let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
                 div()
                     .flex()
                     .items_center()
-                    .gap(px(6.0))
-                    .child(render_lucide_icon(LucideIcon::Heart))
+                    .gap(px(gap))
+                    .child(render_lucide_icon(LucideIcon::Heart, icon_size))
                     .child(label.clone())
                     .into_any_element()
             }),
-            Self::TextButtonTrailingIcon => Arc::new(move |_, _| {
+            Self::TextButtonTrailingIcon => Arc::new(move |model, _| {
+                let look = button_preview_look(model);
+                let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
+                let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
                 div()
                     .flex()
                     .items_center()
-                    .gap(px(6.0))
+                    .gap(px(gap))
                     .child(label.clone())
-                    .child(render_lucide_icon(LucideIcon::ChevronDown))
+                    .child(render_lucide_icon(LucideIcon::ChevronDown, icon_size))
                     .into_any_element()
             }),
-            Self::IconButton => Arc::new(move |_, _| render_lucide_icon(LucideIcon::Heart)),
+            Self::IconButton => Arc::new(move |model, _| {
+                let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
+                render_lucide_icon(LucideIcon::Heart, icon_size)
+            }),
         }
     }
 }

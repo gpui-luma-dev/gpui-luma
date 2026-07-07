@@ -463,3 +463,37 @@ So the visual result was useful, but the implementation confirms the missing arc
 - button-local or carefully generalized,
 - resolved by the look/theme layer,
 - and merely displayed by Theme Studio.
+
+---
+
+## Addendum: Size naming — shadcn `sm | md | lg`, not Radix `1–4`
+
+**Decision (2026-07):** Button **size** uses SDK `ControlSize` (`Sm`, `Md`, `Lg`) and `style.toml` keys `button.metrics.sm|md|lg`. Do **not** introduce a parallel numeric size enum (Radix Themes `1 | 2 | 3 | 4`) or duplicate TOML keys (`1`…`4`).
+
+### Why
+
+- **shadcn/ui** button sizing is Tailwind-style: `sm`, `default`/`md`, `lg` — not Radix numeric tiers.
+- **SDK** already exposes `ControlSize`; look-shadcn should resolve metrics from that directly.
+- **Config** stays one key per tier in `style.toml`; no `from_control_size` translation layer.
+
+### Icon-only buttons
+
+Size and role are separate axes:
+
+- **Size:** `ControlSize::Sm | Md | Lg` (and arbitrary px later)
+- **Role:** `ButtonFamilyRole::Icon` vs `Text`
+
+`sm` / `md` / `lg` icon buttons = `role: Icon` + `size: Sm|Md|Lg`. No separate shadcn `size="icon"` metric is required unless we later want API parity for a single fixed square default.
+
+### Radius (unchanged)
+
+`ButtonRadiusPreset` (`None`, `Small`, `Medium`, `Large`, `Full`) stays **button-local** in look-shadcn. Theme Studio size matrices:
+
+- **Rows:** Small / Medium / Large (`ControlSize`)
+- **Columns:** radius presets
+- **Resolution:** `button_look_semantic(..., size: ControlSize, radius: Option<ButtonRadiusPreset>, ...)`
+
+### Dropped from experiment
+
+- `ShadcnButtonSize::One..Four`
+- `[button.metrics.1]` … `[button.metrics.4]` in `style.toml`
