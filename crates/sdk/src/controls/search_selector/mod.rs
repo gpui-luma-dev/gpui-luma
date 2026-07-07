@@ -26,7 +26,9 @@ pub use panel_template::{
     default_search_selector_panel_template,
 };
 pub use template::{
-    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
-    SearchSelectorRenderModel, SearchSelectorTemplate, SearchSelectorTemplateHandlers, SearchSelectorTemplateModifier,
+    DefaultSearchSelectorItemsTemplate, SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate,
+    SearchSelectorItemsTemplateHandlers, SearchSelectorItemsTemplateModifier, SearchSelectorRenderModel,
+    SearchSelectorTemplate, SearchSelectorTemplateHandlers, SearchSelectorTemplateModifier,
     default_search_selector_items_template, default_search_selector_template,
+    search_selector_items_template_with_modifier,
 };

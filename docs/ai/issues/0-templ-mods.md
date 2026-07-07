@@ -331,14 +331,12 @@ These are not always the first priority, but they are frequent tweak points and 
 
 - [x] `AutocompleteItemsTemplate`
   Path: `crates/sdk/src/controls/autocomplete/template.rs`
-- [~] `ComboBoxItemsTemplate`
+- [x] `ComboBoxItemsTemplate`
   Path: `crates/sdk/src/controls/combobox/items_template.rs`
-  Note: builder-level `with_item_template_modifier(...)` is already the preferred public seam; native item-template modifier parity is optional cleanup, not a rollout blocker.
 - [x] `ComboBoxPanelTemplate`
   Path: `crates/sdk/src/controls/combobox/panel_template.rs`
-- [~] `SearchSelectorItemsTemplate`
+- [x] `SearchSelectorItemsTemplate`
   Path: `crates/sdk/src/controls/search_selector/template.rs`
-  Note: builder-level `with_item_template_modifier(...)` is already the preferred public seam; native item-template modifier parity is optional cleanup, not a rollout blocker.
 - [x] `SearchSelectorPanelTemplate`
   Path: `crates/sdk/src/controls/search_selector/panel_template.rs`
 - [x] `SelectorItemsTemplate`

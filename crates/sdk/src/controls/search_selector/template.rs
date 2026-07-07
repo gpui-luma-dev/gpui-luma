@@ -266,6 +266,10 @@ pub struct SearchSelectorItemsTemplateHandlers {
     pub item_clicks: Vec<SelectorPanelClickHandler>,
 }
 
+pub type SearchSelectorItemsTemplateModifier = Box<
+    dyn Fn(Stateful<gpui::Div>, &SearchSelectorItemsRenderModel<'_>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+>;
+
 pub trait SearchSelectorItemsTemplate: Send + Sync {
     fn render(
         &self,
@@ -275,11 +279,82 @@ pub trait SearchSelectorItemsTemplate: Send + Sync {
     ) -> Stateful<gpui::Div>;
 }
 
-pub struct DefaultSearchSelectorItemsTemplate;
+pub struct DefaultSearchSelectorItemsTemplate {
+    modifiers: Vec<SearchSelectorItemsTemplateModifier>,
+}
+
+impl DefaultSearchSelectorItemsTemplate {
+    pub fn new() -> Self {
+        Self { modifiers: Vec::new() }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: Fn(Stateful<gpui::Div>, &SearchSelectorItemsRenderModel<'_>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn apply_modifiers(
+        &self,
+        mut root: Stateful<gpui::Div>,
+        model: &SearchSelectorItemsRenderModel<'_>,
+    ) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
+
+impl Default for DefaultSearchSelectorItemsTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+struct ModifiedSearchSelectorItemsTemplate {
+    base: Arc<dyn SearchSelectorItemsTemplate>,
+    modifiers: Vec<SearchSelectorItemsTemplateModifier>,
+}
+
+impl ModifiedSearchSelectorItemsTemplate {
+    fn new(base: Arc<dyn SearchSelectorItemsTemplate>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier(mut self, modifier: SearchSelectorItemsTemplateModifier) -> Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn apply_modifiers(
+        &self,
+        mut root: Stateful<gpui::Div>,
+        model: &SearchSelectorItemsRenderModel<'_>,
+    ) -> Stateful<gpui::Div> {
+        for modifier in &self.modifiers {
+            root = (modifier)(root, model);
+        }
+        root
+    }
+}
 
 pub fn default_search_selector_items_template() -> Arc<dyn SearchSelectorItemsTemplate> {
     static TEMPLATE: OnceLock<Arc<dyn SearchSelectorItemsTemplate>> = OnceLock::new();
-    TEMPLATE.get_or_init(|| Arc::new(DefaultSearchSelectorItemsTemplate)).clone()
+    TEMPLATE.get_or_init(|| Arc::new(DefaultSearchSelectorItemsTemplate::new())).clone()
+}
+
+pub fn search_selector_items_template_with_modifier<F>(
+    template: Arc<dyn SearchSelectorItemsTemplate>,
+    modifier: F,
+) -> Arc<dyn SearchSelectorItemsTemplate>
+where
+    F: Fn(Stateful<gpui::Div>, &SearchSelectorItemsRenderModel<'_>) -> Stateful<gpui::Div> + Send + Sync + 'static,
+{
+    Arc::new(ModifiedSearchSelectorItemsTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
 impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
@@ -367,6 +442,31 @@ impl SearchSelectorItemsTemplate for DefaultSearchSelectorItemsTemplate {
             root = root.child(row);
         }
 
-        root
+        self.apply_modifiers(root, model)
+    }
+}
+
+impl SearchSelectorItemsTemplate for ModifiedSearchSelectorItemsTemplate {
+    fn render(
+        &self,
+        model: &SearchSelectorItemsRenderModel<'_>,
+        handlers: SearchSelectorItemsTemplateHandlers,
+        cx: &mut App,
+    ) -> Stateful<gpui::Div> {
+        let root = self.base.render(model, handlers, cx);
+        self.apply_modifiers(root, model)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn items_template_with_modifier_wraps_template() {
+        let template = default_search_selector_items_template();
+        let wrapped = search_selector_items_template_with_modifier(template.clone(), |element, _| element);
+
+        assert!(!Arc::ptr_eq(&wrapped, &template));
     }
 }

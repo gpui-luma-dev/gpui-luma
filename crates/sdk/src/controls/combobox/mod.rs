@@ -21,6 +21,9 @@ pub use model::{ComboBoxBuilder, ComboBoxModel, TypingPolicy, new};
 pub use item_template::{
     ComboBoxItemRenderModel, ComboBoxItemTemplate, ComboBoxItemTemplateModifier, make_combobox_item_template,
 };
+pub use items_template::{
+    ComboBoxItemsTemplateModifier, DefaultComboBoxItemsTemplate, combobox_items_template_with_modifier,
+};
 pub use panel_template::{
     ComboBoxPanelRenderModel, ComboBoxPanelTemplate, ComboBoxPanelTemplateModifier, default_combobox_panel_template,
 };
