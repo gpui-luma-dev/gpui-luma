@@ -2,13 +2,10 @@ use super::super::*;
 
 const BUTTON_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
 const TOGGLE_TEXT_TABLE_STATE_COLUMN_WIDTH: f32 = 112.0;
-const BUTTON_TABLE_ROW_HEIGHT: f32 = 140.0;
 const BUTTON_TABLE_RADIUS_COLUMN_WIDTH: f32 = 136.0;
 const BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT: f32 = 55.0;
 const BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH: f32 = 120.0;
 const BUTTON_TABLE_SIZE_HEADER_HEIGHT: f32 = 40.0;
-
-const BUTTON_TABLE_VARIANT_GAP: f32 = 10.0;
 
 const SIZE_PREVIEW_STYLE: ShadcnButtonStyle = ShadcnButtonStyle::Primary;
 
@@ -45,12 +42,6 @@ const CHOICE_STYLE_VARIANTS: [ButtonStyleVariantDef; 2] = [
     },
 ];
 
-const BUTTON_TEMPLATE_VARIANTS: [ButtonTemplateVariant; 3] = [
-    ButtonTemplateVariant::TextButton,
-    ButtonTemplateVariant::TextButtonLeadingIcon,
-    ButtonTemplateVariant::TextButtonTrailingIcon,
-];
-
 pub(in crate::studio::style::style_guide) fn render_button_template_matrix_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
@@ -82,7 +73,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
             state: InteractionState { disabled: true, ..InteractionState::default() },
         },
     ];
-    let variants = BUTTON_TEMPLATE_VARIANTS;
     let active_tab =
         preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
@@ -97,7 +87,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
         render_button_preview_tabbed_content(
             look.as_ref(),
             &template,
-            &variants,
             &samples,
             preview_tabs,
             active_tab,
@@ -111,7 +100,6 @@ pub(in crate::studio::style::style_guide) fn render_button_template_matrix_secti
 fn render_button_preview_tabbed_content(
     look: &ShadcnLook,
     template: &Arc<dyn ButtonTemplate<()>>,
-    variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
     preview_tabs: Entity<TabsNavigation>,
     active_tab: SharedString,
@@ -122,7 +110,7 @@ fn render_button_preview_tabbed_content(
     let body = if active_tab.as_ref() == "sizes" {
         render_button_size_matrix(look, template, window, cx)
     } else {
-        render_button_template_matrix(look, template, variants, samples, window, cx)
+        render_button_template_matrix(look, template, samples, window, cx)
     };
 
     div()
@@ -138,17 +126,16 @@ fn render_button_preview_tabbed_content(
 fn render_button_template_matrix(
     look: &ShadcnLook,
     template: &Arc<dyn ButtonTemplate<()>>,
-    variants: &[ButtonTemplateVariant],
     samples: &[ButtonStateSample],
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let variant = ButtonTemplateVariant::TextButton;
     let chrome = look.chrome();
 
     super::super::variant_state_table::VariantStateTable::new(
         super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
-            .state_column_width(BUTTON_TABLE_STATE_COLUMN_WIDTH)
-            .row_height(BUTTON_TABLE_ROW_HEIGHT),
+            .state_column_width(BUTTON_TABLE_STATE_COLUMN_WIDTH),
     )
     .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
     .rows(BUTTON_STYLE_VARIANTS.iter().map(|row| {
@@ -157,41 +144,11 @@ fn render_button_template_matrix(
             description: SharedString::from(row.description),
             cells: samples
                 .iter()
-                .map(|sample| {
-                    render_button_state_variants_cell(template, look, row.style, variants, sample, window, cx)
-                })
+                .map(|sample| render_button_state_sample(template, look, row.style, variant, sample, window, cx))
                 .collect(),
         }
     }))
     .build()
-}
-
-fn render_button_state_variants_cell(
-    template: &Arc<dyn ButtonTemplate<()>>,
-    look: &ShadcnLook,
-    style: ShadcnButtonStyle,
-    variants: &[ButtonTemplateVariant],
-    sample: &ButtonStateSample,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    div()
-        .w_full()
-        .h_full()
-        .min_w(px(0.0))
-        .flex()
-        .flex_col()
-        .items_center()
-        .justify_center()
-        .gap(px(BUTTON_TABLE_VARIANT_GAP))
-        .px(px(8.0))
-        .py(px(8.0))
-        .children(
-            variants
-                .iter()
-                .map(|variant| render_button_state_sample(template, look, style, *variant, sample, window, cx)),
-        )
-        .into_any_element()
 }
 
 pub(in crate::studio::style::style_guide) fn render_icon_button_template_matrix_section(
@@ -418,19 +375,8 @@ fn render_button_size_radius_cell(
             render_lucide_icon(LucideIcon::Heart, icon_size)
         })
     } else {
-        let label = SharedString::from("Next");
-        Arc::new(move |model, _| {
-            let look = button_preview_look(model);
-            let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
-            let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
-            div()
-                .flex()
-                .items_center()
-                .gap(px(gap))
-                .child(label.clone())
-                .child(render_lucide_icon(LucideIcon::ChevronRight, icon_size))
-                .into_any_element()
-        })
+        let label = SharedString::from("Button");
+        Arc::new(move |_, _| div().child(label.clone()).into_any_element())
     };
     let model = ButtonRenderModel {
         id,

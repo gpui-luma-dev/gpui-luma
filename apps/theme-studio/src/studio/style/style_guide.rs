@@ -790,8 +790,6 @@ struct ButtonStateSample {
 #[derive(Clone, Copy)]
 enum ButtonTemplateVariant {
     TextButton,
-    TextButtonLeadingIcon,
-    TextButtonTrailingIcon,
     IconButton,
 }
 
@@ -911,8 +909,6 @@ impl ButtonTemplateVariant {
     fn id(self) -> &'static str {
         match self {
             Self::TextButton => "text-button",
-            Self::TextButtonLeadingIcon => "text-button-leading-icon",
-            Self::TextButtonTrailingIcon => "text-button-trailing-icon",
             Self::IconButton => "icon-button",
         }
     }
@@ -925,30 +921,6 @@ impl ButtonTemplateVariant {
         let label = SharedString::from("Button");
         match self {
             Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
-            Self::TextButtonLeadingIcon => Arc::new(move |model, _| {
-                let look = button_preview_look(model);
-                let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
-                let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(gap))
-                    .child(render_lucide_icon(LucideIcon::Heart, icon_size))
-                    .child(label.clone())
-                    .into_any_element()
-            }),
-            Self::TextButtonTrailingIcon => Arc::new(move |model, _| {
-                let look = button_preview_look(model);
-                let gap = look.as_ref().map(|look| look.gap).unwrap_or(6.0);
-                let icon_size = look.as_ref().map(|look| look.icon_size).unwrap_or(16.0);
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(gap))
-                    .child(label.clone())
-                    .child(render_lucide_icon(LucideIcon::ChevronDown, icon_size))
-                    .into_any_element()
-            }),
             Self::IconButton => Arc::new(move |model, _| {
                 let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
                 render_lucide_icon(LucideIcon::Heart, icon_size)
