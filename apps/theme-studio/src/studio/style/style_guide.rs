@@ -116,19 +116,19 @@ enum StyleGuideSection {
 
 impl StyleGuideSection {
     const ALL: [Self; 13] = [
-        Self::Typography,
         Self::Buttons,
-        Self::IconButtons,
         Self::Checkbox,
-        Self::Radio,
-        Self::Switch,
-        Self::Toggle,
+        Self::Feedback,
+        Self::IconButtons,
+        Self::Inputs,
         Self::Menus,
+        Self::Radio,
         Self::Selectors,
         Self::Sidebar,
+        Self::Switch,
         Self::Tabs,
-        Self::Inputs,
-        Self::Feedback,
+        Self::Toggle,
+        Self::Typography,
     ];
 }
 

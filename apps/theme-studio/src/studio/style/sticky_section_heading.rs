@@ -226,19 +226,19 @@ pub(in crate::studio::style::style_guide) fn render_sticky_section_heading_lane(
 
 fn section_order_for_title(title: &str) -> usize {
     match title {
-        "Typography" => 0,
-        "Buttons" => 1,
-        "Icon Button" => 2,
-        "Checkbox" => 3,
-        "Radio" => 4,
-        "Switch" => 5,
-        "Toggles" => 6,
-        "Menus" => 7,
-        "Selectors" => 8,
-        "Sidebar" => 9,
+        "Buttons" => 0,
+        "Checkbox" => 1,
+        "Feedback" => 2,
+        "Icon Button" => 3,
+        "Input Controls" => 4,
+        "Menus" => 5,
+        "Radio" => 6,
+        "Selectors" => 7,
+        "Sidebar" => 8,
+        "Switch" => 9,
         "Tabs" => 10,
-        "Input Controls" => 11,
-        "Feedback" => 12,
+        "Toggles" => 11,
+        "Typography" => 12,
         _ => usize::MAX,
     }
 }
