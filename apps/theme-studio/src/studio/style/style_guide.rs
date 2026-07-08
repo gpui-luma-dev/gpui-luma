@@ -21,7 +21,7 @@ use gpui_luma::controls::combobox::{
     default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
 };
 use gpui_luma::controls::floating_menu::{
-    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, FloatingMenuState, FloatingMenuStepDirection,
+    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook,
     render_floating_menu,
 };
 use gpui_luma::controls::menu_item::MenuItem;
@@ -74,7 +74,7 @@ use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
 use gpui_luma::{declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt};
 use lucide_icons::Icon as LucideIcon;
 use self::cards::buttons::render_lucide_icon;
 
@@ -151,6 +151,7 @@ declare_form! {
             radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
             switch_preview_tabs: Option<Entity<TabsNavigation>> = None,
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
         }
     }
 }
@@ -165,6 +166,7 @@ impl StyleGuidePanel {
         self.sync_radio_preview_tabs(cx);
         self.sync_switch_preview_tabs(cx);
         self.sync_toggles_preview_tabs(cx);
+        self.sync_menus_preview_tabs(cx);
         self.sticky_heading_tracker.borrow_mut().reset();
         cx.notify();
     }
@@ -414,6 +416,38 @@ impl StyleGuidePanel {
         tabs
     }
 
+    fn sync_menus_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.menus_preview_tabs.clone(), cx);
+    }
+
+    fn menus_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.menus_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-menus-preview-tabs")
+            .items([
+                TabsNavigationItem::new("menu-trigger").label("Menu Trigger"),
+                TabsNavigationItem::new("trigger-sizes").label("Trigger Sizes"),
+                TabsNavigationItem::new("floating-menu").label("Floating Menu"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("menu-trigger")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.menus_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
     fn sync_preview_tabs(&self, tabs: Option<Entity<TabsNavigation>>, cx: &mut Context<Self>) {
         if let Some(tabs) = tabs {
             let look = self.look.clone();
@@ -433,6 +467,7 @@ impl Render for StyleGuidePanel {
         let _ = self.radio_preview_tabs(cx);
         let _ = self.switch_preview_tabs(cx);
         let _ = self.toggles_preview_tabs(cx);
+        let _ = self.menus_preview_tabs(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -572,6 +607,7 @@ impl StyleGuidePanel {
                 | StyleGuideSection::Radio
                 | StyleGuideSection::Switch
                 | StyleGuideSection::Toggle
+                | StyleGuideSection::Menus
         )
     }
 
@@ -629,7 +665,12 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
-            StyleGuideSection::Menus => cards::menus::render_menu_template_state_section(self.look.clone(), window, cx),
+            StyleGuideSection::Menus => cards::menus::render_menu_template_state_section(
+                self.look.clone(),
+                self.menus_preview_tabs.clone().expect("menus preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Selectors => {
                 cards::selectors::render_selector_templates_section(self.look.clone(), window, cx)
             }
@@ -821,15 +862,6 @@ struct InputTextAreaSample {
     label: &'static str,
     state: TextAreaState,
     enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-struct PopupMenuStateSample {
-    id: &'static str,
-    label: &'static str,
-    trigger_style: PopupMenuTriggerStyle,
-    state: InteractionState,
-    focus: PopupMenuControlFocusState,
 }
 
 #[derive(Clone, Copy)]

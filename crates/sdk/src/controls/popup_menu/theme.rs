@@ -38,11 +38,12 @@ pub struct PopupMenuLook {
     pub floating_menu: FloatingMenuLook,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PopupMenuTriggerMetrics {
     pub size: ControlSize,
     pub without_elevation: bool,
     pub icon_only: bool,
+    pub trigger_radius_override: Option<f32>,
 }
 
 pub trait PopupMenuTheme: Send + Sync {
@@ -68,7 +69,11 @@ pub trait PopupMenuTheme: Send + Sync {
             crate::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics_tokens| StandardBoxScale::compute(metrics.size, metrics_tokens, scale_factor),
         );
-        compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale)
+        let mut look = compose_popup_menu_look(&self.resolve(trigger_style, metrics, state), &scale);
+        if let Some(radius) = metrics.trigger_radius_override {
+            look.trigger_radius = radius;
+        }
+        look
     }
 }
 

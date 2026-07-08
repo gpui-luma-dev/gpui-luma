@@ -317,6 +317,7 @@ fn render_trigger_sample(
         trigger_size: ControlSize::Md,
         trigger_icon: None,
         without_elevation: false,
+        trigger_radius_override: None,
         open_submenu: None,
         active_path: None,
         enabled: !sample.state.disabled,

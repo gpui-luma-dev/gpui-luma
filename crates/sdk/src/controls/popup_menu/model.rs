@@ -50,6 +50,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub trigger_size: ControlSize,
     pub trigger_icon: Option<LucideIcon>,
     pub without_elevation: bool,
+    pub trigger_radius_override: Option<f32>,
     pub open_submenu: Option<usize>,
     pub active_path: Option<MenuPath>,
     pub enabled: bool,

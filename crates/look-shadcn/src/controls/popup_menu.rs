@@ -80,7 +80,12 @@ pub fn popup_menu_look(
         gpui_luma::theme::LayoutCacheKey { size: metrics.size, scale_factor_bits: scale_factor.to_bits() },
         |_| popup_menu_trigger_scale(mode, theme_mode, metrics.size, state, scale_factor),
     );
-    compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale)
+    let mut look =
+        compose_popup_menu_look(&popup_menu_palette(mode, theme_mode, trigger_style, metrics, state), &scale);
+    if let Some(radius) = metrics.trigger_radius_override {
+        look.trigger_radius = radius;
+    }
+    look
 }
 
 #[cfg(test)]

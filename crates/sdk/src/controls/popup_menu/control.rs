@@ -99,6 +99,7 @@ impl PopupMenu {
             trigger_size: self.model.trigger_size,
             trigger_icon: self.model.trigger_icon,
             without_elevation: self.model.without_elevation,
+            trigger_radius_override: None,
             open_submenu: self.menu_state.open_submenu(),
             active_path: self.menu_state.active_path(),
             enabled: self.model.enabled,

@@ -144,6 +144,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
             size: model.trigger_size,
             without_elevation: model.without_elevation,
             icon_only: model.trigger_icon.is_some(),
+            trigger_radius_override: model.trigger_radius_override,
         };
         let look = self.theme.resolve_look(model.trigger_style, metrics, model.state, scale_factor, _cx);
         let border = button_family_effective_border(look.trigger_border);

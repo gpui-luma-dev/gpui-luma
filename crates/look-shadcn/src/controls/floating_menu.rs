@@ -19,7 +19,7 @@ use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_floating_menu_surface_color_rule,
     find_floating_menu_surface_elevation_rule, find_floating_menu_trigger_color_rule,
-    resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
+    resolve_button_metrics_rule, resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
     resolve_stylesheet_shadow_token,
 };
 
@@ -111,6 +111,18 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
     let shadow = floating_menu_elevation_shadow(catalog, embedded_stylesheet());
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "floating_menu");
     let colors = resolve_floating_menu_colors(&resolver, true).unwrap_or_else(|_| FloatingMenuColorTable::fallback());
+    let button_metrics = embedded_stylesheet()
+        .button
+        .metrics_for_size(size)
+        .map(|rule| resolve_button_metrics_rule(rule, metrics, size));
+    let mut item_typography = typography.text.label;
+    if let Some(button_metrics) = button_metrics.as_ref() {
+        let base_size = item_typography.size;
+        item_typography.size = button_metrics.font_size;
+        if base_size > 0.0 {
+            item_typography.line_height = button_metrics.font_size * (item_typography.line_height / base_size);
+        }
+    }
 
     FloatingMenuLook {
         background: colors.background.hsla(),
@@ -123,11 +135,11 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_disabled_foreground: colors.item_disabled_foreground.hsla(),
         item_hover_background: colors.item_hover_background.hsla(),
         item_hover_foreground: colors.item_hover_foreground.hsla(),
-        item_typography: typography.text.label,
+        item_typography,
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: metrics.control_height(size) * 0.44,
+        item_icon_size: button_metrics.as_ref().map(|m| m.icon_size).unwrap_or_else(|| metrics.control_height(size) * 0.44),
         item_radius: metrics.radius.sm,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }
@@ -198,5 +210,19 @@ mod tests {
         assert_eq!(look.foreground, catalog.color("popover-foreground").expect("popover-foreground"));
         assert_eq!(look.item_hover_background, catalog.color("accent").expect("accent"));
         assert_eq!(look.item_hover_foreground, catalog.color("accent-foreground").expect("accent-foreground"));
+    }
+
+    #[test]
+    fn floating_menu_item_typography_scales_with_size() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let sm = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Sm);
+        let md = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md);
+        let lg = floating_menu_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Lg);
+
+        assert!((sm.item_typography.size - 12.0).abs() < f32::EPSILON);
+        assert!((md.item_typography.size - 14.0).abs() < f32::EPSILON);
+        assert!((lg.item_typography.size - 16.0).abs() < f32::EPSILON);
+        assert!(sm.item_typography.size < md.item_typography.size);
+        assert!(md.item_typography.size < lg.item_typography.size);
     }
 }
