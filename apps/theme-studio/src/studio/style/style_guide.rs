@@ -76,7 +76,7 @@ use gpui_luma::{GridLayout, GridTrack, declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
-use self::cards::buttons::{render_lucide_icon, round_icon_glyph};
+use self::cards::buttons::render_lucide_icon;
 
 #[path = "variant_state_table.rs"]
 mod variant_state_table;
@@ -94,7 +94,9 @@ enum StyleGuideSection {
     Feedback,
     Buttons,
     IconButtons,
-    Choice,
+    Checkbox,
+    Radio,
+    Switch,
     Toggle,
     Menus,
     Selectors,
@@ -104,11 +106,13 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 11] = [
+    const ALL: [Self; 13] = [
         Self::Typography,
         Self::Buttons,
         Self::IconButtons,
-        Self::Choice,
+        Self::Checkbox,
+        Self::Radio,
+        Self::Switch,
         Self::Toggle,
         Self::Menus,
         Self::Selectors,
@@ -132,6 +136,9 @@ declare_form! {
             sidebar_preview: Option<Entity<NavigationSidebar>> = None,
             buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            switch_preview_tabs: Option<Entity<TabsNavigation>> = None,
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
         }
     }
@@ -143,6 +150,9 @@ impl StyleGuidePanel {
         self.sync_sidebar_preview(cx);
         self.sync_buttons_preview_tabs(cx);
         self.sync_icon_buttons_preview_tabs(cx);
+        self.sync_checkbox_preview_tabs(cx);
+        self.sync_radio_preview_tabs(cx);
+        self.sync_switch_preview_tabs(cx);
         self.sync_toggles_preview_tabs(cx);
         cx.notify();
     }
@@ -301,6 +311,105 @@ impl StyleGuidePanel {
         self.toggles_preview_tabs = Some(tabs.clone());
         tabs
     }
+
+    fn sync_checkbox_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.checkbox_preview_tabs.clone(), cx);
+    }
+
+    fn checkbox_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.checkbox_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-checkbox-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.checkbox_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn sync_radio_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.radio_preview_tabs.clone(), cx);
+    }
+
+    fn radio_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.radio_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-radio-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.radio_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn sync_switch_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.switch_preview_tabs.clone(), cx);
+    }
+
+    fn switch_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.switch_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-switch-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.switch_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn sync_preview_tabs(&self, tabs: Option<Entity<TabsNavigation>>, cx: &mut Context<Self>) {
+        if let Some(tabs) = tabs {
+            let look = self.look.clone();
+            tabs.update(cx, move |tabs, cx| {
+                tabs.set_template(look.tabs_navigation_template(), cx);
+            });
+        }
+    }
 }
 
 impl Render for StyleGuidePanel {
@@ -308,6 +417,9 @@ impl Render for StyleGuidePanel {
         let _ = self.sidebar_preview(cx);
         let _ = self.buttons_preview_tabs(cx);
         let _ = self.icon_buttons_preview_tabs(cx);
+        let _ = self.checkbox_preview_tabs(cx);
+        let _ = self.radio_preview_tabs(cx);
+        let _ = self.switch_preview_tabs(cx);
         let _ = self.toggles_preview_tabs(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
@@ -414,7 +526,15 @@ impl StyleGuidePanel {
     }
 
     fn section_allows_interaction(section: StyleGuideSection) -> bool {
-        matches!(section, StyleGuideSection::Buttons | StyleGuideSection::IconButtons | StyleGuideSection::Toggle)
+        matches!(
+            section,
+            StyleGuideSection::Buttons
+                | StyleGuideSection::IconButtons
+                | StyleGuideSection::Checkbox
+                | StyleGuideSection::Radio
+                | StyleGuideSection::Switch
+                | StyleGuideSection::Toggle
+        )
     }
 
     fn scroll_progress(&self) -> f32 {
@@ -447,9 +567,24 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
-            StyleGuideSection::Choice => {
-                cards::buttons::render_choice_template_matrix_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Checkbox => cards::buttons::render_checkbox_template_matrix_section(
+                self.look.clone(),
+                self.checkbox_preview_tabs.clone().expect("checkbox preview tabs"),
+                window,
+                cx,
+            ),
+            StyleGuideSection::Radio => cards::buttons::render_radio_template_matrix_section(
+                self.look.clone(),
+                self.radio_preview_tabs.clone().expect("radio preview tabs"),
+                window,
+                cx,
+            ),
+            StyleGuideSection::Switch => cards::buttons::render_switch_template_matrix_section(
+                self.look.clone(),
+                self.switch_preview_tabs.clone().expect("switch preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Toggle => cards::buttons::render_toggle_template_matrix_section(
                 self.look.clone(),
                 self.toggles_preview_tabs.clone().expect("toggles preview tabs"),
@@ -623,10 +758,10 @@ enum ButtonTemplateVariant {
 }
 
 #[derive(Clone, Copy)]
-struct ChoiceTemplateStateSample {
-    id: &'static str,
-    label: &'static str,
-    state: InteractionState,
+enum ChoiceTemplateControl {
+    Radio,
+    Checkbox,
+    Switch,
 }
 
 #[derive(Clone, Copy)]
@@ -691,23 +826,6 @@ struct ProgressStateSample {
 }
 
 #[derive(Clone, Copy)]
-enum ChoiceTemplateControl {
-    Radio,
-    Checkbox,
-    Switch,
-    Toggle,
-    ToggleIcon,
-}
-
-#[derive(Clone, Copy)]
-enum ToggleTemplateVariant {
-    TextUnselected,
-    TextSelected,
-    IconUnselected,
-    IconSelected,
-}
-
-#[derive(Clone, Copy)]
 enum SelectorTemplateControl {
     AutocompleteTextBox,
     ComboBox,
@@ -721,8 +839,6 @@ impl ChoiceTemplateControl {
             Self::Radio => "radio",
             Self::Checkbox => "checkbox",
             Self::Switch => "switch",
-            Self::Toggle => "toggle",
-            Self::ToggleIcon => "toggle-icon",
         }
     }
 
@@ -731,62 +847,22 @@ impl ChoiceTemplateControl {
             Self::Radio => "Radio",
             Self::Checkbox => "Checkbox",
             Self::Switch => "Switch",
-            Self::Toggle => "Toggle",
-            Self::ToggleIcon => "Toggle Icon",
         }
     }
 
-    fn content(
-        self,
-        selected: bool,
-    ) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
+    fn content(self, _active: bool) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
+        Arc::new(move |_, _| div().into_any_element())
+    }
+
+    fn role(self) -> gpui_luma::controls::button_family::ButtonFamilyRole {
         match self {
-            Self::Radio => Arc::new(move |_, _| div().child("Radio").into_any_element()),
-            Self::Checkbox => Arc::new(move |_, _| div().child("Checkbox").into_any_element()),
-            Self::Switch => Arc::new(move |_, _| div().into_any_element()),
-            Self::Toggle => Arc::new(move |_, _| div().child("Toggle").into_any_element()),
-            Self::ToggleIcon => {
-                let icon = if selected { LucideIcon::Check } else { LucideIcon::Plus };
-                Arc::new(move |model, _| {
-                    let icon_size = button_preview_look_bool(model).map(|look| look.icon_size).unwrap_or(16.0);
-                    render_lucide_icon(icon, icon_size)
-                })
-            }
+            Self::Checkbox | Self::Radio => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
+            Self::Switch => gpui_luma::controls::button_family::ButtonFamilyRole::Text,
         }
     }
 
     fn round(self) -> bool {
-        matches!(self, Self::ToggleIcon)
-    }
-}
-
-impl ToggleTemplateVariant {
-    fn id(self) -> &'static str {
-        match self {
-            Self::TextUnselected => "text-unselected",
-            Self::TextSelected => "text-selected",
-            Self::IconUnselected => "icon-unselected",
-            Self::IconSelected => "icon-selected",
-        }
-    }
-
-    fn selected(self) -> bool {
-        matches!(self, Self::TextSelected | Self::IconSelected)
-    }
-
-    fn round(self) -> bool {
-        matches!(self, Self::IconUnselected | Self::IconSelected)
-    }
-
-    fn content(self) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
-        match self {
-            Self::TextUnselected | Self::TextSelected => {
-                let label = SharedString::from("Toggle");
-                Arc::new(move |_, _| div().child(label.clone()).into_any_element())
-            }
-            Self::IconUnselected => Arc::new(move |model, _| round_icon_glyph(model, false)),
-            Self::IconSelected => Arc::new(move |model, _| round_icon_glyph(model, true)),
-        }
+        false
     }
 }
 
@@ -802,12 +878,6 @@ impl SelectorTemplateControl {
 }
 
 fn button_preview_look(model: &ButtonRenderModel<()>) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
-    model.look.as_ref().map(|resolve| resolve(model))
-}
-
-fn button_preview_look_bool(
-    model: &ButtonRenderModel<bool>,
-) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
     model.look.as_ref().map(|resolve| resolve(model))
 }
 

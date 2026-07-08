@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
-use gpui_luma::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme,
-};
+use gpui_luma::controls::button_family::{ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme};
 use gpui_luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };

@@ -36,6 +36,15 @@ const BUTTON_STYLE_VARIANTS: [ButtonStyleVariantDef; 4] = [
     ButtonStyleVariantDef { label: "Ghost", description: "Quiet utility actions", style: ShadcnButtonStyle::Ghost },
 ];
 
+const CHOICE_STYLE_VARIANTS: [ButtonStyleVariantDef; 2] = [
+    ButtonStyleVariantDef { label: "Primary", description: "High emphasis actions", style: ShadcnButtonStyle::Primary },
+    ButtonStyleVariantDef {
+        label: "Secondary",
+        description: "Lower emphasis actions",
+        style: ShadcnButtonStyle::Secondary,
+    },
+];
+
 const BUTTON_TEMPLATE_VARIANTS: [ButtonTemplateVariant; 3] = [
     ButtonTemplateVariant::TextButton,
     ButtonTemplateVariant::TextButtonLeadingIcon,
@@ -514,60 +523,259 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
     }
 }
 
-pub(in crate::studio::style::style_guide) fn render_choice_template_matrix_section(
+pub(in crate::studio::style::style_guide) fn render_checkbox_template_matrix_section(
     look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_choice_control_template_matrix_section(
+        look,
+        ChoiceTemplateControl::Checkbox,
+        "Checkbox",
+        "Style variants by row. Pressed and Disabled · On columns show checked.",
+        preview_tabs,
+        window,
+        cx,
+    )
+}
+
+pub(in crate::studio::style::style_guide) fn render_radio_template_matrix_section(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_choice_control_template_matrix_section(
+        look,
+        ChoiceTemplateControl::Radio,
+        "Radio",
+        "Style variants by row. Pressed and Disabled · On columns show selected.",
+        preview_tabs,
+        window,
+        cx,
+    )
+}
+
+pub(in crate::studio::style::style_guide) fn render_switch_template_matrix_section(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_choice_control_template_matrix_section(
+        look,
+        ChoiceTemplateControl::Switch,
+        "Switch",
+        "Style variants by row. Pressed and Disabled · On columns show on.",
+        preview_tabs,
+        window,
+        cx,
+    )
+}
+
+fn render_choice_control_template_matrix_section(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    title: &'static str,
+    description: &'static str,
+    preview_tabs: Entity<TabsNavigation>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
-    let states = [
-        ChoiceTemplateStateSample { id: "default", label: "Default", state: InteractionState::default() },
-        ChoiceTemplateStateSample {
-            id: "hover",
-            label: "Hover",
-            state: InteractionState { hovered: true, ..InteractionState::default() },
-        },
-        ChoiceTemplateStateSample {
-            id: "focused",
-            label: "Focused",
-            state: InteractionState { focused: true, ..InteractionState::default() },
-        },
-        ChoiceTemplateStateSample {
-            id: "pressed",
-            label: "Pressed",
-            state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
-        },
-        ChoiceTemplateStateSample {
-            id: "disabled",
-            label: "Disabled",
-            state: InteractionState { disabled: true, ..InteractionState::default() },
-        },
-    ];
-    let controls = [
-        ChoiceTemplateControl::Radio,
-        ChoiceTemplateControl::Checkbox,
-        ChoiceTemplateControl::Switch,
-        ChoiceTemplateControl::Toggle,
-        ChoiceTemplateControl::ToggleIcon,
-    ];
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
-        "Choice Controls",
-        "Selection states across control families.",
+        title,
+        description,
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
-        chrome.panel_background,
-        div()
-            .flex()
-            .flex_col()
-            .items_start()
-            .gap(px(14.0))
-            .child(render_choice_matrix(&look, "Selected", true, &states, &controls, chrome.muted_text, window, cx))
-            .child(render_choice_matrix(&look, "Unselected", false, &states, &controls, chrome.muted_text, window, cx))
-            .into_any_element(),
+        gpui::hsla(0.0, 0.0, 0.0, 0.0),
+        render_choice_preview_tabbed_content(look, control, preview_tabs, active_tab, chrome.border, window, cx),
     )
+}
+
+fn render_choice_preview_tabbed_content(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let body = if active_tab.as_ref() == "sizes" {
+        render_choice_size_matrix(look.clone(), control, window, cx)
+    } else {
+        render_choice_variant_state_matrix(look.clone(), control, &toggle_interaction_state_samples(), window, cx)
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
+        .into_any_element()
+}
+
+fn render_choice_size_matrix(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    super::super::variant_state_table::VariantStateTable::new(
+        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+            .variant_column_width(BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(BUTTON_TABLE_RADIUS_COLUMN_WIDTH)
+            .header_height(BUTTON_TABLE_SIZE_HEADER_HEIGHT)
+            .row_height(BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT)
+            .variant_column_align_center(true),
+    )
+    .row_group_label("SIZE")
+    .column_headers(
+        CHOICE_STYLE_VARIANTS
+            .iter()
+            .map(|variant| render_button_radius_header_cell(variant.label, chrome.muted_text)),
+    )
+    .rows(BUTTON_SIZES.iter().map(|(size, label)| {
+        super::super::variant_state_table::VariantStateTableRow {
+            label: SharedString::from(*label),
+            description: SharedString::from(""),
+            cells: CHOICE_STYLE_VARIANTS
+                .iter()
+                .map(|variant| render_choice_size_cell(&look, control, variant.style, *size, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn render_choice_size_cell(
+    look: &Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let active = true;
+    let id = SharedString::from(format!(
+        "theme-studio-choice-size-preview-{}-{}-{}",
+        control.id(),
+        shadcn_style_id(style),
+        button_size_id(size),
+    ));
+    let model = ButtonRenderModel {
+        id,
+        data: active,
+        content: control.content(active),
+        role: control.role(),
+        size,
+        state: InteractionState::default(),
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+        elevation: true,
+        compact: false,
+        look: None,
+    };
+
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(choice_template_for_control(look, control, style).render(&model, window, cx))
+        .into_any_element()
+}
+
+fn render_choice_variant_state_matrix(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    samples: &[ButtonStateSample; 6],
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    super::super::variant_state_table::VariantStateTable::new(
+        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome),
+    )
+    .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
+    .rows(CHOICE_STYLE_VARIANTS.iter().map(|row| {
+        super::super::variant_state_table::VariantStateTableRow {
+            label: SharedString::from(row.label),
+            description: SharedString::from(row.description),
+            cells: samples
+                .iter()
+                .map(|sample| render_choice_variant_state_cell(&look, control, row.style, sample, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn choice_active_for_sample(sample: &ButtonStateSample) -> bool {
+    matches!(sample.id, "pressed" | "disabled-pressed")
+}
+
+fn render_choice_variant_state_cell(
+    look: &Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    style: ShadcnButtonStyle,
+    sample: &ButtonStateSample,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let active = choice_active_for_sample(sample);
+    let id = SharedString::from(format!(
+        "theme-studio-choice-preview-{}-{}-{}",
+        control.id(),
+        shadcn_style_id(style),
+        sample.id
+    ));
+    let model = ButtonRenderModel {
+        id,
+        data: active,
+        content: control.content(active),
+        role: control.role(),
+        size: ButtonSize::Md,
+        state: sample.state,
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+        elevation: true,
+        compact: false,
+        look: None,
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .justify_center()
+        .items_center()
+        .child(choice_template_for_control(look, control, style).render(&model, window, cx))
+        .into_any_element()
+}
+
+fn choice_template_for_control(
+    look: &Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    style: ShadcnButtonStyle,
+) -> Arc<dyn ButtonTemplate<bool>> {
+    match control {
+        ChoiceTemplateControl::Radio => look.radio_button_template(style),
+        ChoiceTemplateControl::Checkbox => look.checkbox_template(style),
+        ChoiceTemplateControl::Switch => look.switch_template(style),
+    }
 }
 
 pub(in crate::studio::style::style_guide) fn render_toggle_template_matrix_section(
@@ -861,26 +1069,6 @@ fn render_toggle_size_radius_cell(
         .into_any_element()
 }
 
-fn render_choice_header_row(controls: &[ChoiceTemplateControl], label_color: gpui::Hsla) -> AnyElement {
-    div()
-        .flex()
-        .items_center()
-        .gap(px(10.0))
-        .child(div().w(px(28.0)))
-        .children(controls.iter().map(|control| {
-            div()
-                .w(px(152.0))
-                .flex()
-                .justify_center()
-                .text_xs()
-                .line_height(px(15.0))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(label_color)
-                .child(control.header())
-        }))
-        .into_any_element()
-}
-
 fn render_button_state_sample(
     template: &Arc<dyn ButtonTemplate<()>>,
     look: &ShadcnLook,
@@ -922,105 +1110,6 @@ fn render_button_state_sample(
         .items_center()
         .child(template.render(&model, window, cx))
         .into_any_element()
-}
-
-fn render_choice_matrix(
-    look: &Arc<ShadcnLook>,
-    section_label: &'static str,
-    selected: bool,
-    states: &[ChoiceTemplateStateSample],
-    controls: &[ChoiceTemplateControl],
-    label_color: gpui::Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    div()
-        .flex()
-        .items_stretch()
-        .gap(px(8.0))
-        .child(render_vertical_section_rail(section_label, label_color, states.len()))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(8.0))
-                .child(render_choice_header_row(controls, label_color))
-                .children(
-                    states
-                        .iter()
-                        .map(|state| render_choice_state_row(look, state, selected, controls, label_color, window, cx)),
-                ),
-        )
-        .into_any_element()
-}
-
-fn render_choice_state_row(
-    look: &Arc<ShadcnLook>,
-    state_sample: &ChoiceTemplateStateSample,
-    selected: bool,
-    controls: &[ChoiceTemplateControl],
-    label_color: gpui::Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    div()
-        .flex()
-        .items_stretch()
-        .gap(px(10.0))
-        .child(render_vertical_state_rail(state_sample.label, state_sample.id, label_color))
-        .children(
-            controls
-                .iter()
-                .map(|control| render_choice_control_cell(look, *control, selected, state_sample, window, cx)),
-        )
-        .into_any_element()
-}
-
-fn render_choice_control_cell(
-    look: &Arc<ShadcnLook>,
-    control: ChoiceTemplateControl,
-    selected: bool,
-    state_sample: &ChoiceTemplateStateSample,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-choice-template-preview-{}-{}", state_sample.id, control.id()));
-    let model = ButtonRenderModel {
-        id,
-        data: selected,
-        content: control.content(selected),
-        role: ButtonFamilyRole::Text,
-        size: ButtonSize::Md,
-        state: state_sample.state,
-        round: control.round(),
-        radius_override: std::cell::Cell::new(None),
-        elevation: true,
-        compact: false,
-        look: None,
-    };
-
-    div()
-        .w(px(152.0))
-        .flex()
-        .items_center()
-        .justify_center()
-        .child(choice_template_for_control(look, control).render(&model, window, cx))
-        .into_any_element()
-}
-
-fn choice_template_for_control(
-    look: &Arc<ShadcnLook>,
-    control: ChoiceTemplateControl,
-) -> Arc<dyn ButtonTemplate<bool>> {
-    match control {
-        ChoiceTemplateControl::Radio => look.radio_button_template(ShadcnButtonStyle::Primary),
-        ChoiceTemplateControl::Checkbox => look.checkbox_template(ShadcnButtonStyle::Primary),
-        ChoiceTemplateControl::Switch => look.switch_template(ShadcnButtonStyle::Primary),
-        ChoiceTemplateControl::Toggle | ChoiceTemplateControl::ToggleIcon => {
-            look.toggle_template(ShadcnButtonStyle::Secondary)
-        }
-    }
 }
 
 fn toggle_selected_for_sample(sample: &ButtonStateSample) -> bool {
