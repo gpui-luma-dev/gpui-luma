@@ -132,6 +132,7 @@ declare_form! {
             sidebar_preview: Option<Entity<NavigationSidebar>> = None,
             buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
             icon_buttons_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
         }
     }
 }
@@ -142,6 +143,7 @@ impl StyleGuidePanel {
         self.sync_sidebar_preview(cx);
         self.sync_buttons_preview_tabs(cx);
         self.sync_icon_buttons_preview_tabs(cx);
+        self.sync_toggles_preview_tabs(cx);
         cx.notify();
     }
 
@@ -264,6 +266,41 @@ impl StyleGuidePanel {
         self.icon_buttons_preview_tabs = Some(tabs.clone());
         tabs
     }
+
+    fn sync_toggles_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        if let Some(tabs) = self.toggles_preview_tabs.clone() {
+            let look = self.look.clone();
+            tabs.update(cx, move |tabs, cx| {
+                tabs.set_template(look.tabs_navigation_template(), cx);
+            });
+        }
+    }
+
+    fn toggles_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.toggles_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-toggles-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.toggles_preview_tabs = Some(tabs.clone());
+        tabs
+    }
 }
 
 impl Render for StyleGuidePanel {
@@ -271,6 +308,7 @@ impl Render for StyleGuidePanel {
         let _ = self.sidebar_preview(cx);
         let _ = self.buttons_preview_tabs(cx);
         let _ = self.icon_buttons_preview_tabs(cx);
+        let _ = self.toggles_preview_tabs(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -376,7 +414,7 @@ impl StyleGuidePanel {
     }
 
     fn section_allows_interaction(section: StyleGuideSection) -> bool {
-        matches!(section, StyleGuideSection::Buttons | StyleGuideSection::IconButtons)
+        matches!(section, StyleGuideSection::Buttons | StyleGuideSection::IconButtons | StyleGuideSection::Toggle)
     }
 
     fn scroll_progress(&self) -> f32 {
@@ -412,9 +450,12 @@ impl StyleGuidePanel {
             StyleGuideSection::Choice => {
                 cards::buttons::render_choice_template_matrix_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Toggle => {
-                cards::buttons::render_toggle_template_matrix_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Toggle => cards::buttons::render_toggle_template_matrix_section(
+                self.look.clone(),
+                self.toggles_preview_tabs.clone().expect("toggles preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Menus => cards::menus::render_menu_template_state_section(self.look.clone(), window, cx),
             StyleGuideSection::Selectors => {
                 cards::selectors::render_selector_templates_section(self.look.clone(), window, cx)
@@ -589,13 +630,6 @@ struct ChoiceTemplateStateSample {
 }
 
 #[derive(Clone, Copy)]
-struct ToggleStateSample {
-    id: &'static str,
-    header: &'static str,
-    state: InteractionState,
-}
-
-#[derive(Clone, Copy)]
 struct InputInteractionSample {
     id: &'static str,
     label: &'static str,
@@ -669,8 +703,8 @@ enum ChoiceTemplateControl {
 enum ToggleTemplateVariant {
     TextUnselected,
     TextSelected,
-    RoundIconUnselected,
-    RoundIconSelected,
+    IconUnselected,
+    IconSelected,
 }
 
 #[derive(Clone, Copy)]
@@ -731,17 +765,17 @@ impl ToggleTemplateVariant {
         match self {
             Self::TextUnselected => "text-unselected",
             Self::TextSelected => "text-selected",
-            Self::RoundIconUnselected => "round-icon-unselected",
-            Self::RoundIconSelected => "round-icon-selected",
+            Self::IconUnselected => "icon-unselected",
+            Self::IconSelected => "icon-selected",
         }
     }
 
     fn selected(self) -> bool {
-        matches!(self, Self::TextSelected | Self::RoundIconSelected)
+        matches!(self, Self::TextSelected | Self::IconSelected)
     }
 
     fn round(self) -> bool {
-        matches!(self, Self::RoundIconUnselected | Self::RoundIconSelected)
+        matches!(self, Self::IconUnselected | Self::IconSelected)
     }
 
     fn content(self) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
@@ -750,8 +784,8 @@ impl ToggleTemplateVariant {
                 let label = SharedString::from("Toggle");
                 Arc::new(move |_, _| div().child(label.clone()).into_any_element())
             }
-            Self::RoundIconUnselected => Arc::new(move |model, _| round_icon_glyph(model, false)),
-            Self::RoundIconSelected => Arc::new(move |model, _| round_icon_glyph(model, true)),
+            Self::IconUnselected => Arc::new(move |model, _| round_icon_glyph(model, false)),
+            Self::IconSelected => Arc::new(move |model, _| round_icon_glyph(model, true)),
         }
     }
 }

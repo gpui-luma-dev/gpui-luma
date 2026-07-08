@@ -114,6 +114,27 @@ style = "outline"
 shadow = "shadow-xs"
 
 # Toggle elevation (full-button toggles; matches checkbox/radio/switch indicator policy).
+[toggle.metrics.sm]
+height = "36.0"
+padding_horizontal = 10.0
+font_size = 12.0
+icon_size = 14.0
+corner_radius = "radius"
+
+[toggle.metrics.md]
+height = "40.0"
+padding_horizontal = 12.0
+font_size = 14.0
+icon_size = 16.0
+corner_radius = "radius"
+
+[toggle.metrics.lg]
+height = "44.0"
+padding_horizontal = 20.0
+font_size = 16.0
+icon_size = 18.0
+corner_radius = "radius"
+
 [[toggle.elevation_rules]]
 shadow = "shadow-sm"
 
@@ -185,8 +206,8 @@ style = "outline"
 layer = "default"
 selected = true
 mode = "light"
-background = "primary"
-foreground = "primary-foreground"
+background = "accent"
+foreground = "accent-foreground"
 border = "border"
 
 [[button.color_rules]]
@@ -194,8 +215,8 @@ style = "outline"
 layer = "default"
 selected = true
 mode = "dark"
-background = "primary"
-foreground = "primary-foreground"
+background = "accent"
+foreground = "accent-foreground"
 border = "input"
 
 [[button.color_rules]]
@@ -203,8 +224,8 @@ style = "outline"
 layer = "hover"
 selected = true
 mode = "light"
-background = "primary-hover"
-foreground = "primary-foreground"
+background = "accent"
+foreground = "accent-foreground"
 border = "border"
 
 [[button.color_rules]]
@@ -212,8 +233,8 @@ style = "outline"
 layer = "hover"
 selected = true
 mode = "dark"
-background = "primary-hover"
-foreground = "primary-foreground"
+background = "input/50"
+foreground = "accent-foreground"
 border = "input"
 
 [[button.color_rules]]
@@ -221,8 +242,8 @@ style = "outline"
 layer = "pressed"
 selected = true
 mode = "light"
-background = "primary-pressed"
-foreground = "primary-foreground"
+background = "accent"
+foreground = "accent-foreground"
 border = "border"
 
 [[button.color_rules]]
@@ -230,8 +251,8 @@ style = "outline"
 layer = "pressed"
 selected = true
 mode = "dark"
-background = "primary-pressed"
-foreground = "primary-foreground"
+background = "input/50"
+foreground = "accent-foreground"
 border = "input"
 
 # Outline button states (default/unselected)
@@ -301,22 +322,40 @@ border = "border"
 style = "ghost"
 layer = "default"
 selected = true
-background = "primary"
-foreground = "primary-foreground"
+background = "accent"
+foreground = "accent-foreground"
 
 [[button.color_rules]]
 style = "ghost"
 layer = "hover"
 selected = true
-background = "primary-hover"
-foreground = "primary-foreground"
+mode = "light"
+background = "accent"
+foreground = "accent-foreground"
+
+[[button.color_rules]]
+style = "ghost"
+layer = "hover"
+selected = true
+mode = "dark"
+background = "accent/50"
+foreground = "accent-foreground"
 
 [[button.color_rules]]
 style = "ghost"
 layer = "pressed"
 selected = true
-background = "primary-pressed"
-foreground = "primary-foreground"
+mode = "light"
+background = "accent"
+foreground = "accent-foreground"
+
+[[button.color_rules]]
+style = "ghost"
+layer = "pressed"
+selected = true
+mode = "dark"
+background = "accent/50"
+foreground = "accent-foreground"
 
 # Ghost button states (default/unselected)
 [[button.color_rules]]

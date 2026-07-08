@@ -1,8 +1,7 @@
 use super::super::*;
 
-const TEMPLATE_GRID_COLUMN_WIDTH: f32 = 152.0;
-const TEMPLATE_GRID_GAP: f32 = 10.0;
 const BUTTON_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
+const TOGGLE_TEXT_TABLE_STATE_COLUMN_WIDTH: f32 = 112.0;
 const BUTTON_TABLE_ROW_HEIGHT: f32 = 140.0;
 const BUTTON_TABLE_RADIUS_COLUMN_WIDTH: f32 = 136.0;
 const BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT: f32 = 55.0;
@@ -10,6 +9,8 @@ const BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH: f32 = 120.0;
 const BUTTON_TABLE_SIZE_HEADER_HEIGHT: f32 = 40.0;
 
 const BUTTON_TABLE_VARIANT_GAP: f32 = 10.0;
+
+const SIZE_PREVIEW_STYLE: ShadcnButtonStyle = ShadcnButtonStyle::Primary;
 
 const BUTTON_SIZES: [(ButtonSize, &'static str); 3] =
     [(ButtonSize::Sm, "Small"), (ButtonSize::Md, "Medium"), (ButtonSize::Lg, "Large")];
@@ -319,7 +320,7 @@ fn render_icon_button_size_matrix(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    render_button_size_radius_matrix(look, template, ShadcnButtonStyle::Primary, true, window, cx)
+    render_button_size_radius_matrix(look, template, SIZE_PREVIEW_STYLE, true, window, cx)
 }
 
 fn render_button_size_matrix(
@@ -328,7 +329,7 @@ fn render_button_size_matrix(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    render_button_size_radius_matrix(look, template, ShadcnButtonStyle::Primary, false, window, cx)
+    render_button_size_radius_matrix(look, template, SIZE_PREVIEW_STYLE, false, window, cx)
 }
 
 fn render_button_size_radius_matrix(
@@ -465,6 +466,10 @@ fn radius_label_id(radius: ButtonRadiusPreset) -> &'static str {
 }
 
 fn render_icon_button_state_header_cell(sample: &ButtonStateSample, muted_text: gpui::Hsla) -> AnyElement {
+    render_interaction_state_header_cell(sample.id, sample.header, muted_text)
+}
+
+fn render_interaction_state_header_cell(id: &'static str, header: &'static str, muted_text: gpui::Hsla) -> AnyElement {
     div()
         .w_full()
         .h_full()
@@ -473,18 +478,14 @@ fn render_icon_button_state_header_cell(sample: &ButtonStateSample, muted_text: 
         .items_center()
         .justify_center()
         .gap(px(4.0))
-        .child(
-            div()
-                .text_color(muted_text)
-                .child(render_lucide_icon(icon_button_state_header_icon(sample.id), 16.0)),
-        )
+        .child(div().text_color(muted_text).child(render_lucide_icon(icon_button_state_header_icon(id), 16.0)))
         .child(
             div()
                 .text_xs()
                 .line_height(px(15.0))
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(muted_text)
-                .child(icon_button_state_display_label(sample.header)),
+                .child(icon_button_state_display_label(header)),
         )
         .into_any_element()
 }
@@ -496,6 +497,7 @@ fn icon_button_state_header_icon(state_id: &'static str) -> LucideIcon {
         "focused" => LucideIcon::SquareDashed,
         "pressed" => LucideIcon::ArrowDown,
         "disabled" => LucideIcon::CircleMinus,
+        "disabled-pressed" => LucideIcon::CircleMinus,
         _ => LucideIcon::House,
     }
 }
@@ -507,6 +509,7 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
         "focused" => "Focused",
         "pressed" => "Pressed",
         "disabled" => "Disabled",
+        "disabled-pressed" => "Disabled · On",
         _ => header,
     }
 }
@@ -569,79 +572,293 @@ pub(in crate::studio::style::style_guide) fn render_choice_template_matrix_secti
 
 pub(in crate::studio::style::style_guide) fn render_toggle_template_matrix_section(
     look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
     let template = look.toggle_template(ShadcnButtonStyle::Secondary);
-    let samples = [
-        ToggleStateSample { id: "default", header: "default", state: InteractionState::default() },
-        ToggleStateSample {
-            id: "hover",
-            header: "hover",
-            state: InteractionState { hovered: true, ..InteractionState::default() },
-        },
-        ToggleStateSample {
-            id: "focused",
-            header: "focused",
-            state: InteractionState { focused: true, ..InteractionState::default() },
-        },
-        ToggleStateSample {
-            id: "pressed",
-            header: "pressed",
-            state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
-        },
-        ToggleStateSample {
-            id: "disabled",
-            header: "disabled",
-            state: InteractionState { disabled: true, ..InteractionState::default() },
-        },
-    ];
-    let variants = [
-        ToggleTemplateVariant::TextUnselected,
-        ToggleTemplateVariant::TextSelected,
-        ToggleTemplateVariant::RoundIconUnselected,
-        ToggleTemplateVariant::RoundIconSelected,
-    ];
+    let samples = toggle_interaction_state_samples();
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
         "Toggles",
-        "Selected and unselected interaction states.",
+        "Selected toggles per style variant. Pressed and Disabled · On columns show toggled on.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
-        chrome.panel_background,
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(20.0))
-            .children([
-                render_toggle_template_section(
-                    &look,
-                    &template,
-                    "Primary",
-                    ShadcnButtonStyle::Primary,
-                    &variants,
-                    &samples,
-                    chrome.muted_text,
-                    window,
-                    cx,
-                ),
-                render_toggle_template_section(
-                    &look,
-                    &template,
-                    "Secondary",
-                    ShadcnButtonStyle::Secondary,
-                    &variants,
-                    &samples,
-                    chrome.muted_text,
-                    window,
-                    cx,
-                ),
-            ])
-            .into_any_element(),
+        gpui::hsla(0.0, 0.0, 0.0, 0.0),
+        render_toggle_preview_tabbed_content(
+            look.as_ref(),
+            &template,
+            &samples,
+            preview_tabs,
+            active_tab,
+            chrome.border,
+            window,
+            cx,
+        ),
     )
+}
+
+fn toggle_interaction_state_samples() -> [ButtonStateSample; 6] {
+    [
+        ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
+        ButtonStateSample {
+            id: "hover",
+            header: "hover",
+            state: InteractionState { hovered: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "focused",
+            header: "focused",
+            state: InteractionState { focused: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "pressed",
+            header: "pressed",
+            state: InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "disabled",
+            header: "disabled",
+            state: InteractionState { disabled: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "disabled-pressed",
+            header: "disabled-pressed",
+            state: InteractionState { disabled: true, pressed: true, ..InteractionState::default() },
+        },
+    ]
+}
+
+fn render_toggle_preview_tabbed_content(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    samples: &[ButtonStateSample],
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let body = if active_tab.as_ref() == "sizes" {
+        render_toggle_sizes_preview(look, template, window, cx)
+    } else {
+        render_toggle_template_preview(look, template, samples, window, cx)
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
+        .into_any_element()
+}
+
+fn render_toggle_template_preview(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    samples: &[ButtonStateSample],
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(20.0))
+        .children([
+            render_toggle_text_template_matrix(look, template, samples, window, cx),
+            render_toggle_icon_template_matrix(look, template, samples, window, cx),
+        ])
+        .into_any_element()
+}
+
+fn render_toggle_text_template_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    samples: &[ButtonStateSample],
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    super::super::variant_state_table::VariantStateTable::new(
+        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+            .state_column_width(TOGGLE_TEXT_TABLE_STATE_COLUMN_WIDTH),
+    )
+    .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
+    .rows(BUTTON_STYLE_VARIANTS.iter().map(|row| {
+        super::super::variant_state_table::VariantStateTableRow {
+            label: SharedString::from(row.label),
+            description: SharedString::from(row.description),
+            cells: samples
+                .iter()
+                .map(|sample| render_toggle_state_sample(template, look, row.style, false, sample, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn render_toggle_icon_template_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    samples: &[ButtonStateSample],
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    super::super::variant_state_table::VariantStateTable::new(
+        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome),
+    )
+    .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
+    .rows(ICON_BUTTON_VARIANTS.iter().map(|row| {
+        super::super::variant_state_table::VariantStateTableRow {
+            label: SharedString::from(row.label),
+            description: SharedString::from(row.description),
+            cells: samples
+                .iter()
+                .map(|sample| render_toggle_state_sample(template, look, row.style, true, sample, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn render_toggle_sizes_preview(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(20.0))
+        .children([
+            render_toggle_text_size_matrix(look, template, window, cx),
+            render_toggle_icon_size_matrix(look, template, window, cx),
+        ])
+        .into_any_element()
+}
+
+fn render_toggle_text_size_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_toggle_size_radius_matrix(look, template, SIZE_PREVIEW_STYLE, false, window, cx)
+}
+
+fn render_toggle_icon_size_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_toggle_size_radius_matrix(look, template, SIZE_PREVIEW_STYLE, true, window, cx)
+}
+
+fn render_toggle_size_radius_matrix(
+    look: &ShadcnLook,
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    style: ShadcnButtonStyle,
+    icon_only: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    super::super::variant_state_table::VariantStateTable::new(
+        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+            .variant_column_width(BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(BUTTON_TABLE_RADIUS_COLUMN_WIDTH)
+            .header_height(BUTTON_TABLE_SIZE_HEADER_HEIGHT)
+            .row_height(BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT)
+            .variant_column_align_center(true),
+    )
+    .row_group_label("SIZE")
+    .column_headers(
+        ButtonRadiusPreset::ALL
+            .iter()
+            .map(|preset| render_button_radius_header_cell(preset.label(), chrome.muted_text)),
+    )
+    .rows(BUTTON_SIZES.iter().map(|(size, label)| {
+        super::super::variant_state_table::VariantStateTableRow {
+            label: SharedString::from(*label),
+            description: SharedString::from(""),
+            cells: ButtonRadiusPreset::ALL
+                .iter()
+                .map(|radius| {
+                    render_toggle_size_radius_cell(template, look, style, *size, *radius, icon_only, window, cx)
+                })
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn render_toggle_size_radius_cell(
+    template: &Arc<dyn ButtonTemplate<bool>>,
+    look: &ShadcnLook,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    radius: ButtonRadiusPreset,
+    icon_only: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let selected = true;
+    let id = SharedString::from(format!(
+        "theme-studio-toggle-size-radius-preview-{}-{}-{}-{}",
+        shadcn_style_id(style),
+        button_size_id(size),
+        radius_label_id(radius),
+        if icon_only { "icon" } else { "text" }
+    ));
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> = if icon_only {
+        Arc::new(move |model, _| {
+            let icon_size = button_preview_look_bool(model).map(|look| look.icon_size).unwrap_or(16.0);
+            render_lucide_icon(LucideIcon::Heart, icon_size)
+        })
+    } else {
+        let label = SharedString::from("Toggle");
+        Arc::new(move |_, _| div().child(label.clone()).into_any_element())
+    };
+    let look_source = if icon_only {
+        toggle_icon_look_for_semantic(Arc::new(look.clone()), style, size, radius, selected)
+    } else {
+        toggle_look_for_semantic(Arc::new(look.clone()), style, size, radius, selected)
+    };
+    let model = ButtonRenderModel {
+        id,
+        data: selected,
+        content,
+        role: ButtonFamilyRole::Toggle { selected },
+        size,
+        state: InteractionState::default(),
+        round: false,
+        radius_override: std::cell::Cell::new(None),
+        elevation: true,
+        compact: false,
+        look: Some(look_source),
+    };
+
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .child(template.render(&model, window, cx))
+        .into_any_element()
 }
 
 fn render_choice_header_row(controls: &[ChoiceTemplateControl], label_color: gpui::Hsla) -> AnyElement {
@@ -806,99 +1023,48 @@ fn choice_template_for_control(
     }
 }
 
-fn render_toggle_template_section(
-    look: &Arc<ShadcnLook>,
-    template: &Arc<dyn ButtonTemplate<bool>>,
-    section_label: &'static str,
-    style: ShadcnButtonStyle,
-    variants: &[ToggleTemplateVariant],
-    samples: &[ToggleStateSample],
-    label_color: gpui::Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    div()
-        .flex()
-        .items_start()
-        .gap(px(8.0))
-        .child(render_vertical_section_rail(section_label, label_color, variants.len()))
-        .child(render_toggle_matrix_grid(template, look, style, variants, samples, label_color, window, cx))
-        .into_any_element()
-}
-
-fn render_toggle_matrix_grid(
-    template: &Arc<dyn ButtonTemplate<bool>>,
-    look: &Arc<ShadcnLook>,
-    style: ShadcnButtonStyle,
-    variants: &[ToggleTemplateVariant],
-    samples: &[ToggleStateSample],
-    label_color: gpui::Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let mut grid = GridLayout::new()
-        .rows(variants.len() + 1)
-        .columns((0..samples.len()).map(|_| GridTrack::Px(TEMPLATE_GRID_COLUMN_WIDTH)))
-        .gap_x(TEMPLATE_GRID_GAP)
-        .gap_y(8.0);
-
-    for (col, sample) in samples.iter().enumerate() {
-        grid = grid.child(render_toggle_header_cell(sample.header, label_color), 0, col);
-    }
-
-    for (row, variant) in variants.iter().enumerate() {
-        for (col, sample) in samples.iter().enumerate() {
-            grid = grid.child(
-                render_toggle_state_sample(template, look, style, *variant, sample, window, cx),
-                row + 1,
-                col,
-            );
-        }
-    }
-
-    grid.into_any_element()
-}
-
-fn render_toggle_header_cell(label: &'static str, label_color: gpui::Hsla) -> AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .justify_center()
-        .text_size(px(11.0))
-        .line_height(px(15.0))
-        .text_color(label_color)
-        .child(label)
-        .into_any_element()
+fn toggle_selected_for_sample(sample: &ButtonStateSample) -> bool {
+    matches!(sample.id, "pressed" | "disabled-pressed")
 }
 
 fn render_toggle_state_sample(
     template: &Arc<dyn ButtonTemplate<bool>>,
-    look: &Arc<ShadcnLook>,
+    look: &ShadcnLook,
     style: ShadcnButtonStyle,
-    variant: ToggleTemplateVariant,
-    sample: &ToggleStateSample,
+    icon_only: bool,
+    sample: &ButtonStateSample,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let selected = variant.selected();
+    let selected = toggle_selected_for_sample(sample);
     let id = SharedString::from(format!(
         "theme-studio-toggle-preview-{}-{}-{}",
         shadcn_style_id(style),
-        variant.id(),
+        if icon_only { "icon" } else { "text" },
         sample.id
     ));
+    let content: gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> = if icon_only {
+        Arc::new(move |model, _| round_icon_glyph(model, selected))
+    } else {
+        let label = SharedString::from("Toggle");
+        Arc::new(move |_, _| div().child(label.clone()).into_any_element())
+    };
     let model = ButtonRenderModel {
         id,
         data: selected,
-        content: variant.content(),
+        content,
         role: ButtonFamilyRole::Toggle { selected },
         size: ButtonSize::Md,
         state: sample.state,
-        round: variant.round(),
+        round: icon_only,
         radius_override: std::cell::Cell::new(None),
         elevation: true,
         compact: false,
-        look: Some(toggle_button_look_for_style(look.clone(), style)),
+        look: Some(if icon_only {
+            toggle_icon_look_for_style(Arc::new(look.clone()), style)
+        } else {
+            toggle_button_look_for_style(Arc::new(look.clone()), style)
+        }),
     };
 
     div()
@@ -908,6 +1074,72 @@ fn render_toggle_state_sample(
         .items_center()
         .child(template.render(&model, window, cx))
         .into_any_element()
+}
+
+fn toggle_icon_look_for_style(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+    Arc::new(move |model| {
+        let tokens = theme.mode_tokens();
+        gpui_luma_look_shadcn::paint::toggle_icon_look_semantic(
+            tokens.as_ref(),
+            theme.mode(),
+            style,
+            model.data,
+            model.size,
+            Some(ButtonRadiusPreset::Full),
+            model.state,
+        )
+    })
+}
+
+fn toggle_icon_look_for_semantic(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    radius: ButtonRadiusPreset,
+    selected: bool,
+) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+    Arc::new(move |model| {
+        let tokens = theme.mode_tokens();
+        gpui_luma_look_shadcn::paint::toggle_icon_look_semantic(
+            tokens.as_ref(),
+            theme.mode(),
+            style,
+            selected,
+            size,
+            Some(radius),
+            model.state,
+        )
+    })
+}
+
+fn toggle_look_for_semantic(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+    size: ButtonSize,
+    radius: ButtonRadiusPreset,
+    selected: bool,
+) -> gpui_luma::controls::command::button::ButtonLookSource<bool> {
+    Arc::new(move |model| {
+        let tokens = theme.mode_tokens();
+        gpui_luma_look_shadcn::paint::toggle_look_semantic(
+            tokens.as_ref(),
+            theme.mode(),
+            style,
+            selected,
+            size,
+            Some(radius),
+            model.state,
+        )
+    })
+}
+
+fn button_preview_look_bool(
+    model: &ButtonRenderModel<bool>,
+) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
+    model.look.as_ref().map(|resolve| resolve(model))
 }
 
 fn toggle_button_look_for_style(

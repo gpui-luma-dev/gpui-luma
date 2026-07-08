@@ -119,6 +119,8 @@ impl ButtonStylesheet {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct ToggleStylesheet {
     #[serde(default)]
+    pub metrics: HashMap<String, ButtonMetricsRule>,
+    #[serde(default)]
     pub elevation_rules: Vec<LayeredElevationRule>,
 }
 
@@ -128,6 +130,15 @@ impl ToggleStylesheet {
             return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
         }
         self.elevation_rules.iter().find(|rule| rule.layer.is_none())
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ButtonMetricsRule> {
+        let key = match size {
+            ControlSize::Sm => "sm",
+            ControlSize::Md => "md",
+            ControlSize::Lg => "lg",
+        };
+        self.metrics.get(key)
     }
 }
 

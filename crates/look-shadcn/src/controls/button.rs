@@ -109,6 +109,9 @@ pub fn button_look(
     size: ControlSize,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    if let ButtonFamilyRole::Toggle { selected } = role {
+        return super::toggle::toggle_look(mode, theme_mode, style, selected, size, state);
+    }
     button_look_semantic(mode, theme_mode, style, role, size, None, state)
 }
 
@@ -121,6 +124,10 @@ pub fn button_look_semantic(
     radius: Option<ButtonRadiusPreset>,
     state: InteractionState,
 ) -> ButtonFamilyLook {
+    if let ButtonFamilyRole::Toggle { selected } = role {
+        return super::toggle::toggle_look_semantic(mode, theme_mode, style, selected, size, radius, state);
+    }
+
     let ctx = LookContext::new(mode, theme_mode, state);
     let stylesheet = embedded_stylesheet();
     let palette = button_palette(&ctx, stylesheet, style, role, size);
@@ -133,15 +140,11 @@ pub fn button_look_semantic(
     if let Some(radius) = radius {
         look.radius = resolve_button_radius_preset(radius, ctx.metrics(), look.height);
     }
-    look.shadow = if matches!(role, ButtonFamilyRole::Toggle { .. }) {
-        toggle_elevation_shadow(ctx.catalog(), stylesheet, ctx.state.layer())
-    } else {
-        button_elevation_shadow(&ctx, stylesheet, effective_style)
-    };
+    look.shadow = button_elevation_shadow(&ctx, stylesheet, effective_style);
     look
 }
 
-fn toggle_elevation_shadow(
+pub(crate) fn toggle_elevation_shadow(
     catalog: &crate::catalog::CssTokenMap,
     stylesheet: &StylesheetConfig,
     layer: InteractionLayer,
@@ -228,8 +231,15 @@ pub fn button_palette(
 }
 
 fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
+    effective_button_style_for_role(style, role)
+}
+
+pub(crate) fn effective_button_style_for_role(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
     if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
-        ShadcnButtonStyle::Outline
+        match style {
+            ShadcnButtonStyle::Ghost | ShadcnButtonStyle::Outline => style,
+            _ => ShadcnButtonStyle::Outline,
+        }
     } else {
         style
     }
@@ -243,6 +253,7 @@ mod tests {
     use super::*;
     use gpui_luma::controls::button_family::ButtonFamilyRole;
     use crate::catalog::CssTokenMap;
+    use crate::controls::toggle::toggle_look;
     use crate::mode::ShadcnModeTokens;
     use gpui_luma::theme::ThemeMode;
 
@@ -527,6 +538,69 @@ mod tests {
         );
 
         assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn unselected_ghost_toggle_has_no_border_like_ghost_icon_button() {
+        let catalog = retro_arcade_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let icon = button_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Ghost,
+            ButtonFamilyRole::Icon,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+        let toggle = toggle_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Ghost,
+            false,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+
+        assert_eq!(toggle.border, icon.border);
+        assert!(
+            gpui_luma::controls::button_family::button_family_effective_border(toggle.border).a <= 0.0,
+            "ghost toggle off-state should be borderless"
+        );
+    }
+
+    #[test]
+    fn unselected_primary_toggle_still_uses_outline_border() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let toggle = toggle_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+
+        assert!(
+            gpui_luma::controls::button_family::button_family_effective_border(toggle.border).a > 0.0,
+            "primary toggle off-state should keep outline border"
+        );
+    }
+
+    #[test]
+    fn primary_toggle_still_uses_toggle_elevation_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let look = toggle_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            true,
+            ControlSize::Md,
+            InteractionState::default(),
+        );
+        assert!(
+            look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()),
+            "primary toggle should keep toggle elevation"
+        );
     }
 
     #[test]

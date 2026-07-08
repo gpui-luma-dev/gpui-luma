@@ -25,12 +25,14 @@ pub(crate) mod slider;
 pub(crate) mod switch;
 pub(crate) mod tabs_navigation;
 pub(crate) mod templates;
+pub(crate) mod toggle;
 pub(crate) mod textfield;
 pub(crate) mod textarea;
 pub(crate) mod tree_view;
 pub(crate) mod overlay_window;
 
 pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
+pub use toggle::{ToggleLayout, toggle_icon_look_semantic, toggle_look, toggle_look_semantic};
 pub use card::{ShadcnCard, ShadcnCardBuilder};
 pub use textfield::ShadcnTextFieldStyle;
 pub use ext::{

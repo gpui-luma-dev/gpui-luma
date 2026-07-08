@@ -189,7 +189,15 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
             control = control.border_1().border_color(border);
         }
 
-        if matches!(model.role, ButtonFamilyRole::Icon) {
+        let square_icon_toggle = matches!(model.role, ButtonFamilyRole::Toggle { .. })
+            && !model.round
+            && look.padding_x <= 0.0
+            && look.padding_y <= 0.0;
+
+        if matches!(model.role, ButtonFamilyRole::Icon)
+            || (matches!(model.role, ButtonFamilyRole::Toggle { .. }) && model.round)
+            || square_icon_toggle
+        {
             let corner_radius = model.radius_override.get().unwrap_or(look.radius);
             control = control.w(px(look.height)).flex_shrink_0().p_0();
             if model.round || corner_radius >= look.height / 2.0 {
@@ -205,7 +213,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         }
 
         let content = (model.content)(model, cx);
-        let content = if matches!(model.role, ButtonFamilyRole::Icon) {
+        let content = if matches!(model.role, ButtonFamilyRole::Icon) || square_icon_toggle {
             div()
                 .size(px(look.icon_size))
                 .flex()

@@ -39,8 +39,8 @@ pub use stylesheet::{
 };
 pub use elements::{Badge, BadgeLook, BadgeColorTable, BadgeIconPlacement, BadgeVariant, badge_look, resolve_badge_colors};
 pub use controls::{
-    ButtonRadiusPreset, ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ShadcnCheckboxStyleExt,
-    ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt, ShadcnTextFieldStyle,
+    ButtonRadiusPreset, ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ToggleLayout,
+    ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt, ShadcnTextFieldStyle,
 };
 pub use provenance::{
     ColorSource, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,

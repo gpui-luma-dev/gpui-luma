@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gpui_luma::controls::autocomplete::AutocompleteTextBoxTheme;
 use gpui_luma::controls::button_family::{
-    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme, button_family_effective_border,
+    ButtonFamilyLook, ButtonFamilyPalette, ButtonFamilyRole, ButtonFamilyTheme,
 };
 use gpui_luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
@@ -40,7 +40,6 @@ use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTree
 use gpui_luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
 use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
-use gpui::Styled;
 
 use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -994,16 +993,5 @@ impl OverlayWindowTheme for RadixOverlayWindowTheme {
 }
 
 pub fn toggle_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
-    let button_theme = styled_button_family_theme(theme, style);
-    Arc::new(DefaultButtonTemplate::new(button_theme.clone()).with_modifier(move |element, model| {
-        if model.look.is_some() {
-            return element;
-        }
-
-        let look = button_theme.resolve(ButtonFamilyRole::Toggle { selected: model.data }, model.size, model.state);
-        element
-            .bg(look.background)
-            .text_color(look.foreground)
-            .border_color(button_family_effective_border(look.border))
-    }))
+    Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }

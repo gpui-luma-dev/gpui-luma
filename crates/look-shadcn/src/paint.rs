@@ -3,6 +3,7 @@
 pub use crate::controls::accordion::{accordion_content_palette, accordion_trigger_palette};
 pub use crate::controls::autocomplete::autocomplete_textbox_look;
 pub use crate::controls::button::{button_look_semantic, ButtonRadiusPreset, ShadcnButtonStyle};
+pub use crate::controls::toggle::{toggle_icon_look_semantic, toggle_look_semantic, ToggleLayout};
 pub use crate::controls::checkbox::checkbox_look;
 pub use crate::controls::context_menu::context_menu_look;
 pub use crate::controls::control_group::control_group_list_look;
