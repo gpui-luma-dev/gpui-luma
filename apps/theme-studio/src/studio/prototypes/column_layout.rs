@@ -36,7 +36,6 @@ impl ColumnTile {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ColumnPlacementStrategy {
-    Sequential,
     #[default]
     GreedyByEstimatedHeight,
 }
@@ -69,12 +68,6 @@ impl ColumnLayout {
         self
     }
 
-    pub fn gap(mut self, gap: f32) -> Self {
-        self.gap_x = gap;
-        self.gap_y = gap;
-        self
-    }
-
     pub fn column_min_width(mut self, column_min_width: f32) -> Self {
         self.column_min_width = column_min_width.max(1.0);
         self
@@ -97,11 +90,6 @@ impl ColumnLayout {
 
     pub fn strategy(mut self, strategy: ColumnPlacementStrategy) -> Self {
         self.strategy = strategy;
-        self
-    }
-
-    pub fn tile(mut self, tile: ColumnTile) -> Self {
-        self.tiles.push(tile);
         self
     }
 
@@ -134,10 +122,6 @@ impl ColumnLayout {
 
         root
     }
-
-    pub fn into_any_element(self) -> AnyElement {
-        self.build().into_any_element()
-    }
 }
 
 impl Default for ColumnLayout {
@@ -154,29 +138,19 @@ impl IntoElement for ColumnLayout {
     }
 }
 
-fn partition_tiles(columns: usize, strategy: ColumnPlacementStrategy, tiles: Vec<ColumnTile>) -> Vec<Vec<ColumnTile>> {
+fn partition_tiles(columns: usize, _strategy: ColumnPlacementStrategy, tiles: Vec<ColumnTile>) -> Vec<Vec<ColumnTile>> {
     let columns = columns.max(1);
     let mut partitioned: Vec<Vec<ColumnTile>> = (0..columns).map(|_| Vec::new()).collect();
+    let mut heights = vec![0.0_f32; columns];
 
-    match strategy {
-        ColumnPlacementStrategy::Sequential => {
-            for (index, tile) in tiles.into_iter().enumerate() {
-                partitioned[index % columns].push(tile);
-            }
-        }
-        ColumnPlacementStrategy::GreedyByEstimatedHeight => {
-            let mut heights = vec![0.0_f32; columns];
-
-            for tile in tiles {
-                let (shortest_index, _) = heights
-                    .iter()
-                    .enumerate()
-                    .min_by(|(_, left), (_, right)| left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal))
-                    .expect("at least one column");
-                heights[shortest_index] += tile.height_class.estimated_height();
-                partitioned[shortest_index].push(tile);
-            }
-        }
+    for tile in tiles {
+        let (shortest_index, _) = heights
+            .iter()
+            .enumerate()
+            .min_by(|(_, left), (_, right)| left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal))
+            .expect("at least one column");
+        heights[shortest_index] += tile.height_class.estimated_height();
+        partitioned[shortest_index].push(tile);
     }
 
     partitioned
@@ -197,20 +171,8 @@ mod tests {
                 .gap_x(16.0)
                 .gap_y(16.0)
                 .strategy(ColumnPlacementStrategy::GreedyByEstimatedHeight)
-                .tile(ColumnTile::new(div()).height_class(TileHeightClass::Compact)),
+                .tiles([ColumnTile::new(div()).height_class(TileHeightClass::Compact)]),
         );
-    }
-
-    #[test]
-    fn sequential_partition_round_robins_tiles() {
-        let partitioned = partition_tiles(
-            3,
-            ColumnPlacementStrategy::Sequential,
-            vec![ColumnTile::new(div()), ColumnTile::new(div()), ColumnTile::new(div()), ColumnTile::new(div())],
-        );
-
-        let counts: Vec<_> = partitioned.iter().map(Vec::len).collect();
-        assert_eq!(counts, vec![2, 1, 1]);
     }
 
     #[test]

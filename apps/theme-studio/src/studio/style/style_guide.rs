@@ -1,4 +1,4 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -72,7 +72,7 @@ use gpui_luma::controls::textfield::{
 };
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
-use gpui_luma::{GridLayout, GridTrack, declare_form, hstack, vstack};
+use gpui_luma::{declare_form, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
@@ -81,8 +81,17 @@ use self::cards::buttons::render_lucide_icon;
 #[path = "variant_state_table.rs"]
 mod variant_state_table;
 
+#[path = "sticky_section_heading.rs"]
+mod sticky_section_heading;
+
 #[path = "cards/mod.rs"]
 mod cards;
+
+use sticky_section_heading::{
+    SECTION_HEADING_CONTENT_GAP, SECTION_HEADING_SHELL_PAD_BOTTOM, SECTION_HEADING_SHELL_PAD_TOP,
+    StickySectionHeadingTracker, render_section_heading_anchor, render_sticky_section_heading_lane,
+    with_sticky_heading_tracker,
+};
 
 const TRACKER_HEIGHT: f32 = 280.0;
 const TRACKER_INSET: f32 = 22.0;
@@ -131,6 +140,8 @@ declare_form! {
         },
         fields: {
             scroll_handle: ScrollHandle = ScrollHandle::new(),
+            sticky_heading_tracker: Rc<RefCell<StickySectionHeadingTracker>> =
+                Rc::new(RefCell::new(StickySectionHeadingTracker::default())),
             last_scroll_offset: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             last_max_scroll: Rc<Cell<f32>> = Rc::new(Cell::new(0.0)),
             sidebar_preview: Option<Entity<NavigationSidebar>> = None,
@@ -154,6 +165,7 @@ impl StyleGuidePanel {
         self.sync_radio_preview_tabs(cx);
         self.sync_switch_preview_tabs(cx);
         self.sync_toggles_preview_tabs(cx);
+        self.sticky_heading_tracker.borrow_mut().reset();
         cx.notify();
     }
 
@@ -427,66 +439,92 @@ impl Render for StyleGuidePanel {
             let scroll_handle = self.scroll_handle.clone();
             let last_scroll_offset = self.last_scroll_offset.clone();
             let last_max_scroll = self.last_max_scroll.clone();
+            let sticky_heading_tracker = self.sticky_heading_tracker.clone();
+            let scroll_y = (-self.scroll_handle.offset().y.as_f32()).max(0.0);
+            let sticky_snapshot = sticky_heading_tracker.borrow().snapshot(scroll_y);
 
-            div()
-                .id("theme-studio-typography")
-                .size_full()
-                .min_h_0()
-                .flex()
-                .flex_col()
-                .overflow_hidden()
-                .bg(chrome.content_background)
-                .p(px(28.0))
-                .child(
-                    div()
-                        .w_full()
-                        .min_h(px(0.0))
-                        .flex_1()
-                        .flex()
-                        .items_stretch()
-                        .gap(px(16.0))
-                        .child(
-                            div()
-                                .id("style-guide-content")
-                                .flex_1()
-                                .min_h(px(0.0))
-                                .overflow_y_scroll()
-                                .scrollbar_width(px(0.0))
-                                .track_scroll(&self.scroll_handle)
-                                .on_prepaint(move |_, window: &mut Window, cx: &mut App| {
-                                    let offset = (-scroll_handle.offset().y.as_f32()).max(0.0);
-                                    let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
-                                    let offset_changed = (last_scroll_offset.get() - offset).abs() > 0.5;
-                                    let max_changed = (last_max_scroll.get() - max_scroll).abs() > 0.5;
-
-                                    if offset_changed || max_changed {
-                                        last_scroll_offset.set(offset);
-                                        last_max_scroll.set(max_scroll);
-                                        cx.notify(window.current_view());
-                                    }
-                                })
-                                .child(
-                                    div().w_full().flex().justify_start().pb(px(12.0)).child(
+            with_sticky_heading_tracker(sticky_heading_tracker.clone(), || {
+                div()
+                    .id("theme-studio-typography")
+                    .size_full()
+                    .min_h_0()
+                    .flex()
+                    .flex_col()
+                    .overflow_hidden()
+                    .bg(chrome.content_background)
+                    .px(px(28.0))
+                    .pt(px(12.0))
+                    .pb(px(28.0))
+                    .child(
+                        div()
+                            .w_full()
+                            .min_h(px(0.0))
+                            .flex_1()
+                            .flex()
+                            .items_stretch()
+                            .gap(px(16.0))
+                            .child(
+                                div()
+                                    .relative()
+                                    .flex_1()
+                                    .min_h(px(0.0))
+                                    .child(
                                         div()
-                                            .w_full()
-                                            .max_w(px(980.0))
-                                            .flex()
-                                            .flex_col()
-                                            .gap(px(20.0))
-                                            .when_some(
-                                                render_sparse_catalog_callout(self.look.as_ref()),
-                                                |panel, callout| panel.child(callout),
-                                            )
-                                            .children(
-                                                StyleGuideSection::ALL
-                                                    .into_iter()
-                                                    .map(|section| self.render_section_shell(section, window, cx)),
+                                            .id("style-guide-content")
+                                            .size_full()
+                                            .overflow_y_scroll()
+                                            .scrollbar_width(px(0.0))
+                                            .track_scroll(&self.scroll_handle)
+                                            .on_prepaint(move |_, window: &mut Window, cx: &mut App| {
+                                                let offset = (-scroll_handle.offset().y.as_f32()).max(0.0);
+                                                let max_scroll = scroll_handle.max_offset().y.as_f32().max(0.0);
+                                                let offset_changed = (last_scroll_offset.get() - offset).abs() > 0.5;
+                                                let max_changed = (last_max_scroll.get() - max_scroll).abs() > 0.5;
+
+                                                if offset_changed || max_changed {
+                                                    last_scroll_offset.set(offset);
+                                                    last_max_scroll.set(max_scroll);
+                                                    cx.notify(window.current_view());
+                                                }
+                                            })
+                                            .child(
+                                                div().w_full().flex().justify_start().pb(px(12.0)).child(
+                                                    div()
+                                                        .w_full()
+                                                        .max_w(px(980.0))
+                                                        .flex()
+                                                        .flex_col()
+                                                        .gap(px(14.0))
+                                                        .on_prepaint({
+                                                            let sticky_heading_tracker = sticky_heading_tracker.clone();
+                                                            move |bounds, window, cx| {
+                                                                let changed = sticky_heading_tracker
+                                                                    .borrow_mut()
+                                                                    .set_content_origin_y(bounds.origin.y.as_f32());
+                                                                if changed {
+                                                                    cx.notify(window.current_view());
+                                                                }
+                                                            }
+                                                        })
+                                                        .when_some(
+                                                            render_sparse_catalog_callout(self.look.as_ref()),
+                                                            |panel, callout| panel.child(callout),
+                                                        )
+                                                        .children(StyleGuideSection::ALL.into_iter().map(|section| {
+                                                            self.render_section_shell(section, window, cx)
+                                                        })),
+                                                ),
                                             ),
-                                    ),
-                                ),
-                        )
-                        .child(self.render_scroll_tracker(scroll_progress)),
-                )
+                                    )
+                                    .child(render_sticky_section_heading_lane(
+                                        sticky_snapshot,
+                                        chrome.content_background,
+                                        980.0,
+                                    )),
+                            )
+                            .child(self.render_scroll_tracker(scroll_progress)),
+                    )
+            })
         })
     }
 }
@@ -842,14 +880,6 @@ impl ChoiceTemplateControl {
         }
     }
 
-    fn header(self) -> &'static str {
-        match self {
-            Self::Radio => "Radio",
-            Self::Checkbox => "Checkbox",
-            Self::Switch => "Switch",
-        }
-    }
-
     fn content(self, _active: bool) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
         Arc::new(move |_, _| div().into_any_element())
     }
@@ -859,10 +889,6 @@ impl ChoiceTemplateControl {
             Self::Checkbox | Self::Radio => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
             Self::Switch => gpui_luma::controls::button_family::ButtonFamilyRole::Text,
         }
-    }
-
-    fn round(self) -> bool {
-        false
     }
 }
 
@@ -994,61 +1020,18 @@ fn section_shell_with_width(
         .w_full()
         .flex()
         .flex_col()
-        .py(px(12.0))
-        .child(
-            div()
-                .w_full()
-                .flex()
-                .flex_col()
-                .gap(px(4.0))
-                .child(div().text_h2().text_color(title_color).child(title))
-                .child(
-                    div().w_full().min_w(px(0.0)).truncate().typography_sm().text_color(muted_text).child(description),
-                ),
-        )
-        .child(div().w_full().h(px(1.0)).mt(px(10.0)).bg(border))
+        .pt(px(SECTION_HEADING_SHELL_PAD_TOP))
+        .pb(px(SECTION_HEADING_SHELL_PAD_BOTTOM))
+        .child(render_section_heading_anchor(title, description, title_color, muted_text, border))
         .child(
             div()
                 .w_full()
                 .flex()
                 .justify_center()
-                .mt(px(16.0))
+                .mt(px(SECTION_HEADING_CONTENT_GAP))
                 .child(div().w(px(width)).max_w_full().child(content)),
         )
         .into_any_element()
-}
-
-fn render_vertical_section_rail(label: &'static str, color: gpui::Hsla, data_rows: usize) -> AnyElement {
-    let min_height = section_rail_min_height(data_rows);
-    let label_height = section_rail_label_height(data_rows);
-
-    div()
-        .w(px(28.0))
-        .min_h(px(min_height))
-        .flex()
-        .items_center()
-        .justify_center()
-        .gap(px(4.0))
-        .child(svg().path(section_label_asset_path(label)).w(px(20.0)).h(px(label_height)).text_color(color))
-        .child(div().w(px(1.0)).h_full().bg(color))
-        .into_any_element()
-}
-
-fn section_rail_min_height(data_rows: usize) -> f32 {
-    match data_rows {
-        0 => 48.0,
-        1 => 64.0,
-        _ => 188.0,
-    }
-}
-
-fn section_rail_label_height(data_rows: usize) -> f32 {
-    match data_rows {
-        0 | 1 => 38.0,
-        2 => 60.0,
-        3 => 80.0,
-        _ => 104.0,
-    }
 }
 
 fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: gpui::Hsla) -> AnyElement {
@@ -1063,18 +1046,6 @@ fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: 
         .child(svg().path(state_label_asset_path(state_id)).w(px(20.0)).h(px(38.0)).text_color(label_color))
         .child(div().w(px(1.0)).h_full().bg(label_color))
         .into_any_element()
-}
-
-fn section_label_asset_path(section_label: &'static str) -> &'static str {
-    match section_label {
-        "Primary" | "Prominent" => "assets/labels/primary-label.svg",
-        "Secondary" | "Standard" => "assets/labels/secondary-label.svg",
-        "Outline" | "Subtle" => "assets/labels/outline-label.svg",
-        "Ghost" => "assets/labels/ghost-label.svg",
-        "Selected" => "assets/labels/selected-label.svg",
-        "Unselected" => "assets/labels/unselected-label.svg",
-        _ => "assets/labels/default-label.svg",
-    }
 }
 
 fn state_label_asset_path(state_id: &str) -> &'static str {

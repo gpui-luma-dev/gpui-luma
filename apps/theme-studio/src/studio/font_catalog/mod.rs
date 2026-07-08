@@ -6,7 +6,7 @@
 mod classify;
 mod error;
 
-pub use classify::{FontSlot, SuggestedRole, classify_family, guess_role_from_name, os2_family_class, role_from_os2_class};
+pub use classify::{FontSlot, SuggestedRole, classify_family, guess_role_from_name};
 pub use error::FontCatalogError;
 
 use std::collections::HashMap;
@@ -50,7 +50,7 @@ impl FontCatalog {
         Ok(Self { families, by_name })
     }
 
-    #[doc(hidden)]
+    #[cfg(test)]
     pub fn from_families(families: Vec<FontFamily>) -> Self {
         let by_name = families.iter().map(|family| (family.name.clone(), family.suggested)).collect();
         Self { families, by_name }
@@ -65,15 +65,6 @@ impl FontCatalog {
             .get(family_name)
             .copied()
             .or_else(|| self.find_case_insensitive(family_name).map(|family| family.suggested))
-    }
-
-    /// Returns family names whose suggested role matches the typography slot filter.
-    pub fn names_for_slot(&self, slot: FontSlot) -> Vec<&str> {
-        self.families
-            .iter()
-            .filter(|family| slot.matches_suggestion(family.suggested))
-            .map(|family| family.name.as_str())
-            .collect()
     }
 
     pub fn is_suggested_for_slot(&self, family_name: &str, slot: FontSlot) -> bool {

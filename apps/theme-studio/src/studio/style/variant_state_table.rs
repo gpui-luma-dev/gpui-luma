@@ -14,7 +14,6 @@ pub(in crate::studio::style::style_guide) struct VariantStateTableStyle {
     pub header_height: f32,
     pub row_height: f32,
     pub corner_radius: f32,
-    pub grid_lines_enabled: bool,
     pub variant_column_align_center: bool,
     pub border: Hsla,
     pub title_color: Hsla,
@@ -29,17 +28,11 @@ impl VariantStateTableStyle {
             header_height: DEFAULT_HEADER_HEIGHT,
             row_height: DEFAULT_ROW_HEIGHT,
             corner_radius: DEFAULT_CORNER_RADIUS,
-            grid_lines_enabled: false,
             variant_column_align_center: false,
             border: chrome.border,
             title_color: chrome.title_text,
             muted_text: chrome.muted_text,
         }
-    }
-
-    pub(in crate::studio::style::style_guide) fn grid_lines_enabled(mut self, enabled: bool) -> Self {
-        self.grid_lines_enabled = enabled;
-        self
     }
 
     pub(in crate::studio::style::style_guide) fn variant_column_align_center(mut self, centered: bool) -> Self {
@@ -138,11 +131,7 @@ fn table_width(style: &VariantStateTableStyle, column_count: usize) -> f32 {
 }
 
 fn table_border_color(style: &VariantStateTableStyle) -> Hsla {
-    if style.grid_lines_enabled {
-        style.border
-    } else {
-        gpui::hsla(style.border.h, style.border.s, style.border.l, 0.0)
-    }
+    gpui::hsla(style.border.h, style.border.s, style.border.l, 0.0)
 }
 
 fn render_header_row(

@@ -32,7 +32,7 @@ pub(crate) mod tree_view;
 pub(crate) mod overlay_window;
 
 pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
-pub use toggle::{ToggleLayout, toggle_icon_look_semantic, toggle_look, toggle_look_semantic};
+pub use toggle::ToggleLayout;
 pub use card::{ShadcnCard, ShadcnCardBuilder};
 pub use textfield::ShadcnTextFieldStyle;
 pub use ext::{

@@ -434,6 +434,7 @@ fn font_slot_for_stack_role(role: FontStackRole) -> FontSlot {
     }
 }
 
+#[cfg(test)]
 fn font_items(
     font_names: &[String],
     primary_label: Option<&SharedString>,

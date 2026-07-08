@@ -1,7 +1,7 @@
 # Fix Note: Button Size / Radius Preview Ownership
 
-**Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/button.rs`  
-**Status:** Experimental change set. Visual direction improved, but ownership drifted into SDK and should be reviewed before keeping.
+**Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates}.rs`, `crates/look-shadcn/assets/style.toml`  
+**Status:** In progress. Theme Studio preview matrices and much of the look-layer sizing/radius work have landed (`92706612`, `6d244407`, `9ecda374`). SDK contract additions still need broader review before calling the work done.
 
 ---
 
@@ -21,6 +21,51 @@ The visuals moved in the right direction, but the implementation crossed the wro
 - a local inspection surface started shaping shared button rendering behavior.
 
 The core lesson is that **button size and radius must stay semantic and button-owned**, with the **theme crate resolving them**, and Theme Studio should only **display the resolved result**.
+
+---
+
+## Progress (2026-07)
+
+Three commits on `main` (ahead of origin) implement most of the Style Guide preview work and start correcting ownership at the look seam.
+
+| Commit | Focus |
+|--------|--------|
+| `92706612` button sizing | Size/radius matrices for Buttons + Icon Buttons; `ButtonRadiusPreset` + look resolver; `ButtonFamilyLook.icon_size`; template `radius_override` paints visible corners |
+| `6d244407` style templates | Toggle look (`toggle.rs`), toggle metrics in `style.toml`, toggle Theme Studio matrices (text + icon), `VariantStateTable` shared layout |
+| `9ecda374` choice controls | Split Choice into Checkbox / Radio / Switch sections; variant×state matrices; Sizes tabs; toggle template modifier fix |
+
+### Theme Studio Style Guide (landed)
+
+Shared preview pattern: **`VariantStateTable`** — variants as rows, interaction states as columns (`apps/theme-studio/src/studio/style/variant_state_table.rs`).
+
+| Section | Template Preview tab | Sizes tab | Variant rows | State columns |
+|---------|---------------------|-----------|--------------|---------------|
+| Buttons | ✓ | ✓ (size × radius) | Primary … Ghost | default, hover, focused, pressed, disabled |
+| Icon Buttons | ✓ | ✓ (size × radius) | Primary … Ghost | same |
+| Toggles | ✓ (text + icon matrices) | ✓ (size × radius) | Primary … Ghost / icon variants | 6 states incl. `disabled-pressed` (= on) |
+| Checkbox | ✓ | ✓ (size × Primary/Secondary) | Primary, Secondary only | 6 states; pressed/disabled-pressed = checked |
+| Radio | ✓ | ✓ | Primary, Secondary only | 6 states; pressed/disabled-pressed = selected |
+| Switch | ✓ | ✓ | Primary, Secondary only | 6 states; pressed/disabled-pressed = on |
+
+Other preview fixes:
+
+- Checkbox / Radio / Switch / Toggle added to `section_allows_interaction()` (scroll overlay was blocking tab clicks).
+- Toggle icon preview uses `toggle_icon_look_semantic` + `ButtonRadiusPreset::Full` (not generic button icon look).
+- Choice previews use indicator-only role for checkbox/radio (`ButtonFamilyRole::Icon`); Outline/Ghost dropped from choice matrices (they collapse to `foreground` in look-shadcn — misleading as variant rows).
+
+### Look / SDK (landed)
+
+- **`button_look_semantic` / `button_look`**: size → height, padding, gap, typography, icon size; radius preset → px.
+- **`toggle_look` / `toggle_look_semantic`**: separate toggle metrics block in `style.toml`; elevation policy aligned with choice indicators (`shadow-sm` when enabled).
+- **`toggle_template`**: no longer applies a generic `button_palette` modifier that overwrote toggle colors.
+- **Template**: `radius_override` affects visible control rounding, not just focus adorner.
+
+### Still open / needs design
+
+- **SDK review**: `ButtonRadiusPreset`, `ButtonFamilyLook.icon_size`, and shared semantic enums introduced from Theme Studio outward — confirm they belong in SDK vs look-only.
+- **Choice elevation policy**: shadow is style-agnostic (`shadow-sm` whenever enabled); Primary/Secondary only change active fill. Radix-style surface/soft is **not** modeled — see addendum below.
+- **Choice variant model**: reusing `ShadcnButtonStyle` for accent color is a preview convenience; real choice variants (if any) may need look-owned types.
+- **Typography/size ownership elsewhere**: pager, slider, popup menu, etc. still embed translation in SDK themes (catalog in addendum below unchanged).
 
 ---
 
@@ -236,7 +281,9 @@ It should not become a parallel implementation of button sizing logic.
 
 ## Short version
 
-Revert the experiment, then reintroduce the feature from the button/theme seam outward.
+**Original guidance:** revert the experiment, then reintroduce from the button/theme seam outward.
+
+**Current state:** that reintroduction is largely underway for Buttons, Icon Buttons, Toggles, and choice-control previews. Remaining work is SDK contract review, choice elevation/variant policy, and pushing other controls’ size/typography translation into look-shadcn.
 
 ---
 
@@ -421,33 +468,25 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 
 ---
 
-## Concrete Revert Guidance
+## Concrete Revert / Review Guidance
 
-The changes most likely to need review or revert together are:
+### Landed — keep unless deliberately rolling back preview work
 
-- `apps/theme-studio/src/studio/style/cards/buttons.rs`
-- `apps/theme-studio/src/studio/style/style_guide.rs`
-- `crates/sdk/src/controls/command/button/template.rs`
-- `crates/sdk/src/controls/button_family/theme.rs`
-- `crates/look-shadcn/src/controls/button.rs`
-- `crates/look-shadcn/src/look.rs`
-- `crates/sdk/src/controls/pager/theme.rs`
+- `apps/theme-studio/src/studio/style/cards/buttons.rs` — matrix previews for buttons, icon buttons, toggles, checkbox, radio, switch
+- `apps/theme-studio/src/studio/style/style_guide.rs` — section split + interaction allowlist
+- `apps/theme-studio/src/studio/style/variant_state_table.rs` — shared table layout
+- `crates/look-shadcn/src/controls/button.rs` — semantic size/radius resolution
+- `crates/look-shadcn/src/controls/toggle.rs` — toggle look + metrics
+- `crates/look-shadcn/src/controls/templates.rs` — toggle template (modifier removed)
+- `crates/look-shadcn/assets/style.toml` — toggle metrics + elevation rules
+- `crates/sdk/src/controls/command/button/template.rs` — visible `radius_override`
 
-Two categories inside that set:
-
-### Purely local preview experiment
-
-- Buttons section tabs
-- matrix layout
-- row/column labels
-- local section content organization
-
-### Shared ownership changes needing SDK review
+### Still needs SDK / API review before treating as stable
 
 - `ButtonFamilyLook.icon_size`
-- `ButtonRadiusPreset`
-- shadcn radius preset resolver
-- button template `radius_override` rendering behavior
+- `ButtonRadiusPreset` + shadcn radius preset resolver
+- Whether choice controls should keep accepting `ShadcnButtonStyle` or gain look-owned variant types
+- `crates/sdk/src/controls/pager/theme.rs` and other SDK themes that still hardcode size/typography policy
 
 ---
 
@@ -457,7 +496,15 @@ The experiment successfully exposed the real issue:
 
 - **Theme Studio was trying to preview semantic button sizing and radius behavior before those semantics were properly owned by the button/theme seam.**
 
-So the visual result was useful, but the implementation confirms the missing architecture:
+Follow-up commits moved preview matrices onto the look seam for buttons, toggles, and choice controls. Theme Studio now mostly **selects semantic knobs and renders resolved templates** rather than inventing local px typography.
+
+Remaining gaps:
+
+- SDK contracts introduced during the experiment still need a deliberate pass.
+- Choice controls need an elevation/variant policy decision independent of button Primary/Secondary fill.
+- Other SDK control themes still resolve size/typography locally (see catalog addendum).
+
+Target architecture unchanged:
 
 - button size and radius should be semantic,
 - button-local or carefully generalized,
@@ -466,34 +513,45 @@ So the visual result was useful, but the implementation confirms the missing arc
 
 ---
 
-## Addendum: Size naming — shadcn `sm | md | lg`, not Radix `1–4`
+## Addendum: Naming — shadcn/ui semantics, not Radix Themes
 
-**Decision (2026-07):** Button **size** uses SDK `ControlSize` (`Sm`, `Md`, `Lg`) and `style.toml` keys `button.metrics.sm|md|lg`. Do **not** introduce a parallel numeric size enum (Radix Themes `1 | 2 | 3 | 4`) or duplicate TOML keys (`1`…`4`).
+**Decision (2026-07):** look-shadcn and Theme Studio previews target **shadcn/ui** vocabulary. Early notes and experiments sometimes referenced **Radix Themes** (numeric sizes `1–4`, choice variants classic/surface/soft). That framing was the wrong seam for this crate — use **shadcn** names in constants, TOML keys, and preview labels.
 
-### Why
+### Style / variant constants
 
-- **shadcn/ui** button sizing is Tailwind-style: `sm`, `default`/`md`, `lg` — not Radix numeric tiers.
-- **SDK** already exposes `ControlSize`; look-shadcn should resolve metrics from that directly.
-- **Config** stays one key per tier in `style.toml`; no `from_control_size` translation layer.
+- **Use:** `ShadcnButtonStyle` (`Primary`, `Secondary`, `Outline`, `Ghost`) — already the look-shadcn style axis for buttons and toggles.
+- **Do not introduce:** parallel `Radix*` style enums or Radix Themes variant names (`classic`, `surface`, `soft`) unless we deliberately add a second look crate.
+- **Choice controls today:** API accepts `ShadcnButtonStyle`, but checkbox/radio/switch color rules mostly use it only for **checked/on accent** (`@action_layer`). Theme Studio previews show **Primary + Secondary only**; Outline/Ghost are omitted because they map to the same foreground token for indicators.
+
+### Size constants
+
+- **Use:** SDK `ControlSize` (`Sm`, `Md`, `Lg`) and `style.toml` keys `button.metrics.sm|md|lg` (and parallel toggle/choice metric blocks).
+- **Do not introduce:** `ShadcnButtonSize::One..Four`, Radix numeric tiers, or TOML keys `[button.metrics.1]` … `[button.metrics.4]`.
+- **Why:** shadcn/ui button sizing is Tailwind-style `sm` / default (`md`) / `lg`, not Radix Themes `1 | 2 | 3 | 4`.
 
 ### Icon-only buttons
 
 Size and role are separate axes:
 
-- **Size:** `ControlSize::Sm | Md | Lg` (and arbitrary px later)
+- **Size:** `ControlSize::Sm | Md | Lg`
 - **Role:** `ButtonFamilyRole::Icon` vs `Text`
 
-`sm` / `md` / `lg` icon buttons = `role: Icon` + `size: Sm|Md|Lg`. No separate shadcn `size="icon"` metric is required unless we later want API parity for a single fixed square default.
+`sm` / `md` / `lg` icon buttons = `role: Icon` + `size: Sm|Md|Lg`. No separate shadcn `size="icon"` metric unless we later want API parity for a fixed square default.
 
-### Radius (unchanged)
+### Radius
 
 `ButtonRadiusPreset` (`None`, `Small`, `Medium`, `Large`, `Full`) stays **button-local** in look-shadcn. Theme Studio size matrices:
 
 - **Rows:** Small / Medium / Large (`ControlSize`)
-- **Columns:** radius presets
+- **Columns:** radius presets (buttons/toggles) or Primary/Secondary (choice sizes tab)
 - **Resolution:** `button_look_semantic(..., size: ControlSize, radius: Option<ButtonRadiusPreset>, ...)`
+
+### Elevation (choice controls — open)
+
+Checkbox/radio/switch/toggle indicators share **`shadow-sm` when enabled** regardless of `ShadcnButtonStyle`. That follows toggle policy, not button elevation (Primary/Secondary/Ghost = no shadow). Primary/Secondary changes **fill when active**, not shadow tier. A Radix-style surface/soft split would be a **new look-owned axis**, not a rename of Outline/Ghost.
 
 ### Dropped from experiment
 
 - `ShadcnButtonSize::One..Four`
 - `[button.metrics.1]` … `[button.metrics.4]` in `style.toml`
+- Radix Themes choice variant naming as a stand-in for shadcn button styles
