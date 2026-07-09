@@ -1,10 +1,24 @@
-use super::super::*;
+use std::sync::Arc;
 
-pub(in crate::studio::style::style_guide) fn render_feedback_template_section(
-    look: Arc<ShadcnLook>,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
+use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::progress::{ProgressRenderModel, ProgressTemplate};
+use gpui_luma::controls::value::ControlRange;
+use gpui_luma::theme::ControlSize;
+use gpui_luma_look_shadcn::prelude::*;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
+use lucide_icons::Icon as LucideIcon;
+
+use crate::studio::style::shared::shell::section_shell_with_width;
+
+#[derive(Clone, Copy)]
+struct ProgressStateSample {
+    id: &'static str,
+    label: &'static str,
+    value: f32,
+    enabled: bool,
+}
+
+pub(crate) fn render_feedback_template_section(look: Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
     let progress_template = look.progress_template();
 

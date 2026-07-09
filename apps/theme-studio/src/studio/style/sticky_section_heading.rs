@@ -5,9 +5,9 @@ use std::rc::Rc;
 use gpui::{AnyElement, Bounds, Hsla, ParentElement, Pixels, div, prelude::*, px};
 use gpui_luma_look_shadcn::LumaTypographyExt;
 
-pub(in crate::studio::style::style_guide) const SECTION_HEADING_SHELL_PAD_TOP: f32 = 2.0;
-pub(in crate::studio::style::style_guide) const SECTION_HEADING_SHELL_PAD_BOTTOM: f32 = 6.0;
-pub(in crate::studio::style::style_guide) const SECTION_HEADING_CONTENT_GAP: f32 = 10.0;
+pub(crate) const SECTION_HEADING_SHELL_PAD_TOP: f32 = 2.0;
+pub(crate) const SECTION_HEADING_SHELL_PAD_BOTTOM: f32 = 6.0;
+pub(crate) const SECTION_HEADING_CONTENT_GAP: f32 = 10.0;
 
 const SECTION_HEADING_INNER_GAP: f32 = 2.0;
 const SECTION_HEADING_DIVIDER_MARGIN: f32 = 6.0;
@@ -19,7 +19,7 @@ thread_local! {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(in crate::studio::style::style_guide) struct SectionHeading {
+pub(crate) struct SectionHeading {
     pub title: &'static str,
     pub description: &'static str,
     pub title_color: Hsla,
@@ -36,13 +36,13 @@ struct SectionHeadingAnchor {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::studio::style::style_guide) struct StickySectionSnapshot {
+pub(crate) struct StickySectionSnapshot {
     pub heading: SectionHeading,
     pub opacity: f32,
 }
 
 #[derive(Default)]
-pub(in crate::studio::style::style_guide) struct StickySectionHeadingTracker {
+pub(crate) struct StickySectionHeadingTracker {
     content_origin_y: f32,
     anchors: HashMap<&'static str, SectionHeadingAnchor>,
 }
@@ -124,7 +124,7 @@ impl StickySectionHeadingTracker {
     }
 }
 
-pub(in crate::studio::style::style_guide) fn with_sticky_heading_tracker<T>(
+pub(crate) fn with_sticky_heading_tracker<T>(
     tracker: Rc<RefCell<StickySectionHeadingTracker>>,
     f: impl FnOnce() -> T,
 ) -> T {
@@ -140,7 +140,7 @@ fn active_sticky_heading_tracker() -> Option<Rc<RefCell<StickySectionHeadingTrac
     ACTIVE_STICKY_HEADING_TRACKER.with(|slot| slot.borrow().clone())
 }
 
-pub(in crate::studio::style::style_guide) fn render_section_heading(heading: &SectionHeading) -> AnyElement {
+pub(crate) fn render_section_heading(heading: &SectionHeading) -> AnyElement {
     div()
         .w_full()
         .flex()
@@ -160,7 +160,7 @@ pub(in crate::studio::style::style_guide) fn render_section_heading(heading: &Se
         .into_any_element()
 }
 
-pub(in crate::studio::style::style_guide) fn render_section_heading_anchor(
+pub(crate) fn render_section_heading_anchor(
     title: &'static str,
     description: &'static str,
     title_color: Hsla,
@@ -194,7 +194,7 @@ pub(in crate::studio::style::style_guide) fn render_section_heading_anchor(
         .into_any_element()
 }
 
-pub(in crate::studio::style::style_guide) fn render_sticky_section_heading_lane(
+pub(crate) fn render_sticky_section_heading_lane(
     snapshot: Option<StickySectionSnapshot>,
     background: Hsla,
     max_width: f32,

@@ -157,7 +157,15 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_switch_metrics(&self, size: ControlSize) -> SwitchInspectMetrics {
-        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), size)
+        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), ShadcnButtonStyle::Primary, size)
+    }
+
+    pub fn inspect_switch_metrics_for_style(
+        &self,
+        style: ShadcnButtonStyle,
+        size: ControlSize,
+    ) -> SwitchInspectMetrics {
+        inspect_switch_metrics(&self.mode_tokens(), self.theme_mode(), style, size)
     }
 
     pub fn inspect_scrollbar_color_palette(

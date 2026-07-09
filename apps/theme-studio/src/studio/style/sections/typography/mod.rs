@@ -1,6 +1,11 @@
-use super::super::*;
+use gpui::{AnyElement, FontWeight, IntoElement, div, prelude::*, px};
+use gpui_luma::{hstack, vstack};
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::prelude::*;
 
-pub(in crate::studio::style::style_guide) fn render_typography_section(look: &ShadcnLook) -> AnyElement {
+use crate::studio::style::shared::shell::section_shell_with_width;
+
+pub(crate) fn render_typography_section(look: &ShadcnLook) -> AnyElement {
     let chrome = look.chrome();
 
     section_shell_with_width(

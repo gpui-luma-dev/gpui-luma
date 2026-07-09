@@ -59,7 +59,7 @@ use super::radio::radio_button_look;
 use super::scrollbar::scrollbar_look;
 use super::selection_panel::selection_panel_look;
 use super::slider::slider_look;
-use super::switch::switch_look;
+use super::switch::{switch_look, switch_scale};
 use super::accordion::{accordion_content_palette, accordion_trigger_palette};
 use super::resizable_panels::resizable_panels_look;
 use super::split_view::split_view_look;
@@ -125,6 +125,11 @@ impl SwitchTheme for RadixStyledSwitchTheme {
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
+    }
+
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> gpui_luma::controls::switch::SwitchScale {
+        let tokens = self.theme.mode_tokens();
+        switch_scale(tokens.as_ref(), self.theme.mode(), self.style, size, scale_factor)
     }
 }
 

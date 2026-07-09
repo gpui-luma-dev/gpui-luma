@@ -51,6 +51,10 @@ pub type SwitchLook = SwitchPalette;
 pub trait SwitchTheme: Send + Sync {
     fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette;
     fn metrics(&self) -> MetricTokens;
+    /// Look-owned geometry for `size`. Defaults to [`SwitchScale::compute`].
+    fn scale(&self, size: ControlSize, scale_factor: f32) -> SwitchScale {
+        SwitchScale::compute(size, &self.metrics(), scale_factor)
+    }
 }
 
 #[derive(Clone, Debug, Default)]

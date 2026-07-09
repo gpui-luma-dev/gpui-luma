@@ -68,11 +68,11 @@ pub struct SwitchInspectMetrics {
 pub fn inspect_switch_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
     size: gpui_luma::theme::ControlSize,
 ) -> SwitchInspectMetrics {
-    use gpui_luma::controls::switch::SwitchScale;
-
     use gpui_luma_look_shadcn::catalog::SpacingField;
+    use gpui_luma_look_shadcn::paint::switch_scale;
     use crate::metrics::{
         border_width_metric, control_size_key, derived_metric, focus_ring_offset_metric, focus_ring_width_metric,
         pill_radius_metric, spacing_control_metric,
@@ -81,14 +81,32 @@ pub fn inspect_switch_metrics(
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let metrics = ctx.metrics();
     let catalog = ctx.catalog();
-    let scale = SwitchScale::compute(size, metrics, 1.0);
+    let scale = switch_scale(mode, theme_mode, style, size, 1.0);
     let size_key = control_size_key(size);
+    let style_key = match style {
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
+    };
 
     SwitchInspectMetrics {
-        track_width: derived_metric(format!("{size_key} track width = control_height × 42/36"), scale.track_width),
-        track_height: derived_metric(format!("{size_key} track height = control_height × 22/36"), scale.track_height),
-        track_padding: derived_metric(format!("{size_key} track padding = control_height × 2/36"), scale.track_padding),
-        thumb_size: derived_metric(format!("{size_key} thumb = control_height × 0.5"), scale.thumb_size),
+        track_width: derived_metric(
+            format!("{size_key} {style_key} track width (style.toml switch metrics)"),
+            scale.track_width,
+        ),
+        track_height: derived_metric(
+            format!("{size_key} {style_key} track height (style.toml switch metrics)"),
+            scale.track_height,
+        ),
+        track_padding: derived_metric(
+            format!("{size_key} {style_key} track padding = height × 2/22"),
+            scale.track_padding,
+        ),
+        thumb_size: derived_metric(
+            format!("{size_key} {style_key} thumb (style.toml switch metrics)"),
+            scale.thumb_size,
+        ),
         gap: spacing_control_metric(catalog, size, SpacingField::Gap, scale.gap),
         track_radius: pill_radius_metric(catalog, scale.track_radius),
         border_width: border_width_metric(metrics),

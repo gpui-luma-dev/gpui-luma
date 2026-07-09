@@ -1,7 +1,94 @@
-use super::super::*;
-use super::inputs::{input_noop_click, input_noop_hover, input_textfield_handlers};
+use std::sync::Arc;
 
-pub(in crate::studio::style::style_guide) fn render_selector_templates_section(
+use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px, svg};
+use gpui_luma::controls::autocomplete::{
+    AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
+    AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
+};
+use gpui_luma::controls::combobox::{
+    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
+    ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplateHandlers, SelectionItem as ComboBoxSelectionItem,
+    default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
+};
+use gpui_luma::controls::search_selector::{
+    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
+    SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SearchSelectorRenderModel,
+    SearchSelectorTemplateHandlers, SelectionItem as SearchSelectorSelectionItem,
+    default_search_selector_items_template, default_search_selector_panel_template, default_search_selector_template,
+};
+use gpui_luma::controls::selector::{
+    ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers,
+};
+use gpui_luma::controls::selector_panel::{
+    SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
+    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
+};
+use gpui_luma::controls::textfield::{
+    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant,
+};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
+use gpui_luma_look_shadcn::ShadcnLook;
+use lucide_icons::Icon as LucideIcon;
+
+use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
+use crate::studio::style::shared::shell::section_shell_with_width;
+
+#[derive(Clone, Copy)]
+struct SelectorTemplateStateSample {
+    id: &'static str,
+    label: &'static str,
+    textfield_state: TextFieldState,
+    textfield_enabled: bool,
+    selector_state: InteractionState,
+    selector_focus: ControlFocusState,
+    selector_enabled: bool,
+}
+
+#[derive(Clone, Copy)]
+enum SelectorTemplateControl {
+    AutocompleteTextBox,
+    ComboBox,
+    Selector,
+    SearchSelector,
+}
+
+impl SelectorTemplateControl {
+    fn header(self) -> &'static str {
+        match self {
+            Self::AutocompleteTextBox => "AutocompleteTextBox",
+            Self::ComboBox => "ComboBox",
+            Self::Selector => "Selector",
+            Self::SearchSelector => "SearchSelector",
+        }
+    }
+}
+
+fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: gpui::Hsla) -> AnyElement {
+    div()
+        .id(format!("theme-studio-choice-template-state-rail-{label}"))
+        .w(px(28.0))
+        .min_h(px(38.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .gap(px(4.0))
+        .child(svg().path(state_label_asset_path(state_id)).w(px(20.0)).h(px(38.0)).text_color(label_color))
+        .child(div().w(px(1.0)).h_full().bg(label_color))
+        .into_any_element()
+}
+
+fn state_label_asset_path(state_id: &str) -> &'static str {
+    match state_id {
+        "default" => "assets/labels/default-label.svg",
+        "hover" => "assets/labels/hover-label.svg",
+        "focused" => "assets/labels/focused-label.svg",
+        "pressed" => "assets/labels/pressed-label.svg",
+        "disabled" => "assets/labels/disabled-label.svg",
+        _ => "assets/labels/default-label.svg",
+    }
+}
+
+pub(crate) fn render_selector_templates_section(
     look: Arc<ShadcnLook>,
     window: &mut Window,
     cx: &mut App,

@@ -9,19 +9,20 @@
 //! Hover and pressed do not recolor the track or thumb (shadcn Switch has no hover
 //! surface). Only `focused` adds a focus ring via the adorner.
 
-use gpui_luma::controls::switch::SwitchPalette;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
 
 use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::resolve::resolve_color;
 use crate::shadow::parse_shadow_token;
+use super::button::{ButtonRadiusPreset, resolve_button_radius_preset};
 use super::ShadcnButtonStyle;
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_switch_color_rule, resolve_layered_elevation_shadow,
-    resolve_switch_color_rule,
+    resolve_switch_color_rule, resolve_switch_metrics,
 };
 
 #[derive(Clone, Debug)]
@@ -68,6 +69,63 @@ pub fn resolve_switch_colors_with_stylesheet(
         thumb_border: colors.thumb_border,
         label_color: colors.label_color,
     })
+}
+
+/// Corner radius for switch track / thumb (same presets as button / icon button / toggle).
+pub fn resolve_switch_radius_preset(preset: ButtonRadiusPreset, metrics: &MetricTokens, track_height: f32) -> f32 {
+    resolve_button_radius_preset(preset, metrics, track_height)
+}
+
+/// Look-owned switch geometry from `style.toml` (`switch.metrics` / `switch.secondary_metrics`).
+pub fn switch_scale(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    size: ControlSize,
+    scale_factor: f32,
+) -> SwitchScale {
+    switch_scale_with_radius(mode, theme_mode, style, size, None, scale_factor)
+}
+
+pub fn switch_scale_with_radius(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnButtonStyle,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    scale_factor: f32,
+) -> SwitchScale {
+    let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
+    let metrics = ctx.metrics();
+    let fallback = SwitchScale::compute(size, metrics, scale_factor);
+    let stylesheet = embedded_stylesheet();
+    let Some(rule) = stylesheet.switch.metrics_for_style(style, size) else {
+        return apply_switch_radius(fallback, metrics, radius);
+    };
+    let resolved = resolve_switch_metrics(rule);
+    let track_height = snap_to_pixel(resolved.height, scale_factor);
+    let track_padding = snap_to_pixel((resolved.height * (2.0 / 22.0)).max(1.0), scale_factor);
+    let scale = SwitchScale {
+        track_width: snap_to_pixel(resolved.width, scale_factor),
+        track_height,
+        track_padding,
+        thumb_size: snap_to_pixel(resolved.thumb_size, scale_factor),
+        track_radius: metrics.radius.pill,
+        gap: snap_to_pixel(metrics.gap(size), scale_factor),
+        label_baseline_shift: fallback.label_baseline_shift,
+    };
+    apply_switch_radius(scale, metrics, radius)
+}
+
+fn apply_switch_radius(
+    mut scale: SwitchScale,
+    metrics: &MetricTokens,
+    radius: Option<ButtonRadiusPreset>,
+) -> SwitchScale {
+    if let Some(preset) = radius {
+        scale.track_radius = resolve_switch_radius_preset(preset, metrics, scale.track_height);
+    }
+    scale
 }
 
 pub fn switch_look(
@@ -290,5 +348,77 @@ mod tests {
 
         assert_eq!(primary.track_background, secondary.track_background);
         assert_eq!(primary.thumb_background, secondary.thumb_background);
+    }
+
+    #[test]
+    fn secondary_switch_scale_is_smaller_than_primary() {
+        use gpui_luma::theme::ControlSize;
+        use super::switch_scale;
+
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
+            let primary = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, size, 1.0);
+            let secondary = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, size, 1.0);
+            assert!(
+                secondary.track_height < primary.track_height,
+                "{size:?}: secondary height {} should be < primary {}",
+                secondary.track_height,
+                primary.track_height
+            );
+            assert!(
+                secondary.track_width < primary.track_width,
+                "{size:?}: secondary width {} should be < primary {}",
+                secondary.track_width,
+                primary.track_width
+            );
+        }
+    }
+
+    #[test]
+    fn on_primary_and_secondary_use_distinct_style_colors() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let primary =
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let secondary =
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, true, InteractionState::default());
+
+        assert_eq!(primary.track_background, catalog.color("primary").expect("primary"));
+        assert_eq!(secondary.track_background, catalog.color("secondary").expect("secondary"));
+        assert_ne!(primary.track_background, secondary.track_background);
+    }
+
+    #[test]
+    fn switch_radius_presets_match_button_scale() {
+        use gpui_luma::theme::ControlSize;
+        use super::{resolve_switch_radius_preset, switch_scale};
+
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let metrics = mode.metrics;
+        let scale = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, ControlSize::Md, 1.0);
+
+        assert_eq!(
+            resolve_switch_radius_preset(
+                crate::controls::button::ButtonRadiusPreset::None,
+                &metrics,
+                scale.track_height
+            ),
+            metrics.radius.none
+        );
+        assert_eq!(
+            resolve_switch_radius_preset(
+                crate::controls::button::ButtonRadiusPreset::Full,
+                &metrics,
+                scale.track_height
+            ),
+            scale.track_height / 2.0
+        );
+        assert!(
+            resolve_switch_radius_preset(
+                crate::controls::button::ButtonRadiusPreset::Small,
+                &metrics,
+                scale.track_height
+            ) < scale.track_height / 2.0
+        );
     }
 }

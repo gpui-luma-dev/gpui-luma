@@ -13,8 +13,8 @@ use super::config::{
     ListViewSurfaceColorRule, NavigationSidebarBranchColorRule, NavigationSidebarContainerColorRule,
     NavigationSidebarItemColorRule, NavigationSidebarSectionColorRule, ProgressColorRule, ProgressMetricsRule,
     RadioColorRule, ResizablePanelsColorRule, ScrollbarMetricsRule, SliderMetricsRule, SliderColorRule,
-    SplitViewColorRule, SwitchColorRule, ScrollbarColorRule, TabsNavigationItemColorRule, TabsNavigationListColorRule,
-    TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
+    SplitViewColorRule, SwitchColorRule, SwitchMetricsRule, ScrollbarColorRule, TabsNavigationItemColorRule,
+    TabsNavigationListColorRule, TextfieldColorRule, TreeViewRowColorRule, TypographyRule,
 };
 
 /// Context for resolving derived stylesheet tokens (`@outline_layer`, `@action_layer`, etc.).
@@ -582,6 +582,10 @@ pub fn resolve_slider_metrics(
     }
 }
 
+pub fn resolve_switch_metrics(rule: &SwitchMetricsRule) -> ResolvedSwitchMetrics {
+    ResolvedSwitchMetrics { width: rule.width, height: rule.height, thumb_size: rule.thumb_size }
+}
+
 pub fn resolve_scrollbar_metrics(rule: &ScrollbarMetricsRule) -> ResolvedScrollbarMetrics {
     ResolvedScrollbarMetrics {
         thickness: rule.thickness,
@@ -798,6 +802,13 @@ pub struct ResolvedSliderMetrics {
     pub track_height: f32,
     pub thumb_size: f32,
     pub radius: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResolvedSwitchMetrics {
+    pub width: f32,
+    pub height: f32,
+    pub thumb_size: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

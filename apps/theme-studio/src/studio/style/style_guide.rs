@@ -3,93 +3,23 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use gpui::{
-    AnyElement, App, Bounds, ClickEvent, Context, DragMoveEvent, Entity, FontWeight, IntoElement, KeyDownEvent,
-    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Render, ScrollHandle, ScrollWheelEvent,
-    SharedString, TextRun, Window, div, font, point, prelude::*, px, svg,
-};
-use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
-use gpui_luma::controls::color::style::ElementExt;
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, default_button_template};
-use gpui_luma::controls::progress::{ProgressRenderModel, ProgressTemplate};
-use gpui_luma::controls::autocomplete::{
-    AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
-    AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
-};
-use gpui_luma::controls::combobox::{
-    ComboBoxItemsRenderModel, ComboBoxItemsTemplate, ComboBoxItemsTemplateHandlers, ComboBoxPanelRenderModel,
-    ComboBoxPanelTemplate, ComboBoxRenderModel, ComboBoxTemplateHandlers, SelectionItem as ComboBoxSelectionItem,
-    default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
-};
-use gpui_luma::controls::floating_menu::{
-    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
-};
-use gpui_luma::controls::menu_item::MenuItem;
-use gpui_luma::controls::popup_menu::{
-    ControlFocusState as PopupMenuControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
-    PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
+    AnyElement, App, Context, Entity, IntoElement, KeyDownEvent, MouseButton, Pixels, Render, ScrollHandle,
+    ScrollWheelEvent, Window, div, point, prelude::*, px,
 };
 use gpui_luma::controls::navigation_sidebar::{NavNode, NavigationSidebar};
-use gpui_luma::controls::search_selector::{
-    SearchSelectorItemsRenderModel, SearchSelectorItemsTemplate, SearchSelectorItemsTemplateHandlers,
-    SearchSelectorPanelRenderModel, SearchSelectorPanelTemplate, SearchSelectorRenderModel,
-    SearchSelectorTemplateHandlers, SelectionItem as SearchSelectorSelectionItem,
-    default_search_selector_items_template, default_search_selector_panel_template, default_search_selector_template,
-};
-use gpui_luma::controls::selector::{
-    ControlFocusState, SelectorItem, SelectorPath, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers,
-};
-use gpui_luma::controls::selector_panel::{
-    SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
-    SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
-};
-use gpui_luma::controls::scrollbar::{
-    ScrollbarBoundsHandler, ScrollbarDrag, ScrollbarDragMoveHandler, ScrollbarHoverHandler, ScrollbarMouseDownHandler,
-    ScrollbarMouseUpHandler, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarScrollWheelHandler,
-    ScrollbarTemplate, ScrollbarTemplateHandlers,
-};
-use gpui_luma::controls::state::MenuPath;
-use gpui_luma::controls::slider::{
-    SliderBoundsHandler, SliderDrag, SliderHoverHandler, SliderInputStrategy, SliderMouseDownHandler,
-    SliderMouseMoveHandler, SliderMouseUpHandler, SliderRenderModel, SliderTemplate, SliderTemplateHandlers,
-    SliderThumbPolicy, SliderThumbRole, SliderThumbValue, ThumbId, TrackPresentation, build_track_segments,
-};
 use gpui_luma::controls::tabs_navigation::{
-    ControlFocusState as TabsControlFocusState, TabsNavigation, TabsNavigationClickHandler, TabsNavigationEvent,
-    TabsNavigationHoverHandler, TabsNavigationItem, TabsNavigationItemState, TabsNavigationMouseDownHandler,
-    TabsNavigationMouseUpHandler, TabsNavigationRenderItem, TabsNavigationRenderModel, TabsNavigationTemplate,
-    TabsNavigationTemplateHandlers, TabsNavigationWidthMode,
+    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
 };
-use gpui_luma::controls::textarea::{
-    TextAreaClickHandler, TextAreaDrag, TextAreaHoverHandler, TextAreaKeyDownHandler, TextAreaLineMetric,
-    TextAreaMouseDownHandler, TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaRenderModel, TextAreaState,
-    TextAreaTemplate, TextAreaTemplateHandlers, TextAreaTheme, ThemedTextAreaTemplate,
-};
-use gpui_luma::controls::textfield::{
-    TextFieldClickHandler, TextFieldHoverHandler, TextFieldKeyDownHandler, TextFieldMouseDownHandler,
-    TextFieldMouseMoveHandler, TextFieldMouseUpHandler, TextFieldRenderModel, TextFieldState, TextFieldTemplate,
-    TextFieldTemplateHandlers, TextFieldTheme, TextFieldVariant,
-};
-use gpui_luma::controls::value::ControlRange;
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
-use gpui_luma::{declare_form, hstack, vstack};
+use gpui_luma::controls::color::style::ElementExt;
+use gpui_luma::{declare_form};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook, ShadcnLookControlExt};
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_icons::Icon as LucideIcon;
-use self::cards::buttons::render_lucide_icon;
 
-#[path = "variant_state_table.rs"]
-mod variant_state_table;
-
-#[path = "sticky_section_heading.rs"]
-mod sticky_section_heading;
-
-#[path = "cards/mod.rs"]
-mod cards;
-
-use sticky_section_heading::{
-    SECTION_HEADING_CONTENT_GAP, SECTION_HEADING_SHELL_PAD_BOTTOM, SECTION_HEADING_SHELL_PAD_TOP,
-    StickySectionHeadingTracker, render_section_heading_anchor, render_sticky_section_heading_lane,
-    with_sticky_heading_tracker,
+use crate::studio::style::sections;
+use crate::studio::style::shared::callout::render_sparse_catalog_callout;
+use crate::studio::style::sticky_section_heading::{
+    StickySectionHeadingTracker, render_sticky_section_heading_lane, with_sticky_heading_tracker,
 };
 
 const TRACKER_HEIGHT: f32 = 280.0;
@@ -158,7 +88,7 @@ declare_form! {
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
             menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
-            slider_customization_preview: Option<Entity<cards::slider_customization::SliderCustomizationPreview>> =
+            slider_customization_preview: Option<Entity<sections::slider::customization::SliderCustomizationPreview>> =
                 None,
         }
     }
@@ -492,12 +422,13 @@ impl StyleGuidePanel {
     fn slider_customization_preview(
         &mut self,
         cx: &mut Context<Self>,
-    ) -> Entity<cards::slider_customization::SliderCustomizationPreview> {
+    ) -> Entity<sections::slider::customization::SliderCustomizationPreview> {
         if let Some(preview) = self.slider_customization_preview.clone() {
             return preview;
         }
 
-        let preview = cx.new(|cx| cards::slider_customization::SliderCustomizationPreview::new(cx, self.look.clone()));
+        let preview =
+            cx.new(|cx| sections::slider::customization::SliderCustomizationPreview::new(cx, self.look.clone()));
         self.slider_customization_preview = Some(preview.clone());
         preview
     }
@@ -688,65 +619,65 @@ impl StyleGuidePanel {
 
     fn render_section(&self, section: StyleGuideSection, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         match section {
-            StyleGuideSection::Sidebar => cards::sidebar::render_sidebar_template_section(
+            StyleGuideSection::Sidebar => sections::sidebar::render_sidebar_template_section(
                 self.sidebar_preview.clone().expect("sidebar preview"),
                 self.look.as_ref(),
             ),
             StyleGuideSection::Feedback => {
-                cards::feedback::render_feedback_template_section(self.look.clone(), window, cx)
+                sections::feedback::render_feedback_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Buttons => cards::buttons::render_button_template_matrix_section(
+            StyleGuideSection::Buttons => sections::buttons::render_button_template_matrix_section(
                 self.look.clone(),
                 self.buttons_preview_tabs.clone().expect("buttons preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::IconButtons => cards::buttons::render_icon_button_template_matrix_section(
+            StyleGuideSection::IconButtons => sections::icon_buttons::render_icon_button_template_matrix_section(
                 self.look.clone(),
                 self.icon_buttons_preview_tabs.clone().expect("icon buttons preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::Checkbox => cards::buttons::render_checkbox_template_matrix_section(
+            StyleGuideSection::Checkbox => sections::checkbox::render_checkbox_template_matrix_section(
                 self.look.clone(),
                 self.checkbox_preview_tabs.clone().expect("checkbox preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::Radio => cards::buttons::render_radio_template_matrix_section(
+            StyleGuideSection::Radio => sections::radio::render_radio_template_matrix_section(
                 self.look.clone(),
                 self.radio_preview_tabs.clone().expect("radio preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::Switch => cards::buttons::render_switch_template_matrix_section(
+            StyleGuideSection::Switch => sections::switch::render_switch_template_matrix_section(
                 self.look.clone(),
                 self.switch_preview_tabs.clone().expect("switch preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::Toggle => cards::buttons::render_toggle_template_matrix_section(
+            StyleGuideSection::Toggle => sections::toggle::render_toggle_template_matrix_section(
                 self.look.clone(),
                 self.toggles_preview_tabs.clone().expect("toggles preview tabs"),
                 window,
                 cx,
             ),
-            StyleGuideSection::Menus => cards::menus::render_menu_template_state_section(
+            StyleGuideSection::Menus => sections::menus::render_menu_template_state_section(
                 self.look.clone(),
                 self.menus_preview_tabs.clone().expect("menus preview tabs"),
                 window,
                 cx,
             ),
             StyleGuideSection::Selectors => {
-                cards::selectors::render_selector_templates_section(self.look.clone(), window, cx)
+                sections::selectors::render_selector_templates_section(self.look.clone(), window, cx)
             }
             StyleGuideSection::Tabs => {
-                cards::menus::render_tabs_navigation_template_section(self.look.clone(), window, cx)
+                sections::tabs::render_tabs_navigation_template_section(self.look.clone(), window, cx)
             }
             StyleGuideSection::Scrollbar => {
-                cards::inputs::render_scrollbar_template_section(self.look.clone(), window, cx)
+                sections::scrollbar::render_scrollbar_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Slider => cards::inputs::render_slider_template_section(
+            StyleGuideSection::Slider => sections::slider::render_slider_template_section(
                 self.look.clone(),
                 self.slider_preview_tabs.clone().expect("slider preview tabs"),
                 self.slider_customization_preview.clone().expect("slider customization preview"),
@@ -754,12 +685,12 @@ impl StyleGuidePanel {
                 cx,
             ),
             StyleGuideSection::TextField => {
-                cards::inputs::render_textfield_template_section(self.look.clone(), window, cx)
+                sections::textfield::render_textfield_template_section(self.look.clone(), window, cx)
             }
             StyleGuideSection::TextArea => {
-                cards::inputs::render_textarea_template_section(self.look.clone(), window, cx)
+                sections::textarea::render_textarea_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Typography => cards::typography::render_typography_section(self.look.as_ref()),
+            StyleGuideSection::Typography => sections::typography::render_typography_section(self.look.as_ref()),
         }
     }
 
@@ -898,246 +829,4 @@ fn sidebar_leaf_node(id: &'static str, label: &'static str, icon: Option<LucideI
         node = node.icon(icon);
     }
     node
-}
-
-#[derive(Clone, Copy)]
-struct ButtonStateSample {
-    id: &'static str,
-    header: &'static str,
-    state: InteractionState,
-}
-
-#[derive(Clone, Copy)]
-enum ButtonTemplateVariant {
-    TextButton,
-    IconButton,
-}
-
-#[derive(Clone, Copy)]
-enum ChoiceTemplateControl {
-    Radio,
-    Checkbox,
-    Switch,
-}
-
-#[derive(Clone, Copy)]
-struct InputInteractionSample {
-    id: &'static str,
-    label: &'static str,
-    state: InteractionState,
-}
-
-#[derive(Clone, Copy)]
-struct InputTextFieldSample {
-    id: &'static str,
-    label: &'static str,
-    state: TextFieldState,
-    enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-struct InputTextAreaSample {
-    id: &'static str,
-    label: &'static str,
-    state: TextAreaState,
-    enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-struct TabsNavigationStateSample {
-    id: &'static str,
-    label: &'static str,
-    active_index: usize,
-    target_index: usize,
-    target_state: TabsNavigationItemState,
-    enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-struct SelectorTemplateStateSample {
-    id: &'static str,
-    label: &'static str,
-    textfield_state: TextFieldState,
-    textfield_enabled: bool,
-    selector_state: InteractionState,
-    selector_focus: ControlFocusState,
-    selector_enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-struct ProgressStateSample {
-    id: &'static str,
-    label: &'static str,
-    value: f32,
-    enabled: bool,
-}
-
-#[derive(Clone, Copy)]
-enum SelectorTemplateControl {
-    AutocompleteTextBox,
-    ComboBox,
-    Selector,
-    SearchSelector,
-}
-
-impl ChoiceTemplateControl {
-    fn id(self) -> &'static str {
-        match self {
-            Self::Radio => "radio",
-            Self::Checkbox => "checkbox",
-            Self::Switch => "switch",
-        }
-    }
-
-    fn content(self, _active: bool) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<bool>> {
-        Arc::new(move |_, _| div().into_any_element())
-    }
-
-    fn role(self) -> gpui_luma::controls::button_family::ButtonFamilyRole {
-        match self {
-            Self::Checkbox | Self::Radio => gpui_luma::controls::button_family::ButtonFamilyRole::Icon,
-            Self::Switch => gpui_luma::controls::button_family::ButtonFamilyRole::Text,
-        }
-    }
-}
-
-impl SelectorTemplateControl {
-    fn header(self) -> &'static str {
-        match self {
-            Self::AutocompleteTextBox => "AutocompleteTextBox",
-            Self::ComboBox => "ComboBox",
-            Self::Selector => "Selector",
-            Self::SearchSelector => "SearchSelector",
-        }
-    }
-}
-
-fn button_preview_look(model: &ButtonRenderModel<()>) -> Option<gpui_luma::controls::button_family::ButtonFamilyLook> {
-    model.look.as_ref().map(|resolve| resolve(model))
-}
-
-impl ButtonTemplateVariant {
-    fn id(self) -> &'static str {
-        match self {
-            Self::TextButton => "text-button",
-            Self::IconButton => "icon-button",
-        }
-    }
-
-    fn round(self) -> bool {
-        matches!(self, Self::IconButton)
-    }
-
-    fn content(self) -> gpui_luma::controls::command::button::ControlPresenter<ButtonRenderModel<()>> {
-        let label = SharedString::from("Button");
-        match self {
-            Self::TextButton => Arc::new(move |_, _| div().child(label.clone()).into_any_element()),
-            Self::IconButton => Arc::new(move |model, _| {
-                let icon_size = button_preview_look(model).map(|look| look.icon_size).unwrap_or(16.0);
-                render_lucide_icon(LucideIcon::Heart, icon_size)
-            }),
-        }
-    }
-}
-
-fn render_sparse_catalog_callout(look: &ShadcnLook) -> Option<AnyElement> {
-    if look.has_css_catalog() {
-        return None;
-    }
-
-    let chrome = look.chrome();
-    let title = "Native default theme — sparse CSS catalog";
-    let body = "This view uses the active look typography and token mappings. The native default theme has no CSS catalog, so cross-reference data is limited. SDK controls still resolve colors from the embedded palette. Pick a tweakcn theme in the sidebar for full catalog-backed typography context.";
-
-    Some(render_callout(
-        title,
-        body,
-        chrome.border,
-        chrome.panel_background,
-        chrome.title_text,
-        chrome.body_text,
-    ))
-}
-
-fn render_callout(
-    title: &str,
-    body: &str,
-    border: gpui::Hsla,
-    background: gpui::Hsla,
-    title_color: gpui::Hsla,
-    body_color: gpui::Hsla,
-) -> AnyElement {
-    div()
-        .w_full()
-        .max_w(px(860.0))
-        .flex()
-        .flex_col()
-        .gap(px(6.0))
-        .border_1()
-        .border_color(border)
-        .rounded(px(10.0))
-        .bg(background)
-        .p(px(14.0))
-        .child(
-            div()
-                .typography_sm()
-                .font_weight(gpui::FontWeight::SEMIBOLD)
-                .text_color(title_color)
-                .child(title.to_string()),
-        )
-        .child(div().typography_xs().text_color(body_color).child(body.to_string()))
-        .into_any_element()
-}
-
-fn section_shell_with_width(
-    width: f32,
-    title: &'static str,
-    description: &'static str,
-    title_color: gpui::Hsla,
-    muted_text: gpui::Hsla,
-    border: gpui::Hsla,
-    _background: gpui::Hsla,
-    content: AnyElement,
-) -> AnyElement {
-    div()
-        .w_full()
-        .flex()
-        .flex_col()
-        .pt(px(SECTION_HEADING_SHELL_PAD_TOP))
-        .pb(px(SECTION_HEADING_SHELL_PAD_BOTTOM))
-        .child(render_section_heading_anchor(title, description, title_color, muted_text, border))
-        .child(
-            div()
-                .w_full()
-                .flex()
-                .justify_center()
-                .mt(px(SECTION_HEADING_CONTENT_GAP))
-                .child(div().w(px(width)).max_w_full().child(content)),
-        )
-        .into_any_element()
-}
-
-fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: gpui::Hsla) -> AnyElement {
-    div()
-        .id(format!("theme-studio-choice-template-state-rail-{label}"))
-        .w(px(28.0))
-        .min_h(px(38.0))
-        .flex()
-        .items_center()
-        .justify_center()
-        .gap(px(4.0))
-        .child(svg().path(state_label_asset_path(state_id)).w(px(20.0)).h(px(38.0)).text_color(label_color))
-        .child(div().w(px(1.0)).h_full().bg(label_color))
-        .into_any_element()
-}
-
-fn state_label_asset_path(state_id: &str) -> &'static str {
-    match state_id {
-        "default" => "assets/labels/default-label.svg",
-        "hover" => "assets/labels/hover-label.svg",
-        "focused" => "assets/labels/focused-label.svg",
-        "pressed" => "assets/labels/pressed-label.svg",
-        "disabled" => "assets/labels/disabled-label.svg",
-        _ => "assets/labels/default-label.svg",
-    }
 }

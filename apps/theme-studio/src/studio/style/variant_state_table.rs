@@ -8,7 +8,7 @@ const DEFAULT_ROW_HEIGHT: f32 = 52.0;
 const DEFAULT_CORNER_RADIUS: f32 = 10.0;
 
 #[derive(Clone, Debug)]
-pub(in crate::studio::style::style_guide) struct VariantStateTableStyle {
+pub(crate) struct VariantStateTableStyle {
     pub variant_column_width: f32,
     pub state_column_width: f32,
     pub header_height: f32,
@@ -22,7 +22,7 @@ pub(in crate::studio::style::style_guide) struct VariantStateTableStyle {
 }
 
 impl VariantStateTableStyle {
-    pub(in crate::studio::style::style_guide) fn from_chrome(chrome: &LumaChrome) -> Self {
+    pub(crate) fn from_chrome(chrome: &LumaChrome) -> Self {
         Self {
             variant_column_width: DEFAULT_VARIANT_COLUMN_WIDTH,
             state_column_width: DEFAULT_STATE_COLUMN_WIDTH,
@@ -37,44 +37,44 @@ impl VariantStateTableStyle {
         }
     }
 
-    pub(in crate::studio::style::style_guide) fn variant_column_align_center(mut self, centered: bool) -> Self {
+    pub(crate) fn variant_column_align_center(mut self, centered: bool) -> Self {
         self.variant_column_align_center = centered;
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn row_height(mut self, row_height: f32) -> Self {
+    pub(crate) fn row_height(mut self, row_height: f32) -> Self {
         self.row_height = row_height;
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn header_height(mut self, header_height: f32) -> Self {
+    pub(crate) fn header_height(mut self, header_height: f32) -> Self {
         self.header_height = header_height;
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn state_column_width(mut self, width: f32) -> Self {
+    pub(crate) fn state_column_width(mut self, width: f32) -> Self {
         self.state_column_width = width;
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn header_corner_padding_bottom(mut self, padding: f32) -> Self {
+    pub(crate) fn header_corner_padding_bottom(mut self, padding: f32) -> Self {
         self.header_corner_padding_bottom = padding;
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn variant_column_width(mut self, width: f32) -> Self {
+    pub(crate) fn variant_column_width(mut self, width: f32) -> Self {
         self.variant_column_width = width;
         self
     }
 }
 
-pub(in crate::studio::style::style_guide) struct VariantStateTableRow {
+pub(crate) struct VariantStateTableRow {
     pub label: SharedString,
     pub description: SharedString,
     pub cells: Vec<AnyElement>,
 }
 
-pub(in crate::studio::style::style_guide) struct VariantStateTable {
+pub(crate) struct VariantStateTable {
     style: VariantStateTableStyle,
     row_group_label: SharedString,
     column_headers: Vec<AnyElement>,
@@ -82,32 +82,26 @@ pub(in crate::studio::style::style_guide) struct VariantStateTable {
 }
 
 impl VariantStateTable {
-    pub(in crate::studio::style::style_guide) fn new(style: VariantStateTableStyle) -> Self {
+    pub(crate) fn new(style: VariantStateTableStyle) -> Self {
         Self { style, row_group_label: SharedString::from("VARIANTS"), column_headers: Vec::new(), rows: Vec::new() }
     }
 
-    pub(in crate::studio::style::style_guide) fn row_group_label(mut self, label: impl Into<SharedString>) -> Self {
+    pub(crate) fn row_group_label(mut self, label: impl Into<SharedString>) -> Self {
         self.row_group_label = label.into();
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn column_headers(
-        mut self,
-        headers: impl IntoIterator<Item = AnyElement>,
-    ) -> Self {
+    pub(crate) fn column_headers(mut self, headers: impl IntoIterator<Item = AnyElement>) -> Self {
         self.column_headers = headers.into_iter().collect();
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn rows(
-        mut self,
-        rows: impl IntoIterator<Item = VariantStateTableRow>,
-    ) -> Self {
+    pub(crate) fn rows(mut self, rows: impl IntoIterator<Item = VariantStateTableRow>) -> Self {
         self.rows = rows.into_iter().collect();
         self
     }
 
-    pub(in crate::studio::style::style_guide) fn build(self) -> AnyElement {
+    pub(crate) fn build(self) -> AnyElement {
         let Self { style, row_group_label, column_headers, rows } = self;
         let border = table_border_color(&style);
         let width = table_width(&style, column_headers.len());
@@ -217,7 +211,21 @@ fn render_variant_row(
 }
 
 fn render_variant_column_cell(style: &VariantStateTableStyle, row: &VariantStateTableRow) -> AnyElement {
+    let has_description = !row.description.is_empty();
+    let label = div()
+        .text_sm()
+        .line_height(px(18.0))
+        .font_weight(FontWeight::SEMIBOLD)
+        .text_color(style.title_color)
+        .child(row.label.clone());
+    let description = has_description
+        .then(|| div().text_xs().line_height(px(15.0)).text_color(style.muted_text).child(row.description.clone()));
+
     if style.variant_column_align_center {
+        let mut stack = div().flex().flex_col().items_center().justify_center().gap(px(2.0)).child(label);
+        if let Some(description) = description {
+            stack = stack.child(description);
+        }
         return div()
             .w_full()
             .h_full()
@@ -226,34 +234,15 @@ fn render_variant_column_cell(style: &VariantStateTableStyle, row: &VariantState
             .justify_center()
             .px(px(16.0))
             .py(px(4.0))
-            .child(
-                div()
-                    .text_sm()
-                    .line_height(px(18.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(style.title_color)
-                    .child(row.label.clone()),
-            )
+            .child(stack)
             .into_any_element();
     }
 
-    div()
-        .px(px(16.0))
-        .py(px(8.0))
-        .flex()
-        .flex_col()
-        .justify_center()
-        .gap(px(2.0))
-        .child(
-            div()
-                .text_sm()
-                .line_height(px(18.0))
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(style.title_color)
-                .child(row.label.clone()),
-        )
-        .child(div().text_xs().line_height(px(15.0)).text_color(style.muted_text).child(row.description.clone()))
-        .into_any_element()
+    let mut stack = div().px(px(16.0)).py(px(8.0)).flex().flex_col().justify_center().gap(px(2.0)).child(label);
+    if let Some(description) = description {
+        stack = stack.child(description);
+    }
+    stack.into_any_element()
 }
 
 fn table_cell(

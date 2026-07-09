@@ -458,8 +458,12 @@ pub struct RadioColorRule {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct SwitchStylesheet {
+    /// Primary (default) switch geometry keyed by `sm` / `md` / `lg`.
     #[serde(default)]
-    pub metrics: Option<SwitchMetricsRule>,
+    pub metrics: HashMap<String, SwitchMetricsRule>,
+    /// Secondary switch geometry keyed by `sm` / `md` / `lg` (typically one step smaller).
+    #[serde(default)]
+    pub secondary_metrics: HashMap<String, SwitchMetricsRule>,
     #[serde(default)]
     pub elevation_rules: Vec<LayeredElevationRule>,
     #[serde(default)]
@@ -478,6 +482,31 @@ impl SwitchStylesheet {
         self.color_rules
             .iter()
             .find(|rule| matches_optional_bool(rule.disabled, disabled) && matches_optional_bool(rule.on, on))
+    }
+
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&SwitchMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+
+    pub fn secondary_metrics_for_size(&self, size: ControlSize) -> Option<&SwitchMetricsRule> {
+        self.secondary_metrics.get(control_size_key(size))
+    }
+
+    pub fn metrics_for_style(&self, style: ShadcnButtonStyle, size: ControlSize) -> Option<&SwitchMetricsRule> {
+        match style {
+            ShadcnButtonStyle::Secondary => {
+                self.secondary_metrics_for_size(size).or_else(|| self.metrics_for_size(size))
+            }
+            _ => self.metrics_for_size(size),
+        }
+    }
+}
+
+fn control_size_key(size: ControlSize) -> &'static str {
+    match size {
+        ControlSize::Sm => "sm",
+        ControlSize::Md => "md",
+        ControlSize::Lg => "lg",
     }
 }
 

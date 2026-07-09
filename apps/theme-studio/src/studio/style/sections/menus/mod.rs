@@ -1,8 +1,31 @@
-use super::super::*;
-use super::buttons::render_lucide_icon;
-use super::inputs::{input_noop_bounds, input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up};
+use std::sync::Arc;
 
-pub(in crate::studio::style::style_guide) fn render_menu_template_state_section(
+use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, Window, div, prelude::*, px};
+use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
+use gpui_luma::controls::floating_menu::{
+    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
+};
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::popup_menu::{
+    ControlFocusState as PopupMenuControlFocusState, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplate,
+    PopupMenuTemplateHandlers, PopupMenuTriggerStyle,
+};
+use gpui_luma::controls::state::MenuPath;
+use gpui_luma::controls::tabs_navigation::TabsNavigation;
+use gpui_luma::theme::InteractionState;
+use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
+use lucide_icons::Icon as LucideIcon;
+
+use crate::studio::style::shared::button_matrix::{render_button_radius_header_cell};
+use crate::studio::style::shared::icons::render_lucide_icon;
+use crate::studio::style::shared::preview_handlers::{
+    input_noop_bounds, input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up,
+};
+use crate::studio::style::shared::samples::ButtonStateSample;
+use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
+
+pub(crate) fn render_menu_template_state_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
     window: &mut Window,
@@ -105,13 +128,12 @@ fn render_menu_trigger_template_matrix(look: &Arc<ShadcnLook>, window: &mut Wind
     let samples = menu_trigger_state_samples();
     let chrome = look.chrome();
 
-    super::super::variant_state_table::VariantStateTable::new(
-        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
-            .state_column_width(MENU_TRIGGER_TABLE_STATE_COLUMN_WIDTH),
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome).state_column_width(MENU_TRIGGER_TABLE_STATE_COLUMN_WIDTH),
     )
     .column_headers(samples.iter().map(|sample| render_menu_trigger_state_header_cell(sample, chrome.muted_text)))
     .rows(MENU_TRIGGER_STYLE_VARIANTS.iter().map(|row| {
-        super::super::variant_state_table::VariantStateTableRow {
+        VariantStateTableRow {
             label: SharedString::from(row.label),
             description: SharedString::from(row.description),
             cells: samples
@@ -127,22 +149,21 @@ fn render_menu_trigger_size_matrix(look: &Arc<ShadcnLook>, window: &mut Window, 
     let template = look.popup_menu_template();
     let chrome = look.chrome();
 
-    super::super::variant_state_table::VariantStateTable::new(
-        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome)
             .variant_column_width(MENU_TRIGGER_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
             .state_column_width(MENU_TRIGGER_TABLE_RADIUS_COLUMN_WIDTH)
             .header_height(MENU_TRIGGER_TABLE_SIZE_HEADER_HEIGHT)
-            .row_height(MENU_TRIGGER_TABLE_SIZE_RADIUS_ROW_HEIGHT)
-            .variant_column_align_center(true),
+            .row_height(MENU_TRIGGER_TABLE_SIZE_RADIUS_ROW_HEIGHT),
     )
     .row_group_label("SIZE")
     .column_headers(
         ButtonRadiusPreset::ALL
             .iter()
-            .map(|preset| render_menu_trigger_radius_header_cell(preset.label(), chrome.muted_text)),
+            .map(|preset| render_button_radius_header_cell(preset.label(), chrome.muted_text)),
     )
     .rows(MENU_TRIGGER_SIZES.iter().map(|(size, label)| {
-        super::super::variant_state_table::VariantStateTableRow {
+        VariantStateTableRow {
             label: SharedString::from(*label),
             description: SharedString::from(""),
             cells: ButtonRadiusPreset::ALL
@@ -167,41 +188,21 @@ fn render_menu_trigger_size_matrix(look: &Arc<ShadcnLook>, window: &mut Window, 
 fn render_floating_menu_size_matrix(look: &Arc<ShadcnLook>) -> AnyElement {
     let chrome = look.chrome();
 
-    super::super::variant_state_table::VariantStateTable::new(
-        super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome)
             .variant_column_width(MENU_TRIGGER_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
             .state_column_width(280.0)
             .header_height(MENU_TRIGGER_TABLE_SIZE_HEADER_HEIGHT)
-            .row_height(160.0)
-            .variant_column_align_center(false),
+            .row_height(160.0),
     )
     .row_group_label("SIZE")
-    .column_headers([render_floating_menu_size_header_cell("Menu items", chrome.muted_text)])
-    .rows(
-        MENU_TRIGGER_SIZES
-            .iter()
-            .map(|(size, label)| super::super::variant_state_table::VariantStateTableRow {
-                label: SharedString::from(*label),
-                description: SharedString::from(""),
-                cells: vec![render_floating_menu_size_cell(look, *size)],
-            }),
-    )
+    .column_headers([render_button_radius_header_cell("Menu items", chrome.muted_text)])
+    .rows(MENU_TRIGGER_SIZES.iter().map(|(size, label)| VariantStateTableRow {
+        label: SharedString::from(*label),
+        description: SharedString::from(""),
+        cells: vec![render_floating_menu_size_cell(look, *size)],
+    }))
     .build()
-}
-
-fn render_floating_menu_size_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
-    div()
-        .w_full()
-        .h_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_xs()
-        .line_height(px(15.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(muted_text)
-        .child(label)
-        .into_any_element()
 }
 
 fn render_floating_menu_size_cell(look: &Arc<ShadcnLook>, size: ButtonSize) -> AnyElement {
@@ -391,21 +392,6 @@ fn render_menu_trigger_state_header_cell(sample: &ButtonStateSample, muted_text:
         .into_any_element()
 }
 
-fn render_menu_trigger_radius_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
-    div()
-        .w_full()
-        .h_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_xs()
-        .line_height(px(15.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(muted_text)
-        .child(label)
-        .into_any_element()
-}
-
 fn menu_trigger_state_header_icon(state_id: &'static str) -> LucideIcon {
     match state_id {
         "default" => LucideIcon::House,
@@ -428,35 +414,81 @@ fn menu_trigger_state_display_label(header: &'static str) -> &'static str {
     }
 }
 
-pub(in crate::studio::style::style_guide) fn render_tabs_navigation_template_section(
-    look: Arc<ShadcnLook>,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let chrome = look.chrome();
-    let template = look.tabs_navigation_template();
-    let samples = tabs_navigation_state_samples();
+fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) -> PopupMenuTemplateHandlers {
+    let click_count = root_count + submenu_click_count;
 
-    section_shell_with_width(
-        960.0,
-        "Tabs",
-        "Inactive, active, hover, focus, pressed, and disabled.",
-        chrome.title_text,
-        chrome.muted_text,
-        chrome.border,
-        chrome.panel_background,
-        div()
-            .flex()
-            .flex_col()
-            .items_center()
-            .gap(px(10.0))
-            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_tabs_navigation_state_sample(&template, sample, chrome.muted_text, window, cx)
-                }),
-            ))
-            .into_any_element(),
-    )
+    PopupMenuTemplateHandlers {
+        trigger_bounds: Box::new(input_noop_bounds),
+        trigger_click: Box::new(input_noop_click),
+        trigger_hover: Box::new(input_noop_hover),
+        trigger_mouse_down: Box::new(input_noop_mouse_down),
+        trigger_mouse_up: Box::new(input_noop_mouse_up),
+        trigger_mouse_up_out: Box::new(input_noop_mouse_up),
+        root_mouse_down_out: Box::new(input_noop_mouse_down),
+        item_hovers: (0..root_count).map(|_| Box::new(input_noop_hover) as _).collect(),
+        item_clicks: (0..click_count).map(|_| Box::new(input_noop_click) as _).collect(),
+    }
+}
+
+fn popup_menu_items() -> [MenuItem; 5] {
+    [
+        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
+        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::new("archive").label("Archive"),
+        MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
+            MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
+            MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
+        ]),
+        MenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
+    ]
+}
+
+fn floating_menu_default_items() -> [MenuItem; 3] {
+    [
+        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
+        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
+        MenuItem::new("archive").label("Archive"),
+    ]
+}
+
+fn floating_menu_disabled_items() -> [MenuItem; 3] {
+    [
+        MenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
+        MenuItem::new("download").label("Download").icon(LucideIcon::Download).enabled(false),
+        MenuItem::new("share").label("Share").icon(LucideIcon::Share2),
+    ]
+}
+
+fn floating_menu_submenu_items() -> [MenuItem; 3] {
+    [
+        MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
+        MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
+            MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
+            MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
+        ]),
+        MenuItem::new("inspect").label("Inspect"),
+    ]
+}
+
+fn menu_sample_id(label: &str) -> String {
+    label
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
+fn floating_menu_noop_hovers(count: usize) -> Vec<FloatingMenuHoverHandler> {
+    (0..count).map(|_| Box::new(input_noop_hover) as FloatingMenuHoverHandler).collect()
+}
+
+fn floating_menu_noop_clicks(count: usize) -> Vec<FloatingMenuClickHandler> {
+    (0..count).map(|_| Box::new(input_noop_click) as FloatingMenuClickHandler).collect()
 }
 
 fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
@@ -533,235 +565,4 @@ fn render_floating_menu_state_sample(
                 .child(label),
         )
         .into_any_element()
-}
-
-fn render_tabs_navigation_state_sample(
-    template: &Arc<dyn TabsNavigationTemplate>,
-    sample: TabsNavigationStateSample,
-    label_color: gpui::Hsla,
-    window: &mut Window,
-    cx: &mut App,
-) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-tabs-navigation-preview-{}", sample.id));
-    let items = tabs_navigation_preview_tabs();
-    let active_id = items.get(sample.active_index).map(TabsNavigationItem::id);
-    let render_items = items
-        .iter()
-        .enumerate()
-        .map(|(index, item)| {
-            let item_enabled = sample.enabled && item.is_enabled();
-            let active = active_id.is_some_and(|active_id| active_id == item.id());
-            let mut state = TabsNavigationItemState { selected: active, ..TabsNavigationItemState::default() };
-
-            if index == sample.target_index {
-                state = sample.target_state;
-                state.selected = active;
-            }
-
-            if !item_enabled {
-                state.disabled = true;
-                state.hovered = false;
-                state.pressed = false;
-                state.active = false;
-                state.focus_visible = false;
-            }
-
-            TabsNavigationRenderItem { id: item.id(), label: item.label_text(), active, enabled: item_enabled, state }
-        })
-        .collect::<Vec<_>>();
-    let model = TabsNavigationRenderModel {
-        id: &id,
-        size: ControlSize::Md,
-        width_mode: TabsNavigationWidthMode::Intrinsic,
-        items: render_items,
-        active_id,
-        enabled: sample.enabled,
-        focus: TabsControlFocusState {
-            focused: sample.target_state.active,
-            focus_visible: sample.target_state.focus_visible,
-        },
-    };
-
-    div()
-        .flex()
-        .flex_col()
-        .items_center()
-        .gap(px(6.0))
-        .child(template.render(&model, tabs_navigation_preview_handlers(items.len()), window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
-        .into_any_element()
-}
-
-fn tabs_navigation_state_samples() -> [TabsNavigationStateSample; 7] {
-    [
-        TabsNavigationStateSample {
-            id: "inactive",
-            label: "Inactive",
-            active_index: 1,
-            target_index: 0,
-            target_state: TabsNavigationItemState::default(),
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "active",
-            label: "Active",
-            active_index: 1,
-            target_index: 1,
-            target_state: TabsNavigationItemState { selected: true, ..TabsNavigationItemState::default() },
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "hover",
-            label: "Hover",
-            active_index: 1,
-            target_index: 0,
-            target_state: TabsNavigationItemState { hovered: true, ..TabsNavigationItemState::default() },
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "focus",
-            label: "Focus",
-            active_index: 1,
-            target_index: 1,
-            target_state: TabsNavigationItemState {
-                selected: true,
-                active: true,
-                focus_visible: true,
-                ..TabsNavigationItemState::default()
-            },
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "pressed",
-            label: "Pressed",
-            active_index: 1,
-            target_index: 1,
-            target_state: TabsNavigationItemState {
-                selected: true,
-                active: true,
-                hovered: true,
-                pressed: true,
-                focus_visible: true,
-                ..TabsNavigationItemState::default()
-            },
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "disabled-item",
-            label: "Disabled item",
-            active_index: 1,
-            target_index: 2,
-            target_state: TabsNavigationItemState { disabled: true, ..TabsNavigationItemState::default() },
-            enabled: true,
-        },
-        TabsNavigationStateSample {
-            id: "disabled-list",
-            label: "Disabled list",
-            active_index: 1,
-            target_index: 1,
-            target_state: TabsNavigationItemState {
-                selected: true,
-                disabled: true,
-                ..TabsNavigationItemState::default()
-            },
-            enabled: false,
-        },
-    ]
-}
-
-fn popup_menu_preview_handlers(root_count: usize, submenu_click_count: usize) -> PopupMenuTemplateHandlers {
-    let click_count = root_count + submenu_click_count;
-
-    PopupMenuTemplateHandlers {
-        trigger_bounds: Box::new(input_noop_bounds),
-        trigger_click: Box::new(input_noop_click),
-        trigger_hover: Box::new(input_noop_hover),
-        trigger_mouse_down: Box::new(input_noop_mouse_down),
-        trigger_mouse_up: Box::new(input_noop_mouse_up),
-        trigger_mouse_up_out: Box::new(input_noop_mouse_up),
-        root_mouse_down_out: Box::new(input_noop_mouse_down),
-        item_hovers: (0..root_count).map(|_| Box::new(input_noop_hover) as _).collect(),
-        item_clicks: (0..click_count).map(|_| Box::new(input_noop_click) as _).collect(),
-    }
-}
-
-fn tabs_navigation_preview_handlers(count: usize) -> TabsNavigationTemplateHandlers {
-    TabsNavigationTemplateHandlers {
-        item_hovers: (0..count).map(|_| Box::new(input_noop_hover) as TabsNavigationHoverHandler).collect(),
-        item_mouse_downs: (0..count)
-            .map(|_| Box::new(input_noop_mouse_down) as TabsNavigationMouseDownHandler)
-            .collect(),
-        item_mouse_ups: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsNavigationMouseUpHandler).collect(),
-        item_mouse_up_outs: (0..count).map(|_| Box::new(input_noop_mouse_up) as TabsNavigationMouseUpHandler).collect(),
-        item_clicks: (0..count).map(|_| Box::new(input_noop_click) as TabsNavigationClickHandler).collect(),
-    }
-}
-
-fn popup_menu_items() -> [MenuItem; 5] {
-    [
-        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
-        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
-        MenuItem::new("archive").label("Archive"),
-        MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
-            MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
-            MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
-        ]),
-        MenuItem::new("disabled").label("Unavailable").icon(LucideIcon::ArchiveX).enabled(false),
-    ]
-}
-
-fn floating_menu_default_items() -> [MenuItem; 3] {
-    [
-        MenuItem::new("new").label("New file").icon(LucideIcon::FilePlus),
-        MenuItem::new("rename").label("Rename").icon(LucideIcon::Pencil),
-        MenuItem::new("archive").label("Archive"),
-    ]
-}
-
-fn floating_menu_disabled_items() -> [MenuItem; 3] {
-    [
-        MenuItem::new("open").label("Open").icon(LucideIcon::FolderOpen),
-        MenuItem::new("download").label("Download").icon(LucideIcon::Download).enabled(false),
-        MenuItem::new("share").label("Share").icon(LucideIcon::Share2),
-    ]
-}
-
-fn floating_menu_submenu_items() -> [MenuItem; 3] {
-    [
-        MenuItem::new("copy").label("Copy").icon(LucideIcon::Copy),
-        MenuItem::new("share").label("Share").icon(LucideIcon::Share2).submenu([
-            MenuItem::new("copy-link").label("Copy link").icon(LucideIcon::Link),
-            MenuItem::new("email").label("Email").icon(LucideIcon::Mail),
-        ]),
-        MenuItem::new("inspect").label("Inspect"),
-    ]
-}
-
-fn menu_sample_id(label: &str) -> String {
-    label
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() {
-                character.to_ascii_lowercase()
-            } else {
-                '-'
-            }
-        })
-        .collect()
-}
-
-fn floating_menu_noop_hovers(count: usize) -> Vec<FloatingMenuHoverHandler> {
-    (0..count).map(|_| Box::new(input_noop_hover) as FloatingMenuHoverHandler).collect()
-}
-
-fn floating_menu_noop_clicks(count: usize) -> Vec<FloatingMenuClickHandler> {
-    (0..count).map(|_| Box::new(input_noop_click) as FloatingMenuClickHandler).collect()
-}
-
-fn tabs_navigation_preview_tabs() -> [TabsNavigationItem; 3] {
-    [
-        TabsNavigationItem::new("overview").label("Overview"),
-        TabsNavigationItem::new("activity").label("Activity"),
-        TabsNavigationItem::new("settings").label("Settings").enabled(false),
-    ]
 }

@@ -6,7 +6,14 @@ use gpui_luma::controls::slider::{Slider, SliderEvent, SliderThumbPolicy, ThumbI
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
-pub(in crate::studio::style::style_guide) struct SliderCustomizationPreview {
+/// Vertical gap between label, control, and value within each customization demo.
+const DEMO_STACK_GAP: f32 = 4.0;
+/// Partial compensation for empty space above the painted dial track
+/// (`DIAL_SIZE / 2 - TRACK_RADIUS` ≈ 28). Keep some inset so dials aren't
+/// as tight as a full pull-up, closer to linear demo label spacing.
+const DIAL_TOP_INSET: f32 = 12.0;
+
+pub(crate) struct SliderCustomizationPreview {
     look: Arc<ShadcnLook>,
     reversed_slider: Slider,
     blocked_slider: Slider,
@@ -24,7 +31,7 @@ pub(in crate::studio::style::style_guide) struct SliderCustomizationPreview {
 }
 
 impl SliderCustomizationPreview {
-    pub(in crate::studio::style::style_guide) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
+    pub(crate) fn new(cx: &mut Context<Self>, look: Arc<ShadcnLook>) -> Self {
         let stops_policy = SliderThumbPolicy::multi_stop();
         let reversed_slider =
             look.slider("theme-studio-slider-reversed").reversed(true).range(1..100).step(1).value(41).spawn(cx);
@@ -82,7 +89,7 @@ impl SliderCustomizationPreview {
         preview
     }
 
-    pub(in crate::studio::style::style_guide) fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
+    pub(crate) fn sync_look(&mut self, look: Arc<ShadcnLook>, cx: &mut Context<Self>) {
         self.look = look.clone();
         self.reversed_slider.update(cx, |slider, cx| {
             slider.set_template(look.slider_template(), cx);
@@ -159,73 +166,85 @@ impl SliderCustomizationPreview {
 impl Render for SliderCustomizationPreview {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
+        let stops_hint = self.stops_interaction_hint.clone();
+        let stop_summary = self.stop_summary.clone();
 
         div()
             .w_full()
             .flex()
-            .flex_col()
-            .items_center()
-            .gap_6()
-            .child(section_label("Reversed fill track", chrome.muted_text))
+            .flex_row()
+            .items_start()
+            .justify_center()
+            .gap_8()
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .items_center()
-                    .gap_2()
-                    .child(div().w(px(320.0)).child(self.reversed_slider.clone()))
-                    .child(value_label(self.reversed_value, chrome.body_text)),
-            )
-            .child(section_label("Blocked intervals", chrome.muted_text))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap_2()
-                    .child(div().w(px(320.0)).child(self.blocked_slider.clone()))
-                    .child(value_label(self.blocked_value, chrome.body_text)),
-            )
-            .child(section_label("Multi-stop", chrome.muted_text))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap_2()
-                    .when_some(self.stops_interaction_hint.as_ref(), |this, hint| {
-                        this.child(
+                    .gap_4()
+                    .child(demo_block(
+                        "Reversed fill track",
+                        chrome.muted_text,
+                        div().w(px(320.0)).child(self.reversed_slider.clone()),
+                        value_label(self.reversed_value, chrome.body_text),
+                        None,
+                    ))
+                    .child(demo_block(
+                        "Blocked intervals",
+                        chrome.muted_text,
+                        div().w(px(320.0)).child(self.blocked_slider.clone()),
+                        value_label(self.blocked_value, chrome.body_text),
+                        None,
+                    ))
+                    .child(demo_block(
+                        "Multi-stop",
+                        chrome.muted_text,
+                        div().w(px(320.0)).child(self.stops_slider.clone()),
+                        stops_label(&stop_summary, chrome.body_text),
+                        stops_hint.map(|hint| {
                             div()
                                 .text_size(px(11.0))
                                 .line_height(px(14.0))
                                 .text_color(chrome.muted_text)
-                                .child(hint.clone()),
-                        )
-                    })
-                    .child(div().w(px(320.0)).child(self.stops_slider.clone()))
-                    .child(stops_label(&self.stop_summary, chrome.body_text)),
+                                .child(hint)
+                                .into_any_element()
+                        }),
+                    )),
             )
-            .child(section_label("Angular dial", chrome.muted_text))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap_2()
-                    .child(self.angular_slider.clone())
-                    .child(value_label(self.angular_value, chrome.body_text)),
-            )
-            .child(section_label("Wrapping dial", chrome.muted_text))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap_2()
-                    .child(self.wrapping_slider.clone())
-                    .child(value_label(self.wrapping_value, chrome.body_text)),
-            )
+            .child(demo_block(
+                "Angular dial",
+                chrome.muted_text,
+                div().mt(px(-DIAL_TOP_INSET)).child(self.angular_slider.clone()),
+                value_label(self.angular_value, chrome.body_text),
+                None,
+            ))
+            .child(demo_block(
+                "Wrapping dial",
+                chrome.muted_text,
+                div().mt(px(-DIAL_TOP_INSET)).child(self.wrapping_slider.clone()),
+                value_label(self.wrapping_value, chrome.body_text),
+                None,
+            ))
     }
+}
+
+fn demo_block(
+    label: &'static str,
+    label_color: gpui::Hsla,
+    control: impl IntoElement,
+    value: impl IntoElement,
+    hint: Option<AnyElement>,
+) -> AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(DEMO_STACK_GAP))
+        .child(section_label(label, label_color))
+        .when_some(hint, |this, hint| this.child(hint))
+        .child(control)
+        .child(value)
+        .into_any_element()
 }
 
 fn section_label(label: &'static str, color: gpui::Hsla) -> impl IntoElement {
@@ -256,8 +275,6 @@ fn multi_stop_interaction_hint(policy: SliderThumbPolicy) -> Option<String> {
     (!parts.is_empty()).then(|| parts.join(" · "))
 }
 
-pub(in crate::studio::style::style_guide) fn render_slider_customization_body(
-    preview: Entity<SliderCustomizationPreview>,
-) -> AnyElement {
+pub(crate) fn render_slider_customization_body(preview: Entity<SliderCustomizationPreview>) -> AnyElement {
     preview.into_any_element()
 }

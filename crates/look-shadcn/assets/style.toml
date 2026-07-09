@@ -539,10 +539,37 @@ shadow = "shadow-sm"
 layer = "disabled"
 shadow = "none"
 
-[switch.metrics]
-width = 44.0
-height = 24.0
-thumb_size = 20.0
+# Primary switch geometry (matches SwitchScale ratios at control heights 28/36/44).
+[switch.metrics.sm]
+width = 33.0
+height = 17.0
+thumb_size = 14.0
+
+[switch.metrics.md]
+width = 42.0
+height = 22.0
+thumb_size = 18.0
+
+[switch.metrics.lg]
+width = 51.0
+height = 27.0
+thumb_size = 22.0
+
+# Secondary is one size step smaller than primary (lg≈primary.md, md≈primary.sm).
+[switch.secondary_metrics.sm]
+width = 28.0
+height = 15.0
+thumb_size = 12.0
+
+[switch.secondary_metrics.md]
+width = 33.0
+height = 17.0
+thumb_size = 14.0
+
+[switch.secondary_metrics.lg]
+width = 42.0
+height = 22.0
+thumb_size = 18.0
 
 [[switch.color_rules]]
 disabled = true

@@ -5,11 +5,11 @@ use crate::controls::choice_indicator_layout::{
 };
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-use crate::controls::switch::{SwitchScale, SwitchTheme, default_switch_theme};
+use crate::controls::switch::{SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::render_optional_adorner_with_focus_radius;
-use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, snap_to_pixel};
+use crate::theme::snap_to_pixel;
 
 define_control_template!(
     ThemedSwitchTemplate,
@@ -29,11 +29,9 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         };
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
-        let scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| SwitchScale::compute(model.size, metrics, scale_factor),
-        );
+        let scale = self.theme.scale(model.size, scale_factor);
+        let track_radius = model.radius_override.get().unwrap_or(scale.track_radius);
+        let thumb_radius = track_radius.min(scale.thumb_size * 0.5);
 
         let thumb_left = if model.data {
             scale.track_width - scale.thumb_size - scale.track_padding
@@ -50,7 +48,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .bg(palette.thumb_background)
             .border_1()
             .border_color(palette.thumb_border)
-            .rounded(px(scale.track_radius));
+            .rounded(px(thumb_radius));
 
         let shadow_extent = shadow_extent_from_slice(&palette.thumb_shadow, scale_factor, layout_policy.elevation);
         let oversize_extent = indicator_oversize_extent(
@@ -69,7 +67,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .bg(palette.track_background)
             .border_1()
             .border_color(palette.track_border)
-            .rounded(px(scale.track_radius))
+            .rounded(px(track_radius))
             .child(thumb);
 
         if should_paint_shadow(layout_policy.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
@@ -78,7 +76,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
 
         let mut track = div().relative().child(track_visual);
 
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.track_radius) {
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, track_radius) {
             track = track.child(adorner);
         }
 
@@ -109,7 +107,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .line_height(px(palette.label_typography.line_height))
             .font_family(palette.label_font_family.clone())
             .font_weight(palette.label_typography.weight)
-            .rounded(px(scale.track_radius))
+            .rounded(px(track_radius))
             .child(track)
             .child(label);
 
