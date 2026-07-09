@@ -593,13 +593,15 @@ thumb_size = 20.0
 radius = "radius.pill"
 
 [[slider.color_rules]]
+style = "primary"
 layer = "disabled"
-track_background = "muted"
+track_background = "border"
 fill_background = "muted-foreground"
-thumb_background = "muted-foreground"
+thumb_background = "first(background,card)"
 thumb_border = "muted"
 
 [[slider.color_rules]]
+style = "primary"
 layer = "default"
 track_background = "border"
 fill_background = "@primary_default"
@@ -607,6 +609,7 @@ thumb_background = "first(background,card)"
 thumb_border = "@primary_default"
 
 [[slider.color_rules]]
+style = "primary"
 layer = "hover"
 track_background = "border"
 fill_background = "@primary_layer"
@@ -614,6 +617,7 @@ thumb_background = "first(background,card)"
 thumb_border = "@primary_default"
 
 [[slider.color_rules]]
+style = "primary"
 layer = "pressed"
 track_background = "border"
 fill_background = "@primary_layer"

@@ -15,6 +15,7 @@ pub(in crate::studio::style::style_guide) struct VariantStateTableStyle {
     pub row_height: f32,
     pub corner_radius: f32,
     pub variant_column_align_center: bool,
+    pub header_corner_padding_bottom: f32,
     pub border: Hsla,
     pub title_color: Hsla,
     pub muted_text: Hsla,
@@ -29,6 +30,7 @@ impl VariantStateTableStyle {
             row_height: DEFAULT_ROW_HEIGHT,
             corner_radius: DEFAULT_CORNER_RADIUS,
             variant_column_align_center: false,
+            header_corner_padding_bottom: 8.0,
             border: chrome.border,
             title_color: chrome.title_text,
             muted_text: chrome.muted_text,
@@ -52,6 +54,11 @@ impl VariantStateTableStyle {
 
     pub(in crate::studio::style::style_guide) fn state_column_width(mut self, width: f32) -> Self {
         self.state_column_width = width;
+        self
+    }
+
+    pub(in crate::studio::style::style_guide) fn header_corner_padding_bottom(mut self, padding: f32) -> Self {
+        self.header_corner_padding_bottom = padding;
         self
     }
 
@@ -156,7 +163,7 @@ fn render_header_row(
             .justify_end()
             .items_start()
             .px(px(16.0))
-            .pb(px(8.0))
+            .pb(px(style.header_corner_padding_bottom))
             .text_xs()
             .line_height(px(15.0))
             .font_weight(FontWeight::MEDIUM)

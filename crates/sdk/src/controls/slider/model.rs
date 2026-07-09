@@ -172,6 +172,7 @@ pub struct SliderModel {
     pub(crate) wrapping: bool,
     pub(crate) enabled: bool,
     pub(crate) corner_radius: Option<AbsoluteLength>,
+    pub(crate) thumb_radius: Option<AbsoluteLength>,
     pub(crate) template: Arc<dyn SliderTemplate>,
     pub(crate) thumb_policy: SliderThumbPolicy,
     pub(crate) domain_track: Option<Arc<dyn DomainTrackRenderer>>,
@@ -194,6 +195,7 @@ pub struct SliderRenderModel<'a> {
     pub wrapping: bool,
     pub enabled: bool,
     pub corner_radius: Option<AbsoluteLength>,
+    pub thumb_radius: Option<AbsoluteLength>,
     pub thumb_policy: SliderThumbPolicy,
     pub active_thumb_id: Option<ThumbId>,
     pub state: SliderState,
@@ -228,6 +230,7 @@ impl SliderBuilder {
                 wrapping: false,
                 enabled: true,
                 corner_radius: None,
+                thumb_radius: None,
                 template: default_slider_template(),
                 thumb_policy: SliderThumbPolicy::default(),
                 domain_track: None,
@@ -352,6 +355,16 @@ impl SliderBuilder {
 
     pub fn clear_corner_radius(mut self) -> Self {
         self.model.corner_radius = None;
+        self
+    }
+
+    pub fn thumb_radius(mut self, radius: AbsoluteLength) -> Self {
+        self.model.thumb_radius = Some(radius);
+        self
+    }
+
+    pub fn clear_thumb_radius(mut self) -> Self {
+        self.model.thumb_radius = None;
         self
     }
 

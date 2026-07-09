@@ -1,7 +1,7 @@
 # Fix Note: Button Size / Radius Preview Ownership
 
-**Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates}.rs`, `crates/look-shadcn/assets/style.toml`  
-**Status:** In progress. Theme Studio preview matrices and much of the look-layer sizing/radius work have landed (`92706612`, `6d244407`, `9ecda374`). SDK contract additions still need broader review before calling the work done.
+**Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates,slider,scrollbar,progress}.rs`, `crates/look-shadcn/src/elements/badge.rs`, `crates/look-shadcn/assets/style.toml`  
+**Status:** In progress. Button-family, **Menus**, and **Slider** Style Guide previews are on the look seam. **Scrollbar / progress** sizing and **badge typography scaling** are the next look-owned targets. SDK contract review remains open (`slider/theme.rs` still hardcodes sm/md/lg). Shadow round-trip tracked separately in [0-shadow-enhance.md](./0-shadow-enhance.md).
 
 ---
 
@@ -26,46 +26,82 @@ The core lesson is that **button size and radius must stay semantic and button-o
 
 ## Progress (2026-07)
 
-Three commits on `main` (ahead of origin) implement most of the Style Guide preview work and start correcting ownership at the look seam.
+Early commits (`92706612`, `6d244407`, `9ecda374`) landed button/toggle/choice Style Guide matrices and look-layer size/radius resolution. Subsequent session work extended previews and fixed menu panel typography.
 
-| Commit | Focus |
-|--------|--------|
-| `92706612` button sizing | Size/radius matrices for Buttons + Icon Buttons; `ButtonRadiusPreset` + look resolver; `ButtonFamilyLook.icon_size`; template `radius_override` paints visible corners |
-| `6d244407` style templates | Toggle look (`toggle.rs`), toggle metrics in `style.toml`, toggle Theme Studio matrices (text + icon), `VariantStateTable` shared layout |
-| `9ecda374` choice controls | Split Choice into Checkbox / Radio / Switch sections; variant×state matrices; Sizes tabs; toggle template modifier fix |
+| Commit / session | Focus |
+|------------------|--------|
+| `92706612` | Buttons + Icon Buttons size×radius; `ButtonRadiusPreset`; `icon_size`; visible `radius_override` |
+| `6d244407` | Toggle look + `style.toml` metrics; toggle matrices; `VariantStateTable` |
+| `9ecda374` | Checkbox / Radio / Switch split; choice matrices + Sizes tabs |
+| 2026-07-08 | **Menus** four-tab preview; floating-menu typography scales with size; style guide sections alphabetical; buttons text-only in Template/Sizes; menu-trigger `radius_override` in look |
+| 2026-07-08 (later) | **Slider** dedicated section (Template Preview + Sizes); Input Controls split into Scrollbar / Slider / Text Field / Text Area; primary-only slider look; thumb + track radius presets; disabled inactive track = `border` (matches enabled) |
 
 ### Theme Studio Style Guide (landed)
 
 Shared preview pattern: **`VariantStateTable`** — variants as rows, interaction states as columns (`apps/theme-studio/src/studio/style/variant_state_table.rs`).
 
-| Section | Template Preview tab | Sizes tab | Variant rows | State columns |
-|---------|---------------------|-----------|--------------|---------------|
-| Buttons | ✓ | ✓ (size × radius) | Primary … Ghost | default, hover, focused, pressed, disabled |
-| Icon Buttons | ✓ | ✓ (size × radius) | Primary … Ghost | same |
-| Toggles | ✓ (text + icon matrices) | ✓ (size × radius) | Primary … Ghost / icon variants | 6 states incl. `disabled-pressed` (= on) |
-| Checkbox | ✓ | ✓ (size × Primary/Secondary) | Primary, Secondary only | 6 states; pressed/disabled-pressed = checked |
-| Radio | ✓ | ✓ | Primary, Secondary only | 6 states; pressed/disabled-pressed = selected |
-| Switch | ✓ | ✓ | Primary, Secondary only | 6 states; pressed/disabled-pressed = on |
+| Section | Preview tabs | Sizes / sizing preview | Notes |
+|---------|--------------|------------------------|--------|
+| Buttons | Template Preview, Sizes | size × radius | Text-only (no leading/trailing icon rows) |
+| Icon Buttons | Template Preview, Sizes | size × radius | |
+| Toggles | Template Preview, Sizes | size × radius; text + icon matrices on Template | |
+| Checkbox | Template Preview, Sizes | size × Primary/Secondary | |
+| Radio | Template Preview, Sizes | same | |
+| Switch | Template Preview, Sizes | same | |
+| **Menus** | Menu Trigger, Trigger Sizes, Floating Menu, Sizes | trigger: states + size×radius; panel: states + Sm/Md/Lg | Trigger = outline/ghost; panel uses `floating_menu_look(size)` |
+| Selectors | — (single layout) | **none** | State × control-type grid only; all panels hardcoded `Md` |
+| Scrollbar | — | orientation × states | Own section (was grouped under Input Controls) |
+| **Slider** | Template Preview, Sizes | Template: state columns (Standard/Hover/Focus/Active/Disabled); Sizes: Sm/Md/Lg × radius presets | Own section; 120px demo width; primary-only (no Secondary variant row) |
+| Text Field | — | states | Own section (was grouped under Input Controls) |
+| Text Area | — | states | Own section (was grouped under Input Controls) |
+| Feedback | — (stacked blocks) | **partial** | Badge Sm/Md/Lg inline samples; progress states only (single diameter) |
+| Sidebar, Tabs, Typography, … | legacy | — | Not on matrix + Sizes pattern yet |
 
-Other preview fixes:
+Style guide section order: **alphabetical** by title (Buttons → … → Typography).
 
-- Checkbox / Radio / Switch / Toggle added to `section_allows_interaction()` (scroll overlay was blocking tab clicks).
-- Toggle icon preview uses `toggle_icon_look_semantic` + `ButtonRadiusPreset::Full` (not generic button icon look).
-- Choice previews use indicator-only role for checkbox/radio (`ButtonFamilyRole::Icon`); Outline/Ghost dropped from choice matrices (they collapse to `foreground` in look-shadcn — misleading as variant rows).
+Other preview fixes (unchanged from earlier):
+
+- Checkbox / Radio / Switch / Toggle / **Menus** in `section_allows_interaction()`.
+- Toggle icon preview uses `toggle_icon_look_semantic` + `ButtonRadiusPreset::Full`.
+- Choice previews use indicator-only role; Outline/Ghost omitted from choice variant rows.
 
 ### Look / SDK (landed)
 
 - **`button_look_semantic` / `button_look`**: size → height, padding, gap, typography, icon size; radius preset → px.
-- **`toggle_look` / `toggle_look_semantic`**: separate toggle metrics block in `style.toml`; elevation policy aligned with choice indicators (`shadow-sm` when enabled).
-- **`toggle_template`**: no longer applies a generic `button_palette` modifier that overwrote toggle colors.
-- **Template**: `radius_override` affects visible control rounding, not just focus adorner.
+- **`toggle_look` / `toggle_look_semantic`**: separate toggle metrics in `style.toml`.
+- **`floating_menu_look`**: item typography + icon use button `font_size` / `icon_size` per `ControlSize` (was padding-only scaling).
+- **`popup_menu`**: `trigger_radius_override` for menu-trigger radius preview.
+- **`slider_look`**: primary-only color rules in `style.toml`; `[slider.metrics.sm|md|lg]`; separate thumb vs track radius resolution (`resolve_slider_thumb_radius_preset`, `resolve_slider_track_radius_preset`); disabled track rail uses `border` (not `muted`).
+- **Slider template**: disabled opacity on Active/Domain fill only — Inactive rail stays full-opacity; thumb stays opaque when disabled.
+- **Template**: `radius_override` paints visible control corners.
+- **Gallery / paint**: `button_look` re-export restored.
 
-### Still open / needs design
+### Still open / needs work
 
-- **SDK review**: `ButtonRadiusPreset`, `ButtonFamilyLook.icon_size`, and shared semantic enums introduced from Theme Studio outward — confirm they belong in SDK vs look-only.
-- **Choice elevation policy**: shadow is style-agnostic (`shadow-sm` whenever enabled); Primary/Secondary only change active fill. Radix-style surface/soft is **not** modeled — see addendum below.
-- **Choice variant model**: reusing `ShadcnButtonStyle` for accent color is a preview convenience; real choice variants (if any) may need look-owned types.
-- **Typography/size ownership elsewhere**: pager, slider, popup menu, etc. still embed translation in SDK themes (catalog in addendum below unchanged).
+#### SDK contract review (unchanged)
+
+- **`ButtonRadiusPreset`**, **`ButtonFamilyLook.icon_size`**: confirm SDK vs look-only ownership.
+- **Choice elevation / variant policy**: `shadow-sm` when enabled; Primary/Secondary = fill only; no surface/soft axis.
+- **Choice variant model**: `ShadcnButtonStyle` as preview convenience vs look-owned types.
+
+#### Control sizing — next targets
+
+| Control | Look layer today | Theme Studio today | Likely work |
+|---------|------------------|--------------------|-------------|
+| **Slider** | `style.toml` primary color rules; `slider_look(..., size)`; thumb/track radius presets | **Slider** section: Template Preview (states); Sizes (Sm/Md/Lg × radius) | **Done** (Theme Studio + look). Optional: dedup `crates/sdk/src/controls/slider/theme.rs` hardcoded metrics |
+| **Scrollbar** | Single `[scrollbar.metrics]` — **no `ControlSize`** | **Scrollbar** section; orientation × states | Decide sm/md/lg policy; then Sizes tab |
+| **Progress** | Single `[progress.metrics]` (`size`, `stroke_width`) — **no `ControlSize`** | Feedback; variant states only | Add sm/md/lg metrics (or diameter presets); `progress_look(size)`; Sizes row in Feedback or dedicated section |
+| **Badge / tags** | `badge_look(variant, size)`; typography = caption/label/body mix | Feedback shows Sm/Md/Lg **inline** | Align typography with button `font_size` per size (same bug class as floating menu had); optional Sizes matrix; consider `style.toml` `[badge.metrics.*]` |
+| **Selectors** | Trigger = textfield/combobox/search/selector templates; panel = `selector_items_panel_look(size)` | State grid; **`ControlSize::Md` hardcoded** for all popups | **Lower priority** for size matrices — value is state × control type. If sizing matters: trigger follows **textfield size**; panel follows **floating menu size** (same seam as Menus). No separate “selector size” semantic expected. Optional: Sm/Md/Lg column on selector triggers + open panels for parity with Menus. |
+| **Floating menu (runtime)** | Panel metrics global in `style.toml`; popup still passes **trigger size** to panel in some paths | Sizes tab previews panel via `floating_menu_look(size)` directly | Decouple panel size from trigger `ControlSize` in look/SDK popup menu (architecture note from Menus work) |
+
+#### Typography / size ownership elsewhere (catalog addendum)
+
+Pager, popup menu SDK theme, default `floating_menu_theme`, etc. — still embed translation in SDK themes where look-shadcn should own policy.
+
+#### Related (not this note)
+
+- Shadow token ladder + Theme Studio round-trip: [0-shadow-enhance.md](./0-shadow-enhance.md).
 
 ---
 
@@ -279,11 +315,19 @@ It should not become a parallel implementation of button sizing logic.
 
 ## Recommended Follow-Up Fix
 
-## Short version
+### Short version
 
-**Original guidance:** revert the experiment, then reintroduce from the button/theme seam outward.
+Button-family, **Menus**, and **Slider** previews consume the look seam. **Next sizing pass:** scrollbar + progress (add size semantics + metrics), badge (typography alignment + optional matrix). **Selectors:** keep state-first; add size previews only if product wants trigger/panel Sm/Md/Lg parity with Menus.
 
-**Current state:** that reintroduction is largely underway for Buttons, Icon Buttons, Toggles, and choice-control previews. Remaining work is SDK contract review, choice elevation/variant policy, and pushing other controls’ size/typography translation into look-shadcn.
+### Suggested implementation order
+
+1. ~~**Slider** — Theme Studio Sizes tab (Sm/Md/Lg).~~ **Done**: dedicated **Slider** section with Template Preview + Sizes tabs; primary-only look; thumb/track radius presets; disabled inactive track matches enabled (`border`); SDK template dims fill only when disabled.
+2. **Badge** — use button `font_size` / `icon_size` in `badge_typography`; Feedback Sizes matrix.
+3. **Progress** — `[progress.metrics.sm|md|lg]` + `progress_look(size)`; Feedback Sizes samples.
+4. **Scrollbar** — product decision: global vs sized; then metrics + preview.
+5. **Selectors** — optional: parameterize preview `ControlSize`; document trigger = textfield size, panel = floating menu size.
+6. **SDK review** — `ButtonRadiusPreset`, `icon_size`, choice policy (unchanged).
+7. **Popup menu** — decouple floating panel size from trigger size at runtime.
 
 ---
 
@@ -425,6 +469,13 @@ Some modules are doing real style-policy translation themselves rather than only
 
 - `crates/sdk/src/controls/slider/theme.rs`
   - slider height, track height, and thumb sizes are hardcoded by semantic size
+  - **look-shadcn** has `[slider.metrics.sm|md|lg]`, primary color rules, and `slider_look(..., size)` — Theme Studio Slider previews use this seam; SDK default theme should defer there too
+
+- `crates/look-shadcn/src/controls/scrollbar.rs` / `progress.rs`
+  - single global metrics blocks; no `ControlSize` parameter yet (slider now has sm/md/lg in look + Theme Studio)
+
+- `crates/look-shadcn/src/elements/badge.rs`
+  - `badge_typography` maps size → text roles (caption/label/body), not button `font_size` / `icon_size`
 
 - `crates/sdk/src/controls/color/swatch.rs`
   - swatch height and default radius are hardcoded from `ControlSize`
@@ -473,43 +524,47 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 ### Landed — keep unless deliberately rolling back preview work
 
 - `apps/theme-studio/src/studio/style/cards/buttons.rs` — matrix previews for buttons, icon buttons, toggles, checkbox, radio, switch
-- `apps/theme-studio/src/studio/style/style_guide.rs` — section split + interaction allowlist
+- `apps/theme-studio/src/studio/style/cards/menus.rs` — menu trigger + floating menu tabbed previews
+- `apps/theme-studio/src/studio/style/style_guide.rs` — Input Controls split (Scrollbar / Slider / Text Field / Text Area); slider preview tabs; interaction allowlist; alphabetical order
 - `apps/theme-studio/src/studio/style/variant_state_table.rs` — shared table layout
 - `crates/look-shadcn/src/controls/button.rs` — semantic size/radius resolution
 - `crates/look-shadcn/src/controls/toggle.rs` — toggle look + metrics
+- `crates/look-shadcn/src/controls/floating_menu.rs` — item typography/icon scale with size
+- `crates/look-shadcn/src/controls/popup_menu.rs` — trigger radius override
 - `crates/look-shadcn/src/controls/templates.rs` — toggle template (modifier removed)
-- `crates/look-shadcn/assets/style.toml` — toggle metrics + elevation rules
+- `crates/look-shadcn/assets/style.toml` — toggle + slider metrics/color blocks
+- `crates/look-shadcn/src/controls/slider.rs` — primary-only look; thumb/track radius; disabled track = `border`
+- `crates/sdk/src/controls/slider/template/linear.rs` — disabled opacity on fill segments only
 - `crates/sdk/src/controls/command/button/template.rs` — visible `radius_override`
+- `apps/theme-studio/src/studio/style/cards/inputs.rs` — Slider Template Preview + Sizes matrix; Scrollbar / Text Field / Text Area sections
 
-### Still needs SDK / API review before treating as stable
+### Still needs SDK / API review or new look work
 
-- `ButtonFamilyLook.icon_size`
-- `ButtonRadiusPreset` + shadcn radius preset resolver
-- Whether choice controls should keep accepting `ShadcnButtonStyle` or gain look-owned variant types
-- `crates/sdk/src/controls/pager/theme.rs` and other SDK themes that still hardcode size/typography policy
+- `ButtonFamilyLook.icon_size`, `ButtonRadiusPreset`
+- Choice controls: `ShadcnButtonStyle` variant model + elevation policy
+- `crates/sdk/src/controls/slider/theme.rs` — hardcoded sm/md/lg vs `slider_look` (SDK default theme path only; look-shadcn + Theme Studio use look seam)
+- `crates/look-shadcn/src/controls/scrollbar.rs` — no `ControlSize`; single metrics block
+- `crates/look-shadcn/src/controls/progress.rs` — no `ControlSize`; single metrics block
+- `crates/look-shadcn/src/elements/badge.rs` — typography uses text roles, not button metrics per size
+- `apps/theme-studio/.../feedback.rs`, `selectors.rs` — no Sizes tabs; Md-only or inline samples
+- `crates/sdk/src/controls/pager/theme.rs` and other SDK themes in addendum catalog
 
 ---
 
 ## Final Takeaway
 
-The experiment successfully exposed the real issue:
+The experiment exposed the real issue: **Theme Studio was previewing semantic sizing before the button/theme seam owned it.** That is largely fixed for buttons, toggles, choices, menu triggers/panels, and **slider** (Template Preview + Sizes on the look seam).
 
-- **Theme Studio was trying to preview semantic button sizing and radius behavior before those semantics were properly owned by the button/theme seam.**
+**Remaining gaps:**
 
-Follow-up commits moved preview matrices onto the look seam for buttons, toggles, and choice controls. Theme Studio now mostly **selects semantic knobs and renders resolved templates** rather than inventing local px typography.
+- **Slider (SDK path)** — `crates/sdk/src/controls/slider/theme.rs` still hardcodes sm/md/lg; look-shadcn + Theme Studio already use `slider_look`.
+- **Scrollbar / progress** — no size axis in look or previews.
+- **Badge (tags)** — size API exists; typography scaling should match button/floating-menu policy; no Sizes matrix.
+- **Selectors** — state preview is sufficient for v1; sizing is compositional (textfield + floating menu), not a new semantic — optional Sm/Md/Lg preview only.
+- SDK contracts from the experiment still need a deliberate pass.
+- Shadow ladder / Theme Studio: [0-shadow-enhance.md](./0-shadow-enhance.md).
 
-Remaining gaps:
-
-- SDK contracts introduced during the experiment still need a deliberate pass.
-- Choice controls need an elevation/variant policy decision independent of button Primary/Secondary fill.
-- Other SDK control themes still resolve size/typography locally (see catalog addendum).
-
-Target architecture unchanged:
-
-- button size and radius should be semantic,
-- button-local or carefully generalized,
-- resolved by the look/theme layer,
-- and merely displayed by Theme Studio.
+Target architecture unchanged: size semantics resolved in look-shadcn; Theme Studio selects knobs and renders resolved results.
 
 ---
 

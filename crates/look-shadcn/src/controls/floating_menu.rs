@@ -18,8 +18,8 @@ use crate::provenance::{LookResolver, ResolvedColor};
 use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
     StylesheetConfig, embedded_stylesheet, find_floating_menu_surface_color_rule,
-    find_floating_menu_surface_elevation_rule, find_floating_menu_trigger_color_rule,
-    resolve_button_metrics_rule, resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
+    find_floating_menu_surface_elevation_rule, find_floating_menu_trigger_color_rule, resolve_button_metrics_rule,
+    resolve_floating_menu_surface_color_rule, resolve_floating_menu_trigger_color_rule,
     resolve_stylesheet_shadow_token,
 };
 
@@ -139,7 +139,10 @@ pub fn floating_menu_look(mode: &ShadcnModeTokens, theme_mode: ThemeMode, size: 
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: button_metrics.as_ref().map(|m| m.icon_size).unwrap_or_else(|| metrics.control_height(size) * 0.44),
+        item_icon_size: button_metrics
+            .as_ref()
+            .map(|m| m.icon_size)
+            .unwrap_or_else(|| metrics.control_height(size) * 0.44),
         item_radius: metrics.radius.sm,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }

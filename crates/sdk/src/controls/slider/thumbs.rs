@@ -173,6 +173,7 @@ mod tests {
             wrapping: false,
             enabled: true,
             corner_radius: None,
+            thumb_radius: None,
             template: default_slider_template(),
             thumb_policy: policy,
             domain_track: None,

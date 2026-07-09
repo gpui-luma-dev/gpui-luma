@@ -506,6 +506,7 @@ fn render_state_sample(
         wrapping: false,
         enabled: !sample.state.disabled,
         corner_radius: None,
+        thumb_radius: None,
         thumb_policy: SliderThumbPolicy::default(),
         active_thumb_id: Some(thumb_id),
         state: sample.state,

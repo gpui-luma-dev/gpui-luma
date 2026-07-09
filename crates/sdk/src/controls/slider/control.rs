@@ -249,6 +249,7 @@ impl SliderControl {
             wrapping: self.model.wrapping,
             enabled: self.model.enabled,
             corner_radius: self.model.corner_radius,
+            thumb_radius: self.model.thumb_radius,
             thumb_policy: self.model.thumb_policy,
             active_thumb_id: self.active_thumb_id,
             state: self.interaction.render_state(self.model.enabled, window),

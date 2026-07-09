@@ -507,8 +507,11 @@ pub struct SliderStylesheet {
 }
 
 impl SliderStylesheet {
-    pub fn find_color_rule(&self, layer: InteractionLayer) -> Option<&SliderColorRule> {
-        self.color_rules.iter().find(|rule| matches_optional_layer(rule.layer.as_deref(), layer))
+    pub fn find_color_rule(&self, style: &str, layer: InteractionLayer) -> Option<&SliderColorRule> {
+        self.color_rules.iter().find(|rule| {
+            rule.style.as_deref().is_none_or(|value| value == style)
+                && matches_optional_layer(rule.layer.as_deref(), layer)
+        })
     }
 
     pub fn metrics_for_size(&self, size: ControlSize) -> Option<&SliderMetricsRule> {
@@ -532,6 +535,7 @@ pub struct SliderMetricsRule {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SliderColorRule {
+    pub style: Option<String>,
     pub layer: Option<String>,
     pub track_background: String,
     pub fill_background: String,

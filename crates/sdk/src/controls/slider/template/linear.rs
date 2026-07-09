@@ -4,7 +4,8 @@ use gpui::{App, Div, Pixels, Stateful, Window, div, px, prelude::*};
 
 use super::{
     SliderBoundsHandler, SliderInteractionHandlers, SliderTemplate, SliderTemplateHandlers, attach_linear_interaction,
-    attach_thumb_drag, render_domain_track_layer, render_linear_thumb, track_bounds_canvas, track_surface_background,
+    attach_thumb_drag, effective_thumb_radius, render_domain_track_layer, render_linear_thumb, track_bounds_canvas,
+    track_surface_background, DISABLED_OPACITY,
 };
 use crate::controls::color::style::StyledExt;
 use crate::controls::slider::{SliderTheme, default_slider_theme};
@@ -48,6 +49,7 @@ impl SliderTemplate for ThemedSliderTemplate {
         let root_width = short_axis;
         let track_radius =
             model.corner_radius.map(|radius| radius.to_pixels(window.rem_size())).unwrap_or(px(look.radius));
+        let thumb_radius = effective_thumb_radius(model, &look, window.rem_size());
 
         let SliderTemplateHandlers {
             track_bounds,
@@ -100,6 +102,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                         thumb_top,
                         Some(thumb_center_offset),
                         None,
+                        thumb_radius,
                         Some(thumb),
                         active,
                     );
@@ -127,6 +130,7 @@ impl SliderTemplate for ThemedSliderTemplate {
                         thumb_top - thumb_focus_offset(),
                         None,
                         Some(thumb_left - thumb_focus_offset()),
+                        thumb_radius,
                         Some(thumb),
                         active,
                     );
@@ -169,6 +173,7 @@ fn render_horizontal_track(
         .overflow_hidden()
         .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
             this.bg(track_surface_background(model, look))
+                .when(!model.enabled, |track| track.opacity(DISABLED_OPACITY))
         });
 
     if let Some(layer) = render_domain_track_layer(model, track_radius) {
@@ -177,14 +182,23 @@ fn render_horizontal_track(
         track =
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
-                    |segment| render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, true),
+                    |segment| {
+                        render_fill_segment(
+                            segment,
+                            model.orientation,
+                            model.reversed,
+                            look,
+                            track_radius,
+                            true,
+                            model.enabled,
+                        )
+                    },
                 ),
             );
     } else {
-        track =
-            track.children(model.track_segments.iter().map(|segment| {
-                render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, true)
-            }));
+        track = track.children(model.track_segments.iter().map(|segment| {
+            render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, true, model.enabled)
+        }));
     }
 
     track.child(track_bounds_canvas(track_bounds))
@@ -212,6 +226,7 @@ fn render_vertical_track(
         .overflow_hidden()
         .when(model.domain_track.is_none() && !uses_sibling_segments, |this| {
             this.bg(track_surface_background(model, look))
+                .when(!model.enabled, |track| track.opacity(DISABLED_OPACITY))
         });
 
     if let Some(layer) = render_domain_track_layer(model, track_radius) {
@@ -221,15 +236,22 @@ fn render_vertical_track(
             track.children(
                 model.track_segments.iter().filter(|segment| segment.kind == TrackSegmentKind::Blocked).map(
                     |segment| {
-                        render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, false)
+                        render_fill_segment(
+                            segment,
+                            model.orientation,
+                            model.reversed,
+                            look,
+                            track_radius,
+                            false,
+                            model.enabled,
+                        )
                     },
                 ),
             );
     } else {
-        track =
-            track.children(model.track_segments.iter().map(|segment| {
-                render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, false)
-            }));
+        track = track.children(model.track_segments.iter().map(|segment| {
+            render_fill_segment(segment, model.orientation, model.reversed, look, track_radius, false, model.enabled)
+        }));
     }
 
     track.child(track_bounds_canvas(track_bounds))
@@ -242,31 +264,41 @@ fn render_fill_segment(
     look: &crate::controls::slider::SliderLook,
     track_radius: Pixels,
     horizontal: bool,
+    enabled: bool,
 ) -> Div {
     use gpui::relative;
 
     let (display_start, display_span) = segment_display_span(segment, reversed);
     let background = segment_background(segment.kind, look);
     let corner_radii = segment_corner_radii(display_start, display_span, orientation, track_radius);
+    let dim_active = !enabled && matches!(segment.kind, TrackSegmentKind::Active | TrackSegmentKind::Domain);
 
     if horizontal {
-        div()
+        let mut segment = div()
             .absolute()
             .left(relative(display_start))
             .top(px(0.0))
             .h_full()
             .w(relative(display_span))
             .bg(background)
-            .corner_radii(corner_radii)
+            .corner_radii(corner_radii);
+        if dim_active {
+            segment = segment.opacity(super::DISABLED_OPACITY);
+        }
+        segment
     } else {
-        div()
+        let mut segment = div()
             .absolute()
             .left(px(0.0))
             .bottom(relative(display_start))
             .w_full()
             .h(relative(display_span))
             .bg(background)
-            .corner_radii(corner_radii)
+            .corner_radii(corner_radii);
+        if dim_active {
+            segment = segment.opacity(super::DISABLED_OPACITY);
+        }
+        segment
     }
 }
 

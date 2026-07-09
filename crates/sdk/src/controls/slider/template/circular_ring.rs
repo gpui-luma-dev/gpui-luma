@@ -3,8 +3,8 @@ use std::sync::{Arc, OnceLock};
 use gpui::{App, Div, Stateful, Window, canvas, div, px, prelude::*};
 
 use super::{
-    DIAL_SIZE, SliderTemplate, SliderTemplateHandlers, TRACK_RADIUS, attach_radial_interaction, paint_radial_annulus,
-    paint_radial_fill_track, render_slider_thumb_at, track_bounds_canvas, track_muted_background,
+    DIAL_SIZE, SliderTemplate, SliderTemplateHandlers, TRACK_RADIUS, attach_radial_interaction, effective_thumb_radius,
+    paint_radial_annulus, paint_radial_fill_track, render_slider_thumb_at, track_bounds_canvas, track_muted_background,
     track_surface_background, uses_static_track_surface,
 };
 use crate::controls::slider::{SliderTheme, default_slider_theme};
@@ -35,7 +35,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
         model: &SliderRenderModel<'_>,
         handlers: SliderTemplateHandlers,
         primary_thumb_id: ThumbId,
-        _window: &mut Window,
+        window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
         let look = self.theme.resolve(model.size, model.thumb_size, model.state);
@@ -57,6 +57,7 @@ impl SliderTemplate for ThemedCircularRingTemplate {
         let fill_background = look.fill_background;
         let surface_background = track_surface_background(model, &look);
         let static_surface = uses_static_track_surface(model);
+        let thumb_radius = effective_thumb_radius(model, &look, window.rem_size());
 
         let (track_bounds, interaction) = handlers.into();
 
@@ -107,7 +108,14 @@ impl SliderTemplate for ThemedCircularRingTemplate {
                 .absolute()
                 .size_full(),
             )
-            .child(render_slider_thumb_at(&look, format!("{}-thumb", model.id), thumb_x, thumb_y, primary_thumb))
+            .child(render_slider_thumb_at(
+                &look,
+                format!("{}-thumb", model.id),
+                thumb_x,
+                thumb_y,
+                thumb_radius,
+                primary_thumb,
+            ))
             .child(track_bounds_canvas(track_bounds));
 
         attach_radial_interaction(root, model, interaction, primary_thumb_id)

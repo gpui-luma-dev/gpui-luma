@@ -150,11 +150,20 @@ pub(crate) fn track_muted_background(look: &crate::controls::slider::SliderLook)
     look.track_background
 }
 
+pub(crate) fn effective_thumb_radius(
+    model: &SliderRenderModel<'_>,
+    look: &crate::controls::slider::SliderLook,
+    rem_size: Pixels,
+) -> f32 {
+    model.thumb_radius.map(|radius| f32::from(radius.to_pixels(rem_size))).unwrap_or(look.radius)
+}
+
 pub(crate) fn render_slider_thumb_at(
     look: &crate::controls::slider::SliderLook,
     id: impl Into<gpui::ElementId>,
     center_x: f32,
     center_y: f32,
+    thumb_radius: f32,
     thumb: Option<&SliderThumbValue>,
 ) -> Stateful<Div> {
     let thumb_fill = thumb.and_then(|thumb| thumb.preview).unwrap_or(look.thumb_background);
@@ -171,14 +180,14 @@ pub(crate) fn render_slider_thumb_at(
         .p(px(THUMB_FOCUS_GAP))
         .border(px(THUMB_FOCUS_WIDTH))
         .border_color(focus_ring_color(look.focus_ring))
-        .rounded(px(look.radius + thumb_focus_offset()))
+        .rounded(px(thumb_radius + thumb_focus_offset()))
         .child(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
                 .border_1()
                 .border_color(look.thumb_border)
-                .rounded(px(look.radius))
+                .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
         )
 }
@@ -192,6 +201,7 @@ pub(crate) fn render_linear_thumb(
     top: f32,
     main_offset: Option<f32>,
     cross_offset: Option<f32>,
+    thumb_radius: f32,
     thumb: Option<&SliderThumbValue>,
     active: bool,
 ) -> Stateful<Div> {
@@ -211,14 +221,14 @@ pub(crate) fn render_linear_thumb(
         .p(px(THUMB_FOCUS_GAP))
         .border(px(THUMB_FOCUS_WIDTH))
         .border_color(focus_ring_color(focus_ring))
-        .rounded(px(look.radius + thumb_focus_offset()))
+        .rounded(px(thumb_radius + thumb_focus_offset()))
         .child(
             div()
                 .size(px(look.thumb_size))
                 .bg(thumb_fill)
                 .border_1()
                 .border_color(look.thumb_border)
-                .rounded(px(look.radius))
+                .rounded(px(thumb_radius))
                 .shadow(look.thumb_shadow.clone()),
         );
 
@@ -273,7 +283,7 @@ pub(crate) fn attach_radial_interaction(
     if model.enabled {
         root.cursor_pointer()
     } else {
-        root.opacity(DISABLED_OPACITY)
+        root.cursor_not_allowed()
     }
 }
 
@@ -298,7 +308,7 @@ pub(crate) fn attach_linear_interaction(
     if model.enabled {
         root.cursor_pointer()
     } else {
-        root.opacity(DISABLED_OPACITY)
+        root.cursor_not_allowed()
     }
 }
 
@@ -325,10 +335,10 @@ pub(crate) fn attach_thumb_drag(
         });
 
     if enabled {
-        thumb.cursor_pointer()
-    } else {
-        thumb.opacity(DISABLED_OPACITY)
+        thumb = thumb.cursor_pointer();
     }
+
+    thumb
 }
 
 pub(crate) fn arc_annulus_radii(arc_thickness: f32) -> (f32, f32) {

@@ -1,8 +1,6 @@
 use super::super::*;
 use super::buttons::render_lucide_icon;
-use super::inputs::{
-    input_noop_bounds, input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up,
-};
+use super::inputs::{input_noop_bounds, input_noop_click, input_noop_hover, input_noop_mouse_down, input_noop_mouse_up};
 
 pub(in crate::studio::style::style_guide) fn render_menu_template_state_section(
     look: Arc<ShadcnLook>,
@@ -11,8 +9,7 @@ pub(in crate::studio::style::style_guide) fn render_menu_template_state_section(
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
-    let active_tab =
-        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("menu-trigger"));
+    let active_tab = preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("menu-trigger"));
 
     section_shell_with_width(
         960.0,
@@ -180,13 +177,15 @@ fn render_floating_menu_size_matrix(look: &Arc<ShadcnLook>) -> AnyElement {
     )
     .row_group_label("SIZE")
     .column_headers([render_floating_menu_size_header_cell("Menu items", chrome.muted_text)])
-    .rows(MENU_TRIGGER_SIZES.iter().map(|(size, label)| {
-        super::super::variant_state_table::VariantStateTableRow {
-            label: SharedString::from(*label),
-            description: SharedString::from(""),
-            cells: vec![render_floating_menu_size_cell(look, *size)],
-        }
-    }))
+    .rows(
+        MENU_TRIGGER_SIZES
+            .iter()
+            .map(|(size, label)| super::super::variant_state_table::VariantStateTableRow {
+                label: SharedString::from(*label),
+                description: SharedString::from(""),
+                cells: vec![render_floating_menu_size_cell(look, *size)],
+            }),
+    )
     .build()
 }
 

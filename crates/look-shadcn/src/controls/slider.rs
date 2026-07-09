@@ -1,18 +1,21 @@
-//! Slider property mappings (Radix Themes surface / shadcn):
+//! Slider property mappings (primary action styling):
 //!
-//! | Part  | Token                          |
-//! |-------|--------------------------------|
-//! | Track | `border` (neutral track rail)  |
-//! | Fill  | `primary` (+ interaction)      |
-//! | Thumb | `background` / `card`          |
-//! | Ring  | `primary` on thumb border      |
+//! | Part  | Token |
+//! |-------|-------|
+//! | Track | `border` (neutral track rail) |
+//! | Fill  | `@primary_default` / `@primary_layer` |
+//! | Thumb | `first(background,card)` |
+//! | Ring  | `@primary_default` |
 //!
 //! Track uses `border` rather than `muted` because many tweakcn light themes
 //! set `--muted` near white (e.g. 98% lightness), which disappears on card panels.
 
+const SLIDER_STYLE_KEY: &str = "primary";
+
 use gpui_luma::controls::slider::{SliderLook, SliderThumbSize};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
+use crate::controls::button::ButtonRadiusPreset;
 use crate::look_context::LookContext;
 use crate::elevation::thumb_shadow;
 use crate::focus::focus_ring_color;
@@ -26,6 +29,39 @@ const DEFAULT_SLIDER_WIDTH: f32 = 260.0;
 const DEFAULT_SLIDER_HEIGHT: f32 = 32.0;
 const DEFAULT_SLIDER_TRACK_HEIGHT: f32 = 8.0;
 const DEFAULT_SLIDER_THUMB_SIZE: f32 = 18.0;
+
+/// Shared corner-radius preset resolution for slider parts.
+///
+/// Medium/large/full resolve to a pill/circle for the given cross-axis size.
+fn resolve_slider_part_radius_preset(
+    preset: ButtonRadiusPreset,
+    metrics: &gpui_luma::theme::MetricTokens,
+    cross_axis_size: f32,
+) -> f32 {
+    match preset {
+        ButtonRadiusPreset::None => metrics.radius.none,
+        ButtonRadiusPreset::Small => metrics.radius.sm,
+        ButtonRadiusPreset::Medium | ButtonRadiusPreset::Large | ButtonRadiusPreset::Full => cross_axis_size / 2.0,
+    }
+}
+
+/// Thumb corner radius presets for slider controls.
+pub fn resolve_slider_thumb_radius_preset(
+    preset: ButtonRadiusPreset,
+    metrics: &gpui_luma::theme::MetricTokens,
+    thumb_size: f32,
+) -> f32 {
+    resolve_slider_part_radius_preset(preset, metrics, thumb_size)
+}
+
+/// Track end-cap radius presets for slider controls.
+pub fn resolve_slider_track_radius_preset(
+    preset: ButtonRadiusPreset,
+    metrics: &gpui_luma::theme::MetricTokens,
+    track_height: f32,
+) -> f32 {
+    resolve_slider_part_radius_preset(preset, metrics, track_height)
+}
 
 #[derive(Clone, Debug)]
 pub struct SliderColorTable {
@@ -55,8 +91,8 @@ pub fn resolve_slider_colors_with_stylesheet(
     stylesheet: &StylesheetConfig,
     layer: InteractionLayer,
 ) -> anyhow::Result<SliderColorTable> {
-    let rule =
-        find_slider_color_rule(stylesheet, layer).ok_or_else(|| anyhow::anyhow!("no matching slider color rule"))?;
+    let rule = find_slider_color_rule(stylesheet, SLIDER_STYLE_KEY, layer)
+        .ok_or_else(|| anyhow::anyhow!("no matching slider color rule"))?;
     let colors = resolve_slider_color_rule(resolver, rule, layer)?;
     Ok(SliderColorTable {
         track_background: colors.track_background,
@@ -131,7 +167,7 @@ fn slider_thumb_size(size: SliderThumbSize) -> f32 {
 mod tests {
 
     use std::collections::BTreeMap;
-    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
     use super::slider_look;
     use crate::catalog::CssTokenMap;
@@ -175,11 +211,10 @@ mod tests {
     }
 
     #[test]
-    fn default_slider_uses_border_track_and_primary_fill() {
+    fn primary_slider_uses_border_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look =
-            slider_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
+        let look = slider_look(&mode, ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
 
         assert_eq!(look.track_background, catalog.color("border").expect("border"));
         assert_eq!(look.fill_background, catalog.color("primary").expect("primary"));
@@ -188,11 +223,27 @@ mod tests {
     }
 
     #[test]
+    fn disabled_slider_track_background_matches_enabled() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let enabled = slider_look(&mode, ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
+        let disabled = slider_look(
+            &mode,
+            ThemeMode::Light,
+            ControlSize::Md,
+            None,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(disabled.track_background, enabled.track_background);
+        assert_eq!(disabled.track_background, catalog.color("border").expect("border"));
+    }
+
+    #[test]
     fn astrovista_light_track_is_border_not_white_muted() {
         let catalog = astrovista_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look =
-            slider_look(&mode, gpui_luma::theme::ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
+        let look = slider_look(&mode, ThemeMode::Light, ControlSize::Md, None, InteractionState::default());
 
         let border = catalog.color("border").expect("border");
         let muted = catalog.color("muted").expect("muted");
@@ -220,6 +271,30 @@ mod tests {
         assert!(md.track_height < lg.track_height);
         assert!(sm.thumb_size < md.thumb_size);
         assert!(md.thumb_size < lg.thumb_size);
+    }
+
+    #[test]
+    fn slider_radius_presets_use_square_and_pill_shapes() {
+        use crate::controls::button::ButtonRadiusPreset;
+
+        use super::{resolve_slider_thumb_radius_preset, resolve_slider_track_radius_preset};
+        use gpui_luma::theme::MetricTokens;
+
+        let metrics = MetricTokens::default();
+        let thumb_size = 16.0;
+        let track_height = 6.0;
+        let thumb_circle = thumb_size / 2.0;
+        let track_pill = track_height / 2.0;
+
+        assert_eq!(resolve_slider_thumb_radius_preset(ButtonRadiusPreset::None, &metrics, thumb_size), 0.0);
+        assert_eq!(resolve_slider_track_radius_preset(ButtonRadiusPreset::None, &metrics, track_height), 0.0);
+        assert!(resolve_slider_thumb_radius_preset(ButtonRadiusPreset::Small, &metrics, thumb_size) < thumb_circle);
+        assert!(resolve_slider_track_radius_preset(ButtonRadiusPreset::Small, &metrics, track_height) <= track_pill);
+        assert!(
+            resolve_slider_track_radius_preset(ButtonRadiusPreset::Small, &metrics, track_height * 2.0) < track_height
+        );
+        assert_eq!(resolve_slider_thumb_radius_preset(ButtonRadiusPreset::Medium, &metrics, thumb_size), thumb_circle);
+        assert_eq!(resolve_slider_track_radius_preset(ButtonRadiusPreset::Medium, &metrics, track_height), track_pill);
     }
 
     #[test]

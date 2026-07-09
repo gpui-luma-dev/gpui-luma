@@ -21,8 +21,7 @@ use gpui_luma::controls::combobox::{
     default_combobox_items_template, default_combobox_panel_template, default_combobox_template,
 };
 use gpui_luma::controls::floating_menu::{
-    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook,
-    render_floating_menu,
+    FloatingMenuClickHandler, FloatingMenuHoverHandler, FloatingMenuLook, render_floating_menu,
 };
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::popup_menu::{
@@ -110,23 +109,29 @@ enum StyleGuideSection {
     Menus,
     Selectors,
     Tabs,
-    Inputs,
+    Scrollbar,
+    Slider,
+    TextField,
+    TextArea,
     Typography,
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 13] = [
+    const ALL: [Self; 16] = [
         Self::Buttons,
         Self::Checkbox,
         Self::Feedback,
         Self::IconButtons,
-        Self::Inputs,
         Self::Menus,
         Self::Radio,
+        Self::Scrollbar,
         Self::Selectors,
         Self::Sidebar,
+        Self::Slider,
         Self::Switch,
         Self::Tabs,
+        Self::TextArea,
+        Self::TextField,
         Self::Toggle,
         Self::Typography,
     ];
@@ -152,6 +157,7 @@ declare_form! {
             switch_preview_tabs: Option<Entity<TabsNavigation>> = None,
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
             menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
         }
     }
 }
@@ -167,6 +173,7 @@ impl StyleGuidePanel {
         self.sync_switch_preview_tabs(cx);
         self.sync_toggles_preview_tabs(cx);
         self.sync_menus_preview_tabs(cx);
+        self.sync_slider_preview_tabs(cx);
         self.sticky_heading_tracker.borrow_mut().reset();
         cx.notify();
     }
@@ -448,6 +455,36 @@ impl StyleGuidePanel {
         tabs
     }
 
+    fn sync_slider_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.slider_preview_tabs.clone(), cx);
+    }
+
+    fn slider_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.slider_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-slider-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.slider_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
     fn sync_preview_tabs(&self, tabs: Option<Entity<TabsNavigation>>, cx: &mut Context<Self>) {
         if let Some(tabs) = tabs {
             let look = self.look.clone();
@@ -468,6 +505,7 @@ impl Render for StyleGuidePanel {
         let _ = self.switch_preview_tabs(cx);
         let _ = self.toggles_preview_tabs(cx);
         let _ = self.menus_preview_tabs(cx);
+        let _ = self.slider_preview_tabs(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -608,6 +646,7 @@ impl StyleGuidePanel {
                 | StyleGuideSection::Switch
                 | StyleGuideSection::Toggle
                 | StyleGuideSection::Menus
+                | StyleGuideSection::Slider
         )
     }
 
@@ -677,8 +716,20 @@ impl StyleGuidePanel {
             StyleGuideSection::Tabs => {
                 cards::menus::render_tabs_navigation_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Inputs => {
-                cards::inputs::render_input_controls_template_section(self.look.clone(), window, cx)
+            StyleGuideSection::Scrollbar => {
+                cards::inputs::render_scrollbar_template_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::Slider => cards::inputs::render_slider_template_section(
+                self.look.clone(),
+                self.slider_preview_tabs.clone().expect("slider preview tabs"),
+                window,
+                cx,
+            ),
+            StyleGuideSection::TextField => {
+                cards::inputs::render_textfield_template_section(self.look.clone(), window, cx)
+            }
+            StyleGuideSection::TextArea => {
+                cards::inputs::render_textarea_template_section(self.look.clone(), window, cx)
             }
             StyleGuideSection::Typography => cards::typography::render_typography_section(self.look.as_ref()),
         }

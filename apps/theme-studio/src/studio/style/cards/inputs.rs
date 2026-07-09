@@ -1,6 +1,23 @@
 use super::super::*;
 
-pub(in crate::studio::style::style_guide) fn render_input_controls_template_section(
+const SLIDER_DEMO_WIDTH: f32 = 320.0;
+const SLIDER_DEMO_MAX_WIDTH: f32 = 360.0;
+/// Template preview keeps table width; sliders are shorter and centered in state columns.
+const SLIDER_TEMPLATE_DEMO_WIDTH: f32 = 120.0;
+const SLIDER_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
+const SLIDER_TEMPLATE_TABLE_HEADER_HEIGHT: f32 = 28.0;
+const SLIDER_TEMPLATE_TABLE_ROW_HEIGHT: f32 = 40.0;
+/// Match template preview state columns so 120px sliders are not clipped.
+const SLIDER_TABLE_RADIUS_COLUMN_WIDTH: f32 = 152.0;
+const SLIDER_TABLE_SIZE_RADIUS_ROW_HEIGHT: f32 = 40.0;
+const SLIDER_TABLE_SIZE_VARIANT_COLUMN_WIDTH: f32 = 120.0;
+const SLIDER_TABLE_SIZE_HEADER_HEIGHT: f32 = 28.0;
+const SLIDER_TABLE_SIZE_HEADER_CORNER_PADDING_BOTTOM: f32 = 4.0;
+
+const SLIDER_SIZES: [(ControlSize, &str); 3] =
+    [(ControlSize::Sm, "Small"), (ControlSize::Md, "Medium"), (ControlSize::Lg, "Large")];
+
+pub(in crate::studio::style::style_guide) fn render_scrollbar_template_section(
     look: Arc<ShadcnLook>,
     window: &mut Window,
     cx: &mut App,
@@ -9,37 +26,100 @@ pub(in crate::studio::style::style_guide) fn render_input_controls_template_sect
 
     section_shell_with_width(
         960.0,
-        "Input Controls",
-        "Scrollbar, slider, text field, and text area states.",
+        "Scrollbar",
+        "Horizontal and vertical scrollbar interaction states.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(20.0))
-            .children([
-                render_input_scrollbar_preview(&look, window, cx),
-                render_input_slider_preview(&look, window, cx),
-                render_input_textfield_preview(&look, window, cx),
-                render_input_textarea_preview(&look, window, cx),
-            ])
-            .into_any_element(),
+        render_input_scrollbar_body(&look, window, cx),
     )
 }
 
-pub(super) fn render_input_section_heading(title: &'static str, muted_text: gpui::Hsla) -> AnyElement {
+pub(in crate::studio::style::style_guide) fn render_slider_template_section(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
+
+    section_shell_with_width(
+        960.0,
+        "Slider",
+        "Horizontal slider with Sm / Md / Lg sizing and radius presets.",
+        chrome.title_text,
+        chrome.muted_text,
+        chrome.border,
+        chrome.panel_background,
+        render_slider_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
+    )
+}
+
+pub(in crate::studio::style::style_guide) fn render_textfield_template_section(
+    look: Arc<ShadcnLook>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    section_shell_with_width(
+        960.0,
+        "Text Field",
+        "Default, hover, focus, active, and disabled states.",
+        chrome.title_text,
+        chrome.muted_text,
+        chrome.border,
+        chrome.panel_background,
+        render_input_textfield_body(&look, window, cx),
+    )
+}
+
+pub(in crate::studio::style::style_guide) fn render_textarea_template_section(
+    look: Arc<ShadcnLook>,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let chrome = look.chrome();
+
+    section_shell_with_width(
+        960.0,
+        "Text Area",
+        "Default, hover, focus, active, and disabled states.",
+        chrome.title_text,
+        chrome.muted_text,
+        chrome.border,
+        chrome.panel_background,
+        render_input_textarea_body(&look, window, cx),
+    )
+}
+
+fn render_slider_preview_tabbed_content(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let body = match active_tab.as_ref() {
+        "sizes" => render_input_slider_size_matrix(&look, window, cx),
+        _ => render_input_slider_states_body(&look, window, cx),
+    };
+
     div()
-        .text_size(px(12.0))
-        .line_height(px(16.0))
-        .font_weight(FontWeight::MEDIUM)
-        .text_color(muted_text)
-        .child(title)
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
         .into_any_element()
 }
 
-fn render_input_scrollbar_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_input_scrollbar_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
     let samples = input_interaction_samples();
     let template = look.scrollbar_template();
@@ -47,33 +127,26 @@ fn render_input_scrollbar_preview(look: &Arc<ShadcnLook>, window: &mut Window, c
     div()
         .flex()
         .flex_col()
-        .gap(px(10.0))
-        .child(render_input_section_heading("Scrollbar", chrome.muted_text))
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(12.0))
-                .child(render_input_scrollbar_row(
-                    &template,
-                    "Horizontal",
-                    ScrollbarOrientation::Horizontal,
-                    &samples,
-                    chrome.muted_text,
-                    window,
-                    cx,
-                ))
-                .child(render_input_scrollbar_row(
-                    &template,
-                    "Vertical",
-                    ScrollbarOrientation::Vertical,
-                    &samples,
-                    chrome.muted_text,
-                    window,
-                    cx,
-                )),
-        )
+        .items_center()
+        .gap(px(12.0))
+        .child(render_input_scrollbar_row(
+            &template,
+            "Horizontal",
+            ScrollbarOrientation::Horizontal,
+            &samples,
+            chrome.muted_text,
+            window,
+            cx,
+        ))
+        .child(render_input_scrollbar_row(
+            &template,
+            "Vertical",
+            ScrollbarOrientation::Vertical,
+            &samples,
+            chrome.muted_text,
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 
@@ -141,47 +214,204 @@ fn render_input_scrollbar_sample(
         .into_any_element()
 }
 
-fn render_input_slider_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_input_slider_states_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
     let samples = input_interaction_samples();
-    let template = look.slider_template();
 
     div()
         .flex()
         .flex_col()
-        .gap(px(10.0))
-        .child(render_input_section_heading("Slider", chrome.muted_text))
+        .items_center()
         .child(
-            div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples
+            super::super::variant_state_table::VariantStateTable::new(
+                super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+                    .state_column_width(SLIDER_TABLE_STATE_COLUMN_WIDTH)
+                    .variant_column_width(SLIDER_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
+                    .header_height(SLIDER_TEMPLATE_TABLE_HEADER_HEIGHT)
+                    .header_corner_padding_bottom(0.0)
+                    .row_height(SLIDER_TEMPLATE_TABLE_ROW_HEIGHT)
+                    .variant_column_align_center(true),
+            )
+            .row_group_label("")
+            .column_headers(
+                samples.iter().map(|sample| render_input_slider_state_header_cell(*sample, chrome.muted_text)),
+            )
+            .rows([super::super::variant_state_table::VariantStateTableRow {
+                label: SharedString::from(""),
+                description: SharedString::from(""),
+                cells: samples
                     .iter()
                     .copied()
-                    .map(|sample| render_input_slider_sample(&template, sample, chrome.muted_text, window, cx)),
-            ),
+                    .map(|sample| {
+                        render_input_slider_state_cell(
+                            look,
+                            InputInteractionSample { label: "", ..sample },
+                            ControlSize::Md,
+                            None,
+                            Some(SLIDER_TEMPLATE_DEMO_WIDTH),
+                            1.0,
+                            window,
+                            cx,
+                        )
+                    })
+                    .collect(),
+            }])
+            .build(),
         )
         .into_any_element()
 }
 
+fn render_input_slider_state_header_cell(sample: InputInteractionSample, muted_text: gpui::Hsla) -> AnyElement {
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(sample.label)
+        .into_any_element()
+}
+
+fn render_input_slider_size_matrix(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+    let chrome = look.chrome();
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .child(
+            super::super::variant_state_table::VariantStateTable::new(
+                super::super::variant_state_table::VariantStateTableStyle::from_chrome(&chrome)
+                    .variant_column_width(SLIDER_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
+                    .state_column_width(SLIDER_TABLE_RADIUS_COLUMN_WIDTH)
+                    .header_height(SLIDER_TABLE_SIZE_HEADER_HEIGHT)
+                    .header_corner_padding_bottom(SLIDER_TABLE_SIZE_HEADER_CORNER_PADDING_BOTTOM)
+                    .row_height(SLIDER_TABLE_SIZE_RADIUS_ROW_HEIGHT)
+                    .variant_column_align_center(true),
+            )
+            .row_group_label("Sizes")
+            .column_headers(
+                ButtonRadiusPreset::ALL
+                    .iter()
+                    .map(|preset| render_input_slider_radius_header_cell(preset.label(), chrome.muted_text)),
+            )
+            .rows(SLIDER_SIZES.iter().map(|(size, label)| {
+                super::super::variant_state_table::VariantStateTableRow {
+                    label: SharedString::from(*label),
+                    description: SharedString::from(""),
+                    cells: ButtonRadiusPreset::ALL
+                        .iter()
+                        .map(|radius| render_input_slider_size_radius_cell(look, *size, *radius, window, cx))
+                        .collect(),
+                }
+            }))
+            .build(),
+        )
+        .into_any_element()
+}
+
+fn render_input_slider_radius_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(label)
+        .into_any_element()
+}
+
+fn render_input_slider_state_cell(
+    look: &Arc<ShadcnLook>,
+    sample: InputInteractionSample,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    demo_width: Option<f32>,
+    demo_scale: f32,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let template = look.slider_template();
+
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .py(px(4.0))
+        .child(render_input_slider_sample(
+            look,
+            &template,
+            sample,
+            size,
+            radius,
+            demo_width,
+            demo_scale,
+            gpui::transparent_black(),
+            window,
+            cx,
+        ))
+        .into_any_element()
+}
+
+fn render_input_slider_size_radius_cell(
+    look: &Arc<ShadcnLook>,
+    size: ControlSize,
+    radius: ButtonRadiusPreset,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let sample_id = match size {
+        ControlSize::Sm => "size-sm",
+        ControlSize::Md => "size-md",
+        ControlSize::Lg => "size-lg",
+    };
+    let sample = InputInteractionSample { id: sample_id, label: "", state: InteractionState::default() };
+
+    render_input_slider_state_cell(look, sample, size, Some(radius), Some(SLIDER_TEMPLATE_DEMO_WIDTH), 1.0, window, cx)
+}
+
 fn render_input_slider_sample(
+    look: &Arc<ShadcnLook>,
     template: &Arc<dyn SliderTemplate>,
     sample: InputInteractionSample,
+    size: ControlSize,
+    radius: Option<ButtonRadiusPreset>,
+    demo_width: Option<f32>,
+    demo_scale: f32,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-slider-preview-{}", sample.id));
+    let id = SharedString::from(format!(
+        "theme-studio-slider-preview-{}-{}-{}",
+        sample.id,
+        slider_size_id(size),
+        radius.map(slider_radius_id).unwrap_or("default")
+    ));
     let range = ControlRange::from(1..100);
     let value = 41.0;
     let position = range.percentage(value);
     let thumb_id = ThumbId::next();
     let thumbs = [SliderThumbValue { id: thumb_id, position, preview: None, role: SliderThumbRole::Value }];
     let track_segments = build_track_segments(TrackPresentation::Fill, position, &[], range);
+    let corner_radius = radius.map(|preset| px(slider_track_radius_px(look, size, preset)).into());
+    let thumb_radius = radius.map(|preset| px(slider_thumb_radius_px(look, size, preset)).into());
     let model = SliderRenderModel {
         id: &id,
         strategy: SliderInputStrategy::Horizontal,
         orientation: SliderInputStrategy::Horizontal.orientation(),
         presentation: TrackPresentation::Fill,
-        size: ControlSize::Md,
+        size,
         thumb_size: None,
         range,
         step: 10.0,
@@ -190,45 +420,49 @@ fn render_input_slider_sample(
         reversed: false,
         wrapping: false,
         enabled: !sample.state.disabled,
-        corner_radius: None,
+        corner_radius,
+        thumb_radius,
         thumb_policy: SliderThumbPolicy::default(),
         active_thumb_id: Some(thumb_id),
         state: sample.state,
         domain_track: None,
     };
 
-    div()
-        .flex()
-        .flex_col()
-        .items_center()
-        .gap(px(6.0))
-        .child(div().w(px(320.0)).max_w(px(360.0)).child(template.render(
+    let demo_width = demo_width.unwrap_or(SLIDER_DEMO_WIDTH * demo_scale);
+    let demo_max_width = demo_width * (SLIDER_DEMO_MAX_WIDTH / SLIDER_DEMO_WIDTH);
+
+    let mut root = div().flex().flex_col().items_center().gap(px(6.0)).child(
+        div().w(px(demo_width)).max_w(px(demo_max_width)).child(template.render(
             &model,
             input_slider_handlers(),
             thumb_id,
             window,
             cx,
-        )))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
-        .into_any_element()
+        )),
+    );
+
+    if !sample.label.is_empty() {
+        root = root.child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label));
+    }
+
+    root.into_any_element()
 }
 
-fn render_input_textfield_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
-    let chrome = look.chrome();
+fn render_input_textfield_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let template = look.textfield_template();
     let theme = look.textfield_theme();
     let samples = input_textfield_samples();
+    let chrome = look.chrome();
 
     div()
         .flex()
-        .flex_col()
-        .gap(px(10.0))
-        .child(render_input_section_heading("TextField", chrome.muted_text))
-        .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-            samples.iter().copied().map(|sample| {
-                render_input_textfield_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
-            }),
-        ))
+        .flex_wrap()
+        .items_start()
+        .justify_center()
+        .gap(px(12.0))
+        .children(samples.iter().copied().map(|sample| {
+            render_input_textfield_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
+        }))
         .into_any_element()
 }
 
@@ -272,7 +506,7 @@ fn render_input_textfield_sample(
         .into_any_element()
 }
 
-fn render_input_textarea_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_input_textarea_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
     let theme = look.textarea_theme();
     let template: Arc<dyn TextAreaTemplate> = Arc::new(ThemedTextAreaTemplate::new(theme.clone()));
@@ -280,14 +514,13 @@ fn render_input_textarea_preview(look: &Arc<ShadcnLook>, window: &mut Window, cx
 
     div()
         .flex()
-        .flex_col()
-        .gap(px(10.0))
-        .child(render_input_section_heading("TextArea", chrome.muted_text))
-        .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-            samples.iter().copied().map(|sample| {
-                render_input_textarea_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
-            }),
-        ))
+        .flex_wrap()
+        .items_start()
+        .justify_center()
+        .gap(px(12.0))
+        .children(samples.iter().copied().map(|sample| {
+            render_input_textarea_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
+        }))
         .into_any_element()
 }
 
@@ -325,6 +558,45 @@ fn render_input_textarea_sample(
         .child(template.render(&model, input_textarea_handlers(), window, cx))
         .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
+}
+
+fn slider_size_id(size: ControlSize) -> &'static str {
+    match size {
+        ControlSize::Sm => "sm",
+        ControlSize::Md => "md",
+        ControlSize::Lg => "lg",
+    }
+}
+
+fn slider_radius_id(radius: ButtonRadiusPreset) -> &'static str {
+    match radius {
+        ButtonRadiusPreset::None => "none",
+        ButtonRadiusPreset::Small => "small",
+        ButtonRadiusPreset::Medium => "medium",
+        ButtonRadiusPreset::Large => "large",
+        ButtonRadiusPreset::Full => "full",
+    }
+}
+
+fn slider_thumb_radius_px(look: &ShadcnLook, size: ControlSize, preset: ButtonRadiusPreset) -> f32 {
+    let (metrics, look) = slider_size_metrics(look, size);
+    gpui_luma_look_shadcn::paint::resolve_slider_thumb_radius_preset(preset, &metrics, look.thumb_size)
+}
+
+fn slider_track_radius_px(look: &ShadcnLook, size: ControlSize, preset: ButtonRadiusPreset) -> f32 {
+    let (metrics, look) = slider_size_metrics(look, size);
+    gpui_luma_look_shadcn::paint::resolve_slider_track_radius_preset(preset, &metrics, look.track_height)
+}
+
+fn slider_size_metrics(
+    look: &ShadcnLook,
+    size: ControlSize,
+) -> (gpui_luma::theme::MetricTokens, gpui_luma::controls::slider::SliderLook) {
+    use gpui_luma_look_shadcn::paint::slider_look;
+
+    let tokens = look.mode_tokens();
+    let slider_look = slider_look(tokens.as_ref(), look.mode(), size, None, InteractionState::default());
+    (tokens.metrics.clone(), slider_look)
 }
 
 fn input_interaction_samples() -> [InputInteractionSample; 5] {

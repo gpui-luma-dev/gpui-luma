@@ -110,8 +110,12 @@ pub fn find_switch_color_rule(stylesheet: &StylesheetConfig, on: bool, disabled:
     stylesheet.switch.find_color_rule(on, disabled)
 }
 
-pub fn find_slider_color_rule(stylesheet: &StylesheetConfig, layer: InteractionLayer) -> Option<&SliderColorRule> {
-    stylesheet.slider.find_color_rule(layer)
+pub fn find_slider_color_rule<'a>(
+    stylesheet: &'a StylesheetConfig,
+    style: &str,
+    layer: InteractionLayer,
+) -> Option<&'a SliderColorRule> {
+    stylesheet.slider.find_color_rule(style, layer)
 }
 
 pub fn find_scrollbar_color_rule(
@@ -984,7 +988,7 @@ mod tests {
         assert!(find_textfield_elevation_rule(stylesheet, crate::controls::ShadcnTextFieldStyle::Filled).is_some());
         assert!(find_autocomplete_chrome_color_rule(stylesheet).is_some());
         assert!(find_checkbox_color_rule(stylesheet, true, InteractionLayer::Default).is_some());
-        assert!(find_slider_color_rule(stylesheet, InteractionLayer::Hovered).is_some());
+        assert!(find_slider_color_rule(stylesheet, "primary", InteractionLayer::Hovered).is_some());
     }
 
     #[test]
