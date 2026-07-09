@@ -158,6 +158,8 @@ declare_form! {
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
             menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            slider_customization_preview: Option<Entity<cards::slider_customization::SliderCustomizationPreview>> =
+                None,
         }
     }
 }
@@ -174,6 +176,7 @@ impl StyleGuidePanel {
         self.sync_toggles_preview_tabs(cx);
         self.sync_menus_preview_tabs(cx);
         self.sync_slider_preview_tabs(cx);
+        self.sync_slider_customization_preview(cx);
         self.sticky_heading_tracker.borrow_mut().reset();
         cx.notify();
     }
@@ -470,6 +473,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("customization").label("Customization"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -483,6 +487,28 @@ impl StyleGuidePanel {
 
         self.slider_preview_tabs = Some(tabs.clone());
         tabs
+    }
+
+    fn slider_customization_preview(
+        &mut self,
+        cx: &mut Context<Self>,
+    ) -> Entity<cards::slider_customization::SliderCustomizationPreview> {
+        if let Some(preview) = self.slider_customization_preview.clone() {
+            return preview;
+        }
+
+        let preview = cx.new(|cx| cards::slider_customization::SliderCustomizationPreview::new(cx, self.look.clone()));
+        self.slider_customization_preview = Some(preview.clone());
+        preview
+    }
+
+    fn sync_slider_customization_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.slider_customization_preview.clone() {
+            let look = self.look.clone();
+            preview.update(cx, move |preview, cx| {
+                preview.sync_look(look, cx);
+            });
+        }
     }
 
     fn sync_preview_tabs(&self, tabs: Option<Entity<TabsNavigation>>, cx: &mut Context<Self>) {
@@ -506,6 +532,7 @@ impl Render for StyleGuidePanel {
         let _ = self.toggles_preview_tabs(cx);
         let _ = self.menus_preview_tabs(cx);
         let _ = self.slider_preview_tabs(cx);
+        let _ = self.slider_customization_preview(cx);
         with_look(&self.look, || {
             let chrome = self.look.chrome();
             let scroll_progress = self.scroll_progress();
@@ -722,6 +749,7 @@ impl StyleGuidePanel {
             StyleGuideSection::Slider => cards::inputs::render_slider_template_section(
                 self.look.clone(),
                 self.slider_preview_tabs.clone().expect("slider preview tabs"),
+                self.slider_customization_preview.clone().expect("slider customization preview"),
                 window,
                 cx,
             ),

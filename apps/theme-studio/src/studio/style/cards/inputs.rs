@@ -39,6 +39,7 @@ pub(in crate::studio::style::style_guide) fn render_scrollbar_template_section(
 pub(in crate::studio::style::style_guide) fn render_slider_template_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
+    customization_preview: Entity<super::slider_customization::SliderCustomizationPreview>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -54,7 +55,15 @@ pub(in crate::studio::style::style_guide) fn render_slider_template_section(
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        render_slider_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
+        render_slider_preview_tabbed_content(
+            look,
+            preview_tabs,
+            customization_preview,
+            active_tab,
+            chrome.border,
+            window,
+            cx,
+        ),
     )
 }
 
@@ -99,6 +108,7 @@ pub(in crate::studio::style::style_guide) fn render_textarea_template_section(
 fn render_slider_preview_tabbed_content(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
+    customization_preview: Entity<super::slider_customization::SliderCustomizationPreview>,
     active_tab: SharedString,
     border: gpui::Hsla,
     window: &mut Window,
@@ -106,6 +116,7 @@ fn render_slider_preview_tabbed_content(
 ) -> AnyElement {
     let body = match active_tab.as_ref() {
         "sizes" => render_input_slider_size_matrix(&look, window, cx),
+        "customization" => super::slider_customization::render_slider_customization_body(customization_preview),
         _ => render_input_slider_states_body(&look, window, cx),
     };
 
