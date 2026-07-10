@@ -3,8 +3,9 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use gpui::{
-    Bounds, ClickEvent, Context, Corner, Corners, Entity, ImageSource, MouseDownEvent, Pixels, Render, RenderImage,
-    SharedString, Size, Subscription, Window, anchored, canvas, deferred, div, img, point, prelude::*, px, size,
+    Bounds, ClickEvent, Context, Corner, Corners, Entity, HitboxBehavior, ImageSource, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, Pixels, Render, RenderImage, SharedString, Size, Subscription, Window, anchored,
+    canvas, deferred, div, img, point, prelude::*, px, relative, size,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::color::composition::CompositionSize;
@@ -15,20 +16,25 @@ use gpui_luma::controls::color::color_slider::{
 };
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
 use gpui_luma::controls::slider::{SliderControl, SliderEvent, SliderThumbPolicy, ThumbId};
+use gpui_luma::controls::tabs_navigation::{
+    TabsNavigation, TabsNavigationEvent, TabsNavigationItem, TabsNavigationWidthMode,
+};
 use gpui_luma::{form_field, hstack, vstack};
 use gpui_luma::theme::{ControlSize, LumaTextStyle, ThemeMode};
 use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextSize};
 use lucide_icons::Icon as LucideIcon;
 
-use super::color::{format_css_linear_gradient, format_hex_color, format_percent};
+use super::color::{format_css_gradient, format_hex_color, format_percent};
 use super::paint::{
-    GradientType, PreviewRenderer, color_at_position, paint_linear_gradient_preview, rasterize_linear_gradient_preview,
-    sorted_stops,
+    GradientType, MeshPoint, PreviewRenderer, MESH_COLS, MESH_ROWS, color_at_position, paint_gradient_preview,
+    rasterize_gradient_preview, rasterize_mesh_gradient_preview, sorted_stops,
 };
 use super::sv_triangle_picker::SvTrianglePicker;
 
 const SHELL_RADIUS: f32 = 12.0;
 const SHELL_BORDER: f32 = 1.0;
+const MESH_HANDLE_SIZE: f32 = 22.0;
+const MESH_POINT_GAP: f32 = 0.08;
 
 fn shell_inner_corner_radius() -> Pixels {
     px(SHELL_RADIUS - SHELL_BORDER)
@@ -36,16 +42,18 @@ fn shell_inner_corner_radius() -> Pixels {
 
 fn controls_panel_corner_radii() -> Corners<Pixels> {
     let inner = shell_inner_corner_radius();
-    Corners { top_left: inner, top_right: px(0.0), bottom_left: inner, bottom_right: px(0.0) }
+    Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: inner, bottom_right: px(0.0) }
 }
 
 fn preview_panel_corner_radii() -> Corners<Pixels> {
     let inner = shell_inner_corner_radius();
-    Corners { top_left: px(0.0), top_right: inner, bottom_left: px(0.0), bottom_right: inner }
+    Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: inner }
 }
 
 pub struct GradientBuilder {
     look: Arc<ShadcnLook>,
+    top_tabs: Entity<TabsNavigation>,
+    selected_tab: BuilderTab,
     gradient_stops: Entity<SliderControl>,
     stop_colors: HashMap<ThumbId, gpui::Hsla>,
     selected_stop: Option<ThumbId>,
@@ -59,6 +67,9 @@ pub struct GradientBuilder {
     rotation_deg: f32,
     gradient_type: GradientType,
     preview_renderer: PreviewRenderer,
+    mesh_points: Vec<MeshPoint>,
+    selected_mesh_point: Option<usize>,
+    active_mesh_drag: Option<usize>,
     preview_size: Size<Pixels>,
     preview_image_cache: Option<(PreviewImageCacheKey, Arc<RenderImage>)>,
     active_preview_strategy: &'static str,
@@ -66,8 +77,17 @@ pub struct GradientBuilder {
     color_picker: Entity<SvTrianglePicker>,
     color_picker_open: bool,
     stop_swatch_bounds: HashMap<ThumbId, Bounds<Pixels>>,
+    mesh_swatch_bounds: HashMap<usize, Bounds<Pixels>>,
+    mesh_preview_bounds: Option<Bounds<Pixels>>,
     render_task: Option<gpui::Task<()>>,
     _subscriptions: Vec<Subscription>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum BuilderTab {
+    #[default]
+    Gradients,
+    Mesh,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -80,11 +100,31 @@ struct PreviewStopKey {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct PreviewImageCacheKey {
-    width_px: u16,
-    height_px: u16,
-    rotation_tenths: u16,
-    stops: Vec<PreviewStopKey>,
+struct PreviewMeshPointKey {
+    row: u8,
+    col: u8,
+    u_millis: u16,
+    v_millis: u16,
+    red: u8,
+    green: u8,
+    blue: u8,
+    alpha: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum PreviewImageCacheKey {
+    Gradient {
+        gradient_type: GradientType,
+        width_px: u16,
+        height_px: u16,
+        rotation_tenths: u16,
+        stops: Vec<PreviewStopKey>,
+    },
+    Mesh {
+        width_px: u16,
+        height_px: u16,
+        points: Vec<PreviewMeshPointKey>,
+    },
 }
 
 impl GradientBuilder {
@@ -120,6 +160,12 @@ impl GradientBuilder {
 
         let rotation_slider =
             look.slider("color-viz-gradient-rotation").range(0.0..360.0).step(1.0).value(90.0).spawn(cx);
+        let top_tabs = look
+            .tabs_navigation("color-viz-builder-tabs")
+            .items(builder_tab_items())
+            .active("gradients")
+            .width_mode(TabsNavigationWidthMode::Uniform)
+            .spawn(cx);
         let type_selector =
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
         let renderer_selector =
@@ -128,6 +174,8 @@ impl GradientBuilder {
 
         let mut builder = Self {
             look: look.clone(),
+            top_tabs: top_tabs.clone(),
+            selected_tab: BuilderTab::Gradients,
             gradient_stops: gradient_stops.clone(),
             stop_colors,
             selected_stop,
@@ -141,6 +189,9 @@ impl GradientBuilder {
             rotation_deg: 90.0,
             gradient_type: GradientType::Linear,
             preview_renderer: PreviewRenderer::Quads,
+            mesh_points: default_mesh_points(),
+            selected_mesh_point: Some(mesh_point_index(1, 1)),
+            active_mesh_drag: None,
             preview_size: size(px(0.0), px(0.0)),
             preview_image_cache: None,
             active_preview_strategy: "quads",
@@ -148,12 +199,15 @@ impl GradientBuilder {
             color_picker: color_picker.clone(),
             color_picker_open: false,
             stop_swatch_bounds: HashMap::new(),
+            mesh_swatch_bounds: HashMap::new(),
+            mesh_preview_bounds: None,
             render_task: None,
             _subscriptions: Vec::new(),
         };
 
         builder.wire_subscriptions(
             cx,
+            top_tabs,
             gradient_stops,
             add_stop_button,
             rotation_slider,
@@ -166,9 +220,11 @@ impl GradientBuilder {
         builder
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn wire_subscriptions(
         &mut self,
         cx: &mut Context<Self>,
+        top_tabs: Entity<TabsNavigation>,
         gradient_stops: Entity<SliderControl>,
         add_stop_button: Entity<Button>,
         rotation_slider: Entity<SliderControl>,
@@ -178,6 +234,9 @@ impl GradientBuilder {
     ) {
         self._subscriptions.push(cx.subscribe(&gradient_stops, |this, _, event, cx| {
             this.handle_stops_event(event, cx);
+        }));
+        self._subscriptions.push(cx.subscribe(&top_tabs, |this, _, event: &TabsNavigationEvent, cx| {
+            this.handle_top_tabs_event(event, cx);
         }));
         self._subscriptions.push(cx.subscribe(&add_stop_button, |this, _, event: &ButtonEvent, cx| {
             if matches!(event, ButtonEvent::Click) {
@@ -260,10 +319,31 @@ impl GradientBuilder {
         }
     }
 
+    fn handle_top_tabs_event(&mut self, event: &TabsNavigationEvent, cx: &mut Context<Self>) {
+        let TabsNavigationEvent::Activate { tab_id, .. } = event;
+        let next = match tab_id.as_ref() {
+            "mesh" => BuilderTab::Mesh,
+            _ => BuilderTab::Gradients,
+        };
+        if self.selected_tab != next {
+            self.selected_tab = next;
+            self.active_mesh_drag = None;
+            self.color_picker_open = false;
+            let _ = self.ensure_preview_image_cache(self.preview_size, cx);
+            cx.notify();
+        }
+    }
+
     fn handle_type_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
         let SelectorEvent::Change { item_id, .. } = event;
-        if item_id.as_ref() == "linear" {
-            self.gradient_type = GradientType::Linear;
+        let next = match item_id.as_ref() {
+            "radial" => GradientType::Radial,
+            "angular" => GradientType::Angular,
+            _ => GradientType::Linear,
+        };
+        if self.gradient_type != next {
+            self.gradient_type = next;
+            let _ = self.ensure_preview_image_cache(self.preview_size, cx);
             cx.notify();
         }
     }
@@ -287,17 +367,38 @@ impl GradientBuilder {
             return;
         }
         let color = self.color_picker.read(cx).color();
-        let Some(thumb_id) = self.selected_stop else {
-            return;
-        };
-        self.stop_colors.insert(thumb_id, color);
-        self.rebuild_stops(cx);
-        cx.notify();
+        match self.selected_tab {
+            BuilderTab::Gradients => {
+                let Some(thumb_id) = self.selected_stop else {
+                    return;
+                };
+                self.stop_colors.insert(thumb_id, color);
+                self.rebuild_stops(cx);
+            }
+            BuilderTab::Mesh => {
+                let Some(point_index) = self.selected_mesh_point else {
+                    return;
+                };
+                if let Some(point) = self.mesh_points.get_mut(point_index) {
+                    point.color = color;
+                    let _ = self.ensure_preview_image_cache(self.preview_size, cx);
+                    cx.notify();
+                }
+            }
+        }
     }
 
     fn open_color_picker_for_stop(&mut self, thumb_id: ThumbId, cx: &mut Context<Self>) {
         self.selected_stop = Some(thumb_id);
         let color = self.selected_color(cx);
+        self.color_picker.update(cx, |picker, cx| picker.set_color(color, cx));
+        self.color_picker_open = true;
+        cx.notify();
+    }
+
+    fn open_color_picker_for_mesh_point(&mut self, point_index: usize, cx: &mut Context<Self>) {
+        self.selected_mesh_point = Some(point_index);
+        let color = self.selected_mesh_color();
         self.color_picker.update(cx, |picker, cx| picker.set_color(color, cx));
         self.color_picker_open = true;
         cx.notify();
@@ -432,8 +533,19 @@ impl GradientBuilder {
             .unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.5, 1.0))
     }
 
+    fn selected_mesh_color(&self) -> gpui::Hsla {
+        self.selected_mesh_point
+            .and_then(|index| self.mesh_points.get(index))
+            .map(|point| point.color)
+            .unwrap_or_else(|| gpui::hsla(0.0, 0.0, 0.5, 1.0))
+    }
+
     fn handle_stop_swatch_bounds(&mut self, thumb_id: ThumbId, bounds: &Bounds<Pixels>) {
         self.stop_swatch_bounds.insert(thumb_id, *bounds);
+    }
+
+    fn handle_mesh_swatch_bounds(&mut self, point_index: usize, bounds: &Bounds<Pixels>) {
+        self.mesh_swatch_bounds.insert(point_index, *bounds);
     }
 
     fn preview_stops(&self, cx: &Context<Self>) -> Vec<(f32, gpui::Hsla)> {
@@ -475,24 +587,41 @@ impl GradientBuilder {
     }
 
     fn gradient_spec(&self, cx: &Context<Self>) -> String {
-        format_css_linear_gradient(&self.preview_stops(cx), self.rotation_deg)
+        format_css_gradient(self.gradient_type, &self.preview_stops(cx), self.rotation_deg)
+    }
+
+    fn effective_preview_renderer(&self) -> PreviewRenderer {
+        match (self.gradient_type, self.preview_renderer) {
+            (GradientType::Linear, renderer) => renderer,
+            (_, PreviewRenderer::RenderImageAsync) => PreviewRenderer::RenderImageAsync,
+            _ => PreviewRenderer::RenderImageSync,
+        }
     }
 
     fn uses_render_preview(&self, cx: &Context<Self>) -> bool {
-        matches!(self.preview_renderer, PreviewRenderer::RenderImageSync | PreviewRenderer::RenderImageAsync)
-            && self.preview_stops(cx).len() > 1
+        if self.selected_tab == BuilderTab::Mesh {
+            return true;
+        }
+        let stop_count = self.preview_stops(cx).len();
+        self.gradient_type != GradientType::Linear
+            || (matches!(
+                self.effective_preview_renderer(),
+                PreviewRenderer::RenderImageSync | PreviewRenderer::RenderImageAsync
+            ) && stop_count > 1)
     }
 
     fn sync_preview_strategy(&mut self, stop_count: usize) {
-        self.active_preview_strategy = match (stop_count, self.preview_renderer) {
-            (0, _) => "empty",
-            (1, _) => "solid",
-            (2, PreviewRenderer::RenderImageSync) => "render (sync)",
-            (2, PreviewRenderer::RenderImageAsync) => "render (async)",
-            (2, PreviewRenderer::Quads) => "quads",
-            (_, PreviewRenderer::RenderImageSync) => "render (sync)",
-            (_, PreviewRenderer::RenderImageAsync) => "render (async)",
-            _ => "quads",
+        if self.selected_tab == BuilderTab::Mesh {
+            self.active_preview_strategy = "render (sync)";
+            return;
+        }
+        self.active_preview_strategy = match (self.gradient_type, stop_count, self.effective_preview_renderer()) {
+            (_, 0, _) => "empty",
+            (_, 1, _) => "solid",
+            (GradientType::Linear, 2, PreviewRenderer::Quads) => "quads",
+            (GradientType::Linear, _, PreviewRenderer::Quads) => "quads",
+            (_, _, PreviewRenderer::RenderImageAsync) => "render (async)",
+            _ => "render (sync)",
         };
         if !self.active_preview_strategy.starts_with("render") {
             self.last_render_ms = None;
@@ -503,6 +632,9 @@ impl GradientBuilder {
         let mut refreshed = false;
         if self.preview_size != bounds.size {
             self.preview_size = bounds.size;
+        }
+        if self.selected_tab == BuilderTab::Mesh {
+            self.mesh_preview_bounds = Some(bounds);
         }
 
         if self.uses_render_preview(cx) && self.ensure_preview_image_cache(bounds.size, cx) {
@@ -517,8 +649,13 @@ impl GradientBuilder {
             return false;
         }
 
-        let stops = self.preview_stops(cx);
-        let key = preview_image_cache_key(preview_size, self.rotation_deg, &stops);
+        let key = match self.selected_tab {
+            BuilderTab::Gradients => {
+                let stops = self.preview_stops(cx);
+                preview_gradient_cache_key(self.gradient_type, preview_size, self.rotation_deg, &stops)
+            }
+            BuilderTab::Mesh => preview_mesh_cache_key(preview_size, &self.mesh_points),
+        };
         if let Some((cached_key, _)) = &self.preview_image_cache
             && *cached_key == key
         {
@@ -527,21 +664,32 @@ impl GradientBuilder {
 
         self.render_task = None;
 
-        if self.preview_renderer == PreviewRenderer::RenderImageSync {
+        if self.selected_tab == BuilderTab::Mesh
+            || self.effective_preview_renderer() == PreviewRenderer::RenderImageSync
+        {
             let started = Instant::now();
-            let Some(image) = rasterize_linear_gradient_preview(preview_size, &stops, self.rotation_deg) else {
+            let image = match self.selected_tab {
+                BuilderTab::Gradients => {
+                    let stops = self.preview_stops(cx);
+                    rasterize_gradient_preview(self.gradient_type, preview_size, &stops, self.rotation_deg)
+                }
+                BuilderTab::Mesh => rasterize_mesh_gradient_preview(preview_size, &self.mesh_points),
+            };
+            let Some(image) = image else {
                 return false;
             };
             self.preview_image_cache = Some((key, image));
             self.last_render_ms = Some(started.elapsed().as_secs_f32() * 1000.0);
             true
         } else {
+            let gradient_type = self.gradient_type;
             let rotation_deg = self.rotation_deg;
+            let stops = self.preview_stops(cx);
             self.render_task = Some(cx.spawn(async move |this, cx| {
                 let started = Instant::now();
                 let image = cx
                     .background_executor()
-                    .spawn(async move { rasterize_linear_gradient_preview(preview_size, &stops, rotation_deg) })
+                    .spawn(async move { rasterize_gradient_preview(gradient_type, preview_size, &stops, rotation_deg) })
                     .await;
 
                 let _ = this.update(cx, |this, cx| {
@@ -559,6 +707,80 @@ impl GradientBuilder {
     fn cached_preview_image(&self) -> Option<Arc<RenderImage>> {
         self.preview_image_cache.as_ref().map(|(_, image)| image.clone())
     }
+
+    fn begin_mesh_drag(&mut self, point_index: usize, cx: &mut Context<Self>) {
+        self.selected_mesh_point = Some(point_index);
+        self.active_mesh_drag = Some(point_index);
+        self.color_picker_open = false;
+        cx.notify();
+    }
+
+    fn handle_mesh_drag_move(&mut self, position: gpui::Point<Pixels>, cx: &mut Context<Self>) {
+        let Some(point_index) = self.active_mesh_drag else {
+            return;
+        };
+        let Some(bounds) = self.mesh_preview_bounds else {
+            return;
+        };
+        let width = bounds.size.width.as_f32();
+        let height = bounds.size.height.as_f32();
+        if width <= 0.0 || height <= 0.0 {
+            return;
+        }
+
+        let u = ((position.x - bounds.origin.x).as_f32() / width).clamp(0.0, 1.0);
+        let v = ((position.y - bounds.origin.y).as_f32() / height).clamp(0.0, 1.0);
+        let (u, v) = self.constrained_mesh_position(point_index, u, v);
+        let Some(point) = self.mesh_points.get_mut(point_index) else {
+            return;
+        };
+        if (point.u - u).abs() <= f32::EPSILON && (point.v - v).abs() <= f32::EPSILON {
+            return;
+        }
+        point.u = u;
+        point.v = v;
+        let _ = self.ensure_preview_image_cache(self.preview_size, cx);
+        cx.notify();
+    }
+
+    fn finish_mesh_drag(&mut self, cx: &mut Context<Self>) {
+        if self.active_mesh_drag.take().is_some() {
+            cx.notify();
+        }
+    }
+
+    fn constrained_mesh_position(&self, point_index: usize, proposed_u: f32, proposed_v: f32) -> (f32, f32) {
+        let Some(point) = self.mesh_points.get(point_index).copied() else {
+            return (proposed_u.clamp(0.0, 1.0), proposed_v.clamp(0.0, 1.0));
+        };
+
+        let row = point.row as usize;
+        let col = point.col as usize;
+        let mut u = proposed_u.clamp(0.0, 1.0);
+        let mut v = proposed_v.clamp(0.0, 1.0);
+
+        if col == 0 {
+            u = 0.0;
+        } else if col + 1 == MESH_COLS {
+            u = 1.0;
+        } else {
+            let left = self.mesh_points[mesh_point_index(row, col - 1)].u + MESH_POINT_GAP;
+            let right = self.mesh_points[mesh_point_index(row, col + 1)].u - MESH_POINT_GAP;
+            u = u.clamp(left.min(right), left.max(right));
+        }
+
+        if row == 0 {
+            v = 0.0;
+        } else if row + 1 == MESH_ROWS {
+            v = 1.0;
+        } else {
+            let top = self.mesh_points[mesh_point_index(row - 1, col)].v + MESH_POINT_GAP;
+            let bottom = self.mesh_points[mesh_point_index(row + 1, col)].v - MESH_POINT_GAP;
+            v = v.clamp(top.min(bottom), top.max(bottom));
+        }
+
+        (u, v)
+    }
 }
 
 impl Render for GradientBuilder {
@@ -571,6 +793,7 @@ impl Render for GradientBuilder {
         let code_style = self.look.typography_scale(ShadcnTextSize::Xs);
         let info_label_style = self.look.mode_tokens().typography.text.label;
         let info_value_style = self.look.mode_tokens().typography.text.label;
+        let top_tabs = self.top_tabs.clone();
         let gradient_stops = self.gradient_stops.clone();
         let add_stop_button = self.add_stop_button.clone();
         let rotation_slider = self.rotation_slider.clone();
@@ -583,10 +806,10 @@ impl Render for GradientBuilder {
         let preview_corner_radii = preview_panel_corner_radii();
         let preview_surface_radii =
             Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: px(0.0) };
-        let preview_uses_render_image =
-            matches!(self.preview_renderer, PreviewRenderer::RenderImageSync | PreviewRenderer::RenderImageAsync)
-                && stops.len() > 1;
-        let allow_native_two_stop = stops.len() == 2 && self.preview_renderer != PreviewRenderer::Quads;
+        let preview_uses_render_image = self.uses_render_preview(cx);
+        let allow_native_two_stop = self.gradient_type == GradientType::Linear
+            && stops.len() == 2
+            && self.effective_preview_renderer() == PreviewRenderer::Quads;
         let preview_image = if preview_uses_render_image {
             self.cached_preview_image()
         } else {
@@ -614,6 +837,7 @@ impl Render for GradientBuilder {
                 info_value_style,
                 chrome,
             ))
+            .child(render_info_row("Type", self.gradient_type.label(), info_label_style, info_value_style, chrome))
             .child(render_info_row("Stops", format!("{}", stops.len()), info_label_style, info_value_style, chrome))
             .child(render_info_row(
                 "Preview",
@@ -643,22 +867,24 @@ impl Render for GradientBuilder {
             .border_1()
             .border_color(chrome.border)
             .bg(chrome.panel_background)
-            .child(form_field!("Angle", chrome;
-                div()
-                    .w_full()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(rotation_slider)
-                    .child(
-                        div()
-                            .typography_style(code_style)
-                            .text_color(chrome.muted_text)
-                            .child(format!("{rotation_deg:.0}deg"))
-                    )
-            ))
             .child(form_field!("Type", chrome; type_selector))
             .child(form_field!("Renderer", chrome; renderer_selector))
+            .when(self.gradient_type != GradientType::Radial, |this| {
+                this.child(form_field!("Angle", chrome;
+                    div()
+                        .w_full()
+                        .flex()
+                        .flex_col()
+                        .gap_2()
+                        .child(rotation_slider)
+                        .child(
+                            div()
+                                .typography_style(code_style)
+                                .text_color(chrome.muted_text)
+                                .child(format!("{rotation_deg:.0}deg"))
+                        )
+                ))
+            })
             .child(
                 div()
                     .id("color-viz-gradient-spec")
@@ -714,34 +940,38 @@ impl Render for GradientBuilder {
         .overflow_y_scroll()
         .p(px(16.0))
         .bg(card_bg);
+        let picker_bounds = match self.selected_tab {
+            BuilderTab::Gradients => {
+                self.selected_stop.and_then(|thumb_id| self.stop_swatch_bounds.get(&thumb_id).copied())
+            }
+            BuilderTab::Mesh => {
+                self.selected_mesh_point.and_then(|point_index| self.mesh_swatch_bounds.get(&point_index).copied())
+            }
+        };
         let controls = if color_picker_open {
-            if let Some(thumb_id) = self.selected_stop {
-                if let Some(bounds) = self.stop_swatch_bounds.get(&thumb_id).copied() {
-                    controls.child(
-                        deferred(
-                            anchored()
-                                .snap_to_window_with_margin(px(8.0))
-                                .anchor(Corner::TopLeft)
-                                .position(point(bounds.left(), bounds.bottom()))
-                                .offset(point(px(0.0), px(4.0)))
-                                .child(
-                                    self.look
-                                        .card("color-viz-color-picker-popup")
-                                        .elevated(true)
-                                        .child(color_picker)
-                                        .render(_window, cx)
-                                        .occlude()
-                                        .on_mouse_down_out(cx.listener(|this, _: &MouseDownEvent, _, cx| {
-                                            this.color_picker_open = false;
-                                            cx.notify();
-                                        })),
-                                ),
-                        )
-                        .with_priority(1),
+            if let Some(bounds) = picker_bounds {
+                controls.child(
+                    deferred(
+                        anchored()
+                            .snap_to_window_with_margin(px(8.0))
+                            .anchor(Corner::TopLeft)
+                            .position(point(bounds.left(), bounds.bottom()))
+                            .offset(point(px(0.0), px(4.0)))
+                            .child(
+                                self.look
+                                    .card("color-viz-color-picker-popup")
+                                    .elevated(true)
+                                    .child(color_picker)
+                                    .render(_window, cx)
+                                    .occlude()
+                                    .on_mouse_down_out(cx.listener(|this, _: &MouseDownEvent, _, cx| {
+                                        this.color_picker_open = false;
+                                        cx.notify();
+                                    })),
+                            ),
                     )
-                } else {
-                    controls
-                }
+                    .with_priority(1),
+                )
             } else {
                 controls
             }
@@ -749,65 +979,176 @@ impl Render for GradientBuilder {
             controls
         };
 
-        let preview_builder = cx.entity();
-        let preview_surface = div()
-            .id("color-viz-gradient-preview")
-            .relative()
-            .size_full()
-            .rounded(px(0.0))
-            .overflow_hidden()
-            .on_prepaint(move |bounds, window, cx| {
-                preview_builder.update(cx, |this, cx| {
-                    if this.handle_preview_bounds(bounds, cx) {
-                        window.refresh();
-                    }
-                });
-            })
-            .when_some(preview_image, |this, image| {
-                this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
-            })
-            .when(!preview_uses_render_image, |this| {
-                this.child({
-                    let stops = stops.clone();
-                    canvas(
-                        move |_, _, _| {},
-                        move |bounds, _, window, _cx| {
-                            paint_linear_gradient_preview(
-                                window,
-                                bounds,
-                                &stops,
-                                rotation_deg,
-                                preview_surface_radii,
-                                allow_native_two_stop,
-                            );
-                        },
-                    )
+        let content = match self.selected_tab {
+            BuilderTab::Gradients => {
+                let preview_builder = cx.entity();
+                let preview_surface = div()
+                    .id("color-viz-gradient-preview")
+                    .relative()
                     .size_full()
-                })
-            });
-        let preview = div()
-            .flex_1()
-            .min_w(px(0.0))
-            .h_full()
-            .corner_radii(preview_corner_radii)
-            .p(px(10.0))
-            .child(preview_surface);
+                    .rounded(px(0.0))
+                    .overflow_hidden()
+                    .on_prepaint(move |bounds, window, cx| {
+                        preview_builder.update(cx, |this, cx| {
+                            if this.handle_preview_bounds(bounds, cx) {
+                                window.refresh();
+                            }
+                        });
+                    })
+                    .when_some(preview_image, |this, image| {
+                        this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
+                    })
+                    .when(!preview_uses_render_image, |this| {
+                        this.child({
+                            let stops = stops.clone();
+                            let gradient_type = self.gradient_type;
+                            canvas(
+                                move |_, _, _| {},
+                                move |bounds, _, window, _cx| {
+                                    paint_gradient_preview(
+                                        gradient_type,
+                                        window,
+                                        bounds,
+                                        &stops,
+                                        rotation_deg,
+                                        preview_surface_radii,
+                                        allow_native_two_stop,
+                                    );
+                                },
+                            )
+                            .size_full()
+                        })
+                    });
+                let preview = div()
+                    .flex_1()
+                    .min_w(px(0.0))
+                    .h_full()
+                    .corner_radii(preview_corner_radii)
+                    .p(px(10.0))
+                    .child(preview_surface);
 
-        let shell = hstack! {
-            gap=0;
-            controls,
-            div().w(px(1.0)).flex_shrink_0().bg(chrome.border),
-            preview,
-        }
-        .items_stretch()
-        .id("color-viz-gradient-shell")
-        .w_full()
-        .h_full()
-        .min_h_0()
-        .rounded(px(SHELL_RADIUS))
-        .overflow_hidden()
-        .border_1()
-        .border_color(chrome.border);
+                hstack! {
+                    gap=0;
+                    controls,
+                    div().w(px(1.0)).flex_shrink_0().bg(chrome.border),
+                    preview,
+                }
+                .items_stretch()
+                .w_full()
+                .flex_1()
+                .min_h_0()
+                .into_any_element()
+            }
+            BuilderTab::Mesh => {
+                let mesh_controls = render_mesh_controls(
+                    self.mesh_points.clone(),
+                    self.selected_mesh_point,
+                    chrome,
+                    card_bg,
+                    code_style,
+                    info_label_style,
+                    info_value_style,
+                    self.preview_size,
+                    self.last_render_ms,
+                    cx.entity(),
+                );
+                let preview_builder = cx.entity();
+                let preview_surface = div()
+                    .id("color-viz-mesh-preview")
+                    .relative()
+                    .size_full()
+                    .rounded(px(0.0))
+                    .overflow_hidden()
+                    .on_prepaint(move |bounds, window, cx| {
+                        preview_builder.update(cx, |this, cx| {
+                            if this.handle_preview_bounds(bounds, cx) {
+                                window.refresh();
+                            }
+                        });
+                    })
+                    .when_some(self.cached_preview_image(), |this, image| {
+                        this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
+                    })
+                    .child(
+                        canvas(|bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal), {
+                            let builder = cx.entity();
+                            move |bounds, _hitbox, window, cx| {
+                                builder.update(cx, |this, cx| {
+                                    this.mesh_preview_bounds = Some(bounds);
+                                    if this.handle_preview_bounds(bounds, cx) {
+                                        window.refresh();
+                                    }
+                                });
+
+                                window.on_mouse_event({
+                                    let builder = builder.clone();
+                                    move |event: &MouseMoveEvent, phase, _window, cx| {
+                                        if !phase.bubble() && !phase.capture() {
+                                            return;
+                                        }
+                                        builder.update(cx, |this, cx| {
+                                            this.handle_mesh_drag_move(event.position, cx);
+                                        });
+                                    }
+                                });
+
+                                window.on_mouse_event({
+                                    let builder = builder.clone();
+                                    move |_event: &MouseUpEvent, _phase, _window, cx| {
+                                        builder.update(cx, |this, cx| {
+                                            this.finish_mesh_drag(cx);
+                                        });
+                                    }
+                                });
+                            }
+                        })
+                        .absolute()
+                        .inset_0(),
+                    )
+                    .children(self.mesh_points.iter().enumerate().map(|(point_index, point)| {
+                        render_mesh_handle(
+                            point_index,
+                            *point,
+                            self.selected_mesh_point == Some(point_index),
+                            cx.entity(),
+                        )
+                    }));
+                let preview = div()
+                    .flex_1()
+                    .min_w(px(0.0))
+                    .h_full()
+                    .corner_radii(preview_corner_radii)
+                    .p(px(18.0))
+                    .child(preview_surface);
+
+                hstack! {
+                    gap=0;
+                    mesh_controls,
+                    div().w(px(1.0)).flex_shrink_0().bg(chrome.border),
+                    preview,
+                }
+                .items_stretch()
+                .w_full()
+                .flex_1()
+                .min_h_0()
+                .into_any_element()
+            }
+        };
+
+        let shell = div()
+            .id("color-viz-gradient-shell")
+            .w_full()
+            .h_full()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .rounded(px(SHELL_RADIUS))
+            .overflow_hidden()
+            .border_1()
+            .border_color(chrome.border)
+            .child(div().w_full().flex_shrink_0().p(px(10.0)).bg(card_bg).child(top_tabs))
+            .child(div().h(px(1.0)).w_full().flex_shrink_0().bg(chrome.border))
+            .child(content);
 
         div()
             .id("color-viz-gradient-builder")
@@ -821,6 +1162,7 @@ impl Render for GradientBuilder {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_stop_row(
     thumb_id: ThumbId,
     position: f32,
@@ -897,10 +1239,10 @@ fn render_stop_row(
                         .flex()
                         .flex_col()
                         .gap_1()
-                        .child(div().typography_style(label_style.clone()).text_color(chrome.muted_text).child("HEX"))
+                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("HEX"))
                         .child(
                             div()
-                                .typography_style(value_style.clone())
+                                .typography_style(value_style)
                                 .text_color(chrome.body_text)
                                 .child(format_hex_color(color)),
                         ),
@@ -940,7 +1282,11 @@ fn render_info_row(
 }
 
 fn type_items() -> Vec<SelectorItem> {
-    vec![SelectorItem::new("linear").label("Linear")]
+    vec![
+        SelectorItem::new("linear").label("Linear"),
+        SelectorItem::new("radial").label("Radial"),
+        SelectorItem::new("angular").label("Angular"),
+    ]
 }
 
 fn renderer_items() -> Vec<SelectorItem> {
@@ -951,17 +1297,49 @@ fn renderer_items() -> Vec<SelectorItem> {
     ]
 }
 
-fn preview_image_cache_key(
+fn preview_gradient_cache_key(
+    gradient_type: GradientType,
     preview_size: Size<Pixels>,
     rotation_deg: f32,
     stops: &[(f32, gpui::Hsla)],
 ) -> PreviewImageCacheKey {
-    PreviewImageCacheKey {
+    PreviewImageCacheKey::Gradient {
+        gradient_type,
         width_px: preview_size.width.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
         height_px: preview_size.height.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
         rotation_tenths: (rotation_deg.rem_euclid(360.0) * 10.0).round().clamp(0.0, u16::MAX as f32) as u16,
         stops: stops.iter().map(|(position, color)| preview_stop_key(*position, *color)).collect(),
     }
+}
+
+fn preview_mesh_cache_key(preview_size: Size<Pixels>, points: &[MeshPoint]) -> PreviewImageCacheKey {
+    PreviewImageCacheKey::Mesh {
+        width_px: preview_size.width.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
+        height_px: preview_size.height.as_f32().round().clamp(0.0, u16::MAX as f32) as u16,
+        points: points
+            .iter()
+            .map(|point| {
+                let rgb = point.color.to_rgb();
+                PreviewMeshPointKey {
+                    row: point.row,
+                    col: point.col,
+                    u_millis: (point.u.clamp(0.0, 1.0) * 1000.0).round() as u16,
+                    v_millis: (point.v.clamp(0.0, 1.0) * 1000.0).round() as u16,
+                    red: (rgb.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+                    green: (rgb.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+                    blue: (rgb.b.clamp(0.0, 1.0) * 255.0).round() as u8,
+                    alpha: (point.color.a.clamp(0.0, 1.0) * 255.0).round() as u8,
+                }
+            })
+            .collect(),
+    }
+}
+
+fn builder_tab_items() -> Vec<TabsNavigationItem> {
+    vec![
+        TabsNavigationItem::new("gradients").label("Gradients"),
+        TabsNavigationItem::new("mesh").label("Mesh"),
+    ]
 }
 
 fn preview_stop_key(position: f32, color: gpui::Hsla) -> PreviewStopKey {
@@ -973,4 +1351,291 @@ fn preview_stop_key(position: f32, color: gpui::Hsla) -> PreviewStopKey {
         blue: (rgb.b.clamp(0.0, 1.0) * 255.0).round() as u8,
         alpha: (color.a.clamp(0.0, 1.0) * 255.0).round() as u8,
     }
+}
+
+fn mesh_point_index(row: usize, col: usize) -> usize {
+    row * MESH_COLS + col
+}
+
+fn default_mesh_points() -> Vec<MeshPoint> {
+    let top = gpui::hsla(46.0 / 360.0, 1.0, 0.51, 1.0);
+    let middle = gpui::hsla(349.0 / 360.0, 1.0, 0.58, 1.0);
+    let bottom = gpui::hsla(212.0 / 360.0, 0.86, 0.49, 1.0);
+
+    [
+        (0, 0, 0.0, 0.0, top),
+        (0, 1, 1.0 / 3.0, 0.0, top),
+        (0, 2, 2.0 / 3.0, 0.0, top),
+        (0, 3, 1.0, 0.0, top),
+        (1, 0, 0.0, 0.5, middle),
+        (1, 1, 1.0 / 3.0, 0.5, middle),
+        (1, 2, 2.0 / 3.0, 0.5, middle),
+        (1, 3, 1.0, 0.5, middle),
+        (2, 0, 0.0, 1.0, bottom),
+        (2, 1, 1.0 / 3.0, 1.0, bottom),
+        (2, 2, 2.0 / 3.0, 1.0, bottom),
+        (2, 3, 1.0, 1.0, bottom),
+    ]
+    .into_iter()
+    .map(|(row, col, u, v, color)| MeshPoint { row, col, u, v, color })
+    .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_mesh_controls(
+    mesh_points: Vec<MeshPoint>,
+    selected_mesh_point: Option<usize>,
+    chrome: gpui_luma::theme::LumaChrome,
+    card_bg: gpui::Hsla,
+    code_style: LumaTextStyle,
+    info_label_style: LumaTextStyle,
+    info_value_style: LumaTextStyle,
+    preview_size: Size<Pixels>,
+    last_render_ms: Option<f32>,
+    builder: Entity<GradientBuilder>,
+) -> impl IntoElement {
+    let selected_label = selected_mesh_point
+        .and_then(|index| mesh_points.get(index))
+        .map(|point| format!("P{}{}", point.row, point.col))
+        .unwrap_or_else(|| "None".to_string());
+
+    vstack! {
+        gap=14;
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_4()
+            .p_4()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(render_info_row("Grid", "3 x 4", info_label_style, info_value_style, chrome))
+            .child(render_info_row("Selected", selected_label, info_label_style, info_value_style, chrome))
+            .child(
+                div()
+                    .typography_style(code_style)
+                    .text_color(chrome.muted_text)
+                    .font_family("Monaco")
+                    .whitespace_normal()
+                    .child("Phase 2 now uses the 12-point sample mesh from the original reference: three rows, four columns, and evenly spaced defaults."),
+            ),
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .p_3()
+            .children(mesh_points.into_iter().enumerate().map(|(point_index, point)| {
+                render_mesh_point_row(
+                    point_index,
+                    point,
+                    selected_mesh_point == Some(point_index),
+                    info_label_style,
+                    chrome,
+                    builder.clone(),
+                )
+            })),
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p_4()
+            .rounded(px(12.0))
+            .border_1()
+            .border_color(chrome.border)
+            .bg(chrome.panel_background)
+            .child(render_info_row(
+                "Preview",
+                format!(
+                    "{} x {}",
+                    preview_size.width.as_f32().round() as i32,
+                    preview_size.height.as_f32().round() as i32
+                ),
+                info_label_style,
+                info_value_style,
+                chrome,
+            ))
+            .child(render_info_row(
+                "Raster",
+                last_render_ms.map(|ms| format!("{ms:.2} ms")).unwrap_or_else(|| "n/a".to_string()),
+                info_label_style,
+                info_value_style,
+                chrome,
+            )),
+    }
+    .id("color-viz-mesh-controls")
+    .w(px(432.0))
+    .flex_shrink_0()
+    .h_full()
+    .min_h_0()
+    .corner_radii(controls_panel_corner_radii())
+    .overflow_y_scroll()
+    .p(px(16.0))
+    .bg(card_bg)
+}
+
+fn render_mesh_point_row(
+    point_index: usize,
+    point: MeshPoint,
+    selected: bool,
+    label_style: LumaTextStyle,
+    chrome: gpui_luma::theme::LumaChrome,
+    builder: Entity<GradientBuilder>,
+) -> impl IntoElement {
+    let bounds_builder = builder.clone();
+    let swatch_builder = builder.clone();
+    let background = if selected {
+        chrome.content_background
+    } else {
+        chrome.panel_background
+    };
+
+    div()
+        .id(format!("color-viz-mesh-point-row-{point_index}"))
+        .w_full()
+        .flex()
+        .items_center()
+        .gap_3()
+        .p_3()
+        .rounded(px(10.0))
+        .border_1()
+        .border_color(chrome.border)
+        .bg(background)
+        .cursor_pointer()
+        .on_click(move |_, _, cx| {
+            builder.update(cx, |this, cx| {
+                this.selected_mesh_point = Some(point_index);
+                this.color_picker_open = false;
+                cx.notify();
+            });
+        })
+        .child(
+            div()
+                .id(format!("color-viz-mesh-point-swatch-{point_index}"))
+                .size(px(28.0))
+                .rounded(px(999.0))
+                .bg(point.color)
+                .border_2()
+                .border_color(chrome.border)
+                .cursor_pointer()
+                .on_prepaint(move |bounds, _, cx| {
+                    bounds_builder.update(cx, |this, _| {
+                        this.handle_mesh_swatch_bounds(point_index, &bounds);
+                    });
+                })
+                .on_click(move |event: &ClickEvent, _, cx| {
+                    if event.is_keyboard() {
+                        return;
+                    }
+                    cx.stop_propagation();
+                    swatch_builder.update(cx, |this, cx| {
+                        this.open_color_picker_for_mesh_point(point_index, cx);
+                    });
+                }),
+        )
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(0.0))
+                .flex()
+                .items_center()
+                .justify_between()
+                .gap_3()
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("POINT"))
+                        .child(
+                            div()
+                                .typography_style(label_style)
+                                .text_color(chrome.body_text)
+                                .child(format!("P{}{}", point.row, point.col)),
+                        ),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("X"))
+                        .child(
+                            div()
+                                .typography_style(label_style)
+                                .text_color(chrome.body_text)
+                                .child(format_percent(point.u)),
+                        ),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(div().typography_style(label_style).text_color(chrome.muted_text).child("Y"))
+                        .child(
+                            div()
+                                .typography_style(label_style)
+                                .text_color(chrome.body_text)
+                                .child(format_percent(point.v)),
+                        ),
+                ),
+        )
+}
+
+fn render_mesh_handle(
+    point_index: usize,
+    point: MeshPoint,
+    selected: bool,
+    builder: Entity<GradientBuilder>,
+) -> impl IntoElement {
+    let border = if selected {
+        gpui::hsla(0.0, 0.0, 1.0, 1.0)
+    } else {
+        gpui::hsla(0.0, 0.0, 1.0, 0.82)
+    };
+    let release_builder = builder.clone();
+    let click_builder = builder.clone();
+
+    div()
+        .id(format!("color-viz-mesh-handle-{point_index}"))
+        .absolute()
+        .left(relative(point.u))
+        .top(relative(point.v))
+        .ml(px(-MESH_HANDLE_SIZE * 0.5))
+        .mt(px(-MESH_HANDLE_SIZE * 0.5))
+        .size(px(MESH_HANDLE_SIZE))
+        .rounded(px(999.0))
+        .bg(point.color)
+        .border_2()
+        .border_color(border)
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, move |_, _, cx| {
+            cx.stop_propagation();
+            builder.update(cx, |this, cx| {
+                this.begin_mesh_drag(point_index, cx);
+            });
+        })
+        .on_mouse_up(MouseButton::Left, move |_, _, cx| {
+            release_builder.update(cx, |this, cx| {
+                this.finish_mesh_drag(cx);
+            });
+        })
+        .on_click(move |event: &ClickEvent, _, cx| {
+            if event.is_keyboard() {
+                return;
+            }
+            cx.stop_propagation();
+            click_builder.update(cx, |this, cx| {
+                this.selected_mesh_point = Some(point_index);
+                cx.notify();
+            });
+        })
 }

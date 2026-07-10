@@ -2,6 +2,8 @@ use gpui::{Hsla, Rgba, hsla};
 use gpui_luma::controls::color::color_slider::color_spec::Hsv as SdkHsv;
 use palette::{FromColor, Hsl, Hsv as PaletteHsv, Mix, Srgb, Srgba};
 
+use super::paint::GradientType;
+
 pub fn format_hex_color(color: Hsla) -> String {
     let srgb: Srgb = Srgb::from_color(hsla_to_srgba(color));
     format!(
@@ -12,6 +14,7 @@ pub fn format_hex_color(color: Hsla) -> String {
     )
 }
 
+#[allow(dead_code)]
 pub fn parse_hex_color(raw: &str) -> Option<Hsla> {
     let hex = raw.trim().trim_start_matches('#');
     let rgba = match hex.len() {
@@ -69,6 +72,42 @@ pub fn format_css_linear_gradient(stops: &[(f32, Hsla)], rotation_deg: f32) -> S
         .join(", ");
 
     format!("linear-gradient({}deg, {stop_list})", rotation_deg.round() as i32)
+}
+
+pub fn format_css_radial_gradient(stops: &[(f32, Hsla)]) -> String {
+    if stops.is_empty() {
+        return "radial-gradient(circle, transparent 0%, transparent 100%)".to_string();
+    }
+
+    let stop_list = stops
+        .iter()
+        .map(|(position, color)| format!("{} {}", format_hex_color(*color), format_percent(*position)))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    format!("radial-gradient(circle, {stop_list})")
+}
+
+pub fn format_css_angular_gradient(stops: &[(f32, Hsla)], rotation_deg: f32) -> String {
+    if stops.is_empty() {
+        return format!("conic-gradient(from {}deg, transparent 0%, transparent 100%)", rotation_deg.round() as i32);
+    }
+
+    let stop_list = stops
+        .iter()
+        .map(|(position, color)| format!("{} {}", format_hex_color(*color), format_percent(*position)))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    format!("conic-gradient(from {}deg, {stop_list})", rotation_deg.round() as i32)
+}
+
+pub fn format_css_gradient(gradient_type: GradientType, stops: &[(f32, Hsla)], rotation_deg: f32) -> String {
+    match gradient_type {
+        GradientType::Linear => format_css_linear_gradient(stops, rotation_deg),
+        GradientType::Radial => format_css_radial_gradient(stops),
+        GradientType::Angular => format_css_angular_gradient(stops, rotation_deg),
+    }
 }
 
 fn hsla_to_srgba(color: Hsla) -> Srgba {
