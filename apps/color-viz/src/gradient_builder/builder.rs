@@ -26,7 +26,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::color::{format_css_gradient, format_hex_color, format_percent};
 use super::paint::{
-    GradientType, MeshPoint, PreviewRenderer, MESH_COLS, MESH_ROWS, color_at_position, paint_gradient_preview,
+    GradientType, MeshPoint, PreviewRenderer, color_at_position, mesh_dimensions, paint_gradient_preview,
     rasterize_gradient_preview, rasterize_mesh_gradient_preview, sorted_stops,
 };
 use super::sv_triangle_picker::SvTrianglePicker;
@@ -65,9 +65,11 @@ pub struct GradientBuilder {
     rotation_slider: Entity<SliderControl>,
     type_selector: Entity<Selector>,
     renderer_selector: Entity<Selector>,
+    mesh_grid_selector: Entity<Selector>,
     rotation_deg: f32,
     gradient_type: GradientType,
     preview_renderer: PreviewRenderer,
+    mesh_grid_preset: MeshGridPreset,
     mesh_points: Vec<MeshPoint>,
     mesh_background: gpui::Hsla,
     selected_mesh_point: Option<usize>,
@@ -98,6 +100,43 @@ enum BuilderTab {
 enum MeshColorTarget {
     Point(usize),
     Background,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MeshGridPreset {
+    SampleThreeByFour,
+    TwoByTwo,
+    ThreeByThree,
+    FourByFour,
+}
+
+impl MeshGridPreset {
+    fn label(self) -> &'static str {
+        match self {
+            Self::SampleThreeByFour => "3 x 4",
+            Self::TwoByTwo => "2 x 2",
+            Self::ThreeByThree => "3 x 3",
+            Self::FourByFour => "4 x 4",
+        }
+    }
+
+    fn dimensions(self) -> (usize, usize) {
+        match self {
+            Self::SampleThreeByFour => (3, 4),
+            Self::TwoByTwo => (2, 2),
+            Self::ThreeByThree => (3, 3),
+            Self::FourByFour => (4, 4),
+        }
+    }
+
+    fn from_item_id(item_id: &str) -> Self {
+        match item_id {
+            "2x2" => Self::TwoByTwo,
+            "3x3" => Self::ThreeByThree,
+            "4x4" => Self::FourByFour,
+            _ => Self::SampleThreeByFour,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -186,7 +225,10 @@ impl GradientBuilder {
             look.selector("color-viz-gradient-type").items(type_items()).selected_id("linear").spawn(cx);
         let renderer_selector =
             look.selector("color-viz-gradient-renderer").items(renderer_items()).selected_id("quads").spawn(cx);
+        let mesh_grid_selector =
+            look.selector("color-viz-mesh-grid").items(mesh_grid_items()).selected_id("3x4").spawn(cx);
         let color_picker = cx.new(|cx| SvTrianglePicker::with_size(start, CompositionSize::Md, cx));
+        let mesh_grid_preset = MeshGridPreset::SampleThreeByFour;
 
         let mut builder = Self {
             look: look.clone(),
@@ -203,13 +245,15 @@ impl GradientBuilder {
             rotation_slider: rotation_slider.clone(),
             type_selector: type_selector.clone(),
             renderer_selector: renderer_selector.clone(),
+            mesh_grid_selector: mesh_grid_selector.clone(),
             rotation_deg: 90.0,
             gradient_type: GradientType::Linear,
             preview_renderer: PreviewRenderer::Quads,
-            mesh_points: default_mesh_points(),
+            mesh_grid_preset,
+            mesh_points: default_mesh_points(mesh_grid_preset),
             mesh_background,
-            selected_mesh_point: Some(mesh_point_index(1, 1)),
-            mesh_color_target: MeshColorTarget::Point(mesh_point_index(1, 1)),
+            selected_mesh_point: Some(default_mesh_selected_index(mesh_grid_preset)),
+            mesh_color_target: MeshColorTarget::Point(default_mesh_selected_index(mesh_grid_preset)),
             active_mesh_drag: None,
             preview_size: size(px(0.0), px(0.0)),
             preview_image_cache: None,
@@ -234,6 +278,7 @@ impl GradientBuilder {
             rotation_slider,
             type_selector,
             renderer_selector,
+            mesh_grid_selector,
             color_picker,
         );
         builder.sync_stop_buttons(cx);
@@ -252,6 +297,7 @@ impl GradientBuilder {
         rotation_slider: Entity<SliderControl>,
         type_selector: Entity<Selector>,
         renderer_selector: Entity<Selector>,
+        mesh_grid_selector: Entity<Selector>,
         color_picker: Entity<SvTrianglePicker>,
     ) {
         self._subscriptions.push(cx.subscribe(&gradient_stops, |this, _, event, cx| {
@@ -278,6 +324,9 @@ impl GradientBuilder {
         }));
         self._subscriptions.push(cx.subscribe(&renderer_selector, |this, _, event, cx| {
             this.handle_renderer_event(event, cx);
+        }));
+        self._subscriptions.push(cx.subscribe(&mesh_grid_selector, |this, _, event, cx| {
+            this.handle_mesh_grid_event(event, cx);
         }));
         self._subscriptions.push(cx.observe(&color_picker, |this, _, cx| {
             this.apply_picker_color(cx);
@@ -389,6 +438,15 @@ impl GradientBuilder {
         }
     }
 
+    fn handle_mesh_grid_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
+        let SelectorEvent::Change { item_id, .. } = event;
+        let next = MeshGridPreset::from_item_id(item_id.as_ref());
+        if self.mesh_grid_preset != next {
+            self.mesh_grid_preset = next;
+            self.reset_mesh_state(cx);
+        }
+    }
+
     fn apply_picker_color(&mut self, cx: &mut Context<Self>) {
         if !self.color_picker_open {
             return;
@@ -444,10 +502,11 @@ impl GradientBuilder {
     }
 
     fn reset_mesh_state(&mut self, cx: &mut Context<Self>) {
-        self.mesh_points = default_mesh_points();
+        self.mesh_points = default_mesh_points(self.mesh_grid_preset);
         self.mesh_background = default_mesh_background();
-        self.selected_mesh_point = Some(mesh_point_index(1, 1));
-        self.mesh_color_target = MeshColorTarget::Point(mesh_point_index(1, 1));
+        let selected_index = default_mesh_selected_index(self.mesh_grid_preset);
+        self.selected_mesh_point = Some(selected_index);
+        self.mesh_color_target = MeshColorTarget::Point(selected_index);
         self.active_mesh_drag = None;
         self.color_picker_open = false;
         let _ = self.ensure_preview_image_cache(self.preview_size, cx);
@@ -814,6 +873,9 @@ impl GradientBuilder {
         let Some(point) = self.mesh_points.get(point_index).copied() else {
             return (proposed_u.clamp(0.0, 1.0), proposed_v.clamp(0.0, 1.0));
         };
+        let Some((rows, cols)) = mesh_dimensions(&self.mesh_points) else {
+            return (proposed_u.clamp(0.0, 1.0), proposed_v.clamp(0.0, 1.0));
+        };
 
         let row = point.row as usize;
         let col = point.col as usize;
@@ -821,26 +883,26 @@ impl GradientBuilder {
         let mut v = proposed_v.clamp(0.0, 1.0);
 
         if col == 0 {
-            let right = self.mesh_points[mesh_point_index(row, col + 1)].u - MESH_POINT_GAP;
+            let right = self.mesh_points[mesh_point_index(row, col + 1, cols)].u - MESH_POINT_GAP;
             u = u.clamp(0.0, right.max(0.0));
-        } else if col + 1 == MESH_COLS {
-            let left = self.mesh_points[mesh_point_index(row, col - 1)].u + MESH_POINT_GAP;
+        } else if col + 1 == cols {
+            let left = self.mesh_points[mesh_point_index(row, col - 1, cols)].u + MESH_POINT_GAP;
             u = u.clamp(left.min(1.0), 1.0);
         } else {
-            let left = self.mesh_points[mesh_point_index(row, col - 1)].u + MESH_POINT_GAP;
-            let right = self.mesh_points[mesh_point_index(row, col + 1)].u - MESH_POINT_GAP;
+            let left = self.mesh_points[mesh_point_index(row, col - 1, cols)].u + MESH_POINT_GAP;
+            let right = self.mesh_points[mesh_point_index(row, col + 1, cols)].u - MESH_POINT_GAP;
             u = u.clamp(left.min(right), left.max(right));
         }
 
         if row == 0 {
-            let bottom = self.mesh_points[mesh_point_index(row + 1, col)].v - MESH_POINT_GAP;
+            let bottom = self.mesh_points[mesh_point_index(row + 1, col, cols)].v - MESH_POINT_GAP;
             v = v.clamp(0.0, bottom.max(0.0));
-        } else if row + 1 == MESH_ROWS {
-            let top = self.mesh_points[mesh_point_index(row - 1, col)].v + MESH_POINT_GAP;
+        } else if row + 1 == rows {
+            let top = self.mesh_points[mesh_point_index(row - 1, col, cols)].v + MESH_POINT_GAP;
             v = v.clamp(top.min(1.0), 1.0);
         } else {
-            let top = self.mesh_points[mesh_point_index(row - 1, col)].v + MESH_POINT_GAP;
-            let bottom = self.mesh_points[mesh_point_index(row + 1, col)].v - MESH_POINT_GAP;
+            let top = self.mesh_points[mesh_point_index(row - 1, col, cols)].v + MESH_POINT_GAP;
+            let bottom = self.mesh_points[mesh_point_index(row + 1, col, cols)].v - MESH_POINT_GAP;
             v = v.clamp(top.min(bottom), top.max(bottom));
         }
 
@@ -1109,6 +1171,8 @@ impl Render for GradientBuilder {
                     self.mesh_points.clone(),
                     self.mesh_background,
                     self.selected_mesh_point,
+                    self.mesh_grid_preset,
+                    self.mesh_grid_selector.clone(),
                     self.mesh_reset_button.clone(),
                     chrome,
                     card_bg,
@@ -1398,6 +1462,15 @@ fn renderer_items() -> Vec<SelectorItem> {
     ]
 }
 
+fn mesh_grid_items() -> Vec<SelectorItem> {
+    vec![
+        SelectorItem::new("3x4").label("3 x 4"),
+        SelectorItem::new("2x2").label("2 x 2"),
+        SelectorItem::new("3x3").label("3 x 3"),
+        SelectorItem::new("4x4").label("4 x 4"),
+    ]
+}
+
 fn preview_gradient_cache_key(
     gradient_type: GradientType,
     preview_size: Size<Pixels>,
@@ -1463,32 +1536,32 @@ fn preview_stop_key(position: f32, color: gpui::Hsla) -> PreviewStopKey {
     }
 }
 
-fn mesh_point_index(row: usize, col: usize) -> usize {
-    row * MESH_COLS + col
+fn mesh_point_index(row: usize, col: usize, cols: usize) -> usize {
+    row * cols + col
 }
 
-fn default_mesh_points() -> Vec<MeshPoint> {
+fn default_mesh_points(preset: MeshGridPreset) -> Vec<MeshPoint> {
+    let (rows, cols) = preset.dimensions();
     let top = gpui::hsla(46.0 / 360.0, 1.0, 0.51, 1.0);
     let middle = gpui::hsla(349.0 / 360.0, 1.0, 0.58, 1.0);
     let bottom = gpui::hsla(212.0 / 360.0, 0.86, 0.49, 1.0);
+    let row_colors = [(0.0, top), (0.5, middle), (1.0, bottom)];
 
-    [
-        (0, 0, 0.0, 0.0, top),
-        (0, 1, 1.0 / 3.0, 0.0, top),
-        (0, 2, 2.0 / 3.0, 0.0, top),
-        (0, 3, 1.0, 0.0, top),
-        (1, 0, 0.0, 0.5, middle),
-        (1, 1, 1.0 / 3.0, 0.5, middle),
-        (1, 2, 2.0 / 3.0, 0.5, middle),
-        (1, 3, 1.0, 0.5, middle),
-        (2, 0, 0.0, 1.0, bottom),
-        (2, 1, 1.0 / 3.0, 1.0, bottom),
-        (2, 2, 2.0 / 3.0, 1.0, bottom),
-        (2, 3, 1.0, 1.0, bottom),
-    ]
-    .into_iter()
-    .map(|(row, col, u, v, color)| MeshPoint { row, col, u, v, color })
-    .collect()
+    (0..rows)
+        .flat_map(|row| {
+            let v = if rows == 1 { 0.0 } else { row as f32 / (rows - 1) as f32 };
+            let color = color_at_position(&row_colors, v);
+            (0..cols).map(move |col| {
+                let u = if cols == 1 { 0.0 } else { col as f32 / (cols - 1) as f32 };
+                MeshPoint { row: row as u8, col: col as u8, u, v, color }
+            })
+        })
+        .collect()
+}
+
+fn default_mesh_selected_index(preset: MeshGridPreset) -> usize {
+    let (rows, cols) = preset.dimensions();
+    mesh_point_index(rows / 2, cols / 2, cols)
 }
 
 fn default_mesh_background() -> gpui::Hsla {
@@ -1500,6 +1573,8 @@ fn render_mesh_controls(
     mesh_points: Vec<MeshPoint>,
     mesh_background: gpui::Hsla,
     selected_mesh_point: Option<usize>,
+    mesh_grid_preset: MeshGridPreset,
+    mesh_grid_selector: Entity<Selector>,
     mesh_reset_button: Entity<Button>,
     chrome: gpui_luma::theme::LumaChrome,
     card_bg: gpui::Hsla,
@@ -1536,7 +1611,8 @@ fn render_mesh_controls(
                     .child(div().typography_style(info_label_style).text_color(chrome.muted_text).child("Mesh"))
                     .child(mesh_reset_button),
             )
-            .child(render_info_row("Grid", "3 x 4", info_label_style, info_value_style, chrome))
+            .child(form_field!("Preset", chrome; mesh_grid_selector))
+            .child(render_info_row("Grid", mesh_grid_preset.label(), info_label_style, info_value_style, chrome))
             .child(render_info_row("Selected", selected_label, info_label_style, info_value_style, chrome))
             .child(render_mesh_background_row(mesh_background, info_label_style, chrome, builder.clone())),
         div()

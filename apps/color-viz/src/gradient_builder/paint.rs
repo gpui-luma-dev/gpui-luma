@@ -32,9 +32,6 @@ pub enum PreviewRenderer {
     RenderImageAsync,
 }
 
-pub const MESH_ROWS: usize = 3;
-pub const MESH_COLS: usize = 4;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MeshPoint {
     pub row: u8,
@@ -368,10 +365,8 @@ pub fn rasterize_mesh_gradient_preview(
     points: &[MeshPoint],
     background: Hsla,
 ) -> Option<Arc<gpui::RenderImage>> {
-    if points.len() != MESH_ROWS * MESH_COLS {
-        return None;
-    }
-    let cells = build_mesh_cells(points);
+    let (rows, cols) = mesh_dimensions(points)?;
+    let cells = build_mesh_cells(points, rows, cols);
 
     let scale = raster_scale_for_size(size);
     let width = (size.width.as_f32() * scale).round() as u32;
@@ -390,8 +385,17 @@ pub fn rasterize_mesh_gradient_preview(
         }
     }
 
-    paint_mesh_guides(&mut pixmap, points, width as f32, height as f32);
+    paint_mesh_guides(&mut pixmap, points, rows, cols, width as f32, height as f32);
     pixmap_to_render_image(pixmap)
+}
+
+pub fn mesh_dimensions(points: &[MeshPoint]) -> Option<(usize, usize)> {
+    let rows = points.iter().map(|point| point.row as usize).max()? + 1;
+    let cols = points.iter().map(|point| point.col as usize).max()? + 1;
+    if rows < 2 || cols < 2 || points.len() != rows * cols {
+        return None;
+    }
+    Some((rows, cols))
 }
 
 fn fill_pixmap(pixmap: &mut Pixmap, color: Hsla) {
@@ -769,32 +773,32 @@ fn mesh_point(points: &[MeshPoint], row: usize, col: usize) -> MeshPoint {
         })
 }
 
-fn build_mesh_cells(points: &[MeshPoint]) -> Vec<MeshCell> {
-    let mut cells = Vec::with_capacity((MESH_ROWS - 1) * (MESH_COLS - 1));
-    for row in 0..(MESH_ROWS - 1) {
-        for col in 0..(MESH_COLS - 1) {
+fn build_mesh_cells(points: &[MeshPoint], rows: usize, cols: usize) -> Vec<MeshCell> {
+    let mut cells = Vec::with_capacity((rows - 1) * (cols - 1));
+    for row in 0..(rows - 1) {
+        for col in 0..(cols - 1) {
             let p00 = mesh_point(points, row, col);
             let p10 = mesh_point(points, row, col + 1);
             let p01 = mesh_point(points, row + 1, col);
             let p11 = mesh_point(points, row + 1, col + 1);
 
-            let tx00 = mesh_tangent_position(points, row, col, true);
-            let tx10 = mesh_tangent_position(points, row, col + 1, true);
-            let tx01 = mesh_tangent_position(points, row + 1, col, true);
-            let tx11 = mesh_tangent_position(points, row + 1, col + 1, true);
-            let ty00 = mesh_tangent_position(points, row, col, false);
-            let ty10 = mesh_tangent_position(points, row, col + 1, false);
-            let ty01 = mesh_tangent_position(points, row + 1, col, false);
-            let ty11 = mesh_tangent_position(points, row + 1, col + 1, false);
+            let tx00 = mesh_tangent_position(points, rows, cols, row, col, true);
+            let tx10 = mesh_tangent_position(points, rows, cols, row, col + 1, true);
+            let tx01 = mesh_tangent_position(points, rows, cols, row + 1, col, true);
+            let tx11 = mesh_tangent_position(points, rows, cols, row + 1, col + 1, true);
+            let ty00 = mesh_tangent_position(points, rows, cols, row, col, false);
+            let ty10 = mesh_tangent_position(points, rows, cols, row, col + 1, false);
+            let ty01 = mesh_tangent_position(points, rows, cols, row + 1, col, false);
+            let ty11 = mesh_tangent_position(points, rows, cols, row + 1, col + 1, false);
 
-            let cx00 = mesh_tangent_color(points, row, col, true);
-            let cx10 = mesh_tangent_color(points, row, col + 1, true);
-            let cx01 = mesh_tangent_color(points, row + 1, col, true);
-            let cx11 = mesh_tangent_color(points, row + 1, col + 1, true);
-            let cy00 = mesh_tangent_color(points, row, col, false);
-            let cy10 = mesh_tangent_color(points, row, col + 1, false);
-            let cy01 = mesh_tangent_color(points, row + 1, col, false);
-            let cy11 = mesh_tangent_color(points, row + 1, col + 1, false);
+            let cx00 = mesh_tangent_color(points, rows, cols, row, col, true);
+            let cx10 = mesh_tangent_color(points, rows, cols, row, col + 1, true);
+            let cx01 = mesh_tangent_color(points, rows, cols, row + 1, col, true);
+            let cx11 = mesh_tangent_color(points, rows, cols, row + 1, col + 1, true);
+            let cy00 = mesh_tangent_color(points, rows, cols, row, col, false);
+            let cy10 = mesh_tangent_color(points, rows, cols, row, col + 1, false);
+            let cy01 = mesh_tangent_color(points, rows, cols, row + 1, col, false);
+            let cy11 = mesh_tangent_color(points, rows, cols, row + 1, col + 1, false);
 
             cells.push(MeshCell {
                 p00,
@@ -815,31 +819,45 @@ fn build_mesh_cells(points: &[MeshPoint]) -> Vec<MeshCell> {
     cells
 }
 
-fn mesh_tangent_position(points: &[MeshPoint], row: usize, col: usize, horizontal: bool) -> (f32, f32) {
+fn mesh_tangent_position(
+    points: &[MeshPoint],
+    rows: usize,
+    cols: usize,
+    row: usize,
+    col: usize,
+    horizontal: bool,
+) -> (f32, f32) {
     let raw = if horizontal {
         if col == 0 {
             sub2(point2(mesh_point(points, row, col + 1)), point2(mesh_point(points, row, col)))
-        } else if col + 1 == MESH_COLS {
+        } else if col + 1 == cols {
             sub2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row, col - 1)))
         } else {
             scale2(sub2(point2(mesh_point(points, row, col + 1)), point2(mesh_point(points, row, col - 1))), 0.5)
         }
     } else if row == 0 {
         sub2(point2(mesh_point(points, row + 1, col)), point2(mesh_point(points, row, col)))
-    } else if row + 1 == MESH_ROWS {
+    } else if row + 1 == rows {
         sub2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row - 1, col)))
     } else {
         scale2(sub2(point2(mesh_point(points, row + 1, col)), point2(mesh_point(points, row - 1, col))), 0.5)
     };
 
-    clamp_vec2_length(raw, tangent_position_limit(points, row, col, horizontal) * GEOMETRY_TANGENT_LIMIT)
+    clamp_vec2_length(raw, tangent_position_limit(points, rows, cols, row, col, horizontal) * GEOMETRY_TANGENT_LIMIT)
 }
 
-fn mesh_tangent_color(points: &[MeshPoint], row: usize, col: usize, horizontal: bool) -> [f32; 4] {
+fn mesh_tangent_color(
+    points: &[MeshPoint],
+    rows: usize,
+    cols: usize,
+    row: usize,
+    col: usize,
+    horizontal: bool,
+) -> [f32; 4] {
     let raw = if horizontal {
         if col == 0 {
             sub4(color4(mesh_point(points, row, col + 1)), color4(mesh_point(points, row, col)))
-        } else if col + 1 == MESH_COLS {
+        } else if col + 1 == cols {
             sub4(color4(mesh_point(points, row, col)), color4(mesh_point(points, row, col - 1)))
         } else {
             monotone_color_tangent(
@@ -849,7 +867,7 @@ fn mesh_tangent_color(points: &[MeshPoint], row: usize, col: usize, horizontal: 
         }
     } else if row == 0 {
         sub4(color4(mesh_point(points, row + 1, col)), color4(mesh_point(points, row, col)))
-    } else if row + 1 == MESH_ROWS {
+    } else if row + 1 == rows {
         sub4(color4(mesh_point(points, row, col)), color4(mesh_point(points, row - 1, col)))
     } else {
         monotone_color_tangent(
@@ -991,11 +1009,18 @@ fn rgba_to_pixel(rgba: [f32; 4]) -> Option<PremultipliedColorU8> {
     PremultipliedColorU8::from_rgba(b, g, r, a)
 }
 
-fn tangent_position_limit(points: &[MeshPoint], row: usize, col: usize, horizontal: bool) -> f32 {
+fn tangent_position_limit(
+    points: &[MeshPoint],
+    rows: usize,
+    cols: usize,
+    row: usize,
+    col: usize,
+    horizontal: bool,
+) -> f32 {
     if horizontal {
         if col == 0 {
             distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row, col + 1)))
-        } else if col + 1 == MESH_COLS {
+        } else if col + 1 == cols {
             distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row, col - 1)))
         } else {
             distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row, col - 1)))
@@ -1003,7 +1028,7 @@ fn tangent_position_limit(points: &[MeshPoint], row: usize, col: usize, horizont
         }
     } else if row == 0 {
         distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row + 1, col)))
-    } else if row + 1 == MESH_ROWS {
+    } else if row + 1 == rows {
         distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row - 1, col)))
     } else {
         distance2(point2(mesh_point(points, row, col)), point2(mesh_point(points, row - 1, col)))
@@ -1051,14 +1076,14 @@ fn barycentric_weights(sample: (f32, f32), a: (f32, f32), b: (f32, f32), c: (f32
     Some((w0, w1, w2))
 }
 
-fn paint_mesh_guides(pixmap: &mut Pixmap, points: &[MeshPoint], width: f32, height: f32) {
+fn paint_mesh_guides(pixmap: &mut Pixmap, points: &[MeshPoint], rows: usize, cols: usize, width: f32, height: f32) {
     let stroke = Stroke { width: (width.min(height) * 0.004).max(1.5), ..Stroke::default() };
     let mut paint = Paint::default();
     paint.set_color_rgba8(255, 255, 255, 96);
     paint.anti_alias = true;
 
-    for row in 0..MESH_ROWS {
-        for col in 0..(MESH_COLS - 1) {
+    for row in 0..rows {
+        for col in 0..(cols - 1) {
             let a = mesh_point(points, row, col);
             let b = mesh_point(points, row, col + 1);
             if let Some(path) = line_path(a.u * width, a.v * height, b.u * width, b.v * height) {
@@ -1067,8 +1092,8 @@ fn paint_mesh_guides(pixmap: &mut Pixmap, points: &[MeshPoint], width: f32, heig
         }
     }
 
-    for col in 0..MESH_COLS {
-        for row in 0..(MESH_ROWS - 1) {
+    for col in 0..cols {
+        for row in 0..(rows - 1) {
             let a = mesh_point(points, row, col);
             let b = mesh_point(points, row + 1, col);
             if let Some(path) = line_path(a.u * width, a.v * height, b.u * width, b.v * height) {
