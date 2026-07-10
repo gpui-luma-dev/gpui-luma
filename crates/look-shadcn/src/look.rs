@@ -437,6 +437,13 @@ impl ShadcnLook {
         templates::slider_template(Arc::clone(self))
     }
 
+    pub fn slider_template_with_style(
+        self: &Arc<Self>,
+        style: ShadcnButtonStyle,
+    ) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
+        templates::slider_template_with_style(Arc::clone(self), style)
+    }
+
     pub fn slider_angular_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
         templates::slider_angular_template(Arc::clone(self))
     }
@@ -749,6 +756,13 @@ impl ShadcnLook {
 
     pub fn slider_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::slider::SliderTheme> {
         templates::slider_theme(Arc::clone(self))
+    }
+
+    pub fn slider_theme_with_style(
+        self: &Arc<Self>,
+        style: ShadcnButtonStyle,
+    ) -> Arc<dyn gpui_luma::controls::slider::SliderTheme> {
+        templates::slider_theme_with_style(Arc::clone(self), style)
     }
 
     pub fn scrollbar_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTheme> {

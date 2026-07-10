@@ -10,12 +10,12 @@ use gpui_luma::controls::slider::{
 use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::controls::value::ControlRange;
 use gpui_luma::theme::{ControlSize, InteractionState};
-use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnLook};
+use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::style::sections::slider::customization::SliderCustomizationPreview;
 use crate::studio::style::shared::button_matrix::{
     BUTTON_TABLE_SIZE_HEADER_HEIGHT, BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT, BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH,
-    render_button_radius_header_cell,
+    CHOICE_STYLE_VARIANTS, render_button_radius_header_cell,
 };
 use crate::studio::style::shared::input_samples::{InputInteractionSample, input_interaction_samples};
 use crate::studio::style::shared::preview_handlers::input_slider_handlers;
@@ -28,7 +28,7 @@ const SLIDER_DEMO_MAX_WIDTH: f32 = 360.0;
 const SLIDER_TEMPLATE_DEMO_WIDTH: f32 = 120.0;
 const SLIDER_TABLE_STATE_COLUMN_WIDTH: f32 = 152.0;
 const SLIDER_TEMPLATE_TABLE_HEADER_HEIGHT: f32 = 28.0;
-const SLIDER_TEMPLATE_TABLE_ROW_HEIGHT: f32 = 40.0;
+const SLIDER_TEMPLATE_TABLE_ROW_HEIGHT: f32 = 52.0;
 /// Match template preview state columns so 120px sliders are not clipped.
 const SLIDER_TABLE_RADIUS_COLUMN_WIDTH: f32 = 152.0;
 const SLIDER_TABLE_SIZE_RADIUS_ROW_HEIGHT: f32 = BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT;
@@ -53,7 +53,7 @@ pub(crate) fn render_slider_template_section(
     section_shell_with_width(
         960.0,
         "Slider",
-        "Horizontal slider with Sm / Md / Lg sizing and radius presets.",
+        "Horizontal slider with primary/secondary styles, Sm / Md / Lg sizing, and radius presets.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -107,36 +107,40 @@ fn render_input_slider_states_body(look: &Arc<ShadcnLook>, window: &mut Window, 
             VariantStateTable::new(
                 VariantStateTableStyle::from_chrome(&chrome)
                     .state_column_width(SLIDER_TABLE_STATE_COLUMN_WIDTH)
-                    .variant_column_width(SLIDER_TABLE_SIZE_VARIANT_COLUMN_WIDTH)
                     .header_height(SLIDER_TEMPLATE_TABLE_HEADER_HEIGHT)
                     .header_corner_padding_bottom(0.0)
-                    .row_height(SLIDER_TEMPLATE_TABLE_ROW_HEIGHT)
-                    .variant_column_align_center(true),
+                    .row_height(SLIDER_TEMPLATE_TABLE_ROW_HEIGHT),
             )
             .row_group_label("")
             .column_headers(
                 samples.iter().map(|sample| render_input_slider_state_header_cell(*sample, chrome.muted_text)),
             )
-            .rows([VariantStateTableRow {
-                label: SharedString::from(""),
-                description: SharedString::from(""),
-                cells: samples
-                    .iter()
-                    .copied()
-                    .map(|sample| {
-                        render_input_slider_state_cell(
-                            look,
-                            InputInteractionSample { label: "", ..sample },
-                            ControlSize::Md,
-                            None,
-                            Some(SLIDER_TEMPLATE_DEMO_WIDTH),
-                            1.0,
-                            window,
-                            cx,
-                        )
-                    })
-                    .collect(),
-            }])
+            .rows(CHOICE_STYLE_VARIANTS.iter().map(|variant| {
+                VariantStateTableRow {
+                    label: SharedString::from(match variant.style {
+                        ShadcnButtonStyle::Secondary => "Secondary*",
+                        _ => variant.label,
+                    }),
+                    description: SharedString::from(variant.description),
+                    cells: samples
+                        .iter()
+                        .copied()
+                        .map(|sample| {
+                            render_input_slider_state_cell(
+                                look,
+                                InputInteractionSample { label: "", ..sample },
+                                variant.style,
+                                ControlSize::Md,
+                                None,
+                                Some(SLIDER_TEMPLATE_DEMO_WIDTH),
+                                1.0,
+                                window,
+                                cx,
+                            )
+                        })
+                        .collect(),
+                }
+            }))
             .build(),
         )
         .into_any_element()
@@ -197,6 +201,7 @@ fn render_input_slider_size_matrix(look: &Arc<ShadcnLook>, window: &mut Window, 
 fn render_input_slider_state_cell(
     look: &Arc<ShadcnLook>,
     sample: InputInteractionSample,
+    style: ShadcnButtonStyle,
     size: ControlSize,
     radius: Option<ButtonRadiusPreset>,
     demo_width: Option<f32>,
@@ -204,7 +209,7 @@ fn render_input_slider_state_cell(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let template = look.slider_template();
+    let template = look.slider_template_with_style(style);
 
     div()
         .w_full()
@@ -217,6 +222,7 @@ fn render_input_slider_state_cell(
             look,
             &template,
             sample,
+            style,
             size,
             radius,
             demo_width,
@@ -242,13 +248,24 @@ fn render_input_slider_size_radius_cell(
     };
     let sample = InputInteractionSample { id: sample_id, label: "", state: InteractionState::default() };
 
-    render_input_slider_state_cell(look, sample, size, Some(radius), Some(SLIDER_TEMPLATE_DEMO_WIDTH), 1.0, window, cx)
+    render_input_slider_state_cell(
+        look,
+        sample,
+        ShadcnButtonStyle::Primary,
+        size,
+        Some(radius),
+        Some(SLIDER_TEMPLATE_DEMO_WIDTH),
+        1.0,
+        window,
+        cx,
+    )
 }
 
 fn render_input_slider_sample(
     look: &Arc<ShadcnLook>,
     template: &Arc<dyn SliderTemplate>,
     sample: InputInteractionSample,
+    style: ShadcnButtonStyle,
     size: ControlSize,
     radius: Option<ButtonRadiusPreset>,
     demo_width: Option<f32>,
@@ -258,8 +275,9 @@ fn render_input_slider_sample(
     cx: &mut App,
 ) -> AnyElement {
     let id = SharedString::from(format!(
-        "theme-studio-slider-preview-{}-{}-{}",
+        "theme-studio-slider-preview-{}-{}-{}-{}",
         sample.id,
+        slider_style_id(style),
         slider_size_id(size),
         radius.map(slider_radius_id).unwrap_or("default")
     ));
@@ -321,6 +339,15 @@ fn slider_size_id(size: ControlSize) -> &'static str {
     }
 }
 
+fn slider_style_id(style: ShadcnButtonStyle) -> &'static str {
+    match style {
+        ShadcnButtonStyle::Primary => "primary",
+        ShadcnButtonStyle::Secondary => "secondary",
+        ShadcnButtonStyle::Outline => "outline",
+        ShadcnButtonStyle::Ghost => "ghost",
+    }
+}
+
 fn slider_radius_id(radius: ButtonRadiusPreset) -> &'static str {
     match radius {
         ButtonRadiusPreset::None => "none",
@@ -348,6 +375,7 @@ fn slider_size_metrics(
     use gpui_luma_look_shadcn::paint::slider_look;
 
     let tokens = look.mode_tokens();
-    let slider_look = slider_look(tokens.as_ref(), look.mode(), size, None, InteractionState::default());
+    let slider_look =
+        slider_look(tokens.as_ref(), look.mode(), ShadcnButtonStyle::Primary, size, None, InteractionState::default());
     (tokens.metrics.clone(), slider_look)
 }

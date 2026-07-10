@@ -36,8 +36,8 @@ pub use toggle::ToggleLayout;
 pub use card::{ShadcnCard, ShadcnCardBuilder};
 pub use textfield::ShadcnTextFieldStyle;
 pub use ext::{
-    ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt, ShadcnTextAreaExt,
-    ShadcnTextFieldExt,
+    ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSliderStyleExt, ShadcnSwitchStyleExt,
+    ShadcnTextAreaExt, ShadcnTextFieldExt,
 };
 
 pub(crate) use button::button_look;

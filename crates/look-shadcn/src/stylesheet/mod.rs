@@ -383,7 +383,10 @@ pub fn resolve_slider_colors_metadata(stylesheet: &StylesheetConfig) -> Vec<Tabl
         .color_rules
         .iter()
         .map(|rule| TableRuleMetadata {
-            inputs: vec![rule.layer.clone().unwrap_or_else(|| "any".into())],
+            inputs: vec![
+                rule.style.clone().unwrap_or_else(|| "any".into()),
+                rule.layer.clone().unwrap_or_else(|| "any".into()),
+            ],
             outputs: vec![
                 color_output_label("track_background", &rule.track_background),
                 color_output_label("fill_background", &rule.fill_background),
@@ -957,7 +960,7 @@ mod tests {
         assert_eq!(stylesheet.radio.elevation_rules.len(), 2);
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
         assert_eq!(stylesheet.switch.elevation_rules.len(), 2);
-        assert_eq!(stylesheet.slider.color_rules.len(), 4);
+        assert_eq!(stylesheet.slider.color_rules.len(), 8);
         assert_eq!(stylesheet.scrollbar.color_rules.len(), 5);
         assert_eq!(stylesheet.accordion.trigger.color_rules.len(), 5);
         assert_eq!(stylesheet.resizable_panels.color_rules.len(), 5);
@@ -990,6 +993,7 @@ mod tests {
         assert!(find_autocomplete_chrome_color_rule(stylesheet).is_some());
         assert!(find_checkbox_color_rule(stylesheet, true, InteractionLayer::Default).is_some());
         assert!(find_slider_color_rule(stylesheet, "primary", InteractionLayer::Hovered).is_some());
+        assert!(find_slider_color_rule(stylesheet, "secondary", InteractionLayer::Default).is_some());
     }
 
     #[test]

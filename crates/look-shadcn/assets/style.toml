@@ -631,25 +631,57 @@ thumb_border = "muted"
 style = "primary"
 layer = "default"
 track_background = "border"
-fill_background = "@primary_default"
+fill_background = "@action_default"
 thumb_background = "first(background,card)"
-thumb_border = "@primary_default"
+thumb_border = "@action_default"
 
 [[slider.color_rules]]
 style = "primary"
 layer = "hover"
 track_background = "border"
-fill_background = "@primary_layer"
+fill_background = "@action_layer"
 thumb_background = "first(background,card)"
-thumb_border = "@primary_default"
+thumb_border = "@action_default"
 
 [[slider.color_rules]]
 style = "primary"
 layer = "pressed"
 track_background = "border"
-fill_background = "@primary_layer"
+fill_background = "@action_layer"
 thumb_background = "first(background,card)"
-thumb_border = "@primary_default"
+thumb_border = "@action_default"
+
+[[slider.color_rules]]
+style = "secondary"
+layer = "disabled"
+track_background = "border"
+fill_background = "muted-foreground"
+thumb_background = "first(background,card)"
+thumb_border = "muted"
+
+[[slider.color_rules]]
+style = "secondary"
+layer = "default"
+track_background = "border"
+fill_background = "@action_foreground"
+thumb_background = "first(background,card)"
+thumb_border = "@action_foreground"
+
+[[slider.color_rules]]
+style = "secondary"
+layer = "hover"
+track_background = "border"
+fill_background = "@action_foreground"
+thumb_background = "first(background,card)"
+thumb_border = "@action_foreground"
+
+[[slider.color_rules]]
+style = "secondary"
+layer = "pressed"
+track_background = "border"
+fill_background = "@action_foreground"
+thumb_background = "first(background,card)"
+thumb_border = "@action_foreground"
 
 
 # =====================================================================

@@ -249,9 +249,10 @@ pub fn resolve_switch_color_rule(
 pub fn resolve_slider_color_rule(
     resolver: &LookResolver<'_>,
     rule: &SliderColorRule,
+    style: ShadcnButtonStyle,
     layer: InteractionLayer,
 ) -> anyhow::Result<ResolvedSliderColors> {
-    let ctx = ResolveContext { style: ShadcnButtonStyle::Primary, layer, disabled: false };
+    let ctx = ResolveContext { style, layer, disabled: layer == InteractionLayer::Disabled };
     let mut fields = ResolvedFields::default();
     let track_background = resolve_stylesheet_color(resolver, &rule.track_background, &fields, &ctx)?;
     fields.insert("track_background", track_background.clone());

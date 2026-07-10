@@ -206,7 +206,11 @@ pub fn radio_button_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -
 }
 
 pub fn slider_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTheme> {
-    Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })
+    slider_theme_with_style(theme, ShadcnButtonStyle::Primary)
+}
+
+pub fn slider_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn SliderTheme> {
+    Arc::new(RadixSliderTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn dock_splitter_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DockSplitterTheme> {
@@ -281,6 +285,7 @@ impl SplitViewTheme for RadixSplitViewTheme {
 
 struct RadixSliderTheme {
     theme: ShadcnLook,
+    style: ShadcnButtonStyle,
 }
 
 impl SliderTheme for RadixSliderTheme {
@@ -291,7 +296,7 @@ impl SliderTheme for RadixSliderTheme {
         state: InteractionState,
     ) -> gpui_luma::controls::slider::SliderLook {
         let tokens = self.theme.mode_tokens();
-        slider_look(tokens.as_ref(), self.theme.mode(), size, thumb_size, state)
+        slider_look(tokens.as_ref(), self.theme.mode(), self.style, size, thumb_size, state)
     }
 }
 
@@ -311,15 +316,22 @@ impl ScrollbarTheme for RadixScrollbarTheme {
 }
 
 pub fn slider_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
-    Arc::new(ThemedSliderTemplate::new(Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })))
+    slider_template_with_style(theme, ShadcnButtonStyle::Primary)
+}
+
+pub fn slider_template_with_style(
+    theme: Arc<ShadcnLook>,
+    style: ShadcnButtonStyle,
+) -> Arc<dyn gpui_luma::controls::slider::SliderTemplate> {
+    Arc::new(ThemedSliderTemplate::new(slider_theme_with_style(theme, style)))
 }
 
 pub fn slider_angular_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTemplate> {
-    Arc::new(ThemedAngularDialTemplate::new(Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedAngularDialTemplate::new(slider_theme(theme)))
 }
 
 pub fn slider_circular_ring_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTemplate> {
-    Arc::new(ThemedCircularRingTemplate::new(Arc::new(RadixSliderTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedCircularRingTemplate::new(slider_theme(theme)))
 }
 
 pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate> {

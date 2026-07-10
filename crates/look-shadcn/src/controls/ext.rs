@@ -97,6 +97,8 @@ pub trait ShadcnLookControlExt {
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
+    fn primary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
+    fn secondary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder;
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder;
     fn progress(&self, id: impl Into<SharedString>) -> ProgressBuilder;
     fn card(&self, id: impl Into<SharedString>) -> ShadcnCardBuilder;
@@ -310,6 +312,14 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
         slider::new(id).template(self.slider_template())
+    }
+
+    fn primary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
+        slider::new(id).template(self.slider_template_with_style(ShadcnButtonStyle::Primary))
+    }
+
+    fn secondary_slider(&self, id: impl Into<SharedString>) -> SliderBuilder {
+        slider::new(id).template(self.slider_template_with_style(ShadcnButtonStyle::Secondary))
     }
 
     fn pager(&self, id: impl Into<SharedString>) -> PagerBuilder {
@@ -595,5 +605,26 @@ impl ShadcnSwitchStyleExt for SwitchBuilder {
 
     fn ghost(self, theme: &Arc<ShadcnLook>) -> SwitchBuilder {
         self.look_style(theme, ShadcnButtonStyle::Ghost)
+    }
+}
+
+/// Applies a shadcn slider style to a [`SliderBuilder`].
+pub trait ShadcnSliderStyleExt {
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SliderBuilder;
+    fn primary(self, theme: &Arc<ShadcnLook>) -> SliderBuilder;
+    fn secondary(self, theme: &Arc<ShadcnLook>) -> SliderBuilder;
+}
+
+impl ShadcnSliderStyleExt for SliderBuilder {
+    fn look_style(self, theme: &Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SliderBuilder {
+        self.template(theme.slider_template_with_style(style))
+    }
+
+    fn primary(self, theme: &Arc<ShadcnLook>) -> SliderBuilder {
+        self.look_style(theme, ShadcnButtonStyle::Primary)
+    }
+
+    fn secondary(self, theme: &Arc<ShadcnLook>) -> SliderBuilder {
+        self.look_style(theme, ShadcnButtonStyle::Secondary)
     }
 }
