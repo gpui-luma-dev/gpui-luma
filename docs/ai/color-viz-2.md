@@ -20,6 +20,34 @@ The app already has:
 
 The current mesh prototype is good enough to continue from, but not finished enough to generalize blindly.
 
+## Progress Snapshot: 2026-07-10
+
+The document below started as a forward plan. Parts of that plan are now done and should be treated as current behavior, not future intent.
+
+Completed so far:
+
+1. the app has a separate `Mesh` tab instead of forcing mesh controls into the same surface as stop-based gradients
+2. linear, radial, and angular gradients are already working in the `Gradients` tab
+3. the mesh tab has draggable preview handles with live rerasterization
+4. mesh dragging now releases correctly instead of getting stuck on mouse or trackpad interaction
+5. the mesh scene has a first-class background color
+6. the mesh renderer clears to that background before drawing the mesh fill
+7. border points can move away from the frame edge without exposing transparent or unpainted output
+8. the left-side color picker flow is hooked up for both mesh point colors and mesh background color
+9. the preview handles no longer open the picker directly; color editing is intentionally routed through the left panel
+10. a reset icon button restores the default startup state for the active mesh preset
+11. the mesh tab supports concrete grid presets: `3 x 4`, `2 x 2`, `3 x 3`, `4 x 4`
+12. the mesh tab supports aspect presets: `Fill`, `9:19`, `3:4`, `1:1`, `2:3`
+13. preview framing now accounts for handle space instead of sizing the frame as if handles consumed no room
+14. the most recent `Fill` sizing bug on the right edge was fixed by fitting against the inner preview content box rather than the outer padded shell
+
+Still true:
+
+1. the mesh raster path is still an approximation, not Apple-parity mesh shading
+2. the point list is still vertically expensive
+3. the current work is still app-local to `apps/color-viz`
+4. this is still not a general mesh-topology editor
+
 ## Scope Reset: 2026-07-10
 
 The next work should not be framed as "make arbitrary mesh dimensions."
@@ -304,7 +332,11 @@ Do that only if it reduces confusion. Do not split files just to satisfy symmetr
 
 ## Revised Phase Plan
 
+This phase list is updated to reflect what has already landed.
+
 ### Phase 2A: Mesh edge-fill stabilization
+
+Status: Complete
 
 Goal:
 
@@ -325,16 +357,19 @@ Exit criteria:
 
 ### Phase 2B: Preset grids and aspect ratios
 
+Status: Complete
+
 Goal:
 
 1. support the concrete shapes you actually want without opening arbitrary topology work
 
 Work:
 
-1. add grid presets for `2 x 2`, `3 x 3`, `4 x 4`
-2. add aspect-ratio presets for `9:19`, `3:4`, `1:1`, `2:3`
+1. add grid presets for `2 x 2`, `3 x 3`, `4 x 4` while keeping the earlier `3 x 4` sample preset
+2. add aspect-ratio presets for `Fill`, `9:19`, `3:4`, `1:1`, `2:3`
 3. define deterministic default point layouts and colors per preset
 4. ensure cache keys and drag math update correctly
+5. keep preview handles visible by budgeting space for them inside preview framing
 
 Exit criteria:
 
@@ -343,6 +378,8 @@ Exit criteria:
 3. dragging remains correct across presets
 
 ### Phase 2C: Mesh UI cleanup
+
+Status: Next active phase
 
 Goal:
 
@@ -353,6 +390,8 @@ Work:
 1. compress the point-list rows
 2. move verbose copy out of the live panel
 3. ensure more points fit on screen without excessive scrolling
+4. reduce wasted vertical space around preset/aspect/reset controls
+5. decide whether selected-point details stay inline or move to a smaller dedicated row
 
 Exit criteria:
 
@@ -360,7 +399,28 @@ Exit criteria:
 2. the selected point is still easy to identify
 3. the panel is denser without becoming cryptic
 
-### Phase 3: True generalization
+### Phase 3: Rendering refinement and panel cleanup follow-through
+
+After the preset/aspect work, the next practical phase is not arbitrary topology. It is quality and usability cleanup on the fixed supported feature set.
+
+Goal:
+
+1. improve the shipped mesh experience without reopening core scope
+
+Work:
+
+1. tighten panel density so `4 x 4` remains comfortable without heavy scrolling
+2. clean up any remaining preview-edge spacing inconsistencies between `Fill` and fixed aspect presets
+3. reduce obvious raster artifacts where possible without throwing away the current mesh renderer
+4. make default preset seeding look intentional across all supported grids
+
+Exit criteria:
+
+1. the mesh tab feels stable and compact on all supported presets
+2. handle framing is visually correct for `Fill` and fixed ratios
+3. remaining render artifacts are acceptable for current product scope
+
+### Phase 4: True generalization
 
 Only after the preset-based version is stable should the app consider:
 
@@ -382,19 +442,19 @@ Only after the preset-based version is stable should the app consider:
 
 ## Recommended Next Step
 
-The next implementation step should be Phase 2A only.
+The next implementation step should be Phase 2C.
 
 Why:
 
-1. it resolves the real correctness gap
-2. it unblocks all later preset and aspect-ratio work
-3. it is smaller than trying to add presets and UI cleanup at the same time
+1. the correctness and configuration work is already in place
+2. the biggest remaining product issue is control density and panel usability
+3. this is smaller and safer than reopening renderer math immediately
 
 Concrete next coding slice:
 
-1. add `mesh.background`
-2. update mesh rasterization to clear to that color first
-3. expose one background swatch/control in the mesh panel
-4. verify border-point drag behavior visually
+1. compact the mesh left panel
+2. reduce vertical padding around point rows and info rows
+3. keep preset, aspect, reset, and background controls visible without excessive scrolling
+4. verify `4 x 4` remains usable after compaction
 
-Do not combine that with `2 x 2` / `3 x 3` / `4 x 4` in the same pass unless it ends up trivial.
+Do not combine that with arbitrary-grid generalization in the same pass.

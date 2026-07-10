@@ -35,6 +35,8 @@ const SHELL_RADIUS: f32 = 12.0;
 const SHELL_BORDER: f32 = 1.0;
 const MESH_HANDLE_SIZE: f32 = 22.0;
 const MESH_POINT_GAP: f32 = 0.08;
+const MESH_ASPECT_INSET: f32 = 16.0;
+const MESH_PREVIEW_PADDING: f32 = 18.0;
 
 fn shell_inner_corner_radius() -> Pixels {
     px(SHELL_RADIUS - SHELL_BORDER)
@@ -48,6 +50,13 @@ fn controls_panel_corner_radii() -> Corners<Pixels> {
 fn preview_panel_corner_radii() -> Corners<Pixels> {
     let inner = shell_inner_corner_radius();
     Corners { top_left: px(0.0), top_right: px(0.0), bottom_left: px(0.0), bottom_right: inner }
+}
+
+fn mesh_preview_content_size(container_size: Size<Pixels>) -> Size<Pixels> {
+    size(
+        px((container_size.width.as_f32() - MESH_PREVIEW_PADDING * 2.0).max(0.0)),
+        px((container_size.height.as_f32() - MESH_PREVIEW_PADDING * 2.0).max(0.0)),
+    )
 }
 
 pub struct GradientBuilder {
@@ -66,10 +75,12 @@ pub struct GradientBuilder {
     type_selector: Entity<Selector>,
     renderer_selector: Entity<Selector>,
     mesh_grid_selector: Entity<Selector>,
+    mesh_aspect_ratio_selector: Entity<Selector>,
     rotation_deg: f32,
     gradient_type: GradientType,
     preview_renderer: PreviewRenderer,
     mesh_grid_preset: MeshGridPreset,
+    mesh_aspect_ratio_preset: MeshAspectRatioPreset,
     mesh_points: Vec<MeshPoint>,
     mesh_background: gpui::Hsla,
     selected_mesh_point: Option<usize>,
@@ -84,6 +95,7 @@ pub struct GradientBuilder {
     stop_swatch_bounds: HashMap<ThumbId, Bounds<Pixels>>,
     mesh_swatch_bounds: HashMap<usize, Bounds<Pixels>>,
     mesh_background_swatch_bounds: Option<Bounds<Pixels>>,
+    mesh_preview_container_size: Size<Pixels>,
     mesh_preview_bounds: Option<Bounds<Pixels>>,
     render_task: Option<gpui::Task<()>>,
     _subscriptions: Vec<Subscription>,
@@ -135,6 +147,47 @@ impl MeshGridPreset {
             "3x3" => Self::ThreeByThree,
             "4x4" => Self::FourByFour,
             _ => Self::SampleThreeByFour,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MeshAspectRatioPreset {
+    Fill,
+    NineByNineteen,
+    ThreeByFour,
+    OneByOne,
+    TwoByThree,
+}
+
+impl MeshAspectRatioPreset {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Fill => "Fill",
+            Self::NineByNineteen => "9:19",
+            Self::ThreeByFour => "3:4",
+            Self::OneByOne => "1:1",
+            Self::TwoByThree => "2:3",
+        }
+    }
+
+    fn ratio(self) -> Option<f32> {
+        match self {
+            Self::Fill => None,
+            Self::NineByNineteen => Some(9.0 / 19.0),
+            Self::ThreeByFour => Some(3.0 / 4.0),
+            Self::OneByOne => Some(1.0),
+            Self::TwoByThree => Some(2.0 / 3.0),
+        }
+    }
+
+    fn from_item_id(item_id: &str) -> Self {
+        match item_id {
+            "fill" => Self::Fill,
+            "9:19" => Self::NineByNineteen,
+            "1:1" => Self::OneByOne,
+            "2:3" => Self::TwoByThree,
+            _ => Self::ThreeByFour,
         }
     }
 }
@@ -227,8 +280,11 @@ impl GradientBuilder {
             look.selector("color-viz-gradient-renderer").items(renderer_items()).selected_id("quads").spawn(cx);
         let mesh_grid_selector =
             look.selector("color-viz-mesh-grid").items(mesh_grid_items()).selected_id("3x4").spawn(cx);
+        let mesh_aspect_ratio_selector =
+            look.selector("color-viz-mesh-aspect").items(mesh_aspect_ratio_items()).selected_id("3:4").spawn(cx);
         let color_picker = cx.new(|cx| SvTrianglePicker::with_size(start, CompositionSize::Md, cx));
         let mesh_grid_preset = MeshGridPreset::SampleThreeByFour;
+        let mesh_aspect_ratio_preset = MeshAspectRatioPreset::ThreeByFour;
 
         let mut builder = Self {
             look: look.clone(),
@@ -246,10 +302,12 @@ impl GradientBuilder {
             type_selector: type_selector.clone(),
             renderer_selector: renderer_selector.clone(),
             mesh_grid_selector: mesh_grid_selector.clone(),
+            mesh_aspect_ratio_selector: mesh_aspect_ratio_selector.clone(),
             rotation_deg: 90.0,
             gradient_type: GradientType::Linear,
             preview_renderer: PreviewRenderer::Quads,
             mesh_grid_preset,
+            mesh_aspect_ratio_preset,
             mesh_points: default_mesh_points(mesh_grid_preset),
             mesh_background,
             selected_mesh_point: Some(default_mesh_selected_index(mesh_grid_preset)),
@@ -264,6 +322,7 @@ impl GradientBuilder {
             stop_swatch_bounds: HashMap::new(),
             mesh_swatch_bounds: HashMap::new(),
             mesh_background_swatch_bounds: None,
+            mesh_preview_container_size: size(px(0.0), px(0.0)),
             mesh_preview_bounds: None,
             render_task: None,
             _subscriptions: Vec::new(),
@@ -279,6 +338,7 @@ impl GradientBuilder {
             type_selector,
             renderer_selector,
             mesh_grid_selector,
+            mesh_aspect_ratio_selector,
             color_picker,
         );
         builder.sync_stop_buttons(cx);
@@ -298,6 +358,7 @@ impl GradientBuilder {
         type_selector: Entity<Selector>,
         renderer_selector: Entity<Selector>,
         mesh_grid_selector: Entity<Selector>,
+        mesh_aspect_ratio_selector: Entity<Selector>,
         color_picker: Entity<SvTrianglePicker>,
     ) {
         self._subscriptions.push(cx.subscribe(&gradient_stops, |this, _, event, cx| {
@@ -327,6 +388,9 @@ impl GradientBuilder {
         }));
         self._subscriptions.push(cx.subscribe(&mesh_grid_selector, |this, _, event, cx| {
             this.handle_mesh_grid_event(event, cx);
+        }));
+        self._subscriptions.push(cx.subscribe(&mesh_aspect_ratio_selector, |this, _, event, cx| {
+            this.handle_mesh_aspect_ratio_event(event, cx);
         }));
         self._subscriptions.push(cx.observe(&color_picker, |this, _, cx| {
             this.apply_picker_color(cx);
@@ -444,6 +508,18 @@ impl GradientBuilder {
         if self.mesh_grid_preset != next {
             self.mesh_grid_preset = next;
             self.reset_mesh_state(cx);
+        }
+    }
+
+    fn handle_mesh_aspect_ratio_event(&mut self, event: &SelectorEvent, cx: &mut Context<Self>) {
+        let SelectorEvent::Change { item_id, .. } = event;
+        let next = MeshAspectRatioPreset::from_item_id(item_id.as_ref());
+        if self.mesh_aspect_ratio_preset != next {
+            self.mesh_aspect_ratio_preset = next;
+            let fitted_size = fit_aspect_ratio(self.mesh_preview_container_size, self.mesh_aspect_ratio_preset);
+            self.preview_size = fitted_size;
+            let _ = self.ensure_preview_image_cache(fitted_size, cx);
+            cx.notify();
         }
     }
 
@@ -755,6 +831,25 @@ impl GradientBuilder {
         }
 
         if self.uses_render_preview(cx) && self.ensure_preview_image_cache(bounds.size, cx) {
+            refreshed = true;
+            cx.notify();
+        }
+        refreshed
+    }
+
+    fn handle_mesh_preview_container_bounds(&mut self, bounds: Bounds<Pixels>, cx: &mut Context<Self>) -> bool {
+        let mut refreshed = false;
+        let content_size = mesh_preview_content_size(bounds.size);
+        if self.mesh_preview_container_size != content_size {
+            self.mesh_preview_container_size = content_size;
+        }
+
+        let fitted_size = fit_aspect_ratio(content_size, self.mesh_aspect_ratio_preset);
+        if self.preview_size != fitted_size {
+            self.preview_size = fitted_size;
+        }
+
+        if self.uses_render_preview(cx) && self.ensure_preview_image_cache(fitted_size, cx) {
             refreshed = true;
             cx.notify();
         }
@@ -1167,12 +1262,20 @@ impl Render for GradientBuilder {
                 .into_any_element()
             }
             BuilderTab::Mesh => {
+                let preview_container_builder = cx.entity();
+                let preview_frame_builder = cx.entity();
+                let frame_size = fit_aspect_ratio(self.mesh_preview_container_size, self.mesh_aspect_ratio_preset);
+                let handle_inset = px(MESH_HANDLE_SIZE * 0.5);
+                let work_area_size =
+                    size(frame_size.width + px(MESH_HANDLE_SIZE), frame_size.height + px(MESH_HANDLE_SIZE));
                 let mesh_controls = div().child(render_mesh_controls(
                     self.mesh_points.clone(),
                     self.mesh_background,
                     self.selected_mesh_point,
                     self.mesh_grid_preset,
                     self.mesh_grid_selector.clone(),
+                    self.mesh_aspect_ratio_preset,
+                    self.mesh_aspect_ratio_selector.clone(),
                     self.mesh_reset_button.clone(),
                     chrome,
                     card_bg,
@@ -1212,23 +1315,19 @@ impl Render for GradientBuilder {
                 } else {
                     mesh_controls
                 };
-                let preview_builder = cx.entity();
                 let preview_surface = div()
                     .id("color-viz-mesh-preview")
                     .relative()
-                    .size_full()
+                    .w(work_area_size.width)
+                    .h(work_area_size.height)
                     .rounded(px(0.0))
-                    .on_prepaint(move |bounds, window, cx| {
-                        preview_builder.update(cx, |this, cx| {
-                            if this.handle_preview_bounds(bounds, cx) {
-                                window.refresh();
-                            }
-                        });
-                    })
                     .child(
                         div()
                             .absolute()
-                            .inset_0()
+                            .left(handle_inset)
+                            .top(handle_inset)
+                            .w(frame_size.width)
+                            .h(frame_size.height)
                             .overflow_hidden()
                             .when_some(self.cached_preview_image(), |this, image| {
                                 this.child(img(ImageSource::Render(image)).size_full().absolute().top_0().left_0())
@@ -1237,10 +1336,10 @@ impl Render for GradientBuilder {
                                 canvas(|bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal), {
                                     let builder = cx.entity();
                                     move |bounds, _hitbox, window, cx| {
-                                        builder.update(cx, |this, cx| {
-                                            this.mesh_preview_bounds = Some(bounds);
-                                            if this.handle_preview_bounds(bounds, cx) {
-                                                window.refresh();
+                                        preview_frame_builder.update(cx, |this, cx| {
+                                            if this.mesh_preview_bounds != Some(bounds) {
+                                                this.mesh_preview_bounds = Some(bounds);
+                                                cx.notify();
                                             }
                                         });
 
@@ -1270,20 +1369,38 @@ impl Render for GradientBuilder {
                                 .inset_0(),
                             ),
                     )
-                    .children(self.mesh_points.iter().enumerate().map(|(point_index, point)| {
-                        render_mesh_handle(
-                            point_index,
-                            *point,
-                            self.selected_mesh_point == Some(point_index),
-                            cx.entity(),
-                        )
-                    }));
+                    .child(
+                        div()
+                            .absolute()
+                            .left(handle_inset)
+                            .top(handle_inset)
+                            .w(frame_size.width)
+                            .h(frame_size.height)
+                            .children(self.mesh_points.iter().enumerate().map(|(point_index, point)| {
+                                render_mesh_handle(
+                                    point_index,
+                                    *point,
+                                    self.selected_mesh_point == Some(point_index),
+                                    cx.entity(),
+                                )
+                            })),
+                    );
                 let preview = div()
                     .flex_1()
                     .min_w(px(0.0))
                     .h_full()
+                    .flex()
+                    .items_center()
+                    .justify_center()
                     .corner_radii(preview_corner_radii)
                     .p(px(18.0))
+                    .on_prepaint(move |bounds, window, cx| {
+                        preview_container_builder.update(cx, |this, cx| {
+                            if this.handle_mesh_preview_container_bounds(bounds, cx) {
+                                window.refresh();
+                            }
+                        });
+                    })
                     .child(preview_surface);
 
                 hstack! {
@@ -1471,6 +1588,16 @@ fn mesh_grid_items() -> Vec<SelectorItem> {
     ]
 }
 
+fn mesh_aspect_ratio_items() -> Vec<SelectorItem> {
+    vec![
+        SelectorItem::new("fill").label("Fill"),
+        SelectorItem::new("9:19").label("9:19"),
+        SelectorItem::new("3:4").label("3:4"),
+        SelectorItem::new("1:1").label("1:1"),
+        SelectorItem::new("2:3").label("2:3"),
+    ]
+}
+
 fn preview_gradient_cache_key(
     gradient_type: GradientType,
     preview_size: Size<Pixels>,
@@ -1564,6 +1691,38 @@ fn default_mesh_selected_index(preset: MeshGridPreset) -> usize {
     mesh_point_index(rows / 2, cols / 2, cols)
 }
 
+fn fit_aspect_ratio(container: Size<Pixels>, aspect_preset: MeshAspectRatioPreset) -> Size<Pixels> {
+    let container_width = container.width.as_f32().max(0.0);
+    let container_height = container.height.as_f32().max(0.0);
+    if container_width <= 0.0 || container_height <= 0.0 {
+        return size(px(0.0), px(0.0));
+    }
+
+    let Some(ratio) = aspect_preset.ratio() else {
+        let fill_margin = (MESH_ASPECT_INSET - MESH_HANDLE_SIZE * 0.5).max(0.0);
+        return size(
+            px((container_width - MESH_HANDLE_SIZE - fill_margin * 2.0).max(0.0)),
+            px((container_height - MESH_HANDLE_SIZE - fill_margin * 2.0).max(0.0)),
+        );
+    };
+    if ratio <= f32::EPSILON {
+        return size(px(0.0), px(0.0));
+    }
+
+    let inset_width = (container_width - MESH_ASPECT_INSET * 2.0).max(0.0);
+    let inset_height = (container_height - MESH_ASPECT_INSET * 2.0).max(0.0);
+    if inset_width <= 0.0 || inset_height <= 0.0 {
+        return size(px(0.0), px(0.0));
+    }
+
+    let container_ratio = inset_width / inset_height.max(f32::EPSILON);
+    if container_ratio > ratio {
+        size(px(inset_height * ratio), px(inset_height))
+    } else {
+        size(px(inset_width), px(inset_width / ratio))
+    }
+}
+
 fn default_mesh_background() -> gpui::Hsla {
     gpui::hsla(222.0 / 360.0, 0.22, 0.12, 1.0)
 }
@@ -1575,6 +1734,8 @@ fn render_mesh_controls(
     selected_mesh_point: Option<usize>,
     mesh_grid_preset: MeshGridPreset,
     mesh_grid_selector: Entity<Selector>,
+    mesh_aspect_ratio_preset: MeshAspectRatioPreset,
+    mesh_aspect_ratio_selector: Entity<Selector>,
     mesh_reset_button: Entity<Button>,
     chrome: gpui_luma::theme::LumaChrome,
     card_bg: gpui::Hsla,
@@ -1613,6 +1774,8 @@ fn render_mesh_controls(
             )
             .child(form_field!("Preset", chrome; mesh_grid_selector))
             .child(render_info_row("Grid", mesh_grid_preset.label(), info_label_style, info_value_style, chrome))
+            .child(form_field!("Aspect", chrome; mesh_aspect_ratio_selector))
+            .child(render_info_row("Frame", mesh_aspect_ratio_preset.label(), info_label_style, info_value_style, chrome))
             .child(render_info_row("Selected", selected_label, info_label_style, info_value_style, chrome))
             .child(render_mesh_background_row(mesh_background, info_label_style, chrome, builder.clone())),
         div()
