@@ -366,6 +366,7 @@ pub fn rasterize_gradient_preview(
 pub fn rasterize_mesh_gradient_preview(
     size: gpui::Size<Pixels>,
     points: &[MeshPoint],
+    background: Hsla,
 ) -> Option<Arc<gpui::RenderImage>> {
     if points.len() != MESH_ROWS * MESH_COLS {
         return None;
@@ -380,6 +381,7 @@ pub fn rasterize_mesh_gradient_preview(
     }
 
     let mut pixmap = Pixmap::new(width, height)?;
+    fill_pixmap(&mut pixmap, background);
     let subdivisions = mesh_cell_subdivisions(width, height);
     {
         let pixels = pixmap.pixels_mut();
@@ -390,6 +392,16 @@ pub fn rasterize_mesh_gradient_preview(
 
     paint_mesh_guides(&mut pixmap, points, width as f32, height as f32);
     pixmap_to_render_image(pixmap)
+}
+
+fn fill_pixmap(pixmap: &mut Pixmap, color: Hsla) {
+    let rgba = hsla_to_rgba4(color);
+    let Some(pixel) = rgba_to_pixel(rgba) else {
+        return;
+    };
+    for existing in pixmap.pixels_mut().iter_mut() {
+        *existing = pixel;
+    }
 }
 
 fn paint_vertical_gradient_preview(
