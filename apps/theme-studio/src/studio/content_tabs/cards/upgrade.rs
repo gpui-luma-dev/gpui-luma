@@ -13,7 +13,7 @@ use gpui_luma::controls::radio_group::{
 };
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
-use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, LumaTextStyle};
+use gpui_luma::theme::{ControlSize, InteractionLayer, LumaTextStyle};
 use gpui_luma_look_shadcn::ShadcnToken;
 use gpui_luma::{declare_form, form_field, hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
@@ -25,6 +25,8 @@ const PLAN_CARD_RADIUS: f32 = 8.0;
 const PLAN_CARD_PADDING: f32 = 12.0;
 const PLAN_CARD_GAP: f32 = 8.0;
 const PLAN_DISABLED_OPACITY: f32 = 0.56;
+const PLAN_SELECTED_BORDER_WIDTH: f32 = 1.0;
+const PLAN_FOCUS_BORDER_WIDTH: f32 = 2.0;
 
 #[derive(Clone, Debug)]
 struct PlanOptionItem {
@@ -199,6 +201,7 @@ fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanO
     Arc::new(move |model, handlers, window, cx| {
         let chrome = look.chrome();
         let border = chrome.border;
+        let focus_ring = look.token_color("ring").unwrap_or(chrome.border);
         let body_text = chrome.body_text;
         let muted_text = chrome.muted_text;
         let card_surface = look.color(ShadcnToken::Card);
@@ -243,12 +246,7 @@ fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanO
                 content: Arc::new(|_, _| div().into_any_element()),
                 role: ButtonFamilyRole::Icon,
                 size: ButtonSize::Sm,
-                state: InteractionState {
-                    focused: false,
-                    hovered: interaction.hovered,
-                    pressed: interaction.pressed,
-                    disabled: interaction.disabled,
-                },
+                state: interaction,
                 round: false,
                 radius_override: Cell::new(None),
                 elevation: false,
@@ -303,6 +301,12 @@ fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanO
                 .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
                 .on_click(item_click)
                 .child(body);
+
+            if item.state.active {
+                card = card.border(px(PLAN_FOCUS_BORDER_WIDTH)).border_color(focus_ring);
+            } else if item.selected {
+                card = card.border(px(PLAN_SELECTED_BORDER_WIDTH));
+            }
 
             if item.enabled {
                 card = card.cursor_pointer();

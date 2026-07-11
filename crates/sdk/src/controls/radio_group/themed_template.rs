@@ -6,7 +6,8 @@ use gpui::{AnyElement, App, MouseButton, Window, div, prelude::*};
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::control_group::{
-    ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
+    ControlGroupItemLike, ControlGroupLayout, ControlGroupRenderModel, ControlGroupTemplate,
+    ControlGroupTemplateHandlers,
 };
 
 const DISABLED_OPACITY: f32 = 0.56;
@@ -73,38 +74,81 @@ where
             break;
         };
 
-        let render_model = ButtonRenderModel {
-            id: format!("{}-{}", model.id, item.item.id()).into(),
-            data: item.selected,
-            content: Arc::new({
-                let label = item.item.label().clone();
-                move |_, _| div().child(label.clone()).into_any_element()
-            }),
-            role: ButtonFamilyRole::Text,
-            size: ButtonSize::Md,
-            state: item.state.interaction_state(),
-            round: false,
-            radius_override: Cell::new(None),
-            elevation: true,
-            compact: false,
-            look: None,
-        };
+        if let Some(item_template) = model.item_template {
+            let indicator_render_model = ButtonRenderModel {
+                id: format!("{}-{}-indicator", model.id, item.item.id()).into(),
+                data: item.selected,
+                content: Arc::new(|_, _| div().into_any_element()),
+                role: ButtonFamilyRole::Icon,
+                size: ButtonSize::Md,
+                state: item.state.interaction_state(),
+                round: false,
+                radius_override: Cell::new(None),
+                elevation: false,
+                compact: true,
+                look: None,
+            };
+            let indicator = button_template.render(&indicator_render_model, window, cx);
+            let content = item_template(item, window, cx);
 
-        let mut button = button_template
-            .render(&render_model, window, cx)
-            .on_hover(item_hover)
-            .on_mouse_down(MouseButton::Left, item_mouse_down)
-            .on_mouse_up(MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
+            let mut row = div()
+                .id(format!("{}-item-{}", model.id, item.item.id()))
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(indicator)
+                .child(div().flex_1().min_w_0().child(content))
+                .on_hover(item_hover)
+                .on_mouse_down(MouseButton::Left, item_mouse_down)
+                .on_mouse_up(MouseButton::Left, item_mouse_up)
+                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
+                .on_click(item_click);
 
-        if item.enabled {
-            button = button.cursor_pointer();
+            if model.layout == ControlGroupLayout::Horizontal {
+                row = row.flex_1().h_full();
+            }
+
+            if item.enabled {
+                row = row.cursor_pointer();
+            } else {
+                row = row.opacity(DISABLED_OPACITY);
+            }
+
+            rows.push(row.into_any_element());
         } else {
-            button = button.opacity(DISABLED_OPACITY);
-        }
+            let render_model = ButtonRenderModel {
+                id: format!("{}-{}", model.id, item.item.id()).into(),
+                data: item.selected,
+                content: Arc::new({
+                    let label = item.item.label().clone();
+                    move |_, _| div().child(label.clone()).into_any_element()
+                }),
+                role: ButtonFamilyRole::Text,
+                size: ButtonSize::Md,
+                state: item.state.interaction_state(),
+                round: false,
+                radius_override: Cell::new(None),
+                elevation: true,
+                compact: false,
+                look: None,
+            };
 
-        rows.push(button.into_any_element());
+            let mut button = button_template
+                .render(&render_model, window, cx)
+                .on_hover(item_hover)
+                .on_mouse_down(MouseButton::Left, item_mouse_down)
+                .on_mouse_up(MouseButton::Left, item_mouse_up)
+                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
+                .on_click(item_click);
+
+            if item.enabled {
+                button = button.cursor_pointer();
+            } else {
+                button = button.opacity(DISABLED_OPACITY);
+            }
+
+            rows.push(button.into_any_element());
+        }
     }
 
     rows
