@@ -274,8 +274,9 @@ fn icon_button_state_header_icon(state_id: &'static str) -> LucideIcon {
         "hover" => LucideIcon::MousePointer2,
         "focused" => LucideIcon::SquareDashed,
         "pressed" => LucideIcon::ArrowDown,
+        "selected" => LucideIcon::Check,
         "disabled" => LucideIcon::CircleMinus,
-        "disabled-pressed" => LucideIcon::CircleMinus,
+        "disabled-pressed" | "disabled-selected" => LucideIcon::CircleMinus,
         _ => LucideIcon::House,
     }
 }
@@ -286,8 +287,10 @@ fn icon_button_state_display_label(header: &'static str) -> &'static str {
         "hover" => "Hover",
         "focused" => "Focused",
         "pressed" => "Pressed",
+        "selected" => "Selected",
         "disabled" => "Disabled",
         "disabled-pressed" => "Disabled · On",
+        "disabled-selected" => "Disabled · Selected",
         _ => header,
     }
 }
@@ -319,6 +322,39 @@ pub(crate) fn toggle_interaction_state_samples() -> [ButtonStateSample; 6] {
             id: "disabled-pressed",
             header: "disabled-pressed",
             state: InteractionState { disabled: true, pressed: true, ..InteractionState::default() },
+        },
+    ]
+}
+
+/// Toggle template preview columns, including resting selected (on) vs interaction pressed.
+pub(crate) fn toggle_template_preview_samples() -> [ButtonStateSample; 7] {
+    [
+        ButtonStateSample { id: "default", header: "default", state: InteractionState::default() },
+        ButtonStateSample {
+            id: "hover",
+            header: "hover",
+            state: InteractionState { hovered: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "focused",
+            header: "focused",
+            state: InteractionState { focused: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "pressed",
+            header: "pressed",
+            state: InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+        },
+        ButtonStateSample { id: "selected", header: "selected", state: InteractionState::default() },
+        ButtonStateSample {
+            id: "disabled",
+            header: "disabled",
+            state: InteractionState { disabled: true, ..InteractionState::default() },
+        },
+        ButtonStateSample {
+            id: "disabled-selected",
+            header: "disabled-selected",
+            state: InteractionState { disabled: true, ..InteractionState::default() },
         },
     ]
 }

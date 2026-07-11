@@ -6,8 +6,8 @@ use gpui::{
 };
 
 use super::model::{
-    ControlGroupChromeModel, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupRenderModel,
-    ControlSelectionMode,
+    ControlGroupChromeModel, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupLayout,
+    ControlGroupRenderModel, ControlSelectionMode,
 };
 use super::theme::{ControlGroupTheme, default_control_group_theme};
 use super::themed_template::{ThemedControlGroupTemplate, themed_control_group_template};
@@ -36,6 +36,67 @@ where
     E: IntoElement + 'static,
 {
     Arc::new(move |model, window, cx| template(model, window, cx).into_any_element())
+}
+
+pub type ControlGroupItemTemplateModifier<T> = Box<
+    dyn for<'a> Fn(AnyElement, &ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement
+        + Send
+        + Sync
+        + 'static,
+>;
+
+struct ModifiedControlGroupItemTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    base: ControlGroupItemTemplate<T>,
+    modifiers: Vec<ControlGroupItemTemplateModifier<T>>,
+}
+
+impl<T> ModifiedControlGroupItemTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    fn new(base: ControlGroupItemTemplate<T>) -> Self {
+        Self { base, modifiers: Vec::new() }
+    }
+
+    fn with_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(AnyElement, &ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.modifiers.push(Box::new(modifier));
+        self
+    }
+
+    fn into_template(self) -> ControlGroupItemTemplate<T> {
+        let base = self.base;
+        let modifiers = self.modifiers;
+        Arc::new(move |model, window, cx| {
+            let mut element = base(model, window, cx);
+            for modifier in &modifiers {
+                element = modifier(element, model, window, cx);
+            }
+            element
+        })
+    }
+}
+
+pub(super) fn item_template_with_modifier<T, F>(
+    template: ControlGroupItemTemplate<T>,
+    modifier: F,
+) -> ControlGroupItemTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+    F: for<'a> Fn(AnyElement, &ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement
+        + Send
+        + Sync
+        + 'static,
+{
+    ModifiedControlGroupItemTemplate::new(template).with_modifier(modifier).into_template()
 }
 
 pub type ControlGroupTemplate<T> = Arc<
@@ -185,6 +246,10 @@ where
             .on_mouse_up(MouseButton::Left, item_mouse_up)
             .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
             .on_click(item_click);
+
+        if model.layout == ControlGroupLayout::Horizontal {
+            row = row.flex_1().h_full();
+        }
 
         if item.enabled {
             row = row.cursor_pointer();

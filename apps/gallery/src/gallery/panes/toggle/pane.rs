@@ -232,42 +232,34 @@ struct ToggleStateSample {
     id: &'static str,
     header: &'static str,
     state: InteractionState,
+    selected: bool,
 }
 
 #[derive(Clone, Copy)]
 enum ToggleTemplateVariant {
-    TextUnselected,
-    TextSelected,
-    RoundIconUnselected,
-    RoundIconSelected,
+    Text,
+    RoundIcon,
 }
 
 impl ToggleTemplateVariant {
     fn id(self) -> &'static str {
         match self {
-            Self::TextUnselected => "text-unselected",
-            Self::TextSelected => "text-selected",
-            Self::RoundIconUnselected => "round-icon-unselected",
-            Self::RoundIconSelected => "round-icon-selected",
+            Self::Text => "text",
+            Self::RoundIcon => "round-icon",
         }
     }
 
-    fn selected(self) -> bool {
-        matches!(self, Self::TextSelected | Self::RoundIconSelected)
-    }
-
     fn round(self) -> bool {
-        matches!(self, Self::RoundIconUnselected | Self::RoundIconSelected)
+        matches!(self, Self::RoundIcon)
     }
 
-    fn content(self) -> Arc<ChoiceContentRenderer> {
+    fn content(self, selected: bool) -> Arc<ChoiceContentRenderer> {
         match self {
-            Self::TextUnselected | Self::TextSelected => {
+            Self::Text => {
                 let label = SharedString::from("Toggle");
                 Arc::new(move |_, _| div().child(label.clone()).into_any_element())
             }
-            Self::RoundIconUnselected => Arc::new(move |_, _| round_icon_glyph(false).into_any_element()),
-            Self::RoundIconSelected => Arc::new(move |_, _| round_icon_glyph(true).into_any_element()),
+            Self::RoundIcon => Arc::new(move |_, _| round_icon_glyph(selected).into_any_element()),
         }
     }
 }
@@ -282,34 +274,45 @@ impl Render for ToggleStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let samples = [
-            ToggleStateSample { id: "default", header: "default", state: InteractionState::default() },
+            ToggleStateSample { id: "default", header: "default", state: InteractionState::default(), selected: false },
             ToggleStateSample {
                 id: "hover",
                 header: "hover",
                 state: InteractionState { hovered: true, ..InteractionState::default() },
+                selected: false,
             },
             ToggleStateSample {
                 id: "focused",
                 header: "focused",
                 state: InteractionState { focused: true, ..InteractionState::default() },
+                selected: false,
             },
             ToggleStateSample {
                 id: "pressed",
                 header: "pressed",
                 state: InteractionState { hovered: true, pressed: true, focused: true, ..InteractionState::default() },
+                selected: false,
+            },
+            ToggleStateSample {
+                id: "selected",
+                header: "selected",
+                state: InteractionState::default(),
+                selected: true,
             },
             ToggleStateSample {
                 id: "disabled",
                 header: "disabled",
                 state: InteractionState { disabled: true, ..InteractionState::default() },
+                selected: false,
+            },
+            ToggleStateSample {
+                id: "disabled-selected",
+                header: "disabled · selected",
+                state: InteractionState { disabled: true, ..InteractionState::default() },
+                selected: true,
             },
         ];
-        let variants = [
-            ToggleTemplateVariant::TextUnselected,
-            ToggleTemplateVariant::TextSelected,
-            ToggleTemplateVariant::RoundIconUnselected,
-            ToggleTemplateVariant::RoundIconSelected,
-        ];
+        let variants = [ToggleTemplateVariant::Text, ToggleTemplateVariant::RoundIcon];
 
         div()
             .flex()
@@ -426,13 +429,13 @@ fn render_state_sample(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let selected = variant.selected();
+    let selected = sample.selected;
     let id = SharedString::from(format!("toggle-preview-{}-{}-{}", shadcn_style_id(style), variant.id(), sample.id));
     let look = look_for_style(look.clone(), style);
     let model = ButtonRenderModel {
         id,
         data: selected,
-        content: variant.content(),
+        content: variant.content(selected),
         role: ButtonFamilyRole::Toggle { selected },
         size: ButtonSize::Md,
         state: sample.state,

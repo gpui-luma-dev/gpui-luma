@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Hsla, Stateful, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::toggle_button_item_template;
+use gpui_luma::controls::control_group::{ControlGroupBuilder, ControlGroupChromeModel, toggle_button_item_template};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -14,12 +14,31 @@ use super::inspector_tree::build_toggle_group_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
 use super::super::shared::{gallery_pane_with_inspector, notify_entity};
 
+const STYLE_VARIANTS: [(&str, ShadcnButtonStyle); 4] = [
+    ("Primary", ShadcnButtonStyle::Primary),
+    ("Secondary", ShadcnButtonStyle::Secondary),
+    ("Outline", ShadcnButtonStyle::Outline),
+    ("Ghost", ShadcnButtonStyle::Ghost),
+];
+
+const PLACEMENT: [(&str, &str); 4] = [("top", "Top"), ("bottom", "Bottom"), ("left", "Left"), ("right", "Right")];
+
+#[derive(Clone)]
+enum DemoSelection {
+    Single(String),
+    Multiple(Vec<String>),
+}
+
+#[derive(Clone)]
+struct DemoGroup {
+    title: &'static str,
+    group: IconGroup<IconGroupItem>,
+    selection: DemoSelection,
+}
+
 #[derive(Clone)]
 pub(in crate::gallery) struct ToggleGroupPane {
-    single_group: IconGroup<IconGroupItem>,
-    multiple_group: IconGroup<IconGroupItem>,
-    placement: String,
-    visible_edges: Vec<String>,
+    demos: Vec<DemoGroup>,
     inspector: Entity<ColorInspectorShell>,
 }
 
@@ -43,67 +62,50 @@ impl ToggleGroupPane {
             )
         });
 
-        let toggle_template = look.toggle_template(ShadcnButtonStyle::Ghost);
+        let mut demos: Vec<DemoGroup> = STYLE_VARIANTS
+            .iter()
+            .map(|(title, style)| DemoGroup {
+                title,
+                group: icon_group(
+                    &look,
+                    &format!("{}-placement-toggle-group", title.to_ascii_lowercase()),
+                    *style,
+                    &["bottom"],
+                    false,
+                    cx,
+                ),
+                selection: DemoSelection::Single("Bottom".into()),
+            })
+            .collect();
 
-        let single_group = look
-            .button_group("placement-toggle-group")
-            .horizontal()
-            .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
-            .selected("bottom")
-            .items(placement_items())
-            .item_template(toggle_button_item_template(toggle_template.clone(), true, placement_icon_content))
-            .spawn(cx);
+        demos.push(DemoGroup {
+            title: "Multiple · Secondary",
+            group: icon_group(&look, "edge-toggle-group", ShadcnButtonStyle::Secondary, &["top", "left"], true, cx),
+            selection: DemoSelection::Multiple(vec!["Top".into(), "Left".into()]),
+        });
 
-        let multiple_group = look
-            .button_group("edge-toggle-group")
-            .horizontal()
-            .with_template_modifier(|element, _| element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0)))
-            .multiple()
-            .selected_ids(["top", "left"])
-            .items(edge_items())
-            .item_template(toggle_button_item_template(toggle_template, true, placement_icon_content))
-            .spawn(cx);
-
-        Self {
-            single_group,
-            multiple_group,
-            placement: "Bottom".to_string(),
-            visible_edges: vec!["Top".to_string(), "Left".to_string()],
-            inspector,
-        }
+        Self { demos, inspector }
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
-        subscriptions.push(cx.subscribe(&self.single_group, |app, _, event: &IconGroupEvent, cx| {
-            app.panes.toggle_group.handle_single_event(event, cx);
-        }));
-        subscriptions.push(cx.subscribe(&self.multiple_group, |app, _, event: &IconGroupEvent, cx| {
-            app.panes.toggle_group.handle_multiple_event(event, cx);
-        }));
+        for index in 0..self.demos.len() {
+            let group = self.demos[index].group.clone();
+            subscriptions.push(cx.subscribe(&group, move |app, _, event: &IconGroupEvent, cx| {
+                app.panes.toggle_group.apply_event(index, event, cx);
+            }));
+        }
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
         let chrome = look.chrome();
-
         gallery_pane_with_inspector(
             "Toggle Group",
             div()
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap_4()
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_2()
-                        .child(self.single_group.clone())
-                        .child(div().text_color(chrome.body_text).child(format!("Single: {}", self.placement))),
-                )
-                .child(div().flex().flex_col().items_center().gap_2().child(self.multiple_group.clone()).child(
-                    div().text_color(chrome.body_text).child(format!("Multiple: {}", self.visible_edges.join(", "))),
-                ))
+                .gap_5()
+                .children(self.demos.iter().map(|demo| demo_section(demo, chrome.body_text, chrome.muted_text)))
                 .into_any_element(),
             self.inspector.clone(),
             look,
@@ -111,46 +113,109 @@ impl ToggleGroupPane {
     }
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
-        notify_entity(&self.single_group, cx);
-        notify_entity(&self.multiple_group, cx);
+        for demo in &self.demos {
+            notify_entity(&demo.group, cx);
+        }
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
         notify_entity(&self.inspector.read(cx).detail(), cx);
         notify_entity(&self.inspector.read(cx).split(), cx);
     }
 
-    fn handle_single_event(&mut self, event: &IconGroupEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            IconGroupEvent::Change { changed_id, selected, .. } => {
-                self.placement = if *selected {
-                    label_for_id(changed_id.as_ref())
-                } else {
-                    "None".to_string()
-                };
-                cx.notify();
-            }
-        }
-    }
-
-    fn handle_multiple_event(&mut self, event: &IconGroupEvent, cx: &mut Context<GalleryApp>) {
-        match event {
-            IconGroupEvent::Change { selected_ids, .. } => {
-                self.visible_edges = if selected_ids.is_empty() {
-                    vec!["None".to_string()]
-                } else {
-                    selected_ids.iter().map(|id| label_for_id(id.as_ref())).collect()
-                };
-                cx.notify();
-            }
-        }
+    fn apply_event(&mut self, index: usize, event: &IconGroupEvent, cx: &mut Context<GalleryApp>) {
+        let Some(demo) = self.demos.get_mut(index) else {
+            return;
+        };
+        let IconGroupEvent::Change { changed_id, selected, selected_ids, .. } = event;
+        demo.selection = match &demo.selection {
+            DemoSelection::Single(_) => DemoSelection::Single(if *selected {
+                label_for(changed_id.as_ref())
+            } else {
+                "None".into()
+            }),
+            DemoSelection::Multiple(_) => DemoSelection::Multiple(if selected_ids.is_empty() {
+                vec!["None".into()]
+            } else {
+                selected_ids.iter().map(|id| label_for(id.as_ref())).collect()
+            }),
+        };
+        cx.notify();
     }
 }
 
-fn placement_icon_content(item: &IconGroupItem) -> AnyElement {
-    lucide_glyph(placement_icon_for_id(item.id().as_ref()))
+fn icon_group(
+    look: &Arc<ShadcnLook>,
+    id: impl Into<gpui::SharedString>,
+    style: ShadcnButtonStyle,
+    selected: &[&'static str],
+    multiple: bool,
+    cx: &mut Context<GalleryApp>,
+) -> IconGroup<IconGroupItem> {
+    let mut builder = look
+        .button_group(id)
+        .horizontal()
+        .with_template_modifier(pill_shell)
+        .items(items(&PLACEMENT))
+        .item_template(toggle_button_item_template(look.toggle_template(style), true, |item: &IconGroupItem| {
+            lucide_glyph(placement_icon(item.id().as_ref()))
+        }));
+    builder = apply_selection(builder, selected, multiple);
+    builder.spawn(cx)
 }
 
-fn placement_icon_for_id(id: &str) -> LucideIcon {
+fn apply_selection(
+    builder: ControlGroupBuilder<IconGroupItem>,
+    selected: &[&'static str],
+    multiple: bool,
+) -> ControlGroupBuilder<IconGroupItem> {
+    if multiple {
+        builder.multiple().selected_ids(selected.iter().copied())
+    } else {
+        builder.selected(selected[0])
+    }
+}
+
+fn pill_shell(element: Stateful<gpui::Div>, _: &ControlGroupChromeModel) -> Stateful<gpui::Div> {
+    element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0))
+}
+
+fn demo_section(demo: &DemoGroup, body: Hsla, muted: Hsla) -> AnyElement {
+    let caption = match &demo.selection {
+        DemoSelection::Single(value) => format!("Single: {value}"),
+        DemoSelection::Multiple(values) => format!("Selected: {}", values.join(", ")),
+    };
+
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap_2()
+        .child(
+            div()
+                .text_size(px(13.0))
+                .line_height(px(18.0))
+                .font_weight(gpui::FontWeight::MEDIUM)
+                .text_color(muted)
+                .child(demo.title),
+        )
+        .child(demo.group.clone())
+        .child(div().text_size(px(12.0)).line_height(px(16.0)).text_color(body).child(caption))
+        .into_any_element()
+}
+
+fn items(entries: &[(&'static str, &'static str)]) -> Vec<IconGroupItem> {
+    entries.iter().map(|(id, label)| IconGroupItem::new(*id).label(*label)).collect()
+}
+
+fn label_for(id: &str) -> String {
+    PLACEMENT
+        .iter()
+        .find(|(key, _)| *key == id)
+        .map(|(_, label)| (*label).to_string())
+        .unwrap_or_else(|| id.to_string())
+}
+
+fn placement_icon(id: &str) -> LucideIcon {
     match id {
         "top" => LucideIcon::PanelTop,
         "bottom" => LucideIcon::PanelBottom,
@@ -158,28 +223,4 @@ fn placement_icon_for_id(id: &str) -> LucideIcon {
         "right" => LucideIcon::PanelRight,
         _ => LucideIcon::Settings,
     }
-}
-
-fn placement_items() -> [IconGroupItem; 4] {
-    [
-        IconGroupItem::new("top").label("Top"),
-        IconGroupItem::new("bottom").label("Bottom"),
-        IconGroupItem::new("left").label("Left"),
-        IconGroupItem::new("right").label("Right"),
-    ]
-}
-
-fn edge_items() -> [IconGroupItem; 4] {
-    placement_items()
-}
-
-fn label_for_id(id: &str) -> String {
-    match id {
-        "top" => "Top",
-        "bottom" => "Bottom",
-        "left" => "Left",
-        "right" => "Right",
-        _ => id,
-    }
-    .to_string()
 }

@@ -12,7 +12,7 @@ use crate::studio::style::shared::button_matrix::{
     BUTTON_SIZES, BUTTON_STYLE_VARIANTS, BUTTON_TABLE_RADIUS_COLUMN_WIDTH, BUTTON_TABLE_SIZE_HEADER_HEIGHT,
     BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT, BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH, ICON_BUTTON_VARIANTS,
     SIZE_PREVIEW_STYLE, button_size_id, radius_label_id, render_button_radius_header_cell,
-    render_icon_button_state_header_cell, shadcn_style_id, toggle_interaction_state_samples,
+    render_icon_button_state_header_cell, shadcn_style_id, toggle_template_preview_samples,
 };
 use crate::studio::style::shared::icons::render_lucide_icon;
 use crate::studio::style::shared::samples::ButtonStateSample;
@@ -29,14 +29,14 @@ pub(crate) fn render_toggle_template_matrix_section(
 ) -> AnyElement {
     let chrome = look.chrome();
     let template = look.toggle_template(ShadcnButtonStyle::Secondary);
-    let samples = toggle_interaction_state_samples();
+    let samples = toggle_template_preview_samples();
     let active_tab =
         preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
         "Toggles",
-        "Selected toggles per style variant. Pressed and Disabled · On columns show toggled on.",
+        "Style variants across interaction states. Selected and Disabled · Selected columns show toggled on.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
@@ -278,7 +278,7 @@ fn render_toggle_size_radius_cell(
 }
 
 fn toggle_selected_for_sample(sample: &ButtonStateSample) -> bool {
-    matches!(sample.id, "pressed" | "disabled-pressed")
+    matches!(sample.id, "selected" | "disabled-selected")
 }
 
 fn render_toggle_state_sample(

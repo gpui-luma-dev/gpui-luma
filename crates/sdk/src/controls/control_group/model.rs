@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Div, Entity, IntoElement, SharedString, Stateful, Window};
+use gpui::{App, AppContext, Div, Entity, IntoElement, ParentElement, SharedString, Stateful, Window, div};
 
 use super::control::ControlGroupControl;
 use super::template::{
-    ControlGroupItemTemplate, ControlGroupTemplate, default_control_group_template, make_control_group_item_template,
-    modified_control_group_template,
+    ControlGroupItemTemplate, ControlGroupTemplate, default_control_group_template, item_template_with_modifier,
+    make_control_group_item_template, modified_control_group_template,
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 
@@ -310,6 +310,22 @@ where
         self.item_template(make_control_group_item_template(template))
     }
 
+    pub fn with_item_template_modifier<F>(mut self, modifier: F) -> Self
+    where
+        F: for<'a> Fn(gpui::AnyElement, &ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> gpui::AnyElement
+            + Send
+            + Sync
+            + 'static,
+    {
+        let base = self.model.item_template.take().unwrap_or_else(|| {
+            make_control_group_item_template(|item: &ControlGroupItemRenderModel<'_, T>, _, _| {
+                div().child(item.item.label().clone())
+            })
+        });
+        self.model.item_template = Some(item_template_with_modifier(base, modifier));
+        self
+    }
+
     pub fn clear_item_template(mut self) -> Self {
         self.model.item_template = None;
         self
@@ -346,5 +362,58 @@ where
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<ControlGroupControl<T>> {
         cx.new(|cx| ControlGroupControl::from_builder(self, cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_template_modifier_wraps_template() {
+        let template = default_control_group_template::<ControlGroupItem>();
+        let builder = ControlGroupBuilder::new("control-group-test")
+            .template(template.clone())
+            .with_template_modifier(|el, _| el);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn with_item_template_modifier_creates_template_from_default_content() {
+        let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test")
+            .with_item_template_modifier(|content, _, _, _| content);
+
+        assert!(builder.model.item_template.is_some());
+    }
+
+    #[test]
+    fn with_item_template_modifier_wraps_existing_item_template() {
+        let item_template =
+            make_control_group_item_template(|_item: &ControlGroupItemRenderModel<'_, ControlGroupItem>, _, _| {
+                gpui::div()
+            });
+        let builder = ControlGroupBuilder::new("control-group-test")
+            .item_template(item_template.clone())
+            .with_item_template_modifier(|content, _, _, _| content);
+
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+
+    #[test]
+    fn template_and_item_modifiers_compose_on_builder() {
+        let template = default_control_group_template::<ControlGroupItem>();
+        let item_template =
+            make_control_group_item_template(|_item: &ControlGroupItemRenderModel<'_, ControlGroupItem>, _, _| {
+                gpui::div()
+            });
+        let builder = ControlGroupBuilder::new("control-group-test")
+            .template(template.clone())
+            .item_template(item_template.clone())
+            .with_template_modifier(|el, _| el)
+            .with_item_template_modifier(|content, _, _, _| content);
+
+        assert!(!Arc::ptr_eq(&builder.model.template, &template));
+        assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
     }
 }

@@ -40,6 +40,9 @@ Completed so far:
 12. the mesh tab supports aspect presets: `Fill`, `9:19`, `3:4`, `1:1`, `2:3`
 13. preview framing now accounts for handle space instead of sizing the frame as if handles consumed no room
 14. the most recent `Fill` sizing bug on the right edge was fixed by fitting against the inner preview content box rather than the outer padded shell
+15. the builder-side code was reorganized into smaller app-local modules for readability
+16. the paint/raster side was reorganized into shared types, gradient paint, and mesh paint modules
+17. the mesh raster path now has an explicit algorithm seam so the current implementation can be replaced later
 
 Still true:
 
@@ -47,6 +50,7 @@ Still true:
 2. the point list is still vertically expensive
 3. the current work is still app-local to `apps/color-viz`
 4. this is still not a general mesh-topology editor
+5. the attempted gradient-to-mesh seed workflow was reverted and is not part of the current plan
 
 ## Scope Reset: 2026-07-10
 
@@ -116,7 +120,7 @@ This affects:
 1. preview framing
 2. raster size policy
 3. point placement normalization
-4. how preset meshes are seeded and displayed
+4. how preset meshes are initialized and displayed
 
 This should be treated as mesh configuration, not as a visual afterthought.
 
@@ -304,31 +308,30 @@ Avoid:
 
 ### `apps/color-viz/src/gradient_builder/builder.rs`
 
-Likely responsibilities:
+Current responsibilities:
 
-1. mesh preset selection state
-2. mesh aspect-ratio selection state
-3. mesh background color editing
-4. compact point-list rendering
-5. preview cache invalidation across preset/aspect/background changes
+1. `builder.rs` is now the thin entry point for state, setup, and subscription wiring
+2. `builder/actions.rs` owns event handling, drag behavior, color-picker routing, and preview-cache invalidation
+3. `builder/view.rs` owns the `Render` implementation and mesh/gradient control rendering
+4. `builder/mesh.rs` owns mesh presets, aspect presets, sizing helpers, cache-key helpers, and default mesh setup
 
-### `apps/color-viz/src/gradient_builder/paint.rs`
+### `apps/color-viz/src/gradient_builder/paint/`
 
-Likely responsibilities:
+Current responsibilities:
 
-1. apply background fill before mesh rasterization
-2. use current mesh points against the active aspect ratio
-3. keep guide-line painting separate from the fill pass
+1. `paint/types.rs` owns shared preview enums and mesh point types
+2. `paint/gradient.rs` owns linear/radial/angular preview paint and raster logic
+3. `paint/mesh.rs` owns mesh rasterization, guide drawing, and the current mesh-algorithm seam
 
-### Optional app-local split
+### Rendering seam
 
-If the file grows too large, break mesh logic into:
+The current mesh raster path should now be treated as replaceable internals, not as the permanent final shape.
 
-1. `mesh.rs`
-2. `mesh_paint.rs`
-3. `mesh_view.rs`
+Specifically:
 
-Do that only if it reduces confusion. Do not split files just to satisfy symmetry.
+1. the current algorithm remains the default implementation
+2. the algorithm is now isolated inside `paint/mesh.rs`
+3. a future renderer swap should target that seam instead of touching builder/view code first
 
 ## Revised Phase Plan
 
@@ -399,6 +402,21 @@ Exit criteria:
 2. the selected point is still easy to identify
 3. the panel is denser without becoming cryptic
 
+### Explicit non-goal right now: gradient-to-mesh seeding
+
+Status: Tried and reverted
+
+Decision:
+
+1. do not continue the current `Seed From Gradient` interaction
+2. do not couple the mesh tab to the gradient tab as the next step
+3. revisit mesh seeding later only if it becomes a clearly separate mesh-local workflow
+
+Reason:
+
+1. the reverted experiment did not feel like the right product shape
+2. the more urgent problem is still mesh-panel usability and overall editor clarity
+
 ### Phase 3: Rendering refinement and panel cleanup follow-through
 
 After the preset/aspect work, the next practical phase is not arbitrary topology. It is quality and usability cleanup on the fixed supported feature set.
@@ -412,7 +430,7 @@ Work:
 1. tighten panel density so `4 x 4` remains comfortable without heavy scrolling
 2. clean up any remaining preview-edge spacing inconsistencies between `Fill` and fixed aspect presets
 3. reduce obvious raster artifacts where possible without throwing away the current mesh renderer
-4. make default preset seeding look intentional across all supported grids
+4. make default preset initialization look intentional across all supported grids
 
 Exit criteria:
 
@@ -457,4 +475,4 @@ Concrete next coding slice:
 3. keep preset, aspect, reset, and background controls visible without excessive scrolling
 4. verify `4 x 4` remains usable after compaction
 
-Do not combine that with arbitrary-grid generalization in the same pass.
+Do not combine that with mesh seeding or arbitrary-grid generalization in the same pass.
