@@ -10,7 +10,7 @@ use crate::gallery::control::GalleryApp;
 use super::inspector_tree::build_tree_view_inspect_tree;
 use super::scroll_shell::TreeViewScrollShell;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 const TREE_VIEW_DESCRIPTION: &str = concat!(
     "Virtualized tree view for hierarchical data such as file explorers. ",
@@ -64,10 +64,11 @@ impl TreeViewPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector_description(
+            "tree-view",
             "Tree View",
             Some(TREE_VIEW_DESCRIPTION),
             div()
@@ -101,6 +102,7 @@ impl TreeViewPane {
                 )
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

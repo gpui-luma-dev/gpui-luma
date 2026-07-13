@@ -15,7 +15,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_resizable_panels_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 const DEMO_WIDTH: f32 = 540.0;
 const DEMO_HEIGHT: f32 = 220.0;
@@ -233,10 +233,11 @@ impl ResizablePanelsPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector_description(
+            "resizable-panels",
             "Resizable Panels",
             Some(
                 "Panel groups for horizontal, vertical, overlay handles (ResizeHandleSize), nested composition, and weight-based splits with pixel min/max.",
@@ -275,6 +276,7 @@ impl ResizablePanelsPane {
                 ))
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

@@ -13,7 +13,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_accordion_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 const ACCORDION_DESCRIPTION: &str = concat!(
     "Accordion groups collapsible sections with single or multiple expansion modes. ",
@@ -124,10 +124,11 @@ impl AccordionPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector_description(
+            "accordion",
             "Accordion",
             Some(ACCORDION_DESCRIPTION),
             div()
@@ -146,6 +147,7 @@ impl AccordionPane {
                 )
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

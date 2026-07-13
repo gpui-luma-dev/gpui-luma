@@ -11,7 +11,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_badge_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct BadgePane {
@@ -35,8 +35,9 @@ impl BadgePane {
         Self { inspector }
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         gallery_pane_with_inspector_description(
+            "badge",
             "Badge",
             Some(
                 "Look-specific inline status element with variant colors, shared metric scaling, and optional start/end icons.",
@@ -95,6 +96,7 @@ impl BadgePane {
             }
             .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

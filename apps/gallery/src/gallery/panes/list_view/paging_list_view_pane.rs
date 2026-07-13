@@ -12,7 +12,7 @@ use lucide_icons::Icon as LucideIcon;
 use crate::gallery::control::GalleryApp;
 use super::inspector_tree::build_list_view_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 use super::common::{Task, build_task_rows, email_column, selected_summary, status_cell, tag_pill};
 
 const DEFAULT_PAGE_SIZE: usize = 10;
@@ -113,10 +113,11 @@ impl PagingListViewPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector(
+            "paging-list-view",
             "Paging List View",
             div()
                 .w(px(760.0))
@@ -150,6 +151,7 @@ impl PagingListViewPane {
                 .child(self.list_view.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

@@ -1,7 +1,10 @@
+mod inspector_toggle;
 mod template_pipeline;
 mod theme_context;
 
 pub(in crate::gallery) mod inspector;
+
+pub(in crate::gallery) use inspector_toggle::InspectorToggleRegistry;
 
 pub(in crate::gallery) use theme_context::render_sparse_catalog_callout;
 
@@ -41,31 +44,38 @@ pub(super) fn gallery_pane_with_description(
 }
 
 pub(super) fn gallery_pane_with_inspector(
+    page_id: &'static str,
     title: &'static str,
     content: AnyElement,
     inspector: impl IntoElement,
+    toggles: &InspectorToggleRegistry,
     look: &ShadcnLook,
 ) -> AnyElement {
-    gallery_pane_with_inspector_description(title, None, content, inspector, look)
+    gallery_pane_with_inspector_description(page_id, title, None, content, inspector, toggles, look)
 }
 
 pub(super) fn gallery_pane_scrollable_with_inspector(
+    page_id: &'static str,
     title: &'static str,
     content: AnyElement,
     inspector: impl IntoElement,
+    toggles: &InspectorToggleRegistry,
     look: &ShadcnLook,
 ) -> AnyElement {
-    gallery_pane_scrollable_with_inspector_description(title, None, content, inspector, look)
+    gallery_pane_scrollable_with_inspector_description(page_id, title, None, content, inspector, toggles, look)
 }
 
 pub(super) fn gallery_pane_scrollable_with_inspector_description(
+    page_id: &'static str,
     title: &'static str,
     description: Option<&'static str>,
     content: AnyElement,
     inspector: impl IntoElement,
+    toggles: &InspectorToggleRegistry,
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let entry = toggles.get(page_id);
 
     div()
         .size_full()
@@ -75,27 +85,33 @@ pub(super) fn gallery_pane_scrollable_with_inspector_description(
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
-        .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
-        .child(
-            div().min_h(px(0.0)).flex_1().child(
-                DockPanel::new()
-                    .right(div().h_full().min_h(px(0.0)).flex().child(div().w(px(28.0)).h_full()).child(
-                        div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector),
-                    ))
-                    .fill(render_scrollable_pane_body(title, content)),
-            ),
-        )
+        .child(render_pane_header_with_toggle(
+            title,
+            description,
+            entry.toggle.clone(),
+            look,
+            chrome.title_text,
+            chrome.muted_text,
+        ))
+        .child(div().min_h(px(0.0)).flex_1().child(render_pane_body_with_optional_inspector(
+            entry.visible,
+            inspector,
+            render_scrollable_pane_body(title, content),
+        )))
         .into_any_element()
 }
 
 pub(super) fn gallery_pane_with_inspector_description(
+    page_id: &'static str,
     title: &'static str,
     description: Option<&'static str>,
     content: AnyElement,
     inspector: impl IntoElement,
+    toggles: &InspectorToggleRegistry,
     look: &ShadcnLook,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let entry = toggles.get(page_id);
 
     div()
         .size_full()
@@ -105,23 +121,86 @@ pub(super) fn gallery_pane_with_inspector_description(
         .overflow_hidden()
         .bg(chrome.content_background)
         .p(px(28.0))
-        .child(render_pane_header(title, description, look, chrome.title_text, chrome.muted_text))
+        .child(render_pane_header_with_toggle(
+            title,
+            description,
+            entry.toggle.clone(),
+            look,
+            chrome.title_text,
+            chrome.muted_text,
+        ))
         .child(
-            div().min_h(px(0.0)).flex_1().child(
-                DockPanel::new()
-                    .right(div().h_full().min_h(px(0.0)).flex().child(div().w(px(28.0)).h_full()).child(
-                        div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector),
-                    ))
-                    .fill(
-                        div()
-                            .min_h(px(0.0))
-                            .flex()
-                            .items_stretch()
-                            .justify_center()
-                            .child(render_centered_pane_body(content)),
-                    ),
-            ),
+            div().min_h(px(0.0)).flex_1().child(render_pane_body_with_optional_inspector(
+                entry.visible,
+                inspector,
+                div()
+                    .min_h(px(0.0))
+                    .flex()
+                    .items_stretch()
+                    .justify_center()
+                    .child(render_centered_pane_body(content))
+                    .into_any_element(),
+            )),
         )
+        .into_any_element()
+}
+
+fn render_pane_body_with_optional_inspector(
+    visible: bool,
+    inspector: impl IntoElement,
+    fill: AnyElement,
+) -> AnyElement {
+    if visible {
+        DockPanel::new().right(render_inspector_column(inspector)).fill(fill).into_any_element()
+    } else {
+        fill
+    }
+}
+
+fn render_inspector_column(inspector: impl IntoElement) -> AnyElement {
+    div()
+        .h_full()
+        .min_h(px(0.0))
+        .flex()
+        .child(div().w(px(28.0)).h_full())
+        .child(div().w(px(620.0)).min_w(px(620.0)).min_h(px(0.0)).h_full().flex().flex_col().child(inspector))
+        .into_any_element()
+}
+
+fn render_pane_header_with_toggle(
+    title: &'static str,
+    description: Option<&'static str>,
+    toggle: impl IntoElement,
+    look: &ShadcnLook,
+    title_color: Hsla,
+    description_color: Hsla,
+) -> AnyElement {
+    let title_style = look.typography_role(ShadcnTextRole::H3);
+    let description_style = look.typography_scale(ShadcnTextSize::Sm);
+
+    div()
+        .w_full()
+        .flex()
+        .items_start()
+        .justify_between()
+        .gap(px(12.0))
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(4.0))
+                .child(div().typography_style(title_style).text_color(title_color).child(title))
+                .when_some(description, |header, description| {
+                    header.child(
+                        div()
+                            .max_w(px(760.0))
+                            .typography_style(description_style)
+                            .text_color(description_color)
+                            .child(description),
+                    )
+                }),
+        )
+        .child(toggle)
         .into_any_element()
 }
 

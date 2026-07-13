@@ -41,6 +41,23 @@ color-viz-rel:
 graph-viz:
     cargo run -p gpui-luma-graph-viz -- awesome-open-claw
 
+# SplitView shell demos (apps/shells/)
+
+shell:
+    cargo run -p gpui-luma-shell-unified -- default
+
+shell-inset:
+    cargo run -p gpui-luma-shell-inset -- default
+
+shell-rail:
+    cargo run -p gpui-luma-shell-icon-rail -- default
+
+shell-detached:
+    cargo run -p gpui-luma-shell-detached -- default
+
+shell-titlebar:
+    cargo run -p gpui-luma-shell-split-titlebar -- default
+
 loc:
     tokei --types Rust
 

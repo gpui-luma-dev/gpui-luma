@@ -18,7 +18,7 @@ use crate::gallery::control::GalleryApp;
 use super::inspector_tree::build_radio_button_inspect_tree;
 use super::super::button::labeling::render_vertical_section_rail;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 type ChoiceContentRenderer = dyn Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync;
 
@@ -79,10 +79,11 @@ impl RadioButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector(
+            "radio-button",
             "Radio Button",
             div()
                 .flex()
@@ -116,6 +117,7 @@ impl RadioButtonPane {
                 .child(self.state_preview.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

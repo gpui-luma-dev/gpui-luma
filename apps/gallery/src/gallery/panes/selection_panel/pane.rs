@@ -22,7 +22,9 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_selection_panel_inspect_tree;
 use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use crate::gallery::panes::shared::{format_compact_hsla, gallery_pane_with_inspector_description, notify_entity};
+use crate::gallery::panes::shared::{
+    format_compact_hsla, gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry,
+};
 use super::layout::{PAGE_SPEC, render_live_panel_sample, render_page_header, render_section};
 
 #[derive(Clone)]
@@ -169,11 +171,12 @@ impl SelectionPanelPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
         let sections = PAGE_SPEC.sections;
 
         gallery_pane_with_inspector_description(
+            "selection-panel",
             PAGE_SPEC.title,
             Some(PAGE_SPEC.description),
             div()
@@ -222,6 +225,7 @@ impl SelectionPanelPane {
                 ))
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

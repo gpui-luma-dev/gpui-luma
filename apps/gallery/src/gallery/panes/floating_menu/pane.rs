@@ -17,7 +17,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_floating_menu_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct FloatingMenuPane {
@@ -49,11 +49,12 @@ impl FloatingMenuPane {
 
     pub(in crate::gallery) fn subscribe(&self, _cx: &mut Context<GalleryApp>, _subscriptions: &mut Vec<Subscription>) {}
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
         let menu_look = self.menu_theme.resolve();
 
         gallery_pane_with_inspector(
+            "floating-menu",
             "Floating Menu",
             div()
                 .flex()
@@ -93,6 +94,7 @@ impl FloatingMenuPane {
                 .child(div().text_sm().text_color(chrome.muted_text).child(floating_menu_state_machine_snapshot()))
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

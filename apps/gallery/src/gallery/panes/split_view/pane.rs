@@ -18,7 +18,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_split_view_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 use super::shared::{
     DEMO_HEIGHT, DEMO_WIDTH, ICON_RAIL_COLLAPSED_WIDTH, apply_separator_visibility_toggle, content_pane_with_panel,
     demo_frame, inset_content_pane, mockup_shell, nav_pane_mock, separator_switch, separator_visibility_label,
@@ -208,12 +208,17 @@ impl SplitViewPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, kind: SplitViewDemoKind, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(
+        &self,
+        kind: SplitViewDemoKind,
+        look: &ShadcnLook,
+        toggles: &InspectorToggleRegistry,
+    ) -> AnyElement {
         match kind {
-            SplitViewDemoKind::Unified => self.render_unified(look),
-            SplitViewDemoKind::Inset => self.render_inset(look),
-            SplitViewDemoKind::IconRail => self.render_icon_rail(look),
-            SplitViewDemoKind::Detached => self.render_detached(look),
+            SplitViewDemoKind::Unified => self.render_unified(look, toggles),
+            SplitViewDemoKind::Inset => self.render_inset(look, toggles),
+            SplitViewDemoKind::IconRail => self.render_icon_rail(look, toggles),
+            SplitViewDemoKind::Detached => self.render_detached(look, toggles),
         }
     }
 
@@ -278,11 +283,12 @@ impl SplitViewPane {
         }));
     }
 
-    fn render_unified(&self, look: &ShadcnLook) -> AnyElement {
+    fn render_unified(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
         gallery_pane_with_inspector_description(
+            "split-view-unified",
             "Split View: Unified",
             Some("Baseline unified split view with fixed nav pane width in a shared frame."),
             self.demo_body(
@@ -307,11 +313,12 @@ impl SplitViewPane {
                 ),
             ),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }
 
-    fn render_inset(&self, look: &ShadcnLook) -> AnyElement {
+    fn render_inset(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let shell_pad = px(10.0);
         let inset_pad = px(10.0);
         let shell_width = px(DEMO_WIDTH);
@@ -322,6 +329,7 @@ impl SplitViewPane {
         let split_width = (sample_width - inset_pad * 2.0).max(px(1.0));
 
         gallery_pane_with_inspector_description(
+            "split-view-inset",
             "Split View: Layered Inset",
             Some("Layered inset split view with nav and content panes in one frame."),
             self.demo_body(
@@ -352,15 +360,17 @@ impl SplitViewPane {
                 ),
             ),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }
 
-    fn render_icon_rail(&self, look: &ShadcnLook) -> AnyElement {
+    fn render_icon_rail(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
         gallery_pane_with_inspector_description(
+            "split-view-icon-rail",
             "Split View: Icon Rail",
             Some("Split view with collapse-to-icon-rail behavior."),
             self.demo_body(
@@ -392,15 +402,17 @@ impl SplitViewPane {
                 ),
             ),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }
 
-    fn render_detached(&self, look: &ShadcnLook) -> AnyElement {
+    fn render_detached(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let canvas_width = px(DEMO_WIDTH);
         let canvas_height = px(DEMO_HEIGHT);
 
         gallery_pane_with_inspector_description(
+            "split-view-detached",
             "Split View: Detached",
             Some("Detached nav pane and independent content pane surface."),
             self.demo_body(
@@ -429,6 +441,7 @@ impl SplitViewPane {
                 ),
             ),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

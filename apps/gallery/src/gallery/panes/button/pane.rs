@@ -20,7 +20,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_shell::ButtonInspectorShell;
 use super::inspector_tree::spawn_button_inspector_tree;
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 use super::labeling::render_vertical_section_rail;
 
 #[derive(Clone)]
@@ -71,8 +71,9 @@ impl ButtonPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         gallery_pane_with_inspector(
+            "button",
             "Command (Text)",
             div()
                 .flex()
@@ -92,6 +93,7 @@ impl ButtonPane {
                 .child(self.state_preview.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

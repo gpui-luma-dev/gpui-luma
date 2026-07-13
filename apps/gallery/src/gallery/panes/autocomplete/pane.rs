@@ -9,7 +9,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_autocomplete_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct AutocompleteTextFieldPane {
@@ -56,8 +56,9 @@ impl AutocompleteTextFieldPane {
         ));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         gallery_pane_with_inspector(
+            "autocomplete-textfield",
             "Autocomplete TextBox",
             div()
                 .w(px(240.0))
@@ -68,6 +69,7 @@ impl AutocompleteTextFieldPane {
                 .child(self.autocomplete_textbox.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

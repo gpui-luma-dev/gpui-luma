@@ -9,7 +9,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_search_selector_inspect_tree;
 use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity};
+use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SearchSelectorPane {
@@ -54,8 +54,9 @@ impl SearchSelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         gallery_pane_with_inspector(
+            "search-selector",
             "SearchSelector",
             div()
                 .w(px(280.0))
@@ -73,6 +74,7 @@ impl SearchSelectorPane {
                 .child(self.selector.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

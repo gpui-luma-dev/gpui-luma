@@ -1,0 +1,80 @@
+use std::sync::Arc;
+
+use gpui::{Context, Entity, FocusHandle, IntoElement, Render, Subscription, Window, px};
+use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
+use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
+use gpui_luma::theme::ThemeMode;
+use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_shell_common::{
+    chrome::{HasShellTheme, render_app_root, render_title_bar, wrap_content_pane},
+    content, nav_sample,
+    split_sync::wire_split_nav_sync,
+    theme::{ShellThemeChoice, sync_color_control_theme},
+};
+
+pub struct UnifiedShellApp {
+    focus_scope: FocusHandle,
+    pane_focus: FocusHandle,
+    look: Arc<ShadcnLook>,
+    split_view: Entity<SplitView>,
+    navigation_sidebar: Entity<NavigationSidebar>,
+    _subscriptions: Vec<Subscription>,
+}
+
+impl UnifiedShellApp {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>, theme_choice: ShellThemeChoice) -> Self {
+        let focus_scope = cx.focus_handle();
+        let pane_focus = cx.focus_handle().tab_stop(true);
+        window.focus(&focus_scope, cx);
+        let look = theme_choice.shadcn_look();
+        look.set_mode(ThemeMode::Dark);
+        sync_color_control_theme(&look);
+
+        let navigation_sidebar = nav_sample::spawn_properties_sidebar(look.clone(), "shell-nav", cx);
+        let split_view = look
+            .split_view("shell-unified")
+            .sidebar_width(px(300.0))
+            .sidebar_min_width(px(240.0))
+            .sidebar_max_width(px(420.0))
+            .sidebar_collapsed_width(px(56.0))
+            .separator_visibility(SplitViewSeparatorVisibility::Hover)
+            .spawn(cx);
+
+        let mut subscriptions = Vec::new();
+        wire_split_nav_sync(&mut subscriptions, split_view.clone(), navigation_sidebar.clone(), cx);
+
+        Self { focus_scope, pane_focus, look, split_view, navigation_sidebar, _subscriptions: subscriptions }
+    }
+}
+
+impl HasShellTheme for UnifiedShellApp {
+    fn look(&self) -> &Arc<ShadcnLook> {
+        &self.look
+    }
+}
+
+impl Render for UnifiedShellApp {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let pane_focus = self.pane_focus.clone();
+        let navigation_sidebar = self.navigation_sidebar.clone();
+        let look = self.look.clone();
+        let sans_family = look.mode_tokens().typography.font.sans.family.clone();
+
+        self.split_view.update(cx, |split_view, cx| {
+            split_view.set_panes(
+                render_pane(move || navigation_sidebar.clone()),
+                render_pane(move || {
+                    wrap_content_pane(content::shell_content_pane(), pane_focus.clone(), &look, sans_family.clone())
+                }),
+                cx,
+            );
+        });
+
+        render_app_root(
+            &self.focus_scope,
+            &self.look,
+            render_title_bar("Shell: Unified", self, cx),
+            self.split_view.clone(),
+        )
+    }
+}

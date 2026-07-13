@@ -16,8 +16,10 @@ use super::{
     accordion, autocomplete, badge, button, checkbox, choice_controls_template, color, color_compositions, combobox,
     context_menu, dock_panel, floating_menu, tree_view, list_view, listbox, navigation_sidebar, palette, popup_menu,
     pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search_selector,
-    selection_panel, split_view, selector, selector_controls_template, settings, shared::gallery_pane, slider, switch,
-    tabs_navigation, textarea, textfield, toggle, toggle_group, typography, dialog,
+    selection_panel,
+    shared::{gallery_pane, InspectorToggleRegistry},
+    split_view, selector, selector_controls_template, settings, slider, switch, tabs_navigation, textarea, textfield,
+    toggle, toggle_group, typography, dialog,
 };
 
 #[derive(Clone, Copy)]
@@ -434,6 +436,7 @@ const CONTROL_GROUPS: &[GalleryNavGroup] = &[
 #[derive(Clone)]
 pub(in crate::gallery) struct GalleryPanes {
     pub(in crate::gallery) look: Arc<ShadcnLook>,
+    pub(in crate::gallery) inspector_toggles: InspectorToggleRegistry,
     pub(super) badge: badge::BadgePane,
     pub(super) dialog: dialog::DialogPane,
     pub(super) dock_panel: dock_panel::DockPanelPane,
@@ -541,8 +544,10 @@ impl GalleryPanes {
     }
 
     pub(in crate::gallery) fn new(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> Self {
+        let inspector_toggles = InspectorToggleRegistry::new(look.clone(), cx);
         Self {
             look: look.clone(),
+            inspector_toggles,
             badge: badge::BadgePane::new(cx, look.clone()),
             dialog: dialog::DialogPane::new(cx, look.clone()),
             dock_panel: dock_panel::DockPanelPane::new(cx, look.clone()),
@@ -599,6 +604,7 @@ impl GalleryPanes {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        InspectorToggleRegistry::subscribe(&self.inspector_toggles, cx, subscriptions);
         self.badge.subscribe(cx, subscriptions);
         self.dialog.subscribe(cx, subscriptions);
         self.dock_panel.subscribe(cx, subscriptions);
@@ -730,7 +736,7 @@ impl GalleryPanes {
         };
 
         match page.kind {
-            GalleryPageKind::Badge => self.badge.render(&self.look),
+            GalleryPageKind::Badge => self.badge.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::DialogModal => self.dialog.render(dialog::DialogDemoKind::Modal, &self.look),
             GalleryPageKind::DialogModeless => self.dialog.render(dialog::DialogDemoKind::Modeless, &self.look),
             GalleryPageKind::DialogPositioning => self.dialog.render(dialog::DialogDemoKind::Positioning, &self.look),
@@ -740,24 +746,26 @@ impl GalleryPanes {
             GalleryPageKind::ShadowButton => self.shadow_button.render(&self.look),
             GalleryPageKind::SlidePanel => self.slide_panel.render(&self.look),
             GalleryPageKind::RadioControlGroup => self.radio_control_group.render(&self.look),
-            GalleryPageKind::AutocompleteTextField => self.autocomplete_textfield.render(&self.look),
-            GalleryPageKind::ComboBox => self.combobox.render(&self.look),
-            GalleryPageKind::SearchSelector => self.search_selector.render(&self.look),
-            GalleryPageKind::Selector => self.selector.render(&self.look),
-            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.look),
+            GalleryPageKind::AutocompleteTextField => {
+                self.autocomplete_textfield.render(&self.look, &self.inspector_toggles)
+            }
+            GalleryPageKind::ComboBox => self.combobox.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::SearchSelector => self.search_selector.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Selector => self.selector.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.look),
             GalleryPageKind::Palette => palette::render(&self.look),
             GalleryPageKind::Typography => typography::render(&self.look),
-            GalleryPageKind::Button => self.button.render(&self.look),
+            GalleryPageKind::Button => self.button.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
-            GalleryPageKind::Toggle => self.toggle.render(&self.look),
-            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.look),
-            GalleryPageKind::Switch => self.switch.render(&self.look),
-            GalleryPageKind::Checkbox => self.checkbox.render(&self.look),
-            GalleryPageKind::Accordion => self.accordion.render(&self.look),
-            GalleryPageKind::TreeView => self.tree_view.render(&self.look),
-            GalleryPageKind::RadioButton => self.radio_button.render(&self.look),
-            GalleryPageKind::RadioGroup => self.radio_group.render(&self.look),
+            GalleryPageKind::Toggle => self.toggle.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Switch => self.switch.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Checkbox => self.checkbox.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Accordion => self.accordion.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::TreeView => self.tree_view.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::RadioButton => self.radio_button.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::RadioGroup => self.radio_group.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::ChoiceTemplates => self.choice_templates.render(&self.look),
             GalleryPageKind::ColorField => self.color_field.render(&self.look),
             GalleryPageKind::ColorRing => self.color_ring.render(&self.look),
@@ -771,30 +779,32 @@ impl GalleryPanes {
             GalleryPageKind::ColorSvTriangle => self.color_sv_triangle.render(&self.look),
             GalleryPageKind::ColorMultiMixer => self.color_multi_mixer.render(&self.look),
             GalleryPageKind::ColorSplitRing => self.color_split_ring.render(&self.look),
-            GalleryPageKind::ListBox => self.listbox.render(&self.look),
-            GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.look),
-            GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look),
+            GalleryPageKind::ListBox => self.listbox.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::ScrollingListView => self.scrolling_list_view.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::PagingListView => self.paging_list_view.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::Pager => self.pager.render(&self.look),
-            GalleryPageKind::Slider => self.slider.render(&self.look),
-            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.look),
-            GalleryPageKind::TextArea => self.textarea.render(&self.look),
-            GalleryPageKind::TextField => self.textfield.render(&self.look),
-            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.look),
-            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.look),
-            GalleryPageKind::ContextMenu => self.context_menu.render(&self.look),
-            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.look),
-            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.look),
-            GalleryPageKind::Progress => self.progress.render(&self.look),
-            GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.look),
+            GalleryPageKind::Slider => self.slider.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Scrollbar => self.scrollbar.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::TextArea => self.textarea.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::TextField => self.textfield.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::FloatingMenu => self.floating_menu.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::PopupMenu => self.popup_menu.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::ContextMenu => self.context_menu.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::NavigationSidebar => self.navigation_sidebar.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::TabsNavigation => self.tabs_navigation.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::Progress => self.progress.render(&self.look, &self.inspector_toggles),
+            GalleryPageKind::ResizablePanels => self.resizable_panels.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::SplitViewUnified => {
-                self.split_view.render(split_view::SplitViewDemoKind::Unified, &self.look)
+                self.split_view.render(split_view::SplitViewDemoKind::Unified, &self.look, &self.inspector_toggles)
             }
-            GalleryPageKind::SplitViewInset => self.split_view.render(split_view::SplitViewDemoKind::Inset, &self.look),
+            GalleryPageKind::SplitViewInset => {
+                self.split_view.render(split_view::SplitViewDemoKind::Inset, &self.look, &self.inspector_toggles)
+            }
             GalleryPageKind::SplitViewIconRail => {
-                self.split_view.render(split_view::SplitViewDemoKind::IconRail, &self.look)
+                self.split_view.render(split_view::SplitViewDemoKind::IconRail, &self.look, &self.inspector_toggles)
             }
             GalleryPageKind::SplitViewDetached => {
-                self.split_view.render(split_view::SplitViewDemoKind::Detached, &self.look)
+                self.split_view.render(split_view::SplitViewDemoKind::Detached, &self.look, &self.inspector_toggles)
             }
             GalleryPageKind::Settings => settings::render(&self.look),
         }

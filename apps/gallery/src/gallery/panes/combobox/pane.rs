@@ -13,7 +13,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_combobox_inspect_tree;
 use crate::gallery::panes::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity};
+use crate::gallery::panes::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct ComboBoxPane {
@@ -57,8 +57,9 @@ impl ComboBoxPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         gallery_pane_with_inspector(
+            "combobox",
             "ComboBox",
             div()
                 .w(px(240.0))
@@ -76,6 +77,7 @@ impl ComboBoxPane {
                 .child(self.strict_combobox.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

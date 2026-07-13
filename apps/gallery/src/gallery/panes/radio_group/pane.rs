@@ -13,7 +13,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_radio_group_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 const RADIO_GROUP_DESCRIPTION: &str = concat!(
     "Radio groups use single-selection semantics with custom item templates. ",
@@ -138,10 +138,11 @@ impl RadioGroupPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector_description(
+            "radio-group",
             "Radio Group",
             Some(RADIO_GROUP_DESCRIPTION),
             div()
@@ -182,6 +183,7 @@ impl RadioGroupPane {
                 ))
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

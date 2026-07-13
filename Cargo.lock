@@ -2449,6 +2449,85 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui-luma-shell-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui_platform",
+ "lucide-icons",
+ "tracing",
+]
+
+[[package]]
+name = "gpui-luma-shell-detached"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-shell-common",
+ "gpui_platform",
+ "gtk",
+ "lucide-icons",
+]
+
+[[package]]
+name = "gpui-luma-shell-icon-rail"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-shell-common",
+ "gpui_platform",
+ "gtk",
+]
+
+[[package]]
+name = "gpui-luma-shell-inset"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-shell-common",
+ "gpui_platform",
+ "gtk",
+]
+
+[[package]]
+name = "gpui-luma-shell-split-titlebar"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-shell-common",
+ "gpui_platform",
+ "gtk",
+]
+
+[[package]]
+name = "gpui-luma-shell-unified"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui",
+ "gpui-luma",
+ "gpui-luma-look-shadcn",
+ "gpui-luma-shell-common",
+ "gpui_platform",
+ "gtk",
+]
+
+[[package]]
 name = "gpui-luma-theme-studio"
 version = "0.1.0"
 dependencies = [

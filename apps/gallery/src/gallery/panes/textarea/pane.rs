@@ -20,7 +20,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_textarea_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct TextAreaPane {
@@ -118,12 +118,13 @@ impl TextAreaPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
         let value = self.value.as_ref();
         let line_count = if value.is_empty() { 0 } else { value.lines().count() };
 
         gallery_pane_with_inspector_description(
+            "textarea",
             "TextArea",
             Some("Multiline input with hard-line editing, selection, escape-clear, validation, and fixed row height."),
             div()
@@ -169,6 +170,7 @@ impl TextAreaPane {
                 ))
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

@@ -9,6 +9,12 @@ members = [
   "apps/neumorphic-demo",
   "apps/color-viz",
   "apps/graph-viz",
+  "apps/shells/common",
+  "apps/shells/unified",
+  "apps/shells/inset",
+  "apps/shells/icon-rail",
+  "apps/shells/detached",
+  "apps/shells/split-titlebar",
 ]
 default-members = ["crates/sdk", "apps/gallery", "apps/theme-studio", "apps/neumorphic-demo", "apps/color-viz", "apps/graph-viz"]
 
@@ -57,6 +63,21 @@ opt-level = 1
 opt-level = 1
 
 [profile.dev.package.gpui-luma-graph-viz]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-unified]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-inset]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-icon-rail]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-detached]
+opt-level = 1
+
+[profile.dev.package.gpui-luma-shell-split-titlebar]
 opt-level = 1
 
 [profile.dev.package.gpui]

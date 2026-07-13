@@ -12,7 +12,7 @@ use super::inspector_tree::build_selector_inspect_tree;
 use super::panel_preview::SelectorPanelPreview;
 use super::preview::SelectorStatePreview;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{format_compact_hsla, gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{format_compact_hsla, gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct SelectorPane {
@@ -127,10 +127,11 @@ impl SelectorPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector(
+            "popup-selector",
             "Selector",
             div()
                 .w_full()
@@ -164,6 +165,7 @@ impl SelectorPane {
                 .child(self.selector_smart.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

@@ -11,7 +11,7 @@ use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_navigation_sidebar_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 
 #[derive(Clone)]
 pub(in crate::gallery) struct NavigationSidebarPane {
@@ -125,11 +125,12 @@ impl NavigationSidebarPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
         let width = if self.collapsed.get() { px(56.0) } else { px(300.0) };
 
         gallery_pane_with_inspector(
+            "navigation-sidebar",
             "Navigation Sidebar",
             div()
                 .flex_none()
@@ -142,6 +143,7 @@ impl NavigationSidebarPane {
                 .child(self.sidebar.clone())
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }

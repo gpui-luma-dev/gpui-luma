@@ -11,7 +11,7 @@ use crate::gallery::control::GalleryApp;
 use super::inspector_tree::build_context_menu_inspect_tree;
 use super::radial::radial_context_menu_template;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector, notify_entity};
+use super::super::shared::{gallery_pane_with_inspector, notify_entity, InspectorToggleRegistry};
 use super::template::gallery_context_menu_template;
 
 #[derive(Clone)]
@@ -75,10 +75,11 @@ impl ContextMenuPane {
         }));
     }
 
-    pub(in crate::gallery) fn render(&self, look: &ShadcnLook) -> AnyElement {
+    pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
         gallery_pane_with_inspector(
+            "context-menu",
             "Context Menu",
             div()
                 .flex()
@@ -112,6 +113,7 @@ impl ContextMenuPane {
                 )
                 .into_any_element(),
             self.inspector.clone(),
+            toggles,
             look,
         )
     }
