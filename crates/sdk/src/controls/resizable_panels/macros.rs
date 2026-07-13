@@ -1,7 +1,8 @@
 //! Declarative layout DSL for [`ResizablePanels`](super::ResizablePanels).
 //!
 //! Terminate each panel arm with `;`. Use `|` between panels as a visual split marker
-//! (pair with group-level `show_handle: true` for draggable handles).
+//! (pair with group-level `show_handle: true` or `handle_visibility: Hover`
+//! for visible draggable handles).
 
 #[macro_export]
 macro_rules! resizable_panels {
@@ -11,6 +12,7 @@ macro_rules! resizable_panels {
         id: $id:expr,
         layout: $layout:ident,
         $( show_handle: $show_handle:expr, )?
+        $( handle_visibility: $handle_visibility:ident, )?
         $( resize_handle: $resize_handle:ident, )?
         $( handle_grip: $handle_grip:expr, )?
         $( show_border: $show_border:expr, )?
@@ -26,6 +28,7 @@ macro_rules! resizable_panels {
             .theme($theme);
         $crate::resizable_panels!(@finish_builder builder, $cx, $layout, panels
             $(, show_handle = $show_handle)*
+            $(, handle_visibility = $handle_visibility)*
             $(, resize_handle = $resize_handle)*
             $(, handle_grip = $handle_grip)*
             $(, show_border = $show_border)*
@@ -40,6 +43,7 @@ macro_rules! resizable_panels {
         id: $id:expr,
         layout: $layout:ident,
         $( show_handle: $show_handle:expr, )?
+        $( handle_visibility: $handle_visibility:ident, )?
         $( resize_handle: $resize_handle:ident, )?
         $( handle_grip: $handle_grip:expr, )?
         $( show_border: $show_border:expr, )?
@@ -54,6 +58,7 @@ macro_rules! resizable_panels {
         let mut builder = $crate::controls::resizable_panels::ResizablePanels::new($id);
         $crate::resizable_panels!(@finish_builder builder, $cx, $layout, panels
             $(, show_handle = $show_handle)*
+            $(, handle_visibility = $handle_visibility)*
             $(, resize_handle = $resize_handle)*
             $(, handle_grip = $handle_grip)*
             $(, show_border = $show_border)*
@@ -66,6 +71,7 @@ macro_rules! resizable_panels {
     (
         @finish_builder $builder:expr, $cx:expr, $layout:ident, $panels:expr
         $(, show_handle = $show_handle:expr)*
+        $(, handle_visibility = $handle_visibility:ident)*
         $(, resize_handle = $resize_handle:ident)*
         $(, handle_grip = $handle_grip:expr)*
         $(, show_border = $show_border:expr)*
@@ -77,6 +83,9 @@ macro_rules! resizable_panels {
             $crate::controls::resizable_panels::ResizablePanelsOrientation::$layout,
         );
         $( builder = builder.show_handle($show_handle); )?
+        $( builder = builder.handle_visibility(
+            $crate::controls::resizable_panels::ResizeHandleVisibility::$handle_visibility,
+        ); )?
         $( builder = builder.resize_handle(
             $crate::controls::resizable_panels::ResizeHandleSize::$resize_handle,
         ); )?

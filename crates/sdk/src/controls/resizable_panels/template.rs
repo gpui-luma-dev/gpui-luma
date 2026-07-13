@@ -5,7 +5,10 @@ use gpui::{AnyElement, Context, Div, FocusHandle, Hsla, Pixels, Stateful, Window
 use super::{
     control::{ResizablePanels, ResizablePanelsHandleDrag},
     math::{handle_hit_target_main_axis_px, handle_overlay_geometry, split_positions_px},
-    model::{ResizeHandleMetrics, ResizablePanelSpec, ResizablePanelsOrientation, ResizablePanelsRenderModel},
+    model::{
+        ResizeHandleMetrics, ResizeHandleVisibility, ResizablePanelSpec, ResizablePanelsOrientation,
+        ResizablePanelsRenderModel,
+    },
     theme::ResizablePanelsLook,
 };
 
@@ -116,10 +119,9 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
         model: &ResizablePanelsRenderModel<'_>,
         look: &ResizablePanelsLook,
         handle_focuses: &[FocusHandle],
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<ResizablePanels>,
     ) -> Stateful<Div> {
-        let panel_count = model.panels.len();
         let handle_metrics = model.resize_handle.metrics();
         let split_positions = split_positions_px(model.panel_sizes_px);
 
@@ -172,33 +174,19 @@ impl ResizablePanelsTemplate for ThemedResizablePanelsTemplate {
 
         track = track.child(panels_row);
 
-        if model.show_handle {
-            for (index, &split_px) in split_positions.iter().enumerate() {
-                track = track.child(render_overlay_handle(
-                    index,
-                    model,
-                    look,
-                    &handle_focuses[index],
-                    &handle_metrics,
-                    split_px,
-                    cx,
-                ));
-            }
-        } else {
-            for (index, &split_px) in split_positions.iter().enumerate() {
-                track = track.child(render_overlay_handle_hidden(
-                    index,
-                    model,
-                    look,
-                    &handle_focuses[index],
-                    &handle_metrics,
-                    split_px,
-                    cx,
-                ));
-            }
+        for (index, &split_px) in split_positions.iter().enumerate() {
+            track = track.child(render_overlay_handle(
+                index,
+                model,
+                look,
+                &handle_focuses[index],
+                &handle_metrics,
+                split_px,
+                window,
+                cx,
+            ));
         }
 
-        let _panel_count = panel_count;
         let root = root.child(track);
         self.apply_modifiers(root, model)
     }
@@ -230,12 +218,25 @@ fn render_overlay_handle(
     focus: &FocusHandle,
     handle_metrics: &ResizeHandleMetrics,
     split_px: f32,
+    window: &mut Window,
     cx: &mut Context<ResizablePanels>,
 ) -> AnyElement {
     let enabled = model.enabled;
     let orientation = model.orientation;
     let handle_id = format!("{}-handle-{index}", model.id);
-    let lane_px = handle_metrics.lane_px.max(1.0);
+    let handle_active = model.hovered_handle == Some(index)
+        || model.dragging_handle == Some(index)
+        || (enabled && focus.is_focused(window));
+    let show_handle = match model.handle_visibility {
+        ResizeHandleVisibility::Always => true,
+        ResizeHandleVisibility::Hover => handle_active,
+        ResizeHandleVisibility::Hidden => false,
+    };
+    let lane_px = if show_handle {
+        handle_metrics.lane_px.max(1.0)
+    } else {
+        1.0
+    };
     let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, lane_px);
 
     let mut handle = div()
@@ -281,74 +282,6 @@ fn render_overlay_handle(
         look.grip
     };
 
-    let (divider, grip) = match orientation {
-        ResizablePanelsOrientation::Horizontal => {
-            let divider =
-                div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider);
-            let grip = render_handle_grip(orientation, grip_color, handle_metrics);
-            (divider, grip)
-        }
-        ResizablePanelsOrientation::Vertical => {
-            let divider =
-                div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider);
-            let grip = render_handle_grip(orientation, grip_color, handle_metrics);
-            (divider, grip)
-        }
-    };
-
-    handle.child(divider).child(grip).child(interaction_layer).into_any_element()
-}
-
-#[allow(clippy::too_many_arguments)]
-fn render_overlay_handle_hidden(
-    index: usize,
-    model: &ResizablePanelsRenderModel<'_>,
-    look: &ResizablePanelsLook,
-    focus: &FocusHandle,
-    handle_metrics: &ResizeHandleMetrics,
-    split_px: f32,
-    cx: &mut Context<ResizablePanels>,
-) -> AnyElement {
-    let enabled = model.enabled;
-    let orientation = model.orientation;
-    let handle_id = format!("{}-handle-{index}", model.id);
-    let (origin_px, lane_px, divider_local_px) = handle_overlay_geometry(split_px, 1.0);
-
-    let mut handle = div()
-        .id(handle_id)
-        .track_focus(focus)
-        .tab_index(if enabled { 0 } else { -1 })
-        .absolute()
-        .when(!enabled, |this| this.opacity(look.disabled_opacity));
-
-    handle = match orientation {
-        ResizablePanelsOrientation::Horizontal => handle
-            .left(px(origin_px))
-            .top(px(0.0))
-            .bottom(px(0.0))
-            .w(px(lane_px))
-            .when(enabled, |this| this.cursor_col_resize()),
-        ResizablePanelsOrientation::Vertical => handle
-            .top(px(origin_px))
-            .left(px(0.0))
-            .right(px(0.0))
-            .h(px(lane_px))
-            .when(enabled, |this| this.cursor_row_resize()),
-    };
-
-    let drag_payload = ResizablePanelsHandleDrag { id: model.id.clone(), handle_index: index };
-    let interaction_layer = render_handle_interaction_layer(
-        index,
-        model.id.clone(),
-        orientation,
-        px(handle_hit_target_main_axis_px(handle_metrics)),
-        split_px,
-        origin_px,
-        enabled,
-        drag_payload,
-        cx,
-    );
-
     let divider = match orientation {
         ResizablePanelsOrientation::Horizontal => {
             div().absolute().left(px(divider_local_px)).top(px(0.0)).bottom(px(0.0)).w(px(1.0)).bg(look.divider)
@@ -357,6 +290,10 @@ fn render_overlay_handle_hidden(
             div().absolute().top(px(divider_local_px)).left(px(0.0)).right(px(0.0)).h(px(1.0)).bg(look.divider)
         }
     };
+
+    if show_handle {
+        handle = handle.child(render_handle_grip(orientation, grip_color, handle_metrics));
+    }
 
     handle.child(divider).child(interaction_layer).into_any_element()
 }
@@ -411,6 +348,9 @@ fn render_handle_interaction_layer(
             .bottom(px(0.0))
             .w(handle_hit)
             .when(enabled, |this| this.cursor_col_resize())
+            .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                this.handle_handle_hover(index, hovered, cx);
+            }))
             .on_mouse_down(
                 gpui::MouseButton::Left,
                 cx.listener(move |this, event, window, cx| {
@@ -434,6 +374,9 @@ fn render_handle_interaction_layer(
             .right(px(0.0))
             .h(handle_hit)
             .when(enabled, |this| this.cursor_row_resize())
+            .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                this.handle_handle_hover(index, hovered, cx);
+            }))
             .on_mouse_down(
                 gpui::MouseButton::Left,
                 cx.listener(move |this, event, window, cx| {

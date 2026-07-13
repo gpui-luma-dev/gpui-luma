@@ -26,6 +26,18 @@ pub enum ResizeHandleSize {
     Lg,
 }
 
+/// Controls when the resize handle lane and grip are visibly rendered.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ResizeHandleVisibility {
+    /// Keep the seam visible only as a divider while retaining the resize hit target.
+    #[default]
+    Hidden,
+    /// Reveal the configured handle lane while hovering, focusing, or dragging it.
+    Hover,
+    /// Always show the configured handle lane.
+    Always,
+}
+
 /// Resolved pixel metrics for an overlay resize handle.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ResizeHandleMetrics {
@@ -171,7 +183,7 @@ pub struct ResizablePanelsModel {
     pub(crate) frame_height: Option<Pixels>,
     pub(crate) show_border: bool,
     pub(crate) enabled: bool,
-    pub(crate) show_handle: bool,
+    pub(crate) handle_visibility: ResizeHandleVisibility,
     pub(crate) resize_handle: ResizeHandleSize,
     pub(crate) handle_grip: bool,
     pub(crate) keyboard_step: f32,
@@ -188,7 +200,9 @@ pub struct ResizablePanelsRenderModel<'a> {
     pub frame_height: Option<Pixels>,
     pub show_border: bool,
     pub enabled: bool,
-    pub show_handle: bool,
+    pub handle_visibility: ResizeHandleVisibility,
+    pub hovered_handle: Option<usize>,
+    pub dragging_handle: Option<usize>,
     pub resize_handle: ResizeHandleSize,
     pub handle_grip: bool,
     pub panel_sizes_px: &'a [f32],
@@ -222,7 +236,7 @@ impl ResizablePanelsBuilder {
                 frame_height: None,
                 show_border: true,
                 enabled: true,
-                show_handle: false,
+                handle_visibility: ResizeHandleVisibility::Hidden,
                 resize_handle: ResizeHandleSize::Sm,
                 handle_grip: false,
                 keyboard_step: 2.0,
@@ -269,7 +283,16 @@ impl ResizablePanelsBuilder {
     }
 
     pub fn show_handle(mut self, show_handle: bool) -> Self {
-        self.model.show_handle = show_handle;
+        self.model.handle_visibility = if show_handle {
+            ResizeHandleVisibility::Always
+        } else {
+            ResizeHandleVisibility::Hidden
+        };
+        self
+    }
+
+    pub fn handle_visibility(mut self, visibility: ResizeHandleVisibility) -> Self {
+        self.model.handle_visibility = visibility;
         self
     }
 
@@ -344,7 +367,7 @@ where
 mod resize_handle_tests {
     use std::sync::Arc;
 
-    use super::ResizeHandleSize;
+    use super::{ResizeHandleSize, ResizeHandleVisibility};
     use super::{ResizablePanelsBuilder, default_resizable_panels_template};
 
     #[test]
@@ -362,6 +385,24 @@ mod resize_handle_tests {
         assert_eq!(ResizeHandleSize::from_lane_px(18.0), ResizeHandleSize::Lg);
         assert_eq!(ResizeHandleSize::from_lane_px(10.0), ResizeHandleSize::Md);
         assert_eq!(ResizeHandleSize::from_lane_px(8.0), ResizeHandleSize::Sm);
+    }
+
+    #[test]
+    fn show_handle_maps_to_visibility_policy() {
+        assert_eq!(
+            ResizablePanelsBuilder::new("hidden").show_handle(false).model.handle_visibility,
+            ResizeHandleVisibility::Hidden
+        );
+        assert_eq!(
+            ResizablePanelsBuilder::new("always").show_handle(true).model.handle_visibility,
+            ResizeHandleVisibility::Always
+        );
+    }
+
+    #[test]
+    fn handle_visibility_sets_policy_directly() {
+        let builder = ResizablePanelsBuilder::new("hover").handle_visibility(ResizeHandleVisibility::Hover);
+        assert_eq!(builder.model.handle_visibility, ResizeHandleVisibility::Hover);
     }
 
     #[test]

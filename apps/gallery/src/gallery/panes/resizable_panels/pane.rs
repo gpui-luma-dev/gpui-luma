@@ -6,16 +6,18 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::resizable_panels::{
-    ResizeHandleSize, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
+    ResizeHandleSize, ResizeHandleVisibility, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent,
+    ResizablePanelsOrientation,
 };
+use gpui_luma::theme::LumaTextStyle;
 use gpui_luma::resizable_panels;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
 use super::inspector_tree::build_resizable_panels_inspect_tree;
 use super::super::shared::inspector::{ColorInspectorShell, spawn_color_inspector_tree};
-use super::super::shared::{gallery_pane_with_inspector_description, notify_entity, InspectorToggleRegistry};
+use super::super::shared::{gallery_pane_scrollable_with_inspector_description, notify_entity, InspectorToggleRegistry};
 
 const DEMO_WIDTH: f32 = 540.0;
 const DEMO_HEIGHT: f32 = 220.0;
@@ -31,12 +33,14 @@ const PANEL_BG_TRANSPARENT: gpui::Hsla = transparent_black();
 pub(in crate::gallery) struct ResizablePanelsPane {
     horizontal: Entity<ResizablePanels>,
     vertical: Entity<ResizablePanels>,
+    hover_handles: Entity<ResizablePanels>,
     nested_outer: Entity<ResizablePanels>,
     controlled: Entity<ResizablePanels>,
     controlled_panel_sizes: Rc<Cell<[f32; 2]>>,
     reset_controlled_button: Entity<Button<()>>,
     horizontal_sizes: SharedString,
     vertical_sizes: SharedString,
+    hover_handles_sizes: SharedString,
     nested_outer_sizes: SharedString,
     controlled_sizes: SharedString,
     controlled_last_event: SharedString,
@@ -106,6 +110,29 @@ impl ResizablePanelsPane {
                 } => weight(7.0), bg: PANEL_BG_TRANSPARENT;
             ]
         };
+
+        let hover_handles = look
+            .resizable_panels("resizable-panels-hover-handles")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .handle_visibility(ResizeHandleVisibility::Hover)
+            .resize_handle(ResizeHandleSize::Md)
+            .handle_grip(true)
+            .panels([
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Primary", &theme)
+                })
+                .weight(1.0)
+                .bg(PANEL_BG_TRANSPARENT),
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Secondary", &theme)
+                })
+                .weight(1.0)
+                .bg(PANEL_BG_TRANSPARENT),
+            ])
+            .spawn(cx);
 
         let nested_outer = resizable_panels! {
             cx,
@@ -202,12 +229,14 @@ impl ResizablePanelsPane {
         Self {
             horizontal,
             vertical,
+            hover_handles,
             nested_outer,
             controlled,
             controlled_panel_sizes,
             reset_controlled_button,
             horizontal_sizes: "162px / 378px".into(),
             vertical_sizes: "66px / 154px".into(),
+            hover_handles_sizes: "270px / 270px".into(),
             nested_outer_sizes: "270px / 270px".into(),
             controlled_sizes: "162px / 378px".into(),
             controlled_last_event: "None".into(),
@@ -231,12 +260,17 @@ impl ResizablePanelsPane {
         subscriptions.push(cx.subscribe(&self.vertical, |app, _, event: &ResizablePanelsEvent, cx| {
             app.panes.resizable_panels.apply_sizes_event(event, |pane, label| pane.vertical_sizes = label, cx);
         }));
+        subscriptions.push(cx.subscribe(&self.hover_handles, |app, _, event: &ResizablePanelsEvent, cx| {
+            app.panes
+                .resizable_panels
+                .apply_sizes_event(event, |pane, label| pane.hover_handles_sizes = label, cx);
+        }));
     }
 
     pub(in crate::gallery) fn render(&self, look: &ShadcnLook, toggles: &InspectorToggleRegistry) -> AnyElement {
         let chrome = look.chrome();
 
-        gallery_pane_with_inspector_description(
+        gallery_pane_scrollable_with_inspector_description(
             "resizable-panels",
             "Resizable Panels",
             Some(
@@ -253,26 +287,37 @@ impl ResizablePanelsPane {
                         .flex()
                         .flex_wrap()
                         .gap_4()
-                        .child(frame("Horizontal", self.horizontal.clone(), chrome.border))
-                        .child(frame("Vertical", self.vertical.clone(), chrome.border))
-                        .child(frame("Nested", self.nested_outer.clone(), chrome.border))
-                        .child(frame("Controlled", self.controlled.clone(), chrome.border)),
+                        .child(frame("Horizontal", self.horizontal.clone(), look, chrome.muted_text, chrome.border))
+                        .child(frame("Vertical", self.vertical.clone(), look, chrome.muted_text, chrome.border))
+                        .child(frame(
+                            "Hover Handles",
+                            self.hover_handles.clone(),
+                            look,
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
+                        .child(frame("Nested", self.nested_outer.clone(), look, chrome.muted_text, chrome.border))
+                        .child(frame("Controlled", self.controlled.clone(), look, chrome.muted_text, chrome.border)),
                 )
                 .child(
                     div().flex().items_center().gap_3().child(self.reset_controlled_button.clone()).child(
                         div()
-                            .text_size(px(12.0))
+                            .typography_style(look.typography_scale(ShadcnTextSize::Xs))
                             .text_color(chrome.muted_text)
                             .child(format!("Last event: {}", self.controlled_last_event)),
                     ),
                 )
                 .child(telemetry_block(
+                    look,
                     chrome.muted_text,
                     chrome.title_text,
-                    &self.horizontal_sizes,
-                    &self.vertical_sizes,
-                    &self.nested_outer_sizes,
-                    &self.controlled_sizes,
+                    [
+                        ("Horizontal sizes", self.horizontal_sizes.as_ref()),
+                        ("Vertical sizes", self.vertical_sizes.as_ref()),
+                        ("Hover-handle sizes", self.hover_handles_sizes.as_ref()),
+                        ("Nested sizes", self.nested_outer_sizes.as_ref()),
+                        ("Controlled sizes", self.controlled_sizes.as_ref()),
+                    ],
                 ))
                 .into_any_element(),
             self.inspector.clone(),
@@ -284,6 +329,7 @@ impl ResizablePanelsPane {
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.horizontal, cx);
         notify_entity(&self.vertical, cx);
+        notify_entity(&self.hover_handles, cx);
         notify_entity(&self.nested_outer, cx);
         notify_entity(&self.controlled, cx);
         notify_entity(&self.reset_controlled_button, cx);
@@ -350,41 +396,56 @@ impl ResizablePanelsPane {
     }
 }
 
-fn frame(title: &str, content: impl IntoElement, border_color: gpui::Hsla) -> impl IntoElement {
+fn frame(
+    title: &str,
+    content: impl IntoElement,
+    look: &ShadcnLook,
+    label_color: gpui::Hsla,
+    border_color: gpui::Hsla,
+) -> impl IntoElement {
     let title = title.to_string();
-    div().w(px(580.0)).flex().flex_col().gap_2().child(div().text_sm().child(title)).child(
-        div()
-            .w_full()
-            .border_1()
-            .border_dashed()
-            .border_color(border_color)
-            .rounded(px(10.0))
-            .p_4()
-            .child(content),
-    )
+    let label_style = look.typography_scale(ShadcnTextSize::Sm);
+    div()
+        .w(px(580.0))
+        .flex()
+        .flex_col()
+        .gap_2()
+        .child(div().typography_style(label_style).text_color(label_color).child(title))
+        .child(
+            div()
+                .w_full()
+                .border_1()
+                .border_dashed()
+                .border_color(border_color)
+                .rounded(px(10.0))
+                .p_4()
+                .child(content),
+        )
 }
 
 fn telemetry_block(
+    look: &ShadcnLook,
     label_color: gpui::Hsla,
     title_color: gpui::Hsla,
-    horizontal_sizes: &str,
-    vertical_sizes: &str,
-    nested_outer_sizes: &str,
-    controlled_sizes: &str,
+    rows: [(&str, &str); 5],
 ) -> impl IntoElement {
-    div()
+    let title_style = look.typography_scale(ShadcnTextSize::Sm);
+    let row_style = look.typography_scale(ShadcnTextSize::Xs);
+    let mut telemetry = div()
         .flex()
         .flex_col()
         .gap_1()
-        .child(div().text_sm().text_color(title_color).child("Telemetry"))
-        .child(telemetry_row(label_color, "Horizontal sizes", horizontal_sizes))
-        .child(telemetry_row(label_color, "Vertical sizes", vertical_sizes))
-        .child(telemetry_row(label_color, "Nested sizes", nested_outer_sizes))
-        .child(telemetry_row(label_color, "Controlled sizes", controlled_sizes))
+        .child(div().typography_style(title_style).text_color(title_color).child("Telemetry"));
+
+    for (label, sizes) in rows {
+        telemetry = telemetry.child(telemetry_row(row_style, label_color, label, sizes));
+    }
+
+    telemetry
 }
 
-fn telemetry_row(color: gpui::Hsla, label: &str, sizes: &str) -> impl IntoElement {
-    div().text_size(px(12.0)).text_color(color).child(format!("{label}: {sizes}"))
+fn telemetry_row(style: LumaTextStyle, color: gpui::Hsla, label: &str, sizes: &str) -> impl IntoElement {
+    div().typography_style(style).text_color(color).child(format!("{label}: {sizes}"))
 }
 
 fn format_sizes_px(sizes_px: &[f32]) -> String {

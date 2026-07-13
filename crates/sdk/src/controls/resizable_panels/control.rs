@@ -6,8 +6,8 @@ use gpui::{
 use super::{
     math::{apply_pair_delta_px, content_axis_size, solve_layout_px},
     model::{
-        PanelLayoutState, PanelSize, ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation,
-        ResizablePanelsRenderModel,
+        PanelLayoutState, PanelSize, ResizeHandleVisibility, ResizablePanelsBuilder, ResizablePanelsModel,
+        ResizablePanelsOrientation, ResizablePanelsRenderModel,
     },
 };
 use crate::theme::InteractionState;
@@ -36,6 +36,7 @@ pub struct ResizablePanels {
     layout_states: Vec<PanelLayoutState>,
     panel_sizes_px: Vec<f32>,
     handle_focuses: Vec<FocusHandle>,
+    hovered_handle: Option<usize>,
     dragging_handle: Option<usize>,
     drag_start_axis_px: f32,
     drag_start_states: Vec<PanelLayoutState>,
@@ -79,6 +80,7 @@ impl ResizablePanels {
             layout_states,
             panel_sizes_px,
             handle_focuses,
+            hovered_handle: None,
             dragging_handle: None,
             drag_start_axis_px: 0.0,
             drag_start_states: Vec::new(),
@@ -112,6 +114,7 @@ impl ResizablePanels {
         }
         self.model.enabled = enabled;
         if !enabled {
+            self.hovered_handle = None;
             self.dragging_handle = None;
             self.drag_content_axis_px = None;
         }
@@ -119,10 +122,19 @@ impl ResizablePanels {
     }
 
     pub fn set_show_handle(&mut self, show_handle: bool, cx: &mut Context<Self>) {
-        if self.model.show_handle == show_handle {
+        let visibility = if show_handle {
+            ResizeHandleVisibility::Always
+        } else {
+            ResizeHandleVisibility::Hidden
+        };
+        self.set_handle_visibility(visibility, cx);
+    }
+
+    pub fn set_handle_visibility(&mut self, visibility: ResizeHandleVisibility, cx: &mut Context<Self>) {
+        if self.model.handle_visibility == visibility {
             return;
         }
-        self.model.show_handle = show_handle;
+        self.model.handle_visibility = visibility;
         cx.notify();
     }
 
@@ -205,7 +217,11 @@ impl ResizablePanels {
     }
 
     pub fn show_handle(&self) -> bool {
-        self.model.show_handle
+        self.model.handle_visibility == ResizeHandleVisibility::Always
+    }
+
+    pub fn handle_visibility(&self) -> ResizeHandleVisibility {
+        self.model.handle_visibility
     }
 
     fn axis_position(&self, position: gpui::Point<Pixels>) -> f32 {
@@ -271,6 +287,25 @@ impl ResizablePanels {
         self.drag_start_states = self.layout_states.clone();
         self.drag_content_axis_px = Some(self.content_axis_size_px());
         cx.emit(ResizablePanelsEvent::ResizeStart);
+        cx.notify();
+    }
+
+    pub(crate) fn handle_handle_hover(&mut self, index: usize, hovered: &bool, cx: &mut Context<Self>) {
+        if !self.model.enabled || index >= self.handle_focuses.len() {
+            return;
+        }
+
+        let next = if *hovered {
+            Some(index)
+        } else if self.hovered_handle == Some(index) {
+            None
+        } else {
+            return;
+        };
+        if self.hovered_handle == next {
+            return;
+        }
+        self.hovered_handle = next;
         cx.notify();
     }
 
@@ -365,7 +400,9 @@ impl ResizablePanels {
             frame_height: self.model.frame_height,
             show_border: self.model.show_border,
             enabled: self.model.enabled,
-            show_handle: self.model.show_handle,
+            handle_visibility: self.model.handle_visibility,
+            hovered_handle: self.hovered_handle,
+            dragging_handle: self.dragging_handle,
             resize_handle: self.model.resize_handle,
             handle_grip: self.model.handle_grip,
             panel_sizes_px: &self.panel_sizes_px,
