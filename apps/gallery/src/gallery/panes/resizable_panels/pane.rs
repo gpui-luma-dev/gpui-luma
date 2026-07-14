@@ -6,12 +6,12 @@ use gpui::{
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent, HasPresenter};
 use gpui_luma::controls::resizable_panels::{
-    ResizeHandleSize, ResizeHandleVisibility, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent,
-    ResizablePanelsOrientation,
+    PanelHideMode, ResizeCollapseBehavior, ResizeCollapseDirection, ResizeCollapseMode, ResizeHandleSize,
+    ResizeHandleVisibility, ResizablePanelSpec, ResizablePanels, ResizablePanelsEvent, ResizablePanelsOrientation,
 };
 use gpui_luma::theme::LumaTextStyle;
 use gpui_luma::resizable_panels;
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextSize};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextSize};
 
 use crate::gallery::control::GalleryApp;
 
@@ -34,13 +34,20 @@ pub(in crate::gallery) struct ResizablePanelsPane {
     horizontal: Entity<ResizablePanels>,
     vertical: Entity<ResizablePanels>,
     hover_handles: Entity<ResizablePanels>,
+    collapse_min: Entity<ResizablePanels>,
+    collapse_complete: Entity<ResizablePanels>,
+    external_toggle: Entity<ResizablePanels>,
     nested_outer: Entity<ResizablePanels>,
     controlled: Entity<ResizablePanels>,
     controlled_panel_sizes: Rc<Cell<[f32; 2]>>,
+    toggle_external_button: Entity<Button<()>>,
     reset_controlled_button: Entity<Button<()>>,
     horizontal_sizes: SharedString,
     vertical_sizes: SharedString,
     hover_handles_sizes: SharedString,
+    collapse_min_sizes: SharedString,
+    collapse_complete_sizes: SharedString,
+    external_toggle_sizes: SharedString,
     nested_outer_sizes: SharedString,
     controlled_sizes: SharedString,
     controlled_last_event: SharedString,
@@ -128,6 +135,86 @@ impl ResizablePanelsPane {
                 ResizablePanelSpec::new_render({
                     let theme = demo_theme.clone();
                     move || demo_label("Secondary", &theme)
+                })
+                .weight(1.0)
+                .bg(PANEL_BG_TRANSPARENT),
+            ])
+            .spawn(cx);
+
+        let collapse_min = look
+            .resizable_panels("resizable-panels-collapse-min")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .show_handle(true)
+            .resize_handle(ResizeHandleSize::Md)
+            .handle_grip(true)
+            .double_click_collapse(Some(ResizeCollapseBehavior::new(
+                ResizeCollapseMode::ToMinSize,
+                ResizeCollapseDirection::Left,
+            )))
+            .panels([
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Min 96px", &theme)
+                })
+                .weight(1.0)
+                .min(px(96.0))
+                .bg(PANEL_BG_TRANSPARENT),
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Receives space", &theme)
+                })
+                .weight(1.0)
+                .bg(PANEL_BG_TRANSPARENT),
+            ])
+            .spawn(cx);
+
+        let collapse_complete = look
+            .resizable_panels("resizable-panels-collapse-complete")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .show_handle(true)
+            .resize_handle(ResizeHandleSize::Md)
+            .handle_grip(true)
+            .double_click_collapse(Some(ResizeCollapseBehavior::new(
+                ResizeCollapseMode::Completely,
+                ResizeCollapseDirection::Left,
+            )))
+            .panels([
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Complete", &theme)
+                })
+                .weight(1.0)
+                .min(px(96.0))
+                .bg(PANEL_BG_TRANSPARENT),
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Receives all", &theme)
+                })
+                .weight(1.0)
+                .bg(PANEL_BG_TRANSPARENT),
+            ])
+            .spawn(cx);
+
+        let external_toggle = look
+            .resizable_panels("resizable-panels-external-toggle")
+            .orientation(ResizablePanelsOrientation::Horizontal)
+            .size(px(DEMO_WIDTH), px(DEMO_HEIGHT))
+            .handle_visibility(ResizeHandleVisibility::Hover)
+            .resize_handle(ResizeHandleSize::Md)
+            .handle_grip(true)
+            .panels([
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Button target", &theme)
+                })
+                .weight(1.0)
+                .min(px(96.0))
+                .bg(PANEL_BG_TRANSPARENT),
+                ResizablePanelSpec::new_render({
+                    let theme = demo_theme.clone();
+                    move || demo_label("Restores previous split", &theme)
                 })
                 .weight(1.0)
                 .bg(PANEL_BG_TRANSPARENT),
@@ -223,20 +310,33 @@ impl ResizablePanelsPane {
             ]
         };
 
-        let reset_controlled_button =
-            Button::new("resizable-panels-controlled-reset").label("Reset Controlled (30 / 70)").spawn(cx);
+        let reset_controlled_button = look
+            .secondary_button("resizable-panels-controlled-reset")
+            .label("Reset Controlled (30 / 70)")
+            .spawn(cx);
+        let toggle_external_button = look
+            .secondary_button("resizable-panels-external-toggle-button")
+            .label("Toggle External Panel")
+            .spawn(cx);
 
         Self {
             horizontal,
             vertical,
             hover_handles,
+            collapse_min,
+            collapse_complete,
+            external_toggle,
             nested_outer,
             controlled,
             controlled_panel_sizes,
+            toggle_external_button,
             reset_controlled_button,
             horizontal_sizes: "162px / 378px".into(),
             vertical_sizes: "66px / 154px".into(),
             hover_handles_sizes: "270px / 270px".into(),
+            collapse_min_sizes: "270px / 270px".into(),
+            collapse_complete_sizes: "270px / 270px".into(),
+            external_toggle_sizes: "270px / 270px".into(),
             nested_outer_sizes: "270px / 270px".into(),
             controlled_sizes: "162px / 378px".into(),
             controlled_last_event: "None".into(),
@@ -245,6 +345,11 @@ impl ResizablePanelsPane {
     }
 
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
+        subscriptions.push(cx.subscribe(&self.toggle_external_button, |app, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                app.panes.resizable_panels.toggle_external_panel(cx);
+            }
+        }));
         subscriptions.push(cx.subscribe(&self.reset_controlled_button, |app, _, _: &ButtonEvent, cx| {
             app.panes.resizable_panels.reset_controlled(cx);
         }));
@@ -264,6 +369,21 @@ impl ResizablePanelsPane {
             app.panes
                 .resizable_panels
                 .apply_sizes_event(event, |pane, label| pane.hover_handles_sizes = label, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.collapse_min, |app, _, event: &ResizablePanelsEvent, cx| {
+            app.panes
+                .resizable_panels
+                .apply_sizes_event(event, |pane, label| pane.collapse_min_sizes = label, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.collapse_complete, |app, _, event: &ResizablePanelsEvent, cx| {
+            app.panes
+                .resizable_panels
+                .apply_sizes_event(event, |pane, label| pane.collapse_complete_sizes = label, cx);
+        }));
+        subscriptions.push(cx.subscribe(&self.external_toggle, |app, _, event: &ResizablePanelsEvent, cx| {
+            app.panes
+                .resizable_panels
+                .apply_sizes_event(event, |pane, label| pane.external_toggle_sizes = label, cx);
         }));
     }
 
@@ -296,6 +416,32 @@ impl ResizablePanelsPane {
                             chrome.muted_text,
                             chrome.border,
                         ))
+                        .child(frame(
+                            "Double-click to min",
+                            self.collapse_min.clone(),
+                            look,
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
+                        .child(frame(
+                            "Double-click closed",
+                            self.collapse_complete.clone(),
+                            look,
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
+                        .child(frame(
+                            "External toggle",
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap_3()
+                                .child(self.external_toggle.clone())
+                                .child(div().flex().items_center().child(self.toggle_external_button.clone())),
+                            look,
+                            chrome.muted_text,
+                            chrome.border,
+                        ))
                         .child(frame("Nested", self.nested_outer.clone(), look, chrome.muted_text, chrome.border))
                         .child(frame("Controlled", self.controlled.clone(), look, chrome.muted_text, chrome.border)),
                 )
@@ -315,6 +461,9 @@ impl ResizablePanelsPane {
                         ("Horizontal sizes", self.horizontal_sizes.as_ref()),
                         ("Vertical sizes", self.vertical_sizes.as_ref()),
                         ("Hover-handle sizes", self.hover_handles_sizes.as_ref()),
+                        ("Collapse-to-min sizes", self.collapse_min_sizes.as_ref()),
+                        ("Collapse-complete sizes", self.collapse_complete_sizes.as_ref()),
+                        ("External-toggle sizes", self.external_toggle_sizes.as_ref()),
                         ("Nested sizes", self.nested_outer_sizes.as_ref()),
                         ("Controlled sizes", self.controlled_sizes.as_ref()),
                     ],
@@ -330,8 +479,12 @@ impl ResizablePanelsPane {
         notify_entity(&self.horizontal, cx);
         notify_entity(&self.vertical, cx);
         notify_entity(&self.hover_handles, cx);
+        notify_entity(&self.collapse_min, cx);
+        notify_entity(&self.collapse_complete, cx);
+        notify_entity(&self.external_toggle, cx);
         notify_entity(&self.nested_outer, cx);
         notify_entity(&self.controlled, cx);
+        notify_entity(&self.toggle_external_button, cx);
         notify_entity(&self.reset_controlled_button, cx);
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
@@ -347,6 +500,12 @@ impl ResizablePanelsPane {
         self.controlled_sizes = "162px / 378px".into();
         self.controlled_last_event = "Reset".into();
         cx.notify();
+    }
+
+    fn toggle_external_panel(&mut self, cx: &mut Context<GalleryApp>) {
+        self.external_toggle.update(cx, |panels, cx| {
+            panels.toggle_panel_hidden(0, PanelHideMode::Completely, cx);
+        });
     }
 
     fn handle_controlled_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<GalleryApp>) {
@@ -366,6 +525,9 @@ impl ResizablePanelsPane {
                 self.controlled_sizes = format_sizes_px(sizes_px).into();
                 format!("ResizeEnd: {}", format_sizes_px(sizes_px)).into()
             }
+            ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } => {
+                format!("PanelHiddenChanged: {panel_index} {hidden}").into()
+            }
         };
         notify_entity(&self.controlled, cx);
         cx.notify();
@@ -377,7 +539,7 @@ impl ResizablePanelsPane {
                 self.nested_outer_sizes = format_sizes_px(sizes_px).into();
                 cx.notify();
             }
-            ResizablePanelsEvent::ResizeStart => {}
+            ResizablePanelsEvent::ResizeStart | ResizablePanelsEvent::PanelHiddenChanged { .. } => {}
         }
     }
 
@@ -389,7 +551,7 @@ impl ResizablePanelsPane {
     ) {
         let sizes = match event {
             ResizablePanelsEvent::SizesChanged { sizes_px } | ResizablePanelsEvent::ResizeEnd { sizes_px } => sizes_px,
-            ResizablePanelsEvent::ResizeStart => return,
+            ResizablePanelsEvent::ResizeStart | ResizablePanelsEvent::PanelHiddenChanged { .. } => return,
         };
         assign(self, format_sizes_px(sizes).into());
         cx.notify();
@@ -427,7 +589,7 @@ fn telemetry_block(
     look: &ShadcnLook,
     label_color: gpui::Hsla,
     title_color: gpui::Hsla,
-    rows: [(&str, &str); 5],
+    rows: [(&str, &str); 8],
 ) -> impl IntoElement {
     let title_style = look.typography_scale(ShadcnTextSize::Sm);
     let row_style = look.typography_scale(ShadcnTextSize::Xs);

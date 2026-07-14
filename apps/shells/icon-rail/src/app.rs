@@ -5,6 +5,7 @@ use gpui::{
     prelude::*, px,
 };
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
 use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
@@ -12,7 +13,10 @@ use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_shell_common::{
-    chrome::{HasShellTheme, render_app_root, render_title_bar, wrap_content_pane},
+    chrome::{
+        HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
+        wrap_content_pane,
+    },
     content::{self, ICON_RAIL_COLLAPSED_WIDTH},
     nav_sample,
     split_sync::wire_split_nav_sync,
@@ -26,6 +30,7 @@ pub struct IconRailShellApp {
     split_view: Entity<SplitView>,
     navigation_sidebar: Entity<NavigationSidebar>,
     toggle_button: Entity<Button<()>>,
+    theme_toggle_button: IconButton,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -48,9 +53,15 @@ impl IconRailShellApp {
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
         let toggle_button = look.secondary_button("shell-icon-rail-toggle").label("Toggle Collapse").spawn(cx);
+        let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-icon-rail", &look, cx);
 
         let mut subscriptions = Vec::new();
         wire_split_nav_sync(&mut subscriptions, split_view.clone(), navigation_sidebar.clone(), cx);
+        subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                handle_theme_toggle(this, cx);
+            }
+        }));
         subscriptions.push(cx.subscribe(&toggle_button, {
             let split_view = split_view.clone();
             move |_, _, _: &ButtonEvent, cx| {
@@ -67,6 +78,7 @@ impl IconRailShellApp {
             split_view,
             navigation_sidebar,
             toggle_button,
+            theme_toggle_button,
             _subscriptions: subscriptions,
         }
     }
@@ -75,6 +87,10 @@ impl IconRailShellApp {
 impl HasShellTheme for IconRailShellApp {
     fn look(&self) -> &Arc<ShadcnLook> {
         &self.look
+    }
+
+    fn theme_toggle_button(&self) -> IconButton {
+        self.theme_toggle_button.clone()
     }
 }
 

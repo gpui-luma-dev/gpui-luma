@@ -4,10 +4,11 @@ use gpui::{
 };
 
 use super::{
-    math::{apply_pair_delta_px, content_axis_size, solve_layout_px},
+    math::{apply_pair_collapse_px, apply_pair_delta_px, content_axis_size, solve_layout_px_with_min_overrides},
     model::{
-        PanelLayoutState, PanelSize, ResizeHandleVisibility, ResizablePanelsBuilder, ResizablePanelsModel,
-        ResizablePanelsOrientation, ResizablePanelsRenderModel,
+        PanelHideMode, PanelLayoutState, PanelSize, ResizeCollapseDirection, ResizeCollapseMode,
+        ResizeHandleVisibility, ResizablePanelsBuilder, ResizablePanelsModel, ResizablePanelsOrientation,
+        ResizablePanelsRenderModel,
     },
 };
 use crate::theme::InteractionState;
@@ -29,11 +30,37 @@ pub enum ResizablePanelsEvent {
     ResizeStart,
     SizesChanged { sizes_px: Vec<f32> },
     ResizeEnd { sizes_px: Vec<f32> },
+    PanelHiddenChanged { panel_index: usize, hidden: bool },
+}
+
+#[derive(Clone, Debug)]
+struct CollapseRestoreState {
+    handle_index: usize,
+    target_index: usize,
+    left_state: PanelLayoutState,
+    right_state: PanelLayoutState,
+    left_min_override: bool,
+    right_min_override: bool,
+    content_axis_px: f32,
+}
+
+impl CollapseRestoreState {
+    fn intersects_pair(&self, handle_index: usize) -> bool {
+        let left = handle_index;
+        let right = handle_index + 1;
+        let restore_left = self.handle_index;
+        let restore_right = self.handle_index + 1;
+
+        restore_left == left || restore_left == right || restore_right == left || restore_right == right
+    }
 }
 
 pub struct ResizablePanels {
     model: ResizablePanelsModel,
     layout_states: Vec<PanelLayoutState>,
+    collapsed_min_overrides: Vec<bool>,
+    collapse_restore: Vec<Option<CollapseRestoreState>>,
+    panel_hide_restore: Vec<Option<CollapseRestoreState>>,
     panel_sizes_px: Vec<f32>,
     handle_focuses: Vec<FocusHandle>,
     hovered_handle: Option<usize>,
@@ -71,13 +98,21 @@ impl ResizablePanels {
             vec![PanelLayoutState::Weight(1.0)]
         };
 
-        let handle_focuses = (0..builder.model.panels.len().saturating_sub(1)).map(|_| cx.focus_handle()).collect();
+        let handle_count = builder.model.panels.len().saturating_sub(1);
+        let handle_focuses = (0..handle_count).map(|_| cx.focus_handle()).collect();
 
-        let panel_sizes_px = solve_layout_px(&builder.model.panels, &layout_states, 1.0);
+        let collapsed_min_overrides = vec![false; builder.model.panels.len()];
+        let collapse_restore = vec![None; handle_count];
+        let panel_hide_restore = vec![None; builder.model.panels.len()];
+        let panel_sizes_px =
+            solve_layout_px_with_min_overrides(&builder.model.panels, &layout_states, &collapsed_min_overrides, 1.0);
 
         Self {
             model: builder.model,
             layout_states,
+            collapsed_min_overrides,
+            collapse_restore,
+            panel_hide_restore,
             panel_sizes_px,
             handle_focuses,
             hovered_handle: None,
@@ -117,6 +152,7 @@ impl ResizablePanels {
             self.hovered_handle = None;
             self.dragging_handle = None;
             self.drag_content_axis_px = None;
+            self.clear_all_restore_state(cx);
         }
         cx.notify();
     }
@@ -135,6 +171,19 @@ impl ResizablePanels {
             return;
         }
         self.model.handle_visibility = visibility;
+        cx.notify();
+    }
+
+    pub fn set_double_click_collapse(
+        &mut self,
+        behavior: Option<super::model::ResizeCollapseBehavior>,
+        cx: &mut Context<Self>,
+    ) {
+        if self.model.double_click_collapse == behavior {
+            return;
+        }
+        self.model.double_click_collapse = behavior;
+        self.collapse_restore.fill(None);
         cx.notify();
     }
 
@@ -193,6 +242,7 @@ impl ResizablePanels {
         for (state, weight) in self.layout_states.iter_mut().zip(weights.iter()) {
             *state = PanelLayoutState::Weight(weight.max(0.0));
         }
+        self.clear_all_restore_state(cx);
 
         self.refresh_panel_sizes_px();
         cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: self.panel_sizes_px.clone() });
@@ -224,6 +274,72 @@ impl ResizablePanels {
         self.model.handle_visibility
     }
 
+    pub fn double_click_collapse(&self) -> Option<super::model::ResizeCollapseBehavior> {
+        self.model.double_click_collapse
+    }
+
+    pub fn is_panel_hidden(&self, panel_index: usize) -> bool {
+        self.panel_hide_restore.get(panel_index).is_some_and(Option::is_some)
+    }
+
+    pub fn hide_panel(&mut self, panel_index: usize, mode: PanelHideMode, cx: &mut Context<Self>) {
+        if panel_index >= self.layout_states.len() || self.is_panel_hidden(panel_index) {
+            return;
+        }
+        let Some(handle_index) = self.hide_handle_index(panel_index) else {
+            return;
+        };
+        self.clear_pair_restore_state(handle_index, cx);
+        let target_px = match mode {
+            PanelHideMode::ToMinSize => self.model.panels[panel_index].min_px.unwrap_or(0.0),
+            PanelHideMode::Completely => 0.0,
+        };
+        let restore = self.current_restore_state(handle_index, panel_index);
+        let content_axis_px = self.content_axis_size_px();
+        let changed = apply_pair_collapse_px(
+            &self.model.panels,
+            &mut self.layout_states,
+            &mut self.collapsed_min_overrides,
+            handle_index,
+            panel_index,
+            target_px,
+            mode == PanelHideMode::Completely,
+            content_axis_px,
+        );
+        if !changed {
+            return;
+        }
+
+        self.panel_hide_restore[panel_index] = Some(restore);
+        self.refresh_panel_sizes_px();
+        let sizes_px = self.panel_sizes_px.clone();
+        cx.emit(ResizablePanelsEvent::ResizeStart);
+        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: true });
+        cx.notify();
+    }
+
+    pub fn show_panel(&mut self, panel_index: usize, cx: &mut Context<Self>) {
+        let Some(restore) = self.panel_hide_restore.get(panel_index).and_then(Option::as_ref).cloned() else {
+            return;
+        };
+        if self.apply_restore_state(restore, cx) {
+            if let Some(panel_restore) = self.panel_hide_restore.get_mut(panel_index) {
+                *panel_restore = None;
+            }
+            cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+        }
+    }
+
+    pub fn toggle_panel_hidden(&mut self, panel_index: usize, mode: PanelHideMode, cx: &mut Context<Self>) {
+        if self.is_panel_hidden(panel_index) {
+            self.show_panel(panel_index, cx);
+        } else {
+            self.hide_panel(panel_index, mode, cx);
+        }
+    }
+
     fn axis_position(&self, position: gpui::Point<Pixels>) -> f32 {
         match self.model.orientation {
             ResizablePanelsOrientation::Horizontal => position.x.as_f32(),
@@ -253,13 +369,177 @@ impl ResizablePanels {
         self.drag_content_axis_px.unwrap_or_else(|| self.content_axis_size_px())
     }
 
-    fn apply_pair_delta(&mut self, index: usize, delta_px: f32) -> bool {
+    fn apply_pair_delta(&mut self, index: usize, delta_px: f32, cx: &mut Context<Self>) -> bool {
         if index + 1 >= self.layout_states.len() {
             return false;
         }
 
+        self.clear_pair_restore_state(index, cx);
         let content_main_px = self.drag_content_axis_size_px();
         apply_pair_delta_px(&self.model.panels, &mut self.layout_states, index, delta_px, content_main_px)
+    }
+
+    fn clear_all_restore_state(&mut self, cx: &mut Context<Self>) {
+        self.collapsed_min_overrides.fill(false);
+        self.collapse_restore.fill(None);
+        for (panel_index, restore) in self.panel_hide_restore.iter_mut().enumerate() {
+            if restore.take().is_some() {
+                cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+            }
+        }
+    }
+
+    fn clear_pair_restore_state(&mut self, index: usize, cx: &mut Context<Self>) {
+        for panel_index in [index, index + 1] {
+            if let Some(override_min) = self.collapsed_min_overrides.get_mut(panel_index) {
+                *override_min = false;
+            }
+        }
+        self.clear_collapse_restore_for_pair(index);
+        for panel_index in [index, index + 1] {
+            if let Some(restore) = self.panel_hide_restore.get_mut(panel_index)
+                && restore.take().is_some()
+            {
+                cx.emit(ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden: false });
+            }
+        }
+    }
+
+    fn clear_collapse_restore_for_pair(&mut self, pair_handle_index: usize) {
+        for restore in &mut self.collapse_restore {
+            if restore.as_ref().is_some_and(|restore| restore.intersects_pair(pair_handle_index)) {
+                *restore = None;
+            }
+        }
+    }
+
+    fn hide_handle_index(&self, panel_index: usize) -> Option<usize> {
+        if self.layout_states.len() < 2 {
+            return None;
+        }
+        if panel_index == 0 {
+            Some(0)
+        } else {
+            Some(panel_index - 1)
+        }
+    }
+
+    fn collapse_target_index(&self, handle_index: usize, direction: ResizeCollapseDirection) -> Option<usize> {
+        match (self.model.orientation, direction) {
+            (ResizablePanelsOrientation::Horizontal, ResizeCollapseDirection::Left)
+            | (ResizablePanelsOrientation::Vertical, ResizeCollapseDirection::Top) => Some(handle_index),
+            (ResizablePanelsOrientation::Horizontal, ResizeCollapseDirection::Right)
+            | (ResizablePanelsOrientation::Vertical, ResizeCollapseDirection::Bottom) => Some(handle_index + 1),
+            _ => None,
+        }
+    }
+
+    fn collapse_target_px(&self, target_index: usize, mode: ResizeCollapseMode) -> f32 {
+        match mode {
+            ResizeCollapseMode::ToMinSize => self.model.panels[target_index].min_px.unwrap_or(0.0),
+            ResizeCollapseMode::Completely => 0.0,
+        }
+    }
+
+    fn current_restore_state(&self, handle_index: usize, target_index: usize) -> CollapseRestoreState {
+        CollapseRestoreState {
+            handle_index,
+            target_index,
+            left_state: self.layout_states[handle_index],
+            right_state: self.layout_states[handle_index + 1],
+            left_min_override: self.collapsed_min_overrides.get(handle_index).copied().unwrap_or(false),
+            right_min_override: self.collapsed_min_overrides.get(handle_index + 1).copied().unwrap_or(false),
+            content_axis_px: self.content_axis_size_px(),
+        }
+    }
+
+    fn apply_restore_state(&mut self, restore: CollapseRestoreState, cx: &mut Context<Self>) -> bool {
+        if restore.handle_index + 1 >= self.layout_states.len() {
+            return false;
+        }
+
+        self.layout_states[restore.handle_index] = restore.left_state;
+        self.layout_states[restore.handle_index + 1] = restore.right_state;
+        if let Some(override_min) = self.collapsed_min_overrides.get_mut(restore.handle_index) {
+            *override_min = restore.left_min_override;
+        }
+        if let Some(override_min) = self.collapsed_min_overrides.get_mut(restore.handle_index + 1) {
+            *override_min = restore.right_min_override;
+        }
+        self.scale_restored_pair_to_current_axis(&restore);
+        self.clear_collapse_restore_for_pair(restore.handle_index);
+        self.refresh_panel_sizes_px();
+        let sizes_px = self.panel_sizes_px.clone();
+        cx.emit(ResizablePanelsEvent::ResizeStart);
+        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        cx.notify();
+        true
+    }
+
+    fn scale_restored_pair_to_current_axis(&mut self, restore: &CollapseRestoreState) {
+        let current_axis_px = self.content_axis_size_px();
+        if (current_axis_px - restore.content_axis_px).abs() < f32::EPSILON || restore.content_axis_px <= f32::EPSILON {
+            return;
+        }
+
+        let scale = current_axis_px / restore.content_axis_px;
+        for panel_index in [restore.handle_index, restore.handle_index + 1] {
+            if let Some(PanelLayoutState::Absolute(px)) = self.layout_states.get_mut(panel_index) {
+                *px *= scale;
+            }
+        }
+    }
+
+    fn apply_double_click_collapse(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+        let Some(behavior) = self.model.double_click_collapse else {
+            return false;
+        };
+        let Some(target_index) = self.collapse_target_index(index, behavior.direction) else {
+            return false;
+        };
+        if target_index >= self.layout_states.len() || index + 1 >= self.layout_states.len() {
+            return false;
+        }
+
+        if let Some(restore) = self
+            .collapse_restore
+            .get(index)
+            .and_then(Option::as_ref)
+            .filter(|restore| restore.handle_index == index && restore.target_index == target_index)
+            .cloned()
+        {
+            return self.apply_restore_state(restore, cx);
+        }
+
+        self.clear_pair_restore_state(index, cx);
+        let restore = self.current_restore_state(index, target_index);
+        let target_px = self.collapse_target_px(target_index, behavior.mode);
+        let content_axis_px = self.content_axis_size_px();
+        let changed = apply_pair_collapse_px(
+            &self.model.panels,
+            &mut self.layout_states,
+            &mut self.collapsed_min_overrides,
+            index,
+            target_index,
+            target_px,
+            behavior.mode == ResizeCollapseMode::Completely,
+            content_axis_px,
+        );
+        if !changed {
+            return false;
+        }
+
+        if let Some(collapse_restore) = self.collapse_restore.get_mut(index) {
+            *collapse_restore = Some(restore);
+        }
+        self.refresh_panel_sizes_px();
+        let sizes_px = self.panel_sizes_px.clone();
+        cx.emit(ResizablePanelsEvent::ResizeStart);
+        cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
+        cx.emit(ResizablePanelsEvent::ResizeEnd { sizes_px });
+        cx.notify();
+        true
     }
 
     fn emit_sizes_changed_if_needed(&mut self, changed: bool, cx: &mut Context<Self>) {
@@ -282,6 +562,14 @@ impl ResizablePanels {
         }
 
         self.handle_focuses[index].focus(window, cx);
+        if event.click_count >= 2 && self.apply_double_click_collapse(index, cx) {
+            self.dragging_handle = None;
+            self.drag_content_axis_px = None;
+            window.prevent_default();
+            cx.stop_propagation();
+            return;
+        }
+
         self.dragging_handle = Some(index);
         self.drag_start_axis_px = self.axis_position(event.position);
         self.drag_start_states = self.layout_states.clone();
@@ -332,7 +620,7 @@ impl ResizablePanels {
 
         self.layout_states.clone_from(&self.drag_start_states);
         let delta_px = self.axis_position(event.event.position) - self.drag_start_axis_px;
-        let changed = self.apply_pair_delta(index, delta_px);
+        let changed = self.apply_pair_delta(index, delta_px, cx);
         if changed {
             self.refresh_panel_sizes_px();
         }
@@ -377,7 +665,7 @@ impl ResizablePanels {
         };
 
         self.handle_focuses[index].focus(window, cx);
-        if self.apply_pair_delta(index, delta_px) {
+        if self.apply_pair_delta(index, delta_px, cx) {
             self.refresh_panel_sizes_px();
             let sizes_px = self.panel_sizes_px.clone();
             cx.emit(ResizablePanelsEvent::SizesChanged { sizes_px: sizes_px.clone() });
@@ -389,7 +677,12 @@ impl ResizablePanels {
     }
 
     fn refresh_panel_sizes_px(&mut self) {
-        self.panel_sizes_px = solve_layout_px(&self.model.panels, &self.layout_states, self.content_axis_size_px());
+        self.panel_sizes_px = solve_layout_px_with_min_overrides(
+            &self.model.panels,
+            &self.layout_states,
+            &self.collapsed_min_overrides,
+            self.content_axis_size_px(),
+        );
     }
 
     fn render_model(&self) -> ResizablePanelsRenderModel<'_> {
@@ -401,6 +694,7 @@ impl ResizablePanels {
             show_border: self.model.show_border,
             enabled: self.model.enabled,
             handle_visibility: self.model.handle_visibility,
+            double_click_collapse: self.model.double_click_collapse,
             hovered_handle: self.hovered_handle,
             dragging_handle: self.dragging_handle,
             resize_handle: self.model.resize_handle,

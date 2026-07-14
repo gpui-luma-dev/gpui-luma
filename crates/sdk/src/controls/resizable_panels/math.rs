@@ -25,16 +25,32 @@ pub struct PanelPxBounds {
 }
 
 pub fn resolve_panel_px_bounds(spec: &ResizablePanelSpec, content_main_px: f32) -> PanelPxBounds {
+    resolve_panel_px_bounds_with_min_override(spec, content_main_px, false)
+}
+
+fn resolve_panel_px_bounds_with_min_override(
+    spec: &ResizablePanelSpec,
+    content_main_px: f32,
+    allow_zero_min: bool,
+) -> PanelPxBounds {
     let content_main_px = content_main_px.max(1.0);
 
     match spec.size {
         PanelSize::Absolute(_) => {
-            let min_px = spec.min_px.unwrap_or(0.0);
+            let min_px = if allow_zero_min {
+                0.0
+            } else {
+                spec.min_px.unwrap_or(0.0)
+            };
             let max_px = spec.max_px.unwrap_or(content_main_px);
             PanelPxBounds { min_px, max_px: max_px.max(min_px) }
         }
         PanelSize::Weight(_) => {
-            let min_px = spec.min_px.unwrap_or(0.0);
+            let min_px = if allow_zero_min {
+                0.0
+            } else {
+                spec.min_px.unwrap_or(0.0)
+            };
             let max_px = spec.max_px.unwrap_or(content_main_px);
             PanelPxBounds { min_px, max_px: max_px.max(min_px) }
         }
@@ -43,6 +59,15 @@ pub fn resolve_panel_px_bounds(spec: &ResizablePanelSpec, content_main_px: f32) 
 
 /// Two-pass layout: absolutes first, then distribute remainder by weight.
 pub fn solve_layout_px(specs: &[ResizablePanelSpec], states: &[PanelLayoutState], content_main_px: f32) -> Vec<f32> {
+    solve_layout_px_with_min_overrides(specs, states, &[], content_main_px)
+}
+
+pub fn solve_layout_px_with_min_overrides(
+    specs: &[ResizablePanelSpec],
+    states: &[PanelLayoutState],
+    min_overrides: &[bool],
+    content_main_px: f32,
+) -> Vec<f32> {
     let panel_count = specs.len();
     if panel_count == 0 {
         return Vec::new();
@@ -57,7 +82,11 @@ pub fn solve_layout_px(specs: &[ResizablePanelSpec], states: &[PanelLayoutState]
     for (index, state) in states.iter().enumerate().take(panel_count) {
         match state {
             PanelLayoutState::Absolute(px) => {
-                let bounds = resolve_panel_px_bounds(&specs[index], content_main_px);
+                let bounds = resolve_panel_px_bounds_with_min_override(
+                    &specs[index],
+                    content_main_px,
+                    min_overrides.get(index).copied().unwrap_or(false),
+                );
                 let clamped = px.clamp(bounds.min_px, bounds.max_px);
                 sizes_px[index] = clamped;
                 absolute_total += clamped;
@@ -100,7 +129,7 @@ pub fn solve_layout_px(specs: &[ResizablePanelSpec], states: &[PanelLayoutState]
         }
     }
 
-    clamp_weight_panels_px(&mut sizes_px, specs, states, &weight_indices, content_main_px, remainder);
+    clamp_weight_panels_px(&mut sizes_px, specs, states, min_overrides, &weight_indices, content_main_px, remainder);
     sizes_px
 }
 
@@ -108,6 +137,7 @@ fn clamp_weight_panels_px(
     sizes_px: &mut [f32],
     specs: &[ResizablePanelSpec],
     states: &[PanelLayoutState],
+    min_overrides: &[bool],
     weight_indices: &[usize],
     content_main_px: f32,
     remainder: f32,
@@ -126,7 +156,11 @@ fn clamp_weight_panels_px(
             let PanelLayoutState::Weight(weight) = states[index] else {
                 continue;
             };
-            let bounds = resolve_panel_px_bounds(&specs[index], content_main_px);
+            let bounds = resolve_panel_px_bounds_with_min_override(
+                &specs[index],
+                content_main_px,
+                min_overrides.get(index).copied().unwrap_or(false),
+            );
             let size = sizes_px[index];
             if size < bounds.min_px - f32::EPSILON {
                 sizes_px[index] = bounds.min_px;
@@ -165,6 +199,67 @@ fn clamp_weight_panels_px(
             }
         }
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn apply_pair_collapse_px(
+    specs: &[ResizablePanelSpec],
+    states: &mut [PanelLayoutState],
+    min_overrides: &mut [bool],
+    handle_index: usize,
+    target_index: usize,
+    target_px: f32,
+    ignore_target_min: bool,
+    content_main_px: f32,
+) -> bool {
+    if handle_index + 1 >= states.len() || target_index >= states.len() {
+        return false;
+    }
+    if target_index != handle_index && target_index != handle_index + 1 {
+        return false;
+    }
+
+    let neighbor_index = if target_index == handle_index {
+        handle_index + 1
+    } else {
+        handle_index
+    };
+    let start_px = solve_layout_px_with_min_overrides(specs, states, min_overrides, content_main_px);
+    let pair_total = start_px[handle_index] + start_px[handle_index + 1];
+
+    let target_bounds =
+        resolve_panel_px_bounds_with_min_override(&specs[target_index], content_main_px, ignore_target_min);
+    let neighbor_bounds = resolve_panel_px_bounds_with_min_override(
+        &specs[neighbor_index],
+        content_main_px,
+        min_overrides.get(neighbor_index).copied().unwrap_or(false),
+    );
+
+    let min_target = target_bounds.min_px.max(pair_total - neighbor_bounds.max_px);
+    let max_target = target_bounds.max_px.min(pair_total - neighbor_bounds.min_px);
+    if min_target > max_target {
+        return false;
+    }
+
+    let new_target = target_px.clamp(min_target, max_target);
+    let new_neighbor = pair_total - new_target;
+    if (new_target - start_px[target_index]).abs() < f32::EPSILON
+        && (new_neighbor - start_px[neighbor_index]).abs() < f32::EPSILON
+    {
+        return false;
+    }
+
+    states[target_index] = PanelLayoutState::Absolute(new_target);
+    states[neighbor_index] = PanelLayoutState::Absolute(new_neighbor);
+
+    if let Some(override_min) = min_overrides.get_mut(target_index) {
+        *override_min = ignore_target_min && new_target < specs[target_index].min_px.unwrap_or(0.0);
+    }
+    if let Some(override_min) = min_overrides.get_mut(neighbor_index) {
+        *override_min = false;
+    }
+
+    true
 }
 
 /// Adjusts adjacent panels at `index` / `index + 1` by `delta_px` on the main axis.
@@ -283,8 +378,8 @@ pub fn split_positions_px(panel_sizes_px: &[f32]) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::{
-        PanelLayoutState, apply_pair_delta_px, content_axis_size, handle_overlay_geometry, resolve_panel_px_bounds,
-        solve_layout_px,
+        PanelLayoutState, apply_pair_collapse_px, apply_pair_delta_px, content_axis_size, handle_overlay_geometry,
+        resolve_panel_px_bounds, solve_layout_px, solve_layout_px_with_min_overrides,
     };
     use crate::controls::resizable_panels::model::ResizablePanelSpec;
 
@@ -294,6 +389,10 @@ mod tests {
 
     fn absolute_spec(width_px: f32) -> ResizablePanelSpec {
         ResizablePanelSpec::new_render(|| gpui::Empty).size(gpui::px(width_px))
+    }
+
+    fn min_weight_spec(weight: f32, min_px: f32) -> ResizablePanelSpec {
+        ResizablePanelSpec::new_render(|| gpui::Empty).weight(weight).min(gpui::px(min_px))
     }
 
     #[test]
@@ -323,6 +422,36 @@ mod tests {
             panic!("expected absolute state");
         };
         assert!((left - 240.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn collapse_pair_to_min_size_respects_target_min() {
+        let specs = [min_weight_spec(1.0, 120.0), weight_spec(1.0)];
+        let mut states = [PanelLayoutState::Weight(1.0), PanelLayoutState::Weight(1.0)];
+        let mut overrides = [false, false];
+
+        let changed = apply_pair_collapse_px(&specs, &mut states, &mut overrides, 0, 0, 120.0, false, 500.0);
+
+        assert!(changed);
+        assert_eq!(overrides, [false, false]);
+        let sizes = solve_layout_px_with_min_overrides(&specs, &states, &overrides, 500.0);
+        assert!((sizes[0] - 120.0).abs() < f32::EPSILON);
+        assert!((sizes[1] - 380.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn collapse_pair_completely_can_ignore_target_min() {
+        let specs = [min_weight_spec(1.0, 120.0), weight_spec(1.0)];
+        let mut states = [PanelLayoutState::Weight(1.0), PanelLayoutState::Weight(1.0)];
+        let mut overrides = [false, false];
+
+        let changed = apply_pair_collapse_px(&specs, &mut states, &mut overrides, 0, 0, 0.0, true, 500.0);
+
+        assert!(changed);
+        assert_eq!(overrides, [true, false]);
+        let sizes = solve_layout_px_with_min_overrides(&specs, &states, &overrides, 500.0);
+        assert!((sizes[0] - 0.0).abs() < f32::EPSILON);
+        assert!((sizes[1] - 500.0).abs() < f32::EPSILON);
     }
 
     #[test]

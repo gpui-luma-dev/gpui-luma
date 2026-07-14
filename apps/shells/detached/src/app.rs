@@ -9,7 +9,10 @@ use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_shell_common::{
-    chrome::{HasShellTheme, render_app_root, render_title_bar, wrap_content_pane},
+    chrome::{
+        HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
+        wrap_content_pane,
+    },
     content, nav_sample,
     split_sync::wire_split_nav_sync,
     theme::{ShellThemeChoice, sync_color_control_theme},
@@ -23,6 +26,7 @@ pub struct DetachedShellApp {
     split_view: Entity<SplitView>,
     navigation_sidebar: Entity<NavigationSidebar>,
     toggle_button: IconButton,
+    theme_toggle_button: IconButton,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -37,6 +41,7 @@ impl DetachedShellApp {
 
         let navigation_sidebar = nav_sample::spawn_properties_sidebar(look.clone(), "shell-nav", cx);
         let toggle_button = look.ghost_icon_button("shell-detached-toggle", LucideIcon::Menu).spawn(cx);
+        let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-detached", &look, cx);
         let split_view = look
             .split_view("shell-detached")
             .sidebar_width(px(560.0))
@@ -47,6 +52,11 @@ impl DetachedShellApp {
 
         let mut subscriptions = Vec::new();
         wire_split_nav_sync(&mut subscriptions, split_view.clone(), navigation_sidebar.clone(), cx);
+        subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                handle_theme_toggle(this, cx);
+            }
+        }));
         let toggle_for_sub = toggle_button.clone();
         subscriptions.push(cx.subscribe(&toggle_for_sub, {
             let split_view = split_view.clone();
@@ -64,6 +74,7 @@ impl DetachedShellApp {
             split_view,
             navigation_sidebar,
             toggle_button,
+            theme_toggle_button,
             _subscriptions: subscriptions,
         }
     }
@@ -72,6 +83,10 @@ impl DetachedShellApp {
 impl HasShellTheme for DetachedShellApp {
     fn look(&self) -> &Arc<ShadcnLook> {
         &self.look
+    }
+
+    fn theme_toggle_button(&self) -> IconButton {
+        self.theme_toggle_button.clone()
     }
 }
 

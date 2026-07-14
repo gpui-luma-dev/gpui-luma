@@ -13,6 +13,7 @@ macro_rules! resizable_panels {
         layout: $layout:ident,
         $( show_handle: $show_handle:expr, )?
         $( handle_visibility: $handle_visibility:ident, )?
+        $( double_click_collapse: ($collapse_mode:ident, $collapse_direction:ident), )?
         $( resize_handle: $resize_handle:ident, )?
         $( handle_grip: $handle_grip:expr, )?
         $( show_border: $show_border:expr, )?
@@ -29,6 +30,7 @@ macro_rules! resizable_panels {
         $crate::resizable_panels!(@finish_builder builder, $cx, $layout, panels
             $(, show_handle = $show_handle)*
             $(, handle_visibility = $handle_visibility)*
+            $(, double_click_collapse = ($collapse_mode, $collapse_direction))*
             $(, resize_handle = $resize_handle)*
             $(, handle_grip = $handle_grip)*
             $(, show_border = $show_border)*
@@ -44,6 +46,7 @@ macro_rules! resizable_panels {
         layout: $layout:ident,
         $( show_handle: $show_handle:expr, )?
         $( handle_visibility: $handle_visibility:ident, )?
+        $( double_click_collapse: ($collapse_mode:ident, $collapse_direction:ident), )?
         $( resize_handle: $resize_handle:ident, )?
         $( handle_grip: $handle_grip:expr, )?
         $( show_border: $show_border:expr, )?
@@ -59,6 +62,7 @@ macro_rules! resizable_panels {
         $crate::resizable_panels!(@finish_builder builder, $cx, $layout, panels
             $(, show_handle = $show_handle)*
             $(, handle_visibility = $handle_visibility)*
+            $(, double_click_collapse = ($collapse_mode, $collapse_direction))*
             $(, resize_handle = $resize_handle)*
             $(, handle_grip = $handle_grip)*
             $(, show_border = $show_border)*
@@ -72,6 +76,7 @@ macro_rules! resizable_panels {
         @finish_builder $builder:expr, $cx:expr, $layout:ident, $panels:expr
         $(, show_handle = $show_handle:expr)*
         $(, handle_visibility = $handle_visibility:ident)*
+        $(, double_click_collapse = ($collapse_mode:ident, $collapse_direction:ident))*
         $(, resize_handle = $resize_handle:ident)*
         $(, handle_grip = $handle_grip:expr)*
         $(, show_border = $show_border:expr)*
@@ -86,6 +91,12 @@ macro_rules! resizable_panels {
         $( builder = builder.handle_visibility(
             $crate::controls::resizable_panels::ResizeHandleVisibility::$handle_visibility,
         ); )?
+        $( builder = builder.double_click_collapse(Some(
+            $crate::controls::resizable_panels::ResizeCollapseBehavior::new(
+                $crate::controls::resizable_panels::ResizeCollapseMode::$collapse_mode,
+                $crate::controls::resizable_panels::ResizeCollapseDirection::$collapse_direction,
+            ),
+        )); )?
         $( builder = builder.resize_handle(
             $crate::controls::resizable_panels::ResizeHandleSize::$resize_handle,
         ); )?

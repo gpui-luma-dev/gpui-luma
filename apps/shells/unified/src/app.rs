@@ -1,12 +1,17 @@
 use std::sync::Arc;
 
 use gpui::{Context, Entity, FocusHandle, IntoElement, Render, Subscription, Window, px};
+use gpui_luma::controls::command::button::ButtonEvent;
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
 use gpui_luma::controls::split_view::{SplitView, SplitViewSeparatorVisibility, render_pane};
 use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_shell_common::{
-    chrome::{HasShellTheme, render_app_root, render_title_bar, wrap_content_pane},
+    chrome::{
+        HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
+        wrap_content_pane,
+    },
     content, nav_sample,
     split_sync::wire_split_nav_sync,
     theme::{ShellThemeChoice, sync_color_control_theme},
@@ -18,6 +23,7 @@ pub struct UnifiedShellApp {
     look: Arc<ShadcnLook>,
     split_view: Entity<SplitView>,
     navigation_sidebar: Entity<NavigationSidebar>,
+    theme_toggle_button: IconButton,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -39,17 +45,35 @@ impl UnifiedShellApp {
             .sidebar_collapsed_width(px(56.0))
             .separator_visibility(SplitViewSeparatorVisibility::Hover)
             .spawn(cx);
+        let theme_toggle_button = spawn_theme_toggle_button("shell-titlebar-theme-toggle-unified", &look, cx);
 
         let mut subscriptions = Vec::new();
         wire_split_nav_sync(&mut subscriptions, split_view.clone(), navigation_sidebar.clone(), cx);
+        subscriptions.push(cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                handle_theme_toggle(this, cx);
+            }
+        }));
 
-        Self { focus_scope, pane_focus, look, split_view, navigation_sidebar, _subscriptions: subscriptions }
+        Self {
+            focus_scope,
+            pane_focus,
+            look,
+            split_view,
+            navigation_sidebar,
+            theme_toggle_button,
+            _subscriptions: subscriptions,
+        }
     }
 }
 
 impl HasShellTheme for UnifiedShellApp {
     fn look(&self) -> &Arc<ShadcnLook> {
         &self.look
+    }
+
+    fn theme_toggle_button(&self) -> IconButton {
+        self.theme_toggle_button.clone()
     }
 }
 

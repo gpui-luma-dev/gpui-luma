@@ -38,6 +38,38 @@ pub enum ResizeHandleVisibility {
     Always,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResizeCollapseMode {
+    ToMinSize,
+    Completely,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PanelHideMode {
+    ToMinSize,
+    Completely,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResizeCollapseDirection {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ResizeCollapseBehavior {
+    pub mode: ResizeCollapseMode,
+    pub direction: ResizeCollapseDirection,
+}
+
+impl ResizeCollapseBehavior {
+    pub fn new(mode: ResizeCollapseMode, direction: ResizeCollapseDirection) -> Self {
+        Self { mode, direction }
+    }
+}
+
 /// Resolved pixel metrics for an overlay resize handle.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ResizeHandleMetrics {
@@ -184,6 +216,7 @@ pub struct ResizablePanelsModel {
     pub(crate) show_border: bool,
     pub(crate) enabled: bool,
     pub(crate) handle_visibility: ResizeHandleVisibility,
+    pub(crate) double_click_collapse: Option<ResizeCollapseBehavior>,
     pub(crate) resize_handle: ResizeHandleSize,
     pub(crate) handle_grip: bool,
     pub(crate) keyboard_step: f32,
@@ -201,6 +234,7 @@ pub struct ResizablePanelsRenderModel<'a> {
     pub show_border: bool,
     pub enabled: bool,
     pub handle_visibility: ResizeHandleVisibility,
+    pub double_click_collapse: Option<ResizeCollapseBehavior>,
     pub hovered_handle: Option<usize>,
     pub dragging_handle: Option<usize>,
     pub resize_handle: ResizeHandleSize,
@@ -237,6 +271,7 @@ impl ResizablePanelsBuilder {
                 show_border: true,
                 enabled: true,
                 handle_visibility: ResizeHandleVisibility::Hidden,
+                double_click_collapse: None,
                 resize_handle: ResizeHandleSize::Sm,
                 handle_grip: false,
                 keyboard_step: 2.0,
@@ -293,6 +328,11 @@ impl ResizablePanelsBuilder {
 
     pub fn handle_visibility(mut self, visibility: ResizeHandleVisibility) -> Self {
         self.model.handle_visibility = visibility;
+        self
+    }
+
+    pub fn double_click_collapse(mut self, behavior: Option<ResizeCollapseBehavior>) -> Self {
+        self.model.double_click_collapse = behavior;
         self
     }
 
@@ -367,7 +407,9 @@ where
 mod resize_handle_tests {
     use std::sync::Arc;
 
-    use super::{ResizeHandleSize, ResizeHandleVisibility};
+    use super::{
+        ResizeCollapseBehavior, ResizeCollapseDirection, ResizeCollapseMode, ResizeHandleSize, ResizeHandleVisibility,
+    };
     use super::{ResizablePanelsBuilder, default_resizable_panels_template};
 
     #[test]
@@ -403,6 +445,19 @@ mod resize_handle_tests {
     fn handle_visibility_sets_policy_directly() {
         let builder = ResizablePanelsBuilder::new("hover").handle_visibility(ResizeHandleVisibility::Hover);
         assert_eq!(builder.model.handle_visibility, ResizeHandleVisibility::Hover);
+    }
+
+    #[test]
+    fn double_click_collapse_defaults_to_none() {
+        let builder = ResizablePanelsBuilder::new("collapse-default");
+        assert_eq!(builder.model.double_click_collapse, None);
+    }
+
+    #[test]
+    fn double_click_collapse_sets_behavior() {
+        let behavior = ResizeCollapseBehavior::new(ResizeCollapseMode::ToMinSize, ResizeCollapseDirection::Left);
+        let builder = ResizablePanelsBuilder::new("collapse").double_click_collapse(Some(behavior));
+        assert_eq!(builder.model.double_click_collapse, Some(behavior));
     }
 
     #[test]

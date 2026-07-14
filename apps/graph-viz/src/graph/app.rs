@@ -1,18 +1,19 @@
-use std::cell::Cell;
-use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FocusHandle, MouseButton, Render, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
+use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole};
+use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::GraphVizThemeChoice;
 
 use super::activity::load_sample_ride;
 use super::content_pane::ContentPaneHost;
-use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
+use super::controls::workbench_layout::{LEFT_SIDEBAR_PANEL_INDEX, WorkbenchLayout, WorkbenchSidebar};
 use super::theme_sidebar::ThemeSidebar;
 
 pub struct GraphVizApp {
@@ -22,8 +23,9 @@ pub struct GraphVizApp {
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
     workbench: WorkbenchLayout,
-    _left_sidebar_width_px: Rc<Cell<f32>>,
-    sidebar_collapsed: bool,
+    sidebar_toggle: IconButton,
+    mode_toggle: IconButton,
+    sidebar_hidden: bool,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -40,20 +42,25 @@ impl GraphVizApp {
 
         let left_sidebar_entity = theme_sidebar.clone();
         let content_pane_entity = content_pane.clone();
-        let left_sidebar_width_px = Rc::new(Cell::new(360.0));
-        let left_sidebar_width_state = left_sidebar_width_px.clone();
         let workbench = WorkbenchLayout::new(
             "graph-viz",
             look.clone(),
             WorkbenchSidebar::new(move || left_sidebar_entity.clone().into_any_element())
                 .width(px(360.0))
                 .min(px(360.0))
-                .max(px(460.0))
-                .on_width_changed(move |width| left_sidebar_width_state.set(width.as_f32())),
+                .max(px(460.0)),
             move || content_pane_entity.clone().into_any_element(),
-            WorkbenchSidebar::new(|| div().into_any_element()),
             cx,
         );
+
+        let sidebar_toggle = look
+            .ghost_icon_button("graph-viz-sidebar-toggle", LucideIcon::PanelLeft)
+            .size(ControlSize::Sm)
+            .spawn(cx);
+        let mode_toggle = look
+            .ghost_icon_button("graph-viz-mode-toggle", toggle_mode_icon(look.mode()))
+            .size(ControlSize::Sm)
+            .spawn(cx);
 
         let mut subscriptions = Vec::new();
         let theme_selector = theme_sidebar.read(cx).theme_selector();
@@ -64,6 +71,19 @@ impl GraphVizApp {
                 app.change_theme(item_id.as_ref(), cx);
             },
         ));
+        subscriptions.push(cx.subscribe(&workbench.panels(), |app, _, event: &ResizablePanelsEvent, cx| {
+            app.handle_workbench_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&sidebar_toggle, |app, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                app.toggle_sidebar(cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&mode_toggle, |app, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                app.toggle_mode(cx);
+            }
+        }));
 
         Self {
             focus_scope,
@@ -72,8 +92,9 @@ impl GraphVizApp {
             theme_sidebar,
             content_pane,
             workbench,
-            _left_sidebar_width_px: left_sidebar_width_px,
-            sidebar_collapsed: false,
+            sidebar_toggle,
+            mode_toggle,
+            sidebar_hidden: false,
             _subscriptions: subscriptions,
         }
     }
@@ -108,33 +129,81 @@ impl GraphVizApp {
     }
 
     fn sync_split_themes(&self, cx: &mut Context<Self>) {
-        let theme = self.look.dock_splitter_theme();
+        let theme = self.look.resizable_panels_theme();
         self.workbench.sync_theme(&theme, cx);
     }
 
+    fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
+        if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event
+            && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
+        {
+            self.sidebar_hidden = *hidden;
+            let icon = if *hidden {
+                LucideIcon::PanelLeftOpen
+            } else {
+                LucideIcon::PanelLeft
+            };
+            self.sidebar_toggle.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
+            });
+        }
+        cx.notify();
+    }
+
     fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.sidebar_collapsed = !self.sidebar_collapsed;
+        self.workbench.panels().update(cx, |panels, cx| {
+            panels.toggle_panel_hidden(LEFT_SIDEBAR_PANEL_INDEX, PanelHideMode::Completely, cx);
+        });
+    }
+
+    fn toggle_mode(&mut self, cx: &mut Context<Self>) {
+        let mode = match self.look.mode() {
+            ThemeMode::Light => ThemeMode::Dark,
+            ThemeMode::Dark => ThemeMode::Light,
+        };
+        self.look.set_mode(mode);
+        self.mode_toggle.update(cx, |button, cx| {
+            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode))), cx);
+        });
+        cx.bump_luma_theme_revision();
+        let look = self.look.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| {
+            sidebar.apply_theme_snapshot(look, cx);
+        });
+        self.sync_split_themes(cx);
+        self.content_pane.update(cx, |pane, cx| {
+            pane.sync_look(self.look.clone(), cx);
+            pane.notify_tabs(cx);
+        });
         cx.notify();
     }
 }
 
+fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
+    match mode {
+        ThemeMode::Light => LucideIcon::Moon,
+        ThemeMode::Dark => LucideIcon::Sun,
+    }
+}
+
+fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| match &icon {
+        ControlIcon::Lucide(lucide) => div()
+            .font_family("lucide")
+            .text_size(px(14.0))
+            .child(char::from(*lucide).to_string())
+            .into_any_element(),
+        ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
+    })
+}
+
 impl Render for GraphVizApp {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let sans = self.look.mode_tokens().typography.font.sans.family.clone();
-        let active_mode = self.look.mode();
-        let toggle_icon = match active_mode {
-            ThemeMode::Light => LucideIcon::Moon,
-            ThemeMode::Dark => LucideIcon::Sun,
-        };
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
-        let sidebar_toggle_icon = if self.sidebar_collapsed {
-            LucideIcon::PanelLeftOpen
-        } else {
-            LucideIcon::PanelLeft
-        };
 
-        let main_shell = self.workbench.render_body(self.sidebar_collapsed, true);
+        let main_shell = self.workbench.render_body();
 
         let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
@@ -153,66 +222,9 @@ impl Render for GraphVizApp {
                     div()
                         .flex()
                         .items_center()
-                        .gap(px(12.0))
-                        .child(
-                            div()
-                                .id("graph-viz-sidebar-toggle")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.toggle_sidebar(cx);
-                                }))
-                                .child(char::from(sidebar_toggle_icon).to_string()),
-                        )
-                        .child(
-                            div()
-                                .id("graph-viz-mode-toggle")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    let mode = match this.look.mode() {
-                                        ThemeMode::Light => ThemeMode::Dark,
-                                        ThemeMode::Dark => ThemeMode::Light,
-                                    };
-                                    this.look.set_mode(mode);
-                                    cx.bump_luma_theme_revision();
-                                    let look = this.look.clone();
-                                    this.theme_sidebar.update(cx, |sidebar, cx| {
-                                        sidebar.apply_theme_snapshot(look, cx);
-                                    });
-                                    this.sync_split_themes(cx);
-                                    this.content_pane.update(cx, |pane, cx| {
-                                        pane.sync_look(this.look.clone(), cx);
-                                        pane.notify_tabs(cx);
-                                    });
-                                    cx.notify();
-                                }))
-                                .child(char::from(toggle_icon).to_string()),
-                        ),
+                        .gap(px(6.0))
+                        .child(self.sidebar_toggle.clone())
+                        .child(self.mode_toggle.clone()),
                 ),
         );
 

@@ -37,11 +37,6 @@ impl VariantStateTableStyle {
         }
     }
 
-    pub(crate) fn variant_column_align_center(mut self, centered: bool) -> Self {
-        self.variant_column_align_center = centered;
-        self
-    }
-
     pub(crate) fn row_height(mut self, row_height: f32) -> Self {
         self.row_height = row_height;
         self

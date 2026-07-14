@@ -1,20 +1,19 @@
-use std::cell::Cell;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::sync::Arc;
 
-use gpui::{
-    AnyElement, Context, Entity, FocusHandle, MouseButton, Pixels, Render, Size, Subscription, Window, div, prelude::*,
-    px,
-};
+use gpui::{Context, Entity, FocusHandle, Pixels, Render, Size, Subscription, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
+use gpui_luma::controls::command::icon_button::IconButton;
+use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::{ControlSize, LumaThemeSyncExt, ThemeMode};
-use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnTextRole, ShadcnTextSize};
+use gpui_luma_look_shadcn::{LumaTypographyExt, ShadcnLook, ShadcnLookControlExt, ShadcnTextRole};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::{StudioLaunchOptions, StudioThemeChoice};
 
-use super::controls::workbench_layout::{WorkbenchLayout, WorkbenchSidebar};
+use super::content_tabs::{BoardSnapshot, ContentPaneHost};
+use super::controls::workbench_layout::{LEFT_SIDEBAR_PANEL_INDEX, WorkbenchLayout, WorkbenchSidebar};
 use super::demo_controls::DemoControls;
 use super::hs_mixer::{
     ThemePaletteHsOverride, clamp_palette_temperature_amount, clamp_palette_vividness_amount,
@@ -27,7 +26,6 @@ use super::overrides::{
     format_font_family_stack,
 };
 use super::panel_layout_config::{load_window_size, save_studio_layout};
-use super::content_tabs::{BoardSnapshot, ContentPaneHost};
 use super::theme_sidebar::{ThemeSidebar, palette_tokens};
 
 pub struct ThemeStudioApp {
@@ -40,10 +38,10 @@ pub struct ThemeStudioApp {
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
     workbench: WorkbenchLayout,
-    left_sidebar_width_px: Rc<Cell<f32>>,
-    right_sidebar_width_px: Rc<Cell<f32>>,
-    sidebar_collapsed: bool,
-    right_sidebar_collapsed: bool,
+    sidebar_toggle: IconButton,
+    reset_theme_button: IconButton,
+    mode_toggle: IconButton,
+    sidebar_hidden: bool,
     /// Suppresses sidebar `Change` handlers while programmatically syncing sidebar values.
     syncing_sidebar_tokens: bool,
     _subscriptions: Vec<Subscription>,
@@ -67,31 +65,51 @@ impl ThemeStudioApp {
         let content_pane = cx.new(|cx| ContentPaneHost::new(app.clone(), board_snapshot, cx));
         let left_sidebar_entity = theme_sidebar.clone();
         let content_pane_entity = content_pane.clone();
-        let right_sidebar_look = look.clone();
-        let left_sidebar_width_px = Rc::new(Cell::new(360.0));
-        let right_sidebar_width_px = Rc::new(Cell::new(360.0));
-        let left_sidebar_width_state = left_sidebar_width_px.clone();
-        let right_sidebar_width_state = right_sidebar_width_px.clone();
         let workbench = WorkbenchLayout::new(
             "theme-studio",
             look.clone(),
             WorkbenchSidebar::new(move || left_sidebar_entity.clone().into_any_element())
                 .width(px(360.0))
                 .min(px(360.0))
-                .max(px(460.0))
-                .on_width_changed(move |width| left_sidebar_width_state.set(width.as_f32())),
+                .max(px(460.0)),
             move || content_pane_entity.clone().into_any_element(),
-            WorkbenchSidebar::new(move || render_right_sidebar(right_sidebar_look.clone()))
-                .width(px(360.0))
-                .min(px(360.0))
-                .max(px(460.0))
-                .on_width_changed(move |width| right_sidebar_width_state.set(width.as_f32())),
             cx,
         );
+
+        let sidebar_toggle = look
+            .ghost_icon_button("theme-studio-sidebar-toggle", LucideIcon::PanelLeft)
+            .size(ControlSize::Sm)
+            .spawn(cx);
+        let reset_theme_button = look
+            .ghost_icon_button("theme-studio-reset-theme", LucideIcon::RefreshCcw)
+            .size(ControlSize::Sm)
+            .spawn(cx);
+        let mode_toggle = look
+            .ghost_icon_button("theme-studio-mode-toggle", toggle_mode_icon(mode))
+            .size(ControlSize::Sm)
+            .spawn(cx);
 
         let mut subscriptions = Vec::new();
         ThemeSidebar::wire_subscriptions(&theme_sidebar, cx, &mut subscriptions);
         demos.subscribe(cx, &mut subscriptions);
+        subscriptions.push(cx.subscribe(&workbench.panels(), |this, _, event: &ResizablePanelsEvent, cx| {
+            this.handle_workbench_event(event, cx);
+        }));
+        subscriptions.push(cx.subscribe(&sidebar_toggle, |this, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                this.toggle_sidebar(cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&reset_theme_button, |this, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                this.reload_active_theme(cx);
+            }
+        }));
+        subscriptions.push(cx.subscribe(&mode_toggle, |this, _, event, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                this.toggle_mode(cx);
+            }
+        }));
         subscriptions.push(cx.observe_window_bounds(window, |this, window, cx| {
             this.on_window_bounds_changed(window, cx);
         }));
@@ -108,10 +126,10 @@ impl ThemeStudioApp {
             theme_sidebar,
             content_pane,
             workbench,
-            left_sidebar_width_px,
-            right_sidebar_width_px,
-            sidebar_collapsed: false,
-            right_sidebar_collapsed: true,
+            sidebar_toggle,
+            reset_theme_button,
+            mode_toggle,
+            sidebar_hidden: false,
             syncing_sidebar_tokens: false,
             _subscriptions: subscriptions,
         }
@@ -205,7 +223,7 @@ impl ThemeStudioApp {
     }
 
     fn sync_split_themes(&self, cx: &mut Context<Self>) {
-        let theme = self.look.dock_splitter_theme();
+        let theme = self.look.resizable_panels_theme();
         self.workbench.sync_theme(&theme, cx);
     }
 
@@ -472,42 +490,76 @@ impl ThemeStudioApp {
         }
     }
 
-    fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.sidebar_collapsed = !self.sidebar_collapsed;
+    fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
+        if let ResizablePanelsEvent::PanelHiddenChanged { panel_index, hidden } = event
+            && *panel_index == LEFT_SIDEBAR_PANEL_INDEX
+        {
+            self.sidebar_hidden = *hidden;
+            let icon = if *hidden {
+                LucideIcon::PanelLeftOpen
+            } else {
+                LucideIcon::PanelLeft
+            };
+            self.sidebar_toggle.update(cx, |button, cx| {
+                button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(icon)), cx);
+            });
+        }
         cx.notify();
     }
 
-    fn toggle_right_sidebar(&mut self, cx: &mut Context<Self>) {
-        self.right_sidebar_collapsed = !self.right_sidebar_collapsed;
+    fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
+        self.workbench.panels().update(cx, |panels, cx| {
+            panels.toggle_panel_hidden(LEFT_SIDEBAR_PANEL_INDEX, PanelHideMode::Completely, cx);
+        });
+    }
+
+    fn toggle_mode(&mut self, cx: &mut Context<Self>) {
+        let mode = match self.look.mode() {
+            ThemeMode::Light => ThemeMode::Dark,
+            ThemeMode::Dark => ThemeMode::Light,
+        };
+        self.look.set_mode(mode);
+        self.mode_toggle.update(cx, |button, cx| {
+            button.set_presenter(titlebar_icon_presenter(ControlIcon::Lucide(toggle_mode_icon(mode))), cx);
+        });
+        cx.bump_luma_theme_revision();
+        let theme = self.look.clone();
+        let overrides = self.overrides.clone();
+        self.theme_sidebar.update(cx, |sidebar, cx| {
+            sidebar.apply_theme_snapshot(theme, &overrides, cx);
+        });
+        self.sync_split_themes(cx);
+        self.refresh_content_pane(cx);
         cx.notify();
     }
+}
+
+fn toggle_mode_icon(mode: ThemeMode) -> LucideIcon {
+    match mode {
+        ThemeMode::Light => LucideIcon::Moon,
+        ThemeMode::Dark => LucideIcon::Sun,
+    }
+}
+
+fn titlebar_icon_presenter(icon: ControlIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| match &icon {
+        ControlIcon::Lucide(lucide) => div()
+            .font_family("lucide")
+            .text_size(px(14.0))
+            .child(char::from(*lucide).to_string())
+            .into_any_element(),
+        ControlIcon::SvgPath(path) => gpui::svg().size(px(14.0)).path(path.clone()).into_any_element(),
+    })
 }
 
 use super::export::token_css_name;
 
 impl Render for ThemeStudioApp {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
         let sans = self.look.mode_tokens().typography.font.sans.family.clone();
-        let active_mode = self.look.mode();
-        let toggle_icon = match active_mode {
-            ThemeMode::Light => LucideIcon::Moon,
-            ThemeMode::Dark => LucideIcon::Sun,
-        };
-        let _sidebar_widths = (self.left_sidebar_width_px.get(), self.right_sidebar_width_px.get());
         let title_style = self.look.typography_role(ShadcnTextRole::H4);
-        let sidebar_toggle_icon = if self.sidebar_collapsed {
-            LucideIcon::PanelLeftOpen
-        } else {
-            LucideIcon::PanelLeft
-        };
-        let right_sidebar_toggle_icon = if self.right_sidebar_collapsed {
-            LucideIcon::PanelRightOpen
-        } else {
-            LucideIcon::PanelRight
-        };
-
-        let main_shell = self.workbench.render_body(self.sidebar_collapsed, self.right_sidebar_collapsed);
+        let main_shell = self.workbench.render_body();
 
         let title_bar = TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
             div()
@@ -526,108 +578,10 @@ impl Render for ThemeStudioApp {
                     div()
                         .flex()
                         .items_center()
-                        .gap(px(12.0))
-                        .child(
-                            div()
-                                .id("theme-studio-sidebar-toggle")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.toggle_sidebar(cx);
-                                }))
-                                .child(char::from(sidebar_toggle_icon).to_string()),
-                        )
-                        .child(
-                            div()
-                                .id("theme-studio-right-sidebar-toggle")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.toggle_right_sidebar(cx);
-                                }))
-                                .child(char::from(right_sidebar_toggle_icon).to_string()),
-                        )
-                        .child(
-                            div()
-                                .id("theme-studio-reset-theme")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.reload_active_theme(cx);
-                                }))
-                                .child(char::from(LucideIcon::RefreshCcw).to_string()),
-                        )
-                        .child(
-                            div()
-                                .id("theme-studio-mode-toggle")
-                                .size(px(28.0))
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(6.0))
-                                .font_family("lucide")
-                                .text_size(px(14.0))
-                                .line_height(px(14.0))
-                                .text_color(chrome.title_text)
-                                .cursor_pointer()
-                                .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                    cx.stop_propagation();
-                                })
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    let mode = match this.look.mode() {
-                                        ThemeMode::Light => ThemeMode::Dark,
-                                        ThemeMode::Dark => ThemeMode::Light,
-                                    };
-                                    this.look.set_mode(mode);
-                                    cx.bump_luma_theme_revision();
-                                    let theme = this.look.clone();
-                                    let overrides = this.overrides.clone();
-                                    this.theme_sidebar.update(cx, |sidebar, cx| {
-                                        sidebar.apply_theme_snapshot(theme, &overrides, cx);
-                                    });
-                                    this.sync_split_themes(cx);
-                                    this.refresh_content_pane(cx);
-                                    cx.notify();
-                                }))
-                                .child(char::from(toggle_icon).to_string()),
-                        ),
+                        .gap(px(6.0))
+                        .child(self.sidebar_toggle.clone())
+                        .child(self.reset_theme_button.clone())
+                        .child(self.mode_toggle.clone()),
                 ),
         );
 
@@ -649,34 +603,4 @@ impl Render for ThemeStudioApp {
                 .border_color(chrome.border),
         )
     }
-}
-
-fn render_right_sidebar(look: Arc<ShadcnLook>) -> AnyElement {
-    let chrome = look.chrome();
-    let title_style = look.typography_scale(ShadcnTextSize::Sm);
-
-    div()
-        .id("theme-studio-right-sidebar")
-        .size_full()
-        .min_h_0()
-        .flex()
-        .flex_col()
-        .bg(chrome.panel_background)
-        .border_l_1()
-        .border_color(chrome.border)
-        .child(
-            div()
-                .id("theme-studio-right-sidebar-header")
-                .w_full()
-                .h(px(48.0))
-                .flex_shrink_0()
-                .flex()
-                .items_center()
-                .px(px(16.0))
-                .border_b_1()
-                .border_color(chrome.border)
-                .child(div().typography_style(title_style).text_color(chrome.title_text).child("Inspector")),
-        )
-        .child(div().flex_1().min_h_0().w_full())
-        .into_any_element()
 }

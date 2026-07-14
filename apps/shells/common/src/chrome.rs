@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, ParentElement, Render, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
 use gpui_luma::theme::ThemeMode;
-use gpui_luma_look_shadcn::ShadcnLook;
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnLookControlExt};
 use lucide_icons::Icon as LucideIcon;
 
 use crate::theme::toggle_shell_theme;
 
 pub trait HasShellTheme {
     fn look(&self) -> &Arc<ShadcnLook>;
+    fn theme_toggle_button(&self) -> IconButton;
 }
 
 pub fn wrap_content_pane(
@@ -36,14 +39,30 @@ pub fn wrap_content_pane(
         .into_any_element()
 }
 
-pub fn render_title_bar<T: Render + HasShellTheme>(title: &str, app: &T, cx: &mut Context<T>) -> impl IntoElement {
+pub fn spawn_theme_toggle_button<T: 'static>(
+    id: &'static str,
+    look: &Arc<ShadcnLook>,
+    cx: &mut Context<T>,
+) -> IconButton {
+    look.ghost_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx)
+}
+
+pub fn sync_theme_toggle_button<T: 'static>(button: &IconButton, look: &ShadcnLook, cx: &mut Context<T>) {
+    button.update(cx, |button, cx| {
+        button.set_presenter(theme_toggle_presenter(theme_toggle_icon(look.mode())), cx);
+    });
+}
+
+pub fn handle_theme_toggle<T: Render + HasShellTheme>(app: &mut T, cx: &mut Context<T>) {
+    toggle_shell_theme(app.look(), cx);
+    sync_theme_toggle_button(&app.theme_toggle_button(), app.look(), cx);
+    cx.notify();
+}
+
+pub fn render_title_bar<T: Render + HasShellTheme>(title: &str, app: &T, _cx: &mut Context<T>) -> impl IntoElement {
     let look = app.look();
     let chrome = look.chrome();
     let sans_family = look.mode_tokens().typography.font.sans.family.clone();
-    let toggle_icon = match look.mode() {
-        ThemeMode::Light => LucideIcon::Moon,
-        ThemeMode::Dark => LucideIcon::Sun,
-    };
 
     TitleBar::new().background_color(chrome.panel_background).border_color(chrome.border).child(
         div()
@@ -58,31 +77,25 @@ pub fn render_title_bar<T: Render + HasShellTheme>(title: &str, app: &T, cx: &mu
             .text_color(chrome.title_text)
             .font_family(sans_family)
             .child(div().child(title.to_string()))
-            .child(
-                div()
-                    .id("shell-titlebar-theme-toggle")
-                    .size(px(28.0))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .rounded(px(6.0))
-                    .font_family("lucide")
-                    .text_size(px(14.0))
-                    .line_height(px(14.0))
-                    .text_color(chrome.title_text)
-                    .cursor_pointer()
-                    .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                    .active(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.18)))
-                    .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                        cx.stop_propagation();
-                    })
-                    .on_click(cx.listener(|this: &mut T, _, _, cx| {
-                        toggle_shell_theme(this.look(), cx);
-                        cx.notify();
-                    }))
-                    .child(char::from(toggle_icon).to_string()),
-            ),
+            .child(app.theme_toggle_button()),
     )
+}
+
+fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
+    match mode {
+        ThemeMode::Light => LucideIcon::Moon,
+        ThemeMode::Dark => LucideIcon::Sun,
+    }
+}
+
+fn theme_toggle_presenter(icon: LucideIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| {
+        div()
+            .font_family("lucide")
+            .text_size(px(14.0))
+            .child(char::from(icon).to_string())
+            .into_any_element()
+    })
 }
 
 pub fn render_app_root(

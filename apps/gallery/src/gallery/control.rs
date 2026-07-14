@@ -3,8 +3,9 @@ use gpui_luma::controls::color::style::{ColorControlTheme, set_active_color_cont
 use gpui_luma::controls::navigation_sidebar::{NavigationSidebar, NavigationSidebarEvent};
 use gpui_luma::controls::split_view::{SplitView, SplitViewEvent};
 use gpui_luma::controls::command::button::ButtonEvent;
+use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma::theme::{ThemeMode};
+use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
 use gpui_luma_look_shadcn::ShadcnLook;
 use std::sync::Arc;
 
@@ -17,6 +18,7 @@ pub struct GalleryApp {
     pub(super) look: Arc<ShadcnLook>,
     pub(super) split_view: Entity<SplitView>,
     pub(super) navigation_sidebar: Entity<NavigationSidebar>,
+    pub(super) theme_toggle_button: IconButton,
     pub(super) panes: GalleryPanes,
     pub(super) nav_route_buttons: Vec<GalleryRouteButton>,
     pub(super) nav_selection: String,
@@ -56,6 +58,9 @@ impl GalleryApp {
             .items(navigation.nodes)
             .footer_nodes(navigation.footer_nodes)
             .spawn(cx);
+        let theme_toggle_button = look
+            .ghost_icon_button("gallery-titlebar-theme-toggle", super::template::theme_toggle_icon(look.mode()))
+            .spawn(cx);
         let panes = GalleryPanes::new(cx, look.clone());
 
         let mut subscriptions = vec![
@@ -64,6 +69,11 @@ impl GalleryApp {
             }),
             cx.subscribe(&navigation_sidebar, |this, _, event: &NavigationSidebarEvent, cx| {
                 this.handle_navigation_sidebar_event(event, cx);
+            }),
+            cx.subscribe(&theme_toggle_button, |this, _, event: &ButtonEvent, cx| {
+                if matches!(event, ButtonEvent::Click) {
+                    this.toggle_theme(cx);
+                }
             }),
         ];
         for route_button in route_buttons.iter().cloned() {
@@ -88,6 +98,7 @@ impl GalleryApp {
             look,
             split_view,
             navigation_sidebar,
+            theme_toggle_button,
             panes,
             nav_route_buttons: route_buttons,
             nav_selection: initial_selection.to_string(),
@@ -145,6 +156,21 @@ impl GalleryApp {
             });
         }
 
+        cx.notify();
+    }
+
+    fn toggle_theme(&mut self, cx: &mut Context<Self>) {
+        let mode = match self.look.mode() {
+            ThemeMode::Light => ThemeMode::Dark,
+            ThemeMode::Dark => ThemeMode::Light,
+        };
+        self.look.set_mode(mode);
+        sync_color_control_theme(&self.look);
+        self.theme_toggle_button.update(cx, |button, cx| {
+            button.set_presenter(super::template::theme_toggle_presenter(super::template::theme_toggle_icon(mode)), cx);
+        });
+        cx.bump_luma_theme_revision();
+        self.last_inspector_refresh = None;
         cx.notify();
     }
 }

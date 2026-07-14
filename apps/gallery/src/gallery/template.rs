@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use gpui::{AnyElement, Context, FocusHandle, IntoElement, MouseButton, Render, Window, div, prelude::*, px};
+use gpui_luma::controls::command::button::{ButtonRenderModel, ControlPresenter};
 use gpui_luma::controls::split_view::render_pane;
 use gpui_luma::focus::LumaFocusScopeExt;
 use gpui_luma::shell::TitleBar;
-use gpui_luma::theme::{LumaThemeSyncExt, ThemeMode};
+use gpui_luma::theme::ThemeMode;
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
-use super::control::{GalleryApp, sync_color_control_theme};
+use super::control::GalleryApp;
 
 impl Render for GalleryApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -18,11 +21,6 @@ impl Render for GalleryApp {
         let chrome = self.look.chrome();
         let sans_family = self.look.mode_tokens().typography.font.sans.family.clone();
         let content_sans_family = sans_family.clone();
-        let active_mode = self.look.mode();
-        let toggle_icon = match active_mode {
-            ThemeMode::Light => LucideIcon::Moon,
-            ThemeMode::Dark => LucideIcon::Sun,
-        };
 
         if needs_inspector_refresh {
             let selection = self.nav_selection.clone();
@@ -60,37 +58,7 @@ impl Render for GalleryApp {
                 .text_color(chrome.title_text)
                 .font_family(sans_family.clone())
                 .child(div().child("GPUI-Luma Gallery"))
-                .child(
-                    div()
-                        .id("gallery-titlebar-theme-toggle")
-                        .size(px(28.0))
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .rounded(px(6.0))
-                        .font_family("lucide")
-                        .text_size(px(14.0))
-                        .line_height(px(14.0))
-                        .text_color(chrome.title_text)
-                        .cursor_pointer()
-                        .hover(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.10)))
-                        .active(|style| style.bg(gpui::hsla(0.0, 0.0, 1.0, 0.18)))
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                            cx.stop_propagation();
-                        })
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            let mode = match this.look.mode() {
-                                ThemeMode::Light => ThemeMode::Dark,
-                                ThemeMode::Dark => ThemeMode::Light,
-                            };
-                            this.look.set_mode(mode);
-                            sync_color_control_theme(&this.look);
-                            cx.bump_luma_theme_revision();
-                            this.last_inspector_refresh = None;
-                            cx.notify();
-                        }))
-                        .child(char::from(toggle_icon).to_string()),
-                ),
+                .child(self.theme_toggle_button.clone()),
         );
 
         div()
@@ -103,6 +71,23 @@ impl Render for GalleryApp {
             .child(title_bar)
             .child(div().flex_1().min_h_0().child(self.split_view.clone()))
     }
+}
+
+pub(super) fn theme_toggle_icon(mode: ThemeMode) -> LucideIcon {
+    match mode {
+        ThemeMode::Light => LucideIcon::Moon,
+        ThemeMode::Dark => LucideIcon::Sun,
+    }
+}
+
+pub(super) fn theme_toggle_presenter(icon: LucideIcon) -> ControlPresenter<ButtonRenderModel<()>> {
+    Arc::new(move |_, _| {
+        div()
+            .font_family("lucide")
+            .text_size(px(14.0))
+            .child(char::from(icon).to_string())
+            .into_any_element()
+    })
 }
 
 fn render_content_pane(
