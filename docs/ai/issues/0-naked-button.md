@@ -32,6 +32,8 @@ Include at least:
 - Radio
 - Switch
 
+This is not a new preview surface. Thread the variant through the existing button, icon button, toggle, checkbox, radio, and switch matrices. In particular, update the shared style arrays and manual preview `ButtonRenderModel` construction sites so the new render-model field is present everywhere previews instantiate controls directly.
+
 ## Visual Contract
 
 ### Button, Icon Button, and Toggle
@@ -39,14 +41,14 @@ For button-like controls, **Content Only** should:
 - render only the control content (label/icon)
 - have no background fill, borders, or elevation in any state
 - have no hover or active/pressed fills
-- have no focus adorner and reserve no focus-adorner space
+- have no template adorners and reserve no adorner space (today this means the focus adorner; the seam should remain plural for future adorners)
 - keep disabled opacity behavior (e.g., `0.56` opacity)
 - keep cursor, focus state, activation, and event behavior
-<!--  -->
+
 ### Checkbox, Radio, and Switch
 Since these are state indicators, they must remain visible and functional. **Content Only** for these controls should:
-- **Keep Indicator Visible**: Resolve checkmark boxes, radio circles, and switch tracks using standard visible colors (falling back to `Primary` colors) so their selected vs. unselected states remain distinguishable.
-- **Suppress Focus & Chrome**: Remove the focus ring adorner, reserve no focus-ring space, and strip any container borders or background fills around the control.
+- **Keep Indicator Visible**: Resolve checkmark boxes, radio circles, and switch tracks using standard visible colors. Treat `ContentOnly` as `Primary` for indicator color resolution unless a stronger reason appears, so selected vs. unselected states remain distinguishable.
+- **Suppress Adorners & Chrome**: Remove template adorners, reserve no adorner space, and strip any container borders or background fills around the control. The current adorner is focus-only, but the API should stay extensible.
 
 ## API Shape
 
@@ -62,14 +64,27 @@ These should still return normal SDK controls/builders, not raw `div` chrome.
 
 ## Implementation Sketch
 
+### Phase 1: SDK Adorner Suppression Prep
+1. Add `suppress_adorners: Cell<bool>` to `ButtonRenderModel` in [model.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/command/button/model.rs).
+2. Expose `.without_adorners()` on `ButtonBuilder` in [model.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/command/button/model.rs) (with passthroughs on `CheckboxBuilder` and `SwitchBuilder`). The name is intentionally plural: the current implementation only has a focus adorner, but the template seam was written to allow additional adorners later. Elevation remains controlled separately by `.without_elevation()`.
+3. Update [ButtonTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/command/button/template.rs), [CheckboxTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/checkbox/template.rs), [RadioButtonTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/radio_button/template.rs), and [SwitchTemplate](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/switch/template.rs) to check `model.suppress_adorners.get()`. If set, skip rendering adorners and skip adorner layout padding/oversize extent.
+4. Update direct `ButtonRenderModel` construction sites in Theme Studio and Gallery previews. Manual previews will not compile until the new field is populated.
+
+### Phase 2: Look-Shadcn Implementation
 1. Add a `ContentOnly` button style/variant in [ShadcnButtonStyle](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/button.rs#L54-L60).
-2. Add factory methods for content-only controls in [ShadcnLookControlExt](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/ext.rs#L50-L151).
-3. Update [button_family_focus_adorner](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/button_family/theme.rs#L139-L163) to return `None` if `focus_ring.a <= 0.0`. This suppresses focus space reservation automatically via the layout engine.
-4. For `Checkbox`, `Radio`, and `Switch` color look-resolvers:
-   - If the style is `ContentOnly`, resolve the indicator colors using `ShadcnButtonStyle::Primary` instead, but override their `adorner` to `None`.
-5. Keep SDK behavior intact: subscriptions, focus handling, activation, disabled state, presenter updates, and typed data all remain normal.
-6. Move Theme Studio titlebar icon buttons to `content_only_icon_button`.
-7. Update the Theme Studio style guide previews to include **Content Only**.
+2. In [style.toml](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/assets/style.toml), configure `ContentOnly` as a purely color-based style resolving to transparent backgrounds, borders, and fills (no hover/pressed background fills).
+3. In [checkbox.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/checkbox.rs), [radio.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/radio.rs), and [switch.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/switch.rs), if the style is `ContentOnly`, resolve the inner indicators using standard `Primary` colors so they remain fully functional, but apply `.without_adorners()`.
+4. Update every `ShadcnButtonStyle` match site, including resolver helpers, stylesheet selector keys, inspection helpers, Theme Studio shared style arrays, and style-id helpers.
+5. Add factory methods in [ShadcnLookControlExt](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/ext.rs). The factory methods will compose the standard `ContentOnly` style with `.without_adorners()` and `.without_elevation()`.
+6. Keep SDK behavior intact: subscriptions, focus handling, activation, disabled state, presenter updates, and typed data all remain normal.
+7. Move Theme Studio titlebar icon buttons to `content_only_icon_button`.
+8. Update the Theme Studio style guide previews to include **Content Only**.
+
+## Rollout Notes
+
+- This is a medium cross-cutting change because `ShadcnButtonStyle` is a closed enum used by style resolution, stylesheet matching, inspection, and preview matrices.
+- Do the SDK flag first, then the look variant, then the Theme Studio migration. That keeps compile errors localized and makes regressions easier to read.
+- Add tests that cover adorner suppression for text buttons and labeled choice controls. Today the visible case is the focus adorner; test names can mention that concrete behavior while keeping the API named around adorners. Radio should cover both labeled and indicator-only roles because it already special-cases indicator-only layout.
 
 ## Non-Goals
 
@@ -78,4 +93,3 @@ These should still return normal SDK controls/builders, not raw `div` chrome.
 - Do not add separate builder flags for focus, hover, active, selected, border, and elevation.
 - Do not make ghost buttons content-only; this is a distinct variant.
 - Do not strip the indicator track/box/circle colors of checkboxes, radios, or switches.
-
