@@ -119,12 +119,13 @@ pub fn find_slider_color_rule<'a>(
     stylesheet.slider.find_color_rule(style, layer)
 }
 
-pub fn find_scrollbar_color_rule(
-    stylesheet: &StylesheetConfig,
+pub fn find_scrollbar_color_rule<'a>(
+    stylesheet: &'a StylesheetConfig,
+    style: &str,
     disabled: bool,
     layer: InteractionLayer,
-) -> Option<&ScrollbarColorRule> {
-    stylesheet.scrollbar.find_color_rule(disabled, layer)
+) -> Option<&'a ScrollbarColorRule> {
+    stylesheet.scrollbar.find_color_rule(style, disabled, layer)
 }
 
 pub fn find_accordion_trigger_color_rule(

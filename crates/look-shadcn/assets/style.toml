@@ -990,11 +990,23 @@ divider = "border"
 # =====================================================================
 # 8. SCROLLBAR
 # =====================================================================
-[scrollbar.metrics]
+[scrollbar.metrics.sm]
+thickness = 10.0
+track_thickness = 3.0
+thumb_thickness = 6.0
+min_thumb_length = 24.0
+
+[scrollbar.metrics.md]
 thickness = 12.0
 track_thickness = 4.0
 thumb_thickness = 8.0
 min_thumb_length = 28.0
+
+[scrollbar.metrics.lg]
+thickness = 14.0
+track_thickness = 5.0
+thumb_thickness = 10.0
+min_thumb_length = 32.0
 
 [[scrollbar.color_rules]]
 disabled = true
@@ -1010,19 +1022,43 @@ thumb_background = "muted-foreground"
 [[scrollbar.color_rules]]
 disabled = false
 layer = "default"
+style = "ghost"
 track_background = "transparent"
 thumb_background = "border"
 
 [[scrollbar.color_rules]]
 disabled = false
 layer = "hover"
+style = "ghost"
 track_background = "transparent"
 thumb_background = "border"
 
 [[scrollbar.color_rules]]
 disabled = false
 layer = "pressed"
+style = "ghost"
 track_background = "transparent"
+thumb_background = "@darken_border"
+
+[[scrollbar.color_rules]]
+disabled = false
+layer = "default"
+style = "soft"
+track_background = "muted"
+thumb_background = "border"
+
+[[scrollbar.color_rules]]
+disabled = false
+layer = "hover"
+style = "soft"
+track_background = "muted"
+thumb_background = "border"
+
+[[scrollbar.color_rules]]
+disabled = false
+layer = "pressed"
+style = "soft"
+track_background = "muted"
 thumb_background = "@darken_border"
 
 
@@ -1179,9 +1215,17 @@ foreground = "foreground"
 # =====================================================================
 # 12. PROGRESS
 # =====================================================================
-[progress.metrics]
+[progress.metrics.sm]
+size = 48.0
+stroke_width = 5.0
+
+[progress.metrics.md]
 size = 64.0
 stroke_width = 6.0
+
+[progress.metrics.lg]
+size = 80.0
+stroke_width = 8.0
 
 [[progress.color_rules]]
 enabled = true

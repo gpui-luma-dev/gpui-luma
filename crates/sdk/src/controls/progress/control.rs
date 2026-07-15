@@ -3,7 +3,7 @@ use gpui::{Context, IntoElement, Render, SharedString, Window, div, prelude::*};
 use super::{ProgressBuilder, ProgressRenderModel};
 use crate::controls::progress::model::ProgressModel;
 use crate::controls::value::{ControlRange, value_from_input};
-use crate::theme::observe_theme_revision;
+use crate::theme::{ControlSize, observe_theme_revision};
 
 pub struct ProgressControl {
     model: ProgressModel,
@@ -32,6 +32,10 @@ impl ProgressControl {
         self.model.enabled
     }
 
+    pub fn size(&self) -> ControlSize {
+        self.model.size
+    }
+
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         self.model.value = self.model.range.clamp(value_from_input(value));
         cx.notify();
@@ -40,6 +44,15 @@ impl ProgressControl {
     pub fn set_range(&mut self, range: impl Into<ControlRange>, cx: &mut Context<Self>) {
         self.model.range = range.into();
         self.model.value = self.model.range.clamp(self.model.value);
+        cx.notify();
+    }
+
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        if self.model.size == size {
+            return;
+        }
+
+        self.model.size = size;
         cx.notify();
     }
 
@@ -63,6 +76,7 @@ impl ProgressControl {
             range: self.model.range,
             value: self.model.value,
             percentage: self.model.range.percentage(self.model.value),
+            size: self.model.size,
             enabled: self.model.enabled,
         }
     }

@@ -29,8 +29,13 @@ pub fn inspect_scrollbar_color_palette(
 ) -> ScrollbarInspectPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let resolver = LookResolver::new(ctx.catalog(), theme_mode, "scrollbar_inspect");
-    let colors = gpui_luma_look_shadcn::tables::resolve_scrollbar_colors(&resolver, state.disabled, state.layer())
-        .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ScrollbarColorTable::fallback());
+    let colors = gpui_luma_look_shadcn::tables::resolve_scrollbar_colors(
+        &resolver,
+        gpui_luma::controls::scrollbar::ScrollbarStyle::Ghost,
+        state.disabled,
+        state.layer(),
+    )
+    .unwrap_or_else(|_| gpui_luma_look_shadcn::tables::ScrollbarColorTable::fallback());
     let focus_ring = state.focused.then(|| resolver.resolve_decl("ring")).transpose().ok().flatten();
 
     ScrollbarInspectPalette {
@@ -48,7 +53,13 @@ pub fn inspect_scrollbar_metrics(
     use crate::metrics::{derived_metric, pill_radius_metric};
 
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
-    let look = gpui_luma_look_shadcn::paint::scrollbar_look(mode, InteractionState::default(), orientation);
+    let look = gpui_luma_look_shadcn::paint::scrollbar_look(
+        mode,
+        InteractionState::default(),
+        orientation,
+        gpui_luma::theme::ControlSize::Md,
+        gpui_luma::controls::scrollbar::ScrollbarStyle::Ghost,
+    );
     let catalog = ctx.catalog();
 
     ScrollbarInspectMetrics {

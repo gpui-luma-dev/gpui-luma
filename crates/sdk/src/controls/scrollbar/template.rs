@@ -132,7 +132,7 @@ impl ScrollbarTemplate for ThemedScrollbarTemplate {
             drag_move,
             scroll_wheel,
         } = handlers;
-        let look = self.theme.resolve(model.state, model.orientation);
+        let look = self.theme.resolve(model.state, model.orientation, model.size, model.style);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let thumb_fraction = model.thumb_fraction.clamp(0.05, 1.0);
         let thickness = if look.thickness.is_finite() && look.thickness > 0.0 {

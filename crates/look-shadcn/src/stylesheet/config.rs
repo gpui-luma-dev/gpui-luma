@@ -193,12 +193,16 @@ pub trait EnabledColorRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct ProgressStylesheet {
     #[serde(default)]
-    pub metrics: Option<ProgressMetricsRule>,
+    pub metrics: HashMap<String, ProgressMetricsRule>,
     #[serde(default)]
     pub color_rules: Vec<ProgressColorRule>,
 }
 
 impl ProgressStylesheet {
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ProgressMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+
     pub fn find_color_rule(&self, enabled: bool) -> Option<&ProgressColorRule> {
         find_enabled_color_rule(&self.color_rules, enabled)
     }
@@ -564,15 +568,21 @@ pub struct SliderColorRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct ScrollbarStylesheet {
     #[serde(default)]
-    pub metrics: Option<ScrollbarMetricsRule>,
+    pub metrics: HashMap<String, ScrollbarMetricsRule>,
     #[serde(default)]
     pub color_rules: Vec<ScrollbarColorRule>,
 }
 
 impl ScrollbarStylesheet {
-    pub fn find_color_rule(&self, disabled: bool, layer: InteractionLayer) -> Option<&ScrollbarColorRule> {
+    pub fn metrics_for_size(&self, size: ControlSize) -> Option<&ScrollbarMetricsRule> {
+        self.metrics.get(control_size_key(size))
+    }
+
+    pub fn find_color_rule(&self, style: &str, disabled: bool, layer: InteractionLayer) -> Option<&ScrollbarColorRule> {
         self.color_rules.iter().find(|rule| {
-            matches_optional_bool(rule.disabled, disabled) && matches_optional_layer(rule.layer.as_deref(), layer)
+            matches_optional_str(rule.style.as_deref(), style)
+                && matches_optional_bool(rule.disabled, disabled)
+                && matches_optional_layer(rule.layer.as_deref(), layer)
         })
     }
 }
@@ -587,6 +597,7 @@ pub struct ScrollbarMetricsRule {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ScrollbarColorRule {
+    pub style: Option<String>,
     pub disabled: Option<bool>,
     pub layer: Option<String>,
     pub track_background: String,

@@ -34,6 +34,7 @@ pub struct PopupMenuModel {
     pub(crate) placement: PopupMenuPlacement,
     pub(crate) trigger_style: PopupMenuTriggerStyle,
     pub(crate) trigger_size: ControlSize,
+    pub(crate) menu_size: ControlSize,
     pub(crate) trigger_icon: Option<LucideIcon>,
     pub(crate) without_elevation: bool,
     pub(crate) template: Arc<dyn PopupMenuTemplate>,
@@ -48,6 +49,7 @@ pub struct PopupMenuRenderModel<'a> {
     pub placement: PopupMenuPlacement,
     pub trigger_style: PopupMenuTriggerStyle,
     pub trigger_size: ControlSize,
+    pub menu_size: ControlSize,
     pub trigger_icon: Option<LucideIcon>,
     pub without_elevation: bool,
     pub trigger_radius_override: Option<f32>,
@@ -75,6 +77,7 @@ impl PopupMenuBuilder {
                 placement: PopupMenuPlacement::Smart,
                 trigger_style: PopupMenuTriggerStyle::default(),
                 trigger_size: ControlSize::Md,
+                menu_size: ControlSize::Md,
                 trigger_icon: None,
                 without_elevation: false,
                 template: default_popup_menu_template(),
@@ -118,6 +121,11 @@ impl PopupMenuBuilder {
 
     pub fn size(mut self, size: ControlSize) -> Self {
         self.model.trigger_size = size;
+        self
+    }
+
+    pub fn menu_size(mut self, size: ControlSize) -> Self {
+        self.model.menu_size = size;
         self
     }
 

@@ -142,6 +142,7 @@ impl PopupMenuTemplate for ThemedPopupMenuTemplate {
         let scale_factor = window.scale_factor();
         let metrics = PopupMenuTriggerMetrics {
             size: model.trigger_size,
+            menu_size: model.menu_size,
             without_elevation: model.without_elevation,
             icon_only: model.trigger_icon.is_some(),
             trigger_radius_override: model.trigger_radius_override,

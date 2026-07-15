@@ -5,12 +5,20 @@ use gpui::{AppContext, Entity, SharedString};
 use super::template::template_with_modifier;
 use super::{Scrollbar, ScrollbarState, ScrollbarTemplate, default_scrollbar_template};
 use crate::controls::value::{ControlRange, normalized_step, value_from_input};
+use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ScrollbarOrientation {
     Horizontal,
     #[default]
     Vertical,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ScrollbarStyle {
+    #[default]
+    Ghost,
+    Soft,
 }
 
 #[derive(Clone)]
@@ -23,6 +31,8 @@ pub struct ScrollbarModel {
     pub(crate) value: f32,
     pub(crate) thumb_fraction: f32,
     pub(crate) length: Option<f32>,
+    pub(crate) size: ControlSize,
+    pub(crate) style: ScrollbarStyle,
     pub(crate) enabled: bool,
     pub(crate) template: Arc<dyn ScrollbarTemplate>,
 }
@@ -37,6 +47,8 @@ pub struct ScrollbarRenderModel<'a> {
     pub percentage: f32,
     pub thumb_fraction: f32,
     pub length: Option<f32>,
+    pub size: ControlSize,
+    pub style: ScrollbarStyle,
     pub enabled: bool,
     pub state: ScrollbarState,
 }
@@ -57,6 +69,8 @@ impl ScrollbarBuilder {
                 value: 0.0,
                 thumb_fraction: 0.25,
                 length: None,
+                size: ControlSize::Md,
+                style: ScrollbarStyle::Ghost,
                 enabled: true,
                 template: default_scrollbar_template(),
             },
@@ -111,6 +125,26 @@ impl ScrollbarBuilder {
         self
     }
 
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
+        self
+    }
+
+    pub fn style(mut self, style: ScrollbarStyle) -> Self {
+        self.model.style = style;
+        self
+    }
+
+    pub fn ghost(mut self) -> Self {
+        self.model.style = ScrollbarStyle::Ghost;
+        self
+    }
+
+    pub fn soft(mut self) -> Self {
+        self.model.style = ScrollbarStyle::Soft;
+        self
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
         self
@@ -147,7 +181,7 @@ pub(crate) fn normalized_thumb_fraction(value: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{ScrollbarBuilder, default_scrollbar_template, normalized_thumb_fraction};
+    use super::{ScrollbarBuilder, ScrollbarStyle, default_scrollbar_template, normalized_thumb_fraction};
 
     #[test]
     fn thumb_fraction_stays_visible_and_finite() {
@@ -165,5 +199,11 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!std::sync::Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn style_helpers_set_scrollbar_style() {
+        assert_eq!(ScrollbarBuilder::new("soft").soft().model.style, ScrollbarStyle::Soft);
+        assert_eq!(ScrollbarBuilder::new("ghost").soft().ghost().model.style, ScrollbarStyle::Ghost);
     }
 }

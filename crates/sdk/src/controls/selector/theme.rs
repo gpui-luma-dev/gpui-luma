@@ -41,7 +41,7 @@ pub trait SelectorTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_look(&self, state: InteractionState, scale: &StandardBoxScale) -> SelectorLook {
+    fn resolve_look(&self, state: InteractionState, _size: ControlSize, scale: &StandardBoxScale) -> SelectorLook {
         compose_selector_look(&self.resolve(state), scale)
     }
 }

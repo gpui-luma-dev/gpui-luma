@@ -80,9 +80,42 @@ pub(crate) fn render_feedback_template_section(look: Arc<ShadcnLook>, window: &m
             .child(render_feedback_heading("Progress", chrome.muted_text))
             .child(div().flex().flex_wrap().items_start().gap(px(12.0)).children(
                 feedback_progress_samples().into_iter().map(|sample| {
-                    render_feedback_progress_sample(&progress_template, sample, chrome.muted_text, window, cx)
+                    render_feedback_progress_sample(
+                        &progress_template,
+                        sample,
+                        ControlSize::Md,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
                 }),
             ))
+            .child(div().flex().flex_wrap().items_start().gap(px(12.0)).children([
+                render_feedback_progress_sample(
+                    &progress_template,
+                    ProgressStateSample { id: "size-sm", label: "Sm", value: 50.0, enabled: true },
+                    ControlSize::Sm,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_feedback_progress_sample(
+                    &progress_template,
+                    ProgressStateSample { id: "size-md", label: "Md", value: 50.0, enabled: true },
+                    ControlSize::Md,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+                render_feedback_progress_sample(
+                    &progress_template,
+                    ProgressStateSample { id: "size-lg", label: "Lg", value: 50.0, enabled: true },
+                    ControlSize::Lg,
+                    chrome.muted_text,
+                    window,
+                    cx,
+                ),
+            ]))
             .into_any_element(),
     )
 }
@@ -100,6 +133,7 @@ fn render_feedback_heading(title: &'static str, muted_text: gpui::Hsla) -> AnyEl
 fn render_feedback_progress_sample(
     template: &Arc<dyn ProgressTemplate>,
     sample: ProgressStateSample,
+    size: ControlSize,
     label_color: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
@@ -107,7 +141,7 @@ fn render_feedback_progress_sample(
     let id = SharedString::from(format!("theme-studio-feedback-progress-{}", sample.id));
     let range = ControlRange::from(0..100);
     let percentage = range.percentage(sample.value);
-    let model = ProgressRenderModel { id: &id, range, value: sample.value, percentage, enabled: sample.enabled };
+    let model = ProgressRenderModel { id: &id, range, value: sample.value, percentage, size, enabled: sample.enabled };
 
     div()
         .flex()

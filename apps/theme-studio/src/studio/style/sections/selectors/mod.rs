@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px, svg};
+use gpui::{
+    AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px, svg,
+};
 use gpui_luma::controls::autocomplete::{
     AutocompleteItemsRenderModel, AutocompleteItemsTemplateHandlers, AutocompleteTextBoxRenderModel,
     AutocompleteTextBoxTemplateHandlers, default_autocomplete_items_template, default_autocomplete_textbox_template,
@@ -23,10 +25,13 @@ use gpui_luma::controls::selector_panel::{
     SelectorItem as SelectorPanelItem, SelectorItemsPanelLook, SelectorItemsRenderModel, SelectorItemsTemplateHandlers,
     SelectorPanelClickHandler, SelectorPanelHoverHandler, default_selector_items_template,
 };
+use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::controls::textfield::{
     TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant,
 };
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
+use gpui_luma::controls::textfield::TextFieldLook;
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale};
+use gpui_luma_look_shadcn::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 use gpui_luma_look_shadcn::ShadcnLook;
 use lucide_icons::Icon as LucideIcon;
 
@@ -63,6 +68,35 @@ impl SelectorTemplateControl {
     }
 }
 
+const SELECTOR_TRIGGER_WIDTH: f32 = 168.0;
+const SELECTOR_CELL_WIDTH: f32 = 180.0;
+
+struct SelectorPreviewTextfieldRequest<'a> {
+    look: &'a Arc<ShadcnLook>,
+    template: &'a Arc<dyn TextFieldTemplate>,
+    theme: &'a Arc<dyn TextFieldTheme>,
+    id: &'a SharedString,
+    placeholder: &'a SharedString,
+    value: &'a SharedString,
+    state: &'a SelectorTemplateStateSample,
+    size: ControlSize,
+}
+
+struct SelectorPopupHandlers {
+    item_hovers: Vec<SelectorPanelHoverHandler>,
+    item_clicks: Vec<SelectorPanelClickHandler>,
+}
+
+struct ComboBoxPopupTemplates<'a> {
+    items: &'a Arc<dyn ComboBoxItemsTemplate>,
+    panel: &'a Arc<dyn ComboBoxPanelTemplate>,
+}
+
+struct SearchSelectorPopupTemplates<'a> {
+    items: &'a Arc<dyn SearchSelectorItemsTemplate>,
+    panel: &'a Arc<dyn SearchSelectorPanelTemplate>,
+}
+
 fn render_vertical_state_rail(label: &'static str, state_id: &str, label_color: gpui::Hsla) -> AnyElement {
     div()
         .id(format!("theme-studio-choice-template-state-rail-{label}"))
@@ -90,50 +124,118 @@ fn state_label_asset_path(state_id: &str) -> &'static str {
 
 pub(crate) fn render_selector_templates_section(
     look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
-    let states = selector_template_state_samples();
-    let controls = [
-        SelectorTemplateControl::AutocompleteTextBox,
-        SelectorTemplateControl::ComboBox,
-        SelectorTemplateControl::Selector,
-        SelectorTemplateControl::SearchSelector,
-    ];
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
         "Selectors",
-        "Interaction states across selector triggers.",
+        "Interaction states and Sm / Md / Lg sizing across selector triggers and panels.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        div()
-            .flex()
-            .flex_col()
-            .items_start()
-            .gap(px(10.0))
-            .child(render_selector_header_row(&controls, chrome.muted_text))
-            .children(
-                states
-                    .iter()
-                    .map(|state| render_selector_state_row(&look, state, &controls, chrome.muted_text, window, cx)),
-            )
-            .into_any_element(),
+        render_selector_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
     )
 }
 
-fn render_selector_header_row(controls: &[SelectorTemplateControl], label_color: gpui::Hsla) -> AnyElement {
+fn selector_preview_typography_for_size(
+    look: &Arc<ShadcnLook>,
+    base: LumaTextStyle,
+    size: ControlSize,
+) -> LumaTextStyle {
+    let mut typography = base;
+    if let Some(rule) = embedded_stylesheet().button.metrics_for_size(size) {
+        let tokens = look.mode_tokens();
+        let metrics = resolve_button_metrics_rule(rule, &tokens.metrics, size);
+        let base_size = typography.size;
+        typography.size = metrics.font_size;
+        if base_size > 0.0 {
+            typography.line_height = metrics.font_size * (typography.line_height / base_size);
+        }
+    }
+    typography
+}
+
+fn apply_selector_preview_textfield_size(
+    look: &Arc<ShadcnLook>,
+    mut textfield_look: TextFieldLook,
+    size: ControlSize,
+) -> TextFieldLook {
+    textfield_look.typography = selector_preview_typography_for_size(look, textfield_look.typography, size);
+    textfield_look.icon_size = textfield_look.typography.size + 2.0;
+    textfield_look
+}
+
+fn render_selector_preview_tabbed_content(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let body = match active_tab.as_ref() {
+        "sizes" => render_selector_sizes_body(&look, window, cx),
+        _ => render_selector_template_preview_body(&look, window, cx),
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
+        .into_any_element()
+}
+
+fn selector_template_controls() -> [SelectorTemplateControl; 4] {
+    [
+        SelectorTemplateControl::AutocompleteTextBox,
+        SelectorTemplateControl::ComboBox,
+        SelectorTemplateControl::Selector,
+        SelectorTemplateControl::SearchSelector,
+    ]
+}
+
+fn render_selector_template_preview_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+    let chrome = look.chrome();
+    let states = selector_template_state_samples();
+    let controls = selector_template_controls();
+
+    div()
+        .flex()
+        .flex_col()
+        .items_start()
+        .gap(px(10.0))
+        .child(render_selector_header_row(&controls, chrome.muted_text, px(28.0)))
+        .children(
+            states
+                .iter()
+                .map(|state| render_selector_state_row(look, state, &controls, chrome.muted_text, window, cx)),
+        )
+        .into_any_element()
+}
+
+fn render_selector_header_row(
+    controls: &[SelectorTemplateControl],
+    label_color: gpui::Hsla,
+    rail_width: gpui::Pixels,
+) -> AnyElement {
     div()
         .flex()
         .items_center()
         .gap(px(10.0))
-        .child(div().w(px(28.0)))
+        .child(div().w(rail_width))
         .children(controls.iter().map(|control| {
             div()
-                .w(px(180.0))
+                .w(px(SELECTOR_CELL_WIDTH))
                 .flex()
                 .justify_center()
                 .text_size(px(11.0))
@@ -158,11 +260,60 @@ fn render_selector_state_row(
         .items_stretch()
         .gap(px(10.0))
         .child(render_vertical_state_rail(state.label, state.id, label_color))
-        .child(
-            div().flex().items_start().gap(px(10.0)).children(
-                controls.iter().map(|control| render_selector_control_cell(look, *control, state, window, cx)),
-            ),
-        )
+        .child(div().flex().items_start().gap(px(10.0)).children(controls.iter().map(|control| {
+            render_selector_control_cell(look, *control, state, ControlSize::Md, state.id == "pressed", window, cx)
+        })))
+        .into_any_element()
+}
+
+fn render_selector_sizes_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+    let chrome = look.chrome();
+    let controls = selector_template_controls();
+    let sizes = [(ControlSize::Sm, "Sm"), (ControlSize::Md, "Md"), (ControlSize::Lg, "Lg")];
+    let state = SelectorTemplateStateSample {
+        id: "size",
+        label: "Size",
+        textfield_state: TextFieldState {
+            hovered: true,
+            focused: true,
+            focus_visible: true,
+            ..TextFieldState::default()
+        },
+        textfield_enabled: true,
+        selector_state: InteractionState { hovered: true, focused: true, pressed: true, ..InteractionState::default() },
+        selector_focus: ControlFocusState { focused: true, focus_visible: true },
+        selector_enabled: true,
+    };
+
+    div()
+        .flex()
+        .flex_col()
+        .items_start()
+        .gap(px(10.0))
+        .child(render_selector_header_row(&controls, chrome.muted_text, px(36.0)))
+        .children(sizes.into_iter().map(|(size, label)| {
+            div()
+                .flex()
+                .items_start()
+                .gap(px(10.0))
+                .child(
+                    div()
+                        .w(px(36.0))
+                        .pt(px(8.0))
+                        .text_size(px(11.0))
+                        .line_height(px(15.0))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(chrome.muted_text)
+                        .child(label),
+                )
+                .child(
+                    div().flex().items_start().gap(px(10.0)).children(
+                        controls.iter().map(|control| {
+                            render_selector_control_cell(look, *control, &state, size, true, window, cx)
+                        }),
+                    ),
+                )
+        }))
         .into_any_element()
 }
 
@@ -170,32 +321,39 @@ fn render_selector_control_cell(
     look: &Arc<ShadcnLook>,
     control: SelectorTemplateControl,
     state: &SelectorTemplateStateSample,
+    size: ControlSize,
+    show_popup: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-selector-controls-template-{}-{}", state.id, control.header()));
+    let id = SharedString::from(format!(
+        "theme-studio-selector-controls-template-{}-{}-{:?}",
+        state.id,
+        control.header(),
+        size
+    ));
 
     let trigger = match control {
         SelectorTemplateControl::AutocompleteTextBox => {
-            render_selector_autocomplete_trigger(look, &id, "Type to filter...", state, window, cx)
+            render_selector_autocomplete_trigger(look, &id, "Type to filter...", state, size, window, cx)
         }
         SelectorTemplateControl::ComboBox => {
-            render_selector_combobox_trigger(look, &id, "Strict mode (exact match only)...", state, window, cx)
+            render_selector_combobox_trigger(look, &id, "Strict mode (exact match only)...", state, size, window, cx)
         }
         SelectorTemplateControl::SearchSelector => {
-            render_selector_search_selector_trigger(look, &id, "Choose a state...", state, window, cx)
+            render_selector_search_selector_trigger(look, &id, "Choose a state...", state, size, window, cx)
         }
-        SelectorTemplateControl::Selector => render_selector_selector_trigger(look, &id, state, window, cx),
+        SelectorTemplateControl::Selector => render_selector_selector_trigger(look, &id, state, size, window, cx),
     };
 
-    let popup = if state.id == "pressed" {
-        Some(render_selector_popup_preview(look, &id, control, window, cx))
+    let popup = if show_popup {
+        Some(render_selector_popup_preview(look, &id, control, size, window, cx))
     } else {
         None
     };
 
     div()
-        .w(px(180.0))
+        .w(px(SELECTOR_CELL_WIDTH))
         .flex()
         .flex_col()
         .items_center()
@@ -211,6 +369,7 @@ fn render_selector_autocomplete_trigger(
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
+    size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -220,22 +379,26 @@ fn render_selector_autocomplete_trigger(
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_textbox_theme().resolve();
-    let popup_look = look.selector_items_panel_look(ControlSize::Md);
+    let popup_look = look.selector_items_panel_look(size);
 
     let model = AutocompleteTextBoxRenderModel {
         id: id.clone(),
         textfield: render_selector_preview_textfield(
-            &textfield_template,
-            &textfield_theme,
-            id,
-            &placeholder,
-            &value,
-            state,
+            SelectorPreviewTextfieldRequest {
+                look,
+                template: &textfield_template,
+                theme: &textfield_theme,
+                id,
+                placeholder: &placeholder,
+                value: &value,
+                state,
+                size,
+            },
             window,
             cx,
         ),
         query_is_empty: false,
-        popup_width: px(168.0),
+        popup_width: px(SELECTOR_TRIGGER_WIDTH),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
         status_color: status_theme.status_color,
@@ -246,7 +409,7 @@ fn render_selector_autocomplete_trigger(
     };
 
     div()
-        .w(px(168.0))
+        .w(px(SELECTOR_TRIGGER_WIDTH))
         .child(autocomplete_template.render(model, AutocompleteTextBoxTemplateHandlers::default(), window, cx))
         .into_any_element()
 }
@@ -256,6 +419,7 @@ fn render_selector_combobox_trigger(
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
+    size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -265,18 +429,22 @@ fn render_selector_combobox_trigger(
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
     let status_theme = look.autocomplete_textbox_theme().resolve();
-    let popup_look = look.selector_items_panel_look(ControlSize::Md);
+    let popup_look = look.selector_items_panel_look(size);
     let popup_bounds = (state.id == "pressed")
-        .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(168.0), px(32.0))));
+        .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
 
     let model = ComboBoxRenderModel {
         textfield: render_selector_preview_textfield(
-            &textfield_template,
-            &textfield_theme,
-            id,
-            &placeholder,
-            &value,
-            state,
+            SelectorPreviewTextfieldRequest {
+                look,
+                template: &textfield_template,
+                theme: &textfield_theme,
+                id,
+                placeholder: &placeholder,
+                value: &value,
+                state,
+                size,
+            },
             window,
             cx,
         ),
@@ -284,7 +452,7 @@ fn render_selector_combobox_trigger(
         show_down_arrow: true,
         show_clear_button: true,
         full_width: true,
-        minimum_trigger_width: px(168.0),
+        minimum_trigger_width: px(SELECTOR_TRIGGER_WIDTH),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
         status_color: status_theme.status_color,
@@ -295,7 +463,7 @@ fn render_selector_combobox_trigger(
     };
 
     div()
-        .w(px(168.0))
+        .w(px(SELECTOR_TRIGGER_WIDTH))
         .child(combobox_template.render(model, ComboBoxTemplateHandlers::default(), window, cx))
         .into_any_element()
 }
@@ -305,6 +473,7 @@ fn render_selector_search_selector_trigger(
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
+    size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -315,9 +484,15 @@ fn render_selector_search_selector_trigger(
         trigger_label_is_placeholder: true,
         trigger_state: state.textfield_state,
         trigger_theme: look.input_textfield_theme(),
+        trigger_typography_override: Some(selector_preview_typography_for_size(
+            look,
+            look.mode_tokens().typography.text.body,
+            size,
+        )),
         enabled: state.textfield_enabled,
+        size,
         full_width: true,
-        minimum_trigger_width: px(168.0),
+        minimum_trigger_width: px(SELECTOR_TRIGGER_WIDTH),
         status_label: SharedString::from(""),
         status_detail: SharedString::from(""),
         status_color: look.chrome().muted_text,
@@ -326,7 +501,7 @@ fn render_selector_search_selector_trigger(
     };
 
     div()
-        .w(px(168.0))
+        .w(px(SELECTOR_TRIGGER_WIDTH))
         .child(search_selector_template.render(model, SearchSelectorTemplateHandlers::default(), window, cx))
         .into_any_element()
 }
@@ -335,6 +510,7 @@ fn render_selector_selector_trigger(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     state: &SelectorTemplateStateSample,
+    size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -351,6 +527,7 @@ fn render_selector_selector_trigger(
         placement: SelectorPlacement::BelowStart,
         active_path: None,
         enabled: state.selector_enabled,
+        size,
         item_template: None,
         panel_template: None,
         focus: state.selector_focus,
@@ -359,34 +536,34 @@ fn render_selector_selector_trigger(
 
     selector_template
         .render(&model, SelectorTemplateHandlers::default(), window, cx)
-        .w(px(168.0))
+        .w(px(SELECTOR_TRIGGER_WIDTH))
         .into_any_element()
 }
 
 fn render_selector_preview_textfield(
-    textfield_template: &Arc<dyn TextFieldTemplate>,
-    textfield_theme: &Arc<dyn TextFieldTheme>,
-    id: &SharedString,
-    placeholder: &SharedString,
-    value: &SharedString,
-    state: &SelectorTemplateStateSample,
+    request: SelectorPreviewTextfieldRequest<'_>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let SelectorPreviewTextfieldRequest { look, template, theme, id, placeholder, value, state, size } = request;
     let character_offsets = selector_textfield_character_offsets(
+        look,
         value.as_ref(),
-        textfield_theme.clone(),
+        theme.clone(),
         TextFieldVariant::Standard,
         state.textfield_state,
         state.textfield_enabled,
+        size,
         window,
     );
 
     let look = selector_preview_textfield_look(
-        textfield_theme,
+        look,
+        theme,
         TextFieldVariant::Standard,
         state.textfield_state,
         state.textfield_enabled,
+        size,
         window,
     );
     let text_model = TextFieldRenderModel {
@@ -404,17 +581,18 @@ fn render_selector_preview_textfield(
         look,
     };
 
-    textfield_template.render(&text_model, input_textfield_handlers(), window, cx).into_any_element()
+    template.render(&text_model, input_textfield_handlers(), window, cx).into_any_element()
 }
 
 fn render_selector_popup_preview(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     control: SelectorTemplateControl,
+    size: ControlSize,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let popup_look = look.selector_items_panel_look(ControlSize::Md);
+    let popup_look = look.selector_items_panel_look(size);
     let popup_id = SharedString::from(format!("{id}-popup-preview"));
     let items = selector_popup_items_for_control(control);
     let item_hovers = (0..items.len())
@@ -440,10 +618,11 @@ fn render_selector_popup_preview(
             &popup_id,
             &items,
             popup_look.clone(),
-            &default_combobox_items_template(),
-            &default_combobox_panel_template(),
-            item_hovers,
-            item_clicks,
+            ComboBoxPopupTemplates {
+                items: &default_combobox_items_template(),
+                panel: &default_combobox_panel_template(),
+            },
+            SelectorPopupHandlers { item_hovers, item_clicks },
             cx,
         ),
         SelectorTemplateControl::Selector => default_selector_items_template()
@@ -471,19 +650,23 @@ fn render_selector_popup_preview(
             let search_placeholder = SharedString::from("Selection search");
             let search_value = SharedString::from("");
             let search_offsets = selector_textfield_character_offsets(
+                look,
                 search_value.as_ref(),
                 look.input_textfield_theme(),
                 TextFieldVariant::Standard,
                 TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() },
                 true,
+                size,
                 window,
             );
             let search_state = TextFieldState { focused: true, focus_visible: true, ..TextFieldState::default() };
             let search_look = selector_preview_textfield_look(
+                look,
                 &look.input_textfield_theme(),
                 TextFieldVariant::Standard,
                 search_state,
                 true,
+                size,
                 window,
             );
             let search_model = TextFieldRenderModel {
@@ -510,11 +693,12 @@ fn render_selector_popup_preview(
                 &popup_id,
                 &items,
                 popup_look.clone(),
-                &default_search_selector_items_template(),
-                &default_search_selector_panel_template(),
+                SearchSelectorPopupTemplates {
+                    items: &default_search_selector_items_template(),
+                    panel: &default_search_selector_panel_template(),
+                },
                 search_content,
-                item_hovers,
-                item_clicks,
+                SelectorPopupHandlers { item_hovers, item_clicks },
                 cx,
             )
         }
@@ -618,14 +802,16 @@ fn selector_popup_items_for_control(control: SelectorTemplateControl) -> Vec<Sel
 }
 
 fn selector_textfield_character_offsets(
+    look: &Arc<ShadcnLook>,
     value: &str,
     theme: Arc<dyn TextFieldTheme>,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
+    size: ControlSize,
     window: &mut Window,
 ) -> Vec<f32> {
-    let look = selector_preview_textfield_look(&theme, variant, state, enabled, window);
+    let look = selector_preview_textfield_look(look, &theme, variant, state, enabled, size, window);
     let value_shared = SharedString::from(value.to_string());
     let run = TextRun {
         len: value_shared.len(),
@@ -660,26 +846,27 @@ fn selector_char_to_byte_offset(text: &str, char_offset: usize) -> usize {
 }
 
 fn selector_preview_textfield_look(
+    look: &Arc<ShadcnLook>,
     theme: &Arc<dyn TextFieldTheme>,
     variant: TextFieldVariant,
     state: TextFieldState,
     enabled: bool,
+    size: ControlSize,
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldLook {
-    let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(variant, state, enabled, &scale)
+    let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
+    apply_selector_preview_textfield_size(look, theme.resolve_look(variant, state, enabled, &scale), size)
 }
 
 fn render_selector_combobox_popup_preview_from_templates(
     popup_id: &SharedString,
     items: &[SelectorPanelItem],
     look: SelectorItemsPanelLook,
-    items_template: &Arc<dyn ComboBoxItemsTemplate>,
-    panel_template: &Arc<dyn ComboBoxPanelTemplate>,
-    item_hovers: Vec<SelectorPanelHoverHandler>,
-    item_clicks: Vec<SelectorPanelClickHandler>,
+    templates: ComboBoxPopupTemplates<'_>,
+    handlers: SelectorPopupHandlers,
     cx: &mut App,
 ) -> AnyElement {
+    let SelectorPopupHandlers { item_hovers, item_clicks } = handlers;
     let combobox_items = items
         .iter()
         .enumerate()
@@ -689,7 +876,7 @@ fn render_selector_combobox_popup_preview_from_templates(
         .collect::<Vec<_>>();
     let visible_indices = (0..combobox_items.len()).collect::<Vec<_>>();
 
-    let list = items_template.render(
+    let list = templates.items.render(
         &ComboBoxItemsRenderModel {
             menu_id: popup_id,
             combobox_id: popup_id,
@@ -706,7 +893,7 @@ fn render_selector_combobox_popup_preview_from_templates(
         cx,
     );
 
-    panel_template.render(
+    templates.panel.render(
         ComboBoxPanelRenderModel {
             id: popup_id,
             items: &combobox_items,
@@ -728,13 +915,12 @@ fn render_selector_search_selector_popup_preview_from_templates(
     popup_id: &SharedString,
     items: &[SelectorPanelItem],
     look: SelectorItemsPanelLook,
-    items_template: &Arc<dyn SearchSelectorItemsTemplate>,
-    panel_template: &Arc<dyn SearchSelectorPanelTemplate>,
+    templates: SearchSelectorPopupTemplates<'_>,
     search_content: AnyElement,
-    item_hovers: Vec<SelectorPanelHoverHandler>,
-    item_clicks: Vec<SelectorPanelClickHandler>,
+    handlers: SelectorPopupHandlers,
     cx: &mut App,
 ) -> AnyElement {
+    let SelectorPopupHandlers { item_hovers, item_clicks } = handlers;
     let search_items = items
         .iter()
         .enumerate()
@@ -744,7 +930,8 @@ fn render_selector_search_selector_popup_preview_from_templates(
         .collect::<Vec<_>>();
     let visible_indices = (0..search_items.len()).collect::<Vec<_>>();
 
-    let rows = items_template
+    let rows = templates
+        .items
         .render(
             &SearchSelectorItemsRenderModel {
                 menu_id: popup_id,
@@ -763,7 +950,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
         )
         .into_any_element();
 
-    panel_template.render(
+    templates.panel.render(
         SearchSelectorPanelRenderModel {
             id: popup_id,
             items: &search_items,

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::ThemeTokens;
+use crate::theme::{ControlSize, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ProgressLook {
@@ -13,7 +13,7 @@ pub struct ProgressLook {
 }
 
 pub trait ProgressTheme: Send + Sync {
-    fn resolve(&self, enabled: bool) -> ProgressLook;
+    fn resolve(&self, enabled: bool, size: ControlSize) -> ProgressLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -34,7 +34,7 @@ impl DefaultProgressTheme {
 }
 
 impl ProgressTheme for DefaultProgressTheme {
-    fn resolve(&self, enabled: bool) -> ProgressLook {
+    fn resolve(&self, enabled: bool, size: ControlSize) -> ProgressLook {
         let palette = &self.tokens.palette;
 
         ProgressLook {
@@ -48,8 +48,24 @@ impl ProgressTheme for DefaultProgressTheme {
             } else {
                 palette.state.disabled.foreground
             },
-            size: 64.0,
-            stroke_width: 6.0,
+            size: progress_size(size),
+            stroke_width: progress_stroke_width(size),
         }
+    }
+}
+
+fn progress_size(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 48.0,
+        ControlSize::Md => 64.0,
+        ControlSize::Lg => 80.0,
+    }
+}
+
+fn progress_stroke_width(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 5.0,
+        ControlSize::Md => 6.0,
+        ControlSize::Lg => 8.0,
     }
 }

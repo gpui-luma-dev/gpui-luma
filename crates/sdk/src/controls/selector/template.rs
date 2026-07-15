@@ -15,7 +15,7 @@ use crate::controls::selector_panel::{
     SelectorItem, SelectorItemLike, SelectorItemsRenderModel, SelectorItemsTemplate, SelectorItemsTemplateHandlers,
     default_selector_items_template,
 };
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 use super::theme::{SelectorLook, SelectorTheme, default_selector_theme};
 
@@ -193,10 +193,10 @@ where
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
-        self.theme.resolve_look(model.state, &scale)
+        self.theme.resolve_look(model.state, model.size, &scale)
     }
 
     fn render(

@@ -29,7 +29,7 @@ pub fn inspect_progress_color_palette(
 pub fn inspect_progress_metrics(mode: &ShadcnModeTokens, _theme_mode: ThemeMode) -> ProgressInspectMetrics {
     use crate::metrics::derived_metric;
 
-    let look = gpui_luma_look_shadcn::paint::progress_look(mode, true);
+    let look = gpui_luma_look_shadcn::paint::progress_look(mode, true, gpui_luma::theme::ControlSize::Md);
 
     ProgressInspectMetrics {
         size: derived_metric("progress ring diameter", look.size),

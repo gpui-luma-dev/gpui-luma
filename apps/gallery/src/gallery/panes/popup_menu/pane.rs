@@ -317,6 +317,7 @@ fn render_trigger_sample(
         placement: PopupMenuPlacement::BelowStart,
         trigger_style: sample.trigger_style,
         trigger_size: ControlSize::Md,
+        menu_size: ControlSize::Md,
         trigger_icon: None,
         without_elevation: false,
         trigger_radius_override: None,

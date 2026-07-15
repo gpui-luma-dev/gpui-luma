@@ -84,7 +84,7 @@ impl ProgressTemplate for ModifiedProgressTemplate {
 
 impl ProgressTemplate for ThemedProgressTemplate {
     fn render(&self, model: &ProgressRenderModel<'_>, _window: &mut Window, _cx: &mut App) -> Stateful<Div> {
-        let look = self.theme.resolve(model.enabled);
+        let look = self.theme.resolve(model.enabled, model.size);
         let percentage = model.percentage.clamp(0.0, 1.0);
         let size = px(look.size);
         let stroke_width = px(look.stroke_width);

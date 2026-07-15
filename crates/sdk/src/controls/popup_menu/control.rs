@@ -97,6 +97,7 @@ impl PopupMenu {
             placement: self.model.placement,
             trigger_style: self.model.trigger_style,
             trigger_size: self.model.trigger_size,
+            menu_size: self.model.menu_size,
             trigger_icon: self.model.trigger_icon,
             without_elevation: self.model.without_elevation,
             trigger_radius_override: None,

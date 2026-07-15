@@ -2,9 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{Hsla, hsla};
 
-use crate::controls::scrollbar::ScrollbarOrientation;
+use crate::controls::scrollbar::{ScrollbarOrientation, ScrollbarStyle};
 
-use crate::theme::{InteractionLayer, InteractionState, ThemeTokens};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
 
 #[derive(Clone, Copy, Debug)]
 pub struct ScrollbarLook {
@@ -20,7 +20,13 @@ pub struct ScrollbarLook {
 }
 
 pub trait ScrollbarTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarLook;
+    fn resolve(
+        &self,
+        state: InteractionState,
+        orientation: ScrollbarOrientation,
+        size: ControlSize,
+        style: ScrollbarStyle,
+    ) -> ScrollbarLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -41,7 +47,13 @@ impl DefaultScrollbarTheme {
 }
 
 impl ScrollbarTheme for DefaultScrollbarTheme {
-    fn resolve(&self, state: InteractionState, orientation: ScrollbarOrientation) -> ScrollbarLook {
+    fn resolve(
+        &self,
+        state: InteractionState,
+        orientation: ScrollbarOrientation,
+        size: ControlSize,
+        style: ScrollbarStyle,
+    ) -> ScrollbarLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let thumb_background = match state.layer() {
@@ -59,17 +71,51 @@ impl ScrollbarTheme for DefaultScrollbarTheme {
         ScrollbarLook {
             track_background: if state.disabled {
                 palette.state.disabled.background
+            } else if style == ScrollbarStyle::Soft {
+                palette.surface.subtle.background
             } else {
                 hsla(0.0, 0.0, 0.0, 0.0)
             },
             thumb_background,
             focus_ring: state.focused.then_some(palette.focus.ring),
             length,
-            thickness: 12.0,
-            track_thickness: 4.0,
-            thumb_thickness: 8.0,
-            min_thumb_length: 28.0,
+            thickness: scrollbar_thickness(size),
+            track_thickness: scrollbar_track_thickness(size),
+            thumb_thickness: scrollbar_thumb_thickness(size),
+            min_thumb_length: scrollbar_min_thumb_length(size),
             radius: metrics.radius.pill,
         }
+    }
+}
+
+fn scrollbar_thickness(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 10.0,
+        ControlSize::Md => 12.0,
+        ControlSize::Lg => 14.0,
+    }
+}
+
+fn scrollbar_track_thickness(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 3.0,
+        ControlSize::Md => 4.0,
+        ControlSize::Lg => 5.0,
+    }
+}
+
+fn scrollbar_thumb_thickness(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 6.0,
+        ControlSize::Md => 8.0,
+        ControlSize::Lg => 10.0,
+    }
+}
+
+fn scrollbar_min_thumb_length(size: ControlSize) -> f32 {
+    match size {
+        ControlSize::Sm => 24.0,
+        ControlSize::Md => 28.0,
+        ControlSize::Lg => 32.0,
     }
 }

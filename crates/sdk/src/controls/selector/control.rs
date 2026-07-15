@@ -97,6 +97,11 @@ where
         cx.notify();
     }
 
+    pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.model.size = size;
+        cx.notify();
+    }
+
     pub fn set_placement(&mut self, placement: SelectorPlacement, cx: &mut Context<Self>) {
         self.model.placement = placement;
         cx.notify();
@@ -145,6 +150,7 @@ where
             placement: self.model.placement,
             active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
             enabled: self.model.enabled,
+            size: self.model.size,
             item_template: self.model.item_template.as_ref(),
             panel_template: Some(self.model.panel_template.as_ref()),
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),

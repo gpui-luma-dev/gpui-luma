@@ -12,7 +12,7 @@ use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClick
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
 use crate::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant};
-use crate::theme::{ControlSize, StandardBoxScale};
+use crate::theme::{ControlSize, LumaTextStyle, StandardBoxScale};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -64,7 +64,9 @@ pub struct SearchSelectorRenderModel {
     pub trigger_label_is_placeholder: bool,
     pub trigger_state: TextFieldState,
     pub trigger_theme: Arc<dyn TextFieldTheme>,
+    pub trigger_typography_override: Option<LumaTextStyle>,
     pub enabled: bool,
+    pub size: ControlSize,
     pub full_width: bool,
     pub minimum_trigger_width: Pixels,
     pub status_label: SharedString,
@@ -129,12 +131,16 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let trigger_look = model.trigger_theme.resolve_look(
+        let mut trigger_look = model.trigger_theme.resolve_look(
             TextFieldVariant::Standard,
             model.trigger_state,
             model.enabled,
-            &StandardBoxScale::compute(ControlSize::Md, &model.trigger_theme.metrics(), window.scale_factor()),
+            &StandardBoxScale::compute(model.size, &model.trigger_theme.metrics(), window.scale_factor()),
         );
+        if let Some(typography) = model.trigger_typography_override {
+            trigger_look.typography = typography;
+            trigger_look.icon_size = typography.size + 2.0;
+        }
 
         div()
             .id(format!("{}-root", model.id))

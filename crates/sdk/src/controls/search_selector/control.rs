@@ -150,6 +150,11 @@ impl SearchSelectorControl {
         cx.notify();
     }
 
+    pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.model.size = size;
+        cx.notify();
+    }
+
     fn handle_popup_search_event(&mut self, event: TextSelectionEvent, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
@@ -723,7 +728,9 @@ impl Render for SearchSelectorControl {
                 ..TextFieldState::default()
             },
             trigger_theme: self.model.textfield_theme.clone(),
+            trigger_typography_override: None,
             enabled: self.model.enabled,
+            size: self.model.size,
             full_width: self.model.full_width,
             minimum_trigger_width,
             status_label,

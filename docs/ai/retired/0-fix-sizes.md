@@ -1,7 +1,7 @@
 # Fix Note: Button Size / Radius Preview Ownership
 
 **Area:** `apps/theme-studio/src/studio/style/*`, `crates/sdk/src/controls/command/button/*`, `crates/sdk/src/controls/button_family/*`, `crates/look-shadcn/src/controls/{button,toggle,templates,slider,scrollbar,progress}.rs`, `crates/look-shadcn/src/elements/badge.rs`, `crates/look-shadcn/assets/style.toml`  
-**Status:** In progress. Button-family, **Menus**, and **Slider** Style Guide previews are on the look seam. **Scrollbar / progress** sizing and **badge typography scaling** are the next look-owned targets. SDK contract review remains open (`slider/theme.rs` still hardcodes sm/md/lg). Shadow round-trip tracked separately in [0-shadow-enhance.md](./0-shadow-enhance.md).
+**Status:** Retired / complete as of 2026-07-15. The main sizing rollout is done: Button-family, **Menus**, **Slider**, **Scrollbar / Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Theme Studio or runtime surfaces. SDK fallback cleanup for slider, floating menu, popup menu panel sizing, and pager fallback geometry now derives from shared metric/typography tokens instead of local sm/md/lg or fixed px tables. Follow-up work moved to [`../issues/0-sizes-followup.md`](../issues/0-sizes-followup.md). Smarter padding curves moved to [`../issues/0-size-smarter.md`](../issues/0-size-smarter.md). Shadow round-trip remains tracked separately in [`../issues/0-shadow-enhance.md`](../issues/0-shadow-enhance.md).
 
 ---
 
@@ -35,6 +35,12 @@ Early commits (`92706612`, `6d244407`, `9ecda374`) landed button/toggle/choice S
 | `9ecda374` | Checkbox / Radio / Switch split; choice matrices + Sizes tabs |
 | 2026-07-08 | **Menus** four-tab preview; floating-menu typography scales with size; style guide sections alphabetical; buttons text-only in Template/Sizes; menu-trigger `radius_override` in look |
 | 2026-07-08 (later) | **Slider** dedicated section (Template Preview + Sizes); Input Controls split into Scrollbar / Slider / Text Field / Text Area; primary-only slider look; thumb + track radius presets; disabled inactive track = `border` (matches enabled) |
+| 2026-07-15 | **Scrollbar / Progress** size contracts; `[scrollbar.metrics.sm|md|lg]`; `[progress.metrics.sm|md|lg]`; Theme Studio Scrollbar Sizes tab; Progress Sm/Md/Lg row; badge typography resolves from button font metrics |
+| 2026-07-15 (later) | SDK default slider fallback geometry derives height, track height, and thumb size from `MetricTokens` instead of hardcoded Sm/Md/Lg match tables |
+| 2026-07-15 (scrollbar follow-up) | Added `ScrollbarStyle::Ghost | Soft`; ghost keeps the transparent track, soft uses a muted track channel for Radix-like visibility; Theme Studio scrollbar Template Preview shows both variants in a state-column table; Sizes is horizontal-only; user-tested and accepted |
+| 2026-07-15 (popup follow-up) | Popup menus gained independent `menu_size`; trigger size remains trigger-owned, while floating panel metrics resolve from menu size; user-tested and accepted |
+| 2026-07-15 (catalog cleanup) | SDK fallback floating-menu typography/icon size now comes from typography + metric tokens; pager fallback geometry now comes from Sm control metrics + spacing tokens; pager template no longer clamps numeric buttons to a local fixed width |
+| 2026-07-15 (pager guide) | Theme Studio Style Guide gained a Pager section copied from the Gallery pager pane examples and wired as an interactive preview |
 
 ### Theme Studio Style Guide (landed)
 
@@ -49,12 +55,13 @@ Shared preview pattern: **`VariantStateTable`** — variants as rows, interactio
 | Radio | Template Preview, Sizes | same | |
 | Switch | Template Preview, Sizes | same | |
 | **Menus** | Menu Trigger, Trigger Sizes, Floating Menu, Sizes | trigger: states + size×radius; panel: states + Sm/Md/Lg | Trigger = outline/ghost; panel uses `floating_menu_look(size)` |
-| Selectors | — (single layout) | **none** | State × control-type grid only; all panels hardcoded `Md` |
-| Scrollbar | — | orientation × states | Own section (was grouped under Input Controls) |
+| Pager | — (single layout) | Gallery pager examples | Minimal, Minimal + first/last, Numeric, Numeric no first/last, Numeric 5-slot; interactive item/page-size/enabled controls |
+| Selectors | Template Preview, Sizes | Sm/Md/Lg trigger + open-panel rows | Template Preview = state × control-type grid at `Md`; Sizes rows reuse trigger/input `ControlSize` and `selector_items_panel_look(size)` |
+| Scrollbar | Template Preview, Sizes | Template: horizontal Ghost/Soft × states plus vertical states; Sizes: horizontal Sm/Md/Lg | Own section (was grouped under Input Controls) |
 | **Slider** | Template Preview, Sizes | Template: state columns (Standard/Hover/Focus/Active/Disabled); Sizes: Sm/Md/Lg × radius presets | Own section; 120px demo width; primary-only (no Secondary variant row) |
 | Text Field | — | states | Own section (was grouped under Input Controls) |
 | Text Area | — | states | Own section (was grouped under Input Controls) |
-| Feedback | — (stacked blocks) | **partial** | Badge Sm/Md/Lg inline samples; progress states only (single diameter) |
+| Feedback | — (stacked blocks) | Badge Sm/Md/Lg inline samples; progress states + Sm/Md/Lg row | Progress remains in Feedback rather than a separate section |
 | Sidebar, Tabs, Typography, … | legacy | — | Not on matrix + Sizes pattern yet |
 
 Style guide section order: **alphabetical** by title (Buttons → … → Typography).
@@ -73,10 +80,20 @@ Other preview fixes (unchanged from earlier):
 - **`popup_menu`**: `trigger_radius_override` for menu-trigger radius preview.
 - **`slider_look`**: primary-only color rules in `style.toml`; `[slider.metrics.sm|md|lg]`; separate thumb vs track radius resolution (`resolve_slider_thumb_radius_preset`, `resolve_slider_track_radius_preset`); disabled track rail uses `border` (not `muted`).
 - **Slider template**: disabled opacity on Active/Domain fill only — Inactive rail stays full-opacity; thumb stays opaque when disabled.
+- **`scrollbar_look`**: `ControlSize` resolves look-owned thickness, track thickness, thumb thickness, and minimum thumb length from `style.toml`.
+- **`ScrollbarStyle`**: `Ghost` preserves the transparent track; `Soft` fills the track with muted color so the scrollbar channel is visible in previews or dense surfaces.
+- **`progress_look`**: `ControlSize` resolves circular progress diameter and stroke width from `style.toml`.
+- **`badge_look`**: `ControlSize` resolves typography from button font metrics so badge text/icon scale follows the same size policy as buttons and floating menu items.
+- **Default slider theme**: fallback height, track height, and thumb size derive from `MetricTokens` (`control_height`, `spacing`, `gap`, `border_width`) rather than fixed Sm/Md/Lg literals.
+- **Popup menu panel size**: `PopupMenuBuilder::menu_size(...)` decouples floating panel metrics from trigger size; `.size(...)` remains trigger-only.
+- **Default floating menu theme**: fallback menu item typography follows `LumaTypography` size roles, and fallback icon size derives from item typography + border width.
+- **Default pager theme**: fallback button height/min-width, padding, gap, group gap, and radius derive from Sm control metrics + spacing tokens; numeric/gap buttons use the resolved `button_min_width`.
 - **Template**: `radius_override` paints visible control corners.
 - **Gallery / paint**: `button_look` re-export restored.
 
 ### Still open / needs work
+
+This section is retained for historical context. Active remaining work moved to [`0-sizes-followup.md`](../issues/0-sizes-followup.md).
 
 #### SDK contract review (unchanged)
 
@@ -88,16 +105,20 @@ Other preview fixes (unchanged from earlier):
 
 | Control | Look layer today | Theme Studio today | Likely work |
 |---------|------------------|--------------------|-------------|
-| **Slider** | `style.toml` primary color rules; `slider_look(..., size)`; thumb/track radius presets | **Slider** section: Template Preview (states); Sizes (Sm/Md/Lg × radius) | **Done** (Theme Studio + look). Optional: dedup `crates/sdk/src/controls/slider/theme.rs` hardcoded metrics |
-| **Scrollbar** | Single `[scrollbar.metrics]` — **no `ControlSize`** | **Scrollbar** section; orientation × states | Decide sm/md/lg policy; then Sizes tab |
-| **Progress** | Single `[progress.metrics]` (`size`, `stroke_width`) — **no `ControlSize`** | Feedback; variant states only | Add sm/md/lg metrics (or diameter presets); `progress_look(size)`; Sizes row in Feedback or dedicated section |
-| **Badge / tags** | `badge_look(variant, size)`; typography = caption/label/body mix | Feedback shows Sm/Md/Lg **inline** | Align typography with button `font_size` per size (same bug class as floating menu had); optional Sizes matrix; consider `style.toml` `[badge.metrics.*]` |
-| **Selectors** | Trigger = textfield/combobox/search/selector templates; panel = `selector_items_panel_look(size)` | State grid; **`ControlSize::Md` hardcoded** for all popups | **Lower priority** for size matrices — value is state × control type. If sizing matters: trigger follows **textfield size**; panel follows **floating menu size** (same seam as Menus). No separate “selector size” semantic expected. Optional: Sm/Md/Lg column on selector triggers + open panels for parity with Menus. |
-| **Floating menu (runtime)** | Panel metrics global in `style.toml`; popup still passes **trigger size** to panel in some paths | Sizes tab previews panel via `floating_menu_look(size)` directly | Decouple panel size from trigger `ControlSize` in look/SDK popup menu (architecture note from Menus work) |
+| **Slider** | `style.toml` primary color rules; `slider_look(..., size)`; thumb/track radius presets; SDK fallback derives geometry from `MetricTokens` | **Slider** section: Template Preview (states); Sizes (Sm/Md/Lg × radius) | **Done** (Theme Studio + look + SDK fallback cleanup) |
+| **Scrollbar** | `[scrollbar.metrics.sm|md|lg]`; `scrollbar_look(..., size)` | Template Preview + Sizes | **Done / tested** (look metrics + SDK render-model size + Theme Studio Sizes tab) |
+| **Progress** | `[progress.metrics.sm|md|lg]`; `progress_look(..., size)` | Feedback states + Sm/Md/Lg row | **Done** (look metrics + SDK render-model size + Feedback size row) |
+| **Badge / tags** | `badge_look(variant, size)`; typography resolves from button `font_size` per size | Feedback shows Sm/Md/Lg **inline** | **Done** for typography scaling. Badge-specific metrics remain optional only if tags need a non-button sizing policy later |
+| **Selectors** | Trigger = textfield/combobox/search/selector templates; panel = `selector_items_panel_look(size)` | Template Preview tab plus Sizes tab with Sm/Md/Lg trigger + open-panel rows | **Done** for Style Guide parity. No separate selector-size semantic was added; previews reuse `ControlSize` on the trigger/template side and `selector_items_panel_look(size)` for panels. |
+| **Floating menu (runtime)** | Panel metrics resolve through popup `menu_size`; trigger metrics remain trigger-owned | Sizes tab previews panel via `floating_menu_look(size)` directly | **Done / tested** for popup menu runtime. Context/navigation standalone floating menus still default to Md unless their caller/theme exposes size |
 
 #### Typography / size ownership elsewhere (catalog addendum)
 
-Pager, popup menu SDK theme, default `floating_menu_theme`, etc. — still embed translation in SDK themes where look-shadcn should own policy.
+Current cleanup status:
+
+- **Done**: slider fallback geometry, default floating-menu fallback typography/icon sizing, popup menu panel sizing, default pager fallback geometry.
+- **Still possible**: navigation sidebar fallback constants, list/listbox/control-group fallback spacing literals, and standalone context/navigation floating-menu sizing APIs if those surfaces need caller-controlled menu size.
+- **Not urgent**: these are SDK fallback defaults. Shadcn runtime remains look-owned for product styling.
 
 #### Related (not this note)
 
@@ -317,17 +338,17 @@ It should not become a parallel implementation of button sizing logic.
 
 ### Short version
 
-Button-family, **Menus**, and **Slider** previews consume the look seam. **Next sizing pass:** scrollbar + progress (add size semantics + metrics), badge (typography alignment + optional matrix). **Selectors:** keep state-first; add size previews only if product wants trigger/panel Sm/Md/Lg parity with Menus.
+Button-family, **Menus**, **Slider**, **Scrollbar**, **Progress**, **Badge**, **Pager**, and **Selectors** now consume the relevant look/size seams in Theme Studio. Selector sizing stays compositional: trigger/input `ControlSize` plus `selector_items_panel_look(size)`.
 
 ### Suggested implementation order
 
 1. ~~**Slider** — Theme Studio Sizes tab (Sm/Md/Lg).~~ **Done**: dedicated **Slider** section with Template Preview + Sizes tabs; primary-only look; thumb/track radius presets; disabled inactive track matches enabled (`border`); SDK template dims fill only when disabled.
-2. **Badge** — use button `font_size` / `icon_size` in `badge_typography`; Feedback Sizes matrix.
-3. **Progress** — `[progress.metrics.sm|md|lg]` + `progress_look(size)`; Feedback Sizes samples.
-4. **Scrollbar** — product decision: global vs sized; then metrics + preview.
-5. **Selectors** — optional: parameterize preview `ControlSize`; document trigger = textfield size, panel = floating menu size.
-6. **SDK review** — `ButtonRadiusPreset`, `icon_size`, choice policy (unchanged).
-7. **Popup menu** — decouple floating panel size from trigger size at runtime.
+2. ~~**Badge** — use button `font_size` / `icon_size` in `badge_typography`; Feedback Sizes matrix.~~ **Done**: badge typography resolves from button size metrics; Feedback shows Sm/Md/Lg inline.
+3. ~~**Progress** — `[progress.metrics.sm|md|lg]` + `progress_look(size)`; Feedback Sizes samples.~~ **Done**.
+4. ~~**Scrollbar** — product decision: global vs sized; then metrics + preview.~~ **Done / tested**: Scrollbar has Template Preview + Sizes and `Ghost` / `Soft` variants.
+5. ~~**Selectors** — parameterize preview `ControlSize`; document trigger = textfield size, panel = floating menu size.~~ **Done**: Style Guide has Sm/Md/Lg trigger + open-panel rows without adding a selector-specific size axis.
+6. **SDK review** — moved to [`0-sizes-followup.md`](../issues/0-sizes-followup.md).
+7. ~~**Popup menu** — decouple floating panel size from trigger size at runtime.~~ **Done / tested**.
 
 ---
 
@@ -540,14 +561,11 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 
 ### Still needs SDK / API review or new look work
 
+Historical list; current follow-ups moved to [`0-sizes-followup.md`](../issues/0-sizes-followup.md).
+
 - `ButtonFamilyLook.icon_size`, `ButtonRadiusPreset`
 - Choice controls: `ShadcnButtonStyle` variant model + elevation policy
-- `crates/sdk/src/controls/slider/theme.rs` — hardcoded sm/md/lg vs `slider_look` (SDK default theme path only; look-shadcn + Theme Studio use look seam)
-- `crates/look-shadcn/src/controls/scrollbar.rs` — no `ControlSize`; single metrics block
-- `crates/look-shadcn/src/controls/progress.rs` — no `ControlSize`; single metrics block
-- `crates/look-shadcn/src/elements/badge.rs` — typography uses text roles, not button metrics per size
-- `apps/theme-studio/.../feedback.rs`, `selectors.rs` — no Sizes tabs; Md-only or inline samples
-- `crates/sdk/src/controls/pager/theme.rs` and other SDK themes in addendum catalog
+- Optional fallback cleanup for navigation sidebar, list/listbox/control-group, and standalone context/navigation floating-menu sizing APIs.
 
 ---
 
@@ -555,14 +573,11 @@ Behavioral enums that are not really style policy should likely remain in SDK, f
 
 The experiment exposed the real issue: **Theme Studio was previewing semantic sizing before the button/theme seam owned it.** That is largely fixed for buttons, toggles, choices, menu triggers/panels, and **slider** (Template Preview + Sizes on the look seam).
 
-**Remaining gaps:**
+**Remaining follow-ups moved out:**
 
-- **Slider (SDK path)** — `crates/sdk/src/controls/slider/theme.rs` still hardcodes sm/md/lg; look-shadcn + Theme Studio already use `slider_look`.
-- **Scrollbar / progress** — no size axis in look or previews.
-- **Badge (tags)** — size API exists; typography scaling should match button/floating-menu policy; no Sizes matrix.
-- **Selectors** — state preview is sufficient for v1; sizing is compositional (textfield + floating menu), not a new semantic — optional Sm/Md/Lg preview only.
-- SDK contracts from the experiment still need a deliberate pass.
-- Shadow ladder / Theme Studio: [0-shadow-enhance.md](./0-shadow-enhance.md).
+- SDK/API contract review and optional fallback cleanup: [`0-sizes-followup.md`](../issues/0-sizes-followup.md)
+- Smarter size padding curves: [`0-size-smarter.md`](../issues/0-size-smarter.md)
+- Shadow ladder / Theme Studio: [`0-shadow-enhance.md`](../issues/0-shadow-enhance.md)
 
 Target architecture unchanged: size semantics resolved in look-shadcn; Theme Studio selects knobs and renders resolved results.
 

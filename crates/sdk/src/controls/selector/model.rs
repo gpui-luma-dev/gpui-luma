@@ -12,6 +12,7 @@ pub use crate::controls::selector_panel::{
     normalize_selector_items,
 };
 use crate::controls::selector_panel::items_template_with_modifier;
+use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {
@@ -30,6 +31,7 @@ where
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) enabled: bool,
+    pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
     pub(crate) panel_template: Arc<dyn SelectorItemsTemplate<T>>,
@@ -49,6 +51,7 @@ where
     pub placement: SelectorPlacement,
     pub active_path: Option<SelectorPath>,
     pub enabled: bool,
+    pub size: ControlSize,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
     pub focus: ControlFocusState,
@@ -76,6 +79,7 @@ where
                 id,
                 items: Vec::new(),
                 enabled: true,
+                size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
                 item_template: None,
                 panel_template: default_selector_items_template(),
@@ -107,6 +111,11 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
         self
     }
 

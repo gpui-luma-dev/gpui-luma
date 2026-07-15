@@ -29,6 +29,7 @@ pub struct SearchSelectorModel {
     pub(crate) placeholder: SharedString,
     pub(crate) search_placeholder: SharedString,
     pub(crate) enabled: bool,
+    pub(crate) size: ControlSize,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) scrolling: bool,
@@ -60,6 +61,7 @@ impl SearchSelectorBuilder {
                 placeholder: SharedString::from("Select…"),
                 search_placeholder: SharedString::from("Selection search"),
                 enabled: true,
+                size: ControlSize::Md,
                 full_width: true,
                 clean_on_escape: true,
                 scrolling: true,
@@ -97,6 +99,11 @@ impl SearchSelectorBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
         self
     }
 

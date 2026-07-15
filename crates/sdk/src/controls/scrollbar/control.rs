@@ -3,14 +3,14 @@ use gpui::{
     Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, SharedString, Window, div, prelude::*, px,
 };
 
-use super::{ScrollbarBuilder, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarTemplateHandlers};
+use super::{ScrollbarBuilder, ScrollbarOrientation, ScrollbarRenderModel, ScrollbarStyle, ScrollbarTemplateHandlers};
 use crate::controls::interaction::ControlInteraction;
 use crate::controls::scrollbar::model::{ScrollbarModel, normalized_thumb_fraction};
 use crate::controls::value::{ControlRange, value_from_input};
 use crate::keyhandling::{
     ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue, IncreaseValueLarge, MoveToEnd, MoveToStart,
 };
-use crate::theme::observe_theme_revision;
+use crate::theme::{ControlSize, observe_theme_revision};
 
 #[derive(Clone, Debug)]
 pub enum ScrollbarEvent {
@@ -91,6 +91,14 @@ impl Scrollbar {
         self.model.thumb_fraction
     }
 
+    pub fn size(&self) -> ControlSize {
+        self.model.size
+    }
+
+    pub fn style(&self) -> ScrollbarStyle {
+        self.model.style
+    }
+
     pub fn set_value(&mut self, value: impl Into<f64>, cx: &mut Context<Self>) {
         let value = value_from_input(value);
         self.set_value_internal(value, false, cx);
@@ -149,6 +157,20 @@ impl Scrollbar {
         }
     }
 
+    pub fn set_size(&mut self, size: ControlSize, cx: &mut Context<Self>) {
+        if self.model.size != size {
+            self.model.size = size;
+            cx.notify();
+        }
+    }
+
+    pub fn set_style(&mut self, style: ScrollbarStyle, cx: &mut Context<Self>) {
+        if self.model.style != style {
+            self.model.style = style;
+            cx.notify();
+        }
+    }
+
     pub fn set_template(&mut self, template: std::sync::Arc<dyn super::ScrollbarTemplate>, cx: &mut Context<Self>) {
         self.model.template = template;
         cx.notify();
@@ -175,6 +197,8 @@ impl Scrollbar {
             percentage: self.model.range.percentage(self.model.value),
             thumb_fraction: self.model.thumb_fraction,
             length: self.model.length,
+            size: self.model.size,
+            style: self.model.style,
             enabled: self.model.enabled,
             state: self.interaction.render_state(self.model.enabled, window),
         }

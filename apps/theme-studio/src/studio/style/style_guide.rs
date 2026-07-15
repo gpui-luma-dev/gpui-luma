@@ -37,6 +37,7 @@ enum StyleGuideSection {
     Switch,
     Toggle,
     Menus,
+    Pager,
     Selectors,
     Tabs,
     Scrollbar,
@@ -47,12 +48,13 @@ enum StyleGuideSection {
 }
 
 impl StyleGuideSection {
-    const ALL: [Self; 16] = [
+    const ALL: [Self; 17] = [
         Self::Buttons,
         Self::Checkbox,
         Self::Feedback,
         Self::IconButtons,
         Self::Menus,
+        Self::Pager,
         Self::Radio,
         Self::Scrollbar,
         Self::Selectors,
@@ -89,6 +91,9 @@ declare_form! {
                 None,
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
             menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            pager_preview: Option<Entity<sections::pager::PagerPreview>> = None,
+            selectors_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            scrollbar_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_customization_preview: Option<Entity<sections::slider::customization::SliderCustomizationPreview>> =
                 None,
@@ -108,6 +113,9 @@ impl StyleGuidePanel {
         self.sync_switch_customization_preview(cx);
         self.sync_toggles_preview_tabs(cx);
         self.sync_menus_preview_tabs(cx);
+        self.sync_pager_preview(cx);
+        self.sync_selectors_preview_tabs(cx);
+        self.sync_scrollbar_preview_tabs(cx);
         self.sync_slider_preview_tabs(cx);
         self.sync_slider_customization_preview(cx);
         self.sticky_heading_tracker.borrow_mut().reset();
@@ -415,6 +423,85 @@ impl StyleGuidePanel {
         tabs
     }
 
+    fn pager_preview(&mut self, cx: &mut Context<Self>) -> Entity<sections::pager::PagerPreview> {
+        if let Some(preview) = self.pager_preview.clone() {
+            return preview;
+        }
+
+        let preview = cx.new(|cx| sections::pager::PagerPreview::new(cx, self.look.clone()));
+        self.pager_preview = Some(preview.clone());
+        preview
+    }
+
+    fn sync_pager_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.pager_preview.clone() {
+            let look = self.look.clone();
+            preview.update(cx, move |preview, cx| {
+                preview.sync_look(look, cx);
+            });
+        }
+    }
+
+    fn sync_scrollbar_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.scrollbar_preview_tabs.clone(), cx);
+    }
+
+    fn sync_selectors_preview_tabs(&mut self, cx: &mut Context<Self>) {
+        self.sync_preview_tabs(self.selectors_preview_tabs.clone(), cx);
+    }
+
+    fn selectors_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.selectors_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-selectors-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.selectors_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
+    fn scrollbar_preview_tabs(&mut self, cx: &mut Context<Self>) -> Entity<TabsNavigation> {
+        if let Some(tabs) = self.scrollbar_preview_tabs.clone() {
+            return tabs;
+        }
+
+        let tabs = self
+            .look
+            .tabs_navigation("theme-studio-scrollbar-preview-tabs")
+            .items([
+                TabsNavigationItem::new("template-preview").label("Template Preview"),
+                TabsNavigationItem::new("sizes").label("Sizes"),
+            ])
+            .active("template-preview")
+            .width_mode(TabsNavigationWidthMode::Intrinsic)
+            .template(self.look.tabs_navigation_template())
+            .spawn(cx);
+
+        cx.subscribe(&tabs, |_, _, _: &TabsNavigationEvent, cx| {
+            cx.notify();
+        })
+        .detach();
+
+        self.scrollbar_preview_tabs = Some(tabs.clone());
+        tabs
+    }
+
     fn sync_slider_preview_tabs(&mut self, cx: &mut Context<Self>) {
         self.sync_preview_tabs(self.slider_preview_tabs.clone(), cx);
     }
@@ -490,6 +577,9 @@ impl Render for StyleGuidePanel {
         let _ = self.switch_customization_preview(cx);
         let _ = self.toggles_preview_tabs(cx);
         let _ = self.menus_preview_tabs(cx);
+        let _ = self.pager_preview(cx);
+        let _ = self.selectors_preview_tabs(cx);
+        let _ = self.scrollbar_preview_tabs(cx);
         let _ = self.slider_preview_tabs(cx);
         let _ = self.slider_customization_preview(cx);
         with_look(&self.look, || {
@@ -632,6 +722,9 @@ impl StyleGuidePanel {
                 | StyleGuideSection::Switch
                 | StyleGuideSection::Toggle
                 | StyleGuideSection::Menus
+                | StyleGuideSection::Pager
+                | StyleGuideSection::Selectors
+                | StyleGuideSection::Scrollbar
                 | StyleGuideSection::Slider
         )
     }
@@ -697,15 +790,25 @@ impl StyleGuidePanel {
                 window,
                 cx,
             ),
-            StyleGuideSection::Selectors => {
-                sections::selectors::render_selector_templates_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Pager => sections::pager::render_pager_template_section(
+                self.look.clone(),
+                self.pager_preview.clone().expect("pager preview"),
+            ),
+            StyleGuideSection::Selectors => sections::selectors::render_selector_templates_section(
+                self.look.clone(),
+                self.selectors_preview_tabs.clone().expect("selectors preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Tabs => {
                 sections::tabs::render_tabs_navigation_template_section(self.look.clone(), window, cx)
             }
-            StyleGuideSection::Scrollbar => {
-                sections::scrollbar::render_scrollbar_template_section(self.look.clone(), window, cx)
-            }
+            StyleGuideSection::Scrollbar => sections::scrollbar::render_scrollbar_template_section(
+                self.look.clone(),
+                self.scrollbar_preview_tabs.clone().expect("scrollbar preview tabs"),
+                window,
+                cx,
+            ),
             StyleGuideSection::Slider => sections::slider::render_slider_template_section(
                 self.look.clone(),
                 self.slider_preview_tabs.clone().expect("slider preview tabs"),

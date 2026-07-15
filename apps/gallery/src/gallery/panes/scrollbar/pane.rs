@@ -276,6 +276,8 @@ fn render_state_sample(
         percentage: range.percentage(value),
         thumb_fraction: 0.54,
         length: None,
+        size: gpui_luma::theme::ControlSize::Md,
+        style: gpui_luma::controls::scrollbar::ScrollbarStyle::Ghost,
         enabled: !sample.state.disabled,
         state: sample.state,
     };

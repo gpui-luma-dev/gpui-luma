@@ -1,7 +1,7 @@
 //! Progress — muted track + primary fill.
 
 use gpui_luma::controls::progress::ProgressLook;
-use gpui_luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -44,15 +44,14 @@ pub fn resolve_progress_colors_with_stylesheet(
     Ok(ProgressColorTable { track_color: colors.track_color, progress_color: colors.progress_color })
 }
 
-pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool) -> ProgressLook {
+pub fn progress_look(mode: &ShadcnModeTokens, enabled: bool, size: ControlSize) -> ProgressLook {
     let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "progress");
     let colors = resolve_progress_colors(&resolver, enabled).unwrap_or_else(|_| ProgressColorTable::fallback());
     let stylesheet = embedded_stylesheet();
     let (size, stroke_width) = stylesheet
         .progress
-        .metrics
-        .as_ref()
+        .metrics_for_size(size)
         .map(resolve_progress_metrics)
         .map(|metrics| (metrics.size, metrics.stroke_width))
         .unwrap_or((DEFAULT_PROGRESS_SIZE, DEFAULT_PROGRESS_STROKE_WIDTH));
@@ -96,9 +95,22 @@ mod tests {
     fn progress_uses_muted_track_and_primary_fill() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = progress_look(&mode, true);
+        let look = progress_look(&mode, true, gpui_luma::theme::ControlSize::Md);
 
         assert_eq!(look.track_color, catalog.color("muted").expect("muted"));
         assert_eq!(look.progress_color, catalog.color("primary").expect("primary"));
+    }
+
+    #[test]
+    fn progress_size_changes_metrics() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let small = progress_look(&mode, true, gpui_luma::theme::ControlSize::Sm);
+        let medium = progress_look(&mode, true, gpui_luma::theme::ControlSize::Md);
+        let large = progress_look(&mode, true, gpui_luma::theme::ControlSize::Lg);
+
+        assert!(small.size < medium.size);
+        assert!(medium.size < large.size);
+        assert!(small.stroke_width < medium.stroke_width);
+        assert!(medium.stroke_width < large.stroke_width);
     }
 }

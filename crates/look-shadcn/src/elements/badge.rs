@@ -6,7 +6,7 @@ use gpui_luma::theme::{ControlSize, LumaTextStyle};
 
 use crate::look::ShadcnLook;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{embedded_stylesheet, find_badge_color_rule, resolve_badge_color_rule};
+use crate::stylesheet::{embedded_stylesheet, find_badge_color_rule, resolve_badge_color_rule, resolve_button_metrics_rule};
 use crate::tokens::{ShadcnFont, ShadcnToken};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -238,15 +238,20 @@ impl IntoElement for Badge {
 }
 
 fn badge_typography(tokens: &crate::mode::ShadcnModeTokens, size: ControlSize) -> LumaTextStyle {
-    match size {
-        ControlSize::Sm => tokens.typography.text.caption,
-        ControlSize::Md => tokens.typography.text.label,
-        ControlSize::Lg => LumaTextStyle {
-            size: tokens.typography.text.body.size,
-            line_height: tokens.typography.text.label.line_height,
-            weight: FontWeight::MEDIUM,
-        },
+    let mut typography = tokens.typography.text.label;
+    typography.weight = FontWeight::MEDIUM;
+
+    if let Some(metrics) = embedded_stylesheet()
+        .button
+        .metrics_for_size(size)
+        .map(|rule| resolve_button_metrics_rule(rule, &tokens.metrics, size))
+    {
+        let base_size = typography.size.max(1.0);
+        typography.size = metrics.font_size;
+        typography.line_height = metrics.font_size * (typography.line_height / base_size);
     }
+
+    typography
 }
 
 fn render_badge_icon(icon: &IconSource, color: gpui::Hsla, size: f32) -> gpui::AnyElement {
@@ -301,5 +306,18 @@ mod tests {
 
         assert_eq!(look.background.a, 0.0);
         assert!(look.border.is_none());
+    }
+
+    #[test]
+    fn badge_size_resolves_button_typography() {
+        let shadcn = sample_look();
+        let small = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Sm);
+        let medium = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Md);
+        let large = badge_look(&shadcn, BadgeVariant::Secondary, ControlSize::Lg);
+
+        assert!(small.typography.size < medium.typography.size);
+        assert!(medium.typography.size < large.typography.size);
+        assert_eq!(small.icon_size, small.typography.size);
+        assert_eq!(large.icon_size, large.typography.size);
     }
 }

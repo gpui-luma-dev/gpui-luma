@@ -51,7 +51,7 @@ pub fn popup_menu_palette(
         trigger_shadow,
         focus_ring: state.focused.then_some(button.focus_ring),
         trigger_typography: button.typography,
-        floating_menu: floating_menu_look(mode, theme_mode, metrics.size),
+        floating_menu: floating_menu_look(mode, theme_mode, metrics.menu_size),
     }
 }
 
@@ -101,6 +101,7 @@ mod tests {
     use crate::mode::ShadcnModeTokens;
     use crate::controls::button::{ShadcnButtonStyle, button_palette};
     use super::{popup_menu_palette, shadcn_button_style};
+    use crate::controls::floating_menu::floating_menu_look;
     use gpui_luma::controls::button_family::ButtonFamilyRole;
     use gpui_luma::theme::ControlSize;
     use crate::look_context::LookContext;
@@ -191,5 +192,31 @@ mod tests {
         assert_eq!(popup.trigger_background, button.background);
         assert_eq!(popup.trigger_foreground, button.foreground);
         assert_eq!(popup.trigger_background, catalog.color("accent").expect("accent"));
+    }
+
+    #[test]
+    fn menu_size_is_independent_from_trigger_size() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let metrics = PopupMenuTriggerMetrics {
+            size: ControlSize::Sm,
+            menu_size: ControlSize::Lg,
+            ..PopupMenuTriggerMetrics::default()
+        };
+        let state = InteractionState::default();
+        let popup = popup_menu_palette(&mode, ThemeMode::Light, PopupMenuTriggerStyle::Outline, metrics, state);
+        let ctx = LookContext::new(&mode, ThemeMode::Light, state);
+        let small_trigger = button_palette(
+            &ctx,
+            embedded_stylesheet(),
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            ControlSize::Sm,
+        );
+        let large_menu = floating_menu_look(&mode, ThemeMode::Light, ControlSize::Lg);
+
+        assert_eq!(popup.trigger_typography.size, small_trigger.typography.size);
+        assert_eq!(popup.floating_menu.item_height, large_menu.item_height);
+        assert_eq!(popup.floating_menu.item_typography.size, large_menu.item_typography.size);
     }
 }

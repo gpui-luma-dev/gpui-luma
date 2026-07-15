@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{BoxShadow, Hsla};
 
 use super::SliderThumbSize;
-use crate::theme::{ControlSize, InteractionLayer, InteractionState, ThemeTokens};
+use crate::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct SliderLook {
@@ -74,34 +74,63 @@ impl SliderTheme for DefaultSliderTheme {
             thumb_shadow: elevation.thumb.to_box_shadows(),
             focus_ring: state.focused.then_some(palette.focus.ring),
             width: 260.0,
-            height: slider_height(size),
-            track_height: slider_track_height(size),
-            thumb_size: slider_thumb_size(thumb_size.unwrap_or(size.into())),
+            height: slider_height(metrics, size),
+            track_height: slider_track_height(metrics, size),
+            thumb_size: slider_thumb_size(metrics, thumb_size.unwrap_or(size.into())),
             radius: metrics.radius.pill,
         }
     }
 }
 
-fn slider_height(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 24.0,
-        ControlSize::Md => 32.0,
-        ControlSize::Lg => 40.0,
-    }
+fn slider_height(metrics: &MetricTokens, size: ControlSize) -> f32 {
+    (metrics.control_height(size) - metrics.spacing.s1).max(metrics.control_height(size) * 0.5)
 }
 
-fn slider_track_height(size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 4.0,
-        ControlSize::Md => 6.0,
-        ControlSize::Lg => 8.0,
-    }
+fn slider_track_height(metrics: &MetricTokens, size: ControlSize) -> f32 {
+    (metrics.gap(size) - metrics.border_width.strong).max(metrics.border_width.strong)
 }
 
-pub fn slider_thumb_size(size: SliderThumbSize) -> f32 {
-    match size {
-        SliderThumbSize::Sm => 12.0,
-        SliderThumbSize::Md => 16.0,
-        SliderThumbSize::Lg => 20.0,
+pub fn slider_thumb_size(metrics: &MetricTokens, size: SliderThumbSize) -> f32 {
+    let control_size = match size {
+        SliderThumbSize::Sm => ControlSize::Sm,
+        SliderThumbSize::Md => ControlSize::Md,
+        SliderThumbSize::Lg => ControlSize::Lg,
+    };
+
+    slider_height(metrics, control_size) * 0.5
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_slider_geometry_uses_metric_tokens() {
+        let theme = DefaultSliderTheme::default();
+        let small = theme.resolve(ControlSize::Sm, None, InteractionState::default());
+        let medium = theme.resolve(ControlSize::Md, None, InteractionState::default());
+        let large = theme.resolve(ControlSize::Lg, None, InteractionState::default());
+
+        assert!(small.height < medium.height);
+        assert!(medium.height < large.height);
+        assert!(small.track_height < medium.track_height);
+        assert!(medium.track_height < large.track_height);
+        assert!(small.thumb_size < medium.thumb_size);
+        assert!(medium.thumb_size < large.thumb_size);
+    }
+
+    #[test]
+    fn default_slider_geometry_tracks_custom_metric_tokens() {
+        let mut tokens = ThemeTokens::default();
+        tokens.metrics.control.md.control_height = 60.0;
+        tokens.metrics.control.md.gap = 14.0;
+        tokens.metrics.spacing.s1 = 6.0;
+        tokens.metrics.border_width.strong = 3.0;
+        let theme = DefaultSliderTheme::new(tokens.clone());
+        let look = theme.resolve(ControlSize::Md, None, InteractionState::default());
+
+        assert_eq!(look.height, 54.0);
+        assert_eq!(look.track_height, 11.0);
+        assert_eq!(look.thumb_size, 27.0);
     }
 }

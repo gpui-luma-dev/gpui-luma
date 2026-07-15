@@ -4,7 +4,7 @@ use gpui::{AnyElement, App, Context, IntoElement, Render, SharedString, Window, 
 use gpui_luma::controls::selector::{
     ControlFocusState, SelectorPlacement, SelectorRenderModel, SelectorTemplate, SelectorTemplateHandlers,
 };
-use gpui_luma::theme::{InteractionState};
+use gpui_luma::theme::{ControlSize, InteractionState};
 use gpui_luma_look_shadcn::ShadcnLook;
 
 use super::pane::selector_items;
@@ -107,6 +107,7 @@ fn render_trigger_sample(
         placement: SelectorPlacement::BelowStart,
         active_path: None,
         enabled: !sample.state.disabled,
+        size: ControlSize::Md,
         item_template: None,
         panel_template: None,
         focus: sample.focus,

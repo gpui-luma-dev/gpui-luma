@@ -309,9 +309,11 @@ impl ScrollbarTheme for RadixScrollbarTheme {
         &self,
         state: InteractionState,
         orientation: gpui_luma::controls::scrollbar::ScrollbarOrientation,
+        size: gpui_luma::theme::ControlSize,
+        style: gpui_luma::controls::scrollbar::ScrollbarStyle,
     ) -> gpui_luma::controls::scrollbar::ScrollbarLook {
         let tokens = self.theme.mode_tokens();
-        scrollbar_look(tokens.as_ref(), state, orientation)
+        scrollbar_look(tokens.as_ref(), state, orientation, size, style)
     }
 }
 
@@ -430,6 +432,16 @@ impl SelectorTheme for RadixSelectorTheme {
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
+    }
+
+    fn resolve_look(
+        &self,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &gpui_luma::theme::StandardBoxScale,
+    ) -> gpui_luma::controls::selector::SelectorLook {
+        let tokens = self.theme.mode_tokens();
+        super::selector::selector_look(tokens.as_ref(), self.theme.mode(), state, size, scale)
     }
 }
 
@@ -975,9 +987,13 @@ struct RadixProgressTheme {
 }
 
 impl ProgressTheme for RadixProgressTheme {
-    fn resolve(&self, enabled: bool) -> gpui_luma::controls::progress::ProgressLook {
+    fn resolve(
+        &self,
+        enabled: bool,
+        size: gpui_luma::theme::ControlSize,
+    ) -> gpui_luma::controls::progress::ProgressLook {
         let tokens = self.theme.mode_tokens();
-        progress_look(tokens.as_ref(), enabled)
+        progress_look(tokens.as_ref(), enabled, size)
     }
 }
 

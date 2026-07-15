@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{ControlSize, LumaTextStyle, ThemeTokens};
+use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, ThemeTokens};
 
 #[derive(Clone, Debug)]
 pub struct FloatingMenuLook {
@@ -74,31 +74,52 @@ pub(crate) fn default_floating_menu_look(tokens: &ThemeTokens, size: ControlSize
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),
-        item_icon_size: default_menu_item_icon_size(metrics, size),
+        item_icon_size: default_menu_item_icon_size(metrics, item_typography),
         item_radius: metrics.radius.sm,
         submenu_offset_x: metrics.gap(size) * 0.5,
     }
 }
 
 fn scaled_menu_item_typography(typography: &crate::theme::LumaTypography, size: ControlSize) -> LumaTextStyle {
-    let mut item_typography = typography.text.label;
-    let font_size = match size {
-        ControlSize::Sm => 12.0,
-        ControlSize::Md => 14.0,
-        ControlSize::Lg => 16.0,
-    };
-    let base_size = item_typography.size;
-    item_typography.size = font_size;
-    if base_size > 0.0 {
-        item_typography.line_height = font_size * (item_typography.line_height / base_size);
+    match size {
+        ControlSize::Sm => typography.text.scale.sm,
+        ControlSize::Md => typography.text.body,
+        ControlSize::Lg => typography.text.scale.lg,
     }
-    item_typography
 }
 
-fn default_menu_item_icon_size(_metrics: &crate::theme::MetricTokens, size: ControlSize) -> f32 {
-    match size {
-        ControlSize::Sm => 14.0,
-        ControlSize::Md => 16.0,
-        ControlSize::Lg => 18.0,
+fn default_menu_item_icon_size(metrics: &MetricTokens, item_typography: LumaTextStyle) -> f32 {
+    (item_typography.size + metrics.border_width.strong).floor()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_floating_menu_typography_uses_text_tokens() {
+        let mut tokens = ThemeTokens::default();
+        tokens.typography.text.scale.sm.size = 13.0;
+        tokens.typography.text.body.size = 15.0;
+        tokens.typography.text.scale.lg.size = 17.0;
+
+        let small = default_floating_menu_look(&tokens, ControlSize::Sm);
+        let medium = default_floating_menu_look(&tokens, ControlSize::Md);
+        let large = default_floating_menu_look(&tokens, ControlSize::Lg);
+
+        assert_eq!(small.item_typography.size, 13.0);
+        assert_eq!(medium.item_typography.size, 15.0);
+        assert_eq!(large.item_typography.size, 17.0);
+    }
+
+    #[test]
+    fn default_floating_menu_icon_size_tracks_typography_and_border_width() {
+        let mut tokens = ThemeTokens::default();
+        tokens.typography.text.body.size = 15.5;
+        tokens.metrics.border_width.strong = 2.5;
+
+        let look = default_floating_menu_look(&tokens, ControlSize::Md);
+
+        assert_eq!(look.item_icon_size, 18.0);
     }
 }

@@ -1,10 +1,11 @@
 //! Selector property mappings — input trigger fill + accent item panel.
 
-use gpui_luma::controls::selector::SelectorPalette;
+use gpui_luma::controls::selector::{SelectorLook, SelectorPalette};
 use gpui_luma::controls::textfield::TextFieldState;
-use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
 
 use crate::mode::ShadcnModeTokens;
+use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
 use super::selector_items_panel::selector_items_panel_look;
 use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
@@ -39,17 +40,53 @@ pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: I
     }
 }
 
+pub fn selector_look(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    state: InteractionState,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+) -> SelectorLook {
+    let palette = selector_palette(mode, theme_mode, state);
+    let mut typography = palette.trigger_typography;
+    if let Some(rule) = embedded_stylesheet().button.metrics_for_size(size) {
+        let metrics = resolve_button_metrics_rule(rule, &mode.metrics, size);
+        let base_size = typography.size;
+        typography.size = metrics.font_size;
+        if base_size > 0.0 {
+            typography.line_height = metrics.font_size * (typography.line_height / base_size);
+        }
+    }
+
+    SelectorLook {
+        trigger_background: palette.trigger_background,
+        trigger_foreground: palette.trigger_foreground,
+        trigger_icon: palette.trigger_icon,
+        trigger_border: palette.trigger_border,
+        focus_ring: palette.focus_ring,
+        trigger_typography: typography,
+        trigger_radius: scale.radius,
+        trigger_padding_x: scale.padding_x,
+        trigger_padding_y: scale.padding_y,
+        trigger_gap: scale.gap,
+        trigger_height: scale.height,
+        trigger_icon_size: scale.height / 3.0,
+        menu_offset_y: scale.gap * 0.5,
+        items_panel: selector_items_panel_look(mode, theme_mode, size),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::ThemeMode;
+    use gpui_luma::theme::{ControlSize, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
-    use super::selector_palette;
+    use super::{selector_look, selector_palette};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -118,5 +155,31 @@ mod tests {
         let palette = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
 
         assert_eq!(palette.trigger_icon, catalog.color("muted-foreground").expect("muted-foreground"));
+    }
+
+    #[test]
+    fn selector_trigger_typography_uses_stylesheet_font_size() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let sm_scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Sm, &mode.metrics, 1.0);
+        let lg_scale = gpui_luma::theme::StandardBoxScale::compute(ControlSize::Lg, &mode.metrics, 1.0);
+
+        let sm = selector_look(
+            &mode,
+            ThemeMode::Light,
+            gpui_luma::theme::InteractionState::default(),
+            ControlSize::Sm,
+            &sm_scale,
+        );
+        let lg = selector_look(
+            &mode,
+            ThemeMode::Light,
+            gpui_luma::theme::InteractionState::default(),
+            ControlSize::Lg,
+            &lg_scale,
+        );
+
+        assert_eq!(sm.trigger_typography.size, 12.0);
+        assert_eq!(lg.trigger_typography.size, 16.0);
     }
 }

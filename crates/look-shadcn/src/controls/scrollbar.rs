@@ -2,14 +2,15 @@
 //!
 //! | Part  | Token              |
 //! |-------|--------------------|
-//! | Track | transparent        |
+//! | Track | transparent (`Ghost`) / muted (`Soft`) |
 //! | Thumb | `border`           |
 //! | Hover | `border` (no change) |
 //! | Press | `border` (darkened)  |
 
 use gpui_luma::controls::scrollbar::ScrollbarLook;
 use gpui_luma::controls::scrollbar::ScrollbarOrientation;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::controls::scrollbar::ScrollbarStyle;
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
@@ -44,19 +45,21 @@ impl ScrollbarColorTable {
 
 pub fn resolve_scrollbar_colors(
     resolver: &LookResolver<'_>,
+    style: ScrollbarStyle,
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<ScrollbarColorTable> {
-    resolve_scrollbar_colors_with_stylesheet(resolver, embedded_stylesheet(), disabled, layer)
+    resolve_scrollbar_colors_with_stylesheet(resolver, embedded_stylesheet(), style, disabled, layer)
 }
 
 pub fn resolve_scrollbar_colors_with_stylesheet(
     resolver: &LookResolver<'_>,
     stylesheet: &StylesheetConfig,
+    style: ScrollbarStyle,
     disabled: bool,
     layer: InteractionLayer,
 ) -> anyhow::Result<ScrollbarColorTable> {
-    let rule = find_scrollbar_color_rule(stylesheet, disabled, layer)
+    let rule = find_scrollbar_color_rule(stylesheet, scrollbar_style_key(style), disabled, layer)
         .ok_or_else(|| anyhow::anyhow!("no matching scrollbar color rule"))?;
     let colors = resolve_scrollbar_color_rule(resolver, rule, layer)?;
     Ok(ScrollbarColorTable { track_background: colors.track_background, thumb_background: colors.thumb_background })
@@ -66,14 +69,16 @@ pub fn scrollbar_look(
     mode: &ShadcnModeTokens,
     state: InteractionState,
     orientation: ScrollbarOrientation,
+    size: ControlSize,
+    style: ScrollbarStyle,
 ) -> ScrollbarLook {
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "scrollbar");
-    let colors =
-        resolve_scrollbar_colors(&resolver, state.disabled, layer).unwrap_or_else(|_| ScrollbarColorTable::fallback());
+    let colors = resolve_scrollbar_colors(&resolver, style, state.disabled, layer)
+        .unwrap_or_else(|_| ScrollbarColorTable::fallback());
 
     let length = match orientation {
         ScrollbarOrientation::Horizontal => DEFAULT_SCROLLBAR_LENGTH_H,
@@ -82,8 +87,7 @@ pub fn scrollbar_look(
     let stylesheet = embedded_stylesheet();
     let (thickness, track_thickness, thumb_thickness, min_thumb_length) = stylesheet
         .scrollbar
-        .metrics
-        .as_ref()
+        .metrics_for_size(size)
         .map(resolve_scrollbar_metrics)
         .map(|metrics| (metrics.thickness, metrics.track_thickness, metrics.thumb_thickness, metrics.min_thumb_length))
         .unwrap_or((
@@ -111,6 +115,13 @@ pub fn scrollbar_look(
     }
 }
 
+fn scrollbar_style_key(style: ScrollbarStyle) -> &'static str {
+    match style {
+        ScrollbarStyle::Ghost => "ghost",
+        ScrollbarStyle::Soft => "soft",
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -118,6 +129,7 @@ mod tests {
     use gpui_luma::theme::ThemeMode;
 
     use gpui_luma::controls::scrollbar::ScrollbarOrientation;
+    use gpui_luma::controls::scrollbar::ScrollbarStyle;
     use gpui_luma::theme::InteractionState;
 
     use crate::catalog::CssTokenMap;
@@ -146,10 +158,47 @@ mod tests {
     fn default_scrollbar_uses_border_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = scrollbar_look(&mode, InteractionState::default(), ScrollbarOrientation::Vertical);
+        let look = scrollbar_look(
+            &mode,
+            InteractionState::default(),
+            ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Md,
+            ScrollbarStyle::Ghost,
+        );
 
         assert_eq!(look.thumb_background, catalog.color("border").expect("border"));
         assert_eq!(look.track_background.a, 0.0);
+    }
+
+    #[test]
+    fn scrollbar_size_changes_metrics() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let small = scrollbar_look(
+            &mode,
+            InteractionState::default(),
+            ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Sm,
+            ScrollbarStyle::Ghost,
+        );
+        let medium = scrollbar_look(
+            &mode,
+            InteractionState::default(),
+            ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Md,
+            ScrollbarStyle::Ghost,
+        );
+        let large = scrollbar_look(
+            &mode,
+            InteractionState::default(),
+            ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Lg,
+            ScrollbarStyle::Ghost,
+        );
+
+        assert!(small.thickness < medium.thickness);
+        assert!(medium.thickness < large.thickness);
+        assert!(small.thumb_thickness < medium.thumb_thickness);
+        assert!(medium.thumb_thickness < large.thumb_thickness);
     }
 
     #[test]
@@ -162,15 +211,35 @@ mod tests {
             &mode,
             InteractionState { hovered: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Md,
+            ScrollbarStyle::Ghost,
         );
         let focused = scrollbar_look(
             &mode,
             InteractionState { focused: true, ..InteractionState::default() },
             ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Md,
+            ScrollbarStyle::Ghost,
         );
 
         assert_eq!(hovered.thumb_background, border);
         assert_eq!(focused.thumb_background, border);
         assert_eq!(focused.focus_ring, Some(catalog.color("ring").expect("ring")));
+    }
+
+    #[test]
+    fn soft_scrollbar_uses_visible_track() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
+        let look = scrollbar_look(
+            &mode,
+            InteractionState::default(),
+            ScrollbarOrientation::Vertical,
+            gpui_luma::theme::ControlSize::Md,
+            ScrollbarStyle::Soft,
+        );
+
+        assert_eq!(look.track_background, catalog.color("muted").expect("muted"));
+        assert_eq!(look.thumb_background, catalog.color("border").expect("border"));
     }
 }

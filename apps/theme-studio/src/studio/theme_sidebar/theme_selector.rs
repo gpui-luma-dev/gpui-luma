@@ -12,7 +12,7 @@ use gpui_luma::controls::search_selector::{
     default_search_selector_panel_template,
 };
 use gpui_luma::controls::selector::SelectorTheme;
-use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
+use gpui_luma::theme::{InteractionState, StandardBoxScale};
 use gpui_luma_look_shadcn::{BuiltInTheme, ShadcnLook};
 use lucide_icons::Icon as LucideIcon;
 
@@ -124,7 +124,8 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
         let interaction = selector_interaction(&model);
         let look = self.selector_theme.resolve_look(
             interaction,
-            &StandardBoxScale::compute(ControlSize::Md, &self.selector_theme.metrics(), window.scale_factor()),
+            model.size,
+            &StandardBoxScale::compute(model.size, &self.selector_theme.metrics(), window.scale_factor()),
         );
         let open = model.popup_content.is_some();
         let selected_id = self.selected_id.read().expect("theme selector selected id lock").clone();

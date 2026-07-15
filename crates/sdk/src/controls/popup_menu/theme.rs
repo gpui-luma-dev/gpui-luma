@@ -41,6 +41,7 @@ pub struct PopupMenuLook {
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct PopupMenuTriggerMetrics {
     pub size: ControlSize,
+    pub menu_size: ControlSize,
     pub without_elevation: bool,
     pub icon_only: bool,
     pub trigger_radius_override: Option<f32>,
@@ -103,7 +104,6 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
     ) -> PopupMenuPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
-        let size = metrics.size;
         let layer = state.layer();
 
         let (trigger_background, trigger_foreground, trigger_border, trigger_shadow) = match trigger_style {
@@ -157,7 +157,7 @@ impl PopupMenuTheme for DefaultPopupMenuTheme {
             trigger_shadow,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            floating_menu: default_floating_menu_look(&self.tokens, size),
+            floating_menu: default_floating_menu_look(&self.tokens, metrics.menu_size),
         }
     }
 

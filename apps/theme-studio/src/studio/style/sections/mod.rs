@@ -3,6 +3,7 @@ pub(crate) mod checkbox;
 pub(crate) mod feedback;
 pub(crate) mod icon_buttons;
 pub(crate) mod menus;
+pub(crate) mod pager;
 pub(crate) mod radio;
 pub(crate) mod scrollbar;
 pub(crate) mod selectors;

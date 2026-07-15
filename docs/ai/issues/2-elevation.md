@@ -98,6 +98,7 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
 
 ### 1. The Box-Model Seam (Layout Displacement vs. Absolute Drawing)
 * **The Problem**: If a control (e.g. a `36px` height button) automatically adds `5px` top and bottom `ShadowProjectionInsets` padding to its root container to prevent shadow clipping, the control's logical layout height increases to `46px`. When used inside flex grids, toolbar button groups, or header lines, this extra layout padding will break vertical alignment and distort spacing.
+* **Observed pager disabled-state bug (2026-07-15)**: Theme Studio's Pager guide exposes a layout shift when toggling all pagers disabled. Enabled outline pager buttons resolve elevation; disabled buttons remove the visible elevation. If any shadow/projection reserve is conditional on the shadow existing, disabled state changes the button's measured footprint and the pager row shifts. Shadow paint may disappear when disabled, but the layout box and any projection reservation must stay stable across enabled/disabled states.
 * **Blast Minimization**:
   * By default, shadows **must** be drawn using absolute-positioned backing elements that extend *outside* the control's bounds (e.g., `.top(px(-inset))`) **without** adding layout padding to the control's root container. This keeps the control's physical bounds flat and maintains standard flex/grid alignments.
   * Make projection padding **opt-in / context-aware**: only apply layout padding (via a wrapper or an explicit `.with_projection_padding(true)` builder flag) when a control is placed inside a container that has clipping enabled.
@@ -168,6 +169,7 @@ GPUI's vector rendering pipeline has several constraints regarding shadows, clip
 - [ ] **Not in scope:** Surface / Soft elevation.
 
 ### Phase 3: Upgrade Shadow-Using Controls & Refactor Button Base
+- [ ] Fix disabled-state shadow geometry stability: removing/omitting elevation in disabled state must not change measured layout or projection reserve. Reproduce with Theme Studio Style Guide → Pager → toggle enabled.
 - [ ] **Selection trigger chrome (prerequisite)**: Add outline default (+ optional ghost) trigger templates to `selector`, `combobox`, `search_selector`, and `autocomplete` — delegate to command button palette/elevation, not ghost+border hybrid or naked textfield surface rules. See addendum § “Selection Trigger Chrome”.
 - [ ] Upgrade existing shadow-using controls first to resolve their shadows dynamically via look-shadcn catalog metric rules and stylesheet configurations (`style.toml`):
   - [ ] Floating/Popup surfaces: `floating_menu`, `combobox`, `selector_panel`, `search_selector`, and `autocomplete`.
