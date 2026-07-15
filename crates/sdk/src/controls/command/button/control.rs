@@ -95,6 +95,7 @@ impl<D: Clone + 'static> Button<D> {
             compact: self.model.compact,
             suppress_adorners: std::cell::Cell::new(self.model.suppress_adorners),
             switch_track_width_extra: self.model.switch_track_width_extra,
+            switch_orientation: self.model.switch_orientation,
             switch_track_content: self.model.switch_track_content.clone(),
             switch_thumb_content: self.model.switch_thumb_content.clone(),
             look: self.model.look.clone(),

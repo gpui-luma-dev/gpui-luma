@@ -5,7 +5,7 @@ use crate::controls::choice_indicator_layout::{
 };
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
-use crate::controls::switch::{SwitchTheme, default_switch_theme};
+use crate::controls::switch::{SwitchOrientation, SwitchTheme, default_switch_theme};
 use crate::controls::template::TemplateWithModifiers;
 use crate::define_control_template;
 use crate::theme::adorner::render_optional_adorner_with_focus_radius;
@@ -30,16 +30,39 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
         let mut scale = self.theme.scale(model.size, scale_factor);
-        scale.track_width = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
+        let track_length = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
+        let (track_width, track_height) = match model.switch_orientation {
+            SwitchOrientation::Horizontal => (track_length, scale.track_height),
+            SwitchOrientation::Vertical => (scale.track_height, track_length),
+        };
+        scale.track_width = track_width;
+        scale.track_height = track_height;
         let track_radius = model.radius_override.get().unwrap_or(scale.track_radius);
         let thumb_radius = track_radius.min(scale.thumb_size * 0.5);
 
-        let thumb_left = if model.data {
-            scale.track_width - scale.thumb_size - scale.track_padding
-        } else {
-            scale.track_padding
+        let (thumb_left, thumb_top) = match model.switch_orientation {
+            SwitchOrientation::Horizontal => {
+                let thumb_left = if model.data {
+                    scale.track_width - scale.thumb_size - scale.track_padding
+                } else {
+                    scale.track_padding
+                };
+                let thumb_top =
+                    snap_to_pixel(((scale.track_height - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
+                (thumb_left, thumb_top)
+            }
+            SwitchOrientation::Vertical => {
+                let thumb_left =
+                    snap_to_pixel(((scale.track_width - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
+                let thumb_top = if model.data {
+                    scale.track_padding
+                } else {
+                    scale.track_height - scale.thumb_size - scale.track_padding
+                };
+                (thumb_left, thumb_top)
+            }
         };
-        let thumb_top = snap_to_pixel(((scale.track_height - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
+
         let mut thumb = div()
             .id(format!("{}-thumb", model.id))
             .absolute()

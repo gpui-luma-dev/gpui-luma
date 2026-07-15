@@ -16,6 +16,13 @@ use crate::controls::presenter::{ControlPresenter, HasPresenter};
 
 pub type Switch = Entity<Button<bool>>;
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SwitchOrientation {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
 /// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<bool>`] so Radix style
 /// helpers apply the switch template rather than the checkbox template.
 pub struct SwitchBuilder(ButtonBuilder<bool>);
@@ -45,10 +52,28 @@ impl SwitchBuilder {
         Self(self.0.compact())
     }
 
-    /// Adds extra width to the switch track for interior content such as ON/OFF labels.
-    pub fn track_width_extra(mut self, extra_width: f32) -> Self {
-        self.0.model.switch_track_width_extra = extra_width.max(0.0);
+    pub fn orientation(mut self, orientation: SwitchOrientation) -> Self {
+        self.0.model.switch_orientation = orientation;
         self
+    }
+
+    pub fn horizontal(self) -> Self {
+        self.orientation(SwitchOrientation::Horizontal)
+    }
+
+    pub fn vertical(self) -> Self {
+        self.orientation(SwitchOrientation::Vertical)
+    }
+
+    /// Adds extra length along the switch track's movement axis.
+    pub fn track_length_extra(mut self, extra_length: f32) -> Self {
+        self.0.model.switch_track_width_extra = extra_length.max(0.0);
+        self
+    }
+
+    /// Adds extra width to a horizontal switch track for interior content such as ON/OFF labels.
+    pub fn track_width_extra(self, extra_width: f32) -> Self {
+        self.track_length_extra(extra_width)
     }
 
     /// Renders content inside the switch track behind the thumb.
@@ -91,9 +116,18 @@ impl HasPresenter<ButtonRenderModel<bool>> for SwitchBuilder {
 }
 
 impl Button<bool> {
-    pub fn set_switch_track_width_extra(&mut self, extra_width: f32, cx: &mut Context<Self>) {
-        self.model.switch_track_width_extra = extra_width.max(0.0);
+    pub fn set_switch_orientation(&mut self, orientation: SwitchOrientation, cx: &mut Context<Self>) {
+        self.model.switch_orientation = orientation;
         cx.notify();
+    }
+
+    pub fn set_switch_track_length_extra(&mut self, extra_length: f32, cx: &mut Context<Self>) {
+        self.model.switch_track_width_extra = extra_length.max(0.0);
+        cx.notify();
+    }
+
+    pub fn set_switch_track_width_extra(&mut self, extra_width: f32, cx: &mut Context<Self>) {
+        self.set_switch_track_length_extra(extra_width, cx);
     }
 
     pub fn set_switch_track_content<F, E>(&mut self, builder: F, cx: &mut Context<Self>)
@@ -126,11 +160,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn switch_builder_sets_slot_content_and_track_width_extra() {
-        let builder =
-            new("slot-switch").track_width_extra(12.0).track_content(|_, _| div()).thumb_content(|_, _| div());
+    fn switch_builder_sets_slot_content_track_length_and_orientation() {
+        let builder = new("slot-switch")
+            .vertical()
+            .track_length_extra(12.0)
+            .track_content(|_, _| div())
+            .thumb_content(|_, _| div());
 
         assert_eq!(builder.0.model.switch_track_width_extra, 12.0);
+        assert_eq!(builder.0.model.switch_orientation, SwitchOrientation::Vertical);
         assert!(builder.0.model.switch_track_content.is_some());
         assert!(builder.0.model.switch_thumb_content.is_some());
     }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, App, Context, Entity, FontWeight, IntoElement, Render, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel};
 use gpui_luma::controls::presenter::HasPresenter;
-use gpui_luma::controls::switch::{Switch, SwitchBuilder};
+use gpui_luma::controls::switch::{Switch, SwitchBuilder, SwitchOrientation};
 use gpui_luma::theme::InteractionState;
 use gpui_luma_look_shadcn::paint::switch_look;
 use gpui_luma_look_shadcn::prelude::*;
@@ -20,8 +20,7 @@ pub(crate) struct SwitchCustomizationPreview {
     look: Arc<ShadcnLook>,
     primary_switch: Switch,
     secondary_switch: Switch,
-    disabled_off_switch: Switch,
-    disabled_on_switch: Switch,
+    vertical_switch: Switch,
     _subscriptions: Vec<gpui::Subscription>,
 }
 
@@ -41,29 +40,14 @@ impl SwitchCustomizationPreview {
         )
         .content(|_, _| div().into_any_element())
         .spawn(cx);
-        let disabled_off_switch = labeled_switch(
-            look.primary_switch("theme-studio-labeled-switch-disabled-off").with_data(false).enabled(false),
-            look.clone(),
-            ShadcnButtonStyle::Primary,
-        )
-        .content(|_, _| div().into_any_element())
-        .spawn(cx);
-        let disabled_on_switch = labeled_switch(
-            look.primary_switch("theme-studio-labeled-switch-disabled-on").with_data(true).enabled(false),
-            look.clone(),
-            ShadcnButtonStyle::Primary,
-        )
-        .content(|_, _| div().into_any_element())
-        .spawn(cx);
-
-        let mut preview = Self {
-            look,
-            primary_switch,
-            secondary_switch,
-            disabled_off_switch,
-            disabled_on_switch,
-            _subscriptions: Vec::new(),
-        };
+        let vertical_switch = look
+            .primary_switch("theme-studio-vertical-switch-primary")
+            .vertical()
+            .with_data(true)
+            .thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Primary))
+            .content(|_, _| div().into_any_element())
+            .spawn(cx);
+        let mut preview = Self { look, primary_switch, secondary_switch, vertical_switch, _subscriptions: Vec::new() };
         preview.subscribe(cx);
         preview
     }
@@ -73,18 +57,17 @@ impl SwitchCustomizationPreview {
         self.primary_switch.update(cx, |switch, cx| {
             switch.set_template(look.switch_template(ShadcnButtonStyle::Primary), cx);
             switch.set_switch_track_content(labeled_track_content(look.clone(), ShadcnButtonStyle::Primary), cx);
+            switch.set_switch_thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Primary), cx);
         });
         self.secondary_switch.update(cx, |switch, cx| {
             switch.set_template(look.switch_template(ShadcnButtonStyle::Secondary), cx);
             switch.set_switch_track_content(labeled_track_content(look.clone(), ShadcnButtonStyle::Secondary), cx);
+            switch.set_switch_thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Secondary), cx);
         });
-        self.disabled_off_switch.update(cx, |switch, cx| {
+        self.vertical_switch.update(cx, |switch, cx| {
             switch.set_template(look.switch_template(ShadcnButtonStyle::Primary), cx);
-            switch.set_switch_track_content(labeled_track_content(look.clone(), ShadcnButtonStyle::Primary), cx);
-        });
-        self.disabled_on_switch.update(cx, |switch, cx| {
-            switch.set_template(look.switch_template(ShadcnButtonStyle::Primary), cx);
-            switch.set_switch_track_content(labeled_track_content(look.clone(), ShadcnButtonStyle::Primary), cx);
+            switch.set_switch_orientation(SwitchOrientation::Vertical, cx);
+            switch.set_switch_thumb_content(icon_thumb_content(look.clone(), ShadcnButtonStyle::Primary), cx);
         });
         cx.notify();
     }
@@ -102,14 +85,20 @@ impl SwitchCustomizationPreview {
                 cx.notify();
             }
         }));
+        self._subscriptions.push(cx.subscribe(&self.vertical_switch, |this, _, event: &ButtonEvent, cx| {
+            if matches!(event, ButtonEvent::Click) {
+                flip_labeled_switch(&this.vertical_switch, cx);
+                cx.notify();
+            }
+        }));
     }
 }
 
 fn labeled_switch(builder: SwitchBuilder, look: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> SwitchBuilder {
     builder
-        .track_width_extra(LABEL_TRACK_EXTRA_WIDTH)
+        .track_length_extra(LABEL_TRACK_EXTRA_WIDTH)
         .track_content(labeled_track_content(look.clone(), style))
-        .thumb_content(labeled_thumb_content(look, style))
+        .thumb_content(icon_thumb_content(look, style))
 }
 
 fn labeled_track_content(
@@ -144,7 +133,7 @@ fn labeled_track_content(
     }
 }
 
-fn labeled_thumb_content(
+fn icon_thumb_content(
     look: Arc<ShadcnLook>,
     style: ShadcnButtonStyle,
 ) -> impl Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync + 'static {
@@ -167,6 +156,7 @@ impl Render for SwitchCustomizationPreview {
         let chrome = self.look.chrome();
         let primary_checked = *self.primary_switch.read(cx).data();
         let secondary_checked = *self.secondary_switch.read(cx).data();
+        let vertical_checked = *self.vertical_switch.read(cx).data();
 
         div().w_full().flex().flex_col().items_center().gap_8().child(
             div()
@@ -176,44 +166,24 @@ impl Render for SwitchCustomizationPreview {
                 .items_start()
                 .justify_center()
                 .gap_8()
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_4()
-                        .child(demo_block(
-                            "Primary labeled switch",
-                            chrome.muted_text,
-                            self.primary_switch.clone(),
-                            state_label(primary_checked, chrome.body_text),
-                        ))
-                        .child(demo_block(
-                            "Secondary labeled switch",
-                            chrome.muted_text,
-                            self.secondary_switch.clone(),
-                            state_label(secondary_checked, chrome.body_text),
-                        )),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap_4()
-                        .child(demo_block(
-                            "Disabled (off)",
-                            chrome.muted_text,
-                            self.disabled_off_switch.clone(),
-                            state_label(false, chrome.body_text),
-                        ))
-                        .child(demo_block(
-                            "Disabled (on)",
-                            chrome.muted_text,
-                            self.disabled_on_switch.clone(),
-                            state_label(true, chrome.body_text),
-                        )),
-                ),
+                .child(demo_block(
+                    "Primary labeled switch",
+                    chrome.muted_text,
+                    self.primary_switch.clone(),
+                    state_label(primary_checked, chrome.body_text),
+                ))
+                .child(demo_block(
+                    "Secondary labeled switch",
+                    chrome.muted_text,
+                    self.secondary_switch.clone(),
+                    state_label(secondary_checked, chrome.body_text),
+                ))
+                .child(demo_block(
+                    "Vertical icon switch",
+                    chrome.muted_text,
+                    self.vertical_switch.clone(),
+                    state_label(vertical_checked, chrome.body_text),
+                )),
         )
     }
 }

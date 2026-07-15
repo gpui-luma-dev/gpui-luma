@@ -16,9 +16,7 @@ thiserror.workspace = true
 lucide-icons = { workspace = true }
 palette = { workspace = true }
 serde = { workspace = true }
-toml = { workspace = true }
 tracing = "0.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18" }
-

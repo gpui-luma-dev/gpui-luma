@@ -2,7 +2,6 @@ mod app;
 mod content_tabs;
 mod controls;
 mod demo_controls;
-pub mod panel_layout_config;
 mod export;
 mod font_catalog;
 mod font_family_match;

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FocusHandle, Pixels, Render, Size, Subscription, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FocusHandle, Render, Subscription, Window, div, prelude::*, px};
 use gpui_luma::controls::command::button::{ButtonEvent, ButtonRenderModel, ControlIcon, ControlPresenter};
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::resizable_panels::{PanelHideMode, ResizablePanelsEvent};
@@ -25,7 +25,6 @@ use super::overrides::{
     clamp_shadow_offset_y, clamp_shadow_opacity, clamp_shadow_spread, default_shadow_override,
     format_font_family_stack,
 };
-use super::panel_layout_config::{load_window_size, save_studio_layout};
 use super::theme_sidebar::{ThemeSidebar, palette_tokens};
 
 pub struct ThemeStudioApp {
@@ -33,7 +32,6 @@ pub struct ThemeStudioApp {
     pub(super) look: Arc<ShadcnLook>,
     pub(super) demos: DemoControls,
     pub(super) overrides: StudioOverrides,
-    last_window_size: Size<Pixels>,
     active_theme_id: String,
     theme_sidebar: Entity<ThemeSidebar>,
     content_pane: Entity<ContentPaneHost>,
@@ -48,7 +46,7 @@ pub struct ThemeStudioApp {
 }
 
 impl ThemeStudioApp {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>, launch_options: StudioLaunchOptions) -> Self {
+    pub fn new(_window: &mut Window, cx: &mut Context<Self>, launch_options: StudioLaunchOptions) -> Self {
         let app = cx.entity();
         let focus_scope = cx.focus_handle();
         let active_theme_id = launch_options.theme_choice.id();
@@ -110,18 +108,11 @@ impl ThemeStudioApp {
                 this.toggle_mode(cx);
             }
         }));
-        subscriptions.push(cx.observe_window_bounds(window, |this, window, cx| {
-            this.on_window_bounds_changed(window, cx);
-        }));
-
-        let last_window_size = load_window_size();
-
         Self {
             focus_scope,
             look,
             demos,
             overrides,
-            last_window_size,
             active_theme_id,
             theme_sidebar,
             content_pane,
@@ -477,17 +468,6 @@ impl ThemeStudioApp {
         self.theme_sidebar.update(cx, |sidebar, cx| sidebar.sync_global_overrides(&overrides, cx));
         self.syncing_sidebar_tokens = false;
         cx.notify();
-    }
-
-    fn on_window_bounds_changed(&mut self, window: &Window, _cx: &mut Context<Self>) {
-        let size = window.bounds().size;
-        if size == self.last_window_size {
-            return;
-        }
-        self.last_window_size = size;
-        if let Err(err) = save_studio_layout(self.last_window_size) {
-            tracing::warn!("failed to save studio layout: {err:?}");
-        }
     }
 
     fn handle_workbench_event(&mut self, event: &ResizablePanelsEvent, cx: &mut Context<Self>) {
