@@ -13,7 +13,7 @@ pub fn open(cx: &mut App, launch_options: StudioLaunchOptions) -> anyhow::Result
 
     cx.open_window(
         WindowOptions {
-            window_bounds: Some(WindowBounds::Windowed(bounds)),
+            window_bounds: Some(WindowBounds::Maximized(bounds)),
             titlebar: Some(TitleBar::title_bar_options()),
             ..Default::default()
         },

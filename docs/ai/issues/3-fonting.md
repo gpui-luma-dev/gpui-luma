@@ -94,9 +94,9 @@ To ensure consistency, we will resolve sizes inside [crates/look-shadcn/src/cont
 - [ ] Verify that Text Field font sizing and icon heights scale uniformly in the gallery.
 
 ### Phase 2: Menu Sizing Upgrades
-- [ ] Allow passing `ControlSize` to `FloatingMenu`, `PopupMenu`, and `ContextMenu`.
-- [ ] Update `floating_menu_look` in [floating_menu.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/floating_menu.rs) to map `item_typography` dynamically (e.g., small uses caption/label, large uses body).
-- [ ] Connect trigger size contexts so popups automatically inherits the triggers' sizes.
+- [x] Allow passing `ControlSize` to `FloatingMenu`, `PopupMenu`, and `ContextMenu`.
+- [x] Update `floating_menu_look` in [floating_menu.rs](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/controls/floating_menu.rs) to map `item_typography` dynamically (e.g., small uses caption/label, large uses body).
+- [x] Connect trigger size contexts so popups automatically inherits the triggers' sizes.
 
 ### Phase 3: Selector & Dropdown Upgrades
 - [ ] Add `size` configuration to `Selector`, `Autocomplete`, and `Combobox` controls.
