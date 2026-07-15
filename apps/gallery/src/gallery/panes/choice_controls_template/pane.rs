@@ -294,6 +294,7 @@ fn render_control_cell(
         elevation: true,
         compact: false,
         look: None,
+        ..Default::default()
     };
 
     div()

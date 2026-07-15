@@ -194,7 +194,10 @@ fn typography_scaffold_field(path: &str, value: f32) -> ResolvedTypography {
 
 fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
     if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
-        ShadcnButtonStyle::Outline
+        match style {
+            ShadcnButtonStyle::Ghost | ShadcnButtonStyle::Outline | ShadcnButtonStyle::ContentOnly => style,
+            _ => ShadcnButtonStyle::Outline,
+        }
     } else {
         style
     }
@@ -206,6 +209,7 @@ fn button_style_key(style: ShadcnButtonStyle) -> &'static str {
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "content-only",
     }
 }
 

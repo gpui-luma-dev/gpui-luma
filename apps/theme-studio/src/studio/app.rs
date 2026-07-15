@@ -77,15 +77,15 @@ impl ThemeStudioApp {
         );
 
         let sidebar_toggle = look
-            .ghost_icon_button("theme-studio-sidebar-toggle", LucideIcon::PanelLeft)
+            .content_only_icon_button("theme-studio-sidebar-toggle", LucideIcon::PanelLeft)
             .size(ControlSize::Sm)
             .spawn(cx);
         let reset_theme_button = look
-            .ghost_icon_button("theme-studio-reset-theme", LucideIcon::RefreshCcw)
+            .content_only_icon_button("theme-studio-reset-theme", LucideIcon::RefreshCcw)
             .size(ControlSize::Sm)
             .spawn(cx);
         let mode_toggle = look
-            .ghost_icon_button("theme-studio-mode-toggle", toggle_mode_icon(mode))
+            .content_only_icon_button("theme-studio-mode-toggle", toggle_mode_icon(mode))
             .size(ControlSize::Sm)
             .spawn(cx);
 

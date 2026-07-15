@@ -113,6 +113,10 @@ shadow = "none"
 style = "outline"
 shadow = "shadow-xs"
 
+[[button.elevation_rules]]
+style = "content-only"
+shadow = "none"
+
 # Toggle elevation (full-button toggles; matches checkbox/radio/switch indicator policy).
 [toggle.metrics.sm]
 height = "36.0"
@@ -403,6 +407,35 @@ layer = "disabled"
 background = "transparent"
 foreground = "muted-foreground"
 
+# Content-only button states
+[[button.color_rules]]
+style = "content-only"
+layer = "default"
+background = "transparent"
+foreground = "foreground"
+border = "transparent"
+
+[[button.color_rules]]
+style = "content-only"
+layer = "hover"
+background = "transparent"
+foreground = "foreground"
+border = "transparent"
+
+[[button.color_rules]]
+style = "content-only"
+layer = "pressed"
+background = "transparent"
+foreground = "foreground"
+border = "transparent"
+
+[[button.color_rules]]
+style = "content-only"
+layer = "disabled"
+background = "transparent"
+foreground = "foreground"
+border = "transparent"
+
 # Universal fallback
 [[button.color_rules]]
 background = "transparent"
@@ -539,7 +572,7 @@ shadow = "shadow-sm"
 layer = "disabled"
 shadow = "none"
 
-# Primary switch geometry (matches SwitchScale ratios at control heights 28/36/44).
+# Switch geometry (matches SwitchScale ratios at control heights 28/36/44).
 [switch.metrics.sm]
 width = 33.0
 height = 17.0
@@ -554,22 +587,6 @@ thumb_size = 18.0
 width = 51.0
 height = 27.0
 thumb_size = 22.0
-
-# Secondary is one size step smaller than primary (lg≈primary.md, md≈primary.sm).
-[switch.secondary_metrics.sm]
-width = 28.0
-height = 15.0
-thumb_size = 12.0
-
-[switch.secondary_metrics.md]
-width = 33.0
-height = 17.0
-thumb_size = 14.0
-
-[switch.secondary_metrics.lg]
-width = 42.0
-height = 22.0
-thumb_size = 18.0
 
 [[switch.color_rules]]
 disabled = true

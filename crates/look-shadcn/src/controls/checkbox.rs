@@ -71,6 +71,12 @@ pub fn checkbox_look(
     checked: bool,
     state: InteractionState,
 ) -> CheckboxPalette {
+    let content_only = style == ShadcnButtonStyle::ContentOnly;
+    let indicator_style = if content_only {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
@@ -78,8 +84,8 @@ pub fn checkbox_look(
     let typography = ctx.typography();
     let layer = choice_indicator_color_layer(state);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "checkbox");
-    let colors =
-        resolve_checkbox_colors(&resolver, style, checked, layer).unwrap_or_else(|_| CheckboxColorTable::fallback());
+    let colors = resolve_checkbox_colors(&resolver, indicator_style, checked, layer)
+        .unwrap_or_else(|_| CheckboxColorTable::fallback());
 
     let indicator_border = if checked && !state.disabled {
         colors.indicator_background.hsla()
@@ -94,11 +100,18 @@ pub fn checkbox_look(
         indicator_border,
         checkmark_color: colors.checkmark_color.hsla(),
         label_color: colors.label_color.hsla(),
-        adorner: focus_adorner(catalog, metrics, state.focused)
-            .unwrap_or_else(|err| panic!("checkbox properties: {err}")),
+        adorner: if content_only {
+            None
+        } else {
+            focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("checkbox properties: {err}"))
+        },
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        indicator_shadow: checkbox_elevation_shadow(catalog, embedded_stylesheet(), layer),
+        indicator_shadow: if content_only {
+            None
+        } else {
+            checkbox_elevation_shadow(catalog, embedded_stylesheet(), layer)
+        },
     }
 }
 
@@ -182,5 +195,23 @@ mod tests {
         assert_eq!(default.indicator_background, hovered.indicator_background);
         assert_eq!(default.checkmark_color, hovered.checkmark_color);
         assert_eq!(default.label_color, hovered.label_color);
+    }
+
+    #[test]
+    fn content_only_checkbox_keeps_primary_indicator_without_adorners_or_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let primary = checkbox_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let content_only = checkbox_look(
+            &mode,
+            ShadcnButtonStyle::ContentOnly,
+            true,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(content_only.indicator_background, primary.indicator_background);
+        assert_eq!(content_only.indicator_border, primary.indicator_border);
+        assert_eq!(content_only.checkmark_color, primary.checkmark_color);
+        assert!(content_only.adorner.is_none());
+        assert!(content_only.indicator_shadow.is_none());
     }
 }

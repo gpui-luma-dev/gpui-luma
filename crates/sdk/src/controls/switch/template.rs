@@ -50,12 +50,22 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .border_color(palette.thumb_border)
             .rounded(px(thumb_radius));
 
+        let adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            palette.adorner
+        };
+        let focused_probe_adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            focused_probe_palette.as_ref().and_then(|probe| probe.adorner)
+        };
         let shadow_extent = shadow_extent_from_slice(&palette.thumb_shadow, scale_factor, layout_policy.elevation);
         let oversize_extent = indicator_oversize_extent(
             layout_policy,
             model.state.focused,
-            palette.adorner,
-            focused_probe_palette.as_ref().and_then(|probe| probe.adorner),
+            adorner,
+            focused_probe_adorner,
             shadow_extent,
         );
 
@@ -76,7 +86,7 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
 
         let mut track = div().relative().child(track_visual);
 
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, track_radius) {
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, track_radius) {
             track = track.child(adorner);
         }
 

@@ -87,6 +87,7 @@ where
                 elevation: false,
                 compact: true,
                 look: None,
+                ..Default::default()
             };
             let indicator = button_template.render(&indicator_render_model, window, cx);
             let content = item_template(item, window, cx);
@@ -131,6 +132,7 @@ where
                 elevation: true,
                 compact: false,
                 look: None,
+                ..Default::default()
             };
 
             let mut button = button_template

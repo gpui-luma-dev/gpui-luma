@@ -38,18 +38,22 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
 
         let indicator_radius = scale.indicator_size / 2.0;
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
+        let adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            palette.adorner
+        };
+        let focused_probe_adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            focused_probe_look.as_ref().and_then(|probe| probe.adorner)
+        };
         let shadow_extent =
             shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
         let oversize_extent = if indicator_only {
             0.0
         } else {
-            indicator_oversize_extent(
-                layout_policy,
-                model.state.focused,
-                palette.adorner,
-                focused_probe_look.as_ref().and_then(|probe| probe.adorner),
-                shadow_extent,
-            )
+            indicator_oversize_extent(layout_policy, model.state.focused, adorner, focused_probe_adorner, shadow_extent)
         };
 
         let indicator_visual = {
@@ -79,9 +83,7 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
 
         let mut indicator = div().relative().child(indicator_visual);
 
-        if !indicator_only
-            && let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, indicator_radius)
-        {
+        if !indicator_only && let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, indicator_radius) {
             indicator = indicator.child(adorner);
         }
 

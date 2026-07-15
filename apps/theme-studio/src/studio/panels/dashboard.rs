@@ -61,7 +61,7 @@ impl DashboardPanel {
             .spawn(cx);
 
         let sidebar_toggle = look
-            .ghost_icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
+            .content_only_icon_button("studio-dashboard-sidebar-toggle", LucideIcon::PanelLeft)
             .size(ControlSize::Sm)
             .spawn(cx);
 

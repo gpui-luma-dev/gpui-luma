@@ -35,6 +35,7 @@ where
             elevation: true,
             compact: false,
             look: None,
+            ..Default::default()
         };
 
         button_template.render(&render_model, window, cx).into_any_element()

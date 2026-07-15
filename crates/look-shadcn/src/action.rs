@@ -5,6 +5,8 @@ pub fn style_token_pair(style: ShadcnButtonStyle) -> (&'static str, &'static str
     match style {
         ShadcnButtonStyle::Primary => ("primary", "primary-foreground"),
         ShadcnButtonStyle::Secondary => ("secondary", "secondary-foreground"),
-        ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost => ("foreground", "foreground"),
+        ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost | ShadcnButtonStyle::ContentOnly => {
+            ("foreground", "foreground")
+        }
     }
 }

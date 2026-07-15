@@ -722,6 +722,7 @@ fn render_button_state_sample(
         elevation: true,
         compact: false,
         look: None,
+        ..Default::default()
     };
 
     vstack! {

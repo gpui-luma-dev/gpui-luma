@@ -175,6 +175,7 @@ where
             elevation: true,
             compact: false,
             look: None,
+            ..Default::default()
         };
 
         let mut button = button_template

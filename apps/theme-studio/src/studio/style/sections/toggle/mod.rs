@@ -262,8 +262,9 @@ fn render_toggle_size_radius_cell(
         state: InteractionState::default(),
         round: false,
         radius_override: std::cell::Cell::new(None),
-        elevation: true,
+        elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
+        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(look_source),
     };
 
@@ -312,8 +313,9 @@ fn render_toggle_state_sample(
         state: sample.state,
         round: icon_only,
         radius_override: std::cell::Cell::new(None),
-        elevation: true,
+        elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
+        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(if icon_only {
             toggle_icon_look_for_style(Arc::new(look.clone()), style)
         } else {
@@ -407,6 +409,7 @@ fn toggle_button_look_for_style(
             ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(role, model.size, model.state),
             ShadcnButtonStyle::Outline => theme.as_ref().resolve_outline_button(role, model.size, model.state),
             ShadcnButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(role, model.size, model.state),
+            ShadcnButtonStyle::ContentOnly => theme.as_ref().resolve_content_only_button(role, model.size, model.state),
         }
     })
 }

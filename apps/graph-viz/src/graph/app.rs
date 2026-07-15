@@ -54,11 +54,11 @@ impl GraphVizApp {
         );
 
         let sidebar_toggle = look
-            .ghost_icon_button("graph-viz-sidebar-toggle", LucideIcon::PanelLeft)
+            .content_only_icon_button("graph-viz-sidebar-toggle", LucideIcon::PanelLeft)
             .size(ControlSize::Sm)
             .spawn(cx);
         let mode_toggle = look
-            .ghost_icon_button("graph-viz-mode-toggle", toggle_mode_icon(look.mode()))
+            .content_only_icon_button("graph-viz-mode-toggle", toggle_mode_icon(look.mode()))
             .size(ControlSize::Sm)
             .spawn(cx);
 

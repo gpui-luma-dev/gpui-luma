@@ -76,6 +76,7 @@ fn toggle_shadow(
 ) -> Option<Vec<gpui::BoxShadow>> {
     match style {
         ShadcnButtonStyle::Outline | ShadcnButtonStyle::Ghost => button_elevation_shadow(ctx, stylesheet, style),
+        ShadcnButtonStyle::ContentOnly => None,
         _ => toggle_elevation_shadow(ctx.catalog(), stylesheet, ctx.state.layer()),
     }
 }

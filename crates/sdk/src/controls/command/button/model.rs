@@ -37,6 +37,7 @@ pub struct ButtonModel<D = ()> {
     pub(crate) round: bool,
     pub(crate) elevation: bool,
     pub(crate) compact: bool,
+    pub(crate) suppress_adorners: bool,
     pub(crate) look: Option<ButtonLookSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
@@ -52,7 +53,27 @@ pub struct ButtonRenderModel<D> {
     pub radius_override: Cell<Option<f32>>,
     pub elevation: bool,
     pub compact: bool,
+    pub suppress_adorners: Cell<bool>,
     pub look: Option<ButtonLookSource<D>>,
+}
+
+impl<D: Default> Default for ButtonRenderModel<D> {
+    fn default() -> Self {
+        Self {
+            id: SharedString::default(),
+            data: D::default(),
+            content: Arc::new(|_, _| div().into_any_element()),
+            role: ButtonFamilyRole::default(),
+            size: ButtonSize::default(),
+            state: ButtonState::default(),
+            round: false,
+            radius_override: Cell::new(None),
+            elevation: true,
+            compact: false,
+            suppress_adorners: Cell::new(false),
+            look: None,
+        }
+    }
 }
 
 pub struct ButtonBuilder<D = ()> {
@@ -75,6 +96,7 @@ impl ButtonBuilder<()> {
                 round: false,
                 elevation: true,
                 compact: false,
+                suppress_adorners: false,
                 look: None,
                 template: super::template::default_button_template(),
             },
@@ -118,6 +140,7 @@ impl ButtonBuilder<()> {
                 round: old.round,
                 elevation: old.elevation,
                 compact: old.compact,
+                suppress_adorners: old.suppress_adorners,
                 look: None,
                 template: super::template::default_button_template(),
             },
@@ -180,6 +203,15 @@ impl<D: Clone + 'static> ButtonBuilder<D> {
         self
     }
 
+    /// Suppresses template adorners and any layout reserve they require.
+    ///
+    /// The current default templates only render a focus adorner, but the flag is intentionally
+    /// plural because templates may add more adorners over time.
+    pub fn without_adorners(mut self) -> Self {
+        self.model.suppress_adorners = true;
+        self
+    }
+
     /// Dense embedding: no elevation and no focus-ring layout reserve until focused.
     pub fn compact(mut self) -> Self {
         self.model.compact = true;
@@ -221,6 +253,12 @@ mod tests {
         let builder = ButtonBuilder::new("compact-test").compact();
         assert!(!builder.model.elevation);
         assert!(builder.model.compact);
+    }
+
+    #[test]
+    fn without_adorners_sets_suppression_flag() {
+        let builder = ButtonBuilder::new("content-only-test").without_adorners();
+        assert!(builder.model.suppress_adorners);
     }
 
     #[test]

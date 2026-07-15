@@ -93,6 +93,7 @@ impl<D: Clone + 'static> Button<D> {
             radius_override: std::cell::Cell::new(None),
             elevation: self.model.elevation,
             compact: self.model.compact,
+            suppress_adorners: std::cell::Cell::new(self.model.suppress_adorners),
             look: self.model.look.clone(),
         }
     }

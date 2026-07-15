@@ -57,6 +57,7 @@ pub enum ShadcnButtonStyle {
     Secondary,
     Outline,
     Ghost,
+    ContentOnly,
 }
 
 #[derive(Clone, Debug)]
@@ -237,7 +238,7 @@ fn effective_button_style(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> S
 pub(crate) fn effective_button_style_for_role(style: ShadcnButtonStyle, role: ButtonFamilyRole) -> ShadcnButtonStyle {
     if matches!(role, ButtonFamilyRole::Toggle { selected: false }) {
         match style {
-            ShadcnButtonStyle::Ghost | ShadcnButtonStyle::Outline => style,
+            ShadcnButtonStyle::Ghost | ShadcnButtonStyle::Outline | ShadcnButtonStyle::ContentOnly => style,
             _ => ShadcnButtonStyle::Outline,
         }
     } else {
@@ -635,5 +636,30 @@ mod tests {
         );
 
         assert!(look.shadow.is_none());
+    }
+
+    #[test]
+    fn content_only_button_has_no_state_chrome() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+
+        for state in [
+            InteractionState::default(),
+            InteractionState { hovered: true, ..InteractionState::default() },
+            InteractionState { pressed: true, ..InteractionState::default() },
+            InteractionState { disabled: true, ..InteractionState::default() },
+        ] {
+            let look = button_look(
+                &mode,
+                ThemeMode::Light,
+                ShadcnButtonStyle::ContentOnly,
+                ButtonFamilyRole::Text,
+                ControlSize::Md,
+                state,
+            );
+
+            assert_eq!(look.background.a, 0.0);
+            assert!(look.border.is_none_or(|border| border.a == 0.0));
+            assert!(look.shadow.is_none());
+        }
     }
 }

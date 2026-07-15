@@ -640,6 +640,7 @@ fn render_pager_button(
         elevation: true,
         compact: false,
         look: Some(Arc::new(move |model| look_theme.resolve_button_look(&pager_look, model))),
+        ..Default::default()
     };
 
     let mut button = button_template.render(&button_model, window, cx);

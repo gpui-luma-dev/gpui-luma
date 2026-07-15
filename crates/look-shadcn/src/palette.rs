@@ -155,6 +155,7 @@ impl ShadcnPalette {
             crate::controls::ShadcnButtonStyle::Secondary => self.secondary,
             crate::controls::ShadcnButtonStyle::Outline => self.outline,
             crate::controls::ShadcnButtonStyle::Ghost => self.ghost,
+            crate::controls::ShadcnButtonStyle::ContentOnly => self.ghost,
         }
     }
 

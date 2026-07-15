@@ -252,6 +252,7 @@ fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanO
                 elevation: false,
                 compact: true,
                 look: None,
+                ..Default::default()
             };
 
             let indicator = radio_template.render(&render_model, window, cx);

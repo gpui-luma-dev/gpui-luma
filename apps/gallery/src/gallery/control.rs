@@ -59,7 +59,7 @@ impl GalleryApp {
             .footer_nodes(navigation.footer_nodes)
             .spawn(cx);
         let theme_toggle_button = look
-            .ghost_icon_button("gallery-titlebar-theme-toggle", super::template::theme_toggle_icon(look.mode()))
+            .content_only_icon_button("gallery-titlebar-theme-toggle", super::template::theme_toggle_icon(look.mode()))
             .spawn(cx);
         let panes = GalleryPanes::new(cx, look.clone());
 

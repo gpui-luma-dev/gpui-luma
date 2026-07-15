@@ -345,6 +345,7 @@ fn slider_style_id(style: ShadcnButtonStyle) -> &'static str {
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "content-only",
     }
 }
 

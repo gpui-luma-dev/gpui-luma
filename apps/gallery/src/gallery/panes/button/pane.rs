@@ -458,6 +458,7 @@ fn render_state_sample(
         elevation: true,
         compact: false,
         look: Some(look),
+        ..Default::default()
     };
 
     let active_template = if use_uniform_sizing && !matches!(variant, ButtonTemplateVariant::IconButton) {
@@ -485,6 +486,9 @@ fn look_for_style(
         ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Outline => theme.as_ref().resolve_outline_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::ContentOnly => {
+            theme.as_ref().resolve_content_only_button(model.role, model.size, model.state)
+        }
     })
 }
 
@@ -494,6 +498,7 @@ fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "content-only",
     }
 }
 

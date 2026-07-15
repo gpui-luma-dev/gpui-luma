@@ -64,6 +64,7 @@ fn resolve_focus_probe_look<D: Clone>(
             radius_override: std::cell::Cell::new(model.radius_override.get()),
             elevation: model.elevation,
             compact: model.compact,
+            suppress_adorners: std::cell::Cell::new(model.suppress_adorners.get()),
             look: model.look.clone(),
         };
         return Some(resolve(&focused_model));
@@ -249,10 +250,19 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         };
 
         let metrics = self.theme.metrics();
-        let adorner = button_family_focus_adorner(model.state.focused, look.border, look.focus_ring, &metrics);
-        let focused_adorner = focused_probe_look
-            .as_ref()
-            .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics));
+        let suppress_adorners = model.suppress_adorners.get();
+        let adorner = if suppress_adorners {
+            None
+        } else {
+            button_family_focus_adorner(model.state.focused, look.border, look.focus_ring, &metrics)
+        };
+        let focused_adorner = if suppress_adorners {
+            None
+        } else {
+            focused_probe_look
+                .as_ref()
+                .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics))
+        };
 
         let oversize_extent = crate::controls::choice_indicator_layout::button_family_oversize_extent(
             model.compact,
@@ -327,6 +337,7 @@ mod tests {
             elevation: true,
             compact: false,
             look: Some(Arc::new(|_| lime_look())),
+            ..Default::default()
         };
 
         let scale = StandardBoxScale { height: 32.0, padding_x: 12.0, padding_y: 6.0, gap: 6.0, radius: 8.0 };

@@ -398,6 +398,7 @@ impl RadioIndicatorDefaults {
             ShadcnButtonStyle::Secondary => self.secondary.as_deref().unwrap_or("ring"),
             ShadcnButtonStyle::Outline => self.outline.as_deref().unwrap_or("ring"),
             ShadcnButtonStyle::Ghost => self.ghost.as_deref().unwrap_or("ring"),
+            ShadcnButtonStyle::ContentOnly => self.primary.as_deref().unwrap_or("filled"),
         }
     }
 }
@@ -458,12 +459,9 @@ pub struct RadioColorRule {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct SwitchStylesheet {
-    /// Primary (default) switch geometry keyed by `sm` / `md` / `lg`.
+    /// Switch geometry keyed by `sm` / `md` / `lg`. All variants share these metrics.
     #[serde(default)]
     pub metrics: HashMap<String, SwitchMetricsRule>,
-    /// Secondary switch geometry keyed by `sm` / `md` / `lg` (typically one step smaller).
-    #[serde(default)]
-    pub secondary_metrics: HashMap<String, SwitchMetricsRule>,
     #[serde(default)]
     pub elevation_rules: Vec<LayeredElevationRule>,
     #[serde(default)]
@@ -488,17 +486,8 @@ impl SwitchStylesheet {
         self.metrics.get(control_size_key(size))
     }
 
-    pub fn secondary_metrics_for_size(&self, size: ControlSize) -> Option<&SwitchMetricsRule> {
-        self.secondary_metrics.get(control_size_key(size))
-    }
-
-    pub fn metrics_for_style(&self, style: ShadcnButtonStyle, size: ControlSize) -> Option<&SwitchMetricsRule> {
-        match style {
-            ShadcnButtonStyle::Secondary => {
-                self.secondary_metrics_for_size(size).or_else(|| self.metrics_for_size(size))
-            }
-            _ => self.metrics_for_size(size),
-        }
+    pub fn metrics_for_style(&self, _style: ShadcnButtonStyle, size: ControlSize) -> Option<&SwitchMetricsRule> {
+        self.metrics_for_size(size)
     }
 }
 

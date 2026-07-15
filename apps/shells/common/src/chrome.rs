@@ -44,7 +44,7 @@ pub fn spawn_theme_toggle_button<T: 'static>(
     look: &Arc<ShadcnLook>,
     cx: &mut Context<T>,
 ) -> IconButton {
-    look.ghost_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx)
+    look.content_only_icon_button(id, theme_toggle_icon(look.mode())).spawn(cx)
 }
 
 pub fn sync_theme_toggle_button<T: 'static>(button: &IconButton, look: &ShadcnLook, cx: &mut Context<T>) {

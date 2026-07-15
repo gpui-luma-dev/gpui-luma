@@ -99,6 +99,7 @@ pub fn resolve_slider_colors_with_stylesheet(
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "primary",
     };
     let rule = find_slider_color_rule(stylesheet, style_key, layer)
         .ok_or_else(|| anyhow::anyhow!("no matching slider color rule"))?;

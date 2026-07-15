@@ -405,6 +405,16 @@ impl ShadcnLook {
         button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::Ghost, role, size, state)
     }
 
+    pub fn resolve_content_only_button(
+        &self,
+        role: ButtonFamilyRole,
+        size: ControlSize,
+        state: InteractionState,
+    ) -> ButtonFamilyLook {
+        let tokens = self.mode_tokens();
+        button_look(tokens.as_ref(), self.mode(), ShadcnButtonStyle::ContentOnly, role, size, state)
+    }
+
     pub fn switch_template(
         self: &Arc<Self>,
         style: ShadcnButtonStyle,

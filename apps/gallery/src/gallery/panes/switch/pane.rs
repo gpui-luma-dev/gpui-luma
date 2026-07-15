@@ -356,6 +356,7 @@ fn render_state_sample(
         elevation: true,
         compact: false,
         look: None,
+        ..Default::default()
     };
 
     div()
@@ -373,5 +374,6 @@ fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "content-only",
     }
 }

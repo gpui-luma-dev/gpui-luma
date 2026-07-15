@@ -36,13 +36,23 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
             |metrics| CheckboxScale::compute(model.size, metrics, scale_factor),
         );
 
+        let adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            palette.adorner
+        };
+        let focused_probe_adorner = if model.suppress_adorners.get() {
+            None
+        } else {
+            focused_probe_look.as_ref().and_then(|probe| probe.adorner)
+        };
         let shadow_extent =
             shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
         let oversize_extent = indicator_oversize_extent(
             layout_policy,
             model.state.focused,
-            palette.adorner,
-            focused_probe_look.as_ref().and_then(|probe| probe.adorner),
+            adorner,
+            focused_probe_adorner,
             shadow_extent,
         );
 
@@ -73,7 +83,7 @@ impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
         let indicator_only = matches!(model.role, ButtonFamilyRole::Icon);
         let mut indicator = div().relative().child(indicator_visual);
 
-        if let Some(adorner) = render_optional_adorner_with_focus_radius(palette.adorner, scale.indicator_radius) {
+        if let Some(adorner) = render_optional_adorner_with_focus_radius(adorner, scale.indicator_radius) {
             indicator = indicator.child(adorner);
         }
 

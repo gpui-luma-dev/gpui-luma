@@ -88,6 +88,7 @@ pub fn inspect_switch_metrics(
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "primary",
     };
 
     SwitchInspectMetrics {

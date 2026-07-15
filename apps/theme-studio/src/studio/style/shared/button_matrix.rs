@@ -28,7 +28,7 @@ pub(crate) struct ButtonStyleVariantDef {
     pub style: ShadcnButtonStyle,
 }
 
-pub(crate) const BUTTON_STYLE_VARIANTS: [ButtonStyleVariantDef; 4] = [
+pub(crate) const BUTTON_STYLE_VARIANTS: [ButtonStyleVariantDef; 5] = [
     ButtonStyleVariantDef { label: "Primary", description: "High emphasis actions", style: ShadcnButtonStyle::Primary },
     ButtonStyleVariantDef {
         label: "Secondary",
@@ -41,6 +41,11 @@ pub(crate) const BUTTON_STYLE_VARIANTS: [ButtonStyleVariantDef; 4] = [
         style: ShadcnButtonStyle::Outline,
     },
     ButtonStyleVariantDef { label: "Ghost", description: "Quiet utility actions", style: ShadcnButtonStyle::Ghost },
+    ButtonStyleVariantDef {
+        label: "Content Only",
+        description: "Interactive content without chrome",
+        style: ShadcnButtonStyle::ContentOnly,
+    },
 ];
 
 pub(crate) const CHOICE_STYLE_VARIANTS: [ButtonStyleVariantDef; 2] = [
@@ -52,13 +57,27 @@ pub(crate) const CHOICE_STYLE_VARIANTS: [ButtonStyleVariantDef; 2] = [
     },
 ];
 
+pub(crate) const CHOICE_CONTROL_STYLE_VARIANTS: [ButtonStyleVariantDef; 3] = [
+    ButtonStyleVariantDef { label: "Primary", description: "High emphasis actions", style: ShadcnButtonStyle::Primary },
+    ButtonStyleVariantDef {
+        label: "Secondary",
+        description: "Lower emphasis actions",
+        style: ShadcnButtonStyle::Secondary,
+    },
+    ButtonStyleVariantDef {
+        label: "Content Only",
+        description: "Indicator without container chrome",
+        style: ShadcnButtonStyle::ContentOnly,
+    },
+];
+
 pub(crate) struct IconButtonVariantDef {
     pub label: &'static str,
     pub description: &'static str,
     pub style: ShadcnButtonStyle,
 }
 
-pub(crate) const ICON_BUTTON_VARIANTS: [IconButtonVariantDef; 4] = [
+pub(crate) const ICON_BUTTON_VARIANTS: [IconButtonVariantDef; 5] = [
     IconButtonVariantDef { label: "Primary", description: "High emphasis actions", style: ShadcnButtonStyle::Primary },
     IconButtonVariantDef {
         label: "Secondary",
@@ -71,6 +90,11 @@ pub(crate) const ICON_BUTTON_VARIANTS: [IconButtonVariantDef; 4] = [
         style: ShadcnButtonStyle::Outline,
     },
     IconButtonVariantDef { label: "Ghost", description: "Quiet utility actions", style: ShadcnButtonStyle::Ghost },
+    IconButtonVariantDef {
+        label: "Content Only",
+        description: "Interactive icon without chrome",
+        style: ShadcnButtonStyle::ContentOnly,
+    },
 ];
 
 pub(crate) fn render_button_size_radius_matrix(
@@ -165,8 +189,9 @@ fn render_button_size_radius_cell(
         state: InteractionState::default(),
         round: false,
         radius_override: std::cell::Cell::new(None),
-        elevation: true,
+        elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
+        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(button_look_for_semantic(Arc::new(look.clone()), style, size, radius)),
     };
 
@@ -209,6 +234,9 @@ pub(crate) fn button_look_for_style(
         ShadcnButtonStyle::Secondary => theme.as_ref().resolve_secondary_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Outline => theme.as_ref().resolve_outline_button(model.role, model.size, model.state),
         ShadcnButtonStyle::Ghost => theme.as_ref().resolve_ghost_button(model.role, model.size, model.state),
+        ShadcnButtonStyle::ContentOnly => {
+            theme.as_ref().resolve_content_only_button(model.role, model.size, model.state)
+        }
     })
 }
 
@@ -228,6 +256,7 @@ pub(crate) fn shadcn_style_id(style: ShadcnButtonStyle) -> &'static str {
         ShadcnButtonStyle::Secondary => "secondary",
         ShadcnButtonStyle::Outline => "outline",
         ShadcnButtonStyle::Ghost => "ghost",
+        ShadcnButtonStyle::ContentOnly => "content-only",
     }
 }
 

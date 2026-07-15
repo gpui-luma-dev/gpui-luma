@@ -116,6 +116,7 @@ fn render_copy_icon_button<M: 'static>(
         elevation: true,
         compact: false,
         look: None,
+        ..Default::default()
     };
     let button = look.button_template(ShadcnButtonStyle::Ghost).render(&model, window, cx);
 

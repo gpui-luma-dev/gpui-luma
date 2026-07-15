@@ -9,7 +9,7 @@ use gpui_luma_look_shadcn::{ButtonRadiusPreset, ShadcnButtonStyle, ShadcnLook};
 
 use crate::studio::style::shared::button_matrix::{
     BUTTON_SIZES, BUTTON_TABLE_RADIUS_COLUMN_WIDTH, BUTTON_TABLE_SIZE_HEADER_HEIGHT,
-    BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT, BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH, CHOICE_STYLE_VARIANTS,
+    BUTTON_TABLE_SIZE_RADIUS_ROW_HEIGHT, BUTTON_TABLE_SIZE_VARIANT_COLUMN_WIDTH, CHOICE_CONTROL_STYLE_VARIANTS,
     SIZE_PREVIEW_STYLE, button_size_id, radius_label_id, render_button_radius_header_cell,
     render_icon_button_state_header_cell, shadcn_style_id, toggle_interaction_state_samples,
 };
@@ -119,7 +119,7 @@ fn render_choice_size_matrix(
     )
     .row_group_label("SIZE")
     .column_headers(
-        CHOICE_STYLE_VARIANTS
+        CHOICE_CONTROL_STYLE_VARIANTS
             .iter()
             .map(|variant| render_button_radius_header_cell(variant.label, chrome.muted_text)),
     )
@@ -127,7 +127,7 @@ fn render_choice_size_matrix(
         VariantStateTableRow {
             label: SharedString::from(*label),
             description: SharedString::from(""),
-            cells: CHOICE_STYLE_VARIANTS
+            cells: CHOICE_CONTROL_STYLE_VARIANTS
                 .iter()
                 .map(|variant| render_choice_size_cell(&look, control, variant.style, *size, None, window, cx))
                 .collect(),
@@ -207,8 +207,9 @@ fn render_choice_size_cell(
         state: InteractionState::default(),
         round: false,
         radius_override: std::cell::Cell::new(radius_override),
-        elevation: true,
+        elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
+        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: None,
     };
 
@@ -233,7 +234,7 @@ fn render_choice_variant_state_matrix(
 
     VariantStateTable::new(VariantStateTableStyle::from_chrome(&chrome))
         .column_headers(samples.iter().map(|sample| render_icon_button_state_header_cell(sample, chrome.muted_text)))
-        .rows(CHOICE_STYLE_VARIANTS.iter().map(|row| {
+        .rows(CHOICE_CONTROL_STYLE_VARIANTS.iter().map(|row| {
             VariantStateTableRow {
                 label: SharedString::from(row.label),
                 description: SharedString::from(row.description),
@@ -274,8 +275,9 @@ fn render_choice_variant_state_cell(
         state: sample.state,
         round: false,
         radius_override: std::cell::Cell::new(None),
-        elevation: true,
+        elevation: style != ShadcnButtonStyle::ContentOnly,
         compact: false,
+        suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: None,
     };
 

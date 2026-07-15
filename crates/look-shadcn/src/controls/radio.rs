@@ -76,6 +76,12 @@ pub fn radio_button_look(
     selected: bool,
     state: InteractionState,
 ) -> RadioButtonPalette {
+    let content_only = style == ShadcnButtonStyle::ContentOnly;
+    let indicator_style = if content_only {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
@@ -83,16 +89,19 @@ pub fn radio_button_look(
     let typography = ctx.typography();
     let layer = choice_indicator_color_layer(state);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "radio");
-    let colors =
-        resolve_radio_colors(&resolver, style, selected, layer).unwrap_or_else(|_| RadioColorTable::fallback());
+    let colors = resolve_radio_colors(&resolver, indicator_style, selected, layer)
+        .unwrap_or_else(|_| RadioColorTable::fallback());
 
     let indicator_border = if selected && !state.disabled {
         colors.selection_ring.hsla()
     } else {
         resolve_color(catalog, "border").unwrap_or_else(|err| panic!("radio properties: {err}"))
     };
-    let adorner =
-        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("radio properties: {err}"));
+    let adorner = if content_only {
+        None
+    } else {
+        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("radio properties: {err}"))
+    };
 
     RadioButtonPalette {
         control_background: None,
@@ -104,7 +113,11 @@ pub fn radio_button_look(
         adorner,
         label_typography: typography.text.label,
         label_font_family: typography.font.sans.family.clone().into(),
-        indicator_shadow: radio_elevation_shadow(catalog, embedded_stylesheet(), layer),
+        indicator_shadow: if content_only {
+            None
+        } else {
+            radio_elevation_shadow(catalog, embedded_stylesheet(), layer)
+        },
     }
 }
 
@@ -215,5 +228,23 @@ mod tests {
         assert_eq!(default.indicator_background, hovered.indicator_background);
         assert_eq!(default.dot_color, hovered.dot_color);
         assert_eq!(default.label_color, hovered.label_color);
+    }
+
+    #[test]
+    fn content_only_radio_keeps_primary_indicator_without_adorners_or_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
+        let primary = radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let content_only = radio_button_look(
+            &mode,
+            ShadcnButtonStyle::ContentOnly,
+            true,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(content_only.indicator_background, primary.indicator_background);
+        assert_eq!(content_only.indicator_border, primary.indicator_border);
+        assert_eq!(content_only.dot_color, primary.dot_color);
+        assert!(content_only.adorner.is_none());
+        assert!(content_only.indicator_shadow.is_none());
     }
 }

@@ -76,7 +76,7 @@ pub fn resolve_switch_radius_preset(preset: ButtonRadiusPreset, metrics: &Metric
     resolve_button_radius_preset(preset, metrics, track_height)
 }
 
-/// Look-owned switch geometry from `style.toml` (`switch.metrics` / `switch.secondary_metrics`).
+/// Look-owned switch geometry from `style.toml` (`switch.metrics`).
 pub fn switch_scale(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
@@ -135,6 +135,12 @@ pub fn switch_look(
     on: bool,
     state: InteractionState,
 ) -> SwitchPalette {
+    let content_only = style == ShadcnButtonStyle::ContentOnly;
+    let indicator_style = if content_only {
+        ShadcnButtonStyle::Primary
+    } else {
+        style
+    };
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
     let catalog = ctx.catalog();
@@ -142,8 +148,8 @@ pub fn switch_look(
     let typography = ctx.typography();
     let layer = state.layer();
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "switch");
-    let colors =
-        resolve_switch_colors(&resolver, style, on, state.disabled).unwrap_or_else(|_| SwitchColorTable::fallback());
+    let colors = resolve_switch_colors(&resolver, indicator_style, on, state.disabled)
+        .unwrap_or_else(|_| SwitchColorTable::fallback());
 
     let track_background = colors.track_background.hsla();
     let track_border = if on && !state.disabled {
@@ -157,15 +163,22 @@ pub fn switch_look(
     } else {
         colors.thumb_border.hsla()
     };
-    let adorner =
-        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("switch properties: {err}"));
+    let adorner = if content_only {
+        None
+    } else {
+        focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("switch properties: {err}"))
+    };
 
     SwitchPalette {
         track_background,
         track_border,
         thumb_background,
         thumb_border,
-        thumb_shadow: switch_elevation_shadow(catalog, embedded_stylesheet(), layer),
+        thumb_shadow: if content_only {
+            Vec::new()
+        } else {
+            switch_elevation_shadow(catalog, embedded_stylesheet(), layer)
+        },
         label_color: colors.label_color.hsla(),
         adorner,
         label_typography: typography.text.label,
@@ -351,7 +364,7 @@ mod tests {
     }
 
     #[test]
-    fn secondary_switch_scale_is_smaller_than_primary() {
+    fn switch_variants_share_geometry() {
         use gpui_luma::theme::ControlSize;
         use super::switch_scale;
 
@@ -359,18 +372,14 @@ mod tests {
         for size in [ControlSize::Sm, ControlSize::Md, ControlSize::Lg] {
             let primary = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, size, 1.0);
             let secondary = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, size, 1.0);
-            assert!(
-                secondary.track_height < primary.track_height,
-                "{size:?}: secondary height {} should be < primary {}",
-                secondary.track_height,
-                primary.track_height
-            );
-            assert!(
-                secondary.track_width < primary.track_width,
-                "{size:?}: secondary width {} should be < primary {}",
-                secondary.track_width,
-                primary.track_width
-            );
+            let content_only = switch_scale(&mode, ThemeMode::Light, ShadcnButtonStyle::ContentOnly, size, 1.0);
+
+            assert_eq!(secondary.track_height, primary.track_height, "{size:?}: secondary height");
+            assert_eq!(secondary.track_width, primary.track_width, "{size:?}: secondary width");
+            assert_eq!(secondary.thumb_size, primary.thumb_size, "{size:?}: secondary thumb");
+            assert_eq!(content_only.track_height, primary.track_height, "{size:?}: content-only height");
+            assert_eq!(content_only.track_width, primary.track_width, "{size:?}: content-only width");
+            assert_eq!(content_only.thumb_size, primary.thumb_size, "{size:?}: content-only thumb");
         }
     }
 
@@ -420,5 +429,25 @@ mod tests {
                 scale.track_height
             ) < scale.track_height / 2.0
         );
+    }
+
+    #[test]
+    fn content_only_switch_keeps_primary_track_without_adorners_or_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let primary =
+            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let content_only = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::ContentOnly,
+            true,
+            InteractionState { focused: true, ..InteractionState::default() },
+        );
+
+        assert_eq!(content_only.track_background, primary.track_background);
+        assert_eq!(content_only.track_border, primary.track_border);
+        assert_eq!(content_only.thumb_background, primary.thumb_background);
+        assert!(content_only.adorner.is_none());
+        assert!(content_only.thumb_shadow.is_empty());
     }
 }

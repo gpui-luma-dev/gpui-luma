@@ -53,35 +53,41 @@ pub trait ShadcnLookControlExt {
     fn secondary_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
     fn outline_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
     fn ghost_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
+    fn content_only_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()>;
 
     fn checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
     fn primary_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
     fn secondary_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
     fn outline_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
     fn ghost_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
+    fn content_only_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder;
 
     fn switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
     fn primary_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
     fn secondary_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
     fn outline_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
     fn ghost_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
+    fn content_only_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder;
 
     fn radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn primary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn secondary_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn outline_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn ghost_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
+    fn content_only_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
 
     fn primary_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
     fn secondary_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
     fn outline_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
     fn ghost_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
+    fn content_only_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()>;
 
     fn toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn primary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn secondary_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn outline_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
     fn ghost_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
+    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool>;
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder;
     fn context_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::context_menu::ContextMenuBuilder;
@@ -171,6 +177,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         Button::new(id).template(self.button_template(ShadcnButtonStyle::Ghost))
     }
 
+    fn content_only_button(&self, id: impl Into<SharedString>) -> ButtonBuilder<()> {
+        Button::new(id)
+            .template(self.button_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
+    }
+
     fn checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder {
         checkbox::new(id).primary(self)
     }
@@ -189,6 +202,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn ghost_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder {
         checkbox::new(id).ghost(self)
+    }
+
+    fn content_only_checkbox(&self, id: impl Into<SharedString>) -> CheckboxBuilder {
+        checkbox::new(id)
+            .template(self.checkbox_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
     }
 
     fn switch(&self, id: impl Into<SharedString>) -> SwitchBuilder {
@@ -211,6 +231,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         switch::new(id).ghost(self)
     }
 
+    fn content_only_switch(&self, id: impl Into<SharedString>) -> SwitchBuilder {
+        switch::new(id)
+            .template(self.switch_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
+    }
+
     fn radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Primary))
     }
@@ -231,6 +258,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         radio_button::new(id).template(self.radio_button_template(ShadcnButtonStyle::Ghost))
     }
 
+    fn content_only_radio(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+        radio_button::new(id)
+            .template(self.radio_button_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
+    }
+
     fn primary_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         icon_button::new(id, icon).template(self.button_template(ShadcnButtonStyle::Primary))
     }
@@ -245,6 +279,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn ghost_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
         icon_button::new(id, icon).template(self.button_template(ShadcnButtonStyle::Ghost))
+    }
+
+    fn content_only_icon_button(&self, id: impl Into<SharedString>, icon: impl Into<ControlIcon>) -> ButtonBuilder<()> {
+        icon_button::new(id, icon)
+            .template(self.button_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
     }
 
     fn toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
@@ -265,6 +306,13 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
 
     fn ghost_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
         toggle::new(id).template(self.toggle_template(ShadcnButtonStyle::Ghost))
+    }
+
+    fn content_only_toggle(&self, id: impl Into<SharedString>) -> ButtonBuilder<bool> {
+        toggle::new(id)
+            .template(self.toggle_template(ShadcnButtonStyle::ContentOnly))
+            .without_adorners()
+            .without_elevation()
     }
 
     fn popup_menu(&self, id: impl Into<SharedString>) -> gpui_luma::controls::popup_menu::PopupMenuBuilder {
