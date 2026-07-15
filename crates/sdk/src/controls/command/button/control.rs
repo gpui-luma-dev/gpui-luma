@@ -15,7 +15,7 @@ use crate::controls::button_family::ButtonFamilyRole;
 use crate::theme::observe_theme_revision;
 
 pub struct Button<D = ()> {
-    model: super::model::ButtonModel<D>,
+    pub(crate) model: super::model::ButtonModel<D>,
     command: CommandCore,
 }
 
@@ -94,6 +94,9 @@ impl<D: Clone + 'static> Button<D> {
             elevation: self.model.elevation,
             compact: self.model.compact,
             suppress_adorners: std::cell::Cell::new(self.model.suppress_adorners),
+            switch_track_width_extra: self.model.switch_track_width_extra,
+            switch_track_content: self.model.switch_track_content.clone(),
+            switch_thumb_content: self.model.switch_thumb_content.clone(),
             look: self.model.look.clone(),
         }
     }

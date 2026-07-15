@@ -211,6 +211,7 @@ fn render_choice_size_cell(
         compact: false,
         suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: None,
+        ..Default::default()
     };
 
     div()
@@ -221,6 +222,24 @@ fn render_choice_size_cell(
         .justify_center()
         .child(choice_template_for_control(look, control, style).render(&model, window, cx))
         .into_any_element()
+}
+
+pub(crate) fn render_choice_control_template_preview_body(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_choice_variant_state_matrix(look, control, &toggle_interaction_state_samples(), window, cx)
+}
+
+pub(crate) fn render_choice_control_sizes_body(
+    look: Arc<ShadcnLook>,
+    control: ChoiceTemplateControl,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    render_choice_size_matrix(look, control, window, cx)
 }
 
 fn render_choice_variant_state_matrix(
@@ -279,6 +298,7 @@ fn render_choice_variant_state_cell(
         compact: false,
         suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: None,
+        ..Default::default()
     };
 
     div()

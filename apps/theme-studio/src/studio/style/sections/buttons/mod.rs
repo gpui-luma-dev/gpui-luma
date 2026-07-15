@@ -165,6 +165,7 @@ pub(crate) fn render_button_state_sample(
         compact: false,
         suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(look),
+        ..Default::default()
     };
 
     div()

@@ -193,6 +193,7 @@ fn render_button_size_radius_cell(
         compact: false,
         suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(button_look_for_semantic(Arc::new(look.clone()), style, size, radius)),
+        ..Default::default()
     };
 
     div()

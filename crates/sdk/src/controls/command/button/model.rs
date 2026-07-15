@@ -38,6 +38,9 @@ pub struct ButtonModel<D = ()> {
     pub(crate) elevation: bool,
     pub(crate) compact: bool,
     pub(crate) suppress_adorners: bool,
+    pub(crate) switch_track_width_extra: f32,
+    pub(crate) switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    pub(crate) switch_thumb_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
     pub(crate) look: Option<ButtonLookSource<D>>,
     pub(crate) template: Arc<dyn ButtonTemplate<D>>,
 }
@@ -54,6 +57,9 @@ pub struct ButtonRenderModel<D> {
     pub elevation: bool,
     pub compact: bool,
     pub suppress_adorners: Cell<bool>,
+    pub switch_track_width_extra: f32,
+    pub switch_track_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
+    pub switch_thumb_content: Option<ControlPresenter<ButtonRenderModel<D>>>,
     pub look: Option<ButtonLookSource<D>>,
 }
 
@@ -71,6 +77,9 @@ impl<D: Default> Default for ButtonRenderModel<D> {
             elevation: true,
             compact: false,
             suppress_adorners: Cell::new(false),
+            switch_track_width_extra: 0.0,
+            switch_track_content: None,
+            switch_thumb_content: None,
             look: None,
         }
     }
@@ -97,6 +106,9 @@ impl ButtonBuilder<()> {
                 elevation: true,
                 compact: false,
                 suppress_adorners: false,
+                switch_track_width_extra: 0.0,
+                switch_track_content: None,
+                switch_thumb_content: None,
                 look: None,
                 template: super::template::default_button_template(),
             },
@@ -141,6 +153,9 @@ impl ButtonBuilder<()> {
                 elevation: old.elevation,
                 compact: old.compact,
                 suppress_adorners: old.suppress_adorners,
+                switch_track_width_extra: 0.0,
+                switch_track_content: None,
+                switch_thumb_content: None,
                 look: None,
                 template: super::template::default_button_template(),
             },

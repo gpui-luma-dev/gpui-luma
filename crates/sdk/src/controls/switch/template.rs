@@ -29,7 +29,8 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         };
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();
-        let scale = self.theme.scale(model.size, scale_factor);
+        let mut scale = self.theme.scale(model.size, scale_factor);
+        scale.track_width = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
         let track_radius = model.radius_override.get().unwrap_or(scale.track_radius);
         let thumb_radius = track_radius.min(scale.thumb_size * 0.5);
 
@@ -39,16 +40,23 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             scale.track_padding
         };
         let thumb_top = snap_to_pixel(((scale.track_height - scale.thumb_size) * 0.5 - 1.0).max(0.0), scale_factor);
-        let thumb = div()
+        let mut thumb = div()
             .id(format!("{}-thumb", model.id))
             .absolute()
             .left(px(thumb_left))
             .top(px(thumb_top))
             .size(px(scale.thumb_size))
+            .flex()
+            .items_center()
+            .justify_center()
             .bg(palette.thumb_background)
             .border_1()
             .border_color(palette.thumb_border)
             .rounded(px(thumb_radius));
+
+        if let Some(content) = &model.switch_thumb_content {
+            thumb = thumb.child(content(model, cx));
+        }
 
         let adorner = if model.suppress_adorners.get() {
             None
@@ -77,8 +85,23 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             .bg(palette.track_background)
             .border_1()
             .border_color(palette.track_border)
-            .rounded(px(track_radius))
-            .child(thumb);
+            .rounded(px(track_radius));
+
+        if let Some(content) = &model.switch_track_content {
+            track_visual = track_visual.child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .right_0()
+                    .bottom_0()
+                    .left_0()
+                    .overflow_hidden()
+                    .rounded(px(track_radius))
+                    .child(content(model, cx)),
+            );
+        }
+
+        track_visual = track_visual.child(thumb);
 
         if should_paint_shadow(layout_policy.elevation, model.state.disabled, !palette.thumb_shadow.is_empty()) {
             track_visual = track_visual.shadow(palette.thumb_shadow.clone());

@@ -85,6 +85,8 @@ declare_form! {
             checkbox_preview_tabs: Option<Entity<TabsNavigation>> = None,
             radio_preview_tabs: Option<Entity<TabsNavigation>> = None,
             switch_preview_tabs: Option<Entity<TabsNavigation>> = None,
+            switch_customization_preview: Option<Entity<sections::switch::customization::SwitchCustomizationPreview>> =
+                None,
             toggles_preview_tabs: Option<Entity<TabsNavigation>> = None,
             menus_preview_tabs: Option<Entity<TabsNavigation>> = None,
             slider_preview_tabs: Option<Entity<TabsNavigation>> = None,
@@ -103,6 +105,7 @@ impl StyleGuidePanel {
         self.sync_checkbox_preview_tabs(cx);
         self.sync_radio_preview_tabs(cx);
         self.sync_switch_preview_tabs(cx);
+        self.sync_switch_customization_preview(cx);
         self.sync_toggles_preview_tabs(cx);
         self.sync_menus_preview_tabs(cx);
         self.sync_slider_preview_tabs(cx);
@@ -341,6 +344,7 @@ impl StyleGuidePanel {
             .items([
                 TabsNavigationItem::new("template-preview").label("Template Preview"),
                 TabsNavigationItem::new("sizes").label("Sizes"),
+                TabsNavigationItem::new("customization").label("Customization"),
             ])
             .active("template-preview")
             .width_mode(TabsNavigationWidthMode::Intrinsic)
@@ -354,6 +358,29 @@ impl StyleGuidePanel {
 
         self.switch_preview_tabs = Some(tabs.clone());
         tabs
+    }
+
+    fn switch_customization_preview(
+        &mut self,
+        cx: &mut Context<Self>,
+    ) -> Entity<sections::switch::customization::SwitchCustomizationPreview> {
+        if let Some(preview) = self.switch_customization_preview.clone() {
+            return preview;
+        }
+
+        let preview =
+            cx.new(|cx| sections::switch::customization::SwitchCustomizationPreview::new(cx, self.look.clone()));
+        self.switch_customization_preview = Some(preview.clone());
+        preview
+    }
+
+    fn sync_switch_customization_preview(&mut self, cx: &mut Context<Self>) {
+        if let Some(preview) = self.switch_customization_preview.clone() {
+            let look = self.look.clone();
+            preview.update(cx, move |preview, cx| {
+                preview.sync_look(look, cx);
+            });
+        }
     }
 
     fn sync_menus_preview_tabs(&mut self, cx: &mut Context<Self>) {
@@ -460,6 +487,7 @@ impl Render for StyleGuidePanel {
         let _ = self.checkbox_preview_tabs(cx);
         let _ = self.radio_preview_tabs(cx);
         let _ = self.switch_preview_tabs(cx);
+        let _ = self.switch_customization_preview(cx);
         let _ = self.toggles_preview_tabs(cx);
         let _ = self.menus_preview_tabs(cx);
         let _ = self.slider_preview_tabs(cx);
@@ -653,6 +681,7 @@ impl StyleGuidePanel {
             StyleGuideSection::Switch => sections::switch::render_switch_template_matrix_section(
                 self.look.clone(),
                 self.switch_preview_tabs.clone().expect("switch preview tabs"),
+                self.switch_customization_preview.clone().expect("switch customization preview"),
                 window,
                 cx,
             ),

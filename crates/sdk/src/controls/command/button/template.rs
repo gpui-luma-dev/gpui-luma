@@ -65,6 +65,9 @@ fn resolve_focus_probe_look<D: Clone>(
             elevation: model.elevation,
             compact: model.compact,
             suppress_adorners: std::cell::Cell::new(model.suppress_adorners.get()),
+            switch_track_width_extra: model.switch_track_width_extra,
+            switch_track_content: model.switch_track_content.clone(),
+            switch_thumb_content: model.switch_thumb_content.clone(),
             look: model.look.clone(),
         };
         return Some(resolve(&focused_model));

@@ -266,6 +266,7 @@ fn render_toggle_size_radius_cell(
         compact: false,
         suppress_adorners: std::cell::Cell::new(style == ShadcnButtonStyle::ContentOnly),
         look: Some(look_source),
+        ..Default::default()
     };
 
     div()
@@ -321,6 +322,7 @@ fn render_toggle_state_sample(
         } else {
             toggle_button_look_for_style(Arc::new(look.clone()), style)
         }),
+        ..Default::default()
     };
 
     div()
