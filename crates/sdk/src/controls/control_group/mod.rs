@@ -19,7 +19,7 @@ pub use template::{
     ControlGroupItemElements, ControlGroupItemElementTemplate, ControlGroupItemLayout, ControlGroupTemplate,
     ControlGroupTemplateHandlers, control_group_item_layout_template, control_group_template_with_theme,
     default_control_group_template, make_control_group_item_template, make_control_group_item_element_template,
-    shared_control_group_template,
+    render_control_group_item_elements, shared_control_group_template,
 };
 pub use theme::{DefaultControlGroupTheme, ControlGroupListLook, ControlGroupTheme, default_control_group_theme};
 pub use themed_template::ThemedControlGroupTemplate;

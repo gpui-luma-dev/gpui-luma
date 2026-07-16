@@ -16,6 +16,7 @@ use crate::theme::observe_theme_revision;
 
 #[derive(Clone, Debug)]
 pub enum ControlGroupEvent {
+    Activate { activated_id: SharedString },
     Change { changed_id: SharedString, selected: bool, selected_ids: Vec<SharedString> },
 }
 
@@ -283,6 +284,7 @@ where
         let selected = selected_ids_contain(&next_selected_ids, &item_id);
 
         if next_selected_ids == current {
+            cx.emit(ControlGroupEvent::Activate { activated_id: item_id });
             return false;
         }
 
@@ -291,7 +293,8 @@ where
             normalize_model(&mut self.model);
         }
 
-        cx.emit(ControlGroupEvent::Change { changed_id: item_id, selected, selected_ids: next_selected_ids });
+        cx.emit(ControlGroupEvent::Change { changed_id: item_id.clone(), selected, selected_ids: next_selected_ids });
+        cx.emit(ControlGroupEvent::Activate { activated_id: item_id });
         cx.notify();
         true
     }
@@ -369,7 +372,10 @@ where
         }
 
         if let Some(next_index) = next_enabled_index(&self.model.items, self.active_index(), direction) {
-            self.set_active_index(next_index, cx);
+            let changed = self.set_active_index(next_index, cx);
+            if changed && self.model.selection_follows_active {
+                self.commit_toggle_index(next_index, cx);
+            }
         }
     }
 
@@ -385,7 +391,10 @@ where
         };
 
         if let Some(next_index) = next_index {
-            self.set_active_index(next_index, cx);
+            let changed = self.set_active_index(next_index, cx);
+            if changed && self.model.selection_follows_active {
+                self.commit_toggle_index(next_index, cx);
+            }
         }
     }
 
@@ -761,10 +770,12 @@ mod tests {
             active_id: None,
             selection_mode,
             state_mode,
+            selection_follows_active: false,
             enabled: true,
             layout: ControlGroupLayout::default(),
             template: default_control_group_template(),
             item_template: None,
+            item_element_template: None,
         }
     }
 

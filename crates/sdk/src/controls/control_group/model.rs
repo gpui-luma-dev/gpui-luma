@@ -110,6 +110,7 @@ where
     pub(crate) active_id: Option<SharedString>,
     pub(crate) selection_mode: ControlSelectionMode,
     pub(crate) state_mode: ControlGroupStateMode,
+    pub(crate) selection_follows_active: bool,
     pub(crate) enabled: bool,
     pub(crate) layout: ControlGroupLayout,
     pub(crate) template: ControlGroupTemplate<T>,
@@ -197,6 +198,7 @@ where
                 active_id: None,
                 selection_mode: ControlSelectionMode::SingleAllowNone,
                 state_mode: ControlGroupStateMode::Unmanaged,
+                selection_follows_active: false,
                 enabled: true,
                 layout: ControlGroupLayout::default(),
                 template: default_control_group_template(),
@@ -236,6 +238,11 @@ where
 
     pub fn selection_mode(self, selection_mode: ControlSelectionMode) -> Self {
         self.mode(selection_mode)
+    }
+
+    pub fn selection_follows_active(mut self, selection_follows_active: bool) -> Self {
+        self.model.selection_follows_active = selection_follows_active;
+        self
     }
 
     pub fn single_required(self) -> Self {

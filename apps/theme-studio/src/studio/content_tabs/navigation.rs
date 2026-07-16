@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use gpui::{App, Div, ElementId, Hsla, MouseButton, SharedString, Stateful, TextRun, Window, div, font, prelude::*, px};
+use gpui::{App, Div, ElementId, Hsla, SharedString, Stateful, TextRun, Window, div, font, prelude::*, px};
+use gpui_luma::controls::control_group::ControlGroupItemHandlerExt;
 use gpui_luma::controls::tabs_navigation::{
     TabsNavigationItemLook, TabsNavigationRenderModel, TabsNavigationTemplate, TabsNavigationTemplateHandlers,
     TabsNavigationTheme, TabsNavigationWidthMode,
@@ -36,13 +37,6 @@ impl TabsNavigationTemplate for ThemeStudioTabsNavigationTemplate {
         window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let TabsNavigationTemplateHandlers {
-            item_hovers,
-            item_mouse_downs,
-            item_mouse_ups,
-            item_mouse_up_outs,
-            item_clicks,
-        } = handlers;
         let list_look = self.theme.resolve_list(model.enabled, self.tab_size);
         let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), self.tab_size, window);
 
@@ -67,29 +61,7 @@ impl TabsNavigationTemplate for ThemeStudioTabsNavigationTemplate {
             root = root.border_1().border_color(border);
         }
 
-        let mut item_hovers = item_hovers.into_iter();
-        let mut item_mouse_downs = item_mouse_downs.into_iter();
-        let mut item_mouse_ups = item_mouse_ups.into_iter();
-        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-        let mut item_clicks = item_clicks.into_iter();
-
-        for item in &model.items {
-            let Some(item_hover) = item_hovers.next() else {
-                break;
-            };
-            let Some(item_mouse_down) = item_mouse_downs.next() else {
-                break;
-            };
-            let Some(item_mouse_up) = item_mouse_ups.next() else {
-                break;
-            };
-            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-                break;
-            };
-            let Some(item_click) = item_clicks.next() else {
-                break;
-            };
-
+        for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), self.tab_size);
             let mut tab = render_tabs_navigation_item_visual(
                 TabsNavigationItemVisualModel {
@@ -99,11 +71,7 @@ impl TabsNavigationTemplate for ThemeStudioTabsNavigationTemplate {
                 },
                 look,
             )
-            .on_hover(item_hover)
-            .on_mouse_down(MouseButton::Left, item_mouse_down)
-            .on_mouse_up(MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
+            .control_group_item_handlers(item_handlers);
 
             if let Some(width) = uniform_width {
                 tab = tab.w(px(width)).flex_none();

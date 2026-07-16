@@ -128,7 +128,9 @@ impl ToggleGroupPane {
         let Some(demo) = self.demos.get_mut(index) else {
             return;
         };
-        let IconGroupEvent::Change { changed_id, selected, selected_ids, .. } = event;
+        let IconGroupEvent::Change { changed_id, selected, selected_ids, .. } = event else {
+            return;
+        };
         demo.selection = match &demo.selection {
             DemoSelection::Single(_) => DemoSelection::Single(if *selected {
                 label_for(changed_id.as_ref())

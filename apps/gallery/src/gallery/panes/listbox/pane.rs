@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, FontWeight, Subscription, div, prelude::*, px};
 use gpui_luma::controls::control_group::ControlGroupEvent;
 use gpui_luma::controls::listbox::{ListBox, ListBoxItem};
+use gpui_luma::{hstack, vstack};
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::ShadcnLook;
 
@@ -15,8 +16,10 @@ use super::super::shared::{gallery_pane_with_inspector, notify_entity, Inspector
 #[derive(Clone)]
 pub(in crate::gallery) struct ListBoxPane {
     single: ListBox,
+    horizontal: ListBox,
     multiple: ListBox,
     single_choice: String,
+    horizontal_choice: String,
     multi_choices: Vec<String>,
     inspector: Entity<ColorInspectorShell>,
 }
@@ -36,19 +39,18 @@ impl ListBoxPane {
             )
         });
 
-        let single = look.listbox("listbox-density-single").items(density_items()).selected("comfortable").spawn(cx);
-
-        let multiple = look
-            .listbox_multiple("listbox-density-multiple")
-            .items(density_items())
-            .selected_ids(["compact", "expanded"])
-            .spawn(cx);
+        let single = fruit_listbox(&look, "listbox-fruit-single", ListBoxMode::Single, ["oranges"], cx);
+        let horizontal =
+            fruit_listbox(&look, "listbox-fruit-horizontal", ListBoxMode::HorizontalSingle, ["oranges"], cx);
+        let multiple = fruit_listbox(&look, "listbox-fruit-multiple", ListBoxMode::Multiple, ["apples", "bananas"], cx);
 
         Self {
             single,
+            horizontal,
             multiple,
-            single_choice: "Comfortable".to_string(),
-            multi_choices: vec!["Compact".to_string(), "Expanded".to_string()],
+            single_choice: "Oranges".to_string(),
+            horizontal_choice: "Oranges".to_string(),
+            multi_choices: vec!["Apples".to_string(), "Bananas".to_string()],
             inspector,
         }
     }
@@ -56,6 +58,10 @@ impl ListBoxPane {
     pub(in crate::gallery) fn subscribe(&self, cx: &mut Context<GalleryApp>, subscriptions: &mut Vec<Subscription>) {
         subscriptions.push(cx.subscribe(&self.single, |app, _, event: &ControlGroupEvent, cx| {
             app.panes.listbox.handle_single_event(event, cx);
+        }));
+
+        subscriptions.push(cx.subscribe(&self.horizontal, |app, _, event: &ControlGroupEvent, cx| {
+            app.panes.listbox.handle_horizontal_event(event, cx);
         }));
 
         subscriptions.push(cx.subscribe(&self.multiple, |app, _, event: &ControlGroupEvent, cx| {
@@ -71,52 +77,38 @@ impl ListBoxPane {
         gallery_pane_with_inspector(
             "listbox",
             "ListBox",
-            div()
-                .w(px(420.0))
-                .flex()
-                .flex_col()
-                .gap_4()
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(
-                            div()
-                                .typography_style(section_style)
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(chrome.muted_text)
-                                .child("Single select"),
-                        )
-                        .child(self.single.clone())
-                        .child(
-                            div()
-                                .typography_style(status_style)
-                                .text_color(chrome.body_text)
-                                .child(format!("Selected: {}", self.single_choice)),
-                        ),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_2()
-                        .child(
-                            div()
-                                .typography_style(section_style)
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(chrome.muted_text)
-                                .child("Multiple select"),
-                        )
-                        .child(self.multiple.clone())
-                        .child(
-                            div()
-                                .typography_style(status_style)
-                                .text_color(chrome.body_text)
-                                .child(format!("Selected: {}", self.multi_choices.join(", "))),
-                        ),
-                )
-                .into_any_element(),
+            vstack! {
+                gap=16.0;
+                render_listbox_sample(
+                    "Single select",
+                    self.single.clone().into_any_element(),
+                    format!("Selected: {}", self.single_choice),
+                    section_style,
+                    status_style,
+                    chrome.muted_text,
+                    chrome.body_text,
+                ),
+                render_listbox_sample(
+                    "Horizontal single select",
+                    self.horizontal.clone().into_any_element(),
+                    format!("Selected: {}", self.horizontal_choice),
+                    section_style,
+                    status_style,
+                    chrome.muted_text,
+                    chrome.body_text,
+                ),
+                render_listbox_sample(
+                    "Multiple select",
+                    self.multiple.clone().into_any_element(),
+                    format!("Selected: {}", self.multi_choices.join(", ")),
+                    section_style,
+                    status_style,
+                    chrome.muted_text,
+                    chrome.body_text,
+                ),
+            }
+            .w(px(420.0))
+            .into_any_element(),
             self.inspector.clone(),
             toggles,
             look,
@@ -125,6 +117,7 @@ impl ListBoxPane {
 
     pub(in crate::gallery) fn notify_controls(&self, cx: &mut Context<GalleryApp>) {
         notify_entity(&self.single, cx);
+        notify_entity(&self.horizontal, cx);
         notify_entity(&self.multiple, cx);
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
@@ -135,38 +128,104 @@ impl ListBoxPane {
     fn handle_single_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ControlGroupEvent::Change { changed_id, .. } => {
-                self.single_choice = density_label(changed_id.as_ref());
+                self.single_choice = fruit_label(changed_id.as_ref());
                 cx.notify();
             }
+            ControlGroupEvent::Activate { .. } => {}
+        }
+    }
+
+    fn handle_horizontal_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
+        match event {
+            ControlGroupEvent::Change { changed_id, .. } => {
+                self.horizontal_choice = fruit_label(changed_id.as_ref());
+                cx.notify();
+            }
+            ControlGroupEvent::Activate { .. } => {}
         }
     }
 
     fn handle_multi_event(&mut self, event: &ControlGroupEvent, cx: &mut Context<GalleryApp>) {
         match event {
             ControlGroupEvent::Change { selected_ids, .. } => {
-                self.multi_choices = selected_ids.iter().map(|id| density_label(id.as_ref())).collect();
+                self.multi_choices = selected_ids.iter().map(|id| fruit_label(id.as_ref())).collect();
                 if self.multi_choices.is_empty() {
                     self.multi_choices.push("None".to_string());
                 }
                 cx.notify();
             }
+            ControlGroupEvent::Activate { .. } => {}
         }
     }
 }
 
-fn density_items() -> Vec<ListBoxItem> {
+#[derive(Clone, Copy)]
+enum ListBoxMode {
+    Single,
+    HorizontalSingle,
+    Multiple,
+}
+
+fn fruit_listbox(
+    look: &Arc<ShadcnLook>,
+    id: &'static str,
+    mode: ListBoxMode,
+    selected_ids: impl IntoIterator<Item = &'static str>,
+    cx: &mut Context<GalleryApp>,
+) -> ListBox {
+    let mut builder = match mode {
+        ListBoxMode::Single | ListBoxMode::HorizontalSingle => look.listbox(id),
+        ListBoxMode::Multiple => look.listbox_multiple(id),
+    };
+
+    if matches!(mode, ListBoxMode::HorizontalSingle) {
+        builder = builder.horizontal();
+    }
+
+    builder.items(fruit_items()).selected_ids(selected_ids).spawn(cx)
+}
+
+fn render_listbox_sample(
+    label: &'static str,
+    listbox: AnyElement,
+    status: String,
+    section_style: gpui_luma::theme::LumaTextStyle,
+    status_style: gpui_luma::theme::LumaTextStyle,
+    label_color: gpui::Hsla,
+    status_color: gpui::Hsla,
+) -> AnyElement {
+    vstack! {
+        gap=8.0;
+        hstack! {
+            justify=between align=center gap=8.0;
+            div()
+                .typography_style(section_style)
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(label_color)
+                .child(label),
+            div()
+                .typography_style(status_style)
+                .text_color(status_color)
+                .child(status),
+        },
+        listbox,
+    }
+    .into_any_element()
+}
+
+fn fruit_items() -> Vec<ListBoxItem> {
     vec![
-        ListBoxItem::new("compact", "compact").label("Compact"),
-        ListBoxItem::new("comfortable", "comfortable").label("Comfortable"),
-        ListBoxItem::new("expanded", "expanded").label("Expanded"),
+        ListBoxItem::new("apples", "apples").label("Apples"),
+        ListBoxItem::new("oranges", "oranges").label("Oranges"),
+        ListBoxItem::new("bananas", "bananas").label("Bananas"),
     ]
 }
 
-fn density_label(id: &str) -> String {
+fn fruit_label(id: &str) -> String {
     match id {
-        "compact" => "Compact",
-        "comfortable" => "Comfortable",
-        "expanded" => "Expanded",
+        "apples" => "Apples",
+        "oranges" => "Oranges",
+        "bananas" => "Bananas",
         _ => id,
     }
     .to_string()

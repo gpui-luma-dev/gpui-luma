@@ -4,8 +4,8 @@ use gpui::{App, Div, ElementId, Stateful, Window, div, px, prelude::*};
 
 use super::ListBoxItem;
 use crate::controls::control_group::{
-    ControlGroupItemHandlerExt, ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate,
-    ControlGroupTemplateHandlers,
+    ControlGroupItemElementTemplate, ControlGroupItemLike, ControlGroupLayout, ControlGroupRenderModel,
+    ControlGroupTemplate, ControlGroupTemplateHandlers, render_control_group_item_elements,
 };
 use crate::controls::listbox::{ListBoxRowLook, ListBoxTheme, default_listbox_theme};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
@@ -33,13 +33,6 @@ impl ThemedListBoxTemplate {
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let scale_factor = window.scale_factor();
-        let row_scale = cx.use_cached_layout(
-            self.theme.metrics(),
-            LayoutCacheKey { size: self.size, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| ListRowScale::compute(self.size, metrics, scale_factor),
-        );
-
         let list_look = self.theme.resolve_list(model.enabled, model.focus.focused, self.size);
         let focused_probe_list_look = if model.enabled {
             Some(self.theme.resolve_list(model.enabled, true, self.size))
@@ -54,7 +47,6 @@ impl ThemedListBoxTemplate {
             .relative()
             .w_full()
             .flex()
-            .flex_col()
             .gap(px(list_look.row_gap))
             .overflow_hidden()
             .px(px(list_look.padding_x))
@@ -68,56 +60,37 @@ impl ThemedListBoxTemplate {
             root = root.child(adorner);
         }
 
-        let any_item_enabled = model.items.iter().any(|item| item.enabled);
+        root = match model.layout {
+            ControlGroupLayout::Horizontal => root.flex_row().items_center(),
+            ControlGroupLayout::Vertical => root.flex_col(),
+        };
 
-        for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
-            let row_look =
-                self.theme.resolve_row_look(item.selected, item.state.interaction_state(), self.size, &row_scale);
-            let focused_probe_row_look = if any_item_enabled && !item.state.disabled {
-                let mut focused_state = item.state.interaction_state();
-                focused_state.focused = true;
-                Some(self.theme.resolve_row_look(item.selected, focused_state, self.size, &row_scale))
-            } else {
-                None
-            };
-            let row_oversize_extent = adorner_oversize_extent(row_look.adorner).max(
-                focused_probe_row_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0),
-            );
+        let default_item_element_template = self.row_item_element_template();
+        let row_model = ControlGroupRenderModel {
+            id: model.id,
+            items: model.items.clone(),
+            selected_ids: model.selected_ids,
+            active_id: model.active_id,
+            selection_mode: model.selection_mode,
+            state_mode: model.state_mode,
+            enabled: model.enabled,
+            layout: model.layout,
+            focus: model.focus,
+            item_template: model.item_template,
+            item_element_template: model.item_element_template.or(Some(&default_item_element_template)),
+        };
 
-            let content = if let Some(item_template) = model.item_template {
-                item_template(item, window, cx)
-            } else {
-                div().child(ControlGroupItemLike::label(item.item).to_string()).into_any_element()
-            };
-
-            let row = render_listbox_row_visual(
-                ElementId::NamedChild(Arc::new(model.id.clone().into()), format!("item-{}", item.item.id()).into()),
-                item.state,
-                content,
-                row_look,
-            )
-            .control_group_item_handlers(item_handlers);
-
-            let row = if item.enabled {
-                row.cursor_pointer()
-            } else {
-                row.opacity(0.56)
-            };
-
-            let row = if row_oversize_extent > 0.0 {
-                div().relative().p(px(row_oversize_extent)).child(row).into_any_element()
-            } else {
-                row.into_any_element()
-            };
-
-            root = root.child(row);
-        }
+        root = root.children(render_control_group_item_elements(&row_model, handlers, window, cx).into_elements());
 
         if list_oversize_extent > 0.0 {
             div().id(format!("{}-list-slot", model.id)).relative().p(px(list_oversize_extent)).child(root)
         } else {
             root
         }
+    }
+
+    fn row_item_element_template(&self) -> ControlGroupItemElementTemplate<ListBoxItem> {
+        listbox_row_item_element_template_with_size(self.theme.clone(), self.size)
     }
 }
 
@@ -139,6 +112,70 @@ fn default_themed_listbox_template() -> Arc<ThemedListBoxTemplate> {
 pub fn shared_listbox_template() -> ControlGroupTemplate<ListBoxItem> {
     let themed = default_themed_listbox_template();
     Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
+}
+
+pub fn default_listbox_row_item_element_template() -> ControlGroupItemElementTemplate<ListBoxItem> {
+    static TEMPLATE: OnceLock<ControlGroupItemElementTemplate<ListBoxItem>> = OnceLock::new();
+
+    TEMPLATE
+        .get_or_init(|| listbox_row_item_element_template_with_theme(default_listbox_theme()))
+        .clone()
+}
+
+pub fn listbox_row_item_element_template_with_theme(
+    theme: Arc<dyn ListBoxTheme>,
+) -> ControlGroupItemElementTemplate<ListBoxItem> {
+    listbox_row_item_element_template_with_size(theme, ControlSize::Md)
+}
+
+fn listbox_row_item_element_template_with_size(
+    theme: Arc<dyn ListBoxTheme>,
+    size: ControlSize,
+) -> ControlGroupItemElementTemplate<ListBoxItem> {
+    Arc::new(move |item, item_template, window, cx| {
+        let scale_factor = window.scale_factor();
+        let row_scale = cx.use_cached_layout(
+            theme.metrics(),
+            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| ListRowScale::compute(size, metrics, scale_factor),
+        );
+        let row_look = theme.resolve_row_look(item.selected, item.state.interaction_state(), size, &row_scale);
+        let focused_probe_row_look = if !item.state.disabled {
+            let mut focused_state = item.state.interaction_state();
+            focused_state.focused = true;
+            Some(theme.resolve_row_look(item.selected, focused_state, size, &row_scale))
+        } else {
+            None
+        };
+        let row_oversize_extent = adorner_oversize_extent(row_look.adorner)
+            .max(focused_probe_row_look.as_ref().map(|probe| adorner_oversize_extent(probe.adorner)).unwrap_or(0.0));
+
+        let content = if let Some(item_template) = item_template {
+            item_template(item, window, cx)
+        } else {
+            div().child(ControlGroupItemLike::label(item.item).to_string()).into_any_element()
+        };
+
+        let row = render_listbox_row_visual(
+            ElementId::NamedChild(Arc::new(item.group_id.clone().into()), format!("item-{}", item.item.id()).into()),
+            item.state,
+            content,
+            row_look,
+        );
+
+        if row_oversize_extent > 0.0 {
+            div()
+                .id(ElementId::NamedChild(
+                    Arc::new(item.group_id.clone().into()),
+                    format!("item-slot-{}", item.item.id()).into(),
+                ))
+                .relative()
+                .p(px(row_oversize_extent))
+                .child(row)
+        } else {
+            row
+        }
+    })
 }
 
 fn render_listbox_row_visual(

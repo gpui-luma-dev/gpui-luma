@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use gpui::{AppContext, Entity, SharedString};
 
-use super::template::template_with_modifier;
+use super::template::{tabs_navigation_control_group_template, template_with_modifier};
 use super::{TabsNavigation, TabsNavigationTemplate, default_tabs_navigation_template};
+use crate::controls::control_group::ControlGroupItemLike;
 use crate::controls::tabs_navigation::{ControlFocusState, TabsNavigationItemState};
 use crate::theme::ControlSize;
 
@@ -47,6 +48,20 @@ impl TabsNavigationItem {
     }
 
     pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+}
+
+impl ControlGroupItemLike for TabsNavigationItem {
+    fn id(&self) -> &SharedString {
+        &self.id
+    }
+
+    fn label(&self) -> &SharedString {
+        &self.label
+    }
+
+    fn is_enabled(&self) -> bool {
         self.enabled
     }
 }
@@ -147,6 +162,12 @@ impl TabsNavigationBuilder {
 
     pub fn spawn(self, cx: &mut impl AppContext) -> Entity<TabsNavigation> {
         cx.new(|cx| TabsNavigation::from_builder(self, cx))
+    }
+
+    pub(crate) fn control_group_template(
+        &self,
+    ) -> crate::controls::control_group::ControlGroupTemplate<TabsNavigationItem> {
+        tabs_navigation_control_group_template(self.model.size, self.model.width_mode, Arc::clone(&self.model.template))
     }
 }
 

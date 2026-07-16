@@ -14,7 +14,6 @@ use gpui_luma::controls::listbox::{ListBoxListLook, ListBoxRowPalette};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
-use crate::focus::focus_adorner;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
 use crate::stylesheet::{
@@ -91,18 +90,16 @@ pub fn resolve_listbox_row_colors_with_stylesheet(
     Ok(ListBoxRowColorTable { label_color: colors.label_color, background: colors.background })
 }
 
-pub fn listbox_list_look(mode: &ShadcnModeTokens, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListLook {
+pub fn listbox_list_look(mode: &ShadcnModeTokens, enabled: bool, _focused: bool, size: ControlSize) -> ListBoxListLook {
     let ctx = LookContext::new(mode, ThemeMode::Light, InteractionState::default());
     let metrics = ctx.metrics();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "listbox_list");
     let colors = resolve_listbox_list_colors(&resolver, enabled).unwrap_or_else(|_| ListBoxListColorTable::fallback());
-    let adorner =
-        focus_adorner(ctx.catalog(), metrics, focused).unwrap_or_else(|err| panic!("listbox list properties: {err}"));
 
     ListBoxListLook {
         background: colors.background.hsla(),
         border: colors.border.hsla(),
-        adorner,
+        adorner: None,
         divider: colors.divider.hsla(),
         radius: metrics.radius(size),
         padding_x: 6.0,

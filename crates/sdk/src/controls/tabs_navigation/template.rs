@@ -1,25 +1,19 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{
-    App, ClickEvent, Div, ElementId, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful, TextRun,
-    Window, div, font, px, prelude::*,
-};
+use gpui::{App, Div, ElementId, SharedString, Stateful, TextRun, Window, div, font, px, prelude::*};
 
-use super::{TabsNavigationRenderModel, model::TabsNavigationWidthMode};
+use super::{TabsNavigationItem, TabsNavigationRenderItem, TabsNavigationRenderModel, model::TabsNavigationWidthMode};
+use crate::controls::control_group::{
+    ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt, ControlGroupMouseDownHandler,
+    ControlGroupMouseUpHandler, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
+};
 use crate::controls::tabs_navigation::{TabsNavigationItemLook, TabsNavigationTheme, default_tabs_navigation_theme};
 
-pub type TabsNavigationClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
-pub type TabsNavigationMouseUpHandler = Box<dyn Fn(&MouseUpEvent, &mut Window, &mut App) + 'static>;
-
-pub struct TabsNavigationTemplateHandlers {
-    pub item_hovers: Vec<TabsNavigationHoverHandler>,
-    pub item_mouse_downs: Vec<TabsNavigationMouseDownHandler>,
-    pub item_mouse_ups: Vec<TabsNavigationMouseUpHandler>,
-    pub item_mouse_up_outs: Vec<TabsNavigationMouseUpHandler>,
-    pub item_clicks: Vec<TabsNavigationClickHandler>,
-}
+pub type TabsNavigationClickHandler = ControlGroupClickHandler;
+pub type TabsNavigationHoverHandler = ControlGroupHoverHandler;
+pub type TabsNavigationMouseDownHandler = ControlGroupMouseDownHandler;
+pub type TabsNavigationMouseUpHandler = ControlGroupMouseUpHandler;
+pub type TabsNavigationTemplateHandlers = ControlGroupTemplateHandlers;
 
 pub type TabsNavigationTemplateModifier =
     Box<dyn Fn(Stateful<Div>, &TabsNavigationRenderModel<'_>) -> Stateful<Div> + Send + Sync + 'static>;
@@ -128,13 +122,6 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
         window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let TabsNavigationTemplateHandlers {
-            item_hovers,
-            item_mouse_downs,
-            item_mouse_ups,
-            item_mouse_up_outs,
-            item_clicks,
-        } = handlers;
         let list_look = self.theme.resolve_list(model.enabled, model.size);
         let uniform_width = resolve_uniform_tab_width(model, self.theme.as_ref(), window);
 
@@ -156,29 +143,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
             root = root.border_1().border_color(border);
         }
 
-        let mut item_hovers = item_hovers.into_iter();
-        let mut item_mouse_downs = item_mouse_downs.into_iter();
-        let mut item_mouse_ups = item_mouse_ups.into_iter();
-        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-        let mut item_clicks = item_clicks.into_iter();
-
-        for item in &model.items {
-            let Some(item_hover) = item_hovers.next() else {
-                break;
-            };
-            let Some(item_mouse_down) = item_mouse_downs.next() else {
-                break;
-            };
-            let Some(item_mouse_up) = item_mouse_ups.next() else {
-                break;
-            };
-            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-                break;
-            };
-            let Some(item_click) = item_clicks.next() else {
-                break;
-            };
-
+        for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let look = self.theme.resolve_item(item.active, item.state.interaction_state(), model.size);
             let mut tab = render_tabs_navigation_item_visual(
                 TabsNavigationItemVisualModel {
@@ -188,11 +153,7 @@ impl TabsNavigationTemplate for ThemedTabsNavigationTemplate {
                 },
                 look,
             )
-            .on_hover(item_hover)
-            .on_mouse_down(MouseButton::Left, item_mouse_down)
-            .on_mouse_up(MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
+            .control_group_item_handlers(item_handlers);
 
             if let Some(width) = uniform_width {
                 tab = tab.w(px(width)).flex_none();
@@ -280,4 +241,41 @@ fn render_tabs_navigation_item_visual(
     }
 
     root
+}
+
+pub(crate) fn tabs_navigation_control_group_template(
+    size: crate::theme::ControlSize,
+    width_mode: TabsNavigationWidthMode,
+    template: Arc<dyn TabsNavigationTemplate>,
+) -> ControlGroupTemplate<TabsNavigationItem> {
+    Arc::new(move |model, handlers, window, cx| {
+        let tabs_model = tabs_navigation_render_model(model, size, width_mode);
+        template.render(&tabs_model, handlers, window, cx)
+    })
+}
+
+fn tabs_navigation_render_model<'a>(
+    model: &'a ControlGroupRenderModel<'a, TabsNavigationItem>,
+    size: crate::theme::ControlSize,
+    width_mode: TabsNavigationWidthMode,
+) -> TabsNavigationRenderModel<'a> {
+    TabsNavigationRenderModel {
+        id: model.id,
+        size,
+        width_mode,
+        items: model
+            .items
+            .iter()
+            .map(|item| TabsNavigationRenderItem {
+                id: item.item.id(),
+                label: item.item.label_text(),
+                active: item.selected,
+                enabled: item.enabled,
+                state: item.state,
+            })
+            .collect(),
+        active_id: model.selected_ids.first(),
+        enabled: model.enabled,
+        focus: model.focus,
+    }
 }

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::Hsla;
 
-use crate::theme::adorner::{AdornerPlacement, AdornerSpec, FocusRingAdornerSpec};
+use crate::theme::adorner::AdornerSpec;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, ListRowScale, LumaTextStyle, MetricTokens, ThemeTokens,
 };
@@ -74,20 +74,9 @@ impl DefaultListBoxTheme {
 }
 
 impl ListBoxTheme for DefaultListBoxTheme {
-    fn resolve_list(&self, enabled: bool, focused: bool, size: ControlSize) -> ListBoxListLook {
+    fn resolve_list(&self, enabled: bool, _focused: bool, size: ControlSize) -> ListBoxListLook {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
-
-        let adorner = if focused {
-            Some(AdornerSpec::FocusRing(FocusRingAdornerSpec {
-                color: palette.focus.ring,
-                placement: AdornerPlacement::Inset,
-                distance: metrics.border_width.default,
-                width: metrics.focus.width,
-            }))
-        } else {
-            None
-        };
 
         ListBoxListLook {
             background: if enabled {
@@ -96,7 +85,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
                 palette.state.disabled.background
             },
             border: palette.form.input.border,
-            adorner,
+            adorner: None,
             divider: palette.form.input.border,
             radius: metrics.radius(size),
             padding_x: 6.0,
