@@ -21,7 +21,7 @@ pub(in crate::gallery) use metrics::{
     listbox_layout_data, navigation_sidebar_layout_data, popup_menu_ghost_trigger_layout_data,
     popup_menu_outline_trigger_layout_data, progress_layout_data, radio_layout_data, resizable_panels_layout_data,
     scrollbar_layout_data, slider_layout_data, split_view_layout_data, switch_layout_data, tabs_navigation_layout_data,
-    textarea_layout_data, textfield_and_menu_layout_data, tree_view_layout_data,
+    textarea_layout_data, textfield_and_menu_layout_data, toolbar_layout_data, tree_view_layout_data,
 };
 pub(in crate::gallery) use shell::{ColorInspectorShell, notify_inspector_shell_entities, sync_inspector_detail_from_tree};
 pub(in crate::gallery) use tree::{color_field_nodes_optional, spawn_color_inspector_tree};

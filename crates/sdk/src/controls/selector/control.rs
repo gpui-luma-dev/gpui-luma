@@ -56,6 +56,7 @@ where
 
     pub(crate) fn from_builder(builder: SelectorBuilder<T>, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        let tab_stop = builder.model.tab_stop;
         let selected_index = builder
             .initial_selected_id
             .as_ref()
@@ -71,7 +72,7 @@ where
             trigger_bounds: None,
             selected_index,
             active_index: None,
-            interaction: ControlInteraction::new(enabled, cx),
+            interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
         }
     }
 
@@ -277,7 +278,7 @@ where
         }
 
         let item_id = item.id().clone();
-        let label = item.id().clone();
+        let label = item.label().clone();
         let changed = self.selected_index != Some(index);
         self.selected_index = Some(index);
         self.close_menu();
@@ -398,8 +399,10 @@ where
                 self.active_index = next;
                 cx.notify();
             }
-        } else if self.open_menu_with_active(self.last_selectable_index()) {
+        } else if self.model.tab_stop && self.open_menu_with_active(self.last_selectable_index()) {
             cx.notify();
+        } else {
+            cx.propagate();
         }
     }
 
@@ -414,8 +417,10 @@ where
                 self.active_index = next;
                 cx.notify();
             }
-        } else if self.open_menu_with_active(self.first_selectable_index()) {
+        } else if self.model.tab_stop && self.open_menu_with_active(self.first_selectable_index()) {
             cx.notify();
+        } else {
+            cx.propagate();
         }
     }
 

@@ -22,6 +22,7 @@ mod switch;
 mod tabs_navigation;
 mod textarea;
 mod textfield;
+mod toolbar;
 mod tree_view;
 
 pub use accordion::{
@@ -93,6 +94,7 @@ pub use tabs_navigation::{
     inspect_tabs_navigation_metrics,
 };
 pub use textarea::{inspect_textarea_color_palette, inspect_textarea_metrics};
+pub use toolbar::{ToolbarInspectMetrics, ToolbarInspectPalette, inspect_toolbar_color_palette, inspect_toolbar_metrics};
 pub use tree_view::{
     TreeViewInspectMetrics, TreeViewRowInspectPalette, inspect_tree_view_metrics, inspect_tree_view_row_color_palette,
 };

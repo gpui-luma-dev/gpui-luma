@@ -38,6 +38,7 @@ use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTree
 use gpui_luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
 use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
+use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme};
 
 use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -856,6 +857,41 @@ where
     T: ControlGroupItemLike + Clone + Send + Sync + 'static,
 {
     control_group_template_with_theme(control_group_theme(theme))
+}
+
+struct ShadcnToolbarTheme {
+    theme: ShadcnLook,
+}
+
+impl ToolbarTheme for ShadcnToolbarTheme {
+    fn resolve(&self, enabled: bool, size: ControlSize) -> ToolbarLook {
+        let tokens = self.theme.mode_tokens();
+        let metrics = &tokens.metrics;
+        let control = metrics.for_size(size);
+
+        ToolbarLook {
+            background: if enabled {
+                tokens.palette.muted_background
+            } else {
+                tokens.palette.disabled_background
+            },
+            border: tokens.palette.border_default,
+            separator: tokens.palette.border_default,
+            radius: metrics.radius.md,
+            padding_x: 6.0,
+            padding_y: 4.0,
+            gap: control.gap,
+            separator_height: control.height,
+        }
+    }
+}
+
+pub fn toolbar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ToolbarTheme> {
+    Arc::new(ShadcnToolbarTheme { theme: theme.as_ref().clone() })
+}
+
+pub fn toolbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn ToolbarTemplate> {
+    Arc::new(ThemedToolbarTemplate::new(toolbar_theme(theme)))
 }
 
 struct ShadcnListBoxTheme {

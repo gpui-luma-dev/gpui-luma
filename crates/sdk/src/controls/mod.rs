@@ -50,4 +50,5 @@ pub(crate) mod text;
 pub mod textarea;
 pub mod textfield;
 pub mod toggle;
+pub mod toolbar;
 pub mod value;

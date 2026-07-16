@@ -38,13 +38,14 @@ impl PopupMenu {
 
     pub(crate) fn from_builder(builder: PopupMenuBuilder, cx: &mut Context<Self>) -> Self {
         let enabled = builder.model.enabled;
+        let tab_stop = builder.model.tab_stop;
 
         Self {
             model: builder.model,
             open: false,
             trigger_bounds: None,
             menu_state: FloatingMenuState::default(),
-            interaction: ControlInteraction::new(enabled, cx),
+            interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
         }
     }
 
@@ -314,16 +315,20 @@ impl PopupMenu {
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.step_active_item(FloatingMenuStepDirection::Previous, cx);
-        } else {
+        } else if self.model.tab_stop {
             self.open_menu_at_boundary(false, cx);
+        } else {
+            cx.propagate();
         }
     }
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
         if self.open {
             self.step_active_item(FloatingMenuStepDirection::Next, cx);
-        } else {
+        } else if self.model.tab_stop {
             self.open_menu_at_boundary(true, cx);
+        } else {
+            cx.propagate();
         }
     }
 

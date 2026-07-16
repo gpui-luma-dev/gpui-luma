@@ -42,6 +42,7 @@ use gpui_luma::controls::tabs_navigation::{TabsNavigation, TabsNavigationBuilder
 use gpui_luma::controls::textarea::{self, TextAreaBuilder, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{self, TextFieldBuilder, ThemedTextFieldTemplate};
 use gpui_luma::controls::toggle;
+use gpui_luma::controls::toolbar::{self, ToolbarBuilder};
 use gpui_luma::theme::ControlSize;
 
 use super::button::ShadcnButtonStyle;
@@ -147,6 +148,7 @@ pub trait ShadcnLookControlExt {
     fn icon_toolbar_multiple<T>(&self, id: impl Into<SharedString>) -> IconGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static;
+    fn toolbar(&self, id: impl Into<SharedString>) -> ToolbarBuilder;
     fn selection_panel(
         &self,
         id: impl Into<SharedString>,
@@ -489,6 +491,10 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
         button_group::icon_toolbar_multiple(id, self.control_group_theme())
+    }
+
+    fn toolbar(&self, id: impl Into<SharedString>) -> ToolbarBuilder {
+        toolbar::new(id).template(self.toolbar_template())
     }
 
     fn selection_panel(

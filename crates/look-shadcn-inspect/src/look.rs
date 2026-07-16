@@ -22,9 +22,9 @@ use crate::controls::{
     ScrollbarInspectMetrics, ScrollbarInspectPalette, SelectorInspectMetrics, SelectorInspectPalette,
     SliderInspectMetrics, SliderInspectPalette, SplitViewInspectMetrics, SplitViewInspectPalette, SwitchInspectMetrics,
     SwitchInspectPalette, TabsNavigationInspectMetrics, TabsNavigationItemInspectPalette,
-    TabsNavigationListInspectPalette, TextFieldInspectMetrics, TextFieldInspectPalette, TreeViewInspectMetrics,
-    TreeViewRowInspectPalette, inspect_accordion_content_color_palette, inspect_accordion_metrics,
-    inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
+    TabsNavigationListInspectPalette, TextFieldInspectMetrics, TextFieldInspectPalette, ToolbarInspectMetrics,
+    ToolbarInspectPalette, TreeViewInspectMetrics, TreeViewRowInspectPalette, inspect_accordion_content_color_palette,
+    inspect_accordion_metrics, inspect_accordion_trigger_color_palette, inspect_autocomplete_chrome_color_palette,
     inspect_autocomplete_menu_color_palette, inspect_autocomplete_metrics, inspect_badge_color_palette,
     inspect_badge_metrics, inspect_button_color_palette, inspect_button_elevation, inspect_button_metrics,
     inspect_button_typography, inspect_card_metrics, inspect_checkbox_color_palette, inspect_checkbox_metrics,
@@ -42,8 +42,8 @@ use crate::controls::{
     inspect_split_view_metrics, inspect_switch_color_palette, inspect_switch_metrics,
     inspect_tabs_navigation_item_color_palette, inspect_tabs_navigation_list_color_palette,
     inspect_tabs_navigation_metrics, inspect_textarea_color_palette, inspect_textarea_metrics,
-    inspect_textfield_color_palette, inspect_textfield_metrics, inspect_tree_view_metrics,
-    inspect_tree_view_row_color_palette,
+    inspect_textfield_color_palette, inspect_textfield_metrics, inspect_toolbar_color_palette, inspect_toolbar_metrics,
+    inspect_tree_view_metrics, inspect_tree_view_row_color_palette,
 };
 
 /// Inspect-time wrapper around a [`ShadcnLook`] look resolver.
@@ -264,6 +264,14 @@ impl<'a> ShadcnInspect<'a> {
 
     pub fn inspect_tabs_navigation_metrics(&self, size: ControlSize) -> TabsNavigationInspectMetrics {
         inspect_tabs_navigation_metrics(&self.mode_tokens(), self.theme_mode(), size)
+    }
+
+    pub fn inspect_toolbar_color_palette(&self, enabled: bool) -> ToolbarInspectPalette {
+        inspect_toolbar_color_palette(&self.mode_tokens(), self.theme_mode(), enabled)
+    }
+
+    pub fn inspect_toolbar_metrics(&self, size: ControlSize) -> ToolbarInspectMetrics {
+        inspect_toolbar_metrics(&self.mode_tokens(), self.theme_mode(), size)
     }
 
     pub fn inspect_split_view_color_palette(&self, enabled: bool) -> SplitViewInspectPalette {

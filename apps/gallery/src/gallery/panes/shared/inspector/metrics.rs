@@ -209,6 +209,26 @@ pub(in crate::gallery) fn tabs_navigation_layout_data(
     layout_size(size, tabs_navigation_metric_properties(&metrics))
 }
 
+pub(in crate::gallery) fn toolbar_layout_data(
+    look: &gpui_luma_look_shadcn::ShadcnLook,
+    size: gpui_luma::theme::ControlSize,
+) -> InspectLayoutSizeData {
+    let metrics = ShadcnInspect::new(look).inspect_toolbar_metrics(size);
+    layout_size(size, toolbar_metric_properties(&metrics))
+}
+
+fn toolbar_metric_properties(
+    metrics: &gpui_luma_look_shadcn_inspect::ToolbarInspectMetrics,
+) -> Vec<InspectMetricPropertyData> {
+    metric_properties(&[
+        ("radius", &metrics.radius),
+        ("padding x", &metrics.padding_x),
+        ("padding y", &metrics.padding_y),
+        ("gap", &metrics.gap),
+        ("separator height", &metrics.separator_height),
+    ])
+}
+
 pub(in crate::gallery) fn listbox_layout_data(
     look: &gpui_luma_look_shadcn::ShadcnLook,
     size: gpui_luma::theme::ControlSize,

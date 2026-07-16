@@ -31,6 +31,7 @@ pub struct PopupMenuModel {
     pub(crate) label: SharedString,
     pub(crate) items: Vec<MenuItem>,
     pub(crate) enabled: bool,
+    pub(crate) tab_stop: bool,
     pub(crate) placement: PopupMenuPlacement,
     pub(crate) trigger_style: PopupMenuTriggerStyle,
     pub(crate) trigger_size: ControlSize,
@@ -74,6 +75,7 @@ impl PopupMenuBuilder {
                 id,
                 items: Vec::new(),
                 enabled: true,
+                tab_stop: true,
                 placement: PopupMenuPlacement::Smart,
                 trigger_style: PopupMenuTriggerStyle::default(),
                 trigger_size: ControlSize::Md,
@@ -102,6 +104,11 @@ impl PopupMenuBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.model.tab_stop = tab_stop;
         self
     }
 

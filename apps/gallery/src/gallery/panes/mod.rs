@@ -40,3 +40,4 @@ mod textfield;
 mod typography;
 mod toggle;
 mod toggle_group;
+mod toolbar;

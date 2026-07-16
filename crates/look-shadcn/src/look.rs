@@ -658,6 +658,14 @@ impl ShadcnLook {
         templates::control_group_theme(Arc::clone(self))
     }
 
+    pub fn toolbar_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::toolbar::ToolbarTemplate> {
+        templates::toolbar_template(Arc::clone(self))
+    }
+
+    pub fn toolbar_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::toolbar::ToolbarTheme> {
+        templates::toolbar_theme(Arc::clone(self))
+    }
+
     pub fn listbox_template(
         self: &Arc<Self>,
     ) -> gpui_luma::controls::control_group::ControlGroupTemplate<gpui_luma::controls::listbox::ListBoxItem> {

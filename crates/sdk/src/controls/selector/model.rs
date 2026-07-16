@@ -31,6 +31,7 @@ where
     pub(crate) label: SharedString,
     pub(crate) items: Vec<T>,
     pub(crate) enabled: bool,
+    pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
@@ -79,6 +80,7 @@ where
                 id,
                 items: Vec::new(),
                 enabled: true,
+                tab_stop: true,
                 size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
                 item_template: None,
@@ -111,6 +113,11 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.model.tab_stop = tab_stop;
         self
     }
 

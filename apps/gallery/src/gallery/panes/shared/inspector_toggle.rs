@@ -13,6 +13,7 @@ use crate::gallery::control::GalleryApp;
 const INSPECTOR_PAGE_IDS: &[&str] = &[
     "badge",
     "button",
+    "toolbar",
     "toggle",
     "toggle-group",
     "switch",

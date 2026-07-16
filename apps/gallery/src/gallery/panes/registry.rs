@@ -19,7 +19,7 @@ use super::{
     selection_panel,
     shared::{gallery_pane, InspectorToggleRegistry},
     split_view, selector, selector_controls_template, settings, slider, switch, tabs_navigation, textarea, textfield,
-    toggle, toggle_group, typography, dialog,
+    toggle, toggle_group, toolbar, typography, dialog,
 };
 
 #[derive(Clone, Copy)]
@@ -51,6 +51,7 @@ enum GalleryPageKind {
     SelectionPanel,
     SelectorTemplates,
     CustomButton,
+    Toolbar,
     Toggle,
     ToggleGroup,
     Switch,
@@ -283,6 +284,8 @@ const SLIDE_PANEL_PAGE: GalleryPage =
     GalleryPage { id: "slide-panel", label: "Slide Panel", icon: None, kind: GalleryPageKind::SlidePanel };
 const CUSTOM_BUTTON_PAGE: GalleryPage =
     GalleryPage { id: "custom-button", label: "Custom Button", icon: None, kind: GalleryPageKind::CustomButton };
+const TOOLBAR_PAGE: GalleryPage =
+    GalleryPage { id: "toolbar", label: "Toolbar", icon: None, kind: GalleryPageKind::Toolbar };
 const AUTOCOMPLETE_TEXTFIELD_PAGE: GalleryPage = GalleryPage {
     id: "autocomplete-textfield",
     label: "Autocomplete TextBox",
@@ -312,7 +315,7 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
 
 const PRIMARY_PAGES: &[GalleryPage] = &[PALETTE_PAGE, TYPOGRAPHY_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
-const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE];
+const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE, TOOLBAR_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
     ACCORDION_PAGE,
     CHECKBOX_PAGE,
@@ -442,6 +445,7 @@ pub(in crate::gallery) struct GalleryPanes {
     pub(super) selection_panel: selection_panel::SelectionPanelPane,
     pub(super) selector_templates: selector_controls_template::SelectorControlsTemplatePane,
     pub(super) custom_button: prototypes::ModButtonPane,
+    pub(super) toolbar: toolbar::ToolbarPane,
     pub(super) button: button::ButtonPane,
     pub(super) toggle: toggle::TogglePane,
     pub(super) toggle_group: toggle_group::ToggleGroupPane,
@@ -552,6 +556,7 @@ impl GalleryPanes {
             selection_panel: selection_panel::SelectionPanelPane::new(cx, look.clone()),
             selector_templates: selector_controls_template::SelectorControlsTemplatePane::new(cx, look.clone()),
             custom_button: prototypes::ModButtonPane::new(cx, look.clone()),
+            toolbar: toolbar::ToolbarPane::new(cx, look.clone()),
             button: button::ButtonPane::new(cx, look.clone()),
             toggle: toggle::TogglePane::new(cx, look.clone()),
             toggle_group: toggle_group::ToggleGroupPane::new(cx, look.clone()),
@@ -607,6 +612,7 @@ impl GalleryPanes {
         self.selector.subscribe(cx, subscriptions);
         self.selection_panel.subscribe(cx, subscriptions);
         self.custom_button.subscribe(cx, subscriptions);
+        self.toolbar.subscribe(cx, subscriptions);
         self.button.subscribe(cx, subscriptions);
         self.toggle.subscribe(cx, subscriptions);
         self.toggle_group.subscribe(cx, subscriptions);
@@ -672,6 +678,7 @@ impl GalleryPanes {
             GalleryPageKind::SelectionPanel => self.selection_panel.notify_controls(cx),
             GalleryPageKind::SelectorTemplates => self.selector_templates.notify_controls(cx),
             GalleryPageKind::CustomButton => self.custom_button.notify_controls(cx),
+            GalleryPageKind::Toolbar => self.toolbar.notify_controls(cx),
             GalleryPageKind::Button => self.button.notify_controls(cx),
             GalleryPageKind::Toggle => self.toggle.notify_controls(cx),
             GalleryPageKind::ToggleGroup => self.toggle_group.notify_controls(cx),
@@ -745,6 +752,7 @@ impl GalleryPanes {
             GalleryPageKind::Typography => typography::render(&self.look),
             GalleryPageKind::Button => self.button.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
+            GalleryPageKind::Toolbar => self.toolbar.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::Toggle => self.toggle.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::ToggleGroup => self.toggle_group.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::Switch => self.switch.render(&self.look, &self.inspector_toggles),
