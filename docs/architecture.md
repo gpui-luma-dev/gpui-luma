@@ -56,7 +56,7 @@ To customize a control, developers must follow the customization hierarchy:
 3.  **Derived Theme/Look (Third Tier)**: Derive/extend look-level styling rules for family-wide defaults or metric overrides.
 
 ### 2.3 Lookless SDK Core
-The SDK core (`crates/sdk`) is lookless. It does not hardcode theme colors (like hex codes or HSLA values), paddings, or border-radii. Instead, it queries layout metrics from cached scales (e.g., `StandardBoxScale`, `ListRowScale`) and delegates state resolution to look-defined themes. This decouples behavior from design systems, allowing themes (e.g., Radix, Shadcn) to be hot-swapped without modifying SDK controls.
+The SDK core (`crates/sdk`) is lookless. It does not hardcode theme colors (like hex codes or HSLA values), paddings, or border-radii. Instead, it queries layout metrics from cached scales (e.g., `StandardBoxScale`, `ListRowScale`) and delegates state resolution to look-defined themes. This decouples behavior from design systems, allowing Shadcn or another downstream look to be hot-swapped without modifying SDK controls.
 
 ### 2.4 Typed Boundaries
 APIs utilize strongly typed contracts rather than strings:

@@ -1,4 +1,4 @@
-//! Radix CSS token usage metadata for gallery sidebars and theme docs.
+//! Shadcn CSS token usage metadata for gallery sidebars and theme docs.
 
 use gpui_luma::theme::{ThemePartUsage, ThemeUsage};
 
@@ -310,7 +310,7 @@ mod tests {
     use crate::ShadcnLook;
 
     #[test]
-    fn radix_usage_tokens_resolve_in_css_theme() {
+    fn shadcn_usage_tokens_resolve_in_css_theme() {
         let theme = ShadcnLook::from_built_in_theme("retro-arcade").expect("retro-arcade css");
         for usage in all_shadcn_theme_usages() {
             for part in usage.parts {

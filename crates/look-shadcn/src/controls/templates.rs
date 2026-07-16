@@ -6,7 +6,7 @@ use gpui_luma::controls::overlay_window::{
     OverlayWindowLook, OverlayWindowMode, OverlayWindowTemplate, OverlayWindowTheme, ThemedOverlayWindowTemplate,
 };
 use gpui_luma::controls::checkbox::{CheckboxTheme, ThemedCheckboxTemplate};
-use gpui_luma::controls::command::button::{ButtonRenderModel, ButtonTemplate, DefaultButtonTemplate};
+use gpui_luma::controls::command::button::{ButtonTemplate, DefaultButtonTemplate};
 use gpui_luma::controls::context_menu::{ContextMenuTheme, ThemedContextMenuTemplate};
 use gpui_luma::controls::control_group::{
     ControlGroupItemLike, ControlGroupTemplate, ControlGroupTheme, control_group_template_with_theme,
@@ -19,7 +19,7 @@ use gpui_luma::controls::navigation_sidebar::{
     NavigationSidebarTemplate, NavigationSidebarTheme, ThemedNavigationSidebarTemplate,
 };
 use gpui_luma::controls::listbox::{ListBoxTheme, listbox_template_with_theme};
-use gpui_luma::controls::pager::{PagerTemplate, PagerTheme, ThemedPagerTemplate};
+use gpui_luma::controls::pager::{PagerLook, PagerTemplate, PagerTheme, ThemedPagerTemplate};
 use gpui_luma::controls::popup_menu::{PopupMenuTheme, ThemedPopupMenuTemplate};
 use gpui_luma::controls::progress::{ProgressTheme, ThemedProgressTemplate};
 use gpui_luma::controls::radio_button::{RadioButtonTheme, ThemedRadioButtonTemplate};
@@ -53,7 +53,7 @@ use super::navigation_sidebar::{
     navigation_sidebar_section_look,
 };
 use super::listbox::{listbox_list_look, listbox_row_palette};
-use super::pager::pager_look;
+use super::pager::{pager_button_look, pager_look};
 use super::progress::progress_look;
 use super::radio::radio_button_look;
 use super::scrollbar::scrollbar_look;
@@ -70,12 +70,12 @@ use crate::look_context::LookContext;
 use super::button::ShadcnButtonStyle;
 use crate::look::ShadcnLook;
 
-struct RadixStyledButtonFamilyTheme {
+struct ShadcnStyledButtonFamilyTheme {
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
 }
 
-impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
+impl ButtonFamilyTheme for ShadcnStyledButtonFamilyTheme {
     fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
         let tokens = self.theme.mode_tokens();
         let stylesheet = self.theme.stylesheet();
@@ -101,7 +101,7 @@ impl ButtonFamilyTheme for RadixStyledButtonFamilyTheme {
 }
 
 pub fn styled_button_family_theme(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonFamilyTheme> {
-    Arc::new(RadixStyledButtonFamilyTheme { theme: theme.as_ref().clone(), style })
+    Arc::new(ShadcnStyledButtonFamilyTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn button_family_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ButtonFamilyTheme> {
@@ -112,12 +112,12 @@ pub fn button_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<
     Arc::new(DefaultButtonTemplate::new(styled_button_family_theme(theme, style)))
 }
 
-struct RadixStyledSwitchTheme {
+struct ShadcnStyledSwitchTheme {
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
 }
 
-impl SwitchTheme for RadixStyledSwitchTheme {
+impl SwitchTheme for ShadcnStyledSwitchTheme {
     fn resolve(&self, on: bool, state: InteractionState) -> gpui_luma::controls::switch::SwitchPalette {
         let tokens = self.theme.mode_tokens();
         switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state)
@@ -133,12 +133,12 @@ impl SwitchTheme for RadixStyledSwitchTheme {
     }
 }
 
-struct RadixStyledCheckboxTheme {
+struct ShadcnStyledCheckboxTheme {
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
 }
 
-impl CheckboxTheme for RadixStyledCheckboxTheme {
+impl CheckboxTheme for ShadcnStyledCheckboxTheme {
     fn resolve(&self, checked: bool, state: InteractionState) -> gpui_luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
         checkbox_look(tokens.as_ref(), self.style, checked, state)
@@ -149,12 +149,12 @@ impl CheckboxTheme for RadixStyledCheckboxTheme {
     }
 }
 
-struct RadixStyledRadioButtonTheme {
+struct ShadcnStyledRadioButtonTheme {
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
 }
 
-impl RadioButtonTheme for RadixStyledRadioButtonTheme {
+impl RadioButtonTheme for ShadcnStyledRadioButtonTheme {
     fn resolve(
         &self,
         selected: bool,
@@ -174,7 +174,7 @@ pub fn checkbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn CheckboxTheme> {
 }
 
 pub fn checkbox_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn CheckboxTheme> {
-    Arc::new(RadixStyledCheckboxTheme { theme: theme.as_ref().clone(), style })
+    Arc::new(ShadcnStyledCheckboxTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn switch_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SwitchTheme> {
@@ -182,7 +182,7 @@ pub fn switch_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SwitchTheme> {
 }
 
 pub fn switch_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn SwitchTheme> {
-    Arc::new(RadixStyledSwitchTheme { theme: theme.as_ref().clone(), style })
+    Arc::new(ShadcnStyledSwitchTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn radio_button_theme(theme: Arc<ShadcnLook>) -> Arc<dyn RadioButtonTheme> {
@@ -190,7 +190,7 @@ pub fn radio_button_theme(theme: Arc<ShadcnLook>) -> Arc<dyn RadioButtonTheme> {
 }
 
 pub fn radio_button_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn RadioButtonTheme> {
-    Arc::new(RadixStyledRadioButtonTheme { theme: theme.as_ref().clone(), style })
+    Arc::new(ShadcnStyledRadioButtonTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn switch_template(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn ButtonTemplate<bool>> {
@@ -210,38 +210,38 @@ pub fn slider_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTheme> {
 }
 
 pub fn slider_theme_with_style(theme: Arc<ShadcnLook>, style: ShadcnButtonStyle) -> Arc<dyn SliderTheme> {
-    Arc::new(RadixSliderTheme { theme: theme.as_ref().clone(), style })
+    Arc::new(ShadcnSliderTheme { theme: theme.as_ref().clone(), style })
 }
 
 pub fn dock_splitter_theme(theme: Arc<ShadcnLook>) -> Arc<dyn DockSplitterTheme> {
-    Arc::new(RadixDockSplitterTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnDockSplitterTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn resizable_panels_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ResizablePanelsTheme> {
-    Arc::new(RadixResizablePanelsTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnResizablePanelsTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn split_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SplitViewTheme> {
-    Arc::new(RadixSplitViewTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnSplitViewTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn scrollbar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ScrollbarTheme> {
-    Arc::new(RadixScrollbarTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnScrollbarTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn selector_theme(theme: Arc<ShadcnLook>) -> Arc<dyn SelectorTheme> {
-    Arc::new(RadixSelectorTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnSelectorTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn popup_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PopupMenuTheme> {
-    Arc::new(RadixPopupMenuTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnPopupMenuTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixDockSplitterTheme {
+struct ShadcnDockSplitterTheme {
     theme: ShadcnLook,
 }
 
-impl DockSplitterTheme for RadixDockSplitterTheme {
+impl DockSplitterTheme for ShadcnDockSplitterTheme {
     fn resolve(&self, enabled: bool) -> gpui_luma::controls::dock_splitter::DockSplitterLook {
         let tokens = self.theme.mode_tokens();
         let border = tokens.palette.border_default;
@@ -261,34 +261,34 @@ impl DockSplitterTheme for RadixDockSplitterTheme {
     }
 }
 
-struct RadixResizablePanelsTheme {
+struct ShadcnResizablePanelsTheme {
     theme: ShadcnLook,
 }
 
-impl ResizablePanelsTheme for RadixResizablePanelsTheme {
+impl ResizablePanelsTheme for ShadcnResizablePanelsTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::resizable_panels::ResizablePanelsLook {
         let tokens = self.theme.mode_tokens();
         resizable_panels_look(tokens.as_ref(), self.theme.mode(), state)
     }
 }
 
-struct RadixSplitViewTheme {
+struct ShadcnSplitViewTheme {
     theme: ShadcnLook,
 }
 
-impl SplitViewTheme for RadixSplitViewTheme {
+impl SplitViewTheme for ShadcnSplitViewTheme {
     fn resolve(&self, hovered: bool, enabled: bool) -> gpui_luma::controls::split_view::SplitViewLook {
         let tokens = self.theme.mode_tokens();
         split_view_look(tokens.as_ref(), self.theme.mode(), hovered, enabled)
     }
 }
 
-struct RadixSliderTheme {
+struct ShadcnSliderTheme {
     theme: ShadcnLook,
     style: ShadcnButtonStyle,
 }
 
-impl SliderTheme for RadixSliderTheme {
+impl SliderTheme for ShadcnSliderTheme {
     fn resolve(
         &self,
         size: gpui_luma::theme::ControlSize,
@@ -300,11 +300,11 @@ impl SliderTheme for RadixSliderTheme {
     }
 }
 
-struct RadixScrollbarTheme {
+struct ShadcnScrollbarTheme {
     theme: ShadcnLook,
 }
 
-impl ScrollbarTheme for RadixScrollbarTheme {
+impl ScrollbarTheme for ShadcnScrollbarTheme {
     fn resolve(
         &self,
         state: InteractionState,
@@ -337,25 +337,25 @@ pub fn slider_circular_ring_template(theme: Arc<ShadcnLook>) -> Arc<dyn SliderTe
 }
 
 pub fn scrollbar_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::scrollbar::ScrollbarTemplate> {
-    Arc::new(ThemedScrollbarTemplate::new(Arc::new(RadixScrollbarTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedScrollbarTemplate::new(Arc::new(ShadcnScrollbarTheme { theme: theme.as_ref().clone() })))
 }
 
-struct RadixFloatingMenuTheme {
+struct ShadcnFloatingMenuTheme {
     theme: ShadcnLook,
 }
 
-impl FloatingMenuTheme for RadixFloatingMenuTheme {
+impl FloatingMenuTheme for ShadcnFloatingMenuTheme {
     fn resolve(&self) -> gpui_luma::controls::floating_menu::FloatingMenuLook {
         let tokens = self.theme.mode_tokens();
         floating_menu_look(tokens.as_ref(), self.theme.mode(), gpui_luma::theme::ControlSize::Md)
     }
 }
 
-struct RadixPopupMenuTheme {
+struct ShadcnPopupMenuTheme {
     theme: ShadcnLook,
 }
 
-impl PopupMenuTheme for RadixPopupMenuTheme {
+impl PopupMenuTheme for ShadcnPopupMenuTheme {
     fn resolve(
         &self,
         trigger_style: gpui_luma::controls::popup_menu::PopupMenuTriggerStyle,
@@ -391,11 +391,11 @@ impl PopupMenuTheme for RadixPopupMenuTheme {
     }
 }
 
-struct RadixContextMenuTheme {
+struct ShadcnContextMenuTheme {
     theme: ShadcnLook,
 }
 
-impl ContextMenuTheme for RadixContextMenuTheme {
+impl ContextMenuTheme for ShadcnContextMenuTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::context_menu::ContextMenuLook {
         let tokens = self.theme.mode_tokens();
         context_menu_look(tokens.as_ref(), self.theme.mode(), state)
@@ -403,15 +403,15 @@ impl ContextMenuTheme for RadixContextMenuTheme {
 }
 
 pub fn floating_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn FloatingMenuTheme> {
-    Arc::new(RadixFloatingMenuTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnFloatingMenuTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn popup_menu_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::popup_menu::PopupMenuTemplate> {
-    Arc::new(ThemedPopupMenuTemplate::new(Arc::new(RadixPopupMenuTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedPopupMenuTemplate::new(Arc::new(ShadcnPopupMenuTheme { theme: theme.as_ref().clone() })))
 }
 
 pub fn context_menu_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ContextMenuTheme> {
-    Arc::new(RadixContextMenuTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnContextMenuTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn context_menu_template(
@@ -420,11 +420,11 @@ pub fn context_menu_template(
     Arc::new(ThemedContextMenuTemplate::new(context_menu_theme(Arc::clone(&theme))))
 }
 
-struct RadixSelectorTheme {
+struct ShadcnSelectorTheme {
     theme: ShadcnLook,
 }
 
-impl SelectorTheme for RadixSelectorTheme {
+impl SelectorTheme for ShadcnSelectorTheme {
     fn resolve(&self, state: InteractionState) -> gpui_luma::controls::selector::SelectorPalette {
         let tokens = self.theme.mode_tokens();
         super::selector::selector_palette(tokens.as_ref(), self.theme.mode(), state)
@@ -445,11 +445,11 @@ impl SelectorTheme for RadixSelectorTheme {
     }
 }
 
-struct RadixTextFieldTheme {
+struct ShadcnTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for RadixTextFieldTheme {
+impl TextFieldTheme for ShadcnTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -471,11 +471,11 @@ impl TextFieldTheme for RadixTextFieldTheme {
     }
 }
 
-struct RadixAutocompleteTextBoxTheme {
+struct ShadcnAutocompleteTextBoxTheme {
     theme: ShadcnLook,
 }
 
-impl AutocompleteTextBoxTheme for RadixAutocompleteTextBoxTheme {
+impl AutocompleteTextBoxTheme for ShadcnAutocompleteTextBoxTheme {
     fn resolve(&self) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxLook {
         let tokens = self.theme.mode_tokens();
         autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), ControlSize::Md)
@@ -484,24 +484,24 @@ impl AutocompleteTextBoxTheme for RadixAutocompleteTextBoxTheme {
 
 pub fn selector_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::selector::SelectorTemplate> {
     Arc::new(ThemedSelectorTemplate::new(
-        Arc::new(RadixSelectorTheme { theme: theme.as_ref().clone() }),
+        Arc::new(ShadcnSelectorTheme { theme: theme.as_ref().clone() }),
         default_selector_items_template::<gpui_luma::controls::selector::SelectorItem>(),
     ))
 }
 
 pub fn textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(RadixTextFieldTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
 pub fn textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixTextFieldTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixInputTextFieldTheme {
+struct ShadcnInputTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for RadixInputTextFieldTheme {
+impl TextFieldTheme for ShadcnInputTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -524,18 +524,18 @@ impl TextFieldTheme for RadixInputTextFieldTheme {
 }
 
 pub fn input_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixInputTextFieldTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(RadixInputTextFieldTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
-struct RadixSoftTextFieldTheme {
+struct ShadcnSoftTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for RadixSoftTextFieldTheme {
+impl TextFieldTheme for ShadcnSoftTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -558,14 +558,14 @@ impl TextFieldTheme for RadixSoftTextFieldTheme {
 }
 
 pub fn soft_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixSoftTextFieldTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnSoftTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixFilledTextFieldTheme {
+struct ShadcnFilledTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for RadixFilledTextFieldTheme {
+impl TextFieldTheme for ShadcnFilledTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -588,18 +588,18 @@ impl TextFieldTheme for RadixFilledTextFieldTheme {
 }
 
 pub fn filled_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(RadixFilledTextFieldTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnFilledTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn filled_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(RadixFilledTextFieldTheme { theme: theme.as_ref().clone() })))
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnFilledTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
-struct RadixTextAreaTheme {
+struct ShadcnTextAreaTheme {
     theme: ShadcnLook,
 }
 
-impl TextAreaTheme for RadixTextAreaTheme {
+impl TextAreaTheme for ShadcnTextAreaTheme {
     fn resolve(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
@@ -625,14 +625,14 @@ pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls:
 }
 
 pub fn textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(RadixTextAreaTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixSoftTextAreaTheme {
+struct ShadcnSoftTextAreaTheme {
     theme: ShadcnLook,
 }
 
-impl TextAreaTheme for RadixSoftTextAreaTheme {
+impl TextAreaTheme for ShadcnSoftTextAreaTheme {
     fn resolve(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
@@ -654,14 +654,14 @@ impl TextAreaTheme for RadixSoftTextAreaTheme {
 }
 
 pub fn soft_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(RadixSoftTextAreaTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnSoftTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixFilledTextAreaTheme {
+struct ShadcnFilledTextAreaTheme {
     theme: ShadcnLook,
 }
 
-impl TextAreaTheme for RadixFilledTextAreaTheme {
+impl TextAreaTheme for ShadcnFilledTextAreaTheme {
     fn resolve(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
@@ -683,7 +683,7 @@ impl TextAreaTheme for RadixFilledTextAreaTheme {
 }
 
 pub fn filled_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(RadixFilledTextAreaTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnFilledTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn filled_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
@@ -691,7 +691,7 @@ pub fn filled_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::co
 }
 
 pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTextBoxTheme> {
-    Arc::new(RadixAutocompleteTextBoxTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnAutocompleteTextBoxTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn selection_panel_look_provider(theme: Arc<ShadcnLook>) -> SelectionPanelLookProvider {
@@ -701,11 +701,11 @@ pub fn selection_panel_look_provider(theme: Arc<ShadcnLook>) -> SelectionPanelLo
     })
 }
 
-struct RadixTreeViewTheme {
+struct ShadcnTreeViewTheme {
     theme: ShadcnLook,
 }
 
-impl TreeViewTheme for RadixTreeViewTheme {
+impl TreeViewTheme for ShadcnTreeViewTheme {
     fn resolve_row(&self, state: InteractionState, selected: bool) -> gpui_luma::controls::tree_view::TreeViewPalette {
         let tokens = self.theme.mode_tokens();
         tree_view_row_palette(tokens.as_ref(), selected, state)
@@ -716,11 +716,11 @@ impl TreeViewTheme for RadixTreeViewTheme {
     }
 }
 
-struct RadixAccordionTheme {
+struct ShadcnAccordionTheme {
     theme: ShadcnLook,
 }
 
-impl AccordionTheme for RadixAccordionTheme {
+impl AccordionTheme for ShadcnAccordionTheme {
     fn resolve_trigger(&self, state: InteractionState) -> gpui_luma::controls::accordion::AccordionPalette {
         let tokens = self.theme.mode_tokens();
         accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state)
@@ -736,11 +736,11 @@ impl AccordionTheme for RadixAccordionTheme {
     }
 }
 
-struct RadixTabsNavigationTheme {
+struct ShadcnTabsNavigationTheme {
     theme: ShadcnLook,
 }
 
-impl TabsNavigationTheme for RadixTabsNavigationTheme {
+impl TabsNavigationTheme for ShadcnTabsNavigationTheme {
     fn resolve_list(
         &self,
         enabled: bool,
@@ -765,11 +765,11 @@ impl TabsNavigationTheme for RadixTabsNavigationTheme {
     }
 }
 
-struct RadixNavigationSidebarTheme {
+struct ShadcnNavigationSidebarTheme {
     theme: ShadcnLook,
 }
 
-impl NavigationSidebarTheme for RadixNavigationSidebarTheme {
+impl NavigationSidebarTheme for ShadcnNavigationSidebarTheme {
     fn resolve_container(&self) -> gpui_luma::controls::navigation_sidebar::NavigationSidebarContainerLook {
         let tokens = self.theme.mode_tokens();
         navigation_sidebar_container_look(tokens.as_ref())
@@ -805,7 +805,7 @@ where
 }
 
 pub fn tree_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TreeViewTheme> {
-    Arc::new(RadixTreeViewTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnTreeViewTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn accordion_template(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTemplate> {
@@ -813,7 +813,7 @@ pub fn accordion_template(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTemplate> 
 }
 
 pub fn accordion_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AccordionTheme> {
-    Arc::new(RadixAccordionTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnAccordionTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn tabs_navigation_template(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTemplate> {
@@ -821,26 +821,26 @@ pub fn tabs_navigation_template(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigatio
 }
 
 pub fn tabs_navigation_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TabsNavigationTheme> {
-    Arc::new(RadixTabsNavigationTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnTabsNavigationTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn navigation_sidebar_template(theme: Arc<ShadcnLook>) -> Arc<dyn NavigationSidebarTemplate> {
     let menu_theme = floating_menu_theme(Arc::clone(&theme));
     Arc::new(ThemedNavigationSidebarTemplate::new_with_floating_menu_theme(
-        Arc::new(RadixNavigationSidebarTheme { theme: theme.as_ref().clone() }),
+        Arc::new(ShadcnNavigationSidebarTheme { theme: theme.as_ref().clone() }),
         menu_theme,
     ))
 }
 
 pub fn navigation_sidebar_theme(theme: Arc<ShadcnLook>) -> Arc<dyn NavigationSidebarTheme> {
-    Arc::new(RadixNavigationSidebarTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnNavigationSidebarTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixControlGroupTheme {
+struct ShadcnControlGroupTheme {
     theme: ShadcnLook,
 }
 
-impl ControlGroupTheme for RadixControlGroupTheme {
+impl ControlGroupTheme for ShadcnControlGroupTheme {
     fn resolve_list(&self, enabled: bool) -> gpui_luma::controls::control_group::ControlGroupListLook {
         let tokens = self.theme.mode_tokens();
         control_group_list_look(tokens.as_ref(), enabled)
@@ -848,7 +848,7 @@ impl ControlGroupTheme for RadixControlGroupTheme {
 }
 
 pub fn control_group_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ControlGroupTheme> {
-    Arc::new(RadixControlGroupTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnControlGroupTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn control_group_template<T>(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<T>
@@ -858,11 +858,11 @@ where
     control_group_template_with_theme(control_group_theme(theme))
 }
 
-struct RadixListBoxTheme {
+struct ShadcnListBoxTheme {
     theme: ShadcnLook,
 }
 
-impl ListBoxTheme for RadixListBoxTheme {
+impl ListBoxTheme for ShadcnListBoxTheme {
     fn resolve_list(
         &self,
         enabled: bool,
@@ -889,18 +889,18 @@ impl ListBoxTheme for RadixListBoxTheme {
 }
 
 pub fn listbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListBoxTheme> {
-    Arc::new(RadixListBoxTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnListBoxTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn listbox_template(theme: Arc<ShadcnLook>) -> ControlGroupTemplate<gpui_luma::controls::listbox::ListBoxItem> {
     listbox_template_with_theme(listbox_theme(theme))
 }
 
-struct RadixListViewTheme {
+struct ShadcnListViewTheme {
     theme: ShadcnLook,
 }
 
-impl ListViewTheme for RadixListViewTheme {
+impl ListViewTheme for ShadcnListViewTheme {
     fn resolve_look(
         &self,
         enabled: bool,
@@ -927,18 +927,47 @@ impl ListViewTheme for RadixListViewTheme {
 }
 
 pub fn list_view_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ListViewTheme> {
-    Arc::new(RadixListViewTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnListViewTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn list_view_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::list_view::ListViewTemplate> {
     list_view_template_with_theme(list_view_theme(theme))
 }
 
-struct RadixPagerTheme {
+struct ShadcnPagerTheme {
     theme: Arc<ShadcnLook>,
 }
 
-impl PagerTheme for RadixPagerTheme {
+struct ShadcnPagerButtonTheme {
+    theme: Arc<ShadcnLook>,
+    pager_look: PagerLook,
+}
+
+impl ButtonFamilyTheme for ShadcnPagerButtonTheme {
+    fn resolve(&self, role: ButtonFamilyRole, size: ControlSize, state: InteractionState) -> ButtonFamilyPalette {
+        let tokens = self.theme.mode_tokens();
+        let stylesheet = self.theme.stylesheet();
+        let ctx = LookContext::new(tokens.as_ref(), self.theme.mode(), state);
+        button_palette(&ctx, stylesheet.as_ref(), ShadcnButtonStyle::Outline, role, size)
+    }
+
+    fn resolve_look(
+        &self,
+        role: ButtonFamilyRole,
+        _size: ControlSize,
+        state: InteractionState,
+        _scale: &gpui_luma::theme::StandardBoxScale,
+        _pill_radius: f32,
+    ) -> Option<ButtonFamilyLook> {
+        Some(pager_button_look(self.theme.as_ref(), &self.pager_look, role, state))
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+}
+
+impl PagerTheme for ShadcnPagerTheme {
     fn resolve(
         &self,
         enabled: bool,
@@ -947,19 +976,11 @@ impl PagerTheme for RadixPagerTheme {
         pager_look(self.theme.as_ref(), enabled, style)
     }
 
-    fn button_template(&self) -> Arc<dyn ButtonTemplate<()>> {
-        button_template(Arc::clone(&self.theme), ShadcnButtonStyle::Outline)
-    }
-
-    fn resolve_button_look(
-        &self,
-        pager_look: &gpui_luma::controls::pager::PagerLook,
-        model: &ButtonRenderModel<()>,
-    ) -> ButtonFamilyLook {
-        use gpui_luma::controls::pager::tune_pager_button_look;
-
-        let base = self.theme.resolve_outline_button(model.role, ControlSize::Sm, model.state);
-        tune_pager_button_look(base, pager_look, model.role)
+    fn button_template(&self, pager_look: &PagerLook) -> Arc<dyn ButtonTemplate<()>> {
+        Arc::new(DefaultButtonTemplate::new(Arc::new(ShadcnPagerButtonTheme {
+            theme: Arc::clone(&self.theme),
+            pager_look: pager_look.clone(),
+        })))
     }
 }
 
@@ -968,7 +989,7 @@ pub fn pager_template(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTemplate> {
 }
 
 pub fn pager_theme(theme: Arc<ShadcnLook>) -> Arc<dyn PagerTheme> {
-    Arc::new(RadixPagerTheme { theme })
+    Arc::new(ShadcnPagerTheme { theme })
 }
 
 pub fn radio_group_template<T>(
@@ -982,11 +1003,11 @@ where
     radio_group_buttons_template(theme.radio_button_template(style), layout)
 }
 
-struct RadixProgressTheme {
+struct ShadcnProgressTheme {
     theme: ShadcnLook,
 }
 
-impl ProgressTheme for RadixProgressTheme {
+impl ProgressTheme for ShadcnProgressTheme {
     fn resolve(
         &self,
         enabled: bool,
@@ -1002,7 +1023,7 @@ pub fn progress_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls:
 }
 
 pub fn progress_theme(theme: Arc<ShadcnLook>) -> Arc<dyn ProgressTheme> {
-    Arc::new(RadixProgressTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnProgressTheme { theme: theme.as_ref().clone() })
 }
 
 pub fn overlay_window_template(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTemplate> {
@@ -1010,14 +1031,14 @@ pub fn overlay_window_template(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowT
 }
 
 pub fn overlay_window_theme(theme: Arc<ShadcnLook>) -> Arc<dyn OverlayWindowTheme> {
-    Arc::new(RadixOverlayWindowTheme { theme: theme.as_ref().clone() })
+    Arc::new(ShadcnOverlayWindowTheme { theme: theme.as_ref().clone() })
 }
 
-struct RadixOverlayWindowTheme {
+struct ShadcnOverlayWindowTheme {
     theme: ShadcnLook,
 }
 
-impl OverlayWindowTheme for RadixOverlayWindowTheme {
+impl OverlayWindowTheme for ShadcnOverlayWindowTheme {
     fn resolve(&self, size: ControlSize, mode: OverlayWindowMode) -> OverlayWindowLook {
         overlay_window_look(&self.theme, size, mode)
     }

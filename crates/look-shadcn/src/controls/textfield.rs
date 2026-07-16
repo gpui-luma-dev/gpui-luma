@@ -1,4 +1,4 @@
-//! Text field property mappings (shadcn / Radix):
+//! Text field property mappings for shadcn-inspired inputs:
 //!
 //! **Surface** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
 //! `selection:bg-primary`, `selection:text-primary-foreground`, `placeholder:text-muted-foreground`.
@@ -9,7 +9,7 @@
 //!
 //! **Filled**: bordered surface with opaque `background` fill and `shadow-xs` elevation.
 //!
-//! **Soft** (Radix soft): filled `muted` background, no border, same text/selection tokens.
+//! **Soft**: filled `muted` background, no border, same text/selection tokens.
 
 use gpui_luma::controls::textfield::{TextFieldPalette, TextFieldState};
 use gpui_luma::theme::{InteractionState, ThemeMode};

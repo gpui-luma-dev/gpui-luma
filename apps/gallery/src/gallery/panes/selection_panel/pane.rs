@@ -65,9 +65,9 @@ impl SelectionPanelPane {
             .collect::<Vec<_>>();
 
         let wide_panel_look = std::sync::Arc::new({
-            let radix = look.clone();
+            let active_look = look.clone();
             move |size| {
-                let mut look = radix.selection_panel_look(size);
+                let mut look = active_look.selection_panel_look(size);
                 look.min_width = 320.0;
                 look
             }

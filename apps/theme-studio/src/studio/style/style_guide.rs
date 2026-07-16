@@ -787,6 +787,7 @@ impl StyleGuidePanel {
             StyleGuideSection::Menus => sections::menus::render_menu_template_state_section(
                 self.look.clone(),
                 self.menus_preview_tabs.clone().expect("menus preview tabs"),
+                Arc::new(cx.listener(Self::handle_section_overlay_scroll_wheel)),
                 window,
                 cx,
             ),
@@ -797,6 +798,7 @@ impl StyleGuidePanel {
             StyleGuideSection::Selectors => sections::selectors::render_selector_templates_section(
                 self.look.clone(),
                 self.selectors_preview_tabs.clone().expect("selectors preview tabs"),
+                Arc::new(cx.listener(Self::handle_section_overlay_scroll_wheel)),
                 window,
                 cx,
             ),

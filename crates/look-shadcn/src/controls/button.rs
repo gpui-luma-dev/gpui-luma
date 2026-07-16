@@ -13,7 +13,7 @@ use crate::stylesheet::{
     resolve_stylesheet_shadow_token,
 };
 
-/// Button-local corner radius presets (shadcn/Radix `radius` prop).
+/// Button-local corner radius presets (shadcn/Shadcn `radius` prop).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ButtonRadiusPreset {
     None,

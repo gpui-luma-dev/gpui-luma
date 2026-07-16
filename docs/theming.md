@@ -10,7 +10,7 @@ GPUI-Luma completely decouples control behavior from the styling system through 
 
 ```text
 ┌──────────────────────────────────────────────┐
-│  Tier 1: Design Tokens (CSS Catalog)         │ <-- Theme Skin (e.g. Radix, Shadcn)
+│  Tier 1: Design Tokens (CSS Catalog)         │ <-- Theme Skin (e.g. Shadcn or another look)
 │  --primary: hsl(330 64% 52%); --radius: 6px   │     (Parsed from raw CSS files)
 └──────────────────────┬───────────────────────┘
                        │ resolves variables

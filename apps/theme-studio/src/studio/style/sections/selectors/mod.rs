@@ -38,6 +38,8 @@ use lucide_icons::Icon as LucideIcon;
 use crate::studio::style::shared::preview_handlers::{input_noop_click, input_noop_hover, input_textfield_handlers};
 use crate::studio::style::shared::shell::section_shell_with_width;
 
+type SelectorPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+
 #[derive(Clone, Copy)]
 struct SelectorTemplateStateSample {
     id: &'static str,
@@ -125,6 +127,7 @@ fn state_label_asset_path(state_id: &str) -> &'static str {
 pub(crate) fn render_selector_templates_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -140,7 +143,7 @@ pub(crate) fn render_selector_templates_section(
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        render_selector_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
+        render_selector_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, scroll_wheel, window, cx),
     )
 }
 
@@ -177,12 +180,13 @@ fn render_selector_preview_tabbed_content(
     preview_tabs: Entity<TabsNavigation>,
     active_tab: SharedString,
     border: gpui::Hsla,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let body = match active_tab.as_ref() {
-        "sizes" => render_selector_sizes_body(&look, window, cx),
-        _ => render_selector_template_preview_body(&look, window, cx),
+        "sizes" => render_selector_sizes_body(&look, scroll_wheel, window, cx),
+        _ => render_selector_template_preview_body(&look, scroll_wheel, window, cx),
     };
 
     div()
@@ -204,7 +208,12 @@ fn selector_template_controls() -> [SelectorTemplateControl; 4] {
     ]
 }
 
-fn render_selector_template_preview_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_selector_template_preview_body(
+    look: &Arc<ShadcnLook>,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     let chrome = look.chrome();
     let states = selector_template_state_samples();
     let controls = selector_template_controls();
@@ -215,11 +224,9 @@ fn render_selector_template_preview_body(look: &Arc<ShadcnLook>, window: &mut Wi
         .items_start()
         .gap(px(10.0))
         .child(render_selector_header_row(&controls, chrome.muted_text, px(28.0)))
-        .children(
-            states
-                .iter()
-                .map(|state| render_selector_state_row(look, state, &controls, chrome.muted_text, window, cx)),
-        )
+        .children(states.iter().map(|state| {
+            render_selector_state_row(look, state, &controls, chrome.muted_text, scroll_wheel.clone(), window, cx)
+        }))
         .into_any_element()
 }
 
@@ -252,6 +259,7 @@ fn render_selector_state_row(
     state: &SelectorTemplateStateSample,
     controls: &[SelectorTemplateControl],
     label_color: gpui::Hsla,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -261,12 +269,26 @@ fn render_selector_state_row(
         .gap(px(10.0))
         .child(render_vertical_state_rail(state.label, state.id, label_color))
         .child(div().flex().items_start().gap(px(10.0)).children(controls.iter().map(|control| {
-            render_selector_control_cell(look, *control, state, ControlSize::Md, state.id == "pressed", window, cx)
+            render_selector_control_cell(
+                look,
+                *control,
+                state,
+                ControlSize::Md,
+                state.id == "pressed",
+                scroll_wheel.clone(),
+                window,
+                cx,
+            )
         })))
         .into_any_element()
 }
 
-fn render_selector_sizes_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_selector_sizes_body(
+    look: &Arc<ShadcnLook>,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     let chrome = look.chrome();
     let controls = selector_template_controls();
     let sizes = [(ControlSize::Sm, "Sm"), (ControlSize::Md, "Md"), (ControlSize::Lg, "Lg")];
@@ -306,23 +328,21 @@ fn render_selector_sizes_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &
                         .text_color(chrome.muted_text)
                         .child(label),
                 )
-                .child(
-                    div().flex().items_start().gap(px(10.0)).children(
-                        controls.iter().map(|control| {
-                            render_selector_control_cell(look, *control, &state, size, true, window, cx)
-                        }),
-                    ),
-                )
+                .child(div().flex().items_start().gap(px(10.0)).children(controls.iter().map(|control| {
+                    render_selector_control_cell(look, *control, &state, size, true, scroll_wheel.clone(), window, cx)
+                })))
         }))
         .into_any_element()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_selector_control_cell(
     look: &Arc<ShadcnLook>,
     control: SelectorTemplateControl,
     state: &SelectorTemplateStateSample,
     size: ControlSize,
     show_popup: bool,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -334,20 +354,41 @@ fn render_selector_control_cell(
     ));
 
     let trigger = match control {
-        SelectorTemplateControl::AutocompleteTextBox => {
-            render_selector_autocomplete_trigger(look, &id, "Type to filter...", state, size, window, cx)
-        }
-        SelectorTemplateControl::ComboBox => {
-            render_selector_combobox_trigger(look, &id, "Strict mode (exact match only)...", state, size, window, cx)
-        }
-        SelectorTemplateControl::SearchSelector => {
-            render_selector_search_selector_trigger(look, &id, "Choose a state...", state, size, window, cx)
-        }
+        SelectorTemplateControl::AutocompleteTextBox => render_selector_autocomplete_trigger(
+            look,
+            &id,
+            "Type to filter...",
+            state,
+            size,
+            scroll_wheel.clone(),
+            window,
+            cx,
+        ),
+        SelectorTemplateControl::ComboBox => render_selector_combobox_trigger(
+            look,
+            &id,
+            "Strict mode (exact match only)...",
+            state,
+            size,
+            scroll_wheel.clone(),
+            window,
+            cx,
+        ),
+        SelectorTemplateControl::SearchSelector => render_selector_search_selector_trigger(
+            look,
+            &id,
+            "Choose a state...",
+            state,
+            size,
+            scroll_wheel.clone(),
+            window,
+            cx,
+        ),
         SelectorTemplateControl::Selector => render_selector_selector_trigger(look, &id, state, size, window, cx),
     };
 
     let popup = if show_popup {
-        Some(render_selector_popup_preview(look, &id, control, size, window, cx))
+        Some(render_selector_popup_preview(look, &id, control, size, scroll_wheel.clone(), window, cx))
     } else {
         None
     };
@@ -361,15 +402,18 @@ fn render_selector_control_cell(
         .gap(px(6.0))
         .child(trigger)
         .when_some(popup, |root, popup| root.child(popup))
+        .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx))
         .into_any_element()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_selector_autocomplete_trigger(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
     size: ControlSize,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -410,16 +454,26 @@ fn render_selector_autocomplete_trigger(
 
     div()
         .w(px(SELECTOR_TRIGGER_WIDTH))
-        .child(autocomplete_template.render(model, AutocompleteTextBoxTemplateHandlers::default(), window, cx))
+        .child(autocomplete_template.render(
+            model,
+            AutocompleteTextBoxTemplateHandlers {
+                scroll_wheel: Box::new(move |event, window, cx| scroll_wheel(event, window, cx)),
+                ..Default::default()
+            },
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_selector_combobox_trigger(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
     size: ControlSize,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -464,16 +518,26 @@ fn render_selector_combobox_trigger(
 
     div()
         .w(px(SELECTOR_TRIGGER_WIDTH))
-        .child(combobox_template.render(model, ComboBoxTemplateHandlers::default(), window, cx))
+        .child(combobox_template.render(
+            model,
+            ComboBoxTemplateHandlers {
+                scroll_wheel: Box::new(move |event, window, cx| scroll_wheel(event, window, cx)),
+                ..Default::default()
+            },
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_selector_search_selector_trigger(
     look: &Arc<ShadcnLook>,
     id: &SharedString,
     placeholder: &'static str,
     state: &SelectorTemplateStateSample,
     size: ControlSize,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -502,7 +566,15 @@ fn render_selector_search_selector_trigger(
 
     div()
         .w(px(SELECTOR_TRIGGER_WIDTH))
-        .child(search_selector_template.render(model, SearchSelectorTemplateHandlers::default(), window, cx))
+        .child(search_selector_template.render(
+            model,
+            SearchSelectorTemplateHandlers {
+                scroll_wheel: Box::new(move |event, window, cx| scroll_wheel(event, window, cx)),
+                ..Default::default()
+            },
+            window,
+            cx,
+        ))
         .into_any_element()
 }
 
@@ -589,6 +661,7 @@ fn render_selector_popup_preview(
     id: &SharedString,
     control: SelectorTemplateControl,
     size: ControlSize,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -613,6 +686,10 @@ fn render_selector_popup_preview(
                 },
                 AutocompleteItemsTemplateHandlers { item_hovers, item_clicks },
             )
+            .on_scroll_wheel({
+                let scroll_wheel = scroll_wheel.clone();
+                move |event, window, cx| scroll_wheel(event, window, cx)
+            })
             .into_any_element(),
         SelectorTemplateControl::ComboBox => render_selector_combobox_popup_preview_from_templates(
             &popup_id,
@@ -623,6 +700,7 @@ fn render_selector_popup_preview(
                 panel: &default_combobox_panel_template(),
             },
             SelectorPopupHandlers { item_hovers, item_clicks },
+            scroll_wheel.clone(),
             cx,
         ),
         SelectorTemplateControl::Selector => default_selector_items_template()
@@ -644,6 +722,10 @@ fn render_selector_popup_preview(
                 SelectorItemsTemplateHandlers { item_hovers, item_clicks, ..Default::default() },
                 cx,
             )
+            .on_scroll_wheel({
+                let scroll_wheel = scroll_wheel.clone();
+                move |event, window, cx| scroll_wheel(event, window, cx)
+            })
             .into_any_element(),
         SelectorTemplateControl::SearchSelector => {
             let search_id = SharedString::from(format!("{id}-popup-search-preview"));
@@ -687,6 +769,10 @@ fn render_selector_popup_preview(
             let search_content = look
                 .input_textfield_template()
                 .render(&search_model, input_textfield_handlers(), window, cx)
+                .on_scroll_wheel({
+                    let scroll_wheel = scroll_wheel.clone();
+                    move |event, window, cx| scroll_wheel(event, window, cx)
+                })
                 .into_any_element();
 
             render_selector_search_selector_popup_preview_from_templates(
@@ -699,12 +785,17 @@ fn render_selector_popup_preview(
                 },
                 search_content,
                 SelectorPopupHandlers { item_hovers, item_clicks },
+                scroll_wheel.clone(),
                 cx,
             )
         }
     };
 
-    div().w(px(popup_look.min_width)).child(rows).into_any_element()
+    div()
+        .w(px(popup_look.min_width))
+        .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx))
+        .child(rows)
+        .into_any_element()
 }
 
 fn selector_template_state_samples() -> [SelectorTemplateStateSample; 5] {
@@ -864,6 +955,7 @@ fn render_selector_combobox_popup_preview_from_templates(
     look: SelectorItemsPanelLook,
     templates: ComboBoxPopupTemplates<'_>,
     handlers: SelectorPopupHandlers,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     cx: &mut App,
 ) -> AnyElement {
     let SelectorPopupHandlers { item_hovers, item_clicks } = handlers;
@@ -876,22 +968,28 @@ fn render_selector_combobox_popup_preview_from_templates(
         .collect::<Vec<_>>();
     let visible_indices = (0..combobox_items.len()).collect::<Vec<_>>();
 
-    let list = templates.items.render(
-        &ComboBoxItemsRenderModel {
-            menu_id: popup_id,
-            combobox_id: popup_id,
-            items: &combobox_items,
-            visible_indices: &visible_indices,
-            selected_source_index: None,
-            active_visible_index: Some(0),
-            open: true,
-            enabled: true,
-            item_template: None,
-            look: look.clone(),
-        },
-        ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
-        cx,
-    );
+    let list = templates
+        .items
+        .render(
+            &ComboBoxItemsRenderModel {
+                menu_id: popup_id,
+                combobox_id: popup_id,
+                items: &combobox_items,
+                visible_indices: &visible_indices,
+                selected_source_index: None,
+                active_visible_index: Some(0),
+                open: true,
+                enabled: true,
+                item_template: None,
+                look: look.clone(),
+            },
+            ComboBoxItemsTemplateHandlers { item_hovers, item_clicks },
+            cx,
+        )
+        .on_scroll_wheel({
+            let scroll_wheel = scroll_wheel.clone();
+            move |event, window, cx| scroll_wheel(event, window, cx)
+        });
 
     templates.panel.render(
         ComboBoxPanelRenderModel {
@@ -911,6 +1009,7 @@ fn render_selector_combobox_popup_preview_from_templates(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_selector_search_selector_popup_preview_from_templates(
     popup_id: &SharedString,
     items: &[SelectorPanelItem],
@@ -918,6 +1017,7 @@ fn render_selector_search_selector_popup_preview_from_templates(
     templates: SearchSelectorPopupTemplates<'_>,
     search_content: AnyElement,
     handlers: SelectorPopupHandlers,
+    scroll_wheel: SelectorPreviewScrollWheelHandler,
     cx: &mut App,
 ) -> AnyElement {
     let SelectorPopupHandlers { item_hovers, item_clicks } = handlers;
@@ -948,6 +1048,10 @@ fn render_selector_search_selector_popup_preview_from_templates(
             SearchSelectorItemsTemplateHandlers { item_hovers, item_clicks },
             cx,
         )
+        .on_scroll_wheel({
+            let scroll_wheel = scroll_wheel.clone();
+            move |event, window, cx| scroll_wheel(event, window, cx)
+        })
         .into_any_element();
 
     templates.panel.render(

@@ -1,4 +1,4 @@
-//! Scrollbar property mappings (Radix Themes / shadcn-inspired):
+//! Scrollbar property mappings for shadcn-inspired controls:
 //!
 //! | Part  | Token              |
 //! |-------|--------------------|

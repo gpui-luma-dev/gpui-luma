@@ -25,9 +25,12 @@ use crate::studio::style::shared::samples::ButtonStateSample;
 use crate::studio::style::shared::shell::section_shell_with_width;
 use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
 
+type MenuPreviewScrollWheelHandler = Arc<dyn Fn(&gpui::ScrollWheelEvent, &mut Window, &mut App) + 'static>;
+
 pub(crate) fn render_menu_template_state_section(
     look: Arc<ShadcnLook>,
     preview_tabs: Entity<TabsNavigation>,
+    scroll_wheel: MenuPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
@@ -42,7 +45,7 @@ pub(crate) fn render_menu_template_state_section(
         chrome.muted_text,
         chrome.border,
         gpui::hsla(0.0, 0.0, 0.0, 0.0),
-        render_menus_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
+        render_menus_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, scroll_wheel, window, cx),
     )
 }
 
@@ -51,13 +54,14 @@ fn render_menus_preview_tabbed_content(
     preview_tabs: Entity<TabsNavigation>,
     active_tab: SharedString,
     border: gpui::Hsla,
+    scroll_wheel: MenuPreviewScrollWheelHandler,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let body = match active_tab.as_ref() {
         "trigger-sizes" => render_menu_trigger_size_matrix(&look, window, cx),
-        "floating-menu" => render_floating_menu_template_preview(&look),
-        "sizes" => render_floating_menu_size_matrix(&look),
+        "floating-menu" => render_floating_menu_template_preview(&look, scroll_wheel),
+        "sizes" => render_floating_menu_size_matrix(&look, scroll_wheel),
         _ => render_menu_trigger_template_matrix(&look, window, cx),
     };
 
@@ -185,7 +189,7 @@ fn render_menu_trigger_size_matrix(look: &Arc<ShadcnLook>, window: &mut Window, 
     .build()
 }
 
-fn render_floating_menu_size_matrix(look: &Arc<ShadcnLook>) -> AnyElement {
+fn render_floating_menu_size_matrix(look: &Arc<ShadcnLook>, scroll_wheel: MenuPreviewScrollWheelHandler) -> AnyElement {
     let chrome = look.chrome();
 
     VariantStateTable::new(
@@ -200,15 +204,20 @@ fn render_floating_menu_size_matrix(look: &Arc<ShadcnLook>) -> AnyElement {
     .rows(MENU_TRIGGER_SIZES.iter().map(|(size, label)| VariantStateTableRow {
         label: SharedString::from(*label),
         description: SharedString::from(""),
-        cells: vec![render_floating_menu_size_cell(look, *size)],
+        cells: vec![render_floating_menu_size_cell(look, *size, scroll_wheel.clone())],
     }))
     .build()
 }
 
-fn render_floating_menu_size_cell(look: &Arc<ShadcnLook>, size: ButtonSize) -> AnyElement {
+fn render_floating_menu_size_cell(
+    look: &Arc<ShadcnLook>,
+    size: ButtonSize,
+    scroll_wheel: MenuPreviewScrollWheelHandler,
+) -> AnyElement {
     let menu_look = floating_menu_look_for_size(look, size);
     let id = SharedString::from(format!("theme-studio-floating-menu-size-{}", menu_trigger_size_id(size)));
     let items = floating_menu_default_items();
+    let cell_scroll_wheel = scroll_wheel.clone();
 
     div()
         .w_full()
@@ -217,15 +226,19 @@ fn render_floating_menu_size_cell(look: &Arc<ShadcnLook>, size: ButtonSize) -> A
         .items_start()
         .justify_center()
         .py(px(8.0))
-        .child(render_floating_menu(
-            &id,
-            &items,
-            None,
-            None,
-            menu_look,
-            floating_menu_noop_hovers(items.len()),
-            floating_menu_noop_clicks(items.len()),
-        ))
+        .on_scroll_wheel(move |event, window, cx| cell_scroll_wheel(event, window, cx))
+        .child(
+            render_floating_menu(
+                &id,
+                &items,
+                None,
+                None,
+                menu_look,
+                floating_menu_noop_hovers(items.len()),
+                floating_menu_noop_clicks(items.len()),
+            )
+            .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx)),
+        )
         .into_any_element()
 }
 
@@ -493,7 +506,10 @@ fn floating_menu_noop_clicks(count: usize) -> Vec<FloatingMenuClickHandler> {
     (0..count).map(|_| Box::new(input_noop_click) as FloatingMenuClickHandler).collect()
 }
 
-fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
+fn render_floating_menu_template_preview(
+    look: &Arc<ShadcnLook>,
+    scroll_wheel: MenuPreviewScrollWheelHandler,
+) -> AnyElement {
     let chrome = look.chrome();
     let menu_look = floating_menu_look_for_size(look, ButtonSize::Md);
 
@@ -509,6 +525,7 @@ fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
             chrome.muted_text,
             &floating_menu_default_items(),
             None,
+            scroll_wheel.clone(),
         ))
         .child(render_floating_menu_state_sample(
             "Hover / active item",
@@ -516,6 +533,7 @@ fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
             chrome.muted_text,
             &floating_menu_default_items(),
             Some(MenuPath::Root(1)),
+            scroll_wheel.clone(),
         ))
         .child(render_floating_menu_state_sample(
             "Disabled item",
@@ -523,6 +541,7 @@ fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
             chrome.muted_text,
             &floating_menu_disabled_items(),
             None,
+            scroll_wheel.clone(),
         ))
         .child(render_floating_menu_state_sample(
             "Submenu affordance",
@@ -530,34 +549,42 @@ fn render_floating_menu_template_preview(look: &Arc<ShadcnLook>) -> AnyElement {
             chrome.muted_text,
             &floating_menu_submenu_items(),
             None,
+            scroll_wheel,
         ))
         .into_any_element()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_floating_menu_state_sample(
     label: &'static str,
     look: &FloatingMenuLook,
     label_color: gpui::Hsla,
     items: &[MenuItem],
     active_path: Option<MenuPath>,
+    scroll_wheel: MenuPreviewScrollWheelHandler,
 ) -> AnyElement {
     let id = SharedString::from(format!("theme-studio-floating-menu-sample-{}", menu_sample_id(label)));
     let root_count = items.len();
+    let sample_scroll_wheel = scroll_wheel.clone();
 
     div()
         .flex()
         .flex_col()
         .items_center()
         .gap(px(7.0))
-        .child(render_floating_menu(
-            &id,
-            items,
-            None,
-            active_path,
-            look.clone(),
-            floating_menu_noop_hovers(root_count),
-            floating_menu_noop_clicks(root_count),
-        ))
+        .on_scroll_wheel(move |event, window, cx| sample_scroll_wheel(event, window, cx))
+        .child(
+            render_floating_menu(
+                &id,
+                items,
+                None,
+                active_path,
+                look.clone(),
+                floating_menu_noop_hovers(root_count),
+                floating_menu_noop_clicks(root_count),
+            )
+            .on_scroll_wheel(move |event, window, cx| scroll_wheel(event, window, cx)),
+        )
         .child(
             div()
                 .text_xs()

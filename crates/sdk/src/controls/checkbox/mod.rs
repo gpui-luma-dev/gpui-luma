@@ -18,7 +18,7 @@ use crate::theme::ControlSize;
 
 pub type Checkbox = Entity<Button<bool>>;
 
-/// Builder for [`Checkbox`] controls. Distinct from [`ButtonBuilder<bool>`] so Radix style
+/// Builder for [`Checkbox`] controls. Distinct from [`ButtonBuilder<bool>`] so Shadcn style
 /// helpers apply the checkbox template rather than the switch template.
 pub struct CheckboxBuilder(ButtonBuilder<bool>);
 

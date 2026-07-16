@@ -2,9 +2,9 @@
 
 ## Description
 
-`crates/sdk/src/controls/pager/` currently integrates with buttons by **reconstructing and tuning `ButtonFamilyLook` directly** instead of treating buttons as a higher-level control surface.
+`crates/sdk/src/controls/pager/` used to integrate with buttons by **reconstructing and tuning `ButtonFamilyLook` directly** instead of treating buttons as a higher-level control surface.
 
-That works, but it couples pager to the internal shape of button look resolution:
+That worked, but it coupled pager to the internal shape of button look resolution:
 
 - `ButtonFamilyLook`
 - `compose_button_family_look(...)`
@@ -14,11 +14,46 @@ That works, but it couples pager to the internal shape of button look resolution
 
 This became visible during the button size/radius preview experiment: pager had to change when button-look internals changed, even though pager itself was not part of the feature being explored.
 
-The concern is not that pager is broken today. The concern is that pager is using the **wrong ownership seam**.
+The concern was not that pager was broken. The concern was that pager was using the **wrong ownership seam**.
 
-## Current Shape
+## Status
 
-Pager currently does two things:
+Fixed in the current implementation.
+
+Pager now asks its theme for a pager-scoped button template via `PagerTheme::button_template(&PagerLook)`. The SDK pager template no longer installs a per-button `ButtonRenderModel::look` closure and no longer calls a pager-owned `resolve_button_look(...)`.
+
+The concrete shadcn pager-button geometry translation now lives in the shadcn look crate:
+
+- `crates/look-shadcn/src/controls/pager.rs`
+- `crates/look-shadcn/src/controls/templates.rs`
+
+This keeps pager behavior and layout in the SDK while keeping button appearance resolution on the shadcn/button side.
+
+## Closure Notes
+
+Completed changes:
+
+- Removed `PagerTheme::resolve_button_look(...)` and the pager-owned `tune_pager_button_look(...)` helper from `crates/sdk/src/controls/pager/theme.rs`.
+- Updated `crates/sdk/src/controls/pager/template.rs` so pager buttons request `theme.button_template(&PagerLook)` instead of installing a per-button look closure.
+- Added `pager_button_look(...)` in `crates/look-shadcn/src/controls/pager.rs` for shadcn-owned pager button geometry and typography translation.
+- Added `ShadcnPagerButtonTheme` in `crates/look-shadcn/src/controls/templates.rs` so focused-probe and normal button rendering use the same shadcn pager-button adapter.
+- Renamed active shadcn adapter structs and comments away from Radix terminology. Remaining active `radix` matches are standard `from_str_radix` numeric parser calls.
+
+Verification completed:
+
+- `cargo fmt --all`
+- `cargo check -p gpui-luma -p gpui-luma-look-shadcn -p gpui-luma-gallery -p gpui-luma-theme-studio`
+- `cargo clippy -p gpui-luma -p gpui-luma-look-shadcn --lib -- -D warnings`
+- Visual verification completed by user.
+
+Known unrelated blockers:
+
+- `cargo test -p gpui-luma pager` is blocked by an unrelated selector test compile error in `crates/sdk/src/controls/selector/template.rs`.
+- App-level clippy still has pre-existing Theme Studio baseline warnings.
+
+## Original Shape
+
+Pager previously did two things:
 
 1. resolves its own `PagerLook`
 2. manually maps that look into a custom `ButtonFamilyLook`
@@ -28,14 +63,14 @@ Relevant paths:
 - `crates/sdk/src/controls/pager/theme.rs`
 - `crates/sdk/src/controls/pager/template.rs`
 
-Today `PagerTheme::resolve_button_look(...)`:
+Previously `PagerTheme::resolve_button_look(...)`:
 
 - resolves the default button palette,
 - builds a synthetic `StandardBoxScale`,
 - calls `compose_button_family_look(...)`,
 - then further mutates the resulting `ButtonFamilyLook` in `tune_pager_button_look(...)`.
 
-That means pager is not just styling the rendered button output. It is participating directly in the button look-construction pipeline.
+That meant pager was not just styling the rendered button output. It was participating directly in the button look-construction pipeline.
 
 ## Why This Is A Problem
 
@@ -60,7 +95,7 @@ The repo architecture says:
 - template renders resolved values,
 - theme resolves semantic inputs into concrete values.
 
-Pager currently reaches below “use a button” and instead says:
+Pager previously reached below “use a button” and instead said:
 
 - “give me button parts, I will rebuild the look I want.”
 
@@ -68,7 +103,7 @@ That is a lower seam than most consumers should use.
 
 ### 3. Pager duplicates button ownership decisions
 
-Pager currently restates button concerns like:
+Pager previously restated button concerns like:
 
 - height
 - padding
@@ -149,14 +184,14 @@ In other words:
 
 ## Tasks
 
-- [ ] Audit `crates/sdk/src/controls/pager/theme.rs` for every place pager reconstructs button look internals.
-- [ ] Decide whether pager needs:
+- [x] Audit `crates/sdk/src/controls/pager/theme.rs` for every place pager reconstructs button look internals.
+- [x] Decide whether pager needs:
   - a pager-specific button theme adapter,
   - a pager-specific button template,
   - or a semantic button variant hook in the look layer.
-- [ ] Move pager-specific button geometry translation out of `PagerTheme::resolve_button_look(...)`.
-- [ ] Reduce pager’s dependency on `compose_button_family_look(...)` and direct `ButtonFamilyLook` mutation.
-- [ ] Verify that future button look changes do not require pager edits unless pager behavior itself changes.
+- [x] Move pager-specific button geometry translation out of `PagerTheme::resolve_button_look(...)`.
+- [x] Reduce pager’s dependency on `compose_button_family_look(...)` and direct `ButtonFamilyLook` mutation.
+- [x] Verify that future button look changes do not require pager edits unless pager behavior itself changes.
 
 ## Acceptance Criteria
 

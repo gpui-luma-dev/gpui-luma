@@ -624,9 +624,7 @@ fn render_pager_button(
 ) -> AnyElement {
     let disabled = !model.enabled || spec.interaction_disabled;
     let id = SharedString::from(format!("{}-{}", model.id, spec.id_suffix));
-    let pager_look = look.clone();
-    let look_theme = Arc::clone(theme);
-    let button_template = theme.button_template();
+    let button_template = theme.button_template(look);
     let clickable = click.is_some() && !disabled;
     let button_model = ButtonRenderModel {
         id,
@@ -636,10 +634,9 @@ fn render_pager_button(
         size: crate::controls::button_family::ButtonSize::Sm,
         state: InteractionState { disabled, ..InteractionState::default() },
         round: false,
-        radius_override: std::cell::Cell::new(Some(pager_look.radius)),
+        radius_override: std::cell::Cell::new(Some(look.radius)),
         elevation: true,
         compact: false,
-        look: Some(Arc::new(move |model| look_theme.resolve_button_look(&pager_look, model))),
         ..Default::default()
     };
 

@@ -23,7 +23,7 @@ pub enum SwitchOrientation {
     Vertical,
 }
 
-/// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<bool>`] so Radix style
+/// Builder for [`Switch`] controls. Distinct from [`ButtonBuilder<bool>`] so Shadcn style
 /// helpers apply the switch template rather than the checkbox template.
 pub struct SwitchBuilder(ButtonBuilder<bool>);
 

@@ -1,6 +1,6 @@
 use super::ShadcnButtonStyle;
 
-/// Maps a Radix button style to tweakcn token names for filled roles.
+/// Maps a Shadcn button style to tweakcn token names for filled roles.
 pub fn style_token_pair(style: ShadcnButtonStyle) -> (&'static str, &'static str) {
     match style {
         ShadcnButtonStyle::Primary => ("primary", "primary-foreground"),
