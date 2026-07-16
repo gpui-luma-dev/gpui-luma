@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
 use gpui::{
-    AnyElement, App, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, Stateful, Window, div,
-    prelude::*,
+    AnyElement, App, ClickEvent, Div, IntoElement, MouseButton, MouseDownEvent, MouseUpEvent, SharedString, Stateful,
+    StatefulInteractiveElement, Window, div, prelude::*,
 };
 
 use super::model::{
@@ -25,9 +25,107 @@ pub struct ControlGroupTemplateHandlers {
     pub item_clicks: Vec<ControlGroupClickHandler>,
 }
 
+pub struct ControlGroupItemHandlers {
+    pub hover: ControlGroupHoverHandler,
+    pub mouse_down: ControlGroupMouseDownHandler,
+    pub mouse_up: ControlGroupMouseUpHandler,
+    pub mouse_up_out: ControlGroupMouseUpHandler,
+    pub click: ControlGroupClickHandler,
+}
+
+impl ControlGroupTemplateHandlers {
+    pub fn into_item_handlers(self) -> impl Iterator<Item = ControlGroupItemHandlers> {
+        let Self { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } = self;
+
+        item_hovers
+            .into_iter()
+            .zip(item_mouse_downs)
+            .zip(item_mouse_ups)
+            .zip(item_mouse_up_outs)
+            .zip(item_clicks)
+            .map(|((((hover, mouse_down), mouse_up), mouse_up_out), click)| ControlGroupItemHandlers {
+                hover,
+                mouse_down,
+                mouse_up,
+                mouse_up_out,
+                click,
+            })
+    }
+}
+
+pub trait ControlGroupItemHandlerExt: StatefulInteractiveElement + Sized {
+    fn control_group_item_handlers(self, handlers: ControlGroupItemHandlers) -> Self;
+}
+
+impl<E> ControlGroupItemHandlerExt for E
+where
+    E: StatefulInteractiveElement + Sized,
+{
+    fn control_group_item_handlers(self, handlers: ControlGroupItemHandlers) -> Self {
+        self.on_hover(handlers.hover)
+            .on_mouse_down(MouseButton::Left, handlers.mouse_down)
+            .on_mouse_up(MouseButton::Left, handlers.mouse_up)
+            .on_mouse_up_out(MouseButton::Left, handlers.mouse_up_out)
+            .on_click(handlers.click)
+    }
+}
+
 pub type ControlGroupItemTemplate<T> = Arc<
     dyn for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement + Send + Sync + 'static,
 >;
+
+pub type ControlGroupItemElementTemplate<T> = Arc<
+    dyn for<'a> Fn(
+            &ControlGroupItemRenderModel<'a, T>,
+            Option<&ControlGroupItemTemplate<T>>,
+            &mut Window,
+            &mut App,
+        ) -> Stateful<Div>
+        + Send
+        + Sync
+        + 'static,
+>;
+
+pub struct ControlGroupItemElement {
+    pub id: SharedString,
+    pub label: SharedString,
+    pub index: usize,
+    pub selected: bool,
+    pub enabled: bool,
+    element: Option<AnyElement>,
+}
+
+impl ControlGroupItemElement {
+    pub fn into_element(mut self) -> AnyElement {
+        self.element.take().unwrap_or_else(|| div().into_any_element())
+    }
+}
+
+pub struct ControlGroupItemElements {
+    items: Vec<ControlGroupItemElement>,
+}
+
+impl ControlGroupItemElements {
+    pub fn take(&mut self, id: &str) -> AnyElement {
+        let Some(index) = self.items.iter().position(|item| item.id.as_ref() == id) else {
+            return div().into_any_element();
+        };
+
+        self.items.remove(index).into_element()
+    }
+
+    pub fn take_index(&mut self, index: usize) -> AnyElement {
+        let Some(position) = self.items.iter().position(|item| item.index == index) else {
+            return div().into_any_element();
+        };
+
+        self.items.remove(position).into_element()
+    }
+
+    pub fn into_elements(self) -> impl Iterator<Item = AnyElement> {
+        self.items.into_iter().map(ControlGroupItemElement::into_element)
+    }
+}
 
 pub fn make_control_group_item_template<T, F, E>(template: F) -> ControlGroupItemTemplate<T>
 where
@@ -36,6 +134,22 @@ where
     E: IntoElement + 'static,
 {
     Arc::new(move |model, window, cx| template(model, window, cx).into_any_element())
+}
+
+pub fn make_control_group_item_element_template<T, F>(template: F) -> ControlGroupItemElementTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+    F: for<'a> Fn(
+            &ControlGroupItemRenderModel<'a, T>,
+            Option<&ControlGroupItemTemplate<T>>,
+            &mut Window,
+            &mut App,
+        ) -> Stateful<Div>
+        + Send
+        + Sync
+        + 'static,
+{
+    Arc::new(template)
 }
 
 pub type ControlGroupItemTemplateModifier<T> = Box<
@@ -111,6 +225,13 @@ pub type ControlGroupTemplate<T> = Arc<
         + 'static,
 >;
 
+pub type ControlGroupItemLayout<T> = Arc<
+    dyn for<'a> Fn(ControlGroupItemElements, &ControlGroupRenderModel<'a, T>, &mut Window, &mut App) -> AnyElement
+        + Send
+        + Sync
+        + 'static,
+>;
+
 pub fn default_control_group_template<T>() -> ControlGroupTemplate<T>
 where
     T: ControlGroupItemLike + 'static,
@@ -163,6 +284,24 @@ where
     Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
 }
 
+pub fn control_group_item_layout_template<T, F, E>(layout: F) -> ControlGroupTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+    F: for<'a> Fn(ControlGroupItemElements, &ControlGroupRenderModel<'a, T>, &mut Window, &mut App) -> E
+        + Send
+        + Sync
+        + 'static,
+    E: IntoElement + 'static,
+{
+    let layout: ControlGroupItemLayout<T> =
+        Arc::new(move |options, model, window, cx| layout(options, model, window, cx).into_any_element());
+
+    Arc::new(move |model, handlers, window, cx| {
+        let options = render_control_group_item_elements(model, handlers, window, cx);
+        div().id(model.id.clone()).child(layout(options, model, window, cx))
+    })
+}
+
 fn default_item_content<T>(model: &ControlGroupItemRenderModel<'_, T>) -> AnyElement
 where
     T: ControlGroupItemLike + 'static,
@@ -195,6 +334,66 @@ where
     div().child(format!("{active_marker} {selection_marker} {}", model.item.label())).into_any_element()
 }
 
+fn default_item_element<T>(
+    model: &ControlGroupItemRenderModel<'_, T>,
+    item_template: Option<&ControlGroupItemTemplate<T>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> Stateful<Div>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let content = if let Some(item_template) = item_template {
+        item_template(model, window, cx)
+    } else {
+        default_item_content(model)
+    };
+
+    div().id(format!("{}-item-{}", model.group_id, model.item.id())).flex().child(content)
+}
+
+pub fn render_control_group_item_elements<T>(
+    model: &ControlGroupRenderModel<'_, T>,
+    handlers: ControlGroupTemplateHandlers,
+    window: &mut Window,
+    cx: &mut App,
+) -> ControlGroupItemElements
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let mut items = Vec::with_capacity(model.items.len());
+
+    for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
+        let mut element = if let Some(item_element_template) = model.item_element_template {
+            item_element_template(item, model.item_template, window, cx)
+        } else {
+            default_item_element(item, model.item_template, window, cx)
+        }
+        .control_group_item_handlers(item_handlers);
+
+        if item.enabled {
+            element = element.cursor_pointer();
+        } else if model.item_element_template.is_none() {
+            element = element.opacity(0.56);
+        }
+
+        if model.layout == ControlGroupLayout::Horizontal {
+            element = element.flex_1().h_full();
+        }
+
+        items.push(ControlGroupItemElement {
+            id: item.item.id().clone(),
+            label: item.item.label().clone(),
+            index: item.index,
+            selected: item.selected,
+            enabled: item.enabled,
+            element: Some(element.into_any_element()),
+        });
+    }
+
+    ControlGroupItemElements { items }
+}
+
 pub(crate) fn render_control_group_items<T>(
     model: &ControlGroupRenderModel<'_, T>,
     handlers: ControlGroupTemplateHandlers,
@@ -204,61 +403,5 @@ pub(crate) fn render_control_group_items<T>(
 where
     T: ControlGroupItemLike + 'static,
 {
-    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
-        handlers;
-
-    let mut item_hovers = item_hovers.into_iter();
-    let mut item_mouse_downs = item_mouse_downs.into_iter();
-    let mut item_mouse_ups = item_mouse_ups.into_iter();
-    let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-    let mut item_clicks = item_clicks.into_iter();
-    let mut rows = Vec::with_capacity(model.items.len());
-
-    for item in &model.items {
-        let Some(item_hover) = item_hovers.next() else {
-            break;
-        };
-        let Some(item_mouse_down) = item_mouse_downs.next() else {
-            break;
-        };
-        let Some(item_mouse_up) = item_mouse_ups.next() else {
-            break;
-        };
-        let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-            break;
-        };
-        let Some(item_click) = item_clicks.next() else {
-            break;
-        };
-
-        let content = if let Some(item_template) = model.item_template {
-            item_template(item, window, cx)
-        } else {
-            default_item_content(item)
-        };
-
-        let mut row = div()
-            .id(format!("{}-item-{}", model.id, item.item.id()))
-            .flex()
-            .child(content)
-            .on_hover(item_hover)
-            .on_mouse_down(MouseButton::Left, item_mouse_down)
-            .on_mouse_up(MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
-
-        if model.layout == ControlGroupLayout::Horizontal {
-            row = row.flex_1().h_full();
-        }
-
-        if item.enabled {
-            row = row.cursor_pointer();
-        } else {
-            row = row.opacity(0.56);
-        }
-
-        rows.push(row.into_any_element());
-    }
-
-    rows
+    render_control_group_item_elements(model, handlers, window, cx).into_elements().collect()
 }

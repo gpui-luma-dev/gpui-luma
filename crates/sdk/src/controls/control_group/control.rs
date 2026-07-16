@@ -159,6 +159,15 @@ where
         cx.notify();
     }
 
+    pub fn set_item_element_template(
+        &mut self,
+        item_element_template: Option<crate::controls::control_group::ControlGroupItemElementTemplate<T>>,
+        cx: &mut Context<Self>,
+    ) {
+        self.model.item_element_template = item_element_template;
+        cx.notify();
+    }
+
     pub fn set_template(
         &mut self,
         template: crate::controls::control_group::ControlGroupTemplate<T>,
@@ -215,6 +224,7 @@ where
             layout: self.model.layout,
             focus,
             item_template: self.model.item_template.as_ref(),
+            item_element_template: self.model.item_element_template.as_ref(),
         }
     }
 

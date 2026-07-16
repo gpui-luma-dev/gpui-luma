@@ -1,10 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::{App, Div, ElementId, MouseButton, Stateful, Window, div, px, prelude::*};
+use gpui::{App, Div, ElementId, Stateful, Window, div, px, prelude::*};
 
 use super::ListBoxItem;
 use crate::controls::control_group::{
-    ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate, ControlGroupTemplateHandlers,
+    ControlGroupItemHandlerExt, ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate,
+    ControlGroupTemplateHandlers,
 };
 use crate::controls::listbox::{ListBoxRowLook, ListBoxTheme, default_listbox_theme};
 use crate::theme::adorner::{adorner_oversize_extent, render_optional_adorner, render_optional_adorner_with_focus_radius};
@@ -32,13 +33,6 @@ impl ThemedListBoxTemplate {
         window: &mut Window,
         cx: &mut App,
     ) -> Stateful<Div> {
-        let ControlGroupTemplateHandlers {
-            item_hovers,
-            item_mouse_downs,
-            item_mouse_ups,
-            item_mouse_up_outs,
-            item_clicks,
-        } = handlers;
         let scale_factor = window.scale_factor();
         let row_scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -74,31 +68,9 @@ impl ThemedListBoxTemplate {
             root = root.child(adorner);
         }
 
-        let mut item_hovers = item_hovers.into_iter();
-        let mut item_mouse_downs = item_mouse_downs.into_iter();
-        let mut item_mouse_ups = item_mouse_ups.into_iter();
-        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-        let mut item_clicks = item_clicks.into_iter();
-
         let any_item_enabled = model.items.iter().any(|item| item.enabled);
 
-        for item in &model.items {
-            let Some(item_hover) = item_hovers.next() else {
-                break;
-            };
-            let Some(item_mouse_down) = item_mouse_downs.next() else {
-                break;
-            };
-            let Some(item_mouse_up) = item_mouse_ups.next() else {
-                break;
-            };
-            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-                break;
-            };
-            let Some(item_click) = item_clicks.next() else {
-                break;
-            };
-
+        for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
             let row_look =
                 self.theme.resolve_row_look(item.selected, item.state.interaction_state(), self.size, &row_scale);
             let focused_probe_row_look = if any_item_enabled && !item.state.disabled {
@@ -124,11 +96,7 @@ impl ThemedListBoxTemplate {
                 content,
                 row_look,
             )
-            .on_hover(item_hover)
-            .on_mouse_down(MouseButton::Left, item_mouse_down)
-            .on_mouse_up(MouseButton::Left, item_mouse_up)
-            .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-            .on_click(item_click);
+            .control_group_item_handlers(item_handlers);
 
             let row = if item.enabled {
                 row.cursor_pointer()

@@ -8,7 +8,10 @@ use crate::controls::control_group::{
     ControlSelectionMode,
 };
 
-pub use themed_template::{RadioGroupLayout, radio_group_buttons_template, render_radio_button_rows};
+pub use themed_template::{
+    RadioGroupLayout, radio_group_button_item_element_template, radio_group_buttons_template,
+    render_radio_button_option, render_radio_button_rows,
+};
 
 // 1. Semantic Type Aliases
 // This makes the idea of a "Radio Group" visible in function signatures and state

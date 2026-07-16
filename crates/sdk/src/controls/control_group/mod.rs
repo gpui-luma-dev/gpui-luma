@@ -14,9 +14,12 @@ pub use model::{
 pub use button_item_template::button_item_template;
 pub use toggle_button_item_template::toggle_button_item_template;
 pub use template::{
-    ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemTemplate, ControlGroupMouseDownHandler,
-    ControlGroupMouseUpHandler, ControlGroupTemplate, ControlGroupTemplateHandlers, default_control_group_template,
-    control_group_template_with_theme, make_control_group_item_template, shared_control_group_template,
+    ControlGroupClickHandler, ControlGroupHoverHandler, ControlGroupItemHandlerExt, ControlGroupItemHandlers,
+    ControlGroupItemTemplate, ControlGroupMouseDownHandler, ControlGroupMouseUpHandler, ControlGroupItemElement,
+    ControlGroupItemElements, ControlGroupItemElementTemplate, ControlGroupItemLayout, ControlGroupTemplate,
+    ControlGroupTemplateHandlers, control_group_item_layout_template, control_group_template_with_theme,
+    default_control_group_template, make_control_group_item_template, make_control_group_item_element_template,
+    shared_control_group_template,
 };
 pub use theme::{DefaultControlGroupTheme, ControlGroupListLook, ControlGroupTheme, default_control_group_theme};
 pub use themed_template::ThemedControlGroupTemplate;

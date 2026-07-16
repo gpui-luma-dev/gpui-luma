@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, Context, Entity, Hsla, Stateful, Subscription, div, prelude::*, px};
+use gpui::{AnyElement, Context, Entity, Hsla, Subscription, div, prelude::*, px};
 use gpui_luma::controls::button_group::{IconGroup, IconGroupEvent, IconGroupItem, IconGroupItemLike};
-use gpui_luma::controls::control_group::{ControlGroupBuilder, ControlGroupChromeModel, toggle_button_item_template};
+use gpui_luma::controls::control_group::{ControlGroupBuilder, toggle_button_item_template};
 use gpui_luma::controls::icon::lucide_glyph;
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -153,14 +153,30 @@ fn icon_group(
     multiple: bool,
     cx: &mut Context<GalleryApp>,
 ) -> IconGroup<IconGroupItem> {
+    let group_look = look.control_group_theme().resolve_list(true);
     let mut builder = look
         .button_group(id)
-        .horizontal()
-        .with_template_modifier(pill_shell)
         .items(items(&PLACEMENT))
         .item_template(toggle_button_item_template(look.toggle_template(style), true, |item: &IconGroupItem| {
             lucide_glyph(placement_icon(item.id().as_ref()))
-        }));
+        }))
+        .with_item_layout(move |mut items, _, _, _| {
+            gpui_luma::hstack![
+                gap = 6 align = center;
+                items.take("top"),
+                items.take("bottom"),
+                items.take("left"),
+                items.take("right"),
+            ]
+            .relative()
+            .overflow_hidden()
+            .rounded_full()
+            .bg(group_look.background)
+            .border_1()
+            .border_color(group_look.border)
+            .px(px(6.0))
+            .py(px(4.0))
+        });
     builder = apply_selection(builder, selected, multiple);
     builder.spawn(cx)
 }
@@ -175,10 +191,6 @@ fn apply_selection(
     } else {
         builder.selected(selected[0])
     }
-}
-
-fn pill_shell(element: Stateful<gpui::Div>, _: &ControlGroupChromeModel) -> Stateful<gpui::Div> {
-    element.rounded_full().gap(px(6.0)).px(px(6.0)).py(px(4.0))
 }
 
 fn demo_section(demo: &DemoGroup, body: Hsla, muted: Hsla) -> AnyElement {

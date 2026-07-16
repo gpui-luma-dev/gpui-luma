@@ -27,7 +27,9 @@ use gpui_luma::controls::popup_menu::PopupMenu;
 use gpui_luma::controls::progress::{self, ProgressBuilder};
 use gpui_luma::controls::resizable_panels::ResizablePanelsBuilder;
 use gpui_luma::controls::radio_button;
-use gpui_luma::controls::radio_group::{self, RadioGroupBuilder, RadioGroupLayout, radio_group_buttons_template};
+use gpui_luma::controls::radio_group::{
+    self, RadioGroupBuilder, RadioGroupLayout, radio_group_button_item_element_template, radio_group_buttons_template,
+};
 use gpui_luma::controls::scrollbar::{self, ScrollbarBuilder};
 use gpui_luma::controls::selector::{Selector, SelectorBuilder, SelectorItem};
 use gpui_luma::controls::selection_panel::{SelectionPanelBuilder, SelectionPanelControl, SelectionPanelItem};
@@ -342,20 +344,28 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        radio_group::new(id).template(radio_group_buttons_template(
-            self.radio_button_template(ShadcnButtonStyle::Primary),
-            RadioGroupLayout::Vertical,
-        ))
+        radio_group::new(id)
+            .template(radio_group_buttons_template(
+                self.radio_button_template(ShadcnButtonStyle::Primary),
+                RadioGroupLayout::Vertical,
+            ))
+            .item_element_template(radio_group_button_item_element_template(
+                self.radio_button_template(ShadcnButtonStyle::Primary),
+            ))
     }
 
     fn radio_group_horizontal<T>(&self, id: impl Into<SharedString>) -> RadioGroupBuilder<T>
     where
         T: ControlGroupItemLike + Clone + Send + Sync + 'static,
     {
-        radio_group::horizontal(id).template(radio_group_buttons_template(
-            self.radio_button_template(ShadcnButtonStyle::Primary),
-            RadioGroupLayout::Horizontal,
-        ))
+        radio_group::horizontal(id)
+            .template(radio_group_buttons_template(
+                self.radio_button_template(ShadcnButtonStyle::Primary),
+                RadioGroupLayout::Horizontal,
+            ))
+            .item_element_template(radio_group_button_item_element_template(
+                self.radio_button_template(ShadcnButtonStyle::Primary),
+            ))
     }
 
     fn slider(&self, id: impl Into<SharedString>) -> SliderBuilder {

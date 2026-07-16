@@ -1,16 +1,14 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FontWeight, MouseButton, Render, SharedString, Window, div, prelude::*, px};
+use gpui::{Context, Entity, FontWeight, Render, SharedString, Window, div, prelude::*, px};
 use gpui_luma::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use gpui_luma::controls::checkbox::Checkbox;
 use gpui_luma::controls::command::button::{Button, ButtonEvent, ButtonRenderModel, ButtonTemplate};
+use gpui_luma::controls::control_group::{ControlGroupItemElementTemplate, ControlGroupItemRenderModel};
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::radio_button::ThemedRadioButtonTemplate;
-use gpui_luma::controls::radio_group::{
-    RadioGroup, RadioGroupItemLike, RadioGroupTemplate, RadioGroupTemplateHandlers,
-    horizontal as horizontal_radio_group,
-};
+use gpui_luma::controls::radio_group::{RadioGroup, RadioGroupItemLike, horizontal as horizontal_radio_group};
 use gpui_luma::controls::textarea::TextArea;
 use gpui_luma::controls::textfield::TextField;
 use gpui_luma::theme::{ControlSize, InteractionLayer, LumaTextStyle};
@@ -65,7 +63,14 @@ declare_form! {
             expiry_field: TextField = look.textfield("upgrade-expiry").placeholder("MM/YY"),
             cvc_field: TextField = look.textfield("upgrade-cvc").placeholder("CVC"),
             plan_group: RadioGroup<PlanOptionItem> = horizontal_radio_group("upgrade-plan")
-                .template(plan_option_group_template(look.clone()))
+                .item_element_template(plan_option_item_element_template(look.clone()))
+                .with_item_layout(|items, _, _, _| {
+                    div()
+                        .flex()
+                        .w_full()
+                        .gap(px(PLAN_CARD_GAP))
+                        .children(items.into_elements())
+                })
                 .items(plan_items())
                 .selected("starter"),
             notes_area: Entity<TextArea> = look
@@ -191,14 +196,14 @@ fn plan_radio_indicator_template(look: Arc<ShadcnLook>) -> Arc<dyn ButtonTemplat
     )
 }
 
-fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanOptionItem> {
+fn plan_option_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemElementTemplate<PlanOptionItem> {
     let radio_template = plan_radio_indicator_template(look.clone());
     let spec = Arc::new(PlanOptionTemplateSpec {
         title_style: look.typography_scale(ShadcnTextSize::Sm),
         caption_style: look.typography_scale(ShadcnTextSize::Xs),
     });
 
-    Arc::new(move |model, handlers, window, cx| {
+    Arc::new(move |item: &ControlGroupItemRenderModel<'_, PlanOptionItem>, _, window, cx| {
         let chrome = look.chrome();
         let border = chrome.border;
         let focus_ring = look.token_color("ring").unwrap_or(chrome.border);
@@ -206,118 +211,75 @@ fn plan_option_group_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<PlanO
         let muted_text = chrome.muted_text;
         let card_surface = look.color(ShadcnToken::Card);
         let selected_surface = look.adjust_surface_color(card_surface, InteractionLayer::Pressed);
-        let RadioGroupTemplateHandlers {
-            item_hovers,
-            item_mouse_downs,
-            item_mouse_ups,
-            item_mouse_up_outs,
-            item_clicks,
-        } = handlers;
+        let interaction = item.state.interaction_state();
+        let render_model = ButtonRenderModel {
+            id: format!("{}-{}", item.group_id, item.item.id()).into(),
+            data: item.selected,
+            content: Arc::new(|_, _| div().into_any_element()),
+            role: ButtonFamilyRole::Icon,
+            size: ButtonSize::Sm,
+            state: interaction,
+            round: false,
+            radius_override: Cell::new(None),
+            elevation: false,
+            compact: true,
+            look: None,
+            ..Default::default()
+        };
 
-        let mut item_hovers = item_hovers.into_iter();
-        let mut item_mouse_downs = item_mouse_downs.into_iter();
-        let mut item_mouse_ups = item_mouse_ups.into_iter();
-        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-        let mut item_clicks = item_clicks.into_iter();
+        let indicator = radio_template.render(&render_model, window, cx);
+        let title = item.item.title.clone();
+        let description = item.item.description.clone();
+        let title_style = spec.title_style;
+        let caption_style = spec.caption_style;
 
-        let mut root = div().id(model.id.clone()).flex().w_full().gap(px(PLAN_CARD_GAP));
-
-        for item in &model.items {
-            let Some(item_hover) = item_hovers.next() else {
-                break;
-            };
-            let Some(item_mouse_down) = item_mouse_downs.next() else {
-                break;
-            };
-            let Some(item_mouse_up) = item_mouse_ups.next() else {
-                break;
-            };
-            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-                break;
-            };
-            let Some(item_click) = item_clicks.next() else {
-                break;
-            };
-
-            let interaction = item.state.interaction_state();
-            let render_model = ButtonRenderModel {
-                id: format!("{}-{}", model.id, item.item.id()).into(),
-                data: item.selected,
-                content: Arc::new(|_, _| div().into_any_element()),
-                role: ButtonFamilyRole::Icon,
-                size: ButtonSize::Sm,
-                state: interaction,
-                round: false,
-                radius_override: Cell::new(None),
-                elevation: false,
-                compact: true,
-                look: None,
-                ..Default::default()
-            };
-
-            let indicator = radio_template.render(&render_model, window, cx);
-            let title = item.item.title.clone();
-            let description = item.item.description.clone();
-            let title_style = spec.title_style;
-            let caption_style = spec.caption_style;
-
-            let body = hstack! {
-                gap=10 align=start;
-                div().flex_none().child(indicator),
-                vstack! {
-                    gap=2;
-                    div()
-                        .w_full()
-                        .typography_style(title_style)
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(body_text)
-                        .child(title),
-                    div()
-                        .w_full()
-                        .typography_style(caption_style)
-                        .text_color(muted_text)
-                        .line_clamp(3)
-                        .child(description),
-                }
-                .flex_1()
-                .min_w_0()
-                .overflow_hidden(),
+        let body = hstack! {
+            gap=10 align=start;
+            div().flex_none().child(indicator),
+            vstack! {
+                gap=2;
+                div()
+                    .w_full()
+                    .typography_style(title_style)
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(body_text)
+                    .child(title),
+                div()
+                    .w_full()
+                    .typography_style(caption_style)
+                    .text_color(muted_text)
+                    .line_clamp(3)
+                    .child(description),
             }
-            .w_full()
-            .overflow_hidden();
+            .flex_1()
+            .min_w_0()
+            .overflow_hidden(),
+        }
+        .w_full()
+        .overflow_hidden();
 
-            let mut card = div()
-                .id(format!("{}-card", render_model.id))
-                .flex_1()
-                .min_w_0()
-                .overflow_hidden()
-                .rounded(px(PLAN_CARD_RADIUS))
-                .border_1()
-                .border_color(border)
-                .when(item.selected, |card| card.bg(selected_surface))
-                .p(px(PLAN_CARD_PADDING))
-                .on_hover(item_hover)
-                .on_mouse_down(MouseButton::Left, item_mouse_down)
-                .on_mouse_up(MouseButton::Left, item_mouse_up)
-                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-                .on_click(item_click)
-                .child(body);
+        let mut card = div()
+            .id(format!("{}-card", render_model.id))
+            .flex_1()
+            .min_w_0()
+            .overflow_hidden()
+            .rounded(px(PLAN_CARD_RADIUS))
+            .border_1()
+            .border_color(border)
+            .when(item.selected, |card| card.bg(selected_surface))
+            .p(px(PLAN_CARD_PADDING))
+            .child(body);
 
-            if item.state.active {
-                card = card.border(px(PLAN_FOCUS_BORDER_WIDTH)).border_color(focus_ring);
-            } else if item.selected {
-                card = card.border(px(PLAN_SELECTED_BORDER_WIDTH));
-            }
-
-            if item.enabled {
-                card = card.cursor_pointer();
-            } else {
-                card = card.opacity(PLAN_DISABLED_OPACITY);
-            }
-
-            root = root.child(card);
+        if item.state.active {
+            card = card.border(px(PLAN_FOCUS_BORDER_WIDTH)).border_color(focus_ring);
+        } else if item.selected {
+            card = card.border(px(PLAN_SELECTED_BORDER_WIDTH));
         }
 
-        root
+        if item.enabled {
+            card
+        } else {
+            card.opacity(PLAN_DISABLED_OPACITY)
+        }
     })
 }

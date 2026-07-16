@@ -1,12 +1,13 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, MouseButton, Window, div, prelude::*};
+use gpui::{AnyElement, App, Window, div, prelude::*};
 
 use crate::controls::button_family::{ButtonFamilyRole, ButtonSize};
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::control_group::{
-    ControlGroupItemLike, ControlGroupLayout, ControlGroupRenderModel, ControlGroupTemplate,
+    ControlGroupItemHandlerExt, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupItemTemplate,
+    ControlGroupLayout, ControlGroupItemElementTemplate, ControlGroupRenderModel, ControlGroupTemplate,
     ControlGroupTemplateHandlers,
 };
 
@@ -37,6 +38,75 @@ where
     })
 }
 
+pub fn radio_group_button_item_element_template<T>(
+    button_template: Arc<dyn ButtonTemplate<bool>>,
+) -> ControlGroupItemElementTemplate<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    Arc::new(move |item, item_template, window, cx| {
+        render_radio_button_option(item, item_template, &button_template, window, cx)
+    })
+}
+
+pub fn render_radio_button_option<T>(
+    item: &ControlGroupItemRenderModel<'_, T>,
+    item_template: Option<&ControlGroupItemTemplate<T>>,
+    button_template: &Arc<dyn ButtonTemplate<bool>>,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::Stateful<gpui::Div>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    if let Some(item_template) = item_template {
+        let indicator_render_model = ButtonRenderModel {
+            id: format!("{}-{}-indicator", item.group_id, item.item.id()).into(),
+            data: item.selected,
+            content: Arc::new(|_, _| div().into_any_element()),
+            role: ButtonFamilyRole::Icon,
+            size: ButtonSize::Md,
+            state: item.state.interaction_state(),
+            round: false,
+            radius_override: Cell::new(None),
+            elevation: false,
+            compact: true,
+            look: None,
+            ..Default::default()
+        };
+        let indicator = button_template.render(&indicator_render_model, window, cx);
+        let content = item_template(item, window, cx);
+
+        div()
+            .id(format!("{}-item-{}", item.group_id, item.item.id()))
+            .flex()
+            .items_center()
+            .gap_2()
+            .child(indicator)
+            .child(div().flex_1().min_w_0().child(content))
+    } else {
+        let render_model = ButtonRenderModel {
+            id: format!("{}-{}", item.group_id, item.item.id()).into(),
+            data: item.selected,
+            content: Arc::new({
+                let label = item.item.label().clone();
+                move |_, _| div().child(label.clone()).into_any_element()
+            }),
+            role: ButtonFamilyRole::Text,
+            size: ButtonSize::Md,
+            state: item.state.interaction_state(),
+            round: false,
+            radius_override: Cell::new(None),
+            elevation: true,
+            compact: false,
+            look: None,
+            ..Default::default()
+        };
+
+        button_template.render(&render_model, window, cx)
+    }
+}
+
 pub fn render_radio_button_rows<T>(
     model: &ControlGroupRenderModel<'_, T>,
     handlers: ControlGroupTemplateHandlers,
@@ -47,110 +117,23 @@ pub fn render_radio_button_rows<T>(
 where
     T: ControlGroupItemLike + 'static,
 {
-    let ControlGroupTemplateHandlers { item_hovers, item_mouse_downs, item_mouse_ups, item_mouse_up_outs, item_clicks } =
-        handlers;
-
-    let mut item_hovers = item_hovers.into_iter();
-    let mut item_mouse_downs = item_mouse_downs.into_iter();
-    let mut item_mouse_ups = item_mouse_ups.into_iter();
-    let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-    let mut item_clicks = item_clicks.into_iter();
     let mut rows = Vec::with_capacity(model.items.len());
 
-    for item in &model.items {
-        let Some(item_hover) = item_hovers.next() else {
-            break;
-        };
-        let Some(item_mouse_down) = item_mouse_downs.next() else {
-            break;
-        };
-        let Some(item_mouse_up) = item_mouse_ups.next() else {
-            break;
-        };
-        let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-            break;
-        };
-        let Some(item_click) = item_clicks.next() else {
-            break;
-        };
+    for (item, item_handlers) in model.items.iter().zip(handlers.into_item_handlers()) {
+        let mut row = render_radio_button_option(item, model.item_template, button_template, window, cx)
+            .control_group_item_handlers(item_handlers);
 
-        if let Some(item_template) = model.item_template {
-            let indicator_render_model = ButtonRenderModel {
-                id: format!("{}-{}-indicator", model.id, item.item.id()).into(),
-                data: item.selected,
-                content: Arc::new(|_, _| div().into_any_element()),
-                role: ButtonFamilyRole::Icon,
-                size: ButtonSize::Md,
-                state: item.state.interaction_state(),
-                round: false,
-                radius_override: Cell::new(None),
-                elevation: false,
-                compact: true,
-                look: None,
-                ..Default::default()
-            };
-            let indicator = button_template.render(&indicator_render_model, window, cx);
-            let content = item_template(item, window, cx);
-
-            let mut row = div()
-                .id(format!("{}-item-{}", model.id, item.item.id()))
-                .flex()
-                .items_center()
-                .gap_2()
-                .child(indicator)
-                .child(div().flex_1().min_w_0().child(content))
-                .on_hover(item_hover)
-                .on_mouse_down(MouseButton::Left, item_mouse_down)
-                .on_mouse_up(MouseButton::Left, item_mouse_up)
-                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-                .on_click(item_click);
-
-            if model.layout == ControlGroupLayout::Horizontal {
-                row = row.flex_1().h_full();
-            }
-
-            if item.enabled {
-                row = row.cursor_pointer();
-            } else {
-                row = row.opacity(DISABLED_OPACITY);
-            }
-
-            rows.push(row.into_any_element());
-        } else {
-            let render_model = ButtonRenderModel {
-                id: format!("{}-{}", model.id, item.item.id()).into(),
-                data: item.selected,
-                content: Arc::new({
-                    let label = item.item.label().clone();
-                    move |_, _| div().child(label.clone()).into_any_element()
-                }),
-                role: ButtonFamilyRole::Text,
-                size: ButtonSize::Md,
-                state: item.state.interaction_state(),
-                round: false,
-                radius_override: Cell::new(None),
-                elevation: true,
-                compact: false,
-                look: None,
-                ..Default::default()
-            };
-
-            let mut button = button_template
-                .render(&render_model, window, cx)
-                .on_hover(item_hover)
-                .on_mouse_down(MouseButton::Left, item_mouse_down)
-                .on_mouse_up(MouseButton::Left, item_mouse_up)
-                .on_mouse_up_out(MouseButton::Left, item_mouse_up_out)
-                .on_click(item_click);
-
-            if item.enabled {
-                button = button.cursor_pointer();
-            } else {
-                button = button.opacity(DISABLED_OPACITY);
-            }
-
-            rows.push(button.into_any_element());
+        if model.layout == ControlGroupLayout::Horizontal {
+            row = row.flex_1().h_full();
         }
+
+        if item.enabled {
+            row = row.cursor_pointer();
+        } else {
+            row = row.opacity(DISABLED_OPACITY);
+        }
+
+        rows.push(row.into_any_element());
     }
 
     rows

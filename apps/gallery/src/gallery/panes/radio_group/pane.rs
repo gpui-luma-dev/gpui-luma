@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use gpui::{AnyElement, Context, Div, Entity, Subscription, div, prelude::*, px};
-use gpui_luma::controls::command::button::ButtonTemplate;
+use gpui_luma::controls::control_group::ControlGroupItemElementTemplate;
 use gpui_luma::controls::radio_group::{
-    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, RadioGroupTemplate,
-    RadioGroupTemplateHandlers, SelectionMode, render_radio_button_rows,
+    self as sdk_radio_group, RadioGroup, RadioGroupEvent, RadioGroupItem, RadioGroupItemLike, SelectionMode,
 };
 use gpui_luma_look_shadcn::prelude::*;
 use gpui_luma_look_shadcn::{ShadcnButtonStyle, ShadcnLook};
@@ -99,13 +98,25 @@ impl RadioGroupPane {
 
         let indented_group = sdk_radio_group::new("radio-group-density-indented")
             .items(density_items())
-            .template(radio_button_indented_template(radio_template))
+            .item_element_template(sdk_radio_group::radio_group_button_item_element_template(radio_template))
+            .with_item_layout(|mut items, _, _, _| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_start()
+                    .child(indented_option(0, items.take_index(0)))
+                    .child(indented_option(1, items.take_index(1)))
+                    .child(indented_option(2, items.take_index(2)))
+            })
             .selected(Density::Comfortable.id())
             .spawn(cx);
 
-        let delivery_group = sdk_radio_group::horizontal("radio-group-delivery-window")
+        let delivery_group = sdk_radio_group::new("radio-group-delivery-window")
             .items(delivery_window_items())
-            .template(delivery_window_template(look.clone()))
+            .item_element_template(delivery_window_item_element_template(look.clone()))
+            .with_item_layout(|items, _, _, _| {
+                div().flex().items_center().gap(px(DELIVERY_GROUP_GAP)).children(items.into_elements())
+            })
             .selected(DeliveryWindow::Today.id())
             .selection_mode(SelectionMode::SingleAllowNone)
             .spawn(cx);
@@ -413,25 +424,15 @@ fn delivery_window_card(
     }
 }
 
-fn radio_button_indented_template(
-    button_template: Arc<dyn ButtonTemplate<bool>>,
-) -> RadioGroupTemplate<RadioGroupItem> {
-    Arc::new(move |model, handlers, window, cx| {
-        div().id(model.id.clone()).flex().flex_col().items_start().children(
-            render_radio_button_rows(model, handlers, &button_template, window, cx).into_iter().enumerate().map(
-                |(index, button)| {
-                    div()
-                        .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
-                        .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP)))
-                        .child(button)
-                        .into_any_element()
-                },
-            ),
-        )
-    })
+fn indented_option(index: usize, option: AnyElement) -> AnyElement {
+    div()
+        .pl(px(index as f32 * INDENTED_BUTTON_INDENT_STEP))
+        .when(index > FIRST_INDENTED_BUTTON_INDEX, |row| row.mt(px(-INDENTED_BUTTON_VERTICAL_OVERLAP)))
+        .child(option)
+        .into_any_element()
 }
 
-fn delivery_window_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<DeliveryWindowItem> {
+fn delivery_window_item_element_template(look: Arc<ShadcnLook>) -> ControlGroupItemElementTemplate<DeliveryWindowItem> {
     let chrome = look.chrome();
     let spec = Arc::new(DeliveryWindowTemplateSpec {
         selected_background: look.token_color("accent").unwrap_or(chrome.panel_background),
@@ -442,52 +443,12 @@ fn delivery_window_template(look: Arc<ShadcnLook>) -> RadioGroupTemplate<Deliver
         focus_ring: look.token_color("ring").unwrap_or(chrome.border),
     });
 
-    Arc::new(move |model, handlers, _window, _cx| {
-        let RadioGroupTemplateHandlers {
-            item_hovers,
-            item_mouse_downs,
-            item_mouse_ups,
-            item_mouse_up_outs,
-            item_clicks,
-        } = handlers;
-
-        let mut item_hovers = item_hovers.into_iter();
-        let mut item_mouse_downs = item_mouse_downs.into_iter();
-        let mut item_mouse_ups = item_mouse_ups.into_iter();
-        let mut item_mouse_up_outs = item_mouse_up_outs.into_iter();
-        let mut item_clicks = item_clicks.into_iter();
-
-        let mut root = div().id(model.id.clone()).flex().items_center().gap(px(DELIVERY_GROUP_GAP));
-
-        for item in &model.items {
-            let Some(item_hover) = item_hovers.next() else {
-                break;
-            };
-            let Some(item_mouse_down) = item_mouse_downs.next() else {
-                break;
-            };
-            let Some(item_mouse_up) = item_mouse_ups.next() else {
-                break;
-            };
-            let Some(item_mouse_up_out) = item_mouse_up_outs.next() else {
-                break;
-            };
-            let Some(item_click) = item_clicks.next() else {
-                break;
-            };
-
-            let card = delivery_window_card(item.item, item.selected, item.state, &spec)
-                .id(format!("{}-{}", model.id, item.item.id()))
-                .on_hover(item_hover)
-                .on_mouse_down(gpui::MouseButton::Left, item_mouse_down)
-                .on_mouse_up(gpui::MouseButton::Left, item_mouse_up)
-                .on_mouse_up_out(gpui::MouseButton::Left, item_mouse_up_out)
-                .on_click(item_click);
-
-            root = root.child(card);
-        }
-
-        root
+    Arc::new(move |item, _, _, _| {
+        delivery_window_card(item.item, item.selected, item.state, &spec).id(format!(
+            "{}-{}",
+            item.group_id,
+            item.item.id()
+        ))
     })
 }
 

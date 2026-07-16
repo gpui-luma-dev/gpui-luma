@@ -46,7 +46,7 @@ graph TD
 To maintain visual and behavioral flexibility, each control family is split into four distinct boundaries:
 1.  **Model (`model.rs`)**: The builder and static configuration payload. It defines what options the caller can configure and is cheap and side-effect-free to construct.
 2.  **Control (`control.rs`)**: The live GPUI entity (`cx.new(..)`). It owns runtime interaction state, coordinates input and focus events, manages validation, and triggers rendering updates with `cx.notify()`.
-3.  **Template (`template.rs`)**: The presentation engine. It turns a readonly render model snapshot into concrete GPUI elements (`Div`). It is stateless and does not handle business logic or modify control states directly. Templates support a standardized modifier seam (`with_modifier` / `with_template_modifier`) to allow callers to apply styling overrides.
+3.  **Template (`template.rs`)**: The presentation engine. It turns a readonly render model snapshot into concrete GPUI elements (`Div`). It is stateless and does not handle business logic or modify control states directly. Templates support standardized seams for styling and layout overrides. For selection-style controls built on `control_group`, callers that only need custom item layout should use `with_item_layout(...)` and arrange SDK-provided item elements with normal containers such as `vstack!` or `hstack!`; custom group templates are reserved for changing the interaction chrome itself.
 4.  **Theme (`theme.rs` or Look Crate)**: Resolves semantic parameters (interaction layer, size, styling variants) into concrete values (colors, margins, borders).
 
 ### 2.2 The Customization Ladder

@@ -4,7 +4,8 @@ use gpui::{App, AppContext, Div, Entity, IntoElement, ParentElement, SharedStrin
 
 use super::control::ControlGroupControl;
 use super::template::{
-    ControlGroupItemTemplate, ControlGroupTemplate, default_control_group_template, item_template_with_modifier,
+    ControlGroupItemTemplate, ControlGroupItemElementTemplate, ControlGroupTemplate,
+    control_group_item_layout_template, default_control_group_template, item_template_with_modifier,
     make_control_group_item_template, modified_control_group_template,
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
@@ -113,6 +114,7 @@ where
     pub(crate) layout: ControlGroupLayout,
     pub(crate) template: ControlGroupTemplate<T>,
     pub(crate) item_template: Option<ControlGroupItemTemplate<T>>,
+    pub(crate) item_element_template: Option<ControlGroupItemElementTemplate<T>>,
 }
 
 impl<T> ControlGroupModel<T>
@@ -171,6 +173,7 @@ where
     pub layout: ControlGroupLayout,
     pub focus: ControlFocusState,
     pub item_template: Option<&'a ControlGroupItemTemplate<T>>,
+    pub item_element_template: Option<&'a ControlGroupItemElementTemplate<T>>,
 }
 
 pub struct ControlGroupBuilder<T>
@@ -198,6 +201,7 @@ where
                 layout: ControlGroupLayout::default(),
                 template: default_control_group_template(),
                 item_template: None,
+                item_element_template: None,
             },
         }
     }
@@ -302,6 +306,11 @@ where
         self
     }
 
+    pub fn item_element_template(mut self, template: ControlGroupItemElementTemplate<T>) -> Self {
+        self.model.item_element_template = Some(template);
+        self
+    }
+
     pub fn with_item_template<F, E>(self, template: F) -> Self
     where
         F: for<'a> Fn(&ControlGroupItemRenderModel<'a, T>, &mut Window, &mut App) -> E + Send + Sync + 'static,
@@ -331,6 +340,11 @@ where
         self
     }
 
+    pub fn clear_item_element_template(mut self) -> Self {
+        self.model.item_element_template = None;
+        self
+    }
+
     pub fn template(mut self, template: ControlGroupTemplate<T>) -> Self {
         self.model.template = template;
         self
@@ -357,6 +371,23 @@ where
             + 'static,
     {
         self.model.template = Arc::new(template);
+        self
+    }
+
+    pub fn with_item_layout<F, E>(mut self, layout: F) -> Self
+    where
+        F: for<'a> Fn(
+                super::template::ControlGroupItemElements,
+                &ControlGroupRenderModel<'a, T>,
+                &mut gpui::Window,
+                &mut App,
+            ) -> E
+            + Send
+            + Sync
+            + 'static,
+        E: IntoElement + 'static,
+    {
+        self.model.template = control_group_item_layout_template(layout);
         self
     }
 
