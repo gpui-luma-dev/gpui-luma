@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{App, AppContext, Div, Entity, IntoElement, ParentElement, SharedString, Stateful, Window, div};
+use gpui::{App, AppContext, Div, Entity, FocusHandle, IntoElement, ParentElement, SharedString, Stateful, Window, div};
 
 use super::control::ControlGroupControl;
 use super::template::{
@@ -98,6 +98,36 @@ pub enum ControlGroupStateMode {
     Managed,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ControlGroupFocusStrategy {
+    /// The group root owns GPUI focus and the active item is rendered as the focused descendant.
+    #[default]
+    ActiveDescendant,
+    /// The group owns item order while focus may move to an item's supplied GPUI focus target.
+    RovingItemFocus,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ControlGroupArrowPolicy {
+    /// Arrow-key actions move the group's active item.
+    #[default]
+    GroupOwns,
+    /// Arrow-key actions are ignored by the group while the active item's target is focused.
+    ChildOwnsWhenFocused,
+}
+
+#[derive(Clone)]
+pub struct ControlGroupFocusTarget {
+    /// GPUI focus target associated with the control-group item.
+    pub focus_handle: FocusHandle,
+    /// Defines whether group arrow navigation remains active while this target is focused.
+    pub arrow_policy: ControlGroupArrowPolicy,
+}
+
+/// Resolves an optional focus target for a control-group item at interaction time.
+pub type ControlGroupFocusTargetProvider<T> =
+    Arc<dyn for<'a> Fn(&'a T, &mut Window, &mut App) -> Option<ControlGroupFocusTarget> + Send + Sync + 'static>;
+
 #[derive(Clone)]
 pub struct ControlGroupModel<T>
 where
@@ -111,6 +141,8 @@ where
     pub(crate) selection_mode: ControlSelectionMode,
     pub(crate) state_mode: ControlGroupStateMode,
     pub(crate) selection_follows_active: bool,
+    pub(crate) focus_strategy: ControlGroupFocusStrategy,
+    pub(crate) focus_target_provider: Option<ControlGroupFocusTargetProvider<T>>,
     pub(crate) enabled: bool,
     pub(crate) layout: ControlGroupLayout,
     pub(crate) template: ControlGroupTemplate<T>,
@@ -173,6 +205,7 @@ where
     pub enabled: bool,
     pub layout: ControlGroupLayout,
     pub focus: ControlFocusState,
+    pub focus_strategy: ControlGroupFocusStrategy,
     pub item_template: Option<&'a ControlGroupItemTemplate<T>>,
     pub item_element_template: Option<&'a ControlGroupItemElementTemplate<T>>,
 }
@@ -199,6 +232,8 @@ where
                 selection_mode: ControlSelectionMode::SingleAllowNone,
                 state_mode: ControlGroupStateMode::Unmanaged,
                 selection_follows_active: false,
+                focus_strategy: ControlGroupFocusStrategy::default(),
+                focus_target_provider: None,
                 enabled: true,
                 layout: ControlGroupLayout::default(),
                 template: default_control_group_template(),
@@ -242,6 +277,37 @@ where
 
     pub fn selection_follows_active(mut self, selection_follows_active: bool) -> Self {
         self.model.selection_follows_active = selection_follows_active;
+        self
+    }
+
+    pub fn focus_strategy(mut self, focus_strategy: ControlGroupFocusStrategy) -> Self {
+        self.model.focus_strategy = focus_strategy;
+        self
+    }
+
+    pub fn active_descendant(self) -> Self {
+        self.focus_strategy(ControlGroupFocusStrategy::ActiveDescendant)
+    }
+
+    pub fn roving_item_focus(self) -> Self {
+        self.focus_strategy(ControlGroupFocusStrategy::RovingItemFocus)
+    }
+
+    pub fn focus_target_provider(mut self, provider: ControlGroupFocusTargetProvider<T>) -> Self {
+        self.model.focus_target_provider = Some(provider);
+        self
+    }
+
+    pub fn with_focus_target_provider<F>(mut self, provider: F) -> Self
+    where
+        F: for<'a> Fn(&'a T, &mut Window, &mut App) -> Option<ControlGroupFocusTarget> + Send + Sync + 'static,
+    {
+        self.model.focus_target_provider = Some(Arc::new(provider));
+        self
+    }
+
+    pub fn clear_focus_target_provider(mut self) -> Self {
+        self.model.focus_target_provider = None;
         self
     }
 
@@ -453,5 +519,20 @@ mod tests {
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
         assert!(!Arc::ptr_eq(builder.model.item_template.as_ref().unwrap(), &item_template));
+    }
+
+    #[test]
+    fn active_descendant_is_default_focus_strategy() {
+        let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test");
+
+        assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::ActiveDescendant);
+        assert!(builder.model.focus_target_provider.is_none());
+    }
+
+    #[test]
+    fn roving_item_focus_sets_focus_strategy() {
+        let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").roving_item_focus();
+
+        assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::RovingItemFocus);
     }
 }

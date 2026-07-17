@@ -76,6 +76,7 @@ impl ThemedListBoxTemplate {
             enabled: model.enabled,
             layout: model.layout,
             focus: model.focus,
+            focus_strategy: model.focus_strategy,
             item_template: model.item_template,
             item_element_template: model.item_element_template.or(Some(&default_item_element_template)),
         };

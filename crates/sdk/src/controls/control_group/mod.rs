@@ -8,8 +8,10 @@ mod themed_template;
 
 pub use control::{ControlGroupControl, ControlGroupEvent};
 pub use model::{
-    ControlGroupBuilder, ControlGroupChromeModel, ControlGroupItem, ControlGroupItemLike, ControlGroupItemRenderModel,
-    ControlGroupLayout, ControlGroupModel, ControlGroupRenderModel, ControlGroupStateMode, ControlSelectionMode,
+    ControlGroupArrowPolicy, ControlGroupBuilder, ControlGroupChromeModel, ControlGroupFocusStrategy,
+    ControlGroupFocusTarget, ControlGroupFocusTargetProvider, ControlGroupItem, ControlGroupItemLike,
+    ControlGroupItemRenderModel, ControlGroupLayout, ControlGroupModel, ControlGroupRenderModel, ControlGroupStateMode,
+    ControlSelectionMode,
 };
 pub use button_item_template::button_item_template;
 pub use toggle_button_item_template::toggle_button_item_template;

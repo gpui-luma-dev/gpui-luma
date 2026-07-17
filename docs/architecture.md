@@ -85,7 +85,7 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   [`controls/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls): The control library:
     *   **Shared infra:** [`template.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/template.rs) (modifiers), [`state.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/state.rs) (focus/composite states), [`value.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/sdk/src/controls/value.rs) (numeric ranges).
     *   **Buttons:** `command/button`, `command/icon_button`, `button_family`.
-    *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine).
+    *   **Choice:** `checkbox`, `radio_button`, `switch`, `toggle`, `control_group` (selection engine with explicit active-descendant focus by default and opt-in roving-item focus targets).
     *   **Composition:** `toolbar` (horizontal shell for hosted command/toggle/menu controls and separators).
     *   **Inputs:** `textfield`, `textarea`, `text/` (shared editing engine).
     *   **Layout:** `dock_splitter`, `split_view`, `resizable_panels`, `scrollbar`.

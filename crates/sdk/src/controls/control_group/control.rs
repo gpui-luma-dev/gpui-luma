@@ -1,11 +1,12 @@
 use gpui::{
     App, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Render, SharedString,
-    Window, div, prelude::*,
+    Subscription, Window, div, prelude::*,
 };
 
 use super::model::{
     ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupModel, ControlGroupRenderModel,
-    ControlGroupStateMode, ControlSelectionMode,
+    ControlGroupArrowPolicy, ControlGroupFocusStrategy, ControlGroupFocusTarget, ControlGroupStateMode,
+    ControlSelectionMode,
 };
 use super::template::ControlGroupTemplateHandlers;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
@@ -26,6 +27,7 @@ where
 {
     model: ControlGroupModel<T>,
     focus_handle: gpui::FocusHandle,
+    focus_subscription: Option<Subscription>,
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
 }
@@ -49,6 +51,7 @@ where
         Self {
             model: builder.model,
             focus_handle: cx.focus_handle().tab_stop(enabled),
+            focus_subscription: None,
             hovered_item: None,
             pressed_item: None,
         }
@@ -112,6 +115,7 @@ where
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_subscription = None;
 
         if !enabled {
             self.hovered_item = None;
@@ -178,10 +182,11 @@ where
         cx.notify();
     }
 
-    fn render_model<'a>(&'a self, window: &Window) -> ControlGroupRenderModel<'a, T> {
+    fn render_model<'a>(&'a self, window: &mut Window, cx: &mut App) -> ControlGroupRenderModel<'a, T> {
         let focus = ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window);
         let effective_selected_ids = self.model.effective_selected_ids();
         let item_count = self.model.items.len();
+        let keyboard_focus_visible = window.last_input_was_keyboard();
 
         let items = self
             .model
@@ -192,6 +197,18 @@ where
                 let enabled = self.model.enabled && item.is_enabled();
                 let selected = selected_ids_contain(effective_selected_ids, item.id());
                 let active = self.model.active_id.as_ref().is_some_and(|active_id| active_id == item.id());
+                let mut item_active = enabled && focus.focused && active;
+                let mut item_focus_visible = enabled && focus.focus_visible && active;
+
+                if enabled
+                    && active
+                    && self.model.focus_strategy == ControlGroupFocusStrategy::RovingItemFocus
+                    && let Some(target) = self.focus_target_for_index(index, window, cx)
+                    && target.focus_handle.is_focused(window)
+                {
+                    item_active = true;
+                    item_focus_visible = keyboard_focus_visible;
+                }
 
                 ControlGroupItemRenderModel {
                     group_id: &self.model.id,
@@ -206,8 +223,8 @@ where
                         pressed: enabled && self.pressed_item == Some(index),
                         disabled: !enabled,
                         selected,
-                        active: enabled && focus.focused && active,
-                        focus_visible: enabled && focus.focus_visible && active,
+                        active: item_active,
+                        focus_visible: item_focus_visible,
                     },
                     selection_mode: self.model.selection_mode,
                 }
@@ -224,6 +241,7 @@ where
             enabled: self.model.enabled,
             layout: self.model.layout,
             focus,
+            focus_strategy: self.model.focus_strategy,
             item_template: self.model.item_template.as_ref(),
             item_element_template: self.model.item_element_template.as_ref(),
         }
@@ -299,7 +317,62 @@ where
         true
     }
 
-    fn set_active_index(&mut self, index: usize, cx: &mut Context<Self>) -> bool {
+    fn focus_target_for_index(
+        &self,
+        index: usize,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Option<ControlGroupFocusTarget> {
+        let item = self.model.items.get(index)?;
+        let provider = self.model.focus_target_provider.as_ref()?;
+        provider(item, window, cx)
+    }
+
+    fn focus_item_for_strategy(&self, index: usize, window: &mut Window, cx: &mut App) {
+        match self.model.focus_strategy {
+            ControlGroupFocusStrategy::ActiveDescendant => {
+                self.focus_handle.focus(window, cx);
+            }
+            ControlGroupFocusStrategy::RovingItemFocus => {
+                if let Some(target) = self.focus_target_for_index(index, window, cx) {
+                    target.focus_handle.focus(window, cx);
+                } else {
+                    self.focus_handle.focus(window, cx);
+                }
+            }
+        }
+    }
+
+    fn active_focus_target(&self, window: &mut Window, cx: &mut App) -> Option<ControlGroupFocusTarget> {
+        let index = self.active_index()?;
+        self.focus_target_for_index(index, window, cx)
+    }
+
+    fn group_handles_arrow_action(&self, window: &mut Window, cx: &mut App) -> bool {
+        if self.model.focus_strategy == ControlGroupFocusStrategy::ActiveDescendant {
+            return true;
+        }
+
+        !matches!(
+            self.active_focus_target(window, cx).map(|target| {
+                let focused = target.focus_handle.is_focused(window);
+                (target.arrow_policy, focused)
+            }),
+            Some((ControlGroupArrowPolicy::ChildOwnsWhenFocused, true))
+        )
+    }
+
+    fn redirect_roving_focus_on_group_entry(&self, window: &mut Window, cx: &mut App) {
+        if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {
+            return;
+        }
+
+        if let Some(target) = self.active_focus_target(window, cx) {
+            target.focus_handle.focus(window, cx);
+        }
+    }
+
+    fn set_active_index(&mut self, index: usize, window: Option<&mut Window>, cx: &mut Context<Self>) -> bool {
         if !self.can_use_item(index) {
             return false;
         }
@@ -313,6 +386,9 @@ where
         }
 
         self.model.active_id = Some(item.id().clone());
+        if let Some(window) = window {
+            self.focus_item_for_strategy(index, window, cx);
+        }
         cx.notify();
         true
     }
@@ -346,7 +422,7 @@ where
         if self.can_use_item(index) {
             self.pressed_item = Some(index);
             self.model.active_id = Some(self.model.items[index].id().clone());
-            self.focus_handle.focus(window, cx);
+            self.focus_item_for_strategy(index, window, cx);
             cx.notify();
         }
     }
@@ -366,20 +442,20 @@ where
         self.commit_toggle_index(index, cx);
     }
 
-    fn move_active(&mut self, direction: ControlGroupDirection, cx: &mut Context<Self>) {
+    fn move_active(&mut self, direction: ControlGroupDirection, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
         }
 
         if let Some(next_index) = next_enabled_index(&self.model.items, self.active_index(), direction) {
-            let changed = self.set_active_index(next_index, cx);
+            let changed = self.set_active_index(next_index, Some(window), cx);
             if changed && self.model.selection_follows_active {
                 self.commit_toggle_index(next_index, cx);
             }
         }
     }
 
-    fn move_active_to_boundary(&mut self, first: bool, cx: &mut Context<Self>) {
+    fn move_active_to_boundary(&mut self, first: bool, window: &mut Window, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
         }
@@ -391,27 +467,35 @@ where
         };
 
         if let Some(next_index) = next_index {
-            let changed = self.set_active_index(next_index, cx);
+            let changed = self.set_active_index(next_index, Some(window), cx);
             if changed && self.model.selection_follows_active {
                 self.commit_toggle_index(next_index, cx);
             }
         }
     }
 
-    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(ControlGroupDirection::Previous, cx);
+    fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(window, cx) {
+            self.move_active(ControlGroupDirection::Previous, window, cx);
+        }
     }
 
-    fn handle_select_next_item(&mut self, _: &SelectNextItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active(ControlGroupDirection::Next, cx);
+    fn handle_select_next_item(&mut self, _: &SelectNextItem, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(window, cx) {
+            self.move_active(ControlGroupDirection::Next, window, cx);
+        }
     }
 
-    fn handle_select_first_item(&mut self, _: &SelectFirstItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active_to_boundary(true, cx);
+    fn handle_select_first_item(&mut self, _: &SelectFirstItem, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(window, cx) {
+            self.move_active_to_boundary(true, window, cx);
+        }
     }
 
-    fn handle_select_last_item(&mut self, _: &SelectLastItem, _window: &mut Window, cx: &mut Context<Self>) {
-        self.move_active_to_boundary(false, cx);
+    fn handle_select_last_item(&mut self, _: &SelectLastItem, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(window, cx) {
+            self.move_active_to_boundary(false, window, cx);
+        }
     }
 
     fn handle_activate_control(&mut self, _: &ActivateControl, _window: &mut Window, cx: &mut Context<Self>) {
@@ -445,7 +529,11 @@ where
     T: ControlGroupItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let model = self.render_model(window);
+        if self.focus_subscription.is_none() {
+            self.focus_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_group_focus_entry));
+        }
+
+        let model = self.render_model(window, cx);
         let handlers = self.template_handlers(cx);
 
         div()
@@ -460,6 +548,15 @@ where
                     .on_action(cx.listener(Self::handle_activate_control)),
             )
             .into_any_element()
+    }
+}
+
+impl<T> ControlGroupControl<T>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    fn handle_group_focus_entry(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.redirect_roving_focus_on_group_entry(window, cx);
     }
 }
 
@@ -642,7 +739,9 @@ mod tests {
         compute_next_selected_ids, enabled_item_index_by_id, next_enabled_index, normalize_active_id,
         normalize_selected_ids,
     };
-    use crate::controls::control_group::{ControlGroupItem, ControlGroupLayout, default_control_group_template};
+    use crate::controls::control_group::{
+        ControlGroupFocusStrategy, ControlGroupItem, ControlGroupLayout, default_control_group_template,
+    };
 
     #[test]
     fn normalize_single_required_falls_back_to_first_enabled_item() {
@@ -771,6 +870,8 @@ mod tests {
             selection_mode,
             state_mode,
             selection_follows_active: false,
+            focus_strategy: ControlGroupFocusStrategy::ActiveDescendant,
+            focus_target_provider: None,
             enabled: true,
             layout: ControlGroupLayout::default(),
             template: default_control_group_template(),
