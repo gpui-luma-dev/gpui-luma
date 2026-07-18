@@ -35,6 +35,11 @@ impl ControlInteraction {
         }
     }
 
+    pub fn set_tab_stop(&mut self, enabled: bool, tab_stop: bool) {
+        self.tab_stop = tab_stop;
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled && tab_stop);
+    }
+
     pub fn render_state(&self, enabled: bool, window: &Window) -> InteractionState {
         InteractionState { focused: enabled && self.focus_handle.is_focused(window), disabled: !enabled, ..self.state }
     }

@@ -38,7 +38,7 @@ use gpui_luma::controls::tree_view::{TreeViewTemplate, TreeViewTheme, ThemedTree
 use gpui_luma::controls::tabs_navigation::{TabsNavigationTemplate, TabsNavigationTheme, ThemedTabsNavigationTemplate};
 use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
-use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme};
+use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
 
 use gpui_luma::theme::{ControlSize, InteractionState};
 
@@ -864,18 +864,27 @@ struct ShadcnToolbarTheme {
 }
 
 impl ToolbarTheme for ShadcnToolbarTheme {
-    fn resolve(&self, enabled: bool, size: ControlSize) -> ToolbarLook {
+    fn resolve(&self, enabled: bool, size: ControlSize, variant: ToolbarVariant) -> ToolbarLook {
         let tokens = self.theme.mode_tokens();
         let metrics = &tokens.metrics;
         let control = metrics.for_size(size);
+        let transparent = gpui::hsla(0.0, 0.0, 0.0, 0.0);
+
+        let (background, border) = match variant {
+            ToolbarVariant::Outline => {
+                let background = if enabled {
+                    tokens.palette.muted_background
+                } else {
+                    tokens.palette.disabled_background
+                };
+                (background, tokens.palette.border_default)
+            }
+            ToolbarVariant::Ghost => (transparent, transparent),
+        };
 
         ToolbarLook {
-            background: if enabled {
-                tokens.palette.muted_background
-            } else {
-                tokens.palette.disabled_background
-            },
-            border: tokens.palette.border_default,
+            background,
+            border,
             separator: tokens.palette.border_default,
             radius: metrics.radius.md,
             padding_x: 6.0,

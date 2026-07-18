@@ -90,7 +90,7 @@ impl TextFieldControl {
             horizontal_scroll: px(0.0),
             layout_cache: None,
         };
-        this.focus_handle = this.focus_handle.clone().tab_stop(this.model.enabled);
+        this.focus_handle = this.focus_handle.clone().tab_stop(this.model.enabled && this.model.tab_stop);
         this.recompute_invalid();
         observe_theme_revision(cx, |this, cx| {
             this.layout_cache = None;
@@ -131,11 +131,17 @@ impl TextFieldControl {
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
-        self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.model.tab_stop);
         if !enabled {
             self.state.set_hovered(false);
             self.mouse_selecting = false;
         }
+        cx.notify();
+    }
+
+    pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
+        self.model.tab_stop = tab_stop;
+        self.focus_handle = self.focus_handle.clone().tab_stop(self.model.enabled && tab_stop);
         cx.notify();
     }
 
@@ -569,7 +575,7 @@ impl Render for TextFieldControl {
                         cx,
                     )
                     .track_focus(&self.focus_handle)
-                    .tab_stop(self.model.enabled),
+                    .tab_stop(self.model.enabled && self.model.tab_stop),
             )
             .child(
                 canvas(

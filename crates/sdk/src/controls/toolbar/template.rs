@@ -2,8 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
-use super::model::{ToolbarItemKind, ToolbarRenderModel, fallback_item};
-use super::theme::{ToolbarTheme, default_toolbar_theme};
+use super::model::{ToolbarItem, ToolbarItemKind, ToolbarItemRenderModel, ToolbarRenderModel, fallback_item};
+use super::theme::{ToolbarTheme, ToolbarVariant, default_toolbar_theme};
+use crate::controls::control_group::{ControlGroupItemLike, ControlGroupRenderModel, ControlGroupTemplate};
 use crate::theme::ControlSize;
 
 pub type ToolbarTemplateModifier =
@@ -87,7 +88,8 @@ impl ToolbarTemplate for ThemedToolbarTemplate {
         _window: &mut Window,
         _cx: &mut App,
     ) -> Stateful<Div> {
-        let look = self.theme.resolve(model.enabled, self.size);
+        let size = model.size.unwrap_or(self.size);
+        let look = self.theme.resolve(model.enabled, size, model.variant);
         let mut root = div()
             .id(model.id.clone())
             .flex()
@@ -97,16 +99,18 @@ impl ToolbarTemplate for ThemedToolbarTemplate {
             .px(px(look.padding_x))
             .py(px(look.padding_y))
             .rounded(px(look.radius))
-            .bg(look.background)
-            .border_1()
-            .border_color(look.border);
+            .bg(look.background);
+
+        if model.variant == ToolbarVariant::Outline {
+            root = root.border_1().border_color(look.border);
+        }
 
         for item in items {
             let child = match item.kind {
                 ToolbarItemKind::Separator => {
                     div().w(px(1.0)).h(px(look.separator_height)).flex_none().bg(look.separator).into_any_element()
                 }
-                _ => item.element,
+                ToolbarItemKind::Hosted => item.element,
             };
             root = root.child(child);
         }
@@ -144,6 +148,72 @@ where
     Arc::new(ModifiedToolbarTemplate::new(template).with_modifier(Box::new(modifier)))
 }
 
-pub(crate) fn render_fallback_toolbar_item(model: &super::model::ToolbarItemRenderModel) -> gpui::AnyElement {
+pub(crate) fn render_fallback_toolbar_item(model: &ToolbarItemRenderModel) -> gpui::AnyElement {
     fallback_item(model)
+}
+
+pub(crate) fn toolbar_control_group_template(
+    size: ControlSize,
+    variant: ToolbarVariant,
+    template: Arc<dyn ToolbarTemplate>,
+) -> ControlGroupTemplate<ToolbarItem> {
+    Arc::new(move |model, _handlers, window, cx| {
+        let toolbar_model = toolbar_render_model(model, size, variant);
+        let items = render_toolbar_items(model, window, cx);
+        template.render(&toolbar_model, items, window, cx)
+    })
+}
+
+fn toolbar_render_model<'a>(
+    model: &'a ControlGroupRenderModel<'a, ToolbarItem>,
+    size: ControlSize,
+    variant: ToolbarVariant,
+) -> ToolbarRenderModel<'a> {
+    ToolbarRenderModel {
+        id: model.id,
+        items: model
+            .items
+            .iter()
+            .map(|item| ToolbarItemRenderModel {
+                id: item.item.id().clone(),
+                kind: item.item.kind,
+                index: item.index,
+                enabled: item.enabled || item.item.is_separator(),
+                state: item.state,
+            })
+            .collect(),
+        enabled: model.enabled,
+        size: Some(size),
+        variant,
+    }
+}
+
+fn render_toolbar_items(
+    model: &ControlGroupRenderModel<'_, ToolbarItem>,
+    window: &mut Window,
+    cx: &mut App,
+) -> Vec<ToolbarRenderedItem> {
+    model
+        .items
+        .iter()
+        .map(|item| {
+            let render_model = ToolbarItemRenderModel {
+                id: item.item.id().clone(),
+                kind: item.item.kind,
+                index: item.index,
+                enabled: item.enabled || item.item.is_separator(),
+                state: item.state,
+            };
+            let element = match item.item.kind {
+                ToolbarItemKind::Separator => div().into_any_element(),
+                ToolbarItemKind::Hosted => item
+                    .item
+                    .content
+                    .as_ref()
+                    .map(|content| content.present(&render_model, window, cx).element)
+                    .unwrap_or_else(|| render_fallback_toolbar_item(&render_model)),
+            };
+            ToolbarRenderedItem { kind: item.item.kind, element }
+        })
+        .collect()
 }

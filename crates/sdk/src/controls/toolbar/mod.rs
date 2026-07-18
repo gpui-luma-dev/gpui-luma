@@ -3,13 +3,13 @@ mod model;
 mod template;
 mod theme;
 
-pub use control::Toolbar;
+pub use control::{Toolbar, horizontal_arrow_policy};
 pub use model::{ToolbarBuilder, ToolbarItem, ToolbarItemKind, ToolbarItemRenderModel, ToolbarRenderModel};
 pub use template::{
     ThemedToolbarTemplate, ToolbarRenderedItem, ToolbarTemplate, ToolbarTemplateModifier, default_toolbar_template,
     toolbar_template_with_theme,
 };
-pub use theme::{DefaultToolbarTheme, ToolbarLook, ToolbarTheme, default_toolbar_theme};
+pub use theme::{DefaultToolbarTheme, ToolbarLook, ToolbarTheme, ToolbarVariant, default_toolbar_theme};
 
 use gpui::{Entity, SharedString};
 

@@ -4,6 +4,15 @@ use gpui::Hsla;
 
 use crate::theme::{ControlSize, ThemeTokens};
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ToolbarVariant {
+    /// Bordered, filled shell.
+    #[default]
+    Outline,
+    /// Transparent / borderless shell for denser embedding.
+    Ghost,
+}
+
 #[derive(Clone, Debug)]
 pub struct ToolbarLook {
     pub background: Hsla,
@@ -17,7 +26,7 @@ pub struct ToolbarLook {
 }
 
 pub trait ToolbarTheme: Send + Sync {
-    fn resolve(&self, enabled: bool, size: ControlSize) -> ToolbarLook;
+    fn resolve(&self, enabled: bool, size: ControlSize, variant: ToolbarVariant) -> ToolbarLook;
 }
 
 pub struct DefaultToolbarTheme {
@@ -42,18 +51,26 @@ pub fn default_toolbar_theme() -> Arc<dyn ToolbarTheme> {
 }
 
 impl ToolbarTheme for DefaultToolbarTheme {
-    fn resolve(&self, enabled: bool, size: ControlSize) -> ToolbarLook {
+    fn resolve(&self, enabled: bool, size: ControlSize, variant: ToolbarVariant) -> ToolbarLook {
         let metrics = &self.tokens.metrics;
         let control = metrics.for_size(size);
-        let background = if enabled {
-            self.tokens.palette.surface.subtle.background
-        } else {
-            self.tokens.palette.state.disabled.background
+        let transparent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 };
+
+        let (background, border) = match variant {
+            ToolbarVariant::Outline => {
+                let background = if enabled {
+                    self.tokens.palette.surface.subtle.background
+                } else {
+                    self.tokens.palette.state.disabled.background
+                };
+                (background, self.tokens.palette.border.default)
+            }
+            ToolbarVariant::Ghost => (transparent, transparent),
         };
 
         ToolbarLook {
             background,
-            border: self.tokens.palette.border.default,
+            border,
             separator: self.tokens.palette.border.default,
             radius: metrics.radius.md,
             padding_x: metrics.spacing.s2,

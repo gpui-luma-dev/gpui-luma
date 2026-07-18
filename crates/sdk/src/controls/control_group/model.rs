@@ -108,12 +108,34 @@ pub enum ControlGroupFocusStrategy {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ControlGroupArrowAxis {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ControlGroupArrowPolicy {
     /// Arrow-key actions move the group's active item.
     #[default]
     GroupOwns,
-    /// Arrow-key actions are ignored by the group while the active item's target is focused.
+    /// All arrow-key actions are ignored by the group while the active item's target is focused.
     ChildOwnsWhenFocused,
+    /// Left/Right are ignored by the group while focused; Up/Down still move the active item.
+    ChildOwnsHorizontalWhenFocused,
+    /// Up/Down are ignored by the group while focused; Left/Right still move the active item.
+    ChildOwnsVerticalWhenFocused,
+}
+
+impl ControlGroupArrowPolicy {
+    pub(crate) fn child_owns_axis(self, axis: ControlGroupArrowAxis) -> bool {
+        match self {
+            Self::GroupOwns => false,
+            Self::ChildOwnsWhenFocused => true,
+            Self::ChildOwnsHorizontalWhenFocused => axis == ControlGroupArrowAxis::Horizontal,
+            Self::ChildOwnsVerticalWhenFocused => axis == ControlGroupArrowAxis::Vertical,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -121,6 +143,9 @@ pub struct ControlGroupFocusTarget {
     /// GPUI focus target associated with the control-group item.
     pub focus_handle: FocusHandle,
     /// Defines whether group arrow navigation remains active while this target is focused.
+    ///
+    /// Providers may return a different policy dynamically (for example `GroupOwns` while a
+    /// popup is closed and `ChildOwnsWhenFocused` while it is open).
     pub arrow_policy: ControlGroupArrowPolicy,
 }
 
@@ -144,6 +169,7 @@ where
     pub(crate) focus_strategy: ControlGroupFocusStrategy,
     pub(crate) focus_target_provider: Option<ControlGroupFocusTargetProvider<T>>,
     pub(crate) enabled: bool,
+    pub(crate) tab_stop: bool,
     pub(crate) layout: ControlGroupLayout,
     pub(crate) template: ControlGroupTemplate<T>,
     pub(crate) item_template: Option<ControlGroupItemTemplate<T>>,
@@ -235,6 +261,7 @@ where
                 focus_strategy: ControlGroupFocusStrategy::default(),
                 focus_target_provider: None,
                 enabled: true,
+                tab_stop: true,
                 layout: ControlGroupLayout::default(),
                 template: default_control_group_template(),
                 item_template: None,
@@ -371,6 +398,11 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.model.tab_stop = tab_stop;
         self
     }
 
@@ -534,5 +566,30 @@ mod tests {
         let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").roving_item_focus();
 
         assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::RovingItemFocus);
+    }
+
+    #[test]
+    fn tab_stop_defaults_true_and_can_be_disabled() {
+        let default_builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test");
+        assert!(default_builder.model.tab_stop);
+
+        let builder = ControlGroupBuilder::<ControlGroupItem>::new("control-group-test").tab_stop(false);
+        assert!(!builder.model.tab_stop);
+    }
+
+    #[test]
+    fn arrow_policy_respects_directional_ownership() {
+        assert!(!ControlGroupArrowPolicy::GroupOwns.child_owns_axis(ControlGroupArrowAxis::Horizontal));
+        assert!(ControlGroupArrowPolicy::ChildOwnsWhenFocused.child_owns_axis(ControlGroupArrowAxis::Vertical));
+        assert!(
+            ControlGroupArrowPolicy::ChildOwnsHorizontalWhenFocused.child_owns_axis(ControlGroupArrowAxis::Horizontal)
+        );
+        assert!(
+            !ControlGroupArrowPolicy::ChildOwnsHorizontalWhenFocused.child_owns_axis(ControlGroupArrowAxis::Vertical)
+        );
+        assert!(ControlGroupArrowPolicy::ChildOwnsVerticalWhenFocused.child_owns_axis(ControlGroupArrowAxis::Vertical));
+        assert!(
+            !ControlGroupArrowPolicy::ChildOwnsVerticalWhenFocused.child_owns_axis(ControlGroupArrowAxis::Horizontal)
+        );
     }
 }

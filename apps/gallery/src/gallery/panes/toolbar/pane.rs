@@ -3,11 +3,14 @@ use std::sync::Arc;
 use gpui::{AnyElement, Context, Entity, FocusHandle, Focusable, Subscription, div, prelude::*, px};
 use gpui_luma::controls::command::button::{Button, ButtonEvent};
 use gpui_luma::controls::icon::lucide_glyph;
+use gpui_luma::controls::textfield::TextField;
 use gpui_luma::controls::menu_item::MenuItem;
 use gpui_luma::controls::presenter::HasPresenter;
 use gpui_luma::controls::popup_menu::{PopupMenu, PopupMenuEvent};
 use gpui_luma::controls::selector::{Selector, SelectorEvent, SelectorItem};
+use gpui_luma::controls::control_group::ControlGroupArrowPolicy;
 use gpui_luma::controls::toolbar::{ToolbarControl, ToolbarItem};
+use gpui_luma::focus::EscapeFocus;
 use gpui_luma_look_shadcn::ShadcnLook;
 use gpui_luma_look_shadcn::prelude::*;
 use lucide_icons::Icon as LucideIcon;
@@ -49,6 +52,7 @@ pub(in crate::gallery) struct ToolbarPane {
     toggle_buttons: Vec<ToggleButton>,
     menus: Vec<ToolbarMenu>,
     selectors: Vec<ToolbarSelector>,
+    search_field: TextField,
     inspector: Entity<ColorInspectorShell>,
     status: String,
 }
@@ -137,6 +141,12 @@ impl ToolbarPane {
         let video = icon_button(&look, "toolbar-video", LucideIcon::Video, cx);
         let code = icon_button(&look, "toolbar-code", LucideIcon::Code, cx);
 
+        let search_field = look
+            .textfield("toolbar-search")
+            .placeholder("Search...")
+            .tab_stop(false)
+            .spawn(cx);
+
         let toolbar = look
             .toolbar("toolbar-demo")
             .item(menu_item("assistant", assistant_menu.clone(), cx))
@@ -155,6 +165,7 @@ impl ToolbarPane {
             .item(button_item("video", video.clone(), cx))
             .item(menu_item("more", more_menu.clone(), cx))
             .separator("code-separator")
+            .item(textfield_item("search", search_field.clone(), cx))
             .item(button_item("code", code.clone(), cx))
             .spawn(cx);
 
@@ -178,6 +189,7 @@ impl ToolbarPane {
                 ToolbarMenu { label: "More", entity: more_menu },
             ],
             selectors: vec![ToolbarSelector { label: "Style", entity: style_selector }],
+            search_field,
             inspector,
             status: "Paragraph editing toolbar".to_string(),
         }
@@ -262,6 +274,7 @@ impl ToolbarPane {
         for selector in &self.selectors {
             selector.entity.update(cx, |_, cx| cx.notify());
         }
+        self.search_field.update(cx, |_, cx| cx.notify());
         notify_entity(&self.inspector, cx);
         notify_entity(&self.inspector.read(cx).tree(), cx);
         notify_entity(&self.inspector.read(cx).detail(), cx);
@@ -332,6 +345,24 @@ fn selector_item(
 ) -> ToolbarItem {
     let focus = focus_handle_for(&entity, cx);
     ToolbarItem::hosted(id, move |_, _, _| entity.clone()).focus_handle(focus)
+}
+
+fn textfield_item(
+    id: impl Into<gpui::SharedString>,
+    entity: TextField,
+    cx: &mut Context<GalleryApp>,
+) -> ToolbarItem {
+    let focus = focus_handle_for(&entity, cx);
+    ToolbarItem::hosted(id, move |_, _, _| {
+        // Absorb Escape at the toolbar item so it does not bubble to the pane focus scope.
+        div()
+            .child(entity.clone())
+            .on_action(|_: &EscapeFocus, _window, cx| {
+                cx.stop_propagation();
+            })
+    })
+    .focus_handle(focus)
+    .arrow_policy(ControlGroupArrowPolicy::ChildOwnsHorizontalWhenFocused)
 }
 
 fn focus_handle_for<T: Focusable>(entity: &Entity<T>, cx: &mut Context<GalleryApp>) -> FocusHandle {

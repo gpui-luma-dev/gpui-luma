@@ -9,7 +9,8 @@ use super::{
 };
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
-    ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
+    ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
+    SelectPreviousItem, SelectPreviousRow,
 };
 use crate::theme::observe_theme_revision;
 
@@ -210,21 +211,26 @@ impl AccordionControl {
     }
 
     fn handle_previous(&mut self, _: &SelectPreviousItem, _: &mut Window, cx: &mut Context<Self>) {
-        if !self.model.enabled {
-            return;
-        }
-        if let Some(next) = next_enabled_index(&self.model.items, self.focused_item_index, AccordionDirection::Previous)
-        {
-            self.focused_item_index = Some(next);
-            cx.notify();
-        }
+        self.move_focus(AccordionDirection::Previous, cx);
     }
 
     fn handle_next(&mut self, _: &SelectNextItem, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_focus(AccordionDirection::Next, cx);
+    }
+
+    fn handle_previous_row(&mut self, _: &SelectPreviousRow, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_focus(AccordionDirection::Previous, cx);
+    }
+
+    fn handle_next_row(&mut self, _: &SelectNextRow, _: &mut Window, cx: &mut Context<Self>) {
+        self.move_focus(AccordionDirection::Next, cx);
+    }
+
+    fn move_focus(&mut self, direction: AccordionDirection, cx: &mut Context<Self>) {
         if !self.model.enabled {
             return;
         }
-        if let Some(next) = next_enabled_index(&self.model.items, self.focused_item_index, AccordionDirection::Next) {
+        if let Some(next) = next_enabled_index(&self.model.items, self.focused_item_index, direction) {
             self.focused_item_index = Some(next);
             cx.notify();
         }
@@ -277,6 +283,8 @@ impl Render for AccordionControl {
                     .key_context(ControlKeyProfile::TabList.context())
                     .on_action(cx.listener(Self::handle_previous))
                     .on_action(cx.listener(Self::handle_next))
+                    .on_action(cx.listener(Self::handle_previous_row))
+                    .on_action(cx.listener(Self::handle_next_row))
                     .on_action(cx.listener(Self::handle_first))
                     .on_action(cx.listener(Self::handle_last))
                     .on_action(cx.listener(Self::handle_activate)),

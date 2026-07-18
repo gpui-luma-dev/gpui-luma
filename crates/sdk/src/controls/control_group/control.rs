@@ -4,14 +4,15 @@ use gpui::{
 };
 
 use super::model::{
-    ControlGroupBuilder, ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupModel, ControlGroupRenderModel,
-    ControlGroupArrowPolicy, ControlGroupFocusStrategy, ControlGroupFocusTarget, ControlGroupStateMode,
-    ControlSelectionMode,
+    ControlGroupArrowAxis, ControlGroupBuilder, ControlGroupFocusStrategy, ControlGroupFocusTarget,
+    ControlGroupItemLike, ControlGroupItemRenderModel, ControlGroupModel, ControlGroupRenderModel,
+    ControlGroupStateMode, ControlSelectionMode,
 };
 use super::template::ControlGroupTemplateHandlers;
 use crate::controls::state::{CompositeItemState, ControlFocusState};
 use crate::keyhandling::{
-    ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
+    ActivateControl, ControlKeyProfile, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
+    SelectPreviousItem, SelectPreviousRow,
 };
 use crate::theme::observe_theme_revision;
 
@@ -28,6 +29,8 @@ where
     model: ControlGroupModel<T>,
     focus_handle: gpui::FocusHandle,
     focus_subscription: Option<Subscription>,
+    item_focus_subscriptions: Vec<Subscription>,
+    item_focus_subscription_keys: Vec<(SharedString, gpui::FocusHandle)>,
     hovered_item: Option<usize>,
     pressed_item: Option<usize>,
 }
@@ -45,13 +48,15 @@ where
 
     pub(crate) fn from_builder(mut builder: ControlGroupBuilder<T>, cx: &mut Context<Self>) -> Self {
         normalize_model(&mut builder.model);
-        let enabled = builder.model.enabled;
+        let tab_stop = builder.model.enabled && builder.model.tab_stop;
 
         observe_theme_revision(cx, |_, cx| cx.notify()).detach();
         Self {
             model: builder.model,
-            focus_handle: cx.focus_handle().tab_stop(enabled),
+            focus_handle: cx.focus_handle().tab_stop(tab_stop),
             focus_subscription: None,
+            item_focus_subscriptions: Vec::new(),
+            item_focus_subscription_keys: Vec::new(),
             hovered_item: None,
             pressed_item: None,
         }
@@ -108,20 +113,29 @@ where
         self.model.items = items.into_iter().collect();
         self.hovered_item = None;
         self.pressed_item = None;
+        self.clear_item_focus_subscriptions();
         normalize_model(&mut self.model);
         cx.notify();
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
-        self.focus_handle = self.focus_handle.clone().tab_stop(enabled);
+        self.focus_handle = self.focus_handle.clone().tab_stop(enabled && self.model.tab_stop);
         self.focus_subscription = None;
+        self.clear_item_focus_subscriptions();
 
         if !enabled {
             self.hovered_item = None;
             self.pressed_item = None;
         }
 
+        cx.notify();
+    }
+
+    pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
+        self.model.tab_stop = tab_stop;
+        self.focus_handle = self.focus_handle.clone().tab_stop(self.model.enabled && tab_stop);
+        self.focus_subscription = None;
         cx.notify();
     }
 
@@ -348,27 +362,79 @@ where
         self.focus_target_for_index(index, window, cx)
     }
 
-    fn group_handles_arrow_action(&self, window: &mut Window, cx: &mut App) -> bool {
+    fn group_handles_arrow_action(&self, axis: ControlGroupArrowAxis, window: &mut Window, cx: &mut App) -> bool {
         if self.model.focus_strategy == ControlGroupFocusStrategy::ActiveDescendant {
             return true;
         }
 
-        !matches!(
-            self.active_focus_target(window, cx).map(|target| {
-                let focused = target.focus_handle.is_focused(window);
-                (target.arrow_policy, focused)
-            }),
-            Some((ControlGroupArrowPolicy::ChildOwnsWhenFocused, true))
-        )
+        let Some(target) = self.active_focus_target(window, cx) else {
+            return true;
+        };
+
+        if !target.focus_handle.is_focused(window) {
+            return true;
+        }
+
+        !target.arrow_policy.child_owns_axis(axis)
     }
 
-    fn redirect_roving_focus_on_group_entry(&self, window: &mut Window, cx: &mut App) {
-        if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {
+    fn set_active_id_from_focus(&mut self, item_id: SharedString, cx: &mut Context<Self>) {
+        if !self.model.enabled {
             return;
         }
 
-        if let Some(target) = self.active_focus_target(window, cx) {
-            target.focus_handle.focus(window, cx);
+        if enabled_item_index_by_id(&self.model.items, Some(&item_id)).is_none() {
+            return;
+        }
+
+        if self.model.active_id.as_ref() == Some(&item_id) {
+            return;
+        }
+
+        self.model.active_id = Some(item_id);
+        cx.notify();
+    }
+
+    fn clear_item_focus_subscriptions(&mut self) {
+        self.item_focus_subscriptions.clear();
+        self.item_focus_subscription_keys.clear();
+    }
+
+    fn ensure_item_focus_subscriptions(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus
+            || self.model.focus_target_provider.is_none()
+        {
+            self.clear_item_focus_subscriptions();
+            return;
+        }
+
+        let mut desired_keys = Vec::new();
+        for index in 0..self.model.items.len() {
+            let Some(item) = self.model.items.get(index) else {
+                continue;
+            };
+            if !item.is_enabled() {
+                continue;
+            }
+            if let Some(target) = self.focus_target_for_index(index, window, cx) {
+                desired_keys.push((item.id().clone(), target.focus_handle));
+            }
+        }
+
+        if desired_keys == self.item_focus_subscription_keys {
+            return;
+        }
+
+        self.item_focus_subscriptions.clear();
+        self.item_focus_subscription_keys = desired_keys;
+
+        for (item_id, focus_handle) in self.item_focus_subscription_keys.clone() {
+            self.item_focus_subscriptions.push(cx.on_focus_in(&focus_handle, window, {
+                let item_id = item_id.clone();
+                move |this, _window, cx| {
+                    this.set_active_id_from_focus(item_id.clone(), cx);
+                }
+            }));
         }
     }
 
@@ -475,25 +541,37 @@ where
     }
 
     fn handle_select_previous_item(&mut self, _: &SelectPreviousItem, window: &mut Window, cx: &mut Context<Self>) {
-        if self.group_handles_arrow_action(window, cx) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Horizontal, window, cx) {
             self.move_active(ControlGroupDirection::Previous, window, cx);
         }
     }
 
     fn handle_select_next_item(&mut self, _: &SelectNextItem, window: &mut Window, cx: &mut Context<Self>) {
-        if self.group_handles_arrow_action(window, cx) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Horizontal, window, cx) {
+            self.move_active(ControlGroupDirection::Next, window, cx);
+        }
+    }
+
+    fn handle_select_previous_row(&mut self, _: &SelectPreviousRow, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Vertical, window, cx) {
+            self.move_active(ControlGroupDirection::Previous, window, cx);
+        }
+    }
+
+    fn handle_select_next_row(&mut self, _: &SelectNextRow, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Vertical, window, cx) {
             self.move_active(ControlGroupDirection::Next, window, cx);
         }
     }
 
     fn handle_select_first_item(&mut self, _: &SelectFirstItem, window: &mut Window, cx: &mut Context<Self>) {
-        if self.group_handles_arrow_action(window, cx) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Horizontal, window, cx) {
             self.move_active_to_boundary(true, window, cx);
         }
     }
 
     fn handle_select_last_item(&mut self, _: &SelectLastItem, window: &mut Window, cx: &mut Context<Self>) {
-        if self.group_handles_arrow_action(window, cx) {
+        if self.group_handles_arrow_action(ControlGroupArrowAxis::Horizontal, window, cx) {
             self.move_active_to_boundary(false, window, cx);
         }
     }
@@ -532,6 +610,15 @@ where
         if self.focus_subscription.is_none() {
             self.focus_subscription = Some(cx.on_focus(&self.focus_handle, window, Self::handle_group_focus_entry));
         }
+        self.ensure_item_focus_subscriptions(window, cx);
+
+        if self.model.focus_strategy == ControlGroupFocusStrategy::RovingItemFocus
+            && self.focus_handle.is_focused(window)
+        {
+            if let Some(target) = self.active_focus_target(window, cx) {
+                target.focus_handle.focus(window, cx);
+            }
+        }
 
         let model = self.render_model(window, cx);
         let handlers = self.template_handlers(cx);
@@ -543,9 +630,13 @@ where
                     .key_context(ControlKeyProfile::TabList.context())
                     .on_action(cx.listener(Self::handle_select_previous_item))
                     .on_action(cx.listener(Self::handle_select_next_item))
+                    .on_action(cx.listener(Self::handle_select_previous_row))
+                    .on_action(cx.listener(Self::handle_select_next_row))
                     .on_action(cx.listener(Self::handle_select_first_item))
                     .on_action(cx.listener(Self::handle_select_last_item))
-                    .on_action(cx.listener(Self::handle_activate_control)),
+                    .on_action(cx.listener(Self::handle_activate_control))
+                    .on_action(cx.listener(Self::handle_group_next_focus))
+                    .on_action(cx.listener(Self::handle_group_prev_focus)),
             )
             .into_any_element()
     }
@@ -555,8 +646,50 @@ impl<T> ControlGroupControl<T>
 where
     T: ControlGroupItemLike + 'static,
 {
-    fn handle_group_focus_entry(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.redirect_roving_focus_on_group_entry(window, cx);
+    fn handle_group_focus_entry(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    fn handle_group_next_focus(
+        &mut self,
+        _: &crate::focus::NextFocus,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {
+            return;
+        }
+
+        if let Some(next_index) =
+            next_enabled_index_no_wrap(&self.model.items, self.active_index(), ControlGroupDirection::Next)
+        {
+            let changed = self.set_active_index(next_index, Some(window), cx);
+            if changed && self.model.selection_follows_active {
+                self.commit_toggle_index(next_index, cx);
+            }
+            cx.stop_propagation();
+        }
+    }
+
+    fn handle_group_prev_focus(
+        &mut self,
+        _: &crate::focus::PreviousFocus,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {
+            return;
+        }
+
+        if let Some(prev_index) = next_enabled_index_no_wrap(
+            &self.model.items,
+            self.active_index(),
+            ControlGroupDirection::Previous,
+        ) {
+            let changed = self.set_active_index(prev_index, Some(window), cx);
+            if changed && self.model.selection_follows_active {
+                self.commit_toggle_index(prev_index, cx);
+            }
+            cx.stop_propagation();
+        }
     }
 }
 
@@ -653,6 +786,49 @@ where
     T: ControlGroupItemLike + 'static,
 {
     items.iter().rposition(ControlGroupItemLike::is_enabled)
+}
+
+pub(crate) fn next_enabled_index_no_wrap<T>(
+    items: &[T],
+    current_index: Option<usize>,
+    direction: ControlGroupDirection,
+) -> Option<usize>
+where
+    T: ControlGroupItemLike + 'static,
+{
+    let len = items.len();
+    if len == 0 {
+        return None;
+    }
+
+    let current = match current_index {
+        Some(index) => index,
+        None => {
+            return if direction == ControlGroupDirection::Next {
+                items.iter().position(ControlGroupItemLike::is_enabled)
+            } else {
+                items.iter().rposition(ControlGroupItemLike::is_enabled)
+            };
+        }
+    };
+
+    match direction {
+        ControlGroupDirection::Next => {
+            for i in (current + 1)..len {
+                if items[i].is_enabled() {
+                    return Some(i);
+                }
+            }
+        }
+        ControlGroupDirection::Previous => {
+            for i in (0..current).rev() {
+                if items[i].is_enabled() {
+                    return Some(i);
+                }
+            }
+        }
+    }
+    None
 }
 
 pub(crate) fn next_enabled_index<T>(
@@ -873,6 +1049,7 @@ mod tests {
             focus_strategy: ControlGroupFocusStrategy::ActiveDescendant,
             focus_target_provider: None,
             enabled: true,
+            tab_stop: true,
             layout: ControlGroupLayout::default(),
             template: default_control_group_template(),
             item_template: None,

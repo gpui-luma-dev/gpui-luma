@@ -8,6 +8,8 @@ actions!(
         CommitSelection,
         SelectNextItem,
         SelectPreviousItem,
+        SelectNextRow,
+        SelectPreviousRow,
         SelectFirstItem,
         SelectLastItem,
         OpenSubmenu,
@@ -152,9 +154,9 @@ impl ControlKeyProfile {
             ],
             Self::TabList => vec![
                 KeyBinding::new("left", SelectPreviousItem, Some(context)),
-                KeyBinding::new("up", SelectPreviousItem, Some(context)),
                 KeyBinding::new("right", SelectNextItem, Some(context)),
-                KeyBinding::new("down", SelectNextItem, Some(context)),
+                KeyBinding::new("up", SelectPreviousRow, Some(context)),
+                KeyBinding::new("down", SelectNextRow, Some(context)),
                 KeyBinding::new("home", SelectFirstItem, Some(context)),
                 KeyBinding::new("end", SelectLastItem, Some(context)),
                 KeyBinding::new("cmd-left", SelectFirstItem, Some(context)),
@@ -195,8 +197,8 @@ mod tests {
 
     use super::{
         ActivateControl, CloseSubmenu, ControlKeyProfile, DecreaseValue, DecreaseValueLarge, IncreaseValue,
-        IncreaseValueLarge, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem, SelectPreviousItem,
-        default_control_key_bindings,
+        IncreaseValueLarge, OpenSubmenu, SelectFirstItem, SelectLastItem, SelectNextItem, SelectNextRow,
+        SelectPreviousItem, SelectPreviousRow, default_control_key_bindings,
     };
 
     #[test]
@@ -251,9 +253,9 @@ mod tests {
         let bindings = ControlKeyProfile::TabList.default_bindings();
 
         assert!(has_binding::<SelectPreviousItem>(&bindings, "left"));
-        assert!(has_binding::<SelectPreviousItem>(&bindings, "up"));
+        assert!(has_binding::<SelectPreviousRow>(&bindings, "up"));
         assert!(has_binding::<SelectNextItem>(&bindings, "right"));
-        assert!(has_binding::<SelectNextItem>(&bindings, "down"));
+        assert!(has_binding::<SelectNextRow>(&bindings, "down"));
         assert!(has_binding::<SelectFirstItem>(&bindings, "home"));
         assert!(has_binding::<SelectLastItem>(&bindings, "end"));
         assert!(has_binding::<SelectFirstItem>(&bindings, "cmd-left"));

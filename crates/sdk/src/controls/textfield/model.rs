@@ -18,6 +18,7 @@ pub struct TextFieldModel {
     pub(crate) prefix_icon: Option<ControlIcon>,
     pub(crate) variant: TextFieldVariant,
     pub(crate) enabled: bool,
+    pub(crate) tab_stop: bool,
     pub(crate) compact: bool,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
@@ -57,6 +58,7 @@ impl TextFieldBuilder {
                 prefix_icon: None,
                 variant: TextFieldVariant::Standard,
                 enabled: true,
+                tab_stop: true,
                 compact: false,
                 full_width: false,
                 clean_on_escape: false,
@@ -91,6 +93,11 @@ impl TextFieldBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn tab_stop(mut self, tab_stop: bool) -> Self {
+        self.model.tab_stop = tab_stop;
         self
     }
 

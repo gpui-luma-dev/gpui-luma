@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use gpui::{
-    App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
-    Render, SharedString, Window, div, prelude::*,
+    App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::{SelectorBuilder, SelectorPlacement, SelectorRenderModel, SelectorTemplateHandlers};
@@ -33,6 +33,7 @@ where
     selected_index: Option<usize>,
     active_index: Option<usize>,
     interaction: ControlInteraction,
+    focus_out_subscription: Option<Subscription>,
 }
 
 impl<T> EventEmitter<SelectorEvent> for Selector<T> where T: SelectorItemLike + 'static {}
@@ -73,6 +74,7 @@ where
             selected_index,
             active_index: None,
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
+            focus_out_subscription: None,
         }
     }
 
@@ -92,9 +94,17 @@ where
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
+        self.focus_out_subscription = None;
         if !enabled {
             self.close_menu();
         }
+        cx.notify();
+    }
+
+    pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
+        self.model.tab_stop = tab_stop;
+        self.interaction.set_tab_stop(self.model.enabled, tab_stop);
+        self.focus_out_subscription = None;
         cx.notify();
     }
 
@@ -460,6 +470,13 @@ where
             cx.propagate();
         }
     }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.open {
+            self.close_menu();
+            cx.notify();
+        }
+    }
 }
 
 impl<T> Focusable for Selector<T>
@@ -476,6 +493,11 @@ where
     T: SelectorItemLike + 'static,
 {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
 

@@ -1,6 +1,6 @@
 use gpui::{
-    App, Bounds, ClickEvent, Context, EventEmitter, Focusable, IntoElement, MouseDownEvent, MouseUpEvent, Pixels,
-    Render, SharedString, Window, div, prelude::*,
+    App, Bounds, ClickEvent, Context, EventEmitter, FocusOutEvent, Focusable, IntoElement, MouseDownEvent,
+    MouseUpEvent, Pixels, Render, SharedString, Subscription, Window, div, prelude::*,
 };
 
 use super::{PopupMenuBuilder, PopupMenuPlacement, PopupMenuRenderModel, PopupMenuTemplateHandlers, MenuPath};
@@ -26,6 +26,7 @@ pub struct PopupMenu {
     trigger_bounds: Option<Bounds<Pixels>>,
     menu_state: FloatingMenuState,
     interaction: ControlInteraction,
+    focus_out_subscription: Option<Subscription>,
 }
 
 impl EventEmitter<PopupMenuEvent> for PopupMenu {}
@@ -46,6 +47,7 @@ impl PopupMenu {
             trigger_bounds: None,
             menu_state: FloatingMenuState::default(),
             interaction: ControlInteraction::new_with_tab_stop(enabled, tab_stop, cx),
+            focus_out_subscription: None,
         }
     }
 
@@ -67,9 +69,17 @@ impl PopupMenu {
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.model.enabled = enabled;
         self.interaction.set_enabled(enabled);
+        self.focus_out_subscription = None;
         if !enabled {
             self.close_menu();
         }
+        cx.notify();
+    }
+
+    pub fn set_tab_stop(&mut self, tab_stop: bool, cx: &mut Context<Self>) {
+        self.model.tab_stop = tab_stop;
+        self.interaction.set_tab_stop(self.model.enabled, tab_stop);
+        self.focus_out_subscription = None;
         cx.notify();
     }
 
@@ -376,6 +386,13 @@ impl PopupMenu {
             cx.propagate();
         }
     }
+
+    fn handle_focus_out(&mut self, _: FocusOutEvent, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.open {
+            self.close_menu();
+            cx.notify();
+        }
+    }
 }
 
 impl Focusable for PopupMenu {
@@ -386,6 +403,11 @@ impl Focusable for PopupMenu {
 
 impl Render for PopupMenu {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.focus_out_subscription.is_none() {
+            let focus_handle = self.interaction.focus_handle().clone();
+            self.focus_out_subscription = Some(cx.on_focus_out(&focus_handle, window, Self::handle_focus_out));
+        }
+
         let model = self.render_model(window);
         let handlers = self.template_handlers(cx);
 
