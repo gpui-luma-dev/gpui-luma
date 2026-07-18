@@ -74,3 +74,22 @@ Hosted controls need more design work than a quick builder modifier. Buttons, to
 - Hosted controls that own arrow keys internally can do so without breaking toolbar navigation for neighboring items once focus leaves that hosted control.
 - Toolbar item active/focus-visible visuals come from `CompositeItemState` produced by `control_group`, including roving child focus.
 - Gallery has a real working toolbar example and does not keep the full template-preview implementation in `pane.rs`.
+
+## Addendum: Focus Lessons Learned
+
+Failed implementation attempts exposed an important architecture boundary: the existing toolbar cannot be fixed reliably by adding focus callbacks, stdout instrumentation, or a toolbar-local active-index/focus-handle registry. The current toolbar hosts separate child entities (`Button`, `PopupMenu`, `Selector`, etc.) and then tries to coordinate their independent GPUI focus handles from outside. That differs from the working radio/check/toggle group pattern, where `control_group` owns item rendering, item state, active tracking, keyboard handling, and focus-visible visuals as one composite control.
+
+Key lessons:
+- Do not patch the old toolbar focus model. It is structurally different from working `control_group` consumers.
+- Do not introduce a parallel toolbar focus state machine. That recreates bugs already solved by `control_group`.
+- Do not rely on raw `FocusHandle::focus(...)` calls alone. Moving GPUI focus does not automatically synchronize active item, arrow ownership, focus-visible state, or parent composite semantics.
+- Do not diagnose toolbar focus using only visual paint. Popup menu and ghost/icon triggers may fail to show focus even when focus moved; tests and instrumentation must prove focus ownership and active item state.
+- The correct baseline is to make toolbar follow the working `control_group` rendering/ownership pattern first, before adding text fields or selector internals.
+
+Recommended implementation sequence:
+- First build a minimal toolbar specialization that renders command/toggle/menu-trigger faces through `ControlGroupTemplate<ToolbarItem>` and `ControlGroupItemRenderModel`, not by manually tracking child focus handles in toolbar code.
+- Verify `Tab` enters the toolbar as one composite and visibly focuses the first item, matching radio/check/toggle group behavior.
+- Verify arrow navigation, disabled items, and separators using the `control_group` path.
+- Only after the baseline works, add hosted child-focus support for controls that truly need their own focus target, such as text fields or searchable selectors.
+- For child-focus controls, define an explicit `control_group` yield contract so a child can return keyboard ownership to the group while preserving the active item.
+- Keep the Gallery focus harness (`Focus Before`, toolbar, `Focus After`) while developing this issue so enter/leave behavior is always manually testable.
