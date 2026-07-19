@@ -45,9 +45,7 @@ These are lower priority because shadcn runtime styling is already look-owned wh
 
 ### Smarter Size Curves
 
-Padding grows too aggressively at larger sizes, especially in selectors and menus. Track this separately in:
-
-- [`0-size-smarter.md`](./0-size-smarter.md)
+Done — see [`0-size-smarter.md`](./0-size-smarter.md). Padding/`Lg` inset curve and floating-menu density factors landed 2026-07-19.
 
 ## Not In Scope
 
