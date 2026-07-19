@@ -109,6 +109,16 @@ where
         cx.notify();
     }
 
+    pub fn set_focus_strategy(&mut self, focus_strategy: ControlGroupFocusStrategy, cx: &mut Context<Self>) {
+        if self.model.focus_strategy == focus_strategy {
+            return;
+        }
+        self.model.focus_strategy = focus_strategy;
+        self.focus_subscription = None;
+        self.clear_item_focus_subscriptions();
+        cx.notify();
+    }
+
     pub fn set_items(&mut self, items: impl IntoIterator<Item = T>, cx: &mut Context<Self>) {
         self.model.items = items.into_iter().collect();
         self.hovered_item = None;
@@ -648,12 +658,7 @@ where
 {
     fn handle_group_focus_entry(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-    fn handle_group_next_focus(
-        &mut self,
-        _: &crate::focus::NextFocus,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn handle_group_next_focus(&mut self, _: &crate::focus::NextFocus, window: &mut Window, cx: &mut Context<Self>) {
         if self.model.focus_strategy != ControlGroupFocusStrategy::RovingItemFocus {
             return;
         }
@@ -679,11 +684,9 @@ where
             return;
         }
 
-        if let Some(prev_index) = next_enabled_index_no_wrap(
-            &self.model.items,
-            self.active_index(),
-            ControlGroupDirection::Previous,
-        ) {
+        if let Some(prev_index) =
+            next_enabled_index_no_wrap(&self.model.items, self.active_index(), ControlGroupDirection::Previous)
+        {
             let changed = self.set_active_index(prev_index, Some(window), cx);
             if changed && self.model.selection_follows_active {
                 self.commit_toggle_index(prev_index, cx);

@@ -1,19 +1,45 @@
-use gpui::{App, Context, Entity, Focusable, IntoElement, Render, SharedString, Window, div, prelude::*};
-
-use super::model::{ToolbarBuilder, ToolbarItem};
-use super::theme::ToolbarVariant;
-use crate::controls::control_group::{
-    ControlGroupArrowPolicy, ControlGroupControl, ControlGroupFocusTarget, ControlGroupLayout, ControlSelectionMode,
+use gpui::{
+    App, Context, Entity, EventEmitter, Focusable, IntoElement, Render, SharedString, Subscription, Window, div,
+    prelude::*,
 };
+
+use super::model::{ToolbarBuilder, ToolbarItem, ToolbarItemSource};
+use super::theme::ToolbarVariant;
+use crate::controls::command::button::ButtonEvent;
+use crate::controls::control_group::{
+    ControlGroupArrowPolicy, ControlGroupControl, ControlGroupFocusStrategy, ControlGroupFocusTarget,
+    ControlGroupLayout, ControlSelectionMode,
+};
+use crate::controls::popup_menu::PopupMenuEvent;
+use crate::controls::selector::SelectorEvent;
+use crate::controls::textfield::TextFieldEvent;
 use crate::theme::ControlSize;
+
+#[derive(Clone, Debug)]
+pub enum ToolbarValue {
+    Bool(bool),
+    String(SharedString),
+}
+
+#[derive(Clone, Debug)]
+pub enum ToolbarEvent {
+    /// Triggered when a button or toggle is clicked.
+    Click { id: SharedString },
+    /// Triggered when a toggle, menu, selector, or text field value changes.
+    Change { id: SharedString, value: ToolbarValue },
+}
 
 pub struct Toolbar {
     group: Entity<ControlGroupControl<ToolbarItem>>,
     items: Vec<ToolbarItem>,
     size: ControlSize,
     variant: ToolbarVariant,
+    focus_strategy: ControlGroupFocusStrategy,
     template: std::sync::Arc<dyn super::ToolbarTemplate>,
+    _item_subscriptions: Vec<Subscription>,
 }
+
+impl EventEmitter<ToolbarEvent> for Toolbar {}
 
 impl Toolbar {
     #[allow(clippy::new_ret_no_self)]
@@ -27,7 +53,7 @@ impl Toolbar {
             .items(model.items.clone())
             .selection_mode(ControlSelectionMode::SingleAllowNone)
             .layout(ControlGroupLayout::Horizontal)
-            .roving_item_focus()
+            .focus_strategy(model.focus_strategy)
             .with_focus_target_provider(|item, _window, _cx| {
                 item.focus_handle
                     .clone()
@@ -37,11 +63,35 @@ impl Toolbar {
             .template(builder.control_group_template())
             .spawn(cx);
 
-        Self { group, items: model.items, size: model.size, variant: model.variant, template: model.template }
+        let mut toolbar = Self {
+            group,
+            items: model.items,
+            size: model.size,
+            variant: model.variant,
+            focus_strategy: model.focus_strategy,
+            template: model.template,
+            _item_subscriptions: Vec::new(),
+        };
+        toolbar.rewire_item_subscriptions(cx);
+        toolbar
     }
 
     pub fn active_id(&self, cx: &App) -> Option<SharedString> {
         self.group.read(cx).active_id().cloned()
+    }
+
+    pub fn focus_strategy(&self) -> ControlGroupFocusStrategy {
+        self.focus_strategy
+    }
+
+    pub fn set_focus_strategy(&mut self, strategy: ControlGroupFocusStrategy, cx: &mut Context<Self>) {
+        if self.focus_strategy == strategy {
+            return;
+        }
+        self.focus_strategy = strategy;
+        self.group.update(cx, |group, cx| {
+            group.set_focus_strategy(strategy, cx);
+        });
     }
 
     pub fn set_items(&mut self, items: impl IntoIterator<Item = ToolbarItem>, cx: &mut Context<Self>) {
@@ -49,6 +99,7 @@ impl Toolbar {
         self.group.update(cx, |group, cx| {
             group.set_items(self.items.clone(), cx);
         });
+        self.rewire_item_subscriptions(cx);
     }
 
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
@@ -78,12 +129,100 @@ impl Toolbar {
         self.sync_group_template(cx);
     }
 
+    /// Notify the toolbar shell and any hosted event-source controls.
+    pub fn notify_items(&self, cx: &mut Context<Self>) {
+        cx.notify();
+        self.group.update(cx, |_, cx| cx.notify());
+        for item in &self.items {
+            let Some(source) = &item.event_source else {
+                continue;
+            };
+            match source {
+                ToolbarItemSource::CommandButton(entity) => entity.update(cx, |_, cx| cx.notify()),
+                ToolbarItemSource::ToggleButton(entity) => entity.update(cx, |_, cx| cx.notify()),
+                ToolbarItemSource::Menu(entity) => entity.update(cx, |_, cx| cx.notify()),
+                ToolbarItemSource::Selector(entity) => entity.update(cx, |_, cx| cx.notify()),
+                ToolbarItemSource::TextField(entity) => entity.update(cx, |_, cx| cx.notify()),
+            }
+        }
+    }
+
     fn sync_group_template(&mut self, cx: &mut Context<Self>) {
         let template = super::template::toolbar_control_group_template(self.size, self.variant, self.template.clone());
         self.group.update(cx, |group, cx| {
             group.set_template(template, cx);
         });
     }
+
+    fn rewire_item_subscriptions(&mut self, cx: &mut Context<Self>) {
+        self._item_subscriptions = wire_item_subscriptions(&self.items, cx);
+    }
+
+    fn dispatch_click(&mut self, id: &SharedString, cx: &mut Context<Self>) {
+        if let Some(handler) = self.items.iter().find(|item| &item.id == id).and_then(|item| item.on_click.clone()) {
+            handler(cx);
+        }
+        cx.emit(ToolbarEvent::Click { id: id.clone() });
+    }
+
+    fn dispatch_change(&mut self, id: &SharedString, value: ToolbarValue, cx: &mut Context<Self>) {
+        if let Some(handler) = self.items.iter().find(|item| &item.id == id).and_then(|item| item.on_change.clone()) {
+            handler(&value, cx);
+        }
+        cx.emit(ToolbarEvent::Change { id: id.clone(), value });
+    }
+}
+
+fn wire_item_subscriptions(items: &[ToolbarItem], cx: &mut Context<Toolbar>) -> Vec<Subscription> {
+    let mut subscriptions = Vec::new();
+    for item in items {
+        let Some(source) = item.event_source.clone() else {
+            continue;
+        };
+        let id = item.id.clone();
+        match source {
+            ToolbarItemSource::CommandButton(entity) => {
+                subscriptions.push(cx.subscribe(&entity, move |this, _, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click) {
+                        this.dispatch_click(&id, cx);
+                    }
+                }));
+            }
+            ToolbarItemSource::ToggleButton(entity) => {
+                subscriptions.push(cx.subscribe(&entity, move |this, button, event: &ButtonEvent, cx| {
+                    if matches!(event, ButtonEvent::Click) {
+                        let next = button.update(cx, |button, cx| {
+                            let next = !*button.data();
+                            button.set_data(next, cx);
+                            next
+                        });
+                        this.dispatch_click(&id, cx);
+                        this.dispatch_change(&id, ToolbarValue::Bool(next), cx);
+                    }
+                }));
+            }
+            ToolbarItemSource::Menu(entity) => {
+                subscriptions.push(cx.subscribe(&entity, move |this, _, event: &PopupMenuEvent, cx| {
+                    let PopupMenuEvent::Select { item_id, .. } = event;
+                    this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                }));
+            }
+            ToolbarItemSource::Selector(entity) => {
+                subscriptions.push(cx.subscribe(&entity, move |this, _, event: &SelectorEvent, cx| {
+                    let SelectorEvent::Change { item_id, .. } = event;
+                    this.dispatch_change(&id, ToolbarValue::String(item_id.clone()), cx);
+                }));
+            }
+            ToolbarItemSource::TextField(entity) => {
+                subscriptions.push(cx.subscribe(&entity, move |this, _, event: &TextFieldEvent, cx| {
+                    if let TextFieldEvent::Change { value } = event {
+                        this.dispatch_change(&id, ToolbarValue::String(SharedString::from(value.clone())), cx);
+                    }
+                }));
+            }
+        }
+    }
+    subscriptions
 }
 
 impl Focusable for Toolbar {

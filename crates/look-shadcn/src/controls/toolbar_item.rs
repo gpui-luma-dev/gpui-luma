@@ -1,0 +1,212 @@
+//! Look-bound fluent factories for [`ToolbarItem`](gpui_luma::controls::toolbar::ToolbarItem).
+//!
+//! SDK toolbar items are lookless hosted wrappers. These helpers spawn Shadcn-styled child
+//! controls and return ready-to-use [`ToolbarItem`] values for declarative toolbar composition.
+
+use std::sync::Arc;
+
+use gpui::{Context, Focusable, IntoElement, Pixels, SharedString, div, px, prelude::*};
+use gpui_luma::controls::command::button::ControlIcon;
+use gpui_luma::controls::icon::lucide_glyph;
+use gpui_luma::controls::menu_item::MenuItem;
+use gpui_luma::controls::presenter::HasPresenter;
+use gpui_luma::controls::selector::SelectorItem;
+use gpui_luma::controls::toolbar::{ToolbarItem, ToolbarItemSource, horizontal_arrow_policy};
+use gpui_luma::focus::EscapeFocus;
+
+use super::ext::ShadcnLookControlExt;
+use crate::look::ShadcnLook;
+
+/// Default fixed width for toolbar-hosted search/text fields.
+const DEFAULT_TOOLBAR_TEXTFIELD_WIDTH: f32 = 140.0;
+
+/// Fluent builder for a toolbar-hosted text field.
+pub struct ToolbarTextFieldItemBuilder {
+    look: Arc<ShadcnLook>,
+    id: SharedString,
+    placeholder: SharedString,
+    width: Pixels,
+}
+
+impl ToolbarTextFieldItemBuilder {
+    pub fn placeholder(mut self, placeholder: impl Into<SharedString>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Pin the text field to a fixed width (toolbar items do not stretch).
+    pub fn width(mut self, width: impl Into<Pixels>) -> Self {
+        self.width = width.into();
+        self
+    }
+
+    pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> ToolbarItem {
+        let width = self.width;
+        let entity = self
+            .look
+            .textfield(format!("toolbar-field-{}", self.id))
+            .placeholder(self.placeholder)
+            .tab_stop(false)
+            .full_width(false)
+            .with_template_modifier(move |root, _| root.w(width).flex_none())
+            .spawn(cx);
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        ToolbarItem::hosted(self.id, move |_, _, _| {
+            // Absorb Escape so it does not bubble to the pane focus scope.
+            div().w(width).flex_none().child(render.clone()).on_action(|_: &EscapeFocus, _window, cx| {
+                cx.stop_propagation();
+            })
+        })
+        .focus_handle(focus)
+        .arrow_policy(horizontal_arrow_policy())
+        .event_source(ToolbarItemSource::TextField(entity))
+    }
+}
+
+/// Look-bound toolbar item factories matching the declarative toolbar builder sketch.
+pub trait ShadcnToolbarItemExt {
+    /// Ghost icon command button item (`ToolbarItem::button(id, icon)` in the issue sketch).
+    fn toolbar_button<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem;
+
+    /// Ghost icon toggle button item.
+    fn toolbar_toggle<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem;
+
+    /// Ghost popup menu item with a trigger icon.
+    fn toolbar_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem;
+
+    /// Ghost text-label popup menu item (no trigger icon).
+    fn toolbar_label_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem;
+
+    /// Selector item with a default selected id.
+    fn toolbar_selector<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = SelectorItem>,
+        selected_id: impl Into<SharedString>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem;
+
+    /// Start a fluent text-field item (`ToolbarItem::textfield(id).placeholder(...)`).
+    fn toolbar_textfield(&self, id: impl Into<SharedString>) -> ToolbarTextFieldItemBuilder;
+}
+
+impl ShadcnToolbarItemExt for Arc<ShadcnLook> {
+    fn toolbar_button<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        let id = id.into();
+        let entity = self.ghost_icon_button(format!("toolbar-btn-{id}"), icon).tab_stop(false).spawn(cx);
+        ToolbarItem::command_button(id, entity, cx)
+    }
+
+    fn toolbar_toggle<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        let id = id.into();
+        let icon = icon.into();
+        let entity = self
+            .ghost_toggle(format!("toolbar-toggle-{id}"))
+            .content(move |_, _| match &icon {
+                ControlIcon::Lucide(lucide) => lucide_glyph(*lucide).into_any_element(),
+                ControlIcon::SvgPath(path) => gpui::svg().path(path.clone()).size_full().into_any_element(),
+            })
+            .tab_stop(false)
+            .spawn(cx);
+        ToolbarItem::toggle_button(id, entity, cx)
+    }
+
+    fn toolbar_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        icon: impl Into<ControlIcon>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        let id = id.into();
+        let mut builder =
+            self.popup_menu(format!("toolbar-menu-{id}")).label(label).ghost().tab_stop(false).items(items);
+        if let ControlIcon::Lucide(lucide) = icon.into() {
+            builder = builder.trigger_icon(lucide);
+        }
+        let entity = builder.spawn(cx);
+        ToolbarItem::menu_control(id, entity, cx)
+    }
+
+    fn toolbar_label_menu<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = MenuItem>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        let id = id.into();
+        let entity = self
+            .popup_menu(format!("toolbar-menu-{id}"))
+            .label(label)
+            .ghost()
+            .tab_stop(false)
+            .items(items)
+            .spawn(cx);
+        ToolbarItem::menu_control(id, entity, cx)
+    }
+
+    fn toolbar_selector<M: 'static>(
+        &self,
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        items: impl IntoIterator<Item = SelectorItem>,
+        selected_id: impl Into<SharedString>,
+        cx: &mut Context<M>,
+    ) -> ToolbarItem {
+        let id = id.into();
+        let entity = self
+            .selector(format!("toolbar-selector-{id}"))
+            .label(label)
+            .tab_stop(false)
+            .items(items)
+            .selected_id(selected_id)
+            .spawn(cx);
+        ToolbarItem::selector_control(id, entity, cx)
+    }
+
+    fn toolbar_textfield(&self, id: impl Into<SharedString>) -> ToolbarTextFieldItemBuilder {
+        ToolbarTextFieldItemBuilder {
+            look: Arc::clone(self),
+            id: id.into(),
+            placeholder: SharedString::new(""),
+            width: px(DEFAULT_TOOLBAR_TEXTFIELD_WIDTH),
+        }
+    }
+}

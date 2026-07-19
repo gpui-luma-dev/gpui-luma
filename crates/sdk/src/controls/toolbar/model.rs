@@ -1,13 +1,20 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, AppContext, Entity, FocusHandle, IntoElement, ParentElement, SharedString, Window, div};
+use gpui::{
+    AnyElement, App, AppContext, Context, Entity, FocusHandle, Focusable, IntoElement, ParentElement, SharedString,
+    Window, div,
+};
 
 use super::control::Toolbar;
 use super::template::{ToolbarTemplate, default_toolbar_template, modified_toolbar_template};
 use super::theme::ToolbarVariant;
-use crate::controls::control_group::{ControlGroupArrowPolicy, ControlGroupItemLike};
+use crate::controls::command::button::Button;
+use crate::controls::control_group::{ControlGroupArrowPolicy, ControlGroupFocusStrategy, ControlGroupItemLike};
+use crate::controls::popup_menu::PopupMenu;
 use crate::controls::presenter::{HostedContent, Presenter};
+use crate::controls::selector::Selector;
 use crate::controls::state::CompositeItemState;
+use crate::controls::textfield::TextField;
 use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -15,6 +22,19 @@ pub enum ToolbarItemKind {
     Hosted,
     Separator,
 }
+
+/// Hosted control that can fan events into [`super::ToolbarEvent`].
+#[derive(Clone)]
+pub enum ToolbarItemSource {
+    CommandButton(Entity<Button<()>>),
+    ToggleButton(Entity<Button<bool>>),
+    Menu(Entity<PopupMenu>),
+    Selector(Entity<Selector>),
+    TextField(TextField),
+}
+
+pub type ToolbarClickHandler = Arc<dyn Fn(&mut Context<Toolbar>) + 'static>;
+pub type ToolbarChangeHandler = Arc<dyn Fn(&super::ToolbarValue, &mut Context<Toolbar>) + 'static>;
 
 #[derive(Clone)]
 pub struct ToolbarItem {
@@ -25,6 +45,9 @@ pub struct ToolbarItem {
     pub(crate) focus_handle: Option<FocusHandle>,
     pub(crate) arrow_policy: ControlGroupArrowPolicy,
     pub(crate) content: Option<Presenter<ToolbarItemRenderModel>>,
+    pub(crate) event_source: Option<ToolbarItemSource>,
+    pub(crate) on_click: Option<ToolbarClickHandler>,
+    pub(crate) on_change: Option<ToolbarChangeHandler>,
 }
 
 impl ToolbarItem {
@@ -69,6 +92,9 @@ impl ToolbarItem {
                 element: content(model, window, cx).into_any_element(),
                 focus_handle: None,
             })),
+            event_source: None,
+            on_click: None,
+            on_change: None,
         }
     }
 
@@ -82,7 +108,56 @@ impl ToolbarItem {
             focus_handle: None,
             arrow_policy: ControlGroupArrowPolicy::GroupOwns,
             content: None,
+            event_source: None,
+            on_click: None,
+            on_change: None,
         }
+    }
+
+    /// Host a command button and route its clicks into the toolbar event stream.
+    pub fn command_button(id: impl Into<SharedString>, entity: Entity<Button<()>>, cx: &App) -> Self {
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        Self::button(id, move |_, _, _| render.clone())
+            .focus_handle(focus)
+            .event_source(ToolbarItemSource::CommandButton(entity))
+    }
+
+    /// Host a toggle button, auto-flip its value on click, and emit click/change events.
+    pub fn toggle_button(id: impl Into<SharedString>, entity: Entity<Button<bool>>, cx: &App) -> Self {
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        Self::toggle(id, move |_, _, _| render.clone())
+            .focus_handle(focus)
+            .event_source(ToolbarItemSource::ToggleButton(entity))
+    }
+
+    /// Host a popup menu and route selections into the toolbar event stream.
+    pub fn menu_control(id: impl Into<SharedString>, entity: Entity<PopupMenu>, cx: &App) -> Self {
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        Self::menu(id, move |_, _, _| render.clone())
+            .focus_handle(focus)
+            .event_source(ToolbarItemSource::Menu(entity))
+    }
+
+    /// Host a selector and route changes into the toolbar event stream.
+    pub fn selector_control(id: impl Into<SharedString>, entity: Entity<Selector>, cx: &App) -> Self {
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        Self::hosted(id, move |_, _, _| render.clone())
+            .focus_handle(focus)
+            .event_source(ToolbarItemSource::Selector(entity))
+    }
+
+    /// Host a text field and route value changes into the toolbar event stream.
+    pub fn textfield_control(id: impl Into<SharedString>, entity: TextField, cx: &App) -> Self {
+        let focus = entity.read(cx).focus_handle(cx);
+        let render = entity.clone();
+        Self::hosted(id, move |_, _, _| render.clone())
+            .focus_handle(focus)
+            .arrow_policy(ControlGroupArrowPolicy::ChildOwnsHorizontalWhenFocused)
+            .event_source(ToolbarItemSource::TextField(entity))
     }
 
     pub fn enabled(mut self, enabled: bool) -> Self {
@@ -102,6 +177,27 @@ impl ToolbarItem {
 
     pub fn arrow_policy(mut self, arrow_policy: ControlGroupArrowPolicy) -> Self {
         self.arrow_policy = arrow_policy;
+        self
+    }
+
+    pub fn event_source(mut self, event_source: ToolbarItemSource) -> Self {
+        self.event_source = Some(event_source);
+        self
+    }
+
+    pub fn on_click<F>(mut self, handler: F) -> Self
+    where
+        F: Fn(&mut Context<Toolbar>) + 'static,
+    {
+        self.on_click = Some(Arc::new(handler));
+        self
+    }
+
+    pub fn on_change<F>(mut self, handler: F) -> Self
+    where
+        F: Fn(&super::ToolbarValue, &mut Context<Toolbar>) + 'static,
+    {
+        self.on_change = Some(Arc::new(handler));
         self
     }
 
@@ -131,6 +227,7 @@ pub(crate) struct ToolbarModel {
     pub(crate) enabled: bool,
     pub(crate) size: ControlSize,
     pub(crate) variant: ToolbarVariant,
+    pub(crate) focus_strategy: ControlGroupFocusStrategy,
     pub(crate) template: Arc<dyn ToolbarTemplate>,
 }
 
@@ -164,6 +261,7 @@ impl ToolbarBuilder {
                 enabled: true,
                 size: ControlSize::Md,
                 variant: ToolbarVariant::Outline,
+                focus_strategy: ControlGroupFocusStrategy::RovingItemFocus,
                 template: default_toolbar_template(),
             },
         }
@@ -204,6 +302,22 @@ impl ToolbarBuilder {
 
     pub fn ghost(self) -> Self {
         self.variant(ToolbarVariant::Ghost)
+    }
+
+    /// Configure the focus strategy for the underlying control group.
+    pub fn focus_strategy(mut self, strategy: ControlGroupFocusStrategy) -> Self {
+        self.model.focus_strategy = strategy;
+        self
+    }
+
+    /// Arrow keys move between items; Tab exits the toolbar (web-style roving focus).
+    pub fn roving_item_focus(self) -> Self {
+        self.focus_strategy(ControlGroupFocusStrategy::RovingItemFocus)
+    }
+
+    /// Group owns Tab; active item is the focused descendant (desktop sequential style).
+    pub fn sequential_focus(self) -> Self {
+        self.focus_strategy(ControlGroupFocusStrategy::ActiveDescendant)
     }
 
     pub fn template(mut self, template: Arc<dyn ToolbarTemplate>) -> Self {
@@ -262,5 +376,23 @@ mod tests {
 
         let ghost = ToolbarBuilder::new("toolbar-test").ghost();
         assert_eq!(ghost.model.variant, ToolbarVariant::Ghost);
+    }
+
+    #[test]
+    fn builder_defaults_to_roving_item_focus() {
+        let builder = ToolbarBuilder::new("toolbar-test");
+        assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::RovingItemFocus);
+    }
+
+    #[test]
+    fn sequential_focus_sets_active_descendant() {
+        let builder = ToolbarBuilder::new("toolbar-test").sequential_focus();
+        assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::ActiveDescendant);
+    }
+
+    #[test]
+    fn roving_item_focus_sets_strategy() {
+        let builder = ToolbarBuilder::new("toolbar-test").sequential_focus().roving_item_focus();
+        assert_eq!(builder.model.focus_strategy, ControlGroupFocusStrategy::RovingItemFocus);
     }
 }

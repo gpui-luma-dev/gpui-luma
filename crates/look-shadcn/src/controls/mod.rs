@@ -28,6 +28,7 @@ pub(crate) mod templates;
 pub(crate) mod toggle;
 pub(crate) mod textfield;
 pub(crate) mod textarea;
+pub(crate) mod toolbar_item;
 pub(crate) mod tree_view;
 pub(crate) mod overlay_window;
 
@@ -35,6 +36,7 @@ pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
 pub use toggle::ToggleLayout;
 pub use card::{ShadcnCard, ShadcnCardBuilder};
 pub use textfield::ShadcnTextFieldStyle;
+pub use toolbar_item::{ShadcnToolbarItemExt, ToolbarTextFieldItemBuilder};
 pub use ext::{
     ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSliderStyleExt, ShadcnSwitchStyleExt,
     ShadcnTextAreaExt, ShadcnTextFieldExt,

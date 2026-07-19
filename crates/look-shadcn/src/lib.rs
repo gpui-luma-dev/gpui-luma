@@ -41,7 +41,7 @@ pub use elements::{Badge, BadgeLook, BadgeColorTable, BadgeIconPlacement, BadgeV
 pub use controls::{
     ButtonRadiusPreset, ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCard, ShadcnCardBuilder, ToggleLayout,
     ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSliderStyleExt, ShadcnSwitchStyleExt, ShadcnTextFieldExt,
-    ShadcnTextFieldStyle,
+    ShadcnTextFieldStyle, ShadcnToolbarItemExt, ToolbarTextFieldItemBuilder,
 };
 pub use provenance::{
     ColorSource, LookResolver, MetricSource, ResolvedColor, ResolvedMetric, ResolvedTypography, TypographySource,

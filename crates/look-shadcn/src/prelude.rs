@@ -14,7 +14,7 @@
 pub use crate::context::with_look;
 pub use crate::controls::{
     ShadcnButtonStyle, ShadcnButtonStyleExt, ShadcnCheckboxStyleExt, ShadcnLookControlExt, ShadcnSwitchStyleExt,
-    ShadcnTextAreaExt, ShadcnTextFieldExt,
+    ShadcnTextAreaExt, ShadcnTextFieldExt, ShadcnToolbarItemExt,
 };
 pub use crate::elements::{Badge, BadgeIconPlacement, BadgeVariant};
 pub use crate::ext::{LumaTypographyExt, ShadcnElementExt};

@@ -3,8 +3,11 @@ mod model;
 mod template;
 mod theme;
 
-pub use control::{Toolbar, horizontal_arrow_policy};
-pub use model::{ToolbarBuilder, ToolbarItem, ToolbarItemKind, ToolbarItemRenderModel, ToolbarRenderModel};
+pub use control::{Toolbar, ToolbarEvent, ToolbarValue, horizontal_arrow_policy};
+pub use model::{
+    ToolbarBuilder, ToolbarChangeHandler, ToolbarClickHandler, ToolbarItem, ToolbarItemKind, ToolbarItemRenderModel,
+    ToolbarItemSource, ToolbarRenderModel,
+};
 pub use template::{
     ThemedToolbarTemplate, ToolbarRenderedItem, ToolbarTemplate, ToolbarTemplateModifier, default_toolbar_template,
     toolbar_template_with_theme,
