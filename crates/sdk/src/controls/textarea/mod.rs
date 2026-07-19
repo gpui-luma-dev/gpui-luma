@@ -12,6 +12,6 @@ pub use template::{
     TextAreaMouseMoveHandler, TextAreaMouseUpHandler, TextAreaDragMoveHandler, TextAreaTemplate,
     TextAreaTemplateHandlers, ThemedTextAreaTemplate, default_textarea_template,
 };
-pub use theme::{DefaultTextAreaTheme, TextAreaLook, TextAreaPalette, TextAreaTheme, default_textarea_theme};
-#[allow(unused_imports)]
-pub(crate) use theme::compose_textarea_look;
+pub use theme::{
+    DefaultTextAreaTheme, TextAreaLook, TextAreaPalette, TextAreaTheme, compose_textarea_look, default_textarea_theme,
+};

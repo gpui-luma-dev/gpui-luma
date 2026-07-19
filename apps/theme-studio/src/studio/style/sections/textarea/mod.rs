@@ -69,6 +69,7 @@ fn render_input_textarea_sample(
         value: &value,
         enabled: sample.enabled,
         full_width: true,
+        size: ControlSize::Md,
         rows: 3,
         state: sample.state,
         caret_visible: sample.state.focused && sample.enabled,
@@ -198,5 +199,5 @@ fn input_textarea_look(
     window: &Window,
 ) -> gpui_luma::controls::textarea::TextAreaLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(state, enabled, &scale)
+    theme.resolve_look(state, enabled, ControlSize::Md, &scale)
 }

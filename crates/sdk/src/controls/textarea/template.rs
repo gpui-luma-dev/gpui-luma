@@ -8,7 +8,7 @@ use gpui::{
 use super::{TextAreaDrag, TextAreaRenderModel};
 use crate::controls::button_family_template::render_button_family_focus_ring;
 use crate::controls::textarea::{TextAreaTheme, default_textarea_theme};
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale};
 
 const TEXTAREA_CARET_WIDTH: f32 = 1.5;
 const TEXTAREA_CARET_HEIGHT_EXTRA: f32 = 2.0;
@@ -145,12 +145,13 @@ impl TextAreaTemplate for ThemedTextAreaTemplate {
         cx: &mut App,
     ) -> Stateful<Div> {
         let scale_factor = window.scale_factor();
+        let size = model.size;
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(size, metrics, scale_factor),
         );
-        let look = self.theme.resolve_look(model.state, model.enabled, &scale);
+        let look = self.theme.resolve_look(model.state, model.enabled, size, &scale);
         let show_placeholder = model.value.is_empty() && !model.state.focused;
         let selection = model.state.selection_range();
         let cursor = model.state.cursor.min(model.value.chars().count());

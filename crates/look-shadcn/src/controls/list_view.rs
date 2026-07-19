@@ -128,7 +128,7 @@ pub fn list_view_row_palette(
     mode: &ShadcnModeTokens,
     selected: bool,
     state: InteractionState,
-    _size: ControlSize,
+    size: ControlSize,
 ) -> ListViewRowPalette {
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
@@ -136,12 +136,15 @@ pub fn list_view_row_palette(
     let colors = resolve_list_view_row_colors(&resolver, selected, state.focused, state.disabled, state.layer())
         .unwrap_or_else(|_| ListViewRowColorTable::fallback());
 
+    let mut label_typography = typography.text.label;
+    super::apply_button_metrics_typography(&mut label_typography, mode, size);
+
     ListViewRowPalette {
         background: colors.background.hsla(),
         label_color: colors.label_color.hsla(),
         divider: colors.divider.hsla(),
         adorner: None,
-        label_typography: typography.text.label,
+        label_typography,
     }
 }
 

@@ -11,7 +11,7 @@
 //! | Content label     | `foreground`                       |
 
 use gpui_luma::controls::accordion::{AccordionContentPalette, AccordionPalette};
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -102,6 +102,7 @@ pub fn accordion_trigger_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
     state: InteractionState,
+    size: ControlSize,
 ) -> AccordionPalette {
     let ctx = LookContext::new(mode, theme_mode, state);
     let state = ctx.state;
@@ -110,6 +111,9 @@ pub fn accordion_trigger_palette(
     let colors = resolve_accordion_trigger_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| AccordionTriggerColorTable::fallback());
 
+    let mut trigger_typography = typography.text.label;
+    super::apply_button_metrics_typography(&mut trigger_typography, mode, size);
+
     AccordionPalette {
         background: colors.background.map(|color| color.hsla()),
         foreground: colors.foreground.hsla(),
@@ -117,7 +121,7 @@ pub fn accordion_trigger_palette(
         icon_color: colors.icon_color.hsla(),
         chevron_color: colors.chevron_color.hsla(),
         adorner: None,
-        typography: typography.text.label,
+        typography: trigger_typography,
         font_family: typography.font.sans.family.clone().into(),
     }
 }
@@ -143,7 +147,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -172,11 +176,12 @@ mod tests {
     fn trigger_uses_paired_accent_hover_like_navigation_sidebar() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let default = accordion_trigger_palette(&mode, ThemeMode::Light, InteractionState::default());
+        let default = accordion_trigger_palette(&mode, ThemeMode::Light, InteractionState::default(), ControlSize::Md);
         let hovered = accordion_trigger_palette(
             &mode,
             ThemeMode::Light,
             InteractionState { hovered: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(default.foreground, catalog.color("foreground").expect("foreground"));

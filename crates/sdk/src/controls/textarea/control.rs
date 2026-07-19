@@ -15,7 +15,7 @@ use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
 
@@ -335,7 +335,7 @@ impl TextArea {
     }
 
     fn resolved_look(&self, scale: &StandardBoxScale) -> crate::controls::textarea::TextAreaLook {
-        let look = self.model.theme.resolve_look(self.state, self.model.enabled, scale);
+        let look = self.model.theme.resolve_look(self.state, self.model.enabled, self.model.size, scale);
         if let Some(override_fn) = &self.model.look_override {
             override_fn(look)
         } else {
@@ -1009,12 +1009,13 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
-        let (theme, state, enabled, rows, look_override) = {
+        let (theme, state, enabled, control_size, rows, look_override) = {
             let input = self.input.read(cx);
             (
                 input.model.theme.clone(),
                 input.state,
                 input.model.enabled,
+                input.model.size,
                 input.model.rows.max(1),
                 input.model.look_override.clone(),
             )
@@ -1022,10 +1023,10 @@ impl gpui::Element for TextAreaElement {
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
         );
-        let mut look = theme.resolve_look(state, enabled, &scale);
+        let mut look = theme.resolve_look(state, enabled, control_size, &scale);
         if let Some(override_fn) = &look_override {
             look = override_fn(look);
         }
@@ -1044,18 +1045,24 @@ impl gpui::Element for TextAreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
-        let (theme, state, enabled, look_override) = {
+        let (theme, state, enabled, control_size, look_override) = {
             let input = self.input.read(cx);
-            (input.model.theme.clone(), input.state, input.model.enabled, input.model.look_override.clone())
+            (
+                input.model.theme.clone(),
+                input.state,
+                input.model.enabled,
+                input.model.size,
+                input.model.look_override.clone(),
+            )
         };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
         );
         let input = self.input.read(cx);
-        let mut look = theme.resolve_look(state, enabled, &scale);
+        let mut look = theme.resolve_look(state, enabled, control_size, &scale);
         if let Some(override_fn) = &look_override {
             look = override_fn(look);
         }
@@ -1256,10 +1263,11 @@ impl Render for TextArea {
 
         self.sync_focus(window, cx);
         let scale_factor = window.scale_factor();
+        let control_size = self.model.size;
         let scale = cx.use_cached_layout(
             self.model.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| StandardBoxScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: control_size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| StandardBoxScale::compute(control_size, metrics, scale_factor),
         );
         let look = self.resolved_look(&scale);
         let show_scrollbar = self.is_scrollable();

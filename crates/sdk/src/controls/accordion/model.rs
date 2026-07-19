@@ -5,6 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionControl, AccordionTemplate, default_accordion_template};
 use super::template::modified_accordion_template;
+use crate::theme::ControlSize;
 
 pub type AccordionElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
 
@@ -89,6 +90,7 @@ pub struct AccordionModel {
     pub(crate) selection_mode: AccordionSelectionMode,
     pub(crate) collapsible: bool,
     pub(crate) enabled: bool,
+    pub(crate) size: ControlSize,
     pub(crate) item_dividers: bool,
     /// When set, overrides themed vertical padding inside expanded item panels (both edges).
     pub(crate) content_padding_y: Option<f32>,
@@ -118,6 +120,7 @@ pub struct AccordionRenderModel<'a> {
     pub selection_mode: AccordionSelectionMode,
     pub collapsible: bool,
     pub enabled: bool,
+    pub size: ControlSize,
     pub item_dividers: bool,
     pub content_padding_y: Option<f32>,
     pub content_padding_top: Option<f32>,
@@ -140,6 +143,7 @@ impl AccordionBuilder {
                 selection_mode: AccordionSelectionMode::Single,
                 collapsible: true,
                 enabled: true,
+                size: ControlSize::Md,
                 item_dividers: true,
                 content_padding_y: None,
                 content_padding_top: None,
@@ -181,6 +185,11 @@ impl AccordionBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
         self
     }
 

@@ -94,7 +94,7 @@ impl ListBoxTheme for DefaultListBoxTheme {
         }
     }
 
-    fn resolve_row(&self, _selected: bool, state: InteractionState, _size: ControlSize) -> ListBoxRowPalette {
+    fn resolve_row(&self, _selected: bool, state: InteractionState, size: ControlSize) -> ListBoxRowPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
@@ -115,8 +115,10 @@ impl ListBoxTheme for DefaultListBoxTheme {
         };
 
         let adorner = None;
+        let mut label_typography = typography.text.label;
+        crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
 
-        ListBoxRowPalette { background, label_color, adorner, label_typography: typography.text.label }
+        ListBoxRowPalette { background, label_color, adorner, label_typography }
     }
 
     fn metrics(&self) -> MetricTokens {

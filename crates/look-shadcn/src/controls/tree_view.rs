@@ -9,7 +9,9 @@
 //! | Icon / chevron | `sidebar-foreground`               |
 
 use gpui_luma::controls::tree_view::TreeViewPalette;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+
+use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
@@ -62,12 +64,20 @@ pub fn resolve_tree_view_row_colors_with_stylesheet(
     })
 }
 
-pub fn tree_view_row_palette(mode: &ShadcnModeTokens, _selected: bool, state: InteractionState) -> TreeViewPalette {
+pub fn tree_view_row_palette(
+    mode: &ShadcnModeTokens,
+    _selected: bool,
+    state: InteractionState,
+    size: ControlSize,
+) -> TreeViewPalette {
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
     let resolver = LookResolver::new(ctx.catalog(), ctx.theme_mode, "tree_view_row");
     let colors = resolve_tree_view_row_colors(&resolver, state.disabled, state.layer())
         .unwrap_or_else(|_| TreeViewRowColorTable::fallback());
+
+    let mut row_typography = typography.text.label;
+    apply_button_metrics_typography(&mut row_typography, mode, size);
 
     TreeViewPalette {
         background: colors.background.map(|color| color.hsla()),
@@ -75,7 +85,7 @@ pub fn tree_view_row_palette(mode: &ShadcnModeTokens, _selected: bool, state: In
         icon_color: colors.icon_color.hsla(),
         chevron_color: colors.chevron_color.hsla(),
         adorner: None,
-        typography: typography.text.label,
+        typography: row_typography,
         font_family: typography.font.sans.family.clone().into(),
     }
 }
@@ -85,7 +95,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{InteractionLayer, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionLayer, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::mode::ShadcnModeTokens;
@@ -120,6 +130,7 @@ mod tests {
             &mode,
             false,
             gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
+            ControlSize::Md,
         );
         let resolver = LookResolver::new(&catalog, ThemeMode::Light, "test");
         let expected = resolve_tree_view_row_colors(&resolver, false, InteractionLayer::Hovered)

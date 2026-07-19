@@ -46,7 +46,7 @@ pub struct TreeViewPalette {
 }
 
 pub trait TreeViewTheme: Send + Sync {
-    fn resolve_row(&self, state: InteractionState, selected: bool) -> TreeViewPalette;
+    fn resolve_row(&self, state: InteractionState, selected: bool, size: ControlSize) -> TreeViewPalette;
     fn metrics(&self) -> MetricTokens;
 }
 
@@ -68,7 +68,7 @@ impl DefaultTreeViewTheme {
 }
 
 impl TreeViewTheme for DefaultTreeViewTheme {
-    fn resolve_row(&self, state: InteractionState, _selected: bool) -> TreeViewPalette {
+    fn resolve_row(&self, state: InteractionState, _selected: bool, size: ControlSize) -> TreeViewPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
         let layer = state.layer();
@@ -85,13 +85,16 @@ impl TreeViewTheme for DefaultTreeViewTheme {
             palette.app.foreground
         };
 
+        let mut row_typography = typography.text.label;
+        crate::controls::textfield::apply_control_size_typography(&mut row_typography, typography, size);
+
         TreeViewPalette {
             background,
             foreground,
             icon_color: palette.navigation.muted_foreground,
             chevron_color: palette.navigation.muted_foreground,
             adorner: None,
-            typography: typography.text.label,
+            typography: row_typography,
             font_family: typography.font.sans.family.clone().into(),
         }
     }

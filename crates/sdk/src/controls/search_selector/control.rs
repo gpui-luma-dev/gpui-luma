@@ -64,6 +64,7 @@ impl SearchSelectorControl {
         let popup_search_textfield = text_selection::new(format!("{}-popup-search", model.id))
             .placeholder(model.search_placeholder.clone())
             .enabled(model.enabled)
+            .size(model.size)
             .full_width(true)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
@@ -152,6 +153,7 @@ impl SearchSelectorControl {
 
     pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
         self.model.size = size;
+        self.popup_search_textfield.update(cx, |textfield, cx| textfield.set_size(size, cx));
         cx.notify();
     }
 
@@ -552,8 +554,8 @@ impl Render for SearchSelectorControl {
 
         let trigger_focused = self.interaction.focus_handle().is_focused(window);
         let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let look = (self.model.popup_look_provider)();
+        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve(self.model.size);
+        let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .committed_selection
             .and_then(|index| self.model.items.get(index))
@@ -565,11 +567,8 @@ impl Render for SearchSelectorControl {
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
-                &crate::theme::StandardBoxScale::compute(
-                    crate::theme::ControlSize::Md,
-                    &textfield_theme.metrics(),
-                    1.0,
-                ),
+                self.model.size,
+                &crate::theme::StandardBoxScale::compute(self.model.size, &textfield_theme.metrics(), 1.0),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_look.typography.weight;

@@ -6,7 +6,7 @@ use gpui::{
 use lucide_icons::Icon as LucideIcon;
 
 use super::{AccordionRenderModel, AccordionTheme, default_accordion_theme};
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type AccordionHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type AccordionMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -126,8 +126,8 @@ impl AccordionTemplate for ThemedAccordionTemplate {
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| super::theme::AccordionScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| super::theme::AccordionScale::compute(model.size, metrics, scale_factor),
         );
 
         let AccordionTemplateHandlers { trigger_hovers, trigger_mouse_downs, trigger_mouse_ups, trigger_clicks } =
@@ -154,7 +154,7 @@ impl AccordionTemplate for ThemedAccordionTemplate {
                 break;
             };
 
-            let trigger_palette = self.theme.resolve_trigger(item.state.interaction_state());
+            let trigger_palette = self.theme.resolve_trigger(item.state.interaction_state(), model.size);
             let content_palette = self.theme.resolve_content(item.expanded);
             let trigger_min_height = model.trigger_min_height.unwrap_or(scale.trigger_height);
             let trigger_padding_y = model.trigger_padding_y.unwrap_or(scale.padding_y);

@@ -5,6 +5,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{TreeViewControl, TreeViewTemplate, default_tree_view_template};
 use super::template::modified_tree_view_template;
+use crate::theme::ControlSize;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum TreeViewSelectionMode {
@@ -78,6 +79,7 @@ pub struct FlatTreeNode<'a, T> {
     pub has_children: bool,
     pub expanded: bool,
     pub enabled: bool,
+    pub size: ControlSize,
     pub state: crate::controls::state::CompositeItemState,
     pub data: &'a T,
 }
@@ -91,6 +93,7 @@ where
     pub(crate) items: Vec<TreeNode<T>>,
     pub(crate) selection_mode: TreeViewSelectionMode,
     pub(crate) enabled: bool,
+    pub(crate) size: ControlSize,
     pub(crate) template: Arc<dyn TreeViewTemplate<T>>,
 }
 
@@ -98,6 +101,7 @@ pub struct TreeViewRenderModel<'a> {
     pub id: &'a SharedString,
     pub selection_mode: TreeViewSelectionMode,
     pub enabled: bool,
+    pub size: ControlSize,
     pub focus: crate::controls::state::ControlFocusState,
 }
 
@@ -119,6 +123,7 @@ where
                 items: Vec::new(),
                 selection_mode: TreeViewSelectionMode::Single,
                 enabled: true,
+                size: ControlSize::Md,
                 template: default_tree_view_template::<T>(),
             },
         }
@@ -136,6 +141,11 @@ where
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
         self
     }
 

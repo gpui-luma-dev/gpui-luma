@@ -112,7 +112,7 @@ pub fn listbox_row_palette(
     mode: &ShadcnModeTokens,
     _selected: bool,
     state: InteractionState,
-    _size: ControlSize,
+    size: ControlSize,
 ) -> ListBoxRowPalette {
     let ctx = LookContext::new(mode, ThemeMode::Light, state);
     let typography = ctx.typography();
@@ -120,11 +120,14 @@ pub fn listbox_row_palette(
     let colors = resolve_listbox_row_colors(&resolver, state.disabled, state.focused, state.layer())
         .unwrap_or_else(|_| ListBoxRowColorTable::fallback());
 
+    let mut label_typography = typography.text.label;
+    super::apply_button_metrics_typography(&mut label_typography, mode, size);
+
     ListBoxRowPalette {
         background: colors.background.hsla(),
         label_color: colors.label_color.hsla(),
         adorner: None,
-        label_typography: typography.text.label,
+        label_typography,
     }
 }
 

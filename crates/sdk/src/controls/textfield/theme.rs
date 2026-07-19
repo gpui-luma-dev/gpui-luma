@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla, SharedString};
 
-use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
+use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textfield::TextFieldState;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -60,8 +60,10 @@ pub trait TextFieldTheme: Send + Sync {
         variant: TextFieldVariant,
         state: TextFieldState,
         enabled: bool,
+        size: ControlSize,
         scale: &StandardBoxScale,
     ) -> TextFieldLook {
+        let _ = size;
         compose_textfield_look(&self.resolve(variant, state, enabled), scale, self.metrics().border_width.default)
     }
 }
@@ -139,9 +141,40 @@ impl TextFieldTheme for DefaultTextFieldTheme {
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
     }
+
+    fn resolve_look(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> TextFieldLook {
+        let mut palette = self.resolve(variant, state, enabled);
+        apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
+        compose_textfield_look(&palette, scale, self.metrics().border_width.default)
+    }
 }
 
-pub(crate) fn compose_textfield_look(
+/// Scales text-field typography from `LumaTypography` size roles for lookless fallbacks.
+pub fn apply_control_size_typography(
+    typography: &mut LumaTextStyle,
+    tokens: &crate::theme::LumaTypography,
+    size: ControlSize,
+) {
+    let font_size = match size {
+        ControlSize::Sm => tokens.text.scale.sm.size,
+        ControlSize::Md => tokens.text.body.size,
+        ControlSize::Lg => tokens.text.scale.lg.size,
+    };
+    let base_size = typography.size;
+    typography.size = font_size;
+    if base_size > 0.0 {
+        typography.line_height = font_size * (typography.line_height / base_size);
+    }
+}
+
+pub fn compose_textfield_look(
     palette: &TextFieldPalette,
     scale: &StandardBoxScale,
     border_width: f32,
@@ -166,5 +199,30 @@ pub(crate) fn compose_textfield_look(
         radius: scale.radius,
         border_width,
         icon_size: palette.typography.size + 2.0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_theme_scales_typography_with_control_size() {
+        let theme = DefaultTextFieldTheme::default();
+        let scale_md = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0);
+        let scale_sm = StandardBoxScale::compute(ControlSize::Sm, &theme.metrics(), 1.0);
+        let scale_lg = StandardBoxScale::compute(ControlSize::Lg, &theme.metrics(), 1.0);
+
+        let md =
+            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Md, &scale_md);
+        let sm =
+            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Sm, &scale_sm);
+        let lg =
+            theme.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true, ControlSize::Lg, &scale_lg);
+
+        assert!((md.typography.size - theme.tokens.typography.text.body.size).abs() < f32::EPSILON);
+        assert!(sm.typography.size < md.typography.size);
+        assert!(lg.typography.size > md.typography.size);
+        assert!((sm.icon_size - (sm.typography.size + 2.0)).abs() < f32::EPSILON);
     }
 }

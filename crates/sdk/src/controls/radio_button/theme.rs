@@ -59,7 +59,7 @@ pub struct RadioButtonPalette {
 pub type RadioButtonLook = RadioButtonPalette;
 
 pub trait RadioButtonTheme: Send + Sync {
-    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonPalette;
+    fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette;
     fn metrics(&self) -> MetricTokens;
 }
 
@@ -81,7 +81,7 @@ impl DefaultRadioButtonTheme {
 }
 
 impl RadioButtonTheme for DefaultRadioButtonTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> RadioButtonPalette {
+    fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> RadioButtonPalette {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -135,7 +135,11 @@ impl RadioButtonTheme for DefaultRadioButtonTheme {
                 palette.app.foreground
             },
             adorner,
-            label_typography: typography.text.label,
+            label_typography: {
+                let mut label_typography = typography.text.label;
+                crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
+                label_typography
+            },
             label_font_family: typography.font.sans.family.clone().into(),
             indicator_shadow: None,
         }

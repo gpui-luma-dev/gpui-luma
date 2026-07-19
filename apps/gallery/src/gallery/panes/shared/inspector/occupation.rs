@@ -13,21 +13,22 @@ const SCALE_FACTOR: f32 = 1.0;
 pub(in crate::gallery) fn radio_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
-    let palette = paint::radio_button_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state);
+    let palette = paint::radio_button_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
     choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
 }
 
 pub(in crate::gallery) fn checkbox_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
-    let palette = paint::checkbox_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state);
+    let palette = paint::checkbox_look(tokens.as_ref(), ShadcnButtonStyle::Primary, false, state, ControlSize::Md);
     choice_indicator_occupation(palette.indicator_shadow.as_ref(), focus_oversize, state.disabled)
 }
 
 pub(in crate::gallery) fn switch_occupation(look: &ShadcnLook, focus_oversize: f32) -> InspectOccupationSnapshot {
     let state = InteractionState::default();
     let tokens = look.mode_tokens();
-    let palette = paint::switch_look(tokens.as_ref(), look.mode(), ShadcnButtonStyle::Primary, true, state);
+    let palette =
+        paint::switch_look(tokens.as_ref(), look.mode(), ShadcnButtonStyle::Primary, true, state, ControlSize::Md);
     let shadows = if palette.thumb_shadow.is_empty() {
         None
     } else {

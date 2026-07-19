@@ -26,6 +26,10 @@ use super::task_list::{Task, build_task_rows, email_column, status_cell, tag_pil
 const DEFAULT_PAGE_SIZE: usize = 25;
 const LIST_HEADER_TITLE: &str = "Documents";
 const LIST_VIEW_OUTER_PADDING_PX: f32 = 16.0;
+/// Outer card corner radius (matches `.rounded` on the dashboard shell).
+const DASHBOARD_CARD_RADIUS_PX: f32 = 12.0;
+/// Inner fill radius — card radius minus the 1px border (GPUI clips overflow as a rect).
+const DASHBOARD_INNER_RADIUS_PX: f32 = DASHBOARD_CARD_RADIUS_PX - 1.0;
 
 pub struct DashboardPanel {
     look: Arc<ShadcnLook>,
@@ -58,6 +62,10 @@ impl DashboardPanel {
             .selected_id(INITIAL_PROPERTY_SELECTION_ID)
             .items(property_navigation_nodes())
             .footer_nodes(property_navigation_footer_nodes())
+            .with_template_modifier(|root| {
+                // Match card corners: overflow_hidden is rectangular, so the filled root needs radii.
+                root.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX)).rounded_bl(px(DASHBOARD_INNER_RADIUS_PX))
+            })
             .spawn(cx);
 
         let sidebar_toggle = look
@@ -189,20 +197,28 @@ impl Render for DashboardPanel {
         let sidebar_toggle = self.sidebar_toggle.clone();
         let look = self.look.clone();
         let chrome = look.chrome();
+        let sidebar_collapsed = self.sidebar_collapsed;
 
         self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
                 render_pane(move || navigation_sidebar.clone()),
                 render_pane(move || {
-                    div()
+                    let mut content = div()
                         .size_full()
                         .min_h_0()
                         .flex()
                         .flex_col()
+                        .rounded_tr(px(DASHBOARD_INNER_RADIUS_PX))
+                        .rounded_br(px(DASHBOARD_INNER_RADIUS_PX))
                         .border_l_1()
                         .border_color(chrome.border)
-                        .bg(chrome.content_background)
-                        .child(render_list_header(sidebar_toggle.clone(), &look))
+                        .bg(chrome.content_background);
+                    if sidebar_collapsed {
+                        content =
+                            content.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX)).rounded_bl(px(DASHBOARD_INNER_RADIUS_PX));
+                    }
+                    content
+                        .child(render_list_header(sidebar_toggle.clone(), &look, sidebar_collapsed))
                         .child(render_list_header_divider(chrome.border))
                         .child(
                             div()
@@ -228,7 +244,7 @@ impl Render for DashboardPanel {
                 .overflow_hidden()
                 .border_1()
                 .border_color(chrome.border)
-                .rounded(px(12.0))
+                .rounded(px(DASHBOARD_CARD_RADIUS_PX))
                 .bg(chrome.panel_background)
                 .shadow(panel_box_shadow())
                 .child(self.split_view.clone()),
@@ -236,11 +252,11 @@ impl Render for DashboardPanel {
     }
 }
 
-fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook) -> gpui::AnyElement {
+fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook, sidebar_collapsed: bool) -> gpui::AnyElement {
     let chrome = look.chrome();
     let title_style = look.typography_scale(ShadcnTextSize::Lg);
 
-    div()
+    let mut header = div()
         .id("studio-dashboard-list-header")
         .w_full()
         .flex_shrink_0()
@@ -249,7 +265,13 @@ fn render_list_header(sidebar_toggle: IconButton, look: &ShadcnLook) -> gpui::An
         .gap(px(8.0))
         .h(px(44.0))
         .px(px(12.0))
-        .bg(chrome.panel_background)
+        .rounded_tr(px(DASHBOARD_INNER_RADIUS_PX))
+        .bg(chrome.panel_background);
+    if sidebar_collapsed {
+        header = header.rounded_tl(px(DASHBOARD_INNER_RADIUS_PX));
+    }
+
+    header
         .child(sidebar_toggle)
         .child(div().h(px(16.0)).w(px(1.0)).bg(chrome.border))
         .child(div().typography_style(title_style).text_color(chrome.title_text).child(LIST_HEADER_TITLE))

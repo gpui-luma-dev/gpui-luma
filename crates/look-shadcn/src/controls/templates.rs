@@ -40,7 +40,7 @@ use gpui_luma::controls::textarea::{TextAreaTheme, ThemedTextAreaTemplate};
 use gpui_luma::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate};
 use gpui_luma::controls::toolbar::{ThemedToolbarTemplate, ToolbarLook, ToolbarTemplate, ToolbarTheme, ToolbarVariant};
 
-use gpui_luma::theme::{ControlSize, InteractionState};
+use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale};
 
 use super::autocomplete::autocomplete_textbox_look;
 use super::checkbox::checkbox_look;
@@ -119,9 +119,14 @@ struct ShadcnStyledSwitchTheme {
 }
 
 impl SwitchTheme for ShadcnStyledSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> gpui_luma::controls::switch::SwitchPalette {
+    fn resolve(
+        &self,
+        on: bool,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> gpui_luma::controls::switch::SwitchPalette {
         let tokens = self.theme.mode_tokens();
-        switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state)
+        switch_look(tokens.as_ref(), self.theme.mode(), self.style, on, state, size)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -140,9 +145,14 @@ struct ShadcnStyledCheckboxTheme {
 }
 
 impl CheckboxTheme for ShadcnStyledCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> gpui_luma::controls::checkbox::CheckboxPalette {
+    fn resolve(
+        &self,
+        checked: bool,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> gpui_luma::controls::checkbox::CheckboxPalette {
         let tokens = self.theme.mode_tokens();
-        checkbox_look(tokens.as_ref(), self.style, checked, state)
+        checkbox_look(tokens.as_ref(), self.style, checked, state, size)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -160,9 +170,10 @@ impl RadioButtonTheme for ShadcnStyledRadioButtonTheme {
         &self,
         selected: bool,
         state: InteractionState,
+        size: ControlSize,
     ) -> gpui_luma::controls::radio_button::RadioButtonPalette {
         let tokens = self.theme.mode_tokens();
-        radio_button_look(tokens.as_ref(), self.style, selected, state)
+        radio_button_look(tokens.as_ref(), self.style, selected, state, size)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -461,7 +472,7 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
         super::textfield::textfield_palette(
             tokens.as_ref(),
             self.theme.mode(),
-            super::textfield::ShadcnTextFieldStyle::Surface,
+            super::textfield::ShadcnTextFieldStyle::Outline,
             state,
             enabled,
         )
@@ -470,6 +481,26 @@ impl TextFieldTheme for ShadcnTextFieldTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
+
+    fn resolve_look(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textfield::TextFieldLook {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Outline,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
 }
 
 struct ShadcnAutocompleteTextBoxTheme {
@@ -477,9 +508,9 @@ struct ShadcnAutocompleteTextBoxTheme {
 }
 
 impl AutocompleteTextBoxTheme for ShadcnAutocompleteTextBoxTheme {
-    fn resolve(&self) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxLook {
+    fn resolve(&self, size: ControlSize) -> gpui_luma::controls::autocomplete::AutocompleteTextBoxLook {
         let tokens = self.theme.mode_tokens();
-        autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), ControlSize::Md)
+        autocomplete_textbox_look(tokens.as_ref(), self.theme.mode(), size)
     }
 }
 
@@ -522,6 +553,26 @@ impl TextFieldTheme for ShadcnInputTextFieldTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
+
+    fn resolve_look(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textfield::TextFieldLook {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Input,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
 }
 
 pub fn input_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
@@ -532,11 +583,11 @@ pub fn input_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::co
     Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnInputTextFieldTheme { theme: theme.as_ref().clone() })))
 }
 
-struct ShadcnSoftTextFieldTheme {
+struct ShadcnSurfaceTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for ShadcnSoftTextFieldTheme {
+impl TextFieldTheme for ShadcnSurfaceTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -547,7 +598,7 @@ impl TextFieldTheme for ShadcnSoftTextFieldTheme {
         super::textfield::textfield_palette(
             tokens.as_ref(),
             self.theme.mode(),
-            super::textfield::ShadcnTextFieldStyle::Soft,
+            super::textfield::ShadcnTextFieldStyle::Surface,
             state,
             enabled,
         )
@@ -556,17 +607,37 @@ impl TextFieldTheme for ShadcnSoftTextFieldTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
+
+    fn resolve_look(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textfield::TextFieldLook {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Surface,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
 }
 
-pub fn soft_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnSoftTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn surface_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnSurfaceTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-struct ShadcnFilledTextFieldTheme {
+struct ShadcnPrimaryTextFieldTheme {
     theme: ShadcnLook,
 }
 
-impl TextFieldTheme for ShadcnFilledTextFieldTheme {
+impl TextFieldTheme for ShadcnPrimaryTextFieldTheme {
     fn resolve(
         &self,
         _variant: TextFieldVariant,
@@ -577,7 +648,7 @@ impl TextFieldTheme for ShadcnFilledTextFieldTheme {
         super::textfield::textfield_palette(
             tokens.as_ref(),
             self.theme.mode(),
-            super::textfield::ShadcnTextFieldStyle::Filled,
+            super::textfield::ShadcnTextFieldStyle::Primary,
             state,
             enabled,
         )
@@ -586,14 +657,38 @@ impl TextFieldTheme for ShadcnFilledTextFieldTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
+
+    fn resolve_look(
+        &self,
+        _variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textfield::TextFieldLook {
+        let tokens = self.theme.mode_tokens();
+        super::textfield::textfield_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Primary,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
 }
 
-pub fn filled_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
-    Arc::new(ShadcnFilledTextFieldTheme { theme: theme.as_ref().clone() })
+pub fn primary_textfield_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextFieldTheme> {
+    Arc::new(ShadcnPrimaryTextFieldTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn filled_textfield_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
-    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnFilledTextFieldTheme { theme: theme.as_ref().clone() })))
+pub fn primary_textfield_template(
+    theme: Arc<ShadcnLook>,
+) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+    Arc::new(ThemedTextFieldTemplate::new(Arc::new(ShadcnPrimaryTextFieldTheme {
+        theme: theme.as_ref().clone(),
+    })))
 }
 
 struct ShadcnTextAreaTheme {
@@ -601,6 +696,58 @@ struct ShadcnTextAreaTheme {
 }
 
 impl TextAreaTheme for ShadcnTextAreaTheme {
+    fn resolve(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_palette(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Outline,
+            state,
+            enabled,
+        )
+    }
+
+    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
+        self.theme.mode_tokens().metrics
+    }
+
+    fn resolve_look(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Outline,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
+}
+
+pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(textarea_theme(Arc::clone(&theme))))
+}
+
+pub fn textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnTextAreaTheme { theme: theme.as_ref().clone() })
+}
+
+struct ShadcnSurfaceTextAreaTheme {
+    theme: ShadcnLook,
+}
+
+impl TextAreaTheme for ShadcnSurfaceTextAreaTheme {
     fn resolve(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
@@ -619,21 +766,36 @@ impl TextAreaTheme for ShadcnTextAreaTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
+
+    fn resolve_look(
+        &self,
+        state: gpui_luma::controls::textarea::TextAreaState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
+        let tokens = self.theme.mode_tokens();
+        super::textarea::textarea_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            super::textfield::ShadcnTextFieldStyle::Surface,
+            state,
+            enabled,
+            size,
+            scale,
+        )
+    }
 }
 
-pub fn textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
-    Arc::new(ThemedTextAreaTemplate::new(textarea_theme(Arc::clone(&theme))))
+pub fn surface_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnSurfaceTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnTextAreaTheme { theme: theme.as_ref().clone() })
-}
-
-struct ShadcnSoftTextAreaTheme {
+struct ShadcnPrimaryTextAreaTheme {
     theme: ShadcnLook,
 }
 
-impl TextAreaTheme for ShadcnSoftTextAreaTheme {
+impl TextAreaTheme for ShadcnPrimaryTextAreaTheme {
     fn resolve(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
@@ -643,7 +805,7 @@ impl TextAreaTheme for ShadcnSoftTextAreaTheme {
         super::textarea::textarea_palette(
             tokens.as_ref(),
             self.theme.mode(),
-            super::textfield::ShadcnTextFieldStyle::Soft,
+            super::textfield::ShadcnTextFieldStyle::Primary,
             state,
             enabled,
         )
@@ -652,43 +814,33 @@ impl TextAreaTheme for ShadcnSoftTextAreaTheme {
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
         self.theme.mode_tokens().metrics
     }
-}
 
-pub fn soft_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnSoftTextAreaTheme { theme: theme.as_ref().clone() })
-}
-
-struct ShadcnFilledTextAreaTheme {
-    theme: ShadcnLook,
-}
-
-impl TextAreaTheme for ShadcnFilledTextAreaTheme {
-    fn resolve(
+    fn resolve_look(
         &self,
         state: gpui_luma::controls::textarea::TextAreaState,
         enabled: bool,
-    ) -> gpui_luma::controls::textarea::TextAreaPalette {
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> gpui_luma::controls::textarea::TextAreaLook {
         let tokens = self.theme.mode_tokens();
-        super::textarea::textarea_palette(
+        super::textarea::textarea_look(
             tokens.as_ref(),
             self.theme.mode(),
-            super::textfield::ShadcnTextFieldStyle::Filled,
+            super::textfield::ShadcnTextFieldStyle::Primary,
             state,
             enabled,
+            size,
+            scale,
         )
     }
-
-    fn metrics(&self) -> gpui_luma::theme::MetricTokens {
-        self.theme.mode_tokens().metrics
-    }
 }
 
-pub fn filled_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
-    Arc::new(ShadcnFilledTextAreaTheme { theme: theme.as_ref().clone() })
+pub fn primary_textarea_theme(theme: Arc<ShadcnLook>) -> Arc<dyn TextAreaTheme> {
+    Arc::new(ShadcnPrimaryTextAreaTheme { theme: theme.as_ref().clone() })
 }
 
-pub fn filled_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
-    Arc::new(ThemedTextAreaTemplate::new(filled_textarea_theme(Arc::clone(&theme))))
+pub fn primary_textarea_template(theme: Arc<ShadcnLook>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+    Arc::new(ThemedTextAreaTemplate::new(primary_textarea_theme(Arc::clone(&theme))))
 }
 
 pub fn autocomplete_textbox_theme(theme: Arc<ShadcnLook>) -> Arc<dyn AutocompleteTextBoxTheme> {
@@ -707,9 +859,14 @@ struct ShadcnTreeViewTheme {
 }
 
 impl TreeViewTheme for ShadcnTreeViewTheme {
-    fn resolve_row(&self, state: InteractionState, selected: bool) -> gpui_luma::controls::tree_view::TreeViewPalette {
+    fn resolve_row(
+        &self,
+        state: InteractionState,
+        selected: bool,
+        size: ControlSize,
+    ) -> gpui_luma::controls::tree_view::TreeViewPalette {
         let tokens = self.theme.mode_tokens();
-        tree_view_row_palette(tokens.as_ref(), selected, state)
+        tree_view_row_palette(tokens.as_ref(), selected, state, size)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -722,9 +879,13 @@ struct ShadcnAccordionTheme {
 }
 
 impl AccordionTheme for ShadcnAccordionTheme {
-    fn resolve_trigger(&self, state: InteractionState) -> gpui_luma::controls::accordion::AccordionPalette {
+    fn resolve_trigger(
+        &self,
+        state: InteractionState,
+        size: ControlSize,
+    ) -> gpui_luma::controls::accordion::AccordionPalette {
         let tokens = self.theme.mode_tokens();
-        accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state)
+        accordion_trigger_palette(tokens.as_ref(), self.theme.mode(), state, size)
     }
 
     fn resolve_content(&self, expanded: bool) -> gpui_luma::controls::accordion::AccordionContentPalette {

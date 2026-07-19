@@ -89,7 +89,7 @@ impl TreeViewTemplate<ColorInspectTreeData> for ColorInspectorTreeTemplate {
     ) -> AnyElement {
         let chrome = self.look.chrome();
         let theme = self.look.tree_view_theme();
-        let palette = theme.resolve_row(node.state.interaction_state(), node.state.selected);
+        let palette = theme.resolve_row(node.state.interaction_state(), node.state.selected, node.size);
         let body = &self.look.mode_tokens().typography.text.body;
         let mono = &self.look.mode_tokens().typography.text.caption;
         let left_padding = row_indent(node.depth);

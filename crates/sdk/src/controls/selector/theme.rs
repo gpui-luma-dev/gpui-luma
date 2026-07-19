@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::Hsla;
 
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
+use crate::controls::textfield::apply_control_size_typography;
 use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
@@ -67,7 +68,6 @@ impl SelectorTheme for DefaultSelectorTheme {
     fn resolve(&self, state: InteractionState) -> SelectorPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
-        let size = ControlSize::Md;
 
         let trigger_background = match state.layer() {
             InteractionLayer::Disabled => palette.state.disabled.background,
@@ -88,12 +88,19 @@ impl SelectorTheme for DefaultSelectorTheme {
             trigger_border: palette.border.default,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
-            items_panel: default_selector_items_panel_look(&self.tokens, size),
+            items_panel: default_selector_items_panel_look(&self.tokens, ControlSize::Md),
         }
     }
 
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
+    }
+
+    fn resolve_look(&self, state: InteractionState, size: ControlSize, scale: &StandardBoxScale) -> SelectorLook {
+        let mut palette = self.resolve(state);
+        apply_control_size_typography(&mut palette.trigger_typography, &self.tokens.typography, size);
+        palette.items_panel = default_selector_items_panel_look(&self.tokens, size);
+        compose_selector_look(&palette, scale)
     }
 }
 

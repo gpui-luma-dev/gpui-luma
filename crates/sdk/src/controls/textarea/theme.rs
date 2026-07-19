@@ -2,8 +2,9 @@ use std::sync::{Arc, OnceLock};
 
 use gpui::{BoxShadow, Hsla};
 
-use crate::theme::{LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
+use crate::theme::{ControlSize, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens};
 use crate::controls::textarea::TextAreaState;
+use crate::controls::textfield::apply_control_size_typography;
 
 #[derive(Clone, Debug)]
 pub struct TextAreaPalette {
@@ -45,7 +46,14 @@ pub trait TextAreaTheme: Send + Sync {
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_look(&self, state: TextAreaState, enabled: bool, scale: &StandardBoxScale) -> TextAreaLook {
+    fn resolve_look(
+        &self,
+        state: TextAreaState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> TextAreaLook {
+        let _ = size;
         compose_textarea_look(&self.resolve(state, enabled), scale, self.metrics().border_width.default)
     }
 }
@@ -120,13 +128,21 @@ impl TextAreaTheme for DefaultTextAreaTheme {
     fn metrics(&self) -> MetricTokens {
         self.tokens.metrics
     }
+
+    fn resolve_look(
+        &self,
+        state: TextAreaState,
+        enabled: bool,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+    ) -> TextAreaLook {
+        let mut palette = self.resolve(state, enabled);
+        apply_control_size_typography(&mut palette.typography, &self.tokens.typography, size);
+        compose_textarea_look(&palette, scale, self.metrics().border_width.default)
+    }
 }
 
-pub(crate) fn compose_textarea_look(
-    palette: &TextAreaPalette,
-    scale: &StandardBoxScale,
-    border_width: f32,
-) -> TextAreaLook {
+pub fn compose_textarea_look(palette: &TextAreaPalette, scale: &StandardBoxScale, border_width: f32) -> TextAreaLook {
     TextAreaLook {
         background: palette.background,
         foreground: palette.foreground,

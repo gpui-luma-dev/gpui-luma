@@ -30,7 +30,10 @@ pub(crate) mod textfield;
 pub(crate) mod textarea;
 pub(crate) mod toolbar_item;
 pub(crate) mod tree_view;
+pub(crate) mod typography;
 pub(crate) mod overlay_window;
+
+pub(crate) use typography::apply_button_metrics_typography;
 
 pub use button::{ButtonRadiusPreset, ShadcnButtonStyle};
 pub use toggle::ToggleLayout;

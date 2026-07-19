@@ -7,7 +7,9 @@
 //! | Disabled | `muted`         | `muted-foreground`     |
 
 use gpui_luma::controls::checkbox::CheckboxPalette;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+
+use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
@@ -70,6 +72,7 @@ pub fn checkbox_look(
     style: ShadcnButtonStyle,
     checked: bool,
     state: InteractionState,
+    size: ControlSize,
 ) -> CheckboxPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
     let indicator_style = if content_only {
@@ -105,7 +108,11 @@ pub fn checkbox_look(
         } else {
             focus_adorner(catalog, metrics, state.focused).unwrap_or_else(|err| panic!("checkbox properties: {err}"))
         },
-        label_typography: typography.text.label,
+        label_typography: {
+            let mut label_typography = typography.text.label;
+            apply_button_metrics_typography(&mut label_typography, mode, size);
+            label_typography
+        },
         label_font_family: typography.font.sans.family.clone().into(),
         indicator_shadow: if content_only {
             None
@@ -163,7 +170,8 @@ mod tests {
     #[test]
     fn checkbox_look_resolves_stylesheet_shadow() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let look = checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let look =
+            checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default(), ControlSize::Md);
 
         assert!(look.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
     }
@@ -176,6 +184,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { disabled: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert!(look.indicator_shadow.is_none());
@@ -184,12 +193,14 @@ mod tests {
     #[test]
     fn checkbox_hover_does_not_recolor_indicator_or_label() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let default = checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let default =
+            checkbox_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default(), ControlSize::Md);
         let hovered = checkbox_look(
             &mode,
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { hovered: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(default.indicator_background, hovered.indicator_background);
@@ -200,12 +211,14 @@ mod tests {
     #[test]
     fn content_only_checkbox_keeps_primary_indicator_without_adorners_or_shadow() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let primary = checkbox_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let primary =
+            checkbox_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default(), ControlSize::Md);
         let content_only = checkbox_look(
             &mode,
             ShadcnButtonStyle::ContentOnly,
             true,
             InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(content_only.indicator_background, primary.indicator_background);

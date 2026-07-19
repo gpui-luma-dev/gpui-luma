@@ -22,11 +22,11 @@ define_control_template!(
 
 impl ButtonTemplate<bool> for ThemedCheckboxTemplate {
     fn render(&self, model: &ButtonRenderModel<bool>, window: &mut Window, cx: &mut App) -> Stateful<Div> {
-        let palette = self.theme.resolve(model.data, model.state);
+        let palette = self.theme.resolve(model.data, model.state, model.size);
         let focused_probe_look = if model.state.disabled {
             None
         } else {
-            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }))
+            Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }, model.size))
         };
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
         let scale_factor = window.scale_factor();

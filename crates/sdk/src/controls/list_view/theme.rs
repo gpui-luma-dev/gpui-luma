@@ -112,7 +112,7 @@ impl ListViewTheme for DefaultListViewTheme {
         }
     }
 
-    fn resolve_row(&self, selected: bool, state: InteractionState, _size: ControlSize) -> ListViewRowPalette {
+    fn resolve_row(&self, selected: bool, state: InteractionState, size: ControlSize) -> ListViewRowPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
@@ -143,12 +143,15 @@ impl ListViewTheme for DefaultListViewTheme {
             palette.app.foreground
         };
 
+        let mut label_typography = typography.text.label;
+        crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
+
         ListViewRowPalette {
             background,
             label_color,
             divider: palette.form.input.border,
             adorner: None,
-            label_typography: typography.text.label,
+            label_typography,
         }
     }
 

@@ -62,7 +62,7 @@ pub struct CheckboxPalette {
 pub type CheckboxLook = CheckboxPalette;
 
 pub trait CheckboxTheme: Send + Sync {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxPalette;
+    fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette;
     fn metrics(&self) -> MetricTokens;
 }
 
@@ -84,7 +84,7 @@ impl DefaultCheckboxTheme {
 }
 
 impl CheckboxTheme for DefaultCheckboxTheme {
-    fn resolve(&self, checked: bool, state: InteractionState) -> CheckboxPalette {
+    fn resolve(&self, checked: bool, state: InteractionState, size: ControlSize) -> CheckboxPalette {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -136,7 +136,11 @@ impl CheckboxTheme for DefaultCheckboxTheme {
             },
             label_color,
             adorner,
-            label_typography: typography.text.label,
+            label_typography: {
+                let mut label_typography = typography.text.label;
+                crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
+                label_typography
+            },
             label_font_family: typography.font.sans.family.clone().into(),
             indicator_shadow: None,
         }

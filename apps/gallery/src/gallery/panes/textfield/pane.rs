@@ -351,9 +351,9 @@ impl TextFieldStatePreview {
 impl Render for TextFieldStatePreview {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome = self.look.chrome();
-        let surface_textfield_theme = self.look.textfield_theme();
-        let filled_textfield_theme = self.look.filled_textfield_theme();
-        let soft_textfield_theme = self.look.soft_textfield_theme();
+        let outline_textfield_theme = self.look.textfield_theme();
+        let primary_textfield_theme = self.look.primary_textfield_theme();
+        let surface_textfield_theme = self.look.surface_textfield_theme();
         let samples = [
             TextFieldStateSample { id: "default", label: "Default", state: TextFieldState::default(), enabled: true },
             TextFieldStateSample {
@@ -400,6 +400,46 @@ impl Render for TextFieldStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
+                    .child("Outline variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.into_iter().map(|sample| {
+                    render_state_sample(
+                        &self.template,
+                        outline_textfield_theme.clone(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
+                    .child("Primary variant state preview"),
+            )
+            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
+                samples.into_iter().map(|sample| {
+                    render_state_sample(
+                        &self.template,
+                        primary_textfield_theme.clone(),
+                        sample,
+                        chrome.muted_text,
+                        window,
+                        cx,
+                    )
+                }),
+            ))
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .line_height(px(16.0))
+                    .font_weight(gpui::FontWeight::MEDIUM)
+                    .text_color(chrome.muted_text)
                     .child("Surface variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
@@ -407,46 +447,6 @@ impl Render for TextFieldStatePreview {
                     render_state_sample(
                         &self.template,
                         surface_textfield_theme.clone(),
-                        sample,
-                        chrome.muted_text,
-                        window,
-                        cx,
-                    )
-                }),
-            ))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
-                    .text_color(chrome.muted_text)
-                    .child("Filled variant state preview"),
-            )
-            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_state_sample(
-                        &self.template,
-                        filled_textfield_theme.clone(),
-                        sample,
-                        chrome.muted_text,
-                        window,
-                        cx,
-                    )
-                }),
-            ))
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .line_height(px(16.0))
-                    .font_weight(gpui::FontWeight::MEDIUM)
-                    .text_color(chrome.muted_text)
-                    .child("Soft variant state preview"),
-            )
-            .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
-                samples.into_iter().map(|sample| {
-                    render_state_sample(
-                        &self.template,
-                        soft_textfield_theme.clone(),
                         sample,
                         chrome.muted_text,
                         window,
@@ -560,7 +560,7 @@ fn preview_textfield_look(
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(TextFieldVariant::Standard, state, enabled, &scale)
+    theme.resolve_look(TextFieldVariant::Standard, state, enabled, ControlSize::Md, &scale)
 }
 
 fn noop_key_down(_: &gpui::KeyDownEvent, _: &mut Window, _: &mut App) {}

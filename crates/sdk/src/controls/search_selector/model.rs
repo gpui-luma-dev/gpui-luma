@@ -20,7 +20,7 @@ use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_i
 use crate::controls::textfield::{TextFieldTemplate, TextFieldTheme, default_textfield_template, default_textfield_theme};
 use crate::theme::{ControlSize, ThemeTokens};
 
-pub type SearchSelectorPopupLookProvider = Arc<dyn Fn() -> SelectorItemsPanelLook + Send + Sync + 'static>;
+pub type SearchSelectorPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItemsPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct SearchSelectorModel {
@@ -75,9 +75,7 @@ impl SearchSelectorBuilder {
                 items_template: default_search_selector_items_template(),
                 panel_template: default_search_selector_panel_template(),
                 item_template: None,
-                popup_look_provider: Arc::new(|| {
-                    default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
-                }),
+                popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
     }

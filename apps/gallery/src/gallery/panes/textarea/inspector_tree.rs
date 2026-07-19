@@ -16,9 +16,9 @@ struct TextAreaMatrixState {
 
 pub(in crate::gallery) fn build_textarea_inspect_tree(look: &ShadcnLook) -> Vec<TreeNode<ColorInspectTreeData>> {
     let variants = [
+        (ShadcnTextFieldStyle::Outline, "Outline"),
+        (ShadcnTextFieldStyle::Primary, "Primary"),
         (ShadcnTextFieldStyle::Surface, "Surface"),
-        (ShadcnTextFieldStyle::Filled, "Filled"),
-        (ShadcnTextFieldStyle::Soft, "Soft"),
     ];
     let matrix_states = [
         TextAreaMatrixState { label: "default", state: TextAreaState::default(), enabled: true },

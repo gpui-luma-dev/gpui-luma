@@ -97,7 +97,7 @@ mod tests {
         let palette = super::inspect_textfield_color_palette(
             &mode,
             ThemeMode::Light,
-            ShadcnTextFieldStyle::Soft,
+            ShadcnTextFieldStyle::Surface,
             TextFieldState::default(),
             true,
         );

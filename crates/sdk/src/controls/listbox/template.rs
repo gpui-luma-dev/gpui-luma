@@ -100,7 +100,14 @@ pub fn default_listbox_template() -> ControlGroupTemplate<ListBoxItem> {
 }
 
 pub fn listbox_template_with_theme(theme: Arc<dyn ListBoxTheme>) -> ControlGroupTemplate<ListBoxItem> {
-    let themed = Arc::new(ThemedListBoxTemplate::new(theme));
+    listbox_template_with_theme_and_size(theme, ControlSize::Md)
+}
+
+pub fn listbox_template_with_theme_and_size(
+    theme: Arc<dyn ListBoxTheme>,
+    size: ControlSize,
+) -> ControlGroupTemplate<ListBoxItem> {
+    let themed = Arc::new(ThemedListBoxTemplate::new(theme).with_size(size));
     Arc::new(move |model, handlers, window, cx| themed.render(model, handlers, window, cx))
 }
 

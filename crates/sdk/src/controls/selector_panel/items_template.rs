@@ -36,6 +36,11 @@ pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
     let elevation = &tokens.elevation;
+    let item_typography = match size {
+        ControlSize::Sm => typography.text.scale.sm,
+        ControlSize::Md => typography.text.body,
+        ControlSize::Lg => typography.text.scale.lg,
+    };
 
     SelectorItemsPanelLook {
         background: palette.surface.floating.background,
@@ -48,7 +53,7 @@ pub fn default_selector_items_panel_look(tokens: &ThemeTokens, size: ControlSize
         item_disabled_foreground: palette.state.disabled.foreground,
         item_hover_background: palette.state.hover.background,
         item_hover_foreground: palette.state.hover.foreground,
-        item_typography: typography.text.label,
+        item_typography,
         item_height: metrics.control_height(size) * 0.9,
         item_padding_x: metrics.padding_x(size) * 0.75,
         item_gap: metrics.gap(size),

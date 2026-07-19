@@ -9,7 +9,9 @@
 //! | `dot`    | `@outline_layer` fill + `border` ring + `@action_layer` dot |
 
 use gpui_luma::controls::radio_button::RadioButtonPalette;
-use gpui_luma::theme::{InteractionLayer, InteractionState, ThemeMode};
+use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMode};
+
+use super::apply_button_metrics_typography;
 
 use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
@@ -75,6 +77,7 @@ pub fn radio_button_look(
     style: ShadcnButtonStyle,
     selected: bool,
     state: InteractionState,
+    size: ControlSize,
 ) -> RadioButtonPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
     let indicator_style = if content_only {
@@ -111,7 +114,11 @@ pub fn radio_button_look(
         dot_color: colors.dot_color.hsla(),
         label_color: colors.label_color.hsla(),
         adorner,
-        label_typography: typography.text.label,
+        label_typography: {
+            let mut label_typography = typography.text.label;
+            apply_button_metrics_typography(&mut label_typography, mode, size);
+            label_typography
+        },
         label_font_family: typography.font.sans.family.clone().into(),
         indicator_shadow: if content_only {
             None
@@ -170,7 +177,8 @@ mod tests {
     #[test]
     fn radio_look_resolves_stylesheet_shadow() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let look = radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let look =
+            radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default(), ControlSize::Md);
 
         assert!(look.indicator_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
     }
@@ -178,7 +186,8 @@ mod tests {
     #[test]
     fn primary_selected_filled_uses_action_fill_and_foreground_dot() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let look = radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let look =
+            radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default(), ControlSize::Md);
         let primary = resolve_color(&retro_arcade_catalog(), "primary").expect("primary");
         let primary_fg = resolve_color(&retro_arcade_catalog(), "primary-foreground").expect("primary-foreground");
 
@@ -191,7 +200,8 @@ mod tests {
     fn secondary_selected_ring_uses_outline_fill_and_action_ring() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
         let catalog = retro_arcade_catalog();
-        let look = radio_button_look(&mode, ShadcnButtonStyle::Secondary, true, InteractionState::default());
+        let look =
+            radio_button_look(&mode, ShadcnButtonStyle::Secondary, true, InteractionState::default(), ControlSize::Md);
         let secondary = resolve_color(&catalog, "secondary").expect("secondary");
         let secondary_fg = resolve_color(&catalog, "secondary-foreground").expect("secondary-fg");
         let card = resolve_color(&catalog, "card").expect("card");
@@ -209,6 +219,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { disabled: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert!(look.indicator_shadow.is_none());
@@ -217,12 +228,14 @@ mod tests {
     #[test]
     fn radio_hover_does_not_recolor_indicator_or_label() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let default = radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let default =
+            radio_button_look(&mode, ShadcnButtonStyle::Primary, false, InteractionState::default(), ControlSize::Md);
         let hovered = radio_button_look(
             &mode,
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { hovered: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(default.indicator_background, hovered.indicator_background);
@@ -233,12 +246,14 @@ mod tests {
     #[test]
     fn content_only_radio_keeps_primary_indicator_without_adorners_or_shadow() {
         let mode = ShadcnModeTokens::from_catalog(retro_arcade_catalog(), ThemeMode::Light).expect("catalog");
-        let primary = radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let primary =
+            radio_button_look(&mode, ShadcnButtonStyle::Primary, true, InteractionState::default(), ControlSize::Md);
         let content_only = radio_button_look(
             &mode,
             ShadcnButtonStyle::ContentOnly,
             true,
             InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(content_only.indicator_background, primary.indicator_background);

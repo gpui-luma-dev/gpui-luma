@@ -1,14 +1,25 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
+use gpui::{AnyElement, App, Entity, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
+use gpui_luma::controls::command::button::ControlIcon;
+use gpui_luma::controls::tabs_navigation::TabsNavigation;
 use gpui_luma::controls::textfield::{
-    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant,
+    TextFieldRenderModel, TextFieldState, TextFieldTemplate, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
 };
 use gpui_luma::theme::{ControlSize, StandardBoxScale};
 use gpui_luma_look_shadcn::ShadcnLook;
+use lucide_icons::Icon as LucideIcon;
 
+use crate::studio::style::shared::button_matrix::button_size_id;
 use crate::studio::style::shared::preview_handlers::input_textfield_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
+
+const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 168.0;
+const TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH: f32 = 168.0;
+const TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH: f32 = 100.0;
+const TEXTFIELD_TABLE_HEADER_HEIGHT: f32 = 28.0;
+const TEXTFIELD_TABLE_ROW_HEIGHT: f32 = 56.0;
 
 #[derive(Clone, Copy)]
 struct InputTextFieldSample {
@@ -18,62 +29,192 @@ struct InputTextFieldSample {
     enabled: bool,
 }
 
+#[derive(Clone, Copy)]
+struct TextFieldStyleVariant {
+    id: &'static str,
+    label: &'static str,
+}
+
+const TEXTFIELD_STYLE_VARIANTS: [TextFieldStyleVariant; 3] = [
+    TextFieldStyleVariant { id: "primary", label: "Primary" },
+    TextFieldStyleVariant { id: "outline", label: "Outline" },
+    TextFieldStyleVariant { id: "surface", label: "Surface" },
+];
+
 pub(crate) fn render_textfield_template_section(
     look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let chrome = look.chrome();
+    let active_tab =
+        preview_tabs.read(cx).active_id().cloned().unwrap_or_else(|| SharedString::from("template-preview"));
 
     section_shell_with_width(
         960.0,
         "Text Field",
-        "Default, hover, focus, active, and disabled states.",
+        "Template Preview: Primary / Outline / Surface × states. Sizes tab: styles × Sm/Md/Lg typography.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        render_input_textfield_body(&look, window, cx),
+        render_textfield_preview_tabbed_content(look, preview_tabs, active_tab, chrome.border, window, cx),
     )
 }
 
-fn render_input_textfield_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
-    let template = look.textfield_template();
-    let theme = look.textfield_theme();
-    let samples = input_textfield_samples();
-    let chrome = look.chrome();
-
-    div()
-        .flex()
-        .flex_wrap()
-        .items_start()
-        .justify_center()
-        .gap(px(12.0))
-        .children(samples.iter().copied().map(|sample| {
-            render_input_textfield_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
-        }))
-        .into_any_element()
-}
-
-fn render_input_textfield_sample(
-    template: &Arc<dyn TextFieldTemplate>,
-    theme: Arc<dyn TextFieldTheme>,
-    sample: InputTextFieldSample,
-    label_color: gpui::Hsla,
+fn render_textfield_preview_tabbed_content(
+    look: Arc<ShadcnLook>,
+    preview_tabs: Entity<TabsNavigation>,
+    active_tab: SharedString,
+    border: gpui::Hsla,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-textfield-preview-{}", sample.id));
+    let body = match active_tab.as_ref() {
+        "sizes" => render_textfield_sizes_body(&look, window, cx),
+        _ => render_textfield_template_body(&look, window, cx),
+    };
+
+    div()
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(div().w_full().flex().justify_start().child(preview_tabs))
+        .child(div().w_full().h(px(1.0)).bg(border))
+        .child(div().w_full().flex().justify_center().mt(px(16.0)).child(body))
+        .into_any_element()
+}
+
+fn render_textfield_template_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+    let chrome = look.chrome();
+    let samples = input_textfield_samples();
+
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome)
+            .variant_column_width(TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(TEXTFIELD_TABLE_STATE_COLUMN_WIDTH)
+            .header_height(TEXTFIELD_TABLE_HEADER_HEIGHT)
+            .header_corner_padding_bottom(0.0)
+            .row_height(TEXTFIELD_TABLE_ROW_HEIGHT),
+    )
+    .column_headers(samples.iter().map(|sample| render_textfield_state_header_cell(*sample, chrome.muted_text)))
+    .rows(TEXTFIELD_STYLE_VARIANTS.iter().map(|style| {
+        let (template, theme) = textfield_style_pair(look, style.id);
+        VariantStateTableRow {
+            label: SharedString::from(style.label),
+            description: SharedString::from(""),
+            cells: samples
+                .iter()
+                .copied()
+                .map(|sample| {
+                    render_textfield_cell(&template, theme.clone(), sample, style.id, ControlSize::Md, window, cx)
+                })
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn render_textfield_sizes_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+    let chrome = look.chrome();
+    let sizes = [(ControlSize::Sm, "Sm"), (ControlSize::Md, "Md"), (ControlSize::Lg, "Lg")];
+    let sample = InputTextFieldSample { id: "size", label: "Size", state: TextFieldState::default(), enabled: true };
+
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome)
+            .variant_column_width(TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH)
+            .header_height(TEXTFIELD_TABLE_HEADER_HEIGHT)
+            .header_corner_padding_bottom(0.0)
+            .row_height(TEXTFIELD_TABLE_ROW_HEIGHT),
+    )
+    .column_headers(sizes.iter().map(|(_, label)| render_textfield_size_header_cell(label, chrome.muted_text)))
+    .rows(TEXTFIELD_STYLE_VARIANTS.iter().map(|style| {
+        let (template, theme) = textfield_style_pair(look, style.id);
+        VariantStateTableRow {
+            label: SharedString::from(style.label),
+            description: SharedString::from(""),
+            cells: sizes
+                .iter()
+                .copied()
+                .map(|(size, _)| render_textfield_cell(&template, theme.clone(), sample, style.id, size, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn textfield_style_pair(
+    look: &Arc<ShadcnLook>,
+    style_id: &str,
+) -> (Arc<dyn TextFieldTemplate>, Arc<dyn TextFieldTheme>) {
+    match style_id {
+        "primary" => (look.primary_textfield_template(), look.primary_textfield_theme()),
+        "surface" => (
+            Arc::new(ThemedTextFieldTemplate::new(look.surface_textfield_theme())),
+            look.surface_textfield_theme(),
+        ),
+        _ => (look.textfield_template(), look.textfield_theme()),
+    }
+}
+
+fn render_textfield_state_header_cell(sample: InputTextFieldSample, muted_text: gpui::Hsla) -> AnyElement {
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(sample.label)
+        .into_any_element()
+}
+
+fn render_textfield_size_header_cell(label: &'static str, muted_text: gpui::Hsla) -> AnyElement {
+    div()
+        .w_full()
+        .h_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(label)
+        .into_any_element()
+}
+
+fn render_textfield_cell(
+    template: &Arc<dyn TextFieldTemplate>,
+    theme: Arc<dyn TextFieldTheme>,
+    sample: InputTextFieldSample,
+    style_id: &str,
+    size: ControlSize,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
+    let id = SharedString::from(format!(
+        "theme-studio-textfield-preview-{}-{}-{}",
+        style_id,
+        sample.id,
+        button_size_id(size)
+    ));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview");
-    let look = input_textfield_look(&theme, sample.state, sample.enabled, window);
+    let look = input_textfield_look(&theme, sample.state, sample.enabled, size, window);
     let character_offsets =
-        input_textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, window);
+        input_textfield_character_offsets(value.as_ref(), theme, sample.state, sample.enabled, size, window);
+    let prefix_icon = ControlIcon::Lucide(LucideIcon::Search);
     let model = TextFieldRenderModel {
         id: &id,
         placeholder: &placeholder,
         value: &value,
-        prefix_icon: None,
+        prefix_icon: Some(&prefix_icon),
         variant: TextFieldVariant::Standard,
         enabled: sample.enabled,
         full_width: false,
@@ -85,13 +226,11 @@ fn render_input_textfield_sample(
     };
 
     div()
-        .w(px(180.0))
+        .w(px(152.0))
         .flex()
-        .flex_col()
         .items_center()
-        .gap(px(6.0))
+        .justify_center()
         .child(template.render(&model, input_textfield_handlers(), window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 
@@ -131,10 +270,11 @@ fn input_textfield_look(
     theme: &Arc<dyn TextFieldTheme>,
     state: TextFieldState,
     enabled: bool,
+    size: ControlSize,
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldLook {
-    let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(TextFieldVariant::Standard, state, enabled, &scale)
+    let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
+    theme.resolve_look(TextFieldVariant::Standard, state, enabled, size, &scale)
 }
 
 fn input_textfield_character_offsets(
@@ -142,9 +282,10 @@ fn input_textfield_character_offsets(
     theme: Arc<dyn TextFieldTheme>,
     state: TextFieldState,
     enabled: bool,
+    size: ControlSize,
     window: &mut Window,
 ) -> Vec<f32> {
-    let look = input_textfield_look(&theme, state, enabled, window);
+    let look = input_textfield_look(&theme, state, enabled, size, window);
     let run = TextRun {
         len: value.len(),
         font: {

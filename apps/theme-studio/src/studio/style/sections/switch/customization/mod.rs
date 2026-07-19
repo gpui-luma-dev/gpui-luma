@@ -107,8 +107,9 @@ fn labeled_track_content(
 ) -> impl Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
         let tokens = look.mode_tokens();
-        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state);
-        let on_palette = switch_look(tokens.as_ref(), look.mode(), style, true, InteractionState::default());
+        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state, model.size);
+        let on_palette =
+            switch_look(tokens.as_ref(), look.mode(), style, true, InteractionState::default(), model.size);
         let state_label = if model.data { "ON" } else { "OFF" };
         let state_label_color = if model.data && !model.state.disabled {
             on_palette.thumb_background
@@ -139,7 +140,7 @@ fn icon_thumb_content(
 ) -> impl Fn(&ButtonRenderModel<bool>, &mut App) -> AnyElement + Send + Sync + 'static {
     move |model, _| {
         let tokens = look.mode_tokens();
-        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state);
+        let palette = switch_look(tokens.as_ref(), look.mode(), style, model.data, model.state, model.size);
         let icon = if model.data { LucideIcon::Check } else { LucideIcon::X };
         div().text_color(palette.track_background).child(render_lucide_icon(icon, 11.0)).into_any_element()
     }

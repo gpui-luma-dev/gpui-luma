@@ -7,7 +7,7 @@ use lucide_icons::Icon as LucideIcon;
 
 use super::{FlatTreeNode, TreeViewRenderModel, TreeViewTheme, default_tree_view_theme};
 use crate::theme::layout::snap_to_pixel;
-use crate::theme::{ControlSize, LayoutCacheKey, LumaLayoutCacheExt};
+use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt};
 
 pub type TreeViewHoverHandler = Box<dyn Fn(&bool, &mut Window, &mut App) + 'static>;
 pub type TreeViewMouseDownHandler = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App) + 'static>;
@@ -152,11 +152,11 @@ where
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
-            LayoutCacheKey { size: ControlSize::Md, scale_factor_bits: scale_factor.to_bits() },
-            |metrics| super::theme::TreeViewScale::compute(ControlSize::Md, metrics, scale_factor),
+            LayoutCacheKey { size: node.size, scale_factor_bits: scale_factor.to_bits() },
+            |metrics| super::theme::TreeViewScale::compute(node.size, metrics, scale_factor),
         );
 
-        let palette = self.theme.resolve_row(node.state.interaction_state(), node.state.selected);
+        let palette = self.theme.resolve_row(node.state.interaction_state(), node.state.selected, node.size);
         let label_size = palette.typography.size;
         let icon_size = snap_to_pixel(label_size * 0.85, scale_factor);
         let chevron_size = snap_to_pixel(label_size * 0.65, scale_factor);

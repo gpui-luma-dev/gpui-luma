@@ -59,6 +59,7 @@ impl ComboBoxControl {
         let textfield = text_selection::new(format!("{}-textfield", model.id))
             .placeholder(model.placeholder.clone())
             .enabled(model.enabled)
+            .size(model.size)
             .full_width(model.full_width)
             .clean_on_escape(model.clean_on_escape)
             .propagate_home_end_to_parent(true)
@@ -433,6 +434,12 @@ impl ComboBoxControl {
         }
     }
 
+    pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.model.size = size;
+        self.textfield.update(cx, |textfield, cx| textfield.set_size(size, cx));
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if self.model.enabled == enabled {
             return;
@@ -486,8 +493,8 @@ impl ComboBoxControl {
 impl Render for ComboBoxControl {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let tokens = crate::theme::ThemeTokens::default();
-        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve();
-        let look = (self.model.popup_look_provider)();
+        let autocomplete_look = DefaultAutocompleteTextBoxTheme::new(tokens.clone()).resolve(self.model.size);
+        let look = (self.model.popup_look_provider)(self.model.size);
         let selected_label = self
             .behavior
             .state
@@ -501,11 +508,8 @@ impl Render for ComboBoxControl {
                 crate::controls::textfield::TextFieldVariant::Standard,
                 crate::controls::textfield::TextFieldState::default(),
                 true,
-                &crate::theme::StandardBoxScale::compute(
-                    crate::theme::ControlSize::Md,
-                    &textfield_theme.metrics(),
-                    1.0,
-                ),
+                self.model.size,
+                &crate::theme::StandardBoxScale::compute(self.model.size, &textfield_theme.metrics(), 1.0),
             );
             let mut text_font = font(".SystemUIFont");
             text_font.weight = textfield_look.typography.weight;

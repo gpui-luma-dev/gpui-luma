@@ -422,7 +422,7 @@ fn render_selector_autocomplete_trigger(
     let autocomplete_template = default_autocomplete_textbox_template();
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = look.autocomplete_textbox_theme().resolve();
+    let status_theme = look.autocomplete_textbox_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
 
     let model = AutocompleteTextBoxRenderModel {
@@ -482,7 +482,7 @@ fn render_selector_combobox_trigger(
     let combobox_template = default_combobox_template();
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = look.autocomplete_textbox_theme().resolve();
+    let status_theme = look.autocomplete_textbox_theme().resolve(size);
     let popup_look = look.selector_items_panel_look(size);
     let popup_bounds = (state.id == "pressed")
         .then(|| gpui::Bounds::new(gpui::point(px(0.0), px(0.0)), gpui::size(px(SELECTOR_TRIGGER_WIDTH), px(32.0))));
@@ -946,7 +946,7 @@ fn selector_preview_textfield_look(
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(size, &theme.metrics(), window.scale_factor());
-    apply_selector_preview_textfield_size(look, theme.resolve_look(variant, state, enabled, &scale), size)
+    apply_selector_preview_textfield_size(look, theme.resolve_look(variant, state, enabled, size, &scale), size)
 }
 
 fn render_selector_combobox_popup_preview_from_templates(

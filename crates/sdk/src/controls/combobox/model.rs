@@ -17,7 +17,7 @@ use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_i
 use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 use crate::theme::{ControlSize, ThemeTokens};
 
-pub type ComboBoxPopupLookProvider = Arc<dyn Fn() -> SelectorItemsPanelLook + Send + Sync + 'static>;
+pub type ComboBoxPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItemsPanelLook + Send + Sync + 'static>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
 pub enum TypingPolicy {
@@ -32,6 +32,7 @@ pub struct ComboBoxModel {
     pub(crate) items: Vec<SelectionItem>,
     pub(crate) placeholder: SharedString,
     pub(crate) enabled: bool,
+    pub(crate) size: ControlSize,
     pub(crate) full_width: bool,
     pub(crate) clean_on_escape: bool,
     pub(crate) typing_policy: TypingPolicy,
@@ -61,6 +62,7 @@ impl ComboBoxBuilder {
                 items: items.into_iter().collect(),
                 placeholder: SharedString::from("Select…"),
                 enabled: true,
+                size: ControlSize::Md,
                 full_width: true,
                 clean_on_escape: true,
                 typing_policy: TypingPolicy::Flexible,
@@ -75,9 +77,7 @@ impl ComboBoxBuilder {
                 items_template: default_combobox_items_template(),
                 panel_template: default_combobox_panel_template(),
                 item_template: None,
-                popup_look_provider: Arc::new(|| {
-                    default_selector_items_panel_look(&ThemeTokens::default(), ControlSize::Md)
-                }),
+                popup_look_provider: Arc::new(|size| default_selector_items_panel_look(&ThemeTokens::default(), size)),
             },
         }
     }
@@ -94,6 +94,11 @@ impl ComboBoxBuilder {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.model.enabled = enabled;
+        self
+    }
+
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.model.size = size;
         self
     }
 

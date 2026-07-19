@@ -12,6 +12,8 @@
 use gpui_luma::controls::switch::{SwitchPalette, SwitchScale};
 use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, MetricTokens, ThemeMode, snap_to_pixel};
 
+use super::apply_button_metrics_typography;
+
 use crate::look_context::LookContext;
 use crate::focus::focus_adorner;
 use crate::provenance::{LookResolver, ResolvedColor};
@@ -134,6 +136,7 @@ pub fn switch_look(
     style: ShadcnButtonStyle,
     on: bool,
     state: InteractionState,
+    size: ControlSize,
 ) -> SwitchPalette {
     let content_only = style == ShadcnButtonStyle::ContentOnly;
     let indicator_style = if content_only {
@@ -181,7 +184,11 @@ pub fn switch_look(
         },
         label_color: colors.label_color.hsla(),
         adorner,
-        label_typography: typography.text.label,
+        label_typography: {
+            let mut label_typography = typography.text.label;
+            apply_button_metrics_typography(&mut label_typography, mode, size);
+            label_typography
+        },
         label_font_family: typography.font.sans.family.clone().into(),
     }
 }
@@ -202,7 +209,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{InteractionState, ThemeMode};
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::controls::button::ShadcnButtonStyle;
     use crate::catalog::CssTokenMap;
@@ -231,7 +238,14 @@ mod tests {
     #[test]
     fn switch_look_resolves_stylesheet_shadow() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let look = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
 
         assert!(!look.thumb_shadow.is_empty());
     }
@@ -245,6 +259,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { disabled: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert!(look.thumb_shadow.is_empty());
@@ -254,7 +269,14 @@ mod tests {
     fn off_switch_uses_input_track_and_background_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let look = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
 
         let input = catalog.color("input").expect("input");
         let border = catalog.color("border").expect("border");
@@ -269,7 +291,14 @@ mod tests {
     fn on_switch_uses_style_track_and_card_thumb() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let look = switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let look = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            true,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
 
         let primary = catalog.color("primary").expect("primary");
         let primary_foreground = catalog.color("primary-foreground").expect("primary-foreground");
@@ -289,6 +318,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState::default(),
+            ControlSize::Md,
         );
 
         let catalog = &theme.mode_tokens().catalog;
@@ -315,6 +345,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState::default(),
+            ControlSize::Md,
         );
 
         let catalog = &theme.mode_tokens().catalog;
@@ -328,14 +359,21 @@ mod tests {
     fn hover_and_pressed_match_default_track_for_off_switch() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let default =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
+        let default = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
         let hovered = switch_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { hovered: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
         let pressed = switch_look(
             &mode,
@@ -343,6 +381,7 @@ mod tests {
             ShadcnButtonStyle::Primary,
             false,
             InteractionState { hovered: true, pressed: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(default.track_background, hovered.track_background);
@@ -354,10 +393,22 @@ mod tests {
     fn primary_and_secondary_share_off_look() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let primary =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, false, InteractionState::default());
-        let secondary =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, false, InteractionState::default());
+        let primary = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
+        let secondary = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Secondary,
+            false,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
 
         assert_eq!(primary.track_background, secondary.track_background);
         assert_eq!(primary.thumb_background, secondary.thumb_background);
@@ -387,10 +438,22 @@ mod tests {
     fn on_primary_and_secondary_use_distinct_style_colors() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let primary =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
-        let secondary =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Secondary, true, InteractionState::default());
+        let primary = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            true,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
+        let secondary = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Secondary,
+            true,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
 
         assert_eq!(primary.track_background, catalog.color("primary").expect("primary"));
         assert_eq!(secondary.track_background, catalog.color("secondary").expect("secondary"));
@@ -434,14 +497,21 @@ mod tests {
     #[test]
     fn content_only_switch_keeps_primary_track_without_adorners_or_shadow() {
         let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
-        let primary =
-            switch_look(&mode, ThemeMode::Light, ShadcnButtonStyle::Primary, true, InteractionState::default());
+        let primary = switch_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            true,
+            InteractionState::default(),
+            ControlSize::Md,
+        );
         let content_only = switch_look(
             &mode,
             ThemeMode::Light,
             ShadcnButtonStyle::ContentOnly,
             true,
             InteractionState { focused: true, ..InteractionState::default() },
+            ControlSize::Md,
         );
 
         assert_eq!(content_only.track_background, primary.track_background);

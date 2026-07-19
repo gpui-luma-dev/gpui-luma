@@ -502,16 +502,16 @@ impl ShadcnLook {
         templates::input_textfield_template(Arc::clone(self))
     }
 
-    pub fn soft_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
-        templates::soft_textfield_theme(Arc::clone(self))
+    pub fn surface_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
+        templates::surface_textfield_theme(Arc::clone(self))
     }
 
-    pub fn filled_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
-        templates::filled_textfield_theme(Arc::clone(self))
+    pub fn primary_textfield_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTheme> {
+        templates::primary_textfield_theme(Arc::clone(self))
     }
 
-    pub fn filled_textfield_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
-        templates::filled_textfield_template(Arc::clone(self))
+    pub fn primary_textfield_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textfield::TextFieldTemplate> {
+        templates::primary_textfield_template(Arc::clone(self))
     }
 
     pub fn textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
@@ -522,16 +522,16 @@ impl ShadcnLook {
         templates::textarea_theme(Arc::clone(self))
     }
 
-    pub fn soft_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
-        templates::soft_textarea_theme(Arc::clone(self))
+    pub fn surface_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
+        templates::surface_textarea_theme(Arc::clone(self))
     }
 
-    pub fn filled_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
-        templates::filled_textarea_theme(Arc::clone(self))
+    pub fn primary_textarea_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTheme> {
+        templates::primary_textarea_theme(Arc::clone(self))
     }
 
-    pub fn filled_textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
-        templates::filled_textarea_template(Arc::clone(self))
+    pub fn primary_textarea_template(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::textarea::TextAreaTemplate> {
+        templates::primary_textarea_template(Arc::clone(self))
     }
 
     pub fn autocomplete_textbox_theme(
@@ -670,6 +670,13 @@ impl ShadcnLook {
         self: &Arc<Self>,
     ) -> gpui_luma::controls::control_group::ControlGroupTemplate<gpui_luma::controls::listbox::ListBoxItem> {
         templates::listbox_template(Arc::clone(self))
+    }
+
+    pub fn listbox_template_for_size(
+        self: &Arc<Self>,
+        size: gpui_luma::theme::ControlSize,
+    ) -> gpui_luma::controls::control_group::ControlGroupTemplate<gpui_luma::controls::listbox::ListBoxItem> {
+        gpui_luma::controls::listbox::listbox_template_with_theme_and_size(self.listbox_theme(), size)
     }
 
     pub fn listbox_theme(self: &Arc<Self>) -> Arc<dyn gpui_luma::controls::listbox::ListBoxTheme> {

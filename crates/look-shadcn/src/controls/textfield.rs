@@ -1,18 +1,18 @@
 //! Text field property mappings for shadcn-inspired inputs:
 //!
-//! **Surface** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
+//! **Outline** (shadcn Input): `border-border`, light transparent fill, dark `input/30`,
 //! `selection:bg-primary`, `selection:text-primary-foreground`, `placeholder:text-muted-foreground`.
 //!
-//! **Input** (selector / combobox triggers): same fill as Surface (`transparent` light,
+//! **Input** (selector / combobox triggers): same fill as Outline (`transparent` light,
 //! `input/30` dark; hover `input/50` in selector palette). Opaque controls use `border-border`.
 //! Used by selector, combobox, search_selector, and autocomplete — not standalone text fields.
 //!
-//! **Filled**: bordered surface with opaque `background` fill and `shadow-xs` elevation.
+//! **Primary**: bordered control with opaque `background` fill and `shadow-xs` elevation.
 //!
-//! **Soft**: filled `muted` background, no border, same text/selection tokens.
+//! **Surface**: filled `muted` background, no border, same text/selection tokens.
 
-use gpui_luma::controls::textfield::{TextFieldPalette, TextFieldState};
-use gpui_luma::theme::{InteractionState, ThemeMode};
+use gpui_luma::controls::textfield::{TextFieldLook, TextFieldPalette, TextFieldState, compose_textfield_look};
+use gpui_luma::theme::{ControlSize, InteractionState, LumaTextStyle, StandardBoxScale, ThemeMode};
 
 use crate::look_context::LookContext;
 use crate::focus::focus_ring_color;
@@ -26,20 +26,20 @@ use crate::stylesheet::{
 
 fn textfield_style_key(style: ShadcnTextFieldStyle) -> &'static str {
     match style {
-        ShadcnTextFieldStyle::Surface => "surface",
+        ShadcnTextFieldStyle::Outline => "outline",
         ShadcnTextFieldStyle::Input => "input",
-        ShadcnTextFieldStyle::Filled => "filled",
-        ShadcnTextFieldStyle::Soft => "soft",
+        ShadcnTextFieldStyle::Primary => "primary",
+        ShadcnTextFieldStyle::Surface => "surface",
     }
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ShadcnTextFieldStyle {
     #[default]
-    Surface,
+    Outline,
     Input,
-    Filled,
-    Soft,
+    Primary,
+    Surface,
 }
 
 #[derive(Clone, Debug)]
@@ -120,6 +120,17 @@ pub fn textfield_palette(
     state: TextFieldState,
     enabled: bool,
 ) -> TextFieldPalette {
+    textfield_palette_for_size(mode, theme_mode, style, state, enabled, ControlSize::Md)
+}
+
+pub fn textfield_palette_for_size(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextFieldState,
+    enabled: bool,
+    size: ControlSize,
+) -> TextFieldPalette {
     let ctx = LookContext::new(mode, theme_mode, InteractionState::default());
     let stylesheet = embedded_stylesheet();
     let catalog = ctx.catalog();
@@ -148,6 +159,9 @@ pub fn textfield_palette(
         background = hover_fill.hsla();
     }
 
+    let mut text_style = typography.text.body;
+    apply_textfield_control_size_typography(&mut text_style, mode, size);
+
     TextFieldPalette {
         background,
         foreground: colors.foreground.hsla(),
@@ -159,9 +173,31 @@ pub fn textfield_palette(
         caret: colors.caret.hsla(),
         focus_ring,
         shadow,
-        typography: typography.text.body,
+        typography: text_style,
         font_family: typography.font.sans.family.clone().into(),
     }
+}
+
+/// Scales text-field typography from `button.metrics.*.font_size` (same curve as buttons/selectors).
+pub fn apply_textfield_control_size_typography(
+    typography: &mut LumaTextStyle,
+    mode: &ShadcnModeTokens,
+    size: ControlSize,
+) {
+    super::apply_button_metrics_typography(typography, mode, size);
+}
+
+pub fn textfield_look(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextFieldState,
+    enabled: bool,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+) -> TextFieldLook {
+    let palette = textfield_palette_for_size(mode, theme_mode, style, state, enabled, size);
+    compose_textfield_look(&palette, scale, mode.metrics.border_width.default)
 }
 
 #[cfg(test)]
@@ -170,13 +206,13 @@ mod tests {
     use std::collections::BTreeMap;
 
     use gpui_luma::controls::textfield::TextFieldState;
-    use gpui_luma::theme::ThemeMode;
+    use gpui_luma::theme::{ControlSize, ThemeMode};
 
     use crate::catalog::CssTokenMap;
     use crate::color::with_alpha;
     use crate::mode::ShadcnModeTokens;
 
-    use super::{ShadcnTextFieldStyle, textfield_palette};
+    use super::{ShadcnTextFieldStyle, textfield_palette, textfield_palette_for_size};
 
     fn sample_catalog() -> CssTokenMap {
         CssTokenMap::from_map(BTreeMap::from([
@@ -243,7 +279,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Outline, TextFieldState::default(), true);
 
         assert_eq!(look.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
         assert_eq!(look.border, catalog.color("border").expect("border"));
@@ -257,7 +293,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Filled, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Primary, TextFieldState::default(), true);
 
         assert_eq!(look.background, catalog.color("background").expect("background"));
         assert_eq!(look.border, catalog.color("border").expect("border"));
@@ -269,7 +305,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Filled, TextFieldState::default(), false);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Primary, TextFieldState::default(), false);
 
         assert_eq!(look.background, catalog.color("muted").expect("muted"));
         assert!(look.shadow.is_none());
@@ -280,7 +316,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
         let look =
-            textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Dark, ShadcnTextFieldStyle::Outline, TextFieldState::default(), true);
         let input = catalog.color("input").expect("input");
 
         assert_eq!(look.background, with_alpha(input, 0.30));
@@ -292,7 +328,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
 
         assert_eq!(look.background, catalog.color("muted").expect("muted"));
         assert_eq!(look.border, gpui::hsla(0.0, 0.0, 0.0, 0.0));
@@ -304,11 +340,47 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Outline, TextFieldState::default(), true);
         let mut hovered = TextFieldState::default();
         hovered.hovered = true;
-        let look = textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, hovered, true);
+        let look = textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Outline, hovered, true);
 
         assert_eq!(look.background, default.background);
+    }
+
+    #[test]
+    fn palette_typography_uses_stylesheet_font_size() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let sm = textfield_palette_for_size(
+            &mode,
+            ThemeMode::Light,
+            ShadcnTextFieldStyle::Outline,
+            TextFieldState::default(),
+            true,
+            ControlSize::Sm,
+        );
+        let md = textfield_palette_for_size(
+            &mode,
+            ThemeMode::Light,
+            ShadcnTextFieldStyle::Outline,
+            TextFieldState::default(),
+            true,
+            ControlSize::Md,
+        );
+        let lg = textfield_palette_for_size(
+            &mode,
+            ThemeMode::Light,
+            ShadcnTextFieldStyle::Outline,
+            TextFieldState::default(),
+            true,
+            ControlSize::Lg,
+        );
+
+        assert!((sm.typography.size - 12.0).abs() < f32::EPSILON);
+        assert!((md.typography.size - 14.0).abs() < f32::EPSILON);
+        assert!((lg.typography.size - 16.0).abs() < f32::EPSILON);
+        assert!(lg.typography.line_height > md.typography.line_height);
+        assert!(md.typography.line_height > sm.typography.line_height);
     }
 }

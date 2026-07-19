@@ -323,7 +323,7 @@ fn render_autocomplete_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = preview.look.autocomplete_textbox_theme().resolve();
+    let status_theme = preview.look.autocomplete_textbox_theme().resolve(ControlSize::Md);
     let popup_look = preview.look.selector_items_panel_look(ControlSize::Md);
 
     let model = AutocompleteTextBoxRenderModel {
@@ -360,7 +360,7 @@ fn render_combobox_trigger(
 ) -> AnyElement {
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
-    let status_theme = preview.look.autocomplete_textbox_theme().resolve();
+    let status_theme = preview.look.autocomplete_textbox_theme().resolve(ControlSize::Md);
     let popup_look = preview.look.selector_items_panel_look(ControlSize::Md);
 
     let popup_bounds = (state.id == "pressed")
@@ -745,7 +745,7 @@ fn preview_textfield_look(
     window: &Window,
 ) -> gpui_luma::controls::textfield::TextFieldLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(variant, state, enabled, &scale)
+    theme.resolve_look(variant, state, enabled, ControlSize::Md, &scale)
 }
 
 fn noop_mouse_move(_: &gpui::MouseMoveEvent, _: &mut Window, _: &mut App) {}

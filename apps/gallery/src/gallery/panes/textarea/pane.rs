@@ -318,9 +318,9 @@ fn render_telemetry(
 #[derive(Clone)]
 struct TextAreaStatePreview {
     look: Arc<ShadcnLook>,
+    outline_template: Arc<dyn TextAreaTemplate>,
+    primary_template: Arc<dyn TextAreaTemplate>,
     surface_template: Arc<dyn TextAreaTemplate>,
-    filled_template: Arc<dyn TextAreaTemplate>,
-    soft_template: Arc<dyn TextAreaTemplate>,
 }
 
 #[derive(Clone, Copy)]
@@ -335,9 +335,9 @@ impl TextAreaStatePreview {
     fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
             look: look.clone(),
-            surface_template: Arc::new(ThemedTextAreaTemplate::new(look.textarea_theme())),
-            filled_template: Arc::new(ThemedTextAreaTemplate::new(look.filled_textarea_theme())),
-            soft_template: Arc::new(ThemedTextAreaTemplate::new(look.soft_textarea_theme())),
+            outline_template: Arc::new(ThemedTextAreaTemplate::new(look.textarea_theme())),
+            primary_template: Arc::new(ThemedTextAreaTemplate::new(look.primary_textarea_theme())),
+            surface_template: Arc::new(ThemedTextAreaTemplate::new(look.surface_textarea_theme())),
         }
     }
 }
@@ -386,12 +386,12 @@ impl Render for TextAreaStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Surface variant state preview"),
+                    .child("Outline variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.iter().copied().map(|sample| {
                     render_state_sample(
-                        &self.surface_template,
+                        &self.outline_template,
                         self.look.textarea_theme(),
                         sample,
                         chrome.muted_text,
@@ -406,13 +406,13 @@ impl Render for TextAreaStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Filled variant state preview"),
+                    .child("Primary variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.iter().copied().map(|sample| {
                     render_state_sample(
-                        &self.filled_template,
-                        self.look.filled_textarea_theme(),
+                        &self.primary_template,
+                        self.look.primary_textarea_theme(),
                         sample,
                         chrome.muted_text,
                         window,
@@ -426,13 +426,13 @@ impl Render for TextAreaStatePreview {
                     .line_height(px(16.0))
                     .font_weight(gpui::FontWeight::MEDIUM)
                     .text_color(chrome.muted_text)
-                    .child("Soft variant state preview"),
+                    .child("Surface variant state preview"),
             )
             .child(div().flex().flex_wrap().items_start().justify_center().gap(px(12.0)).children(
                 samples.iter().copied().map(|sample| {
                     render_state_sample(
-                        &self.soft_template,
-                        self.look.soft_textarea_theme(),
+                        &self.surface_template,
+                        self.look.surface_textarea_theme(),
                         sample,
                         chrome.muted_text,
                         window,
@@ -461,6 +461,7 @@ fn render_state_sample(
         value: &value,
         enabled: sample.enabled,
         full_width: true,
+        size: ControlSize::Md,
         rows: 3,
         state: sample.state,
         caret_visible: sample.state.focused && sample.enabled,
@@ -552,7 +553,7 @@ fn preview_textarea_look(
     window: &Window,
 ) -> gpui_luma::controls::textarea::TextAreaLook {
     let scale = StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), window.scale_factor());
-    theme.resolve_look(state, enabled, &scale)
+    theme.resolve_look(state, enabled, ControlSize::Md, &scale)
 }
 
 fn textarea_preview_handlers() -> TextAreaTemplateHandlers {

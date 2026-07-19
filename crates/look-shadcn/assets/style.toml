@@ -705,18 +705,18 @@ thumb_border = "@action_foreground"
 # 6. TEXTFIELD
 # =====================================================================
 [[textfield.elevation_rules]]
-style = "filled"
+style = "primary"
 shadow = "shadow-xs"
 
 [[textfield.elevation_rules]]
+style = "outline"
+shadow = "none"
+
+[[textfield.elevation_rules]]
 style = "surface"
 shadow = "none"
 
 [[textfield.elevation_rules]]
-style = "soft"
-shadow = "none"
-
-[[textfield.elevation_rules]]
 style = "input"
 shadow = "none"
 
@@ -789,7 +789,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "filled"
+style = "primary"
 enabled = false
 background = "muted"
 foreground = "muted-foreground"
@@ -801,7 +801,7 @@ selection_foreground = "muted-foreground"
 caret = "muted-foreground"
 
 [[textfield.color_rules]]
-style = "filled"
+style = "primary"
 enabled = true
 invalid = false
 background = "background"
@@ -814,7 +814,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "filled"
+style = "primary"
 enabled = true
 invalid = true
 background = "background"
@@ -827,7 +827,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "surface"
+style = "outline"
 enabled = false
 background = "muted"
 foreground = "muted-foreground"
@@ -839,7 +839,7 @@ selection_foreground = "muted-foreground"
 caret = "muted-foreground"
 
 [[textfield.color_rules]]
-style = "soft"
+style = "surface"
 enabled = false
 background = "muted"
 foreground = "muted-foreground"
@@ -851,7 +851,7 @@ selection_foreground = "muted-foreground"
 caret = "muted-foreground"
 
 [[textfield.color_rules]]
-style = "soft"
+style = "surface"
 enabled = true
 background = "muted"
 foreground = "foreground"
@@ -863,7 +863,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "surface"
+style = "outline"
 enabled = true
 invalid = false
 mode = "light"
@@ -877,7 +877,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "surface"
+style = "outline"
 enabled = true
 invalid = false
 mode = "dark"
@@ -891,7 +891,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "surface"
+style = "outline"
 enabled = true
 invalid = true
 mode = "light"
@@ -905,7 +905,7 @@ selection_foreground = "primary-foreground"
 caret = "foreground"
 
 [[textfield.color_rules]]
-style = "surface"
+style = "outline"
 enabled = true
 invalid = true
 mode = "dark"

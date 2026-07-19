@@ -56,7 +56,7 @@ pub struct AccordionContentPalette {
 }
 
 pub trait AccordionTheme: Send + Sync {
-    fn resolve_trigger(&self, state: InteractionState) -> AccordionPalette;
+    fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette;
     fn resolve_content(&self, expanded: bool) -> AccordionContentPalette;
     fn metrics(&self) -> MetricTokens;
 }
@@ -79,7 +79,7 @@ impl DefaultAccordionTheme {
 }
 
 impl AccordionTheme for DefaultAccordionTheme {
-    fn resolve_trigger(&self, state: InteractionState) -> AccordionPalette {
+    fn resolve_trigger(&self, state: InteractionState, size: ControlSize) -> AccordionPalette {
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
         let layer = state.layer();
@@ -96,6 +96,9 @@ impl AccordionTheme for DefaultAccordionTheme {
             palette.app.foreground
         };
 
+        let mut trigger_typography = typography.text.label;
+        crate::controls::textfield::apply_control_size_typography(&mut trigger_typography, typography, size);
+
         AccordionPalette {
             background,
             foreground,
@@ -103,7 +106,7 @@ impl AccordionTheme for DefaultAccordionTheme {
             icon_color: foreground,
             chevron_color: palette.navigation.muted_foreground,
             adorner: None,
-            typography: typography.text.label,
+            typography: trigger_typography,
             font_family: typography.font.sans.family.clone().into(),
         }
     }

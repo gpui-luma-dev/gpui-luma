@@ -49,7 +49,7 @@ pub struct SwitchPalette {
 pub type SwitchLook = SwitchPalette;
 
 pub trait SwitchTheme: Send + Sync {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette;
+    fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette;
     fn metrics(&self) -> MetricTokens;
     /// Look-owned geometry for `size`. Defaults to [`SwitchScale::compute`].
     fn scale(&self, size: ControlSize, scale_factor: f32) -> SwitchScale {
@@ -75,7 +75,7 @@ impl DefaultSwitchTheme {
 }
 
 impl SwitchTheme for DefaultSwitchTheme {
-    fn resolve(&self, on: bool, state: InteractionState) -> SwitchPalette {
+    fn resolve(&self, on: bool, state: InteractionState, size: ControlSize) -> SwitchPalette {
         let palette = &self.tokens.palette;
         let metrics = &self.tokens.metrics;
         let typography = &self.tokens.typography;
@@ -128,7 +128,11 @@ impl SwitchTheme for DefaultSwitchTheme {
                 palette.app.foreground
             },
             adorner,
-            label_typography: typography.text.label,
+            label_typography: {
+                let mut label_typography = typography.text.label;
+                crate::controls::textfield::apply_control_size_typography(&mut label_typography, typography, size);
+                label_typography
+            },
             label_font_family: typography.font.sans.family.clone().into(),
         }
     }

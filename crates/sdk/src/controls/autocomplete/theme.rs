@@ -15,7 +15,7 @@ pub struct AutocompleteTextBoxLook {
 }
 
 pub trait AutocompleteTextBoxTheme: Send + Sync {
-    fn resolve(&self) -> AutocompleteTextBoxLook;
+    fn resolve(&self, size: ControlSize) -> AutocompleteTextBoxLook;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -36,8 +36,8 @@ impl DefaultAutocompleteTextBoxTheme {
 }
 
 impl AutocompleteTextBoxTheme for DefaultAutocompleteTextBoxTheme {
-    fn resolve(&self) -> AutocompleteTextBoxLook {
-        default_autocomplete_textbox_look(&self.tokens, ControlSize::Md)
+    fn resolve(&self, size: ControlSize) -> AutocompleteTextBoxLook {
+        default_autocomplete_textbox_look(&self.tokens, size)
     }
 }
 

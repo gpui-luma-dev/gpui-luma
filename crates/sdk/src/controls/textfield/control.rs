@@ -145,6 +145,12 @@ impl TextFieldControl {
         cx.notify();
     }
 
+    pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.model.size = size;
+        self.layout_cache = None;
+        cx.notify();
+    }
+
     pub fn set_value(&mut self, value: impl Into<String>, cx: &mut Context<Self>) {
         self.model.value = value.into().into();
         self.state.cursor = self.model.value.chars().count();
@@ -202,6 +208,7 @@ impl TextFieldControl {
             self.model.variant,
             self.state,
             self.model.enabled,
+            self.model.size,
             window.scale_factor(),
             cx,
         );

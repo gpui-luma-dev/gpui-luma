@@ -135,6 +135,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             TextFieldVariant::Standard,
             model.trigger_state,
             model.enabled,
+            model.size,
             &StandardBoxScale::compute(model.size, &model.trigger_theme.metrics(), window.scale_factor()),
         );
         if let Some(typography) = model.trigger_typography_override {

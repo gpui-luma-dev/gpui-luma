@@ -1,10 +1,10 @@
 //! Text area — surface/filled/soft variants share the text field token resolver.
 
-use gpui_luma::controls::textarea::{TextAreaPalette, TextAreaState};
+use gpui_luma::controls::textarea::{TextAreaLook, TextAreaPalette, TextAreaState, compose_textarea_look};
 use gpui_luma::controls::textfield::TextFieldState;
-use gpui_luma::theme::ThemeMode;
+use gpui_luma::theme::{ControlSize, StandardBoxScale, ThemeMode};
 
-use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
+use super::textfield::{ShadcnTextFieldStyle, textfield_palette, textfield_palette_for_size};
 use crate::mode::ShadcnModeTokens;
 
 pub fn textarea_palette(
@@ -15,6 +15,37 @@ pub fn textarea_palette(
     enabled: bool,
 ) -> TextAreaPalette {
     textarea_from_textfield(textfield_palette(mode, theme_mode, style, textfield_state_from(state), enabled))
+}
+
+pub fn textarea_palette_for_size(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextAreaState,
+    enabled: bool,
+    size: ControlSize,
+) -> TextAreaPalette {
+    textarea_from_textfield(textfield_palette_for_size(
+        mode,
+        theme_mode,
+        style,
+        textfield_state_from(state),
+        enabled,
+        size,
+    ))
+}
+
+pub fn textarea_look(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    style: ShadcnTextFieldStyle,
+    state: TextAreaState,
+    enabled: bool,
+    size: ControlSize,
+    scale: &StandardBoxScale,
+) -> TextAreaLook {
+    let palette = textarea_palette_for_size(mode, theme_mode, style, state, enabled, size);
+    compose_textarea_look(&palette, scale, mode.metrics.border_width.default)
 }
 
 fn textfield_state_from(state: TextAreaState) -> TextFieldState {
@@ -83,7 +114,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let textfield =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Outline, TextFieldState::default(), true);
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
@@ -100,7 +131,7 @@ mod tests {
         let textarea = textarea_palette(
             &mode,
             ThemeMode::Light,
-            ShadcnTextFieldStyle::Filled,
+            ShadcnTextFieldStyle::Primary,
             gpui_luma::controls::textarea::TextAreaState::default(),
             true,
         );
@@ -115,7 +146,7 @@ mod tests {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let textfield =
-            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Soft, TextFieldState::default(), true);
+            textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Surface, TextFieldState::default(), true);
         let textarea = textarea_from_textfield(textfield);
 
         assert_eq!(textarea.background, catalog.color("muted").expect("muted"));

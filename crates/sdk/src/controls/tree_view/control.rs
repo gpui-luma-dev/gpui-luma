@@ -113,6 +113,16 @@ where
         self.rebuild_flat_cache(None, cx);
     }
 
+    pub fn set_size(&mut self, size: crate::theme::ControlSize, cx: &mut Context<Self>) {
+        self.model.size = size;
+        cx.notify();
+    }
+
+    pub fn set_template(&mut self, template: std::sync::Arc<dyn super::TreeViewTemplate<T>>, cx: &mut Context<Self>) {
+        self.model.template = template;
+        cx.notify();
+    }
+
     pub fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         if self.model.enabled == enabled {
             return;
@@ -345,6 +355,7 @@ where
             has_children: node.has_children,
             expanded: self.expanded_ids.contains(&node.id),
             enabled: item_enabled,
+            size: self.model.size,
             state,
             data: &node.data,
         };
@@ -562,6 +573,7 @@ where
             id: &self.model.id,
             selection_mode: self.model.selection_mode,
             enabled: self.model.enabled,
+            size: self.model.size,
             focus: ControlFocusState::from_focus_handle(self.model.enabled, &self.focus_handle, window),
         };
 

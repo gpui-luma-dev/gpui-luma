@@ -83,10 +83,10 @@ pub fn find_textfield_elevation_rule(
 
 fn textfield_style_key(style: crate::controls::ShadcnTextFieldStyle) -> &'static str {
     match style {
-        crate::controls::ShadcnTextFieldStyle::Surface => "surface",
+        crate::controls::ShadcnTextFieldStyle::Outline => "outline",
         crate::controls::ShadcnTextFieldStyle::Input => "input",
-        crate::controls::ShadcnTextFieldStyle::Filled => "filled",
-        crate::controls::ShadcnTextFieldStyle::Soft => "soft",
+        crate::controls::ShadcnTextFieldStyle::Primary => "primary",
+        crate::controls::ShadcnTextFieldStyle::Surface => "surface",
     }
 }
 
@@ -962,7 +962,7 @@ mod tests {
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
         assert_eq!(stylesheet.switch.elevation_rules.len(), 2);
         assert_eq!(stylesheet.slider.color_rules.len(), 8);
-        assert_eq!(stylesheet.scrollbar.color_rules.len(), 5);
+        assert_eq!(stylesheet.scrollbar.color_rules.len(), 8);
         assert_eq!(stylesheet.accordion.trigger.color_rules.len(), 5);
         assert_eq!(stylesheet.resizable_panels.color_rules.len(), 5);
         assert_eq!(stylesheet.listbox.list.color_rules.len(), 2);
@@ -989,8 +989,8 @@ mod tests {
         assert!(find_split_view_color_rule(stylesheet, false).is_some());
         assert!(find_control_group_list_color_rule(stylesheet, true).is_some());
         assert!(find_textfield_color_rule(stylesheet, "input", true, false, ThemeMode::Light).is_some());
-        assert!(find_textfield_color_rule(stylesheet, "filled", true, false, ThemeMode::Light).is_some());
-        assert!(find_textfield_elevation_rule(stylesheet, crate::controls::ShadcnTextFieldStyle::Filled).is_some());
+        assert!(find_textfield_color_rule(stylesheet, "primary", true, false, ThemeMode::Light).is_some());
+        assert!(find_textfield_elevation_rule(stylesheet, crate::controls::ShadcnTextFieldStyle::Primary).is_some());
         assert!(find_autocomplete_chrome_color_rule(stylesheet).is_some());
         assert!(find_checkbox_color_rule(stylesheet, true, InteractionLayer::Default).is_some());
         assert!(find_slider_color_rule(stylesheet, "primary", InteractionLayer::Hovered).is_some());
