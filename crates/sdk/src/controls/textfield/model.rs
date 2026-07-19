@@ -163,6 +163,12 @@ impl TextFieldBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::controls::textfield::{
+        TextFieldPalette, TextFieldState, TextFieldTheme, TextFieldVariant, ThemedTextFieldTemplate,
+        default_textfield_theme,
+    };
+    use crate::theme::{MetricTokens, ThemeTokens};
+    use gpui::hsla;
 
     #[test]
     fn with_template_modifier_wraps_template() {
@@ -172,5 +178,35 @@ mod tests {
             .with_template_modifier(|element, _| element);
 
         assert!(!Arc::ptr_eq(&builder.model.template, &template));
+    }
+
+    #[test]
+    fn with_template_modifier_forwards_resolve_look() {
+        struct MarkerTheme;
+
+        impl TextFieldTheme for MarkerTheme {
+            fn resolve(&self, _variant: TextFieldVariant, _state: TextFieldState, _enabled: bool) -> TextFieldPalette {
+                let mut palette =
+                    default_textfield_theme().resolve(TextFieldVariant::Standard, TextFieldState::default(), true);
+                palette.background = hsla(0.12, 1.0, 0.55, 1.0);
+                palette
+            }
+
+            fn metrics(&self) -> MetricTokens {
+                ThemeTokens::default().metrics
+            }
+        }
+
+        let base = Arc::new(ThemedTextFieldTemplate::new(Arc::new(MarkerTheme)));
+        let expected = base.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true);
+        let modified = TextFieldBuilder::new("textfield-test")
+            .template(base)
+            .with_template_modifier(|element, _| element)
+            .model
+            .template;
+        let look = modified.resolve_look(TextFieldVariant::Standard, TextFieldState::default(), true);
+
+        assert_eq!(look.background, expected.background);
+        assert_eq!(look.background, hsla(0.12, 1.0, 0.55, 1.0));
     }
 }

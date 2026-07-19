@@ -129,6 +129,21 @@ where
 }
 
 impl TextFieldTemplate for ModifiedTextFieldTemplate {
+    fn resolve_look(&self, variant: TextFieldVariant, state: TextFieldState, enabled: bool) -> TextFieldLook {
+        self.base.resolve_look(variant, state, enabled)
+    }
+
+    fn resolve_look_with_scale(
+        &self,
+        variant: TextFieldVariant,
+        state: TextFieldState,
+        enabled: bool,
+        scale_factor: f32,
+        cx: &mut App,
+    ) -> TextFieldLook {
+        self.base.resolve_look_with_scale(variant, state, enabled, scale_factor, cx)
+    }
+
     fn render(
         &self,
         model: &TextFieldRenderModel<'_>,
@@ -313,9 +328,13 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
                 .child(text_viewport);
         }
 
+        // Always fill the focus-ring root so a stretched ring cannot leave a content-sized
+        // entry box centered inside it (e.g. fixed-width hosts without full_width).
         let mut control = div()
             .id(format!("{}-control", model.id))
             .relative()
+            .w_full()
+            .min_w(px(0.0))
             .h(px(look.min_height))
             .flex()
             .items_center()
@@ -329,7 +348,6 @@ impl TextFieldTemplate for ThemedTextFieldTemplate {
             .line_height(px(look.typography.line_height))
             .font_family(look.font_family.clone())
             .font_weight(look.typography.weight)
-            .when(model.full_width, |root| root.w_full())
             .when(model.enabled, |root| root.cursor_text())
             .when(!model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
             .child(text_viewport);

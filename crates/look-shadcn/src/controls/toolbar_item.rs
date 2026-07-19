@@ -42,13 +42,14 @@ impl ToolbarTextFieldItemBuilder {
 
     pub fn spawn<M: 'static>(self, cx: &mut Context<M>) -> ToolbarItem {
         let width = self.width;
+        // Size the host and keep the field full-width so the control fill matches the
+        // focus ring (same pattern as search_selector / combobox embedded fields).
         let entity = self
             .look
             .textfield(format!("toolbar-field-{}", self.id))
             .placeholder(self.placeholder)
             .tab_stop(false)
-            .full_width(false)
-            .with_template_modifier(move |root, _| root.w(width).flex_none())
+            .full_width(true)
             .spawn(cx);
         let focus = entity.read(cx).focus_handle(cx);
         let render = entity.clone();

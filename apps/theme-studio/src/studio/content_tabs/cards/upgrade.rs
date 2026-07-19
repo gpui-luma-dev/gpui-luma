@@ -60,8 +60,9 @@ declare_form! {
             name_field: TextField = look.textfield("upgrade-name").placeholder("Name").full_width(true),
             email_field: TextField = look.textfield("upgrade-email").placeholder("Email").full_width(true),
             card_field: TextField = look.textfield("upgrade-card").placeholder("Card Number").full_width(true),
-            expiry_field: TextField = look.textfield("upgrade-expiry").placeholder("MM/YY"),
-            cvc_field: TextField = look.textfield("upgrade-cvc").placeholder("CVC"),
+            // full_width fills the fixed host (72/64px below); it does not grow with typed content.
+            expiry_field: TextField = look.textfield("upgrade-expiry").placeholder("MM/YY").full_width(true),
+            cvc_field: TextField = look.textfield("upgrade-cvc").placeholder("CVC").full_width(true),
             plan_group: RadioGroup<PlanOptionItem> = horizontal_radio_group("upgrade-plan")
                 .item_element_template(plan_option_item_element_template(look.clone()))
                 .with_item_layout(|items, _, _, _| {
