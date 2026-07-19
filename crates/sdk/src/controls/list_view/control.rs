@@ -4,8 +4,8 @@ use gpui::{
 };
 
 use super::layout::{
-    clamp_page, compute_shell_height, effective_visible_rows, page_count, page_start, visible_item_count,
-    visible_row_height,
+    clamp_page, compute_shell_height, distributed_row_height, effective_visible_rows, page_after_size_change,
+    page_count, page_start, rows_for_viewport_height_border_box, visible_item_count, visible_row_height,
 };
 use super::model::{
     ListScrollMode, ListSelectionMode, ListViewBuilder, ListViewHeaderTemplate, ListViewLabel, ListViewModel,
@@ -42,6 +42,8 @@ where
     hovered_index: Option<usize>,
     pressed_index: Option<usize>,
     current_page: usize,
+    /// When fill-height + paged, row height stretched so `page_size` rows fill the viewport.
+    fill_row_height: Option<f32>,
 }
 
 impl<T> EventEmitter<ListViewEvent> for ListViewControl<T> where T: 'static {}
@@ -68,10 +70,10 @@ where
 
         let visible_count = Self::visible_list_item_count(&builder.model, 0);
         let mut list_state = ListState::new(visible_count, builder.model.alignment, px(builder.model.overdraw));
-        if builder.model.visible_rows.is_some() {
-            // Fixed-viewport lists still scroll through the full item set. Without measuring
-            // every row, GPUI's internal height sum stays at the visible slice and scroll_max
-            // collapses to zero when overdraw is small.
+        if builder.model.visible_rows.is_some() || builder.model.fill_height {
+            // Fixed-viewport / fill-height lists still scroll through the full item set.
+            // Without measuring every row, GPUI's internal height sum stays at the visible
+            // slice and scroll_max collapses to zero when overdraw is small.
             list_state = list_state.measure_all();
         }
         Self {
@@ -81,6 +83,7 @@ where
             hovered_index: None,
             pressed_index: None,
             current_page: 0,
+            fill_row_height: None,
         }
     }
 
@@ -102,6 +105,10 @@ where
 
     pub fn scroll_mode(&self) -> ListScrollMode {
         self.model.scroll_mode
+    }
+
+    pub fn fills_height(&self) -> bool {
+        self.model.fill_height
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -217,16 +224,27 @@ where
             return;
         }
 
-        let active_global = self.model.active_index;
+        let old_page_size = self.page_size().unwrap_or(1);
+        let keep_in_view = self.focus_index_for_page_size_change();
+        let next_page =
+            page_after_size_change(self.current_page, old_page_size, page_size, self.model.items.len(), keep_in_view);
         self.model.scroll_mode = ListScrollMode::Paged { page_size };
-        if let Some(active_global) = active_global {
-            self.current_page = active_global / page_size;
-        }
-        self.current_page = clamp_page(self.current_page, self.model.items.len(), page_size);
+        self.current_page = next_page;
         self.sync_list_state();
         cx.emit(ListViewEvent::PageSizeChanged { page_size });
         cx.emit(ListViewEvent::PageChanged { page: self.current_page });
         cx.notify();
+    }
+
+    /// Row to keep visible across a page-size change: active when selected (or when nothing is
+    /// selected), otherwise the first selected index.
+    fn focus_index_for_page_size_change(&self) -> Option<usize> {
+        if let Some(active) = self.model.active_index {
+            if self.model.selected_indices.is_empty() || self.model.selected_indices.contains(&active) {
+                return Some(active);
+            }
+        }
+        self.model.selected_indices.first().copied()
     }
 
     pub fn scroll_to_row(&mut self, index: usize, cx: &mut Context<Self>) {
@@ -386,20 +404,59 @@ where
     }
 
     fn row_scroll_increment(&self, row_look: &super::theme::ListViewRowLook) -> f32 {
-        visible_row_height(row_look, self.model.visible_row_height)
+        self.fill_row_height.unwrap_or_else(|| visible_row_height(row_look, self.model.visible_row_height))
+    }
+
+    fn token_row_height(&self, scale_factor: f32) -> f32 {
+        visible_row_height(&self.resolve_row_look_for_metrics(scale_factor), self.model.visible_row_height)
     }
 
     fn visible_row_capacity(&self) -> usize {
-        if let Some(count) = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode) {
+        if let Some(count) =
+            effective_visible_rows(self.model.visible_rows, self.model.scroll_mode, self.model.fill_height)
+        {
             return count;
         }
 
-        let viewport_height = self.list_state.viewport_bounds().size.height;
-        let row_height = self.row_scroll_increment(&self.resolve_row_look_for_metrics());
-        if viewport_height > px(0.0) && row_height > 0.0 {
-            ((viewport_height.as_f32() / row_height).floor() as usize).max(1)
-        } else {
-            1
+        if self.should_sync_page_size_to_viewport() {
+            return self.page_size().unwrap_or(1);
+        }
+
+        self.viewport_page_size(1.0).unwrap_or(1)
+    }
+
+    fn should_sync_page_size_to_viewport(&self) -> bool {
+        self.model.fill_height && self.is_paged() && self.model.visible_rows.is_none()
+    }
+
+    fn viewport_page_size(&self, scale_factor: f32) -> Option<usize> {
+        let viewport_height = self.list_state.viewport_bounds().size.height.as_f32();
+        // Fill-height rows paint dividers as border_t inside `.h(...)`.
+        rows_for_viewport_height_border_box(viewport_height, self.token_row_height(scale_factor))
+    }
+
+    /// When fill-height + paged, match `page_size` to the viewport and stretch rows to fill it.
+    fn sync_fill_height_page_size(&mut self, window: &Window, cx: &mut Context<Self>) {
+        if !self.should_sync_page_size_to_viewport() {
+            return;
+        }
+        let viewport_height = self.list_state.viewport_bounds().size.height.as_f32();
+        let Some(page_size) = self.viewport_page_size(window.scale_factor()) else {
+            return;
+        };
+        let Some(row_height) = distributed_row_height(viewport_height, page_size) else {
+            return;
+        };
+
+        let height_changed = self.fill_row_height.is_none_or(|current| (current - row_height).abs() > 0.05);
+        self.fill_row_height = Some(row_height);
+
+        if self.page_size() != Some(page_size) {
+            self.set_page_size(page_size, cx);
+            self.list_state.remeasure();
+        } else if height_changed {
+            self.list_state.remeasure();
+            cx.notify();
         }
     }
 
@@ -433,7 +490,7 @@ where
     }
 
     fn snap_scroll_position(&mut self) {
-        let row_look = self.resolve_row_look_for_metrics();
+        let row_look = self.resolve_row_look_for_metrics(1.0);
         let row_height = self.row_scroll_increment(&row_look);
         let offset = self.list_state.logical_scroll_top();
         let mut item_ix = offset.item_ix;
@@ -468,8 +525,8 @@ where
         )
     }
 
-    fn resolve_row_look_for_metrics(&self) -> super::theme::ListViewRowLook {
-        let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), 1.0);
+    fn resolve_row_look_for_metrics(&self, scale_factor: f32) -> super::theme::ListViewRowLook {
+        let scale = ListRowScale::compute(self.model.size, &self.model.theme.metrics(), scale_factor);
         self.model.theme.resolve_row_look(false, InteractionState::default(), self.model.size, &scale)
     }
 
@@ -477,7 +534,8 @@ where
         let look = self.resolve_look(window);
         let row_look = self.resolve_row_look(window, cx);
         let has_header = self.model.header_template.is_some();
-        let visible_rows = effective_visible_rows(self.model.visible_rows, self.model.scroll_mode);
+        let visible_rows =
+            effective_visible_rows(self.model.visible_rows, self.model.scroll_mode, self.model.fill_height);
         let row_height = visible_row_height(&row_look, self.model.visible_row_height);
         let body_rows_height = visible_rows.map(|count| super::layout::body_rows_height(count, row_height));
         let shell_height = visible_rows.map(|count| compute_shell_height(count, row_height, &look, has_header));
@@ -524,7 +582,10 @@ where
             LayoutCacheKey { size: self.model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| ListRowScale::compute(self.model.size, metrics, scale_factor),
         );
-        let look = self.model.theme.resolve_row_look(selected, interaction, self.model.size, &scale);
+        let mut look = self.model.theme.resolve_row_look(selected, interaction, self.model.size, &scale);
+        if let Some(fill_height) = self.fill_row_height {
+            look.min_height = fill_height;
+        }
         let focused_probe_look = if enabled || active {
             let mut focused_probe_state = interaction;
             focused_probe_state.focused = true;
@@ -570,6 +631,7 @@ where
             enabled,
             local_index > 0,
             is_custom,
+            self.fill_row_height,
         )
         .on_hover(cx.listener(move |this, hovered, _window, cx| {
             this.handle_item_hover(index, *hovered, cx);
@@ -763,7 +825,7 @@ where
         if viewport_height > px(0.0) {
             viewport_height * 0.9
         } else {
-            px(self.row_scroll_increment(&self.resolve_row_look_for_metrics()))
+            px(self.row_scroll_increment(&self.resolve_row_look_for_metrics(1.0)))
         }
     }
 
@@ -877,11 +939,20 @@ where
             shell = shell.on_scroll_wheel(cx.listener(Self::handle_scroll_wheel));
         }
 
-        if render_model.shell_height.is_some() {
-            div().w_full().child(shell).into_any_element()
-        } else {
-            div().w_full().h_full().child(shell).into_any_element()
+        let sync_page_size = self.should_sync_page_size_to_viewport();
+        let entity = cx.entity();
+        let mut root = div().w_full();
+        if render_model.shell_height.is_none() {
+            root = root.h_full();
         }
+        if sync_page_size {
+            root = root.on_children_prepainted(move |_child_bounds, window, cx| {
+                entity.update(cx, |this, cx| {
+                    this.sync_fill_height_page_size(window, cx);
+                });
+            });
+        }
+        root.child(shell).into_any_element()
     }
 }
 

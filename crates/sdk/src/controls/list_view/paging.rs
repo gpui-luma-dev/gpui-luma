@@ -76,13 +76,29 @@ impl<T: 'static> PagingListViewControl<T> {
     pub fn pager(&self) -> &Entity<PagerControl> {
         &self.pager
     }
+
+    fn fills_height(&self, cx: &App) -> bool {
+        self.list.read(cx).fills_height()
+    }
 }
 
 impl<T: 'static> EventEmitter<ListViewEvent> for PagingListViewControl<T> {}
 
 impl<T: 'static> Render for PagingListViewControl<T> {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div().w_full().flex().flex_col().child(self.list.clone()).child(self.pager.clone())
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let list = self.list.clone();
+        let pager = self.pager.clone();
+        if self.fills_height(cx) {
+            div()
+                .size_full()
+                .min_h_0()
+                .flex()
+                .flex_col()
+                .child(div().flex_1().min_h_0().w_full().child(list))
+                .child(div().flex_none().w_full().child(pager))
+        } else {
+            div().w_full().flex().flex_col().child(list).child(pager)
+        }
     }
 }
 
@@ -159,7 +175,14 @@ impl<T: 'static> PagingListViewBuilder<T> {
         Self { list_builder, pager_builder }
     }
 
+    /// Fill the parent height; see [`ListViewBuilder::fill_height`].
+    pub fn fill_height(mut self) -> Self {
+        self.list_builder = self.list_builder.fill_height();
+        self
+    }
+
     pub fn spawn(self, cx: &mut impl AppContext) -> PagingListView<T> {
+        let fill_height = self.list_builder.model.fill_height;
         let list = cx.new(|cx| ListViewControl::from_builder(self.list_builder, cx));
 
         let (current_page, page_count, page_size, selected_count, total_rows) = list.read_with(cx, |list, _| {
@@ -173,7 +196,10 @@ impl<T: 'static> PagingListViewBuilder<T> {
         });
 
         let mut pager_builder = self.pager_builder;
-        if pager_builder.model.template_parameters.page_size_label.is_none() {
+        // Viewport-driven page size: hide the manual "rows per page" control.
+        if fill_height {
+            pager_builder = pager_builder.page_size_options([]);
+        } else if pager_builder.model.template_parameters.page_size_label.is_none() {
             pager_builder = pager_builder.page_size_label("Rows per page");
         }
         let pager_theme = pager_builder.model.theme.clone().unwrap_or_else(default_pager_theme);

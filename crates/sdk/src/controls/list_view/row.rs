@@ -10,14 +10,18 @@ pub(crate) fn render_list_view_row(
     enabled: bool,
     show_top_divider: bool,
     is_custom: bool,
+    fill_row_height: Option<f32>,
 ) -> Stateful<gpui::Div> {
     let mut row = div().id(id).relative().w_full();
 
+    if let Some(height) = fill_row_height {
+        row = row.h(px(height)).overflow_hidden();
+    }
+
     if is_custom {
-        row = row.child(div().flex_1().min_w(px(0.0)).child(content));
+        row = row.flex().items_center().child(div().flex_1().min_w(px(0.0)).h_full().child(content));
     } else {
-        row = row
-            .min_h(px(look.min_height))
+        let mut body = row
             .flex()
             .items_center()
             .px(px(look.padding_x))
@@ -26,8 +30,11 @@ pub(crate) fn render_list_view_row(
             .text_color(look.label_color)
             .text_size(px(look.label_typography.size))
             .line_height(px(look.label_typography.line_height))
-            .font_weight(look.label_typography.weight)
-            .child(div().flex_1().min_w(px(0.0)).mt(px(look.label_baseline_shift)).child(content));
+            .font_weight(look.label_typography.weight);
+        if fill_row_height.is_none() {
+            body = body.min_h(px(look.min_height));
+        }
+        row = body.child(div().flex_1().min_w(px(0.0)).mt(px(look.label_baseline_shift)).child(content));
     }
 
     if show_top_divider {

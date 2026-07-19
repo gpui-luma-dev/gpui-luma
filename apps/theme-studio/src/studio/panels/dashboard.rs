@@ -122,6 +122,7 @@ impl DashboardPanel {
                     .child(cells)
             };
         }
+        .fill_height()
         .spawn(cx);
 
         let mut subscriptions = Vec::new();
@@ -207,9 +208,10 @@ impl Render for DashboardPanel {
                             div()
                                 .flex_1()
                                 .min_h_0()
+                                .w_full()
                                 .px(px(LIST_VIEW_OUTER_PADDING_PX))
                                 .pt(px(LIST_VIEW_OUTER_PADDING_PX))
-                                .child(list_view.clone()),
+                                .child(div().size_full().min_h_0().child(list_view.clone())),
                         )
                         .into_any_element()
                 }),

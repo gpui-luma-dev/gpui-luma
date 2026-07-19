@@ -15,8 +15,9 @@ pub use column_template::{
     default_muted_column_template, default_numeric_column_template, default_text_column_template,
 };
 pub use layout::{
-    ROW_DIVIDER_WIDTH, body_rows_height, compute_shell_height, default_row_height, effective_visible_rows, page_count,
-    visible_row_height,
+    ROW_DIVIDER_WIDTH, body_rows_height, compute_shell_height, default_row_height, distributed_row_height,
+    effective_visible_rows, page_after_size_change, page_count, rows_for_viewport_height,
+    rows_for_viewport_height_border_box, visible_row_height,
 };
 pub use model::{
     IntoListViewColumnCellTemplate, ListScrollMode, ListSelectionMode, ListViewLookOverride, ListViewBuilder,

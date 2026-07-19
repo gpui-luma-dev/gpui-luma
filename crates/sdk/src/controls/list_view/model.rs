@@ -290,6 +290,9 @@ where
     pub(crate) scroll_mode: ListScrollMode,
     pub(crate) visible_rows: Option<usize>,
     pub(crate) visible_row_height: Option<f32>,
+    /// When true, the shell fills parent height (`h_full`) instead of sizing from
+    /// `visible_rows` / paged `page_size`. Explicit `visible_rows` still wins when set.
+    pub(crate) fill_height: bool,
 }
 
 impl<T> ListViewModel<T>
@@ -354,6 +357,7 @@ where
                 scroll_mode: ListScrollMode::ScrollSmooth,
                 visible_rows: None,
                 visible_row_height: None,
+                fill_height: false,
             },
         }
     }
@@ -448,6 +452,17 @@ where
 
     pub fn visible_rows(mut self, count: usize) -> Self {
         self.model.visible_rows = Some(count.max(1));
+        self
+    }
+
+    /// Fill the parent height instead of using a content-sized shell.
+    ///
+    /// Intended for pane/split layouts. The shell uses `h_full` unless [`Self::visible_rows`]
+    /// is also set. For paged lists, `page_size` is recalculated from the list viewport on
+    /// resize and row heights are stretched so the page fills the viewport flush (pager updates
+    /// with the new page size).
+    pub fn fill_height(mut self) -> Self {
+        self.model.fill_height = true;
         self
     }
 
