@@ -417,8 +417,8 @@ fn render_selector_autocomplete_trigger(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let textfield_template = look.input_textfield_template();
-    let textfield_theme = look.input_textfield_theme();
+    let textfield_template = look.primary_textfield_template();
+    let textfield_theme = look.primary_textfield_theme();
     let autocomplete_template = default_autocomplete_textbox_template();
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
@@ -477,8 +477,8 @@ fn render_selector_combobox_trigger(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let textfield_template = look.input_textfield_template();
-    let textfield_theme = look.input_textfield_theme();
+    let textfield_template = look.primary_textfield_template();
+    let textfield_theme = look.primary_textfield_theme();
     let combobox_template = default_combobox_template();
     let value = SharedString::from("California");
     let placeholder = SharedString::from(placeholder);
@@ -542,12 +542,26 @@ fn render_selector_search_selector_trigger(
     cx: &mut App,
 ) -> AnyElement {
     let search_selector_template = default_search_selector_template();
+    let selector_theme = look.selector_theme();
+    let interaction = InteractionState {
+        hovered: state.textfield_state.hovered,
+        focused: state.textfield_state.focused || state.textfield_state.focus_visible,
+        disabled: !state.textfield_enabled,
+        ..InteractionState::default()
+    };
+    let trigger_look = selector_theme.resolve_look(
+        Default::default(),
+        interaction,
+        size,
+        &StandardBoxScale::compute(size, &selector_theme.metrics(), window.scale_factor()),
+        false,
+    );
     let model = SearchSelectorRenderModel {
         id: id.clone(),
         trigger_label: SharedString::from(placeholder),
         trigger_label_is_placeholder: true,
         trigger_state: state.textfield_state,
-        trigger_theme: look.input_textfield_theme(),
+        trigger_look,
         trigger_typography_override: Some(selector_preview_typography_for_size(
             look,
             look.mode_tokens().typography.text.body,
@@ -600,6 +614,8 @@ fn render_selector_selector_trigger(
         active_path: None,
         enabled: state.selector_enabled,
         size,
+        trigger_style: Default::default(),
+        without_elevation: false,
         item_template: None,
         panel_template: None,
         focus: state.selector_focus,

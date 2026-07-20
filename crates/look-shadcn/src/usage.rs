@@ -168,11 +168,11 @@ const RADIX_THEME_USAGES: &[&ThemeUsage] = &[
     &ThemeUsage {
         label: "Selector",
         parts: &[
-            part("trigger background", "background", &["default light"], &["SelectorPalette.trigger_background"]),
-            part("trigger background", "input", &["default dark"], &["SelectorPalette.trigger_background"]),
-            part("trigger hover fill", "input", &["hovered dark"], &["SelectorPalette.trigger_background"]),
-            part("trigger foreground", "foreground", &["default"], &["SelectorPalette.trigger_foreground"]),
-            part("trigger border", "border", &["default"], &["SelectorPalette.trigger_border"]),
+            part("trigger background", "background", &["outline default"], &["SelectorPalette.trigger_background"]),
+            part("trigger hover fill", "accent", &["outline hovered"], &["SelectorPalette.trigger_background"]),
+            part("trigger foreground", "foreground", &["outline default"], &["SelectorPalette.trigger_foreground"]),
+            part("trigger border", "border", &["outline default"], &["SelectorPalette.trigger_border"]),
+            part("trigger shadow", "shadow-xs", &["outline elevated"], &["SelectorPalette.trigger_shadow"]),
             part("panel surface", "popover", &["open"], &["SelectorItemsPanelLook.background"]),
             part("item hover bg", "accent", &["hovered"], &["SelectorItemsPanelLook.item_hover_background"]),
         ],
@@ -314,13 +314,8 @@ mod tests {
         let theme = ShadcnLook::from_built_in_theme("retro-arcade").expect("retro-arcade css");
         for usage in all_shadcn_theme_usages() {
             for part in usage.parts {
-                assert!(
-                    theme.token_color(part.token).is_ok(),
-                    "{} part `{}` missing token `--{}`",
-                    usage.label,
-                    part.part,
-                    part.token
-                );
+                let resolves = theme.token_color(part.token).is_ok() || theme.parse_shadow_token(part.token).is_ok();
+                assert!(resolves, "{} part `{}` missing token `--{}`", usage.label, part.part, part.token);
             }
         }
     }

@@ -230,10 +230,16 @@ impl EnabledColorRule for ProgressColorRule {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct CardStylesheet {
     #[serde(default)]
+    pub elevation_rules: Vec<FloatingMenuSurfaceElevationRule>,
+    #[serde(default)]
     pub color_rule: Option<CardColorRule>,
 }
 
 impl CardStylesheet {
+    pub fn elevation_rule(&self) -> Option<&FloatingMenuSurfaceElevationRule> {
+        self.elevation_rules.first()
+    }
+
     pub fn color_rule(&self) -> Option<&CardColorRule> {
         self.color_rule.as_ref()
     }
@@ -525,6 +531,8 @@ pub struct SliderStylesheet {
     #[serde(default)]
     pub metrics: HashMap<String, SliderMetricsRule>,
     #[serde(default)]
+    pub elevation_rules: Vec<LayeredElevationRule>,
+    #[serde(default)]
     pub color_rules: Vec<SliderColorRule>,
 }
 
@@ -534,6 +542,13 @@ impl SliderStylesheet {
             rule.style.as_deref().is_none_or(|value| value == style)
                 && matches_optional_layer(rule.layer.as_deref(), layer)
         })
+    }
+
+    pub fn elevation_rule_for_layer(&self, layer: InteractionLayer) -> Option<&LayeredElevationRule> {
+        if layer == InteractionLayer::Disabled {
+            return self.elevation_rules.iter().find(|rule| rule.layer.as_deref() == Some("disabled"));
+        }
+        self.elevation_rules.iter().find(|rule| rule.layer.is_none())
     }
 
     pub fn metrics_for_size(&self, size: ControlSize) -> Option<&SliderMetricsRule> {

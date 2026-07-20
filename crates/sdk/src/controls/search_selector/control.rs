@@ -716,6 +716,17 @@ impl Render for SearchSelectorControl {
         };
 
         let interaction_state = self.interaction.render_state(self.model.enabled, window);
+        let trigger_look = self.model.selector_theme.resolve_look(
+            self.model.trigger_style,
+            interaction_state,
+            self.model.size,
+            &crate::theme::StandardBoxScale::compute(
+                self.model.size,
+                &self.model.selector_theme.metrics(),
+                window.scale_factor(),
+            ),
+            self.model.without_elevation,
+        );
         let render_model = SearchSelectorRenderModel {
             id: self.model.id.clone(),
             trigger_label: selected_label.map(SharedString::from).unwrap_or_else(|| self.model.placeholder.clone()),
@@ -726,7 +737,7 @@ impl Render for SearchSelectorControl {
                 focus_visible: self.behavior.state.open || trigger_focused,
                 ..TextFieldState::default()
             },
-            trigger_theme: self.model.textfield_theme.clone(),
+            trigger_look,
             trigger_typography_override: None,
             enabled: self.model.enabled,
             size: self.model.size,

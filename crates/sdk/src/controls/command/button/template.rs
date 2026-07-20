@@ -42,6 +42,45 @@ fn resolve_look<D>(
     resolve_theme_look(theme, model, scale)
 }
 
+fn clone_model_with_state<D: Clone>(model: &ButtonRenderModel<D>, state: InteractionState) -> ButtonRenderModel<D> {
+    ButtonRenderModel {
+        id: model.id.clone(),
+        data: model.data.clone(),
+        content: model.content.clone(),
+        role: model.role,
+        size: model.size,
+        state,
+        round: model.round,
+        radius_override: std::cell::Cell::new(model.radius_override.get()),
+        elevation: model.elevation,
+        compact: model.compact,
+        suppress_adorners: std::cell::Cell::new(model.suppress_adorners.get()),
+        switch_track_width_extra: model.switch_track_width_extra,
+        switch_orientation: model.switch_orientation,
+        switch_track_content: model.switch_track_content.clone(),
+        switch_thumb_content: model.switch_thumb_content.clone(),
+        look: model.look.clone(),
+    }
+}
+
+fn resolve_probe_look<D: Clone>(
+    theme: &Arc<dyn ButtonFamilyTheme>,
+    model: &ButtonRenderModel<D>,
+    scale: &StandardBoxScale,
+    state: InteractionState,
+) -> ButtonFamilyLook {
+    if let Some(resolve) = &model.look {
+        return resolve(&clone_model_with_state(model, state));
+    }
+
+    if let Some(look) = theme.resolve_look(model.role, model.size, state, scale, theme.metrics().radius.pill) {
+        return look;
+    }
+
+    let palette = theme.resolve(model.role, model.size, state);
+    compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill)
+}
+
 fn resolve_focus_probe_look<D: Clone>(
     theme: &Arc<dyn ButtonFamilyTheme>,
     model: &ButtonRenderModel<D>,
@@ -51,36 +90,22 @@ fn resolve_focus_probe_look<D: Clone>(
         return None;
     }
 
-    if let Some(resolve) = &model.look {
-        let focused_state = InteractionState { focused: true, ..model.state };
-        let focused_model = ButtonRenderModel {
-            id: model.id.clone(),
-            data: model.data.clone(),
-            content: model.content.clone(),
-            role: model.role,
-            size: model.size,
-            state: focused_state,
-            round: model.round,
-            radius_override: std::cell::Cell::new(model.radius_override.get()),
-            elevation: model.elevation,
-            compact: model.compact,
-            suppress_adorners: std::cell::Cell::new(model.suppress_adorners.get()),
-            switch_track_width_extra: model.switch_track_width_extra,
-            switch_orientation: model.switch_orientation,
-            switch_track_content: model.switch_track_content.clone(),
-            switch_thumb_content: model.switch_thumb_content.clone(),
-            look: model.look.clone(),
-        };
-        return Some(resolve(&focused_model));
-    }
-
     let focused_state = InteractionState { focused: true, ..model.state };
-    if let Some(look) = theme.resolve_look(model.role, model.size, focused_state, scale, theme.metrics().radius.pill) {
-        return Some(look);
+    Some(resolve_probe_look(theme, model, scale, focused_state))
+}
+
+/// Enabled-state look used only for elevation layout reservation when disabled clears paint shadows.
+fn resolve_elevation_probe_look<D: Clone>(
+    theme: &Arc<dyn ButtonFamilyTheme>,
+    model: &ButtonRenderModel<D>,
+    scale: &StandardBoxScale,
+) -> Option<ButtonFamilyLook> {
+    if !model.elevation || !model.state.disabled {
+        return None;
     }
 
-    let palette = theme.resolve(model.role, model.size, focused_state);
-    Some(compose_button_family_look(&palette, model.role, scale, theme.metrics().radius.pill))
+    let enabled_state = InteractionState { disabled: false, ..model.state };
+    Some(resolve_probe_look(theme, model, scale, enabled_state))
 }
 
 pub trait ButtonTemplate<D = ()>: Send + Sync {
@@ -174,6 +199,7 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
         );
         let look = resolve_look(&self.theme, model, &scale);
         let focused_probe_look = resolve_focus_probe_look(&self.theme, model, &scale);
+        let elevation_probe_look = resolve_elevation_probe_look(&self.theme, model, &scale);
         let border = button_family_effective_border(look.border);
 
         let mut control = div()
@@ -268,11 +294,19 @@ impl<D: 'static + Clone> ButtonTemplate<D> for DefaultButtonTemplate<D> {
                 .and_then(|probe| button_family_focus_adorner(true, probe.border, probe.focus_ring, &metrics))
         };
 
+        let shadow_extent = crate::controls::choice_indicator_layout::reserve_shadow_extent(
+            look.shadow.as_ref(),
+            elevation_probe_look.as_ref().and_then(|probe| probe.shadow.as_ref()),
+            scale_factor,
+            model.elevation,
+        );
         let oversize_extent = crate::controls::choice_indicator_layout::button_family_oversize_extent(
             model.compact,
+            model.elevation,
             model.state.focused,
             adorner,
             focused_adorner,
+            shadow_extent,
         );
 
         let mut adorned = div().id(format!("{}-adorned", model.id)).relative().child(control);

@@ -1,17 +1,19 @@
 //! Inspect metadata for `selector`.
 
-use gpui_luma::controls::textfield::TextFieldState;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::selector::SelectorTriggerStyle;
 use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
-use gpui_luma_look_shadcn::{ShadcnModeTokens, ShadcnTextFieldStyle};
+use gpui_luma_look_shadcn::{ResolvedColor, ShadcnButtonStyle, ShadcnModeTokens};
 
+use super::button::{inspect_button_color_palette, inspect_button_metrics};
 use super::floating_menu::{FloatingMenuInspectMetrics, FloatingMenuInspectPalette};
-use super::textfield::inspect_textfield_color_palette;
 
 pub struct SelectorInspectPalette {
-    pub trigger_background: gpui_luma_look_shadcn::ResolvedColor,
-    pub trigger_foreground: gpui_luma_look_shadcn::ResolvedColor,
-    pub trigger_border: gpui_luma_look_shadcn::ResolvedColor,
-    pub focus_ring: Option<gpui_luma_look_shadcn::ResolvedColor>,
+    pub trigger_style: SelectorTriggerStyle,
+    pub trigger_background: ResolvedColor,
+    pub trigger_foreground: ResolvedColor,
+    pub trigger_border: ResolvedColor,
+    pub focus_ring: Option<ResolvedColor>,
     pub items_panel: FloatingMenuInspectPalette,
 }
 
@@ -21,31 +23,26 @@ pub struct SelectorInspectMetrics {
     pub items_panel: FloatingMenuInspectMetrics,
 }
 
-fn selector_textfield_state(state: InteractionState) -> TextFieldState {
-    TextFieldState {
-        hovered: state.hovered,
-        focused: state.focused,
-        focus_visible: state.focused,
-        ..TextFieldState::default()
+fn button_style(trigger_style: SelectorTriggerStyle) -> ShadcnButtonStyle {
+    match trigger_style {
+        SelectorTriggerStyle::Outline => ShadcnButtonStyle::Outline,
+        SelectorTriggerStyle::Ghost => ShadcnButtonStyle::Ghost,
     }
 }
 
 pub fn inspect_selector_color_palette(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    trigger_style: SelectorTriggerStyle,
     state: InteractionState,
     size: ControlSize,
 ) -> SelectorInspectPalette {
     let menu = crate::controls::floating_menu::inspect_floating_menu_color_palette(mode, theme_mode, size);
-    let trigger = inspect_textfield_color_palette(
-        mode,
-        theme_mode,
-        ShadcnTextFieldStyle::Input,
-        selector_textfield_state(state),
-        !state.disabled,
-    );
+    let trigger =
+        inspect_button_color_palette(mode, theme_mode, button_style(trigger_style), ButtonFamilyRole::Text, state);
 
     SelectorInspectPalette {
+        trigger_style,
         trigger_background: trigger.background,
         trigger_foreground: trigger.foreground,
         trigger_border: trigger.border,
@@ -57,15 +54,14 @@ pub fn inspect_selector_color_palette(
 pub fn inspect_selector_metrics(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    trigger_style: SelectorTriggerStyle,
     size: ControlSize,
 ) -> SelectorInspectMetrics {
-    use gpui_luma::controls::button_family::ButtonFamilyRole;
-
     SelectorInspectMetrics {
-        trigger: crate::controls::button::inspect_button_metrics(
+        trigger: inspect_button_metrics(
             mode,
             theme_mode,
-            gpui_luma_look_shadcn::ShadcnButtonStyle::Ghost,
+            button_style(trigger_style),
             ButtonFamilyRole::Text,
             size,
             InteractionState::default(),

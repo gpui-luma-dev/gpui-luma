@@ -16,8 +16,9 @@ use super::template::{
     default_search_selector_template, template_with_modifier,
 };
 use crate::controls::scrollbar::{ScrollbarTemplate, default_scrollbar_template};
+use crate::controls::selector::{SelectorTheme, SelectorTriggerStyle, default_selector_theme};
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
-use crate::controls::textfield::{TextFieldTemplate, TextFieldTheme, default_textfield_template, default_textfield_theme};
+use crate::controls::textfield::{TextFieldTemplate, default_textfield_template};
 use crate::theme::{ControlSize, ThemeTokens};
 
 pub type SearchSelectorPopupLookProvider = Arc<dyn Fn(ControlSize) -> SelectorItemsPanelLook + Send + Sync + 'static>;
@@ -37,7 +38,9 @@ pub struct SearchSelectorModel {
     pub(crate) max_visible_rows: usize,
     pub(crate) fill_popup_viewport: bool,
     pub(crate) textfield_template: Arc<dyn TextFieldTemplate>,
-    pub(crate) textfield_theme: Arc<dyn TextFieldTheme>,
+    pub(crate) selector_theme: Arc<dyn SelectorTheme>,
+    pub(crate) trigger_style: SelectorTriggerStyle,
+    pub(crate) without_elevation: bool,
     pub(crate) scrollbar_template: Arc<dyn ScrollbarTemplate>,
     pub(crate) template: Arc<dyn SearchSelectorTemplate>,
     pub(crate) items_template: Arc<dyn SearchSelectorItemsTemplate>,
@@ -69,7 +72,9 @@ impl SearchSelectorBuilder {
                 max_visible_rows: 7,
                 fill_popup_viewport: false,
                 textfield_template: default_textfield_template(),
-                textfield_theme: default_textfield_theme(),
+                selector_theme: default_selector_theme(),
+                trigger_style: SelectorTriggerStyle::default(),
+                without_elevation: false,
                 scrollbar_template: default_scrollbar_template(),
                 template: default_search_selector_template(),
                 items_template: default_search_selector_items_template(),
@@ -153,8 +158,24 @@ impl SearchSelectorBuilder {
         self
     }
 
-    pub fn textfield_theme(mut self, theme: Arc<dyn TextFieldTheme>) -> Self {
-        self.model.textfield_theme = theme;
+    /// Theme for the read-only display trigger (Outline/Ghost command-button chrome).
+    pub fn selector_theme(mut self, theme: Arc<dyn SelectorTheme>) -> Self {
+        self.model.selector_theme = theme;
+        self
+    }
+
+    pub fn trigger_style(mut self, style: SelectorTriggerStyle) -> Self {
+        self.model.trigger_style = style;
+        self
+    }
+
+    pub fn ghost(mut self) -> Self {
+        self.model.trigger_style = SelectorTriggerStyle::Ghost;
+        self
+    }
+
+    pub fn without_elevation(mut self) -> Self {
+        self.model.without_elevation = true;
         self
     }
 

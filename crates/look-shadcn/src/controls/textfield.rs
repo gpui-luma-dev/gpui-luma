@@ -143,11 +143,9 @@ pub fn textfield_palette_for_size(
     } else {
         None
     };
-    let shadow = if enabled {
-        textfield_elevation_shadow(&ctx, stylesheet, style)
-    } else {
-        None
-    };
+    // Keep elevation in the look when disabled so SDK hosts can reserve projection
+    // space; templates gate paint with `enabled` / `should_paint_shadow`.
+    let shadow = textfield_elevation_shadow(&ctx, stylesheet, style);
 
     let mut background = colors.background.hsla();
     if style == ShadcnTextFieldStyle::Input
@@ -275,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn surface_textfield_light_uses_transparent_fill_and_border_token() {
+    fn outline_textfield_light_uses_transparent_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
@@ -289,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn filled_textfield_light_uses_background_fill_and_shadow() {
+    fn primary_textfield_light_uses_background_fill_and_shadow() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
@@ -301,18 +299,18 @@ mod tests {
     }
 
     #[test]
-    fn filled_textfield_disabled_has_no_shadow() {
+    fn primary_textfield_disabled_retains_elevation_shadow_for_layout() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
             textfield_palette(&mode, ThemeMode::Light, ShadcnTextFieldStyle::Primary, TextFieldState::default(), false);
 
         assert_eq!(look.background, catalog.color("muted").expect("muted"));
-        assert!(look.shadow.is_none());
+        assert!(look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
     }
 
     #[test]
-    fn surface_textfield_dark_uses_input_fill_and_border_token() {
+    fn outline_textfield_dark_uses_input_fill_and_border_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
         let look =
@@ -324,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn soft_textfield_uses_muted_fill_and_no_border() {
+    fn surface_textfield_uses_muted_fill_and_no_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let look =
@@ -336,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn surface_textfield_hover_does_not_change_background() {
+    fn outline_textfield_hover_does_not_change_background() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let default =

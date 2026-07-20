@@ -1,7 +1,7 @@
 use gpui::{App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::choice_indicator_layout::{
-    ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from_slice, should_paint_shadow,
+    ChoiceLayoutPolicy, indicator_oversize_extent, reserve_shadow_extent_from_slice, should_paint_shadow,
 };
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 
@@ -32,6 +32,15 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
             ))
         };
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
+        let elevation_probe_palette = if layout_policy.elevation && model.state.disabled {
+            Some(self.theme.resolve(
+                model.data,
+                crate::theme::InteractionState { disabled: false, ..model.state },
+                model.size,
+            ))
+        } else {
+            None
+        };
         let scale_factor = window.scale_factor();
         let mut scale = self.theme.scale(model.size, scale_factor);
         let track_length = snap_to_pixel(scale.track_width + model.switch_track_width_extra, scale_factor);
@@ -95,7 +104,12 @@ impl ButtonTemplate<bool> for ThemedSwitchTemplate {
         } else {
             focused_probe_palette.as_ref().and_then(|probe| probe.adorner)
         };
-        let shadow_extent = shadow_extent_from_slice(&palette.thumb_shadow, scale_factor, layout_policy.elevation);
+        let shadow_extent = reserve_shadow_extent_from_slice(
+            &palette.thumb_shadow,
+            elevation_probe_palette.as_ref().map(|probe| probe.thumb_shadow.as_slice()),
+            scale_factor,
+            layout_policy.elevation,
+        );
         let oversize_extent = indicator_oversize_extent(
             layout_policy,
             model.state.focused,

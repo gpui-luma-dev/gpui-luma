@@ -17,9 +17,10 @@ use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateT
 
 const TEXTFIELD_TABLE_STATE_COLUMN_WIDTH: f32 = 168.0;
 const TEXTFIELD_TABLE_SIZE_COLUMN_WIDTH: f32 = 168.0;
-const TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH: f32 = 100.0;
+const TEXTFIELD_TABLE_VARIANT_COLUMN_WIDTH: f32 = 108.0;
 const TEXTFIELD_TABLE_HEADER_HEIGHT: f32 = 28.0;
-const TEXTFIELD_TABLE_ROW_HEIGHT: f32 = 56.0;
+/// Extra height so Primary (`shadow-xs`) is not clipped by the row cell.
+const TEXTFIELD_TABLE_ROW_HEIGHT: f32 = 64.0;
 
 #[derive(Clone, Copy)]
 struct InputTextFieldSample {
@@ -35,6 +36,7 @@ struct TextFieldStyleVariant {
     label: &'static str,
 }
 
+/// Matches `ShadcnTextFieldStyle` / `ShadcnTextFieldExt`.
 const TEXTFIELD_STYLE_VARIANTS: [TextFieldStyleVariant; 3] = [
     TextFieldStyleVariant { id: "primary", label: "Primary" },
     TextFieldStyleVariant { id: "outline", label: "Outline" },
@@ -54,7 +56,7 @@ pub(crate) fn render_textfield_template_section(
     section_shell_with_width(
         960.0,
         "Text Field",
-        "Template Preview: Primary / Outline / Surface × states. Sizes tab: styles × Sm/Md/Lg typography.",
+        "Template Preview: Primary / Outline / Surface × states. Sizes tab: same variants × Sm/Md/Lg.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,

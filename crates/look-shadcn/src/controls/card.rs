@@ -11,8 +11,12 @@ use gpui_luma::theme::{ControlSize, LumaTextStyle, observe_theme_revision};
 use crate::look::ShadcnLook;
 use crate::look_context::LookContext;
 use crate::provenance::{ColorSource, LookResolver, ResolvedColor};
-use crate::stylesheet::{embedded_stylesheet, find_card_color_rule, resolve_card_color_rule};
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnTextRole, ShadcnTextSize};
+use crate::shadow::parse_shadow_token;
+use crate::stylesheet::{
+    StylesheetConfig, embedded_stylesheet, find_card_color_rule, find_card_elevation_rule, resolve_card_color_rule,
+    resolve_stylesheet_shadow_token,
+};
+use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnTextRole, ShadcnTextSize};
 
 #[derive(Clone, Debug)]
 pub struct CardColorTable {
@@ -78,6 +82,7 @@ pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
     let colors = resolve_card_colors(theme).unwrap_or_else(|_| CardColorTable::fallback());
     let metrics = &tokens.metrics;
     let typography = &tokens.typography;
+    let shadow = card_elevation_shadow(&tokens.catalog, embedded_stylesheet());
 
     CardLook {
         background: colors.background.hsla(),
@@ -85,7 +90,7 @@ pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
         title_color: colors.foreground.hsla(),
         description_color: colors.muted_foreground.hsla(),
         body_color: colors.foreground.hsla(),
-        shadow: theme.shadow(ShadcnShadow::Default),
+        shadow,
         radius: theme.radius(ShadcnRadius::Lg),
         padding: metrics.padding_x(size),
         section_gap: metrics.gap(size),
@@ -100,6 +105,16 @@ pub fn card_look(theme: &ShadcnLook, size: ControlSize) -> CardLook {
         body: typography.text.body,
         font_family: theme.font(ShadcnFont::Sans),
     }
+}
+
+fn card_elevation_shadow(catalog: &crate::catalog::CssTokenMap, stylesheet: &StylesheetConfig) -> Vec<BoxShadow> {
+    let Some(rule) = find_card_elevation_rule(stylesheet) else {
+        return Vec::new();
+    };
+    let Some(token) = resolve_stylesheet_shadow_token(&rule.shadow) else {
+        return Vec::new();
+    };
+    parse_shadow_token(catalog, &token).unwrap_or_default()
 }
 
 pub type CardElementRenderer = Arc<dyn Fn(&mut Window, &mut App) -> AnyElement + Send + Sync>;
@@ -354,6 +369,7 @@ mod tests {
                 --border: oklch(0.6537 0.0197 205.2618); \
                 --input: oklch(0.6537 0.0197 205.2618); \
                 --ring: oklch(0.5924 0.2025 355.8943); \
+                --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10); \
             } \
             .dark { \
                 --background: oklch(0.205 0 0); \
@@ -371,9 +387,16 @@ mod tests {
                 --border: oklch(0.40 0 0); \
                 --input: oklch(0.40 0 0); \
                 --ring: oklch(0.5924 0.2025 355.8943); \
+                --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10); \
             }",
         )
         .expect("look")
+    }
+
+    #[test]
+    fn card_resolves_stylesheet_shadow() {
+        let look = card_look(&sample_look(), ControlSize::Md);
+        assert!(!look.shadow.is_empty());
     }
 
     #[test]

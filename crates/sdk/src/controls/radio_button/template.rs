@@ -2,7 +2,7 @@ use gpui::{AnyElement, App, Div, Stateful, Window, div, px, prelude::*};
 
 use crate::controls::button_family::ButtonFamilyRole;
 use crate::controls::choice_indicator_layout::{
-    ChoiceLayoutPolicy, indicator_oversize_extent, shadow_extent_from, should_paint_shadow,
+    ChoiceLayoutPolicy, indicator_oversize_extent, reserve_shadow_extent, should_paint_shadow,
 };
 use crate::controls::command::button::{ButtonRenderModel, ButtonTemplate};
 use crate::controls::template::TemplateWithModifiers;
@@ -29,6 +29,11 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
             Some(self.theme.resolve(model.data, InteractionState { focused: true, ..model.state }, model.size))
         };
         let layout_policy = ChoiceLayoutPolicy::from_render_model(model);
+        let elevation_probe_look = if layout_policy.elevation && model.state.disabled {
+            Some(self.theme.resolve(model.data, InteractionState { disabled: false, ..model.state }, model.size))
+        } else {
+            None
+        };
         let scale_factor = window.scale_factor();
         let scale = cx.use_cached_layout(
             self.theme.metrics(),
@@ -48,8 +53,12 @@ impl ButtonTemplate<bool> for ThemedRadioButtonTemplate {
         } else {
             focused_probe_look.as_ref().and_then(|probe| probe.adorner)
         };
-        let shadow_extent =
-            shadow_extent_from(palette.indicator_shadow.as_ref(), scale_factor, layout_policy.elevation);
+        let shadow_extent = reserve_shadow_extent(
+            palette.indicator_shadow.as_ref(),
+            elevation_probe_look.as_ref().and_then(|probe| probe.indicator_shadow.as_ref()),
+            scale_factor,
+            layout_policy.elevation,
+        );
         let oversize_extent = if indicator_only {
             0.0
         } else {

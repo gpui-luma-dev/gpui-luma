@@ -15,6 +15,7 @@ use crate::controls::scrollbar::{Scrollbar, ScrollbarEvent, ScrollbarOrientation
 use crate::controls::text::{EditableTextPolicy, FocusNavigation, handle_key_down, select_all, word_cluster_range};
 use crate::controls::value::ControlRange;
 use crate::controls::button_family_template::render_button_family_focus_ring;
+use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::theme::{LayoutCacheKey, LumaLayoutCacheExt, StandardBoxScale, observe_theme_revision};
 
 const TEXTAREA_RESIZE_ICON_SIZE: f32 = 10.0;
@@ -1301,6 +1302,7 @@ impl Render for TextArea {
                     .child(char::from(LucideIcon::Scaling).to_string()),
             );
 
+        // Keep overflow on an inner clip host so elevation shadows on the chrome are not clipped.
         let mut control = div()
             .id(format!("{}-control-{}", self.model.id, self.theme_epoch))
             .relative()
@@ -1313,7 +1315,6 @@ impl Render for TextArea {
             .border(px(look.border_width))
             .border_color(look.border)
             .rounded(px(look.radius))
-            .overflow_hidden()
             .text_size(px(look.typography.size))
             .line_height(px(look.typography.line_height))
             .font_family(look.font_family.clone())
@@ -1321,7 +1322,15 @@ impl Render for TextArea {
             .when(self.model.full_width, |root| root.w_full())
             .when(self.model.enabled, |root| root.cursor_text())
             .when(!self.model.enabled, |root| root.cursor_not_allowed().opacity(0.6))
-            .child(TextAreaElement { input: cx.entity() })
+            .child(
+                div()
+                    .relative()
+                    .min_w(px(0.0))
+                    .flex_1()
+                    .w_full()
+                    .overflow_hidden()
+                    .child(TextAreaElement { input: cx.entity() }),
+            )
             .when(show_scrollbar, |root| {
                 root.child(
                     div()
@@ -1337,13 +1346,18 @@ impl Render for TextArea {
             })
             .when(self.model.enabled, |root| root.child(resize_handle));
 
+        let has_elevation = look.shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
         if self.model.enabled
             && let Some(shadows) = look.shadow.as_ref().filter(|shadows| !shadows.is_empty())
         {
             control = control.shadow(shadows.clone());
         }
 
+        let shadow_extent = reserve_shadow_extent(look.shadow.as_ref(), None, scale_factor, has_elevation);
         let mut root = render_button_family_focus_ring(self.model.id.clone(), control, look.focus_ring, look.radius);
+        if shadow_extent > 0.0 {
+            root = div().id(format!("{}-elevation", self.model.id)).relative().p(px(shadow_extent)).child(root);
+        }
         if self.model.full_width {
             root = root.w_full();
         }

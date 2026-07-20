@@ -437,9 +437,14 @@ struct ShadcnSelectorTheme {
 }
 
 impl SelectorTheme for ShadcnSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> gpui_luma::controls::selector::SelectorPalette {
+    fn resolve(
+        &self,
+        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
+        state: InteractionState,
+        without_elevation: bool,
+    ) -> gpui_luma::controls::selector::SelectorPalette {
         let tokens = self.theme.mode_tokens();
-        super::selector::selector_palette(tokens.as_ref(), self.theme.mode(), state)
+        super::selector::selector_palette(tokens.as_ref(), self.theme.mode(), trigger_style, state, without_elevation)
     }
 
     fn metrics(&self) -> gpui_luma::theme::MetricTokens {
@@ -448,12 +453,22 @@ impl SelectorTheme for ShadcnSelectorTheme {
 
     fn resolve_look(
         &self,
+        trigger_style: gpui_luma::controls::selector::SelectorTriggerStyle,
         state: InteractionState,
         size: ControlSize,
         scale: &gpui_luma::theme::StandardBoxScale,
+        without_elevation: bool,
     ) -> gpui_luma::controls::selector::SelectorLook {
         let tokens = self.theme.mode_tokens();
-        super::selector::selector_look(tokens.as_ref(), self.theme.mode(), state, size, scale)
+        super::selector::selector_look(
+            tokens.as_ref(),
+            self.theme.mode(),
+            trigger_style,
+            state,
+            size,
+            scale,
+            without_elevation,
+        )
     }
 }
 

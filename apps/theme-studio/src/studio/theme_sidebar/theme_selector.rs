@@ -123,9 +123,11 @@ impl SearchSelectorTemplate for ThemeSearchSelectorTemplate {
 
         let interaction = selector_interaction(&model);
         let look = self.selector_theme.resolve_look(
+            gpui_luma::controls::selector::SelectorTriggerStyle::Outline,
             interaction,
             model.size,
             &StandardBoxScale::compute(model.size, &self.selector_theme.metrics(), window.scale_factor()),
+            false,
         );
         let open = model.popup_content.is_some();
         let selected_id = self.selected_id.read().expect("theme selector selected id lock").clone();

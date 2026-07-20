@@ -9,6 +9,8 @@ use lucide_icons::Icon as LucideIcon;
 use super::{SelectorPlacement, SelectorRenderModel};
 use super::item_template::render_item_content;
 
+use crate::controls::button_family::button_family_effective_border;
+use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::color::style::ElementExt;
 use crate::controls::icon::lucide_icon;
 use crate::controls::selector_panel::{
@@ -196,7 +198,8 @@ where
             LayoutCacheKey { size: model.size, scale_factor_bits: scale_factor.to_bits() },
             |metrics| StandardBoxScale::compute(model.size, metrics, scale_factor),
         );
-        self.theme.resolve_look(model.state, model.size, &scale)
+        self.theme
+            .resolve_look(model.trigger_style, model.state, model.size, &scale, model.without_elevation)
     }
 
     fn render(
@@ -218,7 +221,9 @@ where
             on_item_mouse_down,
             on_item_click,
         } = handlers;
+        let scale_factor = window.scale_factor();
         let look = self.resolve_look(model, window, cx);
+        let border = button_family_effective_border(look.trigger_border);
         let trigger_content = render_item_content(model, &look, cx);
         let mut root = div()
             .id(model.id.clone())
@@ -231,8 +236,6 @@ where
             .h(px(look.trigger_height))
             .w_full()
             .bg(look.trigger_background)
-            .border_1()
-            .border_color(look.trigger_border)
             .rounded(px(look.trigger_radius))
             .cursor_pointer()
             .relative()
@@ -270,12 +273,29 @@ where
                 ),
             ));
 
+        if border.a > 0.0 {
+            root = root.border_1().border_color(border);
+        }
+
+        let paint_shadow = !model.state.disabled
+            && !model.without_elevation
+            && look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
+        if paint_shadow && let Some(shadows) = look.trigger_shadow.as_ref() {
+            root = root.shadow(shadows.clone());
+        }
+
         if model.state.disabled {
             root = root.opacity(0.56);
         }
 
         if let Some(focus_ring) = look.focus_ring {
             root = root.border_1().border_color(focus_ring);
+        }
+
+        let has_elevation = !model.without_elevation && look.trigger_shadow.as_ref().is_some_and(|s| !s.is_empty());
+        let shadow_extent = reserve_shadow_extent(look.trigger_shadow.as_ref(), None, scale_factor, has_elevation);
+        if shadow_extent > 0.0 {
+            root = div().id(format!("{}-elevation", model.id)).relative().w_full().p(px(shadow_extent)).child(root);
         }
 
         if model.open {
@@ -444,14 +464,17 @@ mod tests {
     use gpui::{Bounds, point, px, size};
 
     use super::*;
+    use crate::controls::selector::SelectorTriggerStyle;
     use crate::theme::{ControlSize, InteractionState, StandardBoxScale};
 
     fn look() -> SelectorLook {
         let theme = default_selector_theme();
         theme.resolve_look(
+            SelectorTriggerStyle::Outline,
             InteractionState::default(),
             ControlSize::Md,
             &StandardBoxScale::compute(ControlSize::Md, &theme.metrics(), 1.0),
+            false,
         )
     }
 

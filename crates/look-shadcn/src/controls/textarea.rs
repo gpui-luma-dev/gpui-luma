@@ -125,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn filled_textarea_uses_background_fill_and_shadow() {
+    fn primary_textarea_uses_background_fill_and_shadow() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let textarea = textarea_palette(
@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn soft_textarea_uses_muted_fill_and_no_border() {
+    fn surface_textarea_uses_muted_fill_and_no_border() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let textfield =

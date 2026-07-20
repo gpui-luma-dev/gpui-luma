@@ -14,10 +14,9 @@ use gpui_luma::controls::split_view::{SplitView, SplitViewEvent, SplitViewSepara
 use gpui_luma::theme::ControlSize;
 use gpui_luma::{column, column_emphasis, paging_list_view};
 use gpui_luma_look_shadcn::prelude::*;
-use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize};
+use gpui_luma_look_shadcn::{ShadcnLook, ShadcnTextSize, with_look};
 use lucide_icons::Icon as LucideIcon;
 
-use crate::studio::content_tabs::cards::panel_box_shadow;
 use super::navigation_sidebar::{
     property_navigation_footer_nodes, property_navigation_nodes, INITIAL_PROPERTY_SELECTION_ID,
 };
@@ -235,20 +234,23 @@ impl Render for DashboardPanel {
             );
         });
 
-        div().size_full().min_h_0().p(px(24.0)).child(
-            div()
-                .size_full()
-                .min_h_0()
-                .flex()
-                .flex_col()
-                .overflow_hidden()
-                .border_1()
-                .border_color(chrome.border)
-                .rounded(px(DASHBOARD_CARD_RADIUS_PX))
-                .bg(chrome.panel_background)
-                .shadow(panel_box_shadow())
-                .child(self.split_view.clone()),
-        )
+        let split_view = self.split_view.clone();
+        with_look(&self.look, || {
+            div().size_full().min_h_0().p(px(24.0)).child(
+                div()
+                    .size_full()
+                    .min_h_0()
+                    .flex()
+                    .flex_col()
+                    .overflow_hidden()
+                    .border_1()
+                    .border_color(chrome.border)
+                    .rounded(px(DASHBOARD_CARD_RADIUS_PX))
+                    .bg(chrome.panel_background)
+                    .shadow_cn(ShadcnShadow::Default)
+                    .child(split_view),
+            )
+        })
     }
 }
 

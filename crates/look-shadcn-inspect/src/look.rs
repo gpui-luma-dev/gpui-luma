@@ -378,11 +378,22 @@ impl<'a> ShadcnInspect<'a> {
     }
 
     pub fn inspect_selector_color_palette(&self, state: InteractionState, size: ControlSize) -> SelectorInspectPalette {
-        inspect_selector_color_palette(&self.mode_tokens(), self.theme_mode(), state, size)
+        inspect_selector_color_palette(
+            &self.mode_tokens(),
+            self.theme_mode(),
+            gpui_luma::controls::selector::SelectorTriggerStyle::Outline,
+            state,
+            size,
+        )
     }
 
     pub fn inspect_selector_metrics(&self, size: ControlSize) -> SelectorInspectMetrics {
-        inspect_selector_metrics(&self.mode_tokens(), self.theme_mode(), size)
+        inspect_selector_metrics(
+            &self.mode_tokens(),
+            self.theme_mode(),
+            gpui_luma::controls::selector::SelectorTriggerStyle::Outline,
+            size,
+        )
     }
 
     pub fn inspect_control_group_list_color_palette(&self, enabled: bool) -> ControlGroupListInspectPalette {

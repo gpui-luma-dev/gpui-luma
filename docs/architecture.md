@@ -100,7 +100,8 @@ Apps under `apps/` must **only compose** SDK controls using builders and factori
 *   [`stylesheet/`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/stylesheet): Stylesheet matching configuration and resolvers:
     *   `config.rs`: Strongly deserialized Serde layouts for mapping styles to `style.toml`.
     *   `resolve.rs`: Layout metric calculations, variables (`@field`), and opacity resolver.
-*   [`ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`).
+*   [`ext.rs`](file:///Users/scg/Developer/GitHub/gpui-luma/crates/look-shadcn/src/ext.rs): Layout extension modifiers (`bg_cn`, `text_cn`, `gap_cn`, `shadow_cn`).
+*   **Elevation:** Control/container shadows resolve from `[[*.elevation_rules]]` in `assets/style.toml` → catalog `--shadow-*` tokens → look fields → template `.shadow()`. SDK hosts reserve projection via `ShadowProjectionInsets` / elevation slots so disabled paint-clear does not shift layout. App chrome may use `div().shadow_cn(ShadcnShadow::…)` inside `with_look`.
 
 ### `apps/theme-studio` Experimental Layout Prototypes
 *   `studio/prototypes/flex_layout.rs`: App-local responsive flow prototype retained for Theme Studio experimentation and not part of the SDK surface.

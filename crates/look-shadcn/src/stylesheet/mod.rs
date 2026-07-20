@@ -282,6 +282,10 @@ pub fn find_card_color_rule(stylesheet: &StylesheetConfig) -> Option<&CardColorR
     stylesheet.card.color_rule()
 }
 
+pub fn find_card_elevation_rule(stylesheet: &StylesheetConfig) -> Option<&FloatingMenuSurfaceElevationRule> {
+    stylesheet.card.elevation_rule()
+}
+
 pub fn find_badge_color_rule(
     stylesheet: &StylesheetConfig,
     variant: BadgeVariant,
@@ -962,6 +966,8 @@ mod tests {
         assert_eq!(stylesheet.switch.color_rules.len(), 3);
         assert_eq!(stylesheet.switch.elevation_rules.len(), 2);
         assert_eq!(stylesheet.slider.color_rules.len(), 8);
+        assert_eq!(stylesheet.slider.elevation_rules.len(), 2);
+        assert_eq!(stylesheet.card.elevation_rules.len(), 1);
         assert_eq!(stylesheet.scrollbar.color_rules.len(), 8);
         assert_eq!(stylesheet.accordion.trigger.color_rules.len(), 5);
         assert_eq!(stylesheet.resizable_panels.color_rules.len(), 5);

@@ -126,8 +126,9 @@ impl SelectorTemplateControl {
 impl SelectorControlsTemplatePreview {
     fn new(look: Arc<ShadcnLook>) -> Self {
         Self {
-            textfield_template: look.input_textfield_template(),
-            textfield_theme: look.input_textfield_theme(),
+            // Editable selection triggers use Primary (elevated) textfield chrome.
+            textfield_template: look.primary_textfield_template(),
+            textfield_theme: look.primary_textfield_theme(),
             autocomplete_template: default_autocomplete_textbox_template(),
             autocomplete_items_template: default_autocomplete_items_template(),
             combobox_template: default_combobox_template(),
@@ -442,12 +443,26 @@ fn render_search_selector_trigger(
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
+    let selector_theme = preview.look.selector_theme();
+    let interaction = InteractionState {
+        hovered: state.textfield_state.hovered,
+        focused: state.textfield_state.focused || state.textfield_state.focus_visible,
+        disabled: !state.textfield_enabled,
+        ..InteractionState::default()
+    };
+    let trigger_look = selector_theme.resolve_look(
+        Default::default(),
+        interaction,
+        ControlSize::Md,
+        &StandardBoxScale::compute(ControlSize::Md, &selector_theme.metrics(), window.scale_factor()),
+        false,
+    );
     let model = SearchSelectorRenderModel {
         id: id.clone(),
         trigger_label: SharedString::from(placeholder),
         trigger_label_is_placeholder: true,
         trigger_state: state.textfield_state,
-        trigger_theme: preview.textfield_theme.clone(),
+        trigger_look,
         trigger_typography_override: None,
         enabled: state.textfield_enabled,
         size: ControlSize::Md,
@@ -490,6 +505,8 @@ fn render_selector_trigger(
         active_path: None,
         enabled: state.selector_enabled,
         size: ControlSize::Md,
+        trigger_style: Default::default(),
+        without_elevation: false,
         item_template: None,
         panel_template: None,
         focus: state.selector_focus,

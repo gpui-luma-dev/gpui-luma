@@ -440,7 +440,8 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     ) -> AutocompleteTextBoxBuilder {
         let theme = Arc::clone(self);
         autocomplete::new(id, items)
-            .textfield_template(self.input_textfield_template())
+            // Editable trigger: Primary textfield elevation (`shadow-xs`), not transparent Input.
+            .textfield_template(self.primary_textfield_template())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }
@@ -452,7 +453,8 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     ) -> ComboBoxBuilder {
         let theme = Arc::clone(self);
         combobox::new(id, items)
-            .textfield_template(self.input_textfield_template())
+            // Editable trigger: Primary textfield elevation (`shadow-xs`), not transparent Input.
+            .textfield_template(self.primary_textfield_template())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }
@@ -464,8 +466,9 @@ impl ShadcnLookControlExt for Arc<ShadcnLook> {
     ) -> SearchSelectorBuilder {
         let theme = Arc::clone(self);
         search_selector::new(id, items)
+            // Popup search field stays Input; display trigger uses selector Outline chrome.
             .textfield_template(self.input_textfield_template())
-            .textfield_theme(self.input_textfield_theme())
+            .selector_theme(self.selector_theme())
             .scrollbar_template(self.scrollbar_template())
             .popup_look_provider(Arc::new(move |size| theme.selector_items_panel_look(size)))
     }

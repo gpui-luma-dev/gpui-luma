@@ -15,12 +15,13 @@ use gpui_luma::theme::{ControlSize, InteractionLayer, InteractionState, ThemeMod
 
 use crate::controls::button::{ButtonRadiusPreset, ShadcnButtonStyle};
 use crate::look_context::LookContext;
-use crate::elevation::thumb_shadow;
 use crate::focus::focus_ring_color;
 use crate::mode::ShadcnModeTokens;
 use crate::provenance::{LookResolver, ResolvedColor};
+use crate::shadow::parse_shadow_token;
 use crate::stylesheet::{
-    StylesheetConfig, embedded_stylesheet, find_slider_color_rule, resolve_slider_color_rule, resolve_slider_metrics,
+    StylesheetConfig, embedded_stylesheet, find_slider_color_rule, resolve_layered_elevation_shadow,
+    resolve_slider_color_rule, resolve_slider_metrics,
 };
 
 const DEFAULT_SLIDER_WIDTH: f32 = 260.0;
@@ -125,10 +126,10 @@ pub fn slider_look(
     let catalog = ctx.catalog();
     let metrics = ctx.metrics();
     let layer = state.layer();
-    let thumb_shadow = thumb_shadow(ctx.theme_mode);
+    let stylesheet = embedded_stylesheet();
+    let thumb_shadow = slider_elevation_shadow(catalog, stylesheet, layer);
     let resolver = LookResolver::new(catalog, ctx.theme_mode, "slider");
     let colors = resolve_slider_colors(&resolver, style, layer).unwrap_or_else(|_| SliderColorTable::fallback());
-    let stylesheet = embedded_stylesheet();
     let (width, height, track_height, resolved_thumb_size_px, radius) = stylesheet
         .slider
         .metrics_for_size(size)
@@ -174,6 +175,17 @@ fn slider_thumb_size(size: SliderThumbSize) -> f32 {
     }
 }
 
+fn slider_elevation_shadow(
+    catalog: &crate::catalog::CssTokenMap,
+    stylesheet: &StylesheetConfig,
+    layer: InteractionLayer,
+) -> Vec<gpui::BoxShadow> {
+    let Some(token) = resolve_layered_elevation_shadow(&stylesheet.slider.elevation_rules, layer) else {
+        return Vec::new();
+    };
+    parse_shadow_token(catalog, &token).unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -201,6 +213,7 @@ mod tests {
             ("input".into(), "oklch(0.8 0.02 200)".into()),
             ("ring".into(), "oklch(0.5924 0.2025 355.8943)".into()),
             ("card".into(), "oklch(0.9306 0.0260 92.4020)".into()),
+            ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
     }
 
@@ -219,7 +232,38 @@ mod tests {
             ("input".into(), "hsl(220 15.7895% 96.2745%)".into()),
             ("ring".into(), "hsl(13.2143 73.0435% 54.9020%)".into()),
             ("card".into(), "hsl(0 0% 100%)".into()),
+            ("shadow-sm".into(), "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)".into()),
         ]))
+    }
+
+    #[test]
+    fn slider_look_resolves_stylesheet_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let look = slider_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ControlSize::Md,
+            None,
+            InteractionState::default(),
+        );
+
+        assert!(!look.thumb_shadow.is_empty());
+    }
+
+    #[test]
+    fn disabled_slider_look_has_no_shadow() {
+        let mode = ShadcnModeTokens::from_catalog(sample_catalog(), ThemeMode::Light).expect("catalog");
+        let look = slider_look(
+            &mode,
+            ThemeMode::Light,
+            ShadcnButtonStyle::Primary,
+            ControlSize::Md,
+            None,
+            InteractionState { disabled: true, ..InteractionState::default() },
+        );
+
+        assert!(look.thumb_shadow.is_empty());
     }
 
     #[test]

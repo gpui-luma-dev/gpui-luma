@@ -14,6 +14,14 @@ pub use crate::controls::selector_panel::{
 use crate::controls::selector_panel::items_template_with_modifier;
 use crate::theme::ControlSize;
 
+/// Trigger chrome aligned with command button variants (read-only select).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SelectorTriggerStyle {
+    #[default]
+    Outline,
+    Ghost,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SelectorPlacement {
     Smart,
@@ -34,6 +42,8 @@ where
     pub(crate) tab_stop: bool,
     pub(crate) size: ControlSize,
     pub(crate) placement: SelectorPlacement,
+    pub(crate) trigger_style: SelectorTriggerStyle,
+    pub(crate) without_elevation: bool,
     pub(crate) item_template: Option<SelectorItemTemplate<T>>,
     pub(crate) panel_template: Arc<dyn SelectorItemsTemplate<T>>,
     pub(crate) template: Arc<dyn SelectorTemplate<T>>,
@@ -53,6 +63,8 @@ where
     pub active_path: Option<SelectorPath>,
     pub enabled: bool,
     pub size: ControlSize,
+    pub trigger_style: SelectorTriggerStyle,
+    pub without_elevation: bool,
     pub item_template: Option<&'a SelectorItemTemplate<T>>,
     pub panel_template: Option<&'a dyn SelectorItemsTemplate<T>>,
     pub focus: ControlFocusState,
@@ -83,6 +95,8 @@ where
                 tab_stop: true,
                 size: ControlSize::Md,
                 placement: SelectorPlacement::Smart,
+                trigger_style: SelectorTriggerStyle::default(),
+                without_elevation: false,
                 item_template: None,
                 panel_template: default_selector_items_template(),
                 template: default_selector_template::<T>(),
@@ -93,6 +107,21 @@ where
 
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.model.label = label.into();
+        self
+    }
+
+    pub fn trigger_style(mut self, style: SelectorTriggerStyle) -> Self {
+        self.model.trigger_style = style;
+        self
+    }
+
+    pub fn ghost(mut self) -> Self {
+        self.model.trigger_style = SelectorTriggerStyle::Ghost;
+        self
+    }
+
+    pub fn without_elevation(mut self) -> Self {
+        self.model.without_elevation = true;
         self
     }
 

@@ -1,41 +1,49 @@
-//! Selector property mappings — input trigger fill + accent item panel.
+//! Selector property mappings — outline/ghost command-button trigger + accent item panel.
 
-use gpui_luma::controls::selector::{SelectorLook, SelectorPalette};
-use gpui_luma::controls::textfield::TextFieldState;
+use gpui_luma::controls::button_family::ButtonFamilyRole;
+use gpui_luma::controls::selector::{SelectorLook, SelectorPalette, SelectorTriggerStyle};
 use gpui_luma::theme::{ControlSize, InteractionState, StandardBoxScale, ThemeMode};
 
+use crate::look_context::LookContext;
 use crate::mode::ShadcnModeTokens;
 use crate::stylesheet::{embedded_stylesheet, resolve_button_metrics_rule};
 
+use super::button::{ShadcnButtonStyle, button_elevation_shadow, button_palette};
 use super::selector_items_panel::selector_items_panel_look;
-use super::textfield::{ShadcnTextFieldStyle, textfield_palette};
 
-fn selector_textfield_state(state: InteractionState) -> TextFieldState {
-    TextFieldState {
-        hovered: state.hovered,
-        focused: state.focused,
-        focus_visible: state.focused,
-        ..TextFieldState::default()
+fn shadcn_button_style(trigger_style: SelectorTriggerStyle) -> ShadcnButtonStyle {
+    match trigger_style {
+        SelectorTriggerStyle::Outline => ShadcnButtonStyle::Outline,
+        SelectorTriggerStyle::Ghost => ShadcnButtonStyle::Ghost,
     }
 }
 
-pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: InteractionState) -> SelectorPalette {
-    let trigger = textfield_palette(
-        mode,
-        theme_mode,
-        ShadcnTextFieldStyle::Input,
-        selector_textfield_state(state),
-        !state.disabled,
-    );
-    let typography = &mode.typography;
+pub fn selector_palette(
+    mode: &ShadcnModeTokens,
+    theme_mode: ThemeMode,
+    trigger_style: SelectorTriggerStyle,
+    state: InteractionState,
+    without_elevation: bool,
+) -> SelectorPalette {
+    let ctx = LookContext::new(mode, theme_mode, state);
+    let stylesheet = embedded_stylesheet();
+    let button_style = shadcn_button_style(trigger_style);
+    let button = button_palette(&ctx, stylesheet, button_style, ButtonFamilyRole::Text, ControlSize::Md);
+    let trigger_shadow = if without_elevation {
+        None
+    } else {
+        button_elevation_shadow(&ctx, stylesheet, button_style)
+    };
+    let icon = ctx.catalog().color("muted-foreground").unwrap_or(button.foreground);
 
     SelectorPalette {
-        trigger_background: trigger.background,
-        trigger_foreground: trigger.foreground,
-        trigger_icon: trigger.icon,
-        trigger_border: trigger.border,
-        focus_ring: trigger.focus_ring,
-        trigger_typography: typography.text.label,
+        trigger_background: button.background,
+        trigger_foreground: button.foreground,
+        trigger_icon: icon,
+        trigger_border: button.border,
+        trigger_shadow,
+        focus_ring: state.focused.then_some(button.focus_ring),
+        trigger_typography: button.typography,
         items_panel: selector_items_panel_look(mode, theme_mode, ControlSize::Md),
     }
 }
@@ -43,11 +51,13 @@ pub fn selector_palette(mode: &ShadcnModeTokens, theme_mode: ThemeMode, state: I
 pub fn selector_look(
     mode: &ShadcnModeTokens,
     theme_mode: ThemeMode,
+    trigger_style: SelectorTriggerStyle,
     state: InteractionState,
     size: ControlSize,
     scale: &StandardBoxScale,
+    without_elevation: bool,
 ) -> SelectorLook {
-    let palette = selector_palette(mode, theme_mode, state);
+    let palette = selector_palette(mode, theme_mode, trigger_style, state, without_elevation);
     let mut typography = palette.trigger_typography;
     if let Some(rule) = embedded_stylesheet().button.metrics_for_size(size) {
         let metrics = resolve_button_metrics_rule(rule, &mode.metrics, size);
@@ -63,6 +73,7 @@ pub fn selector_look(
         trigger_foreground: palette.trigger_foreground,
         trigger_icon: palette.trigger_icon,
         trigger_border: palette.trigger_border,
+        trigger_shadow: palette.trigger_shadow,
         focus_ring: palette.focus_ring,
         trigger_typography: typography,
         trigger_radius: scale.radius,
@@ -78,14 +89,17 @@ pub fn selector_look(
 
 #[cfg(test)]
 mod tests {
-
     use std::collections::BTreeMap;
 
-    use gpui_luma::theme::{ControlSize, ThemeMode};
+    use gpui_luma::controls::button_family::ButtonFamilyRole;
+    use gpui_luma::controls::selector::SelectorTriggerStyle;
+    use gpui_luma::theme::{ControlSize, InteractionState, ThemeMode};
 
     use crate::catalog::CssTokenMap;
-    use crate::color::with_alpha;
+    use crate::controls::button::{ShadcnButtonStyle, button_palette};
+    use crate::look_context::LookContext;
     use crate::mode::ShadcnModeTokens;
+    use crate::stylesheet::embedded_stylesheet;
     use super::{selector_look, selector_palette};
 
     fn sample_catalog() -> CssTokenMap {
@@ -106,53 +120,67 @@ mod tests {
             ("popover".into(), "oklch(0.9306 0.0260 92.4020)".into()),
             ("popover-foreground".into(), "oklch(0.3092 0.0518 219.6516)".into()),
             ("accent".into(), "oklch(0.5808 0.1732 39.5003)".into()),
+            ("shadow-xs".into(), "0 1px 2px 0px hsl(0 0% 0% / 0.05)".into()),
         ]))
     }
 
     #[test]
-    fn selector_trigger_light_uses_transparent_fill() {
+    fn outline_trigger_matches_outline_command_button() {
         let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
-        let palette = selector_palette(&mode, ThemeMode::Light, gpui_luma::theme::InteractionState::default());
-
-        assert_eq!(palette.trigger_background, gpui::hsla(0.0, 0.0, 0.0, 0.0));
-        assert_eq!(palette.trigger_foreground, catalog.color("foreground").expect("foreground"));
-        assert_eq!(palette.trigger_border, catalog.color("border").expect("border"));
-    }
-
-    #[test]
-    fn selector_trigger_dark_uses_input_fill() {
-        let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
-        let palette = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
-        let input = catalog.color("input").expect("input");
-
-        assert_eq!(palette.trigger_background, with_alpha(input, 0.30));
-        assert_eq!(palette.trigger_border, catalog.color("border").expect("border"));
-    }
-
-    #[test]
-    fn selector_trigger_dark_hover_uses_input_half_fill() {
-        let catalog = sample_catalog();
-        let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
-        let default = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
-        let hovered = selector_palette(
-            &mode,
-            ThemeMode::Dark,
-            gpui_luma::theme::InteractionState { hovered: true, ..Default::default() },
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let state = InteractionState::default();
+        let selector = selector_palette(&mode, ThemeMode::Light, SelectorTriggerStyle::Outline, state, false);
+        let ctx = LookContext::new(&mode, ThemeMode::Light, state);
+        let button = button_palette(
+            &ctx,
+            embedded_stylesheet(),
+            ShadcnButtonStyle::Outline,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
         );
-        let input = catalog.color("input").expect("input");
 
-        assert_eq!(default.trigger_background, with_alpha(input, 0.30));
-        assert_eq!(hovered.trigger_background, with_alpha(input, 0.50));
-        assert_eq!(hovered.trigger_foreground, default.trigger_foreground);
+        assert_eq!(selector.trigger_background, button.background);
+        assert_eq!(selector.trigger_foreground, button.foreground);
+        assert_eq!(selector.trigger_border, button.border);
+        assert!(selector.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty()));
+    }
+
+    #[test]
+    fn ghost_trigger_matches_ghost_command_button() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let state = InteractionState::default();
+        let selector = selector_palette(&mode, ThemeMode::Light, SelectorTriggerStyle::Ghost, state, false);
+        let ctx = LookContext::new(&mode, ThemeMode::Light, state);
+        let button = button_palette(
+            &ctx,
+            embedded_stylesheet(),
+            ShadcnButtonStyle::Ghost,
+            ButtonFamilyRole::Text,
+            ControlSize::Md,
+        );
+
+        assert_eq!(selector.trigger_background, button.background);
+        assert_eq!(selector.trigger_foreground, button.foreground);
+        assert_eq!(selector.trigger_border, button.border);
+        assert!(selector.trigger_shadow.is_none());
+    }
+
+    #[test]
+    fn outline_without_elevation_clears_shadow() {
+        let catalog = sample_catalog();
+        let mode = ShadcnModeTokens::from_catalog(catalog, ThemeMode::Light).expect("catalog");
+        let selector =
+            selector_palette(&mode, ThemeMode::Light, SelectorTriggerStyle::Outline, InteractionState::default(), true);
+        assert!(selector.trigger_shadow.is_none());
     }
 
     #[test]
     fn selector_trigger_chevron_uses_muted_icon_color() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Dark).expect("catalog");
-        let palette = selector_palette(&mode, ThemeMode::Dark, gpui_luma::theme::InteractionState::default());
+        let palette =
+            selector_palette(&mode, ThemeMode::Dark, SelectorTriggerStyle::Outline, InteractionState::default(), false);
 
         assert_eq!(palette.trigger_icon, catalog.color("muted-foreground").expect("muted-foreground"));
     }
@@ -167,16 +195,20 @@ mod tests {
         let sm = selector_look(
             &mode,
             ThemeMode::Light,
-            gpui_luma::theme::InteractionState::default(),
+            SelectorTriggerStyle::Outline,
+            InteractionState::default(),
             ControlSize::Sm,
             &sm_scale,
+            false,
         );
         let lg = selector_look(
             &mode,
             ThemeMode::Light,
-            gpui_luma::theme::InteractionState::default(),
+            SelectorTriggerStyle::Outline,
+            InteractionState::default(),
             ControlSize::Lg,
             &lg_scale,
+            false,
         );
 
         assert_eq!(sm.trigger_typography.size, 12.0);

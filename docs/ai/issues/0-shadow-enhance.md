@@ -1,8 +1,23 @@
 # Fix Note: Shadow Token Model and Theme Studio Round-Trip
 
 **Area:** `crates/look-shadcn/src/{look,shadow,tokens}.rs`, `crates/look-shadcn/assets/tweakcn/*.css`, `apps/theme-studio/src/studio/{overrides,theme_sidebar/panels/other}.rs`  
-**Status:** Partial. Catalog fan-out on `"shadow"` override is shipped; full parts ↔ ladder ↔ Theme Studio round-trip is not.  
-**Related:** [2-elevation.md](./2-elevation.md) (control paint + projection padding)
+**Status:** Open / partial — fan-out shipped; **parts ↔ ladder regeneration** still TODO.  
+**Owns:** Theme Studio Other → Shadow coherence with the catalog ladder (this note only).  
+**Related:** [2-elevation.md](../retired/2-elevation.md) — control paint + projection (**done**, retired 2026-07-19).
+
+---
+
+## Boundary (read first)
+
+| Topic | Status | Owner |
+|-------|--------|--------|
+| Control elevation resolve/paint (`elevation_rules`, slots, Primary textfield, etc.) | **Done** | [2-elevation.md](../retired/2-elevation.md) |
+| Parts → regenerate full `--shadow-2xs`…`--2xl` on Other-tab edit | **Open** | **This note** |
+| Outline / Surface textfield elevation | **Won't do** | Product: Primary-only elevation |
+| Absolute-positioned shadow backing | **Unrelated leftover** | Only if clip returns after elevation slots; not ladder work |
+| Full manual bleed/clip QA matrix | **Unrelated leftover** | Optional polish; not blocking |
+
+Do **not** mix ladder regeneration with control paint/clip follow-ups.
 
 ---
 
@@ -66,12 +81,12 @@ When `"shadow"` is overridden, `apply_token_overrides` copies that CSS string to
 
 | Consumer | Resolution path |
 |----------|-----------------|
-| Cards | `look.shadow(ShadcnShadow::Default)` |
+| Cards / dashboard chrome | `look.shadow(...)` / `shadow_cn` |
 | Buttons (outline), toggles, choices | `style.toml` elevation → catalog key → `parse_shadow_token` |
-| Floating menu, filled textfield | `shadow-md` / `shadow-xs` via stylesheet rules |
+| Floating menu, Primary textfield/textarea | `shadow-md` / `shadow-xs` via stylesheet rules |
 | App one-off elevated primary | `ButtonBuilder::with_look` + `look.shadow(...)` (no look change) |
 
-See [2-elevation.md](./2-elevation.md) for remaining SDK paint / projection-padding work.
+Control paint / projection is done ([2-elevation.md](../retired/2-elevation.md)). This note owns **ladder parts ↔ Theme Studio round-trip only**.
 
 ---
 
@@ -192,7 +207,7 @@ No need to parse `@theme` calc aliases.
 3. Ladder generator + unit tests against `academic.css`, `bubblegum.css` fixtures
 4. Replace flat fan-out with regeneration on override apply
 5. Theme Studio: load/save through parts + regeneration
-6. Update [2-elevation.md](./2-elevation.md) cross-links; note in `docs/architecture.md` if shadow model becomes a public contract
+6. Keep [2-elevation.md](../retired/2-elevation.md) cross-links current; note in `docs/architecture.md` if the ladder model becomes a public contract
 
 ---
 
@@ -215,6 +230,8 @@ No need to parse `@theme` calc aliases.
 - Storing only `--shadow` and dropping the ladder (controls use `shadow-xs`, `shadow-md`, …)
 - Moving generation logic into Theme Studio or SDK
 - Per-level shadow editors in Theme Studio v1 (regeneration from one editor is enough initially)
+- Outline / Surface textfield elevation (Primary-only; won't add)
+- Absolute shadow backing or bleed/clip QA (unrelated leftovers from elevation; revisit only if clipping appears)
 
 ---
 
@@ -222,6 +239,7 @@ No need to parse `@theme` calc aliases.
 
 | Date | Change |
 |------|--------|
+| 2026-07-19 | **Status clarified:** elevation paint ([2-elevation](../retired/2-elevation.md)) retired. This note remains open for ladder regen only. Documented unrelated leftovers (absolute backing, clip QA) and won't-do Outline/Surface elevation. |
 | 2026-07-08 | **Shipped:** `apply_token_overrides` fan-out — `"shadow"` override copied to all `shadow-*` catalog keys so SDK controls respond to Other tab (cards already used `--shadow`). |
 | 2026-07-08 | **Identified:** Fan-out flattens tweakcn ladder; parts (`shadow-x` …) not wired to Other tab; no `ShadcnShadowParts` model. |
 | 2026-07-08 | **Doc:** This note created. |

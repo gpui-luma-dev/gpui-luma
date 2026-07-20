@@ -162,6 +162,8 @@ where
             active_path: self.active_index.map(crate::controls::selector_panel::SelectorPath::Item),
             enabled: self.model.enabled,
             size: self.model.size,
+            trigger_style: self.model.trigger_style,
+            without_elevation: self.model.without_elevation,
             item_template: self.model.item_template.as_ref(),
             panel_template: Some(self.model.panel_template.as_ref()),
             focus: ControlFocusState::from_focus_handle(self.model.enabled, self.interaction.focus_handle(), window),

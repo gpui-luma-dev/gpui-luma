@@ -50,7 +50,7 @@ Done — see [`0-size-smarter.md`](./0-size-smarter.md). Padding/`Lg` inset curv
 ## Not In Scope
 
 - Shadow token ladder and Theme Studio round-trip: [`0-shadow-enhance.md`](./0-shadow-enhance.md)
-- Choice disabled/elevation layout regression: [`2-elevation.md`](./2-elevation.md)
+- Choice disabled/elevation layout regression: [`2-elevation.md`](./2-elevation.md) (**done**)
 
 ## Retired Source Note
 

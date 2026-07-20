@@ -75,15 +75,6 @@ pub fn parse_hex_color(raw: &str) -> Option<Hsla> {
     }
 }
 
-pub fn panel_box_shadow() -> Vec<gpui::BoxShadow> {
-    vec![gpui::BoxShadow {
-        color: gpui::hsla(0.0, 0.0, 0.0, 0.35),
-        offset: gpui::point(px(0.0), px(8.0)),
-        blur_radius: px(12.0),
-        spread_radius: px(0.0),
-    }]
-}
-
 pub fn card(
     id: impl Into<SharedString>,
     look: &Arc<ShadcnLook>,

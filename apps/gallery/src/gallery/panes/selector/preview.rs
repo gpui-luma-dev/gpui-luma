@@ -108,6 +108,8 @@ fn render_trigger_sample(
         active_path: None,
         enabled: !sample.state.disabled,
         size: ControlSize::Md,
+        trigger_style: Default::default(),
+        without_elevation: false,
         item_template: None,
         panel_template: None,
         focus: sample.focus,

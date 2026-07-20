@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use gpui::{AnyElement, App, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
+use gpui::{AnyElement, App, FontWeight, IntoElement, SharedString, TextRun, Window, div, font, prelude::*, px};
 use gpui_luma::controls::textarea::{
     TextAreaLineMetric, TextAreaRenderModel, TextAreaState, TextAreaTemplate, TextAreaTheme, ThemedTextAreaTemplate,
 };
@@ -9,6 +9,13 @@ use gpui_luma_look_shadcn::ShadcnLook;
 
 use crate::studio::style::shared::preview_handlers::input_textarea_handlers;
 use crate::studio::style::shared::shell::section_shell_with_width;
+use crate::studio::style::variant_state_table::{VariantStateTable, VariantStateTableRow, VariantStateTableStyle};
+
+const TEXTAREA_TABLE_STATE_COLUMN_WIDTH: f32 = 168.0;
+const TEXTAREA_TABLE_VARIANT_COLUMN_WIDTH: f32 = 108.0;
+const TEXTAREA_TABLE_HEADER_HEIGHT: f32 = 28.0;
+/// Tall enough for 3-row previews + Primary elevation.
+const TEXTAREA_TABLE_ROW_HEIGHT: f32 = 120.0;
 
 #[derive(Clone, Copy)]
 struct InputTextAreaSample {
@@ -18,48 +25,96 @@ struct InputTextAreaSample {
     enabled: bool,
 }
 
+#[derive(Clone, Copy)]
+struct TextAreaStyleVariant {
+    id: &'static str,
+    label: &'static str,
+}
+
+/// Matches `ShadcnTextFieldStyle` / `ShadcnTextAreaExt` (same order as text field).
+const TEXTAREA_STYLE_VARIANTS: [TextAreaStyleVariant; 3] = [
+    TextAreaStyleVariant { id: "primary", label: "Primary" },
+    TextAreaStyleVariant { id: "outline", label: "Outline" },
+    TextAreaStyleVariant { id: "surface", label: "Surface" },
+];
+
 pub(crate) fn render_textarea_template_section(look: Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
 
     section_shell_with_width(
         960.0,
         "Text Area",
-        "Default, hover, focus, active, and disabled states.",
+        "Template Preview: Primary / Outline / Surface × states.",
         chrome.title_text,
         chrome.muted_text,
         chrome.border,
         chrome.panel_background,
-        render_input_textarea_body(&look, window, cx),
+        render_textarea_template_body(&look, window, cx),
     )
 }
 
-fn render_input_textarea_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
+fn render_textarea_template_body(look: &Arc<ShadcnLook>, window: &mut Window, cx: &mut App) -> AnyElement {
     let chrome = look.chrome();
-    let theme = look.textarea_theme();
-    let template: Arc<dyn TextAreaTemplate> = Arc::new(ThemedTextAreaTemplate::new(theme.clone()));
     let samples = input_textarea_samples();
 
+    VariantStateTable::new(
+        VariantStateTableStyle::from_chrome(&chrome)
+            .variant_column_width(TEXTAREA_TABLE_VARIANT_COLUMN_WIDTH)
+            .state_column_width(TEXTAREA_TABLE_STATE_COLUMN_WIDTH)
+            .header_height(TEXTAREA_TABLE_HEADER_HEIGHT)
+            .header_corner_padding_bottom(0.0)
+            .row_height(TEXTAREA_TABLE_ROW_HEIGHT),
+    )
+    .column_headers(samples.iter().map(|sample| render_textarea_state_header_cell(*sample, chrome.muted_text)))
+    .rows(TEXTAREA_STYLE_VARIANTS.iter().map(|style| {
+        let (template, theme) = textarea_style_pair(look, style.id);
+        VariantStateTableRow {
+            label: SharedString::from(style.label),
+            description: SharedString::from(""),
+            cells: samples
+                .iter()
+                .copied()
+                .map(|sample| render_textarea_cell(&template, theme.clone(), sample, style.id, window, cx))
+                .collect(),
+        }
+    }))
+    .build()
+}
+
+fn textarea_style_pair(look: &Arc<ShadcnLook>, style_id: &str) -> (Arc<dyn TextAreaTemplate>, Arc<dyn TextAreaTheme>) {
+    match style_id {
+        "surface" => {
+            (Arc::new(ThemedTextAreaTemplate::new(look.surface_textarea_theme())), look.surface_textarea_theme())
+        }
+        "primary" => (look.primary_textarea_template(), look.primary_textarea_theme()),
+        _ => (look.textarea_template(), look.textarea_theme()),
+    }
+}
+
+fn render_textarea_state_header_cell(sample: InputTextAreaSample, muted_text: gpui::Hsla) -> AnyElement {
     div()
+        .w_full()
+        .h_full()
         .flex()
-        .flex_wrap()
-        .items_start()
+        .items_center()
         .justify_center()
-        .gap(px(12.0))
-        .children(samples.iter().copied().map(|sample| {
-            render_input_textarea_sample(&template, theme.clone(), sample, chrome.muted_text, window, cx)
-        }))
+        .text_xs()
+        .line_height(px(15.0))
+        .font_weight(FontWeight::MEDIUM)
+        .text_color(muted_text)
+        .child(sample.label)
         .into_any_element()
 }
 
-fn render_input_textarea_sample(
+fn render_textarea_cell(
     template: &Arc<dyn TextAreaTemplate>,
     theme: Arc<dyn TextAreaTheme>,
     sample: InputTextAreaSample,
-    label_color: gpui::Hsla,
+    style_id: &str,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
-    let id = SharedString::from(format!("theme-studio-textarea-preview-{}", sample.id));
+    let id = SharedString::from(format!("theme-studio-textarea-preview-{}-{}", style_id, sample.id));
     let placeholder = SharedString::from("Placeholder");
     let value = SharedString::from("Preview\nText area");
     let line_metrics = input_textarea_line_metrics(value.as_ref(), theme, sample.state, sample.enabled, window);
@@ -78,13 +133,11 @@ fn render_input_textarea_sample(
     };
 
     div()
-        .w(px(180.0))
+        .w(px(152.0))
         .flex()
-        .flex_col()
         .items_center()
-        .gap(px(6.0))
+        .justify_center()
         .child(template.render(&model, input_textarea_handlers(), window, cx))
-        .child(div().text_size(px(11.0)).line_height(px(15.0)).text_color(label_color).child(sample.label))
         .into_any_element()
 }
 
@@ -104,8 +157,8 @@ fn input_textarea_samples() -> [InputTextAreaSample; 5] {
             enabled: true,
         },
         InputTextAreaSample {
-            id: "selection",
-            label: "Selection",
+            id: "active",
+            label: "Active",
             state: TextAreaState {
                 hovered: true,
                 focused: true,

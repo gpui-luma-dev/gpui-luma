@@ -5,14 +5,17 @@ use gpui::{
     SharedString, Stateful, Window, div, prelude::*, px,
 };
 
+use crate::controls::button_family::button_family_effective_border;
 use crate::controls::button_family_template::render_button_family_focus_ring;
+use crate::controls::choice_indicator_layout::reserve_shadow_extent;
 use crate::controls::icon::lucide_icon;
+use crate::controls::selector::SelectorLook;
 use crate::controls::selector_panel::{SelectorItemsPanelLook, SelectorPanelClickHandler, SelectorPanelHoverHandler};
 
 use super::behavior::SelectionItem;
 use super::item_template::{SearchSelectorItemRenderModel, SearchSelectorItemTemplate};
-use crate::controls::textfield::{TextFieldState, TextFieldTheme, TextFieldVariant};
-use crate::theme::{ControlSize, LumaTextStyle, StandardBoxScale};
+use crate::controls::textfield::TextFieldState;
+use crate::theme::{ControlSize, LumaTextStyle};
 
 pub type SearchSelectorKeyDownHandler = Box<dyn Fn(&KeyDownEvent, &mut Window, &mut App) + 'static>;
 pub type SearchSelectorScrollWheelHandler = Box<dyn Fn(&ScrollWheelEvent, &mut Window, &mut App) + 'static>;
@@ -63,7 +66,7 @@ pub struct SearchSelectorRenderModel {
     pub trigger_label: SharedString,
     pub trigger_label_is_placeholder: bool,
     pub trigger_state: TextFieldState,
-    pub trigger_theme: Arc<dyn TextFieldTheme>,
+    pub trigger_look: SelectorLook,
     pub trigger_typography_override: Option<LumaTextStyle>,
     pub enabled: bool,
     pub size: ControlSize,
@@ -131,16 +134,86 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
             trigger_bounds,
         } = handlers;
 
-        let mut trigger_look = model.trigger_theme.resolve_look(
-            TextFieldVariant::Standard,
-            model.trigger_state,
-            model.enabled,
-            model.size,
-            &StandardBoxScale::compute(model.size, &model.trigger_theme.metrics(), window.scale_factor()),
-        );
+        let scale_factor = window.scale_factor();
+        let mut trigger_look = model.trigger_look;
         if let Some(typography) = model.trigger_typography_override {
-            trigger_look.typography = typography;
-            trigger_look.icon_size = typography.size + 2.0;
+            trigger_look.trigger_typography = typography;
+            trigger_look.trigger_icon_size = typography.size + 2.0;
+        }
+        let border = button_family_effective_border(trigger_look.trigger_border);
+        let label_color = if model.trigger_label_is_placeholder {
+            trigger_look.trigger_icon
+        } else {
+            trigger_look.trigger_foreground
+        };
+
+        let mut trigger = div()
+            .id(format!("{}-trigger", model.id))
+            .relative()
+            .w_full()
+            .h(px(trigger_look.trigger_height))
+            .px(px(trigger_look.trigger_padding_x))
+            .py(px(trigger_look.trigger_padding_y))
+            .rounded(px(trigger_look.trigger_radius))
+            .bg(trigger_look.trigger_background)
+            .text_size(px(trigger_look.trigger_typography.size))
+            .line_height(px(trigger_look.trigger_typography.line_height))
+            .font_weight(trigger_look.trigger_typography.weight)
+            .when(model.enabled, |row| row.cursor_pointer())
+            .on_hover(trigger_hover)
+            .on_mouse_down(MouseButton::Left, trigger_mouse_down)
+            .on_mouse_up(MouseButton::Left, trigger_mouse_up)
+            .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
+            .on_click(trigger_click)
+            .child(
+                div()
+                    .h_full()
+                    .w_full()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .gap(px(trigger_look.trigger_gap))
+                    .child(div().min_w(px(0.0)).truncate().text_color(label_color).child(model.trigger_label))
+                    .child(
+                        div()
+                            .id(format!("{}-icon", model.id))
+                            .w(px(18.0))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .text_color(trigger_look.trigger_icon)
+                            .child(lucide_icon(lucide_icons::Icon::Search, trigger_look.trigger_icon, 12.0)),
+                    ),
+            );
+
+        if border.a > 0.0 {
+            trigger = trigger.border_1().border_color(border);
+        }
+
+        let has_elevation = trigger_look.trigger_shadow.as_ref().is_some_and(|shadows| !shadows.is_empty());
+        if model.enabled
+            && has_elevation
+            && let Some(shadows) = trigger_look.trigger_shadow.as_ref()
+        {
+            trigger = trigger.shadow(shadows.clone());
+        }
+
+        let shadow_extent =
+            reserve_shadow_extent(trigger_look.trigger_shadow.as_ref(), None, scale_factor, has_elevation);
+        let mut trigger_chrome = render_button_family_focus_ring(
+            format!("{}-trigger-ring", model.id).into(),
+            trigger,
+            trigger_look.focus_ring,
+            trigger_look.trigger_radius,
+        )
+        .w_full();
+        if shadow_extent > 0.0 {
+            trigger_chrome = div()
+                .id(format!("{}-elevation", model.id))
+                .relative()
+                .w_full()
+                .p(px(shadow_extent))
+                .child(trigger_chrome);
         }
 
         div()
@@ -160,68 +233,7 @@ impl SearchSelectorTemplate for DefaultSearchSelectorTemplate {
                     .min_w(model.minimum_trigger_width)
                     .when(model.full_width, |row| row.w_full())
                     .relative()
-                    .child(
-                        render_button_family_focus_ring(
-                            format!("{}-trigger-ring", model.id).into(),
-                            div()
-                                .id(format!("{}-trigger", model.id))
-                                .relative()
-                                .w_full()
-                                .h(px(trigger_look.min_height))
-                                .px(px(trigger_look.padding_x))
-                                .py(px(trigger_look.padding_y))
-                                .border(px(trigger_look.border_width))
-                                .border_color(trigger_look.border)
-                                .rounded(px(trigger_look.radius))
-                                .bg(trigger_look.background)
-                                .text_size(px(trigger_look.typography.size))
-                                .line_height(px(trigger_look.typography.line_height))
-                                .font_weight(trigger_look.typography.weight)
-                                .when(model.enabled, |row| row.cursor_pointer())
-                                .on_hover(trigger_hover)
-                                .on_mouse_down(MouseButton::Left, trigger_mouse_down)
-                                .on_mouse_up(MouseButton::Left, trigger_mouse_up)
-                                .on_mouse_up_out(MouseButton::Left, trigger_mouse_up_out)
-                                .on_click(trigger_click)
-                                .child(
-                                    div()
-                                        .h_full()
-                                        .w_full()
-                                        .flex()
-                                        .items_center()
-                                        .justify_between()
-                                        .gap(px(trigger_look.gap))
-                                        .child(
-                                            div()
-                                                .min_w(px(0.0))
-                                                .truncate()
-                                                .text_color(if model.trigger_label_is_placeholder {
-                                                    trigger_look.placeholder
-                                                } else {
-                                                    trigger_look.foreground
-                                                })
-                                                .child(model.trigger_label),
-                                        )
-                                        .child(
-                                            div()
-                                                .id(format!("{}-icon", model.id))
-                                                .w(px(18.0))
-                                                .flex()
-                                                .items_center()
-                                                .justify_center()
-                                                .text_color(trigger_look.icon)
-                                                .child(lucide_icon(
-                                                    lucide_icons::Icon::Search,
-                                                    trigger_look.icon,
-                                                    12.0,
-                                                )),
-                                        ),
-                                ),
-                            trigger_look.focus_ring,
-                            trigger_look.radius,
-                        )
-                        .w_full(),
-                    ),
+                    .child(trigger_chrome),
             )
             .when_some(model.popup_content, |root, popup_content| root.child(popup_content))
     }

@@ -615,6 +615,14 @@ label_color = "foreground"
 # =====================================================================
 # 5. SLIDER
 # =====================================================================
+# Thumb elevation (matches switch thumb scale at GPUI sizes).
+[[slider.elevation_rules]]
+shadow = "shadow-sm"
+
+[[slider.elevation_rules]]
+layer = "disabled"
+shadow = "none"
+
 [slider.metrics.sm]
 width = 260.0
 height = 24.0
@@ -1240,6 +1248,9 @@ progress_color = "muted-foreground"
 # =====================================================================
 # 13. CARD
 # =====================================================================
+[[card.elevation_rules]]
+shadow = "shadow"
+
 [card.color_rule]
 background = "card"
 foreground = "card-foreground"

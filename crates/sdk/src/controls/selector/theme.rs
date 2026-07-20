@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use gpui::Hsla;
+use gpui::{BoxShadow, Hsla};
 
 use crate::controls::selector_panel::{SelectorItemsPanelLook, default_selector_items_panel_look};
 use crate::controls::textfield::apply_control_size_typography;
@@ -8,12 +8,15 @@ use crate::theme::{
     ControlSize, InteractionLayer, InteractionState, LumaTextStyle, MetricTokens, StandardBoxScale, ThemeTokens,
 };
 
+use super::model::SelectorTriggerStyle;
+
 #[derive(Clone, Debug)]
 pub struct SelectorPalette {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_icon: Hsla,
-    pub trigger_border: Hsla,
+    pub trigger_border: Option<Hsla>,
+    pub trigger_shadow: Option<Vec<BoxShadow>>,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
     pub items_panel: SelectorItemsPanelLook,
@@ -24,7 +27,8 @@ pub struct SelectorLook {
     pub trigger_background: Hsla,
     pub trigger_foreground: Hsla,
     pub trigger_icon: Hsla,
-    pub trigger_border: Hsla,
+    pub trigger_border: Option<Hsla>,
+    pub trigger_shadow: Option<Vec<BoxShadow>>,
     pub focus_ring: Option<Hsla>,
     pub trigger_typography: LumaTextStyle,
     pub trigger_radius: f32,
@@ -38,12 +42,24 @@ pub struct SelectorLook {
 }
 
 pub trait SelectorTheme: Send + Sync {
-    fn resolve(&self, state: InteractionState) -> SelectorPalette;
+    fn resolve(
+        &self,
+        trigger_style: SelectorTriggerStyle,
+        state: InteractionState,
+        without_elevation: bool,
+    ) -> SelectorPalette;
 
     fn metrics(&self) -> MetricTokens;
 
-    fn resolve_look(&self, state: InteractionState, _size: ControlSize, scale: &StandardBoxScale) -> SelectorLook {
-        compose_selector_look(&self.resolve(state), scale)
+    fn resolve_look(
+        &self,
+        trigger_style: SelectorTriggerStyle,
+        state: InteractionState,
+        _size: ControlSize,
+        scale: &StandardBoxScale,
+        without_elevation: bool,
+    ) -> SelectorLook {
+        compose_selector_look(&self.resolve(trigger_style, state, without_elevation), scale)
     }
 }
 
@@ -65,7 +81,13 @@ impl DefaultSelectorTheme {
 }
 
 impl SelectorTheme for DefaultSelectorTheme {
-    fn resolve(&self, state: InteractionState) -> SelectorPalette {
+    fn resolve(
+        &self,
+        trigger_style: SelectorTriggerStyle,
+        state: InteractionState,
+        without_elevation: bool,
+    ) -> SelectorPalette {
+        let _ = without_elevation;
         let palette = &self.tokens.palette;
         let typography = &self.tokens.typography;
 
@@ -73,19 +95,27 @@ impl SelectorTheme for DefaultSelectorTheme {
             InteractionLayer::Disabled => palette.state.disabled.background,
             InteractionLayer::Pressed => palette.state.pressed.background,
             InteractionLayer::Hovered => palette.state.hover.background,
-            InteractionLayer::Default => palette.app.background,
+            InteractionLayer::Default => match trigger_style {
+                SelectorTriggerStyle::Outline => palette.app.background,
+                SelectorTriggerStyle::Ghost => gpui::hsla(0.0, 0.0, 0.0, 0.0),
+            },
         };
         let trigger_foreground = if state.disabled {
             palette.state.disabled.foreground
         } else {
             palette.app.foreground
         };
+        let trigger_border = match trigger_style {
+            SelectorTriggerStyle::Outline => Some(palette.border.default),
+            SelectorTriggerStyle::Ghost => None,
+        };
 
         SelectorPalette {
             trigger_background,
             trigger_foreground,
             trigger_icon: palette.app.muted_foreground,
-            trigger_border: palette.border.default,
+            trigger_border,
+            trigger_shadow: None,
             focus_ring: state.focused.then_some(palette.focus.ring),
             trigger_typography: typography.text.label,
             items_panel: default_selector_items_panel_look(&self.tokens, ControlSize::Md),
@@ -96,8 +126,15 @@ impl SelectorTheme for DefaultSelectorTheme {
         self.tokens.metrics
     }
 
-    fn resolve_look(&self, state: InteractionState, size: ControlSize, scale: &StandardBoxScale) -> SelectorLook {
-        let mut palette = self.resolve(state);
+    fn resolve_look(
+        &self,
+        trigger_style: SelectorTriggerStyle,
+        state: InteractionState,
+        size: ControlSize,
+        scale: &StandardBoxScale,
+        without_elevation: bool,
+    ) -> SelectorLook {
+        let mut palette = self.resolve(trigger_style, state, without_elevation);
         apply_control_size_typography(&mut palette.trigger_typography, &self.tokens.typography, size);
         palette.items_panel = default_selector_items_panel_look(&self.tokens, size);
         compose_selector_look(&palette, scale)
@@ -110,6 +147,7 @@ pub(crate) fn compose_selector_look(palette: &SelectorPalette, scale: &StandardB
         trigger_foreground: palette.trigger_foreground,
         trigger_icon: palette.trigger_icon,
         trigger_border: palette.trigger_border,
+        trigger_shadow: palette.trigger_shadow.clone(),
         focus_ring: palette.focus_ring,
         trigger_typography: palette.trigger_typography,
         trigger_radius: scale.radius,

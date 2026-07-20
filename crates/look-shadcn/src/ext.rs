@@ -2,7 +2,7 @@ use gpui::{InteractiveElement, StatefulInteractiveElement, Styled, px};
 use gpui_luma::theme::{LumaTextScale, LumaTextStyle, LumaTypography};
 
 use crate::context::with_active_look;
-use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
+use crate::tokens::{ShadcnFont, ShadcnRadius, ShadcnShadow, ShadcnStyle, ShadcnTextRole, ShadcnTextSize, ShadcnToken};
 
 fn resolve_style_color(style: ShadcnStyle) -> Option<gpui::Hsla> {
     with_active_look(|look| {
@@ -214,6 +214,19 @@ pub trait ShadcnElementExt: Styled + Sized {
         with_active_look(|look| {
             if let Some(look) = look {
                 self.rounded(px(look.radius(role)))
+            } else {
+                self
+            }
+        })
+    }
+
+    /// Applies a catalog shadow token from the active look (`--shadow-*`).
+    ///
+    /// No-ops when no look is bound via [`crate::with_look`].
+    fn shadow_cn(self, role: ShadcnShadow) -> Self {
+        with_active_look(|look| {
+            if let Some(look) = look {
+                self.shadow(look.shadow(role))
             } else {
                 self
             }

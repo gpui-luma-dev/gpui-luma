@@ -91,7 +91,7 @@ mod tests {
     use crate::test_support::sample_catalog;
 
     #[test]
-    fn inspect_soft_textfield_uses_muted_token() {
+    fn inspect_surface_textfield_uses_muted_token() {
         let catalog = sample_catalog();
         let mode = ShadcnModeTokens::from_catalog(catalog.clone(), ThemeMode::Light).expect("catalog");
         let palette = super::inspect_textfield_color_palette(

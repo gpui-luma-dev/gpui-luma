@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 use gpui::{AnyElement, App, ClickEvent, Div, FontWeight, SharedString, Stateful, Window, div, px, prelude::*, svg};
 use lucide_icons::Icon as LucideIcon;
 
+use crate::controls::choice_indicator_layout::shadow_extent_from_slice;
 use crate::controls::menu_item::{MenuItem, MenuItemIcon};
 use crate::controls::state::MenuPath;
 use crate::controls::floating_menu::FloatingMenuLook;
@@ -168,6 +169,7 @@ impl FloatingMenuTemplate for ThemedFloatingMenuTemplate {
             menu = menu.child(submenu);
         }
 
+        let menu = with_elevation_slot(format!("{}-menu", model.id), menu, &look.shadow);
         self.apply_modifiers(menu, model)
     }
 }
@@ -300,6 +302,18 @@ fn render_floating_submenu(
     }
 
     submenu
+}
+
+fn with_elevation_slot(
+    id: impl Into<SharedString>,
+    surface: Stateful<Div>,
+    shadows: &[gpui::BoxShadow],
+) -> Stateful<Div> {
+    let extent = shadow_extent_from_slice(shadows, 1.0, true);
+    if extent <= 0.0 {
+        return surface;
+    }
+    div().id(format!("{}-elevation", id.into())).relative().p(px(extent)).child(surface)
 }
 
 fn render_item_icon(icon: Option<&MenuItemIcon>, size: f32) -> AnyElement {
