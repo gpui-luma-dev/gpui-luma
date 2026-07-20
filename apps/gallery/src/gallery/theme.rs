@@ -65,14 +65,6 @@ impl GalleryThemeChoice {
         }
     }
 
-    /// `cargo run -p gpui-luma-gallery -- <stem>|default|…`
-    pub(in crate::gallery) fn cli_usage_line() -> String {
-        let program = "gpui-luma-gallery";
-        let mut options = vec!["default".to_string()];
-        options.extend(available_theme_names());
-        format!("cargo run -p {program} -- [{}]", options.join("|"))
-    }
-
     pub fn shadcn_look(self) -> Arc<ShadcnLook> {
         match self {
             Self::Default => Arc::new(ShadcnLook::native()),

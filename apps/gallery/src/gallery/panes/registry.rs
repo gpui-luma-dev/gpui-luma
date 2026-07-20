@@ -14,12 +14,11 @@ use crate::gallery::control::GalleryApp;
 
 use super::{
     accordion, autocomplete, badge, button, checkbox, choice_controls_template, color, color_compositions, combobox,
-    context_menu, dock_panel, floating_menu, tree_view, list_view, listbox, navigation_sidebar, palette, popup_menu,
-    pager, progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search_selector,
-    selection_panel,
+    context_menu, dock_panel, floating_menu, tree_view, list_view, listbox, navigation_sidebar, popup_menu, pager,
+    progress, prototypes, radio_button, radio_group, resizable_panels, scrollbar, search_selector, selection_panel,
     shared::{gallery_pane, InspectorToggleRegistry},
     split_view, selector, selector_controls_template, settings, slider, switch, tabs_navigation, textarea, textfield,
-    toggle, toggle_group, toolbar, typography, dialog,
+    toggle, toggle_group, toolbar, dialog,
 };
 
 #[derive(Clone, Copy)]
@@ -32,8 +31,6 @@ struct GalleryPage {
 
 #[derive(Clone, Copy)]
 enum GalleryPageKind {
-    Palette,
-    Typography,
     Badge,
     DialogModal,
     DialogModeless,
@@ -119,15 +116,6 @@ pub(in crate::gallery) struct GalleryBranchButton {
     pub(in crate::gallery) node_id: &'static str,
     pub(in crate::gallery) button: Entity<Button<bool>>,
 }
-
-const PALETTE_PAGE: GalleryPage =
-    GalleryPage { id: "palette", label: "Palette", icon: Some(LucideIcon::Palette), kind: GalleryPageKind::Palette };
-const TYPOGRAPHY_PAGE: GalleryPage = GalleryPage {
-    id: "typography",
-    label: "Typography",
-    icon: Some(LucideIcon::Type),
-    kind: GalleryPageKind::Typography,
-};
 
 const BADGE_PAGE: GalleryPage = GalleryPage { id: "badge", label: "Badge", icon: None, kind: GalleryPageKind::Badge };
 const DIALOG_MODAL_PAGE: GalleryPage =
@@ -299,7 +287,6 @@ const SETTINGS_PAGE: GalleryPage = GalleryPage {
     kind: GalleryPageKind::Settings,
 };
 
-const PRIMARY_PAGES: &[GalleryPage] = &[PALETTE_PAGE, TYPOGRAPHY_PAGE];
 const BOTTOM_PAGES: &[GalleryPage] = &[SETTINGS_PAGE];
 const COMMAND_PAGES: &[GalleryPage] = &[BUTTON_PAGE, CUSTOM_BUTTON_PAGE, TOOLBAR_PAGE];
 const CHOICE_PAGES: &[GalleryPage] = &[
@@ -468,24 +455,19 @@ pub(in crate::gallery) struct GalleryPanes {
 
 impl GalleryPanes {
     pub(in crate::gallery) fn initial_selection() -> &'static str {
-        PALETTE_PAGE.id
+        BUTTON_PAGE.id
     }
 
     pub(in crate::gallery) fn navigation(cx: &mut Context<GalleryApp>, look: Arc<ShadcnLook>) -> GalleryNavigation {
         let sidebar_theme = look.navigation_sidebar_theme();
         let mut route_buttons = Vec::new();
         let mut branch_buttons = Vec::new();
-        let mut nodes: Vec<NavNode> = PRIMARY_PAGES
-            .iter()
-            .map(|page| nav_node_for_page(page, cx, &mut route_buttons, sidebar_theme.clone()))
-            .collect();
-
         let label_theme = sidebar_theme.clone();
-        nodes.push(NavNode::new("controls-label").presenter(
+        let mut nodes = vec![NavNode::new("controls-label").presenter(
             move |state: &NavNodeState, window: &mut Window, cx: &mut App| {
                 controls_label_presenter(state, window, cx, label_theme.clone())
             },
-        ));
+        )];
 
         nodes.extend(CONTROL_GROUPS.iter().map(|group| {
             let label = group.label;
@@ -697,7 +679,7 @@ impl GalleryPanes {
             GalleryPageKind::Progress => self.progress.notify_controls(cx),
             GalleryPageKind::ResizablePanels => self.resizable_panels.notify_controls(cx),
             GalleryPageKind::SplitViewUnified | GalleryPageKind::SplitViewInset => self.split_view.notify_controls(cx),
-            GalleryPageKind::Palette | GalleryPageKind::Typography | GalleryPageKind::Settings => {}
+            GalleryPageKind::Settings => {}
         }
     }
 
@@ -725,8 +707,6 @@ impl GalleryPanes {
             GalleryPageKind::Selector => self.selector.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::SelectionPanel => self.selection_panel.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::SelectorTemplates => self.selector_templates.render(&self.look),
-            GalleryPageKind::Palette => palette::render(&self.look),
-            GalleryPageKind::Typography => typography::render(&self.look),
             GalleryPageKind::Button => self.button.render(&self.look, &self.inspector_toggles),
             GalleryPageKind::CustomButton => self.custom_button.render(&self.look),
             GalleryPageKind::Toolbar => self.toolbar.render(&self.look, &self.inspector_toggles),
@@ -778,9 +758,8 @@ impl GalleryPanes {
 }
 
 fn page_for_id(id: &str) -> Option<GalleryPage> {
-    PRIMARY_PAGES
+    BOTTOM_PAGES
         .iter()
-        .chain(BOTTOM_PAGES)
         .chain(CONTROL_GROUPS.iter().flat_map(|group| group.pages.iter()))
         .copied()
         .find(|page| page.id == id)
@@ -792,10 +771,10 @@ fn nav_node_for_page(
     route_buttons: &mut Vec<GalleryRouteButton>,
     sidebar_theme: Arc<dyn NavigationSidebarTheme>,
 ) -> NavNode {
-    let reserve_icon_space = PRIMARY_PAGES.iter().chain(BOTTOM_PAGES).all(|candidate| candidate.id != page.id);
+    let reserve_icon_space = BOTTOM_PAGES.iter().all(|candidate| candidate.id != page.id);
     let label = page.label;
     let button = Button::new(page.id)
-        .typed(page.id == PALETTE_PAGE.id)
+        .typed(page.id == BUTTON_PAGE.id)
         .content(move |_, _| div().child(label).into_any_element())
         .template(sidebar_leaf_template(page.icon, reserve_icon_space, sidebar_theme.clone()))
         .spawn(cx);

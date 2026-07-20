@@ -1,12 +1,9 @@
 mod inspector_toggle;
 mod template_pipeline;
-mod theme_context;
 
 pub(in crate::gallery) mod inspector;
 
 pub(in crate::gallery) use inspector_toggle::InspectorToggleRegistry;
-
-pub(in crate::gallery) use theme_context::render_sparse_catalog_callout;
 
 pub(in crate::gallery) use template_pipeline::{
     render_combobox_popup_preview_from_templates, render_search_selector_popup_preview_from_templates,
