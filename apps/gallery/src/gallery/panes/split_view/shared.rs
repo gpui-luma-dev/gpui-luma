@@ -12,7 +12,6 @@ use crate::gallery::control::GalleryApp;
 
 pub(super) const DEMO_WIDTH: f32 = 820.0;
 pub(super) const DEMO_HEIGHT: f32 = 460.0;
-pub(super) const ICON_RAIL_COLLAPSED_WIDTH: f32 = 128.0;
 
 pub(super) fn demo_frame(title: impl Into<SharedString>, body: impl IntoElement) -> AnyElement {
     let title = title.into();
@@ -66,10 +65,6 @@ pub(super) fn mockup_shell(body: impl IntoElement, canvas_width: Pixels, canvas_
                 .child(body),
         )
         .into_any_element()
-}
-
-pub(super) fn content_pane_with_panel(panel: impl IntoElement) -> AnyElement {
-    div().size_full().p_3().child(panel).into_any_element()
 }
 
 pub(super) fn shell_content_pane() -> AnyElement {

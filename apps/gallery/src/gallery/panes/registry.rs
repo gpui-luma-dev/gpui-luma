@@ -90,8 +90,6 @@ enum GalleryPageKind {
     ResizablePanels,
     SplitViewUnified,
     SplitViewInset,
-    SplitViewIconRail,
-    SplitViewDetached,
     Settings,
 }
 
@@ -250,18 +248,6 @@ const SPLIT_VIEW_INSET_PAGE: GalleryPage = GalleryPage {
     icon: None,
     kind: GalleryPageKind::SplitViewInset,
 };
-const SPLIT_VIEW_ICON_RAIL_PAGE: GalleryPage = GalleryPage {
-    id: "split-view-icon-rail",
-    label: "Split View: Icon Rail",
-    icon: None,
-    kind: GalleryPageKind::SplitViewIconRail,
-};
-const SPLIT_VIEW_DETACHED_PAGE: GalleryPage = GalleryPage {
-    id: "split-view-detached",
-    label: "Split View: Detached",
-    icon: None,
-    kind: GalleryPageKind::SplitViewDetached,
-};
 const NAVIGATION_SIDEBAR_PAGE: GalleryPage = GalleryPage {
     id: "navigation-sidebar",
     label: "Navigation Sidebar",
@@ -347,14 +333,8 @@ const COLOR_PAGES: &[GalleryPage] = &[
     COLOR_SPLIT_RING_PAGE,
 ];
 const MENU_PAGES: &[GalleryPage] = &[CONTEXT_MENU_PAGE, FLOATING_MENU_PAGE, POPUP_MENU_PAGE];
-const LAYOUT_PAGES: &[GalleryPage] = &[
-    DOCK_PANEL_PAGE,
-    RESIZABLE_PANELS_PAGE,
-    SPLIT_VIEW_DETACHED_PAGE,
-    SPLIT_VIEW_ICON_RAIL_PAGE,
-    SPLIT_VIEW_INSET_PAGE,
-    SPLIT_VIEW_UNIFIED_PAGE,
-];
+const LAYOUT_PAGES: &[GalleryPage] =
+    &[DOCK_PANEL_PAGE, RESIZABLE_PANELS_PAGE, SPLIT_VIEW_INSET_PAGE, SPLIT_VIEW_UNIFIED_PAGE];
 const NAVIGATION_PAGES: &[GalleryPage] = &[NAVIGATION_SIDEBAR_PAGE, TABS_NAVIGATION_PAGE];
 const FEEDBACK_PAGES: &[GalleryPage] = &[
     BADGE_PAGE,
@@ -716,10 +696,7 @@ impl GalleryPanes {
             GalleryPageKind::TabsNavigation => self.tabs_navigation.notify_controls(cx),
             GalleryPageKind::Progress => self.progress.notify_controls(cx),
             GalleryPageKind::ResizablePanels => self.resizable_panels.notify_controls(cx),
-            GalleryPageKind::SplitViewUnified
-            | GalleryPageKind::SplitViewInset
-            | GalleryPageKind::SplitViewIconRail
-            | GalleryPageKind::SplitViewDetached => self.split_view.notify_controls(cx),
+            GalleryPageKind::SplitViewUnified | GalleryPageKind::SplitViewInset => self.split_view.notify_controls(cx),
             GalleryPageKind::Palette | GalleryPageKind::Typography | GalleryPageKind::Settings => {}
         }
     }
@@ -794,12 +771,6 @@ impl GalleryPanes {
             }
             GalleryPageKind::SplitViewInset => {
                 self.split_view.render(split_view::SplitViewDemoKind::Inset, &self.look, &self.inspector_toggles)
-            }
-            GalleryPageKind::SplitViewIconRail => {
-                self.split_view.render(split_view::SplitViewDemoKind::IconRail, &self.look, &self.inspector_toggles)
-            }
-            GalleryPageKind::SplitViewDetached => {
-                self.split_view.render(split_view::SplitViewDemoKind::Detached, &self.look, &self.inspector_toggles)
             }
             GalleryPageKind::Settings => settings::render(&self.look),
         }

@@ -17,11 +17,13 @@ use gpui_luma_shell_common::{
         HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
         wrap_content_pane,
     },
-    content::{self, ICON_RAIL_COLLAPSED_WIDTH},
-    nav_sample,
+    content, nav_sample,
     split_sync::wire_split_nav_sync,
     theme::{ShellThemeChoice, sync_color_control_theme},
 };
+
+/// Collapsed sidebar width that leaves an icon rail visible.
+const ICON_RAIL_COLLAPSED_WIDTH: f32 = 128.0;
 
 pub struct IconRailShellApp {
     focus_scope: FocusHandle,

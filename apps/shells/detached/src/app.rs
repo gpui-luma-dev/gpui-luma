@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use gpui::{Context, Entity, FocusHandle, IntoElement, Render, Subscription, Window, px};
+use gpui::{
+    AnyElement, Context, Entity, FocusHandle, IntoElement, ParentElement, Render, Styled, Subscription, Window, div,
+    px, rgb,
+};
 use gpui_luma::controls::command::button::ButtonEvent;
 use gpui_luma::controls::command::icon_button::IconButton;
 use gpui_luma::controls::navigation_sidebar::NavigationSidebar;
@@ -13,7 +16,7 @@ use gpui_luma_shell_common::{
         HasShellTheme, handle_theme_toggle, render_app_root, render_title_bar, spawn_theme_toggle_button,
         wrap_content_pane,
     },
-    content, nav_sample,
+    nav_sample,
     split_sync::wire_split_nav_sync,
     theme::{ShellThemeChoice, sync_color_control_theme},
 };
@@ -100,10 +103,10 @@ impl Render for DetachedShellApp {
 
         self.split_view.update(cx, |split_view, cx| {
             split_view.set_panes(
-                render_pane(move || content::detached_nav_pane_with_sidebar(navigation_sidebar.clone())),
+                render_pane(move || detached_nav_pane_with_sidebar(navigation_sidebar.clone())),
                 render_pane(move || {
                     wrap_content_pane(
-                        content::detached_content_pane(toggle_button.clone()),
+                        detached_content_pane(toggle_button.clone()),
                         pane_focus.clone(),
                         &look,
                         sans_family.clone(),
@@ -120,4 +123,27 @@ impl Render for DetachedShellApp {
             self.split_view.clone(),
         )
     }
+}
+
+fn detached_nav_pane_with_sidebar(navigation_sidebar: Entity<NavigationSidebar>) -> AnyElement {
+    div()
+        .size_full()
+        .p(px(10.0))
+        .child(div().size_full().rounded(px(16.0)).bg(rgb(0x242835)).overflow_hidden().child(navigation_sidebar))
+        .into_any_element()
+}
+
+fn detached_content_pane(toggle_button: IconButton) -> AnyElement {
+    div()
+        .size_full()
+        .p_3()
+        .child(
+            div()
+                .size_full()
+                .flex()
+                .flex_col()
+                .child(div().w_full().flex().items_center().child(toggle_button))
+                .child(div().flex_1().mt_2().bg(rgb(0x800080)).rounded_md()),
+        )
+        .into_any_element()
 }

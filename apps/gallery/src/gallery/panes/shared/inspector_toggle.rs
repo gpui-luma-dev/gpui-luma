@@ -38,8 +38,6 @@ const INSPECTOR_PAGE_IDS: &[&str] = &[
     "resizable-panels",
     "split-view-unified",
     "split-view-inset",
-    "split-view-icon-rail",
-    "split-view-detached",
     "autocomplete-textfield",
     "combobox",
     "search-selector",
